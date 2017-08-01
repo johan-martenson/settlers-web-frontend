@@ -1,0 +1,276 @@
+:root {
+    --high-light: #3333AA;
+    --dialog-background-color: white;
+    --high-light-error: #993333;
+    --hover-color: lightgray;
+    --selected-color: #333;
+    --button-rounded-corner: 0.3rem;
+    --button-margin: 0.5rem;
+    --button-padding: 0.5rem;
+    --dialog-rounded-corner: 1rem;
+}
+
+* {
+    font-family: Verdana;
+}
+
+.App {
+    background-color: black;
+    user-select: none;
+    height: 100vh;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+}
+
+.Button {
+    cursor: pointer;
+    margin: var(--button-margin);
+    padding: var(--button-padding);
+    text-align: center;
+}
+
+.Button:hover {
+    background-color: var(--hover-color);
+    border-radius: var(--button-rounded-corner);
+}
+
+.Previous {
+    float: left;
+}
+
+.Next {
+    float: right;
+}
+
+.Next::after{
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.Menu {
+    padding-left: 2em;
+    padding-right: 2em;
+    margin: 0 auto;
+    position: absolute;
+    width: 20%;
+    top: 10%;
+    left: 40%;
+    marginLeft: -10%;
+    zIndex: 999;
+    background-color: var(--dialog-background-color);
+    border-radius: var(--dialog-rounded-corner);
+}
+
+.Menu .MenuSectionLabel {
+    text-align: left;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.Menu .MenuSectionContent {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.Menu * {
+    margin: 1em auto;
+    padding: 5px;
+}
+
+.Selected {
+    background-color: var(--selected-color);
+    border-radius: var(--button-rounded-corner);
+    color: whitesmoke;
+}
+
+.GameCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+.Dialog {
+    padding-left: 2em;
+    padding-right: 2em;
+    margin: 0 auto;
+    position: absolute;
+    width: 20%;
+    top: 10%;
+    left: 40%;
+    marginLeft: -10%;
+    z-index: 999;
+    background-color: var(--dialog-background-color);
+    border-radius: var(--dialog-rounded-corner);
+    max-height: 80%;
+}
+
+.MediumIcon {
+    width: 100px;
+}
+
+.SmallIcon {
+    width: 50px;
+}
+
+.RoadIcon {
+    width: 200px;
+}
+
+.Dialog h2 {
+    text-align: left;
+}
+
+.TransientErrorMessage {
+    padding-top: 1em;
+    padding-bottom: 1em;
+    padding-left: 2em;
+    padding-right: 2em;
+    border-top: thick solid var(--high-light-error);
+    margin: 0 auto;
+    position: absolute;
+    width: 30%;
+    bottom: 0%;
+    left: 0;
+    marginLeft: -10%;
+    background-color: var(--dialog-background-color);
+    z-index: 500;
+}
+
+#ConstructionInfo {
+    width: 40%;
+    left: 30%;
+    marginLeft: -20%;
+}
+
+.ConstructionItem {
+    float: left;
+}
+
+.DialogSection {
+    margin-top: 0;
+    margin-bottom: 0;
+    max-height: 100%;
+}
+
+.DialogSection h3 {
+    margin-top: 0;
+    margin-bottom: 0;
+    text-align: left;
+}
+
+.DialogSection::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.SelectedChoice {
+    float:left;
+    border-bottom: thin solid var(--dialog-background-color);
+    background-color: var(--selected-color);
+    border-radius: var(--button-rounded-corner);
+    color: whitesmoke;
+    margin-right: var(--button-margin);
+
+}
+
+.Choice {
+    float:left;
+    border-bottom: thin solid var(--dialog-background-color);
+    margin-right: var(--button-margin);
+}
+
+.SelectedChoice:hover {
+    cursor: pointer;
+}
+
+.Choice:hover {
+    cursor: pointer;
+    background-color: var(--hover-color);
+    border-radius: var(--button-rounded-corner);
+}
+
+
+.PanelChoices::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+
+.Slider {
+    display: flex;
+}
+
+.Slider .SliderScale {
+    width: 100%;
+    position: relative;
+    margin: 0;
+    background-color: lightgray;
+}
+
+.Slider .SliderLessLabel {
+    display: inline-block;
+    margin-right: 0.5rem;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.Slider .SliderMoreLabel {
+    display: inline-block;
+    margin-left: 0.5rem;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.Slider .SliderIndicator {
+    position: absolute;
+    top: 0;
+    background-color: var(--selected-color);
+    width: 0.5rem;
+    height: 100%;
+    border-radius: 0.2rem;
+    margin: 0;
+    transform: translateX(-0.25rem)
+}
+
+.Slider .SliderLessLabel:hover {
+    cursor: pointer;
+}
+
+.Slider .SliderMoreLabel:hover {
+    cursor: pointer;
+}
+
+.InventoryList {
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+.InventoryLabel {
+    margin: 0;
+    padding: 0;
+    text-align: left;
+    text-transform: lowercase;
+    float: left
+}
+
+.InventoryValue {
+    text-align: right;
+    margin: 0;
+    padding: 0;
+    float: right;
+}
+
+.InventoryLabelValuePair::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.InventoryLabel::first-letter {
+    text-transform: uppercase;
+}

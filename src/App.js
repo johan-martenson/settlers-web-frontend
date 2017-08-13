@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import {
+    EnemyHouseInfo,
     ConstructionInfo,
     ServerUnreachable,
     vegetationToInt,
@@ -29,7 +30,7 @@ var MENU_CONSTRUCTION = 3;
 var MAX_SCALE = 50;
 var MIN_SCALE = 10;
 
-var LONGEST_TICK_LENGTH = 200;
+var LONGEST_TICK_LENGTH = 500;
 
 var globalSyncState = {
     mouseDown: false,
@@ -216,13 +217,11 @@ class App extends Component {
         this.setState({
 	    translateX: newTranslateX,
 	    translateY: newTranslateY,
-	    scale: scale,
+	    scale: scale
         });
     }
 
     onSpeedSliderChange(value) {
-        console.info("New value for speed change");
-        console.info("Updating with " + Math.round(LONGEST_TICK_LENGTH / value));
         setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.url);
     }
     
@@ -252,7 +251,7 @@ class App extends Component {
             
 	    this.setState({
 		translateX: globalSyncState.translateXAtMouseDown + deltaX,
-		translateY: globalSyncState.translateYAtMouseDown + deltaY,
+		translateY: globalSyncState.translateYAtMouseDown + deltaY
 	    });
 	}
     }
@@ -284,8 +283,7 @@ class App extends Component {
 
                     this.onCanReachServer("get view for player");
                 }).catch(
-                    (a, b, c) => {
-                        console.error("" + a + " " + b + " " + c);
+                    () => {
                         this.onCannotReachServer("get view for player");
                     }
                 );
@@ -393,7 +391,7 @@ class App extends Component {
                     this.setState({
                         terrain: terrain,
                         gameWidth: data.width,
-                        gameHeight: data.height,
+                        gameHeight: data.height
                     });
 
                     this.onCanReachServer("get terrain");
@@ -472,7 +470,7 @@ class App extends Component {
         } else {
             console.info("Selecting point: " + point.x + ", " + point.y);
             this.setState({
-                selected: point,
+                selected: point
             });
         }
     }
@@ -744,7 +742,17 @@ class App extends Component {
                                             startNewRoad={this.startNewRoad.bind(this)}
                                             player={this.state.player}
                                             />
-              } 
+              }
+
+              {typeof(this.state.showEnemyHouseInfo) !== "undefined" &&
+                  <EnemyHouseInfo house={this.state.showEnemyHouseInfo.house}
+                                      url={this.props.url}
+                                      closeDialog={this.closeActiveMenu.bind(this)}
+                                      onCanReachServer={this.onCanReachServer.bind(this)}
+                                      onCannotReachServer={this.onCannotReachServer.bind(this)}
+                                      player={this.state.player}
+                                      />
+              }
 
               {typeof(this.state.serverUnreachable) !== "undefined" &&
                   <ServerUnreachable command={this.state.serverUnreachable}

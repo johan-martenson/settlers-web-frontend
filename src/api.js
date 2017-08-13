@@ -1,3 +1,27 @@
+async function attackBuilding(house, numberOfAttackers, player, url) {
+    let response = await fetch(url + "/buildings/" + house.houseId,
+                               {method: 'put',
+                                body: JSON.stringify({
+                                    attacked:
+                                    {
+                                        by: player,
+                                        attackers: numberOfAttackers
+                                    }
+                                }
+                                                    )
+                               });
+    return await response.json();
+}
+
+async function getGameInformation(url) {
+
+    // tickLength: 273
+
+    let response = await fetch(url + "/game");
+
+    return await response.json();
+}
+
 async function setSpeed(tickLength, url) {
 
     console.info("Updating speed " + tickLength);
@@ -72,7 +96,12 @@ async function getViewForPlayer(url, player) {
      */
 
     let response = await fetch(url + "/viewForPlayer?player=" + player);
-    return await response.json();
+
+    if (response.ok) {
+        return await response.json();
+    }
+
+    throw new Error("Invalid request");
 }
 
 async function getPlayers(url) {
@@ -83,15 +112,16 @@ async function getPlayers(url) {
     return await response.json();
 }
 
-async function getHouseInformation(houseId, url) {
+async function getHouseInformation(houseId, playerId, url) {
     // x:
     // y:
     // inventory: {'gold': 3}
     // type: 'headquarter'
+    // maxAttackers: 23
 
     console.info("Getting information about house " + houseId);
 
-    let response = await fetch(url + "/buildings?buildingId=" + houseId);
+    let response = await fetch(url + "/buildings?buildingId=" + houseId + "&playerId=" + playerId);
     return await response.json();
 }
 
@@ -136,7 +166,7 @@ async function sendScout(point, player, url) {
     return await response.json();
 }
 
-var SMALL_HOUSES = ["Forester",
+var SMALL_HOUSES = ["ForesterHut",
                     "Woodcutter",
                     "Well",
                     "Quarry",
@@ -155,7 +185,7 @@ var MEDIUM_HOUSES = ["Sawmill",
                      "Mill",
                      "Bakery",
                      "Mint",
-                     "Slaugterhouse",
+                     "Slaughterhouse",
                      "Catapult",
                      "Mint"
                     ];
@@ -176,6 +206,7 @@ var materialToColor = {
 };
 
 export {
+    getGameInformation,
     removeHouse,
     setSpeed,
     sendScout,

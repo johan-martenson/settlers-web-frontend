@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import {
+    attackBuilding,
+    getGameInformation,
     removeHouse,
     sendScout,
     callGeologist,
@@ -36,6 +38,34 @@ var intToVegetationColor = {
 let immediateState = {
     dragging: false,
     clickOffset: 0
+};
+
+let houseImageMap = {
+    Bakery: "bakery-small.png",
+    ForesterHut: "house.png",
+    Woodcutter: "house.png",
+    Well: "well-with-tree-small.png",
+    Quarry: "house.png",
+    Barracks: "barracks-small.png",
+    Guardhouse: "house.png",
+    Hunterhut: "house.png",
+    Fishery: "house.png",
+    Goldmine: "house.png",
+    Ironmine: "house.png",
+    Coalmine: "house.png",
+    Granitemine: "house.png",
+    Sawmill: "sawmill-small.png",
+    Watchtower: "house.png",
+    Mill: "house.png",
+    Mint: "house.png",
+    Slaughterhouse: "house.png",
+    Catapult: "house.png",
+    Mint: "house.png",
+    Headquarter: "headquarter-small.png",
+    Farm: "house.png",
+    Pigfarm: "house.png",
+    Donkeyfarm: "house.png",
+    Fortress: "fortress-small.png"
 };
 
 class GameCanvas extends Component {
@@ -341,13 +371,13 @@ class GameCanvas extends Component {
                     let point = this.gamePointToScreenPoint(house);
 
                     /* Draw the house next to the point, instead of on top */
-                    point.x -= 25;
-                    point.y -= 30;
+                    point.x -= 1.5 * this.props.scale;
+                    point.y -= 2 * this.props.scale;
 
                     return (
-                        <image href="house.png"
-                               width="50"
-                               height="50"
+                        <image href={houseImageMap[house.type]}
+                               width={3 * this.props.scale}
+                               height={3 * this.props.scale}
                                x={point.x}
                                y={point.y}
                                key={index}
@@ -366,11 +396,16 @@ class GameCanvas extends Component {
                     let point = this.gamePointToScreenPoint(tree);
 
                     /* Draw the house next to the point, instead of on top */
-                    point.x -= 10;
-                    point.y -= 35;
+                    point.x -= 1 * this.props.scale;
+                    point.y -= 3 * this.props.scale;
 
                     return (
-                        <image href="tree.png" width="20" height="50" x={point.x} y={point.y} key={index}/>
+                        <image href="tree.png"
+                               width={1 * this.props.scale}
+                               height={3 * this.props.scale}
+                               x={point.x}
+                               y={point.y}
+                               key={index}/>
                     );
                 }
             )}
@@ -457,25 +492,26 @@ class GameCanvas extends Component {
                         point.y -= 15;
                         
                         return (
-                            <circle key={index}
-                                    cx={point.x}
-                                    cy={point.y}
-                                    r="6"
-                                    fill="red"
+                            <image href="rabbit-small-brown.png"
+                                   key={index}
+                                   x={point.x}
+                                   y={point.y}
+                                   width="20"
                                     />
                         );
+
                     } else {
                         let point = this.gamePointToScreenPoint(animal);
 
                         point.y -= 15;
 
                         return (
-                            <circle key={index}
-                                    cx={point.x}
-                                    cy={point.y}
-                                    r="6"
-                                    fill="red"
-                                    />
+                            <image href="rabbit-small-brown.png"
+                                   x={point.x}
+                                   y={point.y}
+                                   key={index}
+                                   width="20"
+                                   />
                         );
                     }
                 })
@@ -509,8 +545,8 @@ class GameCanvas extends Component {
                     let point = this.gamePointToScreenPoint(house);
 
                     /* Draw the house next to the point, instead of on top */
-                    point.x -= 30;
-                    point.y -= 15;
+                    point.x -= 1.5 * this.props.scale; // 30
+                    point.y -= 2 * this.props.scale; // 15
 
                     let houseTitle = house.type;
 
@@ -518,12 +554,18 @@ class GameCanvas extends Component {
                         houseTitle = "(" + house.type + ")";
                     }
 
+                    let textStyle = {
+                        background: "white",
+                        backgroundColor: "white"
+                    };
+
                     return (
                         <text x={point.x}
                               y={point.y - 5}
-                              stroke="one"
+                              stroke="yellow"
                               fill="yellow"
-                              fontSize="10"
+                              fontSize="12"
+                              style={textStyle}
                               key={index}
                               >{houseTitle}</text>
                     );
@@ -680,7 +722,19 @@ class SelectPlayer extends Component {
 }
 
 class Menu extends Component {
-    
+
+    constructor(props) {
+        super(props);
+
+        this.state = {currentSpeed: 4};
+    }
+
+    componentDidMount() {
+        let game = getGameInformation(this.props.url);
+
+        this.setState({currentSpeed: game.tickLength});
+    }
+
     render() {
 
         return (
@@ -703,9 +757,9 @@ class Menu extends Component {
                       />
 
               <div className="MenuSectionLabel">Adjust game speed:</div>
-              <Slider max={8}
+              <Slider max={10}
                       min={1}
-                      initialValue={2}
+                      initialValue={this.state.currentSpeed}
                       less="slower"
                       more="faster"
                       onValue={this.props.adjustSpeed}
@@ -748,11 +802,6 @@ class HeadquarterInfo extends Component {
         getHouseInformation(this.props.house.houseId, this.props.url).then(
             (data) => {
                 console.info("Got house information " + JSON.stringify(data));
-
-                for (let key of Object.keys(data)) {
-                    console.info(key);
-                    console.info(data[key]);
-                }
 
                 this.props.onCanReachServer("get house information");
 
@@ -814,6 +863,48 @@ class HeadquarterInfo extends Component {
     }
 }
 
+class EnemyHouseInfo extends Component {
+
+    render() {
+        return (
+            <div className="Dialog">
+
+              <h1>{this.props.house.type}</h1>
+
+              <img src="house.png" className="MediumIcon" alt="House"/>
+
+              <div className="Button"
+                   onClick={
+                       (event) => {
+
+                           attackBuilding(this.props.house, this.props.player, this.props.url);
+
+                           this.props.closeDialog();
+
+                           event.stopPropagation();
+                       }
+                }
+                >
+                Attack
+              </div>
+
+              <div className="Button"
+                   onClick={
+                       (event) => {
+                           this.props.closeDialog();
+
+                           event.stopPropagation();
+                       }
+                }
+                >
+                Close
+              </div>
+
+            </div>
+        );
+    }
+}
+
 class FriendlyHouseInfo extends Component {
     constructor(props) {
         super(props);
@@ -826,7 +917,7 @@ class FriendlyHouseInfo extends Component {
         return (
             <div className="Dialog">
               <h1>{this.props.house.type}</h1>
-              <img src="house.png" className="MediumIcon" alt="House"/>
+              <img src={houseImageMap[this.props.house.type]} className="MediumIcon" alt="House"/>
               {(this.props.house.type === "Headquarter") &&
                   <HeadquarterInfo house={this.props.house}
                                        url={this.props.url}
@@ -915,7 +1006,7 @@ function FriendlyFlagInfo(props) {
                    event.stopPropagation();
             }}
             >
-              <img className="SmallIcon" src="geologist.jpg" alt="Geologist"/>
+              <img className="SmallIcon" src="pickaxe2.png" alt="Geologist"/>
               <div>Call geologist</div>
             </div>
 
@@ -930,7 +1021,7 @@ function FriendlyFlagInfo(props) {
                      event.stopPropagation();
               }}
               >
-              <img className="SmallIcon" src="scout.jpg" alt="Scout"/>
+              <img className="SmallIcon" src="magnifier2.png" alt="Scout"/>
               <div>Send scout</div>
             </div>
 
@@ -1080,7 +1171,7 @@ class ConstructionInfo extends Component {
               
                   {this.state.selected === "Buildings" &&
                       <div className="PanelChoices">
-                            <div className={this.state.buildingSizeSelected === "small" ? "Button SelectedChoice" : "Choice"}
+                            <div className={this.state.buildingSizeSelected === "small" ? "Button SelectedChoice" : "Button Choice"}
                                      onClick={() => this.setState({buildingSizeSelected: "small"})}
                                   >
                                   Small
@@ -1123,7 +1214,7 @@ class ConstructionInfo extends Component {
                                                   }
                                               }
                                               >
-                                              <img src="house.png"
+                                              <img src={houseImageMap[house]}
                                                    className="SmallIcon"
                                                    alt="House"/>
                                               <div>
@@ -1162,9 +1253,10 @@ class ConstructionInfo extends Component {
                            }
                        }
                        >
-                       <img src="house.png"
+                       <img src={houseImageMap[house]}
                             className="SmallIcon"
                             alt="House"/>
+
                        <div>
                          {house}
                        </div>
@@ -1204,7 +1296,7 @@ class ConstructionInfo extends Component {
                                }
                            }
                            >
-                           <img src="house.png"
+                           <img src={houseImageMap[house]}
                                 className="SmallIcon"
                                 alt="House"/>
                            <div>
@@ -1368,6 +1460,7 @@ class Slider extends Component {
 }
 
 export {
+    EnemyHouseInfo,
     ConstructionInfo,
     ServerUnreachable,
     FriendlyFlagInfo,

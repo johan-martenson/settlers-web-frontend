@@ -41,31 +41,31 @@ let immediateState = {
 };
 
 let houseImageMap = {
-    Bakery: "bakery-small.png",
-    ForesterHut: "house.png",
-    Woodcutter: "house.png",
-    Well: "well-with-tree-small.png",
-    Quarry: "house.png",
-    Barracks: "barracks-small.png",
-    Guardhouse: "house.png",
-    Hunterhut: "house.png",
-    Fishery: "house.png",
-    Goldmine: "house.png",
-    Ironmine: "house.png",
-    Coalmine: "house.png",
-    Granitemine: "house.png",
-    Sawmill: "sawmill-small.png",
-    Watchtower: "house.png",
-    Mill: "house.png",
-    Mint: "house.png",
+    Bakery:         "bakery-small.png",
+    ForesterHut:    "house.png",
+    Woodcutter:     "house.png",
+    Well:           "well-with-tree-small.png",
+    Quarry:         "house.png",
+    Barracks:       "barracks-small.png",
+    Guardhouse:     "house.png",
+    Hunterhut:      "house.png",
+    Fishery:        "house.png",
+    Goldmine:       "house.png",
+    Ironmine:       "house.png",
+    Coalmine:       "house.png",
+    Granitemine:    "house.png",
+    Sawmill:        "sawmill-small.png",
+    Watchtower:     "house.png",
+    Mill:           "house.png",
+    Mint:           "house.png",
     Slaughterhouse: "house.png",
-    Catapult: "house.png",
-    Mint: "house.png",
-    Headquarter: "headquarter-small.png",
-    Farm: "house.png",
-    Pigfarm: "house.png",
-    Donkeyfarm: "house.png",
-    Fortress: "fortress-small.png"
+    Catapult:       "house.png",
+    Mint:           "house.png",
+    Headquarter:    "headquarter-small.png",
+    Farm:           "house.png",
+    Pigfarm:        "house.png",
+    Donkeyfarm:     "house.png",
+    Fortress:       "fortress-small.png"
 };
 
 class GameCanvas extends Component {
@@ -738,7 +738,7 @@ class Menu extends Component {
     render() {
 
         return (
-            <div className="Menu" ref={(selfName) => {this.selfName = selfName;}}>
+            <div className="Dialog" ref={(selfName) => {this.selfName = selfName;}}>
               <h1>Menu</h1>
 
               <div className="MenuSectionLabel">Select player:</div>

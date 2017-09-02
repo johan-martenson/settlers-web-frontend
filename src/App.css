@@ -8,6 +8,7 @@
     --button-margin: 0.5rem;
     --button-padding: 0.5rem;
     --dialog-rounded-corner: 1rem;
+    --mobile-width: 1000px;
 }
 
 * {
@@ -51,27 +52,13 @@ h1 {
     display: table;
 }
 
-.Menu {
-    padding-left: 2em;
-    padding-right: 2em;
-    margin: 0 auto;
-    position: absolute;
-    width: 20%;
-    top: 10%;
-    left: 40%;
-    marginLeft: -10%;
-    zIndex: 999;
-    background-color: var(--dialog-background-color);
-    border-radius: var(--dialog-rounded-corner);
-}
-
-.Menu .MenuSectionLabel {
+.MenuSectionLabel {
     text-align: left;
     width: 100%;
     margin-bottom: 0;
 }
 
-.Menu .MenuSectionContent {
+.MenuSectionContent {
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -93,18 +80,17 @@ h1 {
 }
 
 .Dialog {
+    top: 0;
+    left: 0;
     padding-left: 2em;
     padding-right: 2em;
     margin: 0 auto;
     position: absolute;
-    width: 20%;
-    top: 10%;
-    left: 40%;
-    marginLeft: -10%;
+    width: 100%;
+    height: 100%;
     z-index: 999;
     background-color: var(--dialog-background-color);
     border-radius: var(--dialog-rounded-corner);
-    max-height: 80%;
 }
 
 .MediumIcon {
@@ -139,11 +125,11 @@ h1 {
     z-index: 500;
 }
 
-#ConstructionInfo {
+/*#ConstructionInfo {
     width: 40%;
     left: 30%;
     marginLeft: -20%;
-}
+}*/
 
 .ConstructionItem {
     float: left;
@@ -273,4 +259,22 @@ h1 {
 
 .InventoryLabel::first-letter {
     text-transform: uppercase;
+}
+
+/* Adjust for screens larger than mobile */
+@media screen and (min-width: 1000px) {
+    .Dialog {
+        padding-left: 2em;
+        padding-right: 2em;
+        margin: 0 auto;
+        position: absolute;
+        width: 40%;
+        top: 10%;
+        left: 30%;
+        marginLeft: -20%;
+        z-index: 999;
+        background-color: var(--dialog-background-color);
+        border-radius: var(--dialog-rounded-corner);
+        max-height: 80%;
+    }
 }

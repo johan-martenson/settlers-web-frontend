@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import {
+    MenuButton,
     EnemyHouseInfo,
     ConstructionInfo,
     ServerUnreachable,
@@ -41,7 +42,9 @@ var globalSyncState = {
     translateYAtMouseDown: 0,
     width: 0,
     height: 0
-}
+};
+
+let ongoingTouches = {};
 
 class App extends Component {
 
@@ -51,7 +54,14 @@ class App extends Component {
         this.onMouseDown = this.onMouseDown.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onMouseUp = this.onMouseUp.bind(this);
+
+        this.onTouchStart = this.onTouchStart.bind(this);
+        this.onTouchEnd = this.onTouchEnd.bind(this);
+        this.onTouchMove = this.onTouchMove.bind(this);
+        this.onTouchCancel = this.onTouchCancel.bind(this);
+
         this.onKeyDown = this.onKeyDown.bind(this);
+
         this.periodicFetch = this.periodicFetch.bind(this);
         this.toggleDetails = this.toggleDetails.bind(this);
 
@@ -237,6 +247,8 @@ class App extends Component {
 
         globalSyncState.translateXAtMouseDown = this.state.translateX;
         globalSyncState.translateYAtMouseDown = this.state.translateY;
+
+        event.stopPropagation();
     }
 
     onMouseMove(event) {
@@ -254,10 +266,14 @@ class App extends Component {
 		translateY: globalSyncState.translateYAtMouseDown + deltaY
 	    });
 	}
+
+        event.stopPropagation();
     }
 
     onMouseUp(event) {
         globalSyncState.mouseDown = false;
+
+        event.stopPropagation();
     }
 
     periodicFetch() {
@@ -670,6 +686,118 @@ class App extends Component {
         return {x: roundedGameX, y: roundedGameY};
     }
 
+    copyTouch(touch) {
+        return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY };
+    }
+
+    onTouchStart(evt) {
+
+        evt.preventDefault();
+
+        console.log("touchstart.");
+
+        let touches = evt.changedTouches;
+
+        for (let i = 0; i < touches.length; i++) {
+
+            console.log("touchstart:" + i + "...");
+
+            ongoingTouches[touches[i].identifier] = this.copyTouch(touches[i]);
+
+            console.log("touchstart:" + i + ".");
+        }
+
+        /* Only move map with one movement */
+        if (!globalSyncState.touchMoveOngoing) {
+            let touch = touches[0];
+
+            globalSyncState.touchIdentifier = touch.identifier;
+
+            globalSyncState.mouseDownX = touch.pageX;
+            globalSyncState.mouseDownY = touch.pageY;
+            globalSyncState.mouseMoving = false;
+            globalSyncState.touchMoveOngoing = true;
+
+            globalSyncState.translateXAtMouseDown = this.state.translateX;
+            globalSyncState.translateYAtMouseDown = this.state.translateY;
+        }
+    }
+
+    onTouchMove(evt) {
+
+        evt.preventDefault();
+
+        var touches = evt.changedTouches;
+
+        for (let i = 0; i < touches.length; i++) {
+            let touch = ongoingTouches[touches[i].identifier];
+
+            if (globalSyncState.touchMoveOngoing && touch.identifier === globalSyncState.touchIdentifier) {
+	        let deltaX = (touch.pageX - globalSyncState.mouseDownX);
+	        let deltaY = (touch.pageY - globalSyncState.mouseDownY);
+
+                /* Detect move to separate move from click */
+                if (deltaX*deltaX + deltaY*deltaY > 25) {
+                    globalSyncState.mouseMoving = true;
+                }
+
+	        this.setState({
+		    translateX: globalSyncState.translateXAtMouseDown + deltaX,
+		    translateY: globalSyncState.translateYAtMouseDown + deltaY
+	        });
+            }
+
+            /* Store ongoing touches just because ... */
+            if (touch) {
+                console.log("continuing touch " + touch);
+
+                console.log("ctx.moveTo(" + touch.pageX + ", " + touch.pageY + ");");
+
+                console.log("ctx.lineTo(" + touches[i].pageX + ", " + touches[i].pageY + ");");
+
+                ongoingTouches[touch.identifier] = touches[i];
+                console.log(".");
+            } else {
+                console.log("can't figure out which touch to continue");
+            }
+        }
+    }
+
+    onTouchCancel(evt) {
+        evt.preventDefault();
+
+        console.log("touchcancel.");
+
+        /* Stop moving */
+        globalSyncState.touchMoveOngoing = false;
+
+        let touches = evt.changedTouches;
+
+        for (let i = 0; i < touches.length; i++) {
+            delete ongoingTouches[touches[i].identifier];
+        }
+    }
+
+    onTouchEnd(evt) {
+
+        evt.preventDefault();
+
+        /* Stop moving */
+        globalSyncState.touchMoveOngoing = false;
+
+        let touches = evt.changedTouches;
+
+        for (let i = 0; i < touches.length; i++) {
+            let touch = ongoingTouches[touches[i].identifier];
+
+            if (touch) {
+                delete ongoingTouches[touches[i].identifier];
+            } else {
+                console.log("can't figure out which touch to end");
+            }
+        }
+    }
+
     render() {
 
         return (
@@ -680,6 +808,10 @@ class App extends Component {
               onMouseMove={this.onMouseMove}
               onMouseUp={this.onMouseUp}
               onKeyDown={this.onKeyDown}
+              onTouchStart={this.onTouchStart}
+              onTouchMove={this.onTouchMove}
+              onTouchEnd={this.onTouchEnd}
+              onTouchCancel={this.onTouchCancel}
               tabIndex="1">
 
               <GameCanvas
@@ -710,6 +842,8 @@ class App extends Component {
                 possibleRoadConnections={this.state.possibleRoadConnections}
                 />
 
+              <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
+
               {this.state.menuVisible &&
                   <Menu
                         currentPlayer={this.state.player}
@@ -721,12 +855,13 @@ class App extends Component {
                         minZoom={MIN_SCALE}
                         maxZoom={MAX_SCALE}
                         adjustSpeed={this.onSpeedSliderChange.bind(this)}
-                        />
+                  />
               }
 
               {typeof(this.state.showFriendlyHouseInfo) !== "undefined" &&
                   <FriendlyHouseInfo house={this.state.showFriendlyHouseInfo.house}
                                          url={this.props.url}
+                                         player={this.state.player}
                                          closeDialog={this.closeActiveMenu.bind(this)}
                                          onCanReachServer={this.onCanReachServer.bind(this)}
                                          onCannotReachServer={this.onCannotReachServer.bind(this)}

@@ -1,5 +1,5 @@
 async function attackBuilding(house, numberOfAttackers, player, url) {
-    let response = await fetch(url + "/buildings/" + house.houseId,
+    let response = await fetch(url + "/houses/" + house.houseId,
                                {method: 'put',
                                 body: JSON.stringify({
                                     attacked:
@@ -119,9 +119,8 @@ async function getHouseInformation(houseId, playerId, url) {
     // type: 'headquarter'
     // maxAttackers: 23
 
-    console.info("Getting information about house " + houseId);
 
-    let response = await fetch(url + "/buildings?buildingId=" + houseId + "&playerId=" + playerId);
+    let response = await fetch(url + "/houses/" + houseId + "?playerId=" + playerId);
     return await response.json();
 }
 
@@ -192,8 +191,8 @@ var MEDIUM_HOUSES = ["Sawmill",
 
 var LARGE_HOUSES = ["Headquarter",
                     "Farm",
-                    "Pigfarm",
-                    "Donkeyfarm",
+                    "PigFarm",
+                    "DonkeyFarm",
                     "Fortress"
                    ];
 

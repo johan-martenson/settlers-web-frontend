@@ -60,11 +60,10 @@ let houseImageMap = {
     Mint:           "house.png",
     Slaughterhouse: "house.png",
     Catapult:       "house.png",
-    Mint:           "house.png",
     Headquarter:    "headquarter-small.png",
     Farm:           "house.png",
-    Pigfarm:        "house.png",
-    Donkeyfarm:     "house.png",
+    PigFarm:        "house.png",
+    DonkeyFarm:     "house.png",
     Fortress:       "fortress-small.png"
 };
 
@@ -679,14 +678,15 @@ class SelectPlayer extends Component {
     onClick(event) {
 
         for (let player of this.state.players) {
-            if (player.id === parseInt(event.target.id, 10)) {
+
+            if (player.id === parseInt(event.currentTarget.id, 10)) {
                 this.props.onPlayerSelected(player);
 
                 break;
             }
         }
     }
-    
+
     render () {
         return (
             <div className="PlayerSelect MenuSectionContent">
@@ -694,24 +694,16 @@ class SelectPlayer extends Component {
                   (player, index) => {
 
                       // Don't change to ===, this comparison fails for some reason
-                      if (typeof(this.props.currentPlayer) != "undefined" && this.props.currentPlayer === player.id) {
-                          return (
-                              <div key={player.id}
-                                   className="Button Selected"
-                                   id={player.id}
-                                   onClick={this.onClick.bind(this)}>
-                                {player.name}
-                              </div>
-                          );
-                      }
-                        
+                      let selected = typeof(this.props.currentPlayer) != "undefined" &&
+                          this.props.currentPlayer === player.id;
+
                       return (
-                          <div key={player.id}
-                               className="Button"
-                               id={player.id}
-                               onClick={this.onClick.bind(this)}>
-                            {player.name}
-                          </div>
+                          <Button label={player.name}
+                                  key={player.id}
+                                  id={player.id}
+                                  selected={selected}
+                                  onButtonClicked={this.onClick.bind(this)}
+                          />
                       );
                   }
               )
@@ -765,16 +757,7 @@ class Menu extends Component {
                       onValue={this.props.adjustSpeed}
                       />
 
-              <div className="Button"
-                   onClick={this.props.closeMenu}
-                   onKeyDown={(event) => {
-                       if (event.which === 27) {
-                           this.props.closeMenu();
-                           event.stopPropagation();
-                       }
-                    }
-                }
-                >Close</div>
+              <Button label="Close" onButtonClicked={this.props.closeMenu} />
             </div>
         );
     }
@@ -799,7 +782,7 @@ class HeadquarterInfo extends Component {
 
     componentDidMount() {
 
-        getHouseInformation(this.props.house.houseId, this.props.url).then(
+        getHouseInformation(this.props.house.houseId, this.props.player, this.props.url).then(
             (data) => {
                 console.info("Got house information " + JSON.stringify(data));
 
@@ -873,32 +856,18 @@ class EnemyHouseInfo extends Component {
 
               <img src="house.png" className="MediumIcon" alt="House"/>
 
-              <div className="Button"
-                   onClick={
-                       (event) => {
+              <Button label="Attack"
+                      onButtonClicked={
+                          (event) => {
 
-                           attackBuilding(this.props.house, this.props.player, this.props.url);
+                              attackBuilding(this.props.house, this.props.player, this.props.url);
 
-                           this.props.closeDialog();
-
-                           event.stopPropagation();
-                       }
+                              this.props.closeDialog();
+                          }
                 }
-                >
-                Attack
-              </div>
+                />
 
-              <div className="Button"
-                   onClick={
-                       (event) => {
-                           this.props.closeDialog();
-
-                           event.stopPropagation();
-                       }
-                }
-                >
-                Close
-              </div>
+                <Button label="Close" onButtonClicked={this.props.closeDialog} />
 
             </div>
         );
@@ -921,6 +890,7 @@ class FriendlyHouseInfo extends Component {
               {(this.props.house.type === "Headquarter") &&
                   <HeadquarterInfo house={this.props.house}
                                        url={this.props.url}
+                                       player={this.props.player}
                                        onCanReachServer={this.props.onCanReachServer}
                                        onCannotReachServer={this.props.onCannotReachServer}
                                        />
@@ -933,25 +903,13 @@ class FriendlyHouseInfo extends Component {
                                         removeHouse(this.props.house.houseId, this.props.url);
 
                                         this.props.closeDialog();
-
-                                        event.stopPropagation();
                                     }
                                 }
                             >
                             Destroy
                           </span>
                       }
-              <div className="Button"
-                   onClick={
-                       (event) => {
-                           this.props.closeDialog();
-
-                           event.stopPropagation();
-                       }
-                   }
-                   >
-                  Close
-              </div>
+              <Button label="Close" onButtonClicked={this.props.closeDialog} />
             </div>
         );
     }
@@ -964,74 +922,72 @@ function FriendlyFlagInfo(props) {
 
           <div className="DialogSection">
 
-            <div className="Button ConstructionItem"
-                 onClick={(event) => {
-                     removeFlag(props.flag.flagId,
-                                props.url).then(
-                                    () => props.onCanReachServer).catch(
-                                        () => props.onCannotReachServer);
+            <Button className="ConstructionItem"
+                    label="Remove"
+                    image="flag.png"
+                    imageLabel="Flag"
+                    onButtonClicked={
+                        () => {
+                            console.log("Removing flag");
+                            removeFlag(props.flag.flagId,
+                                       props.url).then(
+                                           () => props.onCanReachServer).catch(
+                                               () => props.onCannotReachServer);
 
-                     props.closeDialog();
-                     event.stopPropagation();
-                  }
+                            props.closeDialog();
+                        }
               }
-              >
-              <img src="flag.png" className="SmallIcon" alt="flag"/>
-              <div>Remove</div>
-            </div>
 
-            <div className="Button ConstructionItem"
-                 onClick={(event) => {
-                     console.info("Starting to build road");
+              />
 
-                     props.startNewRoad(props.flag);
+              <Button className="ConstructionItem"
+                    label="Build road"
+                    image="road-1.png"
+                    imageLabel="Road"
+                    onButtonClicked={
+                        () => {
+                            console.info("Starting to build road");
 
-                     props.closeDialog();
+                            props.startNewRoad(props.flag);
 
-                     event.stopPropagation();
-              }}
-              >
-              <img className="SmallIcon" src="road-1.png" alt="Road"/>
-              <div>Build road</div>
-            </div>
+                            props.closeDialog();
+                        }
+                    }
+              />
 
-            <div className="Button ConstructionItem"
-               onClick={(event) => {
-                   console.info("Calling for geologist");
+              <Button className="ConstructionItem"
+                      label="Call geologist"
+                      image="pickaxe2.png"
+                      imageLabel="Geologist"
+                      onButtonClicked={
+                          () => {
+                              console.info("Calling for geologist");
 
-                   callGeologist(props.flag, props.player, props.url);
+                              callGeologist(props.flag, props.player, props.url);
 
-                   props.closeDialog();
+                              props.closeDialog();
+                          }
+                      }
+                />
 
-                   event.stopPropagation();
-            }}
-            >
-              <img className="SmallIcon" src="pickaxe2.png" alt="Geologist"/>
-              <div>Call geologist</div>
-            </div>
+                <Button className="ConstructionItem"
+                        label="Send scout"
+                        image="magnifier2.png"
+                        imageLabel="Scout"
+                        onButtonClicked={
+                            () => {
+                                console.info("Sending scout");
 
-            <div className="Button ConstructionItem"
-                 onClick={(event) => {
-                     console.info("Sending scout");
+                                sendScout(props.flag, props.player, props.url);
 
-                     sendScout(props.flag, props.player, props.url);
-
-                     props.closeDialog();
-
-                     event.stopPropagation();
-              }}
-              >
-              <img className="SmallIcon" src="magnifier2.png" alt="Scout"/>
-              <div>Send scout</div>
-            </div>
+                                props.closeDialog();
+                            }
+                        }
+              />
 
           </div>
 
-          <div className="Button"
-               onClick={props.closeDialog}
-               >
-            Close
-          </div>
+          <Button label="Close" onButtonClicked={props.closeDialog} />
 
         </div>
     );
@@ -1110,82 +1066,74 @@ class ConstructionInfo extends Component {
 
               <div className="PanelChoices">
                 {this.canBuildHouse() &&
-                    <div className={this.state.selected === "Buildings" ? "Button SelectedChoice" : "Button Choice"}
-                             onClick={() => this.setState({selected: "Buildings"})}
-                          >
-                          Buildings
-                        </div>
-                    }
-                    {this.canRaiseFlag() &&
-                        <div className={this.state.selected === "FlagsAndRoads" ? "Button SelectedChoice" : "Button Choice"}
-                                 onClick={() => this.setState({selected: "FlagsAndRoads"})}
-                              >
-                              Flags and roads
-                            </div>
-                        }
+                    <Button label="Buildings" selected={this.state.selected === "Buildings"}
+                                className="PanelChoice"
+                                onButtonClicked={() => this.setState({selected: "Buildings"})}/>
+                }
+                {this.canRaiseFlag() &&
+                    <Button label="Flags and roads" selected={this.state.selected === "FlagsAndRoads"}
+                                className="PanelChoice"
+                                onButtonClicked={() => this.setState({selected: "FlagsAndRoads"})}
+                          />
+                }
               </div>
 
               {this.state.selected === "FlagsAndRoads" &&
                   <div className="DialogSection">
                             <div className="DialogSection">
-                                  <div className="Button ConstructionItem"
-                                           onClick={(event) => {
-                                               console.info("Raising flag");
-                                               createFlag(this.props.point,
-                                                          this.props.player,
-                                                          this.props.url).then(
-                                                              () => this.props.onCanReachServer
-                                                          ).catch(
-                                                              () => this.props.onCannotReachServer
-                                                          );
-                                                   
-                                               this.props.closeDialog();
-                                               event.stopPropagation();
-                                           }
-                                                   }
-                                        >
-                                        <img className="SmallIcon"
-                                                 src="flag.png"
-                                                 alt="Flag"/>
-                                            <div>Raise flag</div>
-                                      </div>
-                                      {this.canBuildRoad() &&
-                                       <div className="Button ConstructionItem"
-                                                onClick={(event) =>{
-                                                    console.info("Starting to build road");
 
-                                                    this.props.startNewRoad(this.props.point);
+                                  <Button className="ConstructionItem"
+                                              label="Raise flag"
+                                              image="flag.png"
+                                              imageLabel="Flag"
+                                              onButtonClicked={
+                                                  () => {
+                                                      console.info("Raising flag");
+                                                      createFlag(this.props.point,
+                                                                 this.props.player,
+                                                                 this.props.url).then(
+                                                                     () => this.props.onCanReachServer
+                                                                 ).catch(
+                                                                     () => this.props.onCannotReachServer
+                                                                 );
 
-                                                    event.stopPropagation();
-                                                }}
-                                             >
-                                             <img className="SmallIcon"
-                                                      src="road-1.png"
-                                                      alt="Road"/>
-                                                 <div>Build road</div>
-                                           </div>
-                                           }
+                                                      this.props.closeDialog();
+                                                  }
+                                              }
+                                        />
+
+                                  {this.canBuildRoad() &&
+                                        <button className="ConstructionItem"
+                                                    label="Build road"
+                                                    image="road-1.png"
+                                                    imageLabel="Road"
+                                                    onButtonClicked={
+                                                        () =>{
+                                                            console.info("Starting to build road");
+
+                                                            this.props.startNewRoad(this.props.point);
+                                                        }
+                                                    }
+                                              />
+                                  }
                                 </div>
                       </div>
                   }
               
                   {this.state.selected === "Buildings" &&
                       <div className="PanelChoices">
-                            <div className={this.state.buildingSizeSelected === "small" ? "Button SelectedChoice" : "Button Choice"}
-                                     onClick={() => this.setState({buildingSizeSelected: "small"})}
-                                  >
-                                  Small
-                                </div>
-                                <div className={this.state.buildingSizeSelected === "medium" ? "Button SelectedChoice" : "Button Choice"}
-                                         onClick={() => this.setState({buildingSizeSelected: "medium"})}
-                                      >
-                                      Medium
-                                    </div>
-                                    <div className={this.state.buildingSizeSelected === "large" ? "Button SelectedChoice" : "Button Choice"}
-                                             onClick={() => this.setState({buildingSizeSelected: "large"})}
-                                          >
-                                          Large
-                                        </div>
+                            <Button label="Small" selected={this.state.buildingSizeSelected === "small"}
+                                        className="Choice"
+                                        onButtonClicked={() => this.setState({buildingSizeSelected: "small"})}
+                                  />
+                            <Button label="Medium" selected={this.state.buildingSizeSelected === "medium"}
+                                        className="Choice"
+                                        onButtonClicked={() => this.setState({buildingSizeSelected: "medium"})}
+                                  />
+                            <Button label="Large" selected={this.state.buildingSizeSelected === "large"}
+                                        className="Choice"
+                                        onButtonClicked={() => this.setState({buildingSizeSelected: "large"})}
+                                  />
 
                           </div>
                       }
@@ -1195,32 +1143,27 @@ class ConstructionInfo extends Component {
                                     {SMALL_HOUSES.map((house, index) => {
 
                                         return (
-                                            <div className="Button ConstructionItem"
-                                                 key={index}
-                                                 onClick={(event) => {
-                                                     console.info("Creating house");
-                                                     createBuilding(house,
-                                                                    this.props.point,
-                                                                    this.props.player,
-                                                                    this.props.url).then(
-                                                                        this.props.onCanReachServer("create building")
-                                                                    ).catch(
-                                                                        this.props.onCannotReachServer("create building")
-                                                                    );
+                                            <Button className="ConstructionItem"
+                                                    key={index}
+                                                    label={house}
+                                                    image={houseImageMap[house]}
+                                                    imageLabel="House"
+                                                    onButtonClicked={
+                                                        () => {
+                                                            console.info("Creating house");
+                                                            createBuilding(house,
+                                                                           this.props.point,
+                                                                           this.props.player,
+                                                                           this.props.url).then(
+                                                                               this.props.onCanReachServer("create building")
+                                                                           ).catch(
+                                                                               this.props.onCannotReachServer("create building")
+                                                                           );
 
-                                                     this.props.closeDialog();
-
-                                                     event.stopPropagation();
-                                                  }
-                                              }
-                                              >
-                                              <img src={houseImageMap[house]}
-                                                   className="SmallIcon"
-                                                   alt="House"/>
-                                              <div>
-                                                {house}
-                                              </div>
-                                            </div>
+                                                            this.props.closeDialog();
+                                                        }
+                                                    }
+                                              />
                                         );
                                     })
                                     }
@@ -1234,33 +1177,27 @@ class ConstructionInfo extends Component {
              {MEDIUM_HOUSES.map((house, index) => {
 
                  return (
-                     <div className="Button ConstructionItem"
-                          key={index}
-                          onClick={(event) => {
-                              console.info("Creating house");
-                              createBuilding(house,
-                                             this.props.point,
-                                             this.props.player,
-                                             this.props.url).then(
-                                                 () => this.props.onCanReachServer("create building")
-                                             ).catch(
-                                                 () => this.props.onCannotReachServer("create building")
-                                             );
+                     <Button className="ConstructionItem"
+                             label={house}
+                             image={houseImageMap[house]}
+                             imageLabel="House"
+                             key={index}
+                             onButtonClicked={
+                                 () => {
+                                     console.info("Creating house");
+                                     createBuilding(house,
+                                                    this.props.point,
+                                                    this.props.player,
+                                                    this.props.url).then(
+                                                        () => this.props.onCanReachServer("create building")
+                                                    ).catch(
+                                                        () => this.props.onCannotReachServer("create building")
+                                                    );
 
-                              this.props.closeDialog();
-
-                              event.stopPropagation();
-                           }
+                                     this.props.closeDialog();
+                                 }
                        }
-                       >
-                       <img src={houseImageMap[house]}
-                            className="SmallIcon"
-                            alt="House"/>
-
-                       <div>
-                         {house}
-                       </div>
-                     </div>
+                       />
                  );
              })
              }
@@ -1278,31 +1215,26 @@ class ConstructionInfo extends Component {
                  } else {
 
                      return (
-                         <div className="Button ConstructionItem"
-                              key={index}
-                              onClick={(event) => {
-                                  console.info("Creating house");
-                                  createBuilding(house,
-                                                 this.props.point,
-                                                 this.props.player,
-                                                 this.props.url).then(
-                                                     () => this.props.onCanReachServer("create building")
-                                                 ).catch(
-                                                     () => this.props.onCannotReachServer("create building")
-                                                 );
-                                  this.props.closeDialog();
-
-                                  event.stopPropagation();
-                               }
+                         <Button className="ConstructionItem"
+                                 label={house}
+                                 image={houseImageMap[house]}
+                                 imageLabel="House"
+                                 key={index}
+                                 onButtonClicked={
+                                     () => {
+                                         console.info("Creating house");
+                                         createBuilding(house,
+                                                        this.props.point,
+                                                        this.props.player,
+                                                        this.props.url).then(
+                                                            () => this.props.onCanReachServer("create building")
+                                                        ).catch(
+                                                            () => this.props.onCannotReachServer("create building")
+                                                        );
+                                         this.props.closeDialog();
+                                     }
                            }
-                           >
-                           <img src={houseImageMap[house]}
-                                className="SmallIcon"
-                                alt="House"/>
-                           <div>
-                             {house}
-                           </div>
-                         </div>
+                           />
                      );
                  }
              })
@@ -1310,12 +1242,9 @@ class ConstructionInfo extends Component {
              </div>
             }
 
-                <div className="Button"
-            onClick={this.props.closeDialog}
-                >
-                Close
+                <Button label="Close" onButtonClicked={this.props.closeDialog} />
+
             </div>
-                </div>
         );
     }
 }
@@ -1459,7 +1388,69 @@ class Slider extends Component {
     }
 }
 
+class MenuButton extends Component {
+    render() {
+        return (
+            <div className="MenuButton"
+                 onClick={(event) => {
+                     this.props.onMenuButtonClicked();
+                     event.stopPropagation();
+                  }
+              }
+              onTouchStart={(event) => {
+                  this.props.onMenuButtonClicked();
+                  event.stopPropagation();
+                  }
+              }
+              >
+              <div className="MenuButtonBar"/>
+              <div className="MenuButtonBar"/>
+              <div className="MenuButtonBar"/>
+            </div>
+        );
+    }
+}
+
+function Button(props) {
+    let className = "Button";
+
+    if (props.selected && (props.selected === true)) {
+        className = className + " Selected";
+    }
+
+    if (props.className) {
+        className = className + " " + props.className;
+    }
+
+    return (
+        <div className={className}
+             id={props.id !== "undefined" ? props.id : ""}
+             onClick={
+                 (event) => {
+                     props.onButtonClicked(event);
+                     event.stopPropagation();
+                 }
+             }
+             onTouchStart={
+                 (event) => {
+                     props.onButtonClicked(event);
+                     event.stopPropagation();
+                 }
+             }
+          >
+
+          {props.image &&
+              <img src={props.image} className="SmallIcon" alt={props.imageLabel}/>
+          }
+
+          <div
+            >{props.label}</div>
+        </div>
+    );
+}
+
 export {
+    MenuButton,
     EnemyHouseInfo,
     ConstructionInfo,
     ServerUnreachable,

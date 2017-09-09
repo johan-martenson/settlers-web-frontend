@@ -15,6 +15,10 @@
     font-family: Verdana;
 }
 
+.InputTextFieldContainer {
+    text-align: center;
+}
+
 .App {
     background-color: black;
     user-select: none;
@@ -31,6 +35,7 @@ h1 {
     margin: var(--button-margin);
     padding: var(--button-padding);
     text-align: center;
+    border-radius: var(--button-rounded-corner);
 }
 
 .Button:hover {
@@ -52,6 +57,25 @@ h1 {
     display: table;
 }
 
+.MenuButton {
+    display: inline-block;
+    cursor: pointer;
+    background-color: white;
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    z-index: 500;
+    padding: 0.5rem;
+    border-radius: var(--button-rounded-corner);
+}
+
+.MenuButtonBar {
+    width: 3rem;
+    height: 0.2rem;
+    background-color: var(--hover-color);
+    margin: 0.4rem 0rem;
+}
+
 .MenuSectionLabel {
     text-align: left;
     width: 100%;
@@ -70,7 +94,6 @@ h1 {
 
 .Selected {
     background-color: var(--selected-color);
-    border-radius: var(--button-rounded-corner);
     color: whitesmoke;
 }
 
@@ -91,6 +114,7 @@ h1 {
     z-index: 999;
     background-color: var(--dialog-background-color);
     border-radius: var(--dialog-rounded-corner);
+    text-align: center;
 }
 
 .MediumIcon {
@@ -153,24 +177,13 @@ h1 {
     display: table;
 }
 
-.SelectedChoice {
-    float:left;
-    border-bottom: thin solid var(--dialog-background-color);
-    background-color: var(--selected-color);
-    border-radius: var(--button-rounded-corner);
-    color: whitesmoke;
-    margin-right: var(--button-margin);
-
+.PanelChoice {
+    float: left;
 }
 
 .Choice {
     float:left;
-    border-bottom: thin solid var(--dialog-background-color);
     margin-right: var(--button-margin);
-}
-
-.SelectedChoice:hover {
-    cursor: pointer;
 }
 
 .Choice:hover {
@@ -246,9 +259,7 @@ h1 {
 
 .InventoryValue {
     text-align: right;
-    margin: 0;
-    padding: 0;
-    float: right;
+    padding-right: 2em;
 }
 
 .InventoryLabelValuePair::after {

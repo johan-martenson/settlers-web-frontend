@@ -15,6 +15,10 @@
     font-family: Verdana;
 }
 
+.h1 {
+    text-transform: capitalize;
+}
+
 .InputTextFieldContainer {
     text-align: center;
 }
@@ -149,12 +153,6 @@ h1 {
     z-index: 500;
 }
 
-/*#ConstructionInfo {
-    width: 40%;
-    left: 30%;
-    marginLeft: -20%;
-}*/
-
 .ConstructionItem {
     float: left;
 }
@@ -229,7 +227,7 @@ h1 {
     position: absolute;
     top: 0;
     background-color: var(--selected-color);
-    width: 0.5rem;
+    width: 2rem;
     height: 100%;
     border-radius: 0.2rem;
     margin: 0;
@@ -288,4 +286,56 @@ h1 {
         border-radius: var(--dialog-rounded-corner);
         max-height: 80%;
     }
+}
+
+.App {
+    text-align: center;
+}
+
+.Guide {
+    padding: 2rem;
+}
+
+.Page {
+    padding: 2rem;
+}
+
+.PageIllustrations {
+    margin: 1rem;
+    text-align: center;
+}
+
+.PageIllustration {
+    float: none;
+    display: inline;
+}
+
+.GuidePrevious {
+    display: inline-block;
+    margin-right: 0.5rem;
+    margin-top: 0;
+    margin-bottom: 0;
+    left: 0;
+}
+
+.GuideNext {
+    display: inline-block;
+    margin-left: 0.5rem;
+    margin-top: 0;
+    margin-bottom: 0;
+    right: 0;
+}
+
+.PageTitle {
+    text-transform: capitalize;
+    font-variant: small-caps;
+}
+
+.PageParagraph {
+    text-align: left;
+}
+
+.PageParagraph::first-letter {
+    //    text-transform: uppercase bold;
+    font-weight: bold;
 }

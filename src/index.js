@@ -32,7 +32,7 @@ class GameInit extends Component {
               {(typeof(this.state.host) === "undefined") &&
                   <div>
                       <div className="Dialog">
-                      <h1>Select host to connect to</h1>
+                      <h1>Select host</h1>
 
                       <div className="MenuSectionLabel">Predefined hosts:</div>
                       <div className="Button"

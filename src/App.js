@@ -12,6 +12,10 @@ import {
 } from './components.jsx';
 
 import {
+    Guide
+} from './guide.jsx';
+
+import {
     setSpeed,
     getTerrain,
     getViewForPlayer,
@@ -27,6 +31,7 @@ var MENU_MENU = 0;
 var MENU_FRIENDLY_HOUSE = 1;
 var MENU_FRIENDLY_FLAG = 2;
 var MENU_CONSTRUCTION = 3;
+var MENU_GUIDE = 4;
 
 var MAX_SCALE = 50;
 var MIN_SCALE = 10;
@@ -139,6 +144,9 @@ class App extends Component {
         } else if (this.state.activeMenu === MENU_CONSTRUCTION) {
             console.info("Closing construction menu");
             this.setState({showConstructionInfo: undefined});
+        } else if (this.state.activeMenu === MENU_GUIDE) {
+            console.info("Closing guide");
+            this.setState({showHelp: undefined});
         }
     }
     
@@ -184,7 +192,16 @@ class App extends Component {
             }
         );
     }
-    
+
+    showHelp() {
+        this.setState(
+            {
+                activeMenu: MENU_GUIDE,
+                showHelp: true
+            }
+        );
+    }
+
     moveGameUp() {
         this.setState({
 	    translateY: this.state.translateY + 10
@@ -855,6 +872,7 @@ class App extends Component {
                         minZoom={MIN_SCALE}
                         maxZoom={MAX_SCALE}
                         adjustSpeed={this.onSpeedSliderChange.bind(this)}
+                        showHelp={this.showHelp.bind(this)}
                   />
               }
 
@@ -887,6 +905,10 @@ class App extends Component {
                                       onCannotReachServer={this.onCannotReachServer.bind(this)}
                                       player={this.state.player}
                                       />
+              }
+
+              {typeof(this.state.showHelp) !== "undefined" &&
+                  <Guide closeDialog={this.closeActiveMenu.bind(this)}/>
               }
 
               {typeof(this.state.serverUnreachable) !== "undefined" &&

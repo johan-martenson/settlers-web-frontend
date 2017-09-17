@@ -47,15 +47,15 @@ let houseImageMap = {
     Well:           "well-with-tree-small.png",
     Quarry:         "house.png",
     Barracks:       "barracks-small.png",
-    Guardhouse:     "house.png",
-    Hunterhut:      "house.png",
+    GuardHouse:     "house.png",
+    HunterHut:      "house.png",
     Fishery:        "house.png",
-    Goldmine:       "house.png",
-    Ironmine:       "house.png",
-    Coalmine:       "house.png",
-    Granitemine:    "house.png",
+    GoldMine:       "house.png",
+    IronMine:       "house.png",
+    CoalMine:       "house.png",
+    GraniteMine:    "house.png",
     Sawmill:        "sawmill-small.png",
-    Watchtower:     "house.png",
+    WatchTower:     "house.png",
     Mill:           "house.png",
     Mint:           "house.png",
     Slaughterhouse: "house.png",
@@ -64,7 +64,9 @@ let houseImageMap = {
     Farm:           "house.png",
     PigFarm:        "house.png",
     DonkeyFarm:     "house.png",
-    Fortress:       "fortress-small.png"
+    Fortress:       "fortress-small.png",
+    Brewery:        "house.png",
+    Armory:         "house.png"
 };
 
 class GameCanvas extends Component {
@@ -756,6 +758,14 @@ class Menu extends Component {
                       more="faster"
                       onValue={this.props.adjustSpeed}
                       />
+
+              <Button label="Help" onButtonClicked={
+                          () => {
+                              this.props.closeMenu();
+
+                              this.props.showHelp();
+                          }
+                      }/>
 
               <Button label="Close" onButtonClicked={this.props.closeMenu} />
             </div>
@@ -1450,6 +1460,7 @@ function Button(props) {
 }
 
 export {
+    houseImageMap,
     MenuButton,
     EnemyHouseInfo,
     ConstructionInfo,
@@ -1460,5 +1471,6 @@ export {
     GameCanvas,
     intToVegetationColor,
     vegetationToInt,
-    SelectPlayer
+    SelectPlayer,
+    Button
 };

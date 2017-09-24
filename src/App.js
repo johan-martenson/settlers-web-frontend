@@ -185,6 +185,11 @@ class App extends Component {
     }
 
     showMenu() {
+
+        /* Close active dialogs first */
+        this.closeActiveMenu();
+
+        /* Open the menu */
         this.setState(
             {
                 menuVisible: true,

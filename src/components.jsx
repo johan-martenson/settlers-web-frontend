@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import {camelCaseToWords} from './util.js';
 import {
     attackBuilding,
     getGameInformation,
@@ -58,7 +59,7 @@ let houseImageMap = {
     WatchTower:     "house.png",
     Mill:           "house.png",
     Mint:           "house.png",
-    Slaughterhouse: "house.png",
+    SlaughterHouse: "house.png",
     Catapult:       "house.png",
     Headquarter:    "headquarter-small.png",
     Farm:           "house.png",
@@ -549,10 +550,10 @@ class GameCanvas extends Component {
                     point.x -= 1.5 * this.props.scale; // 30
                     point.y -= 2 * this.props.scale; // 15
 
-                    let houseTitle = house.type;
+                    let houseTitle = camelCaseToWords(house.type);
 
                     if (house.state === "unfinished") {
-                        houseTitle = "(" + house.type + ")";
+                        houseTitle = "(" + houseTitle + ")";
                     }
 
                     let textStyle = {
@@ -568,7 +569,9 @@ class GameCanvas extends Component {
                               fontSize="12"
                               style={textStyle}
                               key={index}
-                              >{houseTitle}</text>
+                              >
+                          {houseTitle}
+                        </text>
                     );
                 }
             )}
@@ -832,15 +835,21 @@ class HeadquarterInfo extends Component {
                 )
                 }
             </div>
-            <div className="Previous Button" onClick={() => {
-                if (this.state.page > 0) {
-                    this.setState({
-                        page: this.state.page - 1
-                    });
-                }
-            }
+
+            {this.state.page > 0 &&
+                <div className="Previous Button" onClick={
+                    () => {
+                        if (this.state.page > 0) {
+                            this.setState({
+                                page: this.state.page - 1
+                            });
+                        }
                     }
-                >Prev</div>
+                }
+             >Prev</div>
+            }
+
+            {(this.state.page + 1) * this.state.itemsPerPage < Object.keys(this.state.inventory).length &&
                 <div className="Next Button" onClick={() => {
                     if ((this.state.page + 1) * this.state.itemsPerPage <
                         Object.keys(this.state.inventory).length) {
@@ -849,8 +858,8 @@ class HeadquarterInfo extends Component {
                         });
                     }
                 }
-                    }
-                >Next</div>
+            }
+            >Next</div>}
             </div>
         );
     }
@@ -1155,7 +1164,7 @@ class ConstructionInfo extends Component {
                                         return (
                                             <Button className="ConstructionItem"
                                                     key={index}
-                                                    label={house}
+                                                    label={camelCaseToWords(house)}
                                                     image={houseImageMap[house]}
                                                     imageLabel="House"
                                                     onButtonClicked={
@@ -1188,7 +1197,7 @@ class ConstructionInfo extends Component {
 
                  return (
                      <Button className="ConstructionItem"
-                             label={house}
+                             label={camelCaseToWords(house)}
                              image={houseImageMap[house]}
                              imageLabel="House"
                              key={index}
@@ -1226,7 +1235,7 @@ class ConstructionInfo extends Component {
 
                      return (
                          <Button className="ConstructionItem"
-                                 label={house}
+                                 label={camelCaseToWords(house)}
                                  image={houseImageMap[house]}
                                  imageLabel="House"
                                  key={index}

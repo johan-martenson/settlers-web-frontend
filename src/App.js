@@ -91,6 +91,7 @@ class App extends Component {
             stones: [],
             borders: [],
             signs: [],
+            crops: [],
             animals: [],
             translateX: 0,
             translateY: 0,
@@ -314,6 +315,7 @@ class App extends Component {
                         stones: data.stones,
                         borders: data.borders,
                         signs: data.signs,
+                        crops: data.crops,
                         animals: data.animals,
                         discoveredPoints: new Map(data.discoveredPoints.map(
                             (point) => ["x" + point.x + "y" + point.y, 1]))
@@ -376,6 +378,7 @@ class App extends Component {
                             stones: data.stones,
                             borders: data.borders,
                             signs: data.signs,
+                            crops: data.crops,
                             animals: data.animals,
                             translateX: translateX,
                             translateY: translateY,
@@ -847,6 +850,7 @@ class App extends Component {
                 stones={this.state.stones}
                 borders={this.state.borders}
                 signs={this.state.signs}
+                crops={this.state.crops}
                 animals={this.state.animals}
                 scale={this.state.scale}
                 translateX={this.state.translateX}

@@ -424,6 +424,27 @@ class GameCanvas extends Component {
                 }
             )}
 
+            {this.props.crops.map(
+                (crop, index) => {
+
+                    if (!this.pointIsDiscovered(crop)) {
+                        return null;
+                    }
+
+                    let point = this.gamePointToScreenPoint(crop);
+
+                    return (
+                        <ellipse cx={point.x}
+                                 cy={point.y}
+                                 ry={0.5 * this.props.scale}
+                                 rx={1 * this.props.scale}
+                                 fill="orange"
+                                 key={index}
+                                 />
+                    );
+                }
+            )}
+
             {this.props.signs.map(
                 (sign, index) => {
                     let point = this.gamePointToScreenPoint(sign);

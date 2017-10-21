@@ -222,5 +222,6 @@ export {
     MEDIUM_HOUSES,
     LARGE_HOUSES,
     removeFlag,
-    materialToColor
+    materialToColor,
+    attackBuilding
 };

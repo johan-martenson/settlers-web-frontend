@@ -23,17 +23,29 @@ var vegetationToInt = {
     "SWAMP": 2,
     "WATER": 3,
 
-    'G': 0,
-    'M': 1,
-    'S': 2,
-    'W': 3
+    'G':  0,
+    'M':  1,
+    'SW': 2,
+    'W':  3,
+    'DW': 4,
+    'SN': 5,
+    'L':  6,
+    'MM': 7,
+    'ST': 8,
+    'DE': 9
 };
 
 var intToVegetationColor = {
     0: "green",
     1: "gray",
     2: "brown",
-    3: "blue"
+    3: "lightblue",
+    4: "blue",
+    5: "white",
+    6: "red",
+    7: "lightgray",
+    8: "darkorange",
+    9: "orange"
 };
 
 let immediateState = {
@@ -467,7 +479,7 @@ class GameCanvas extends Component {
                         point.y -= 15;
                         
                         return (
-                            <image href="worker.png" key={index} x={point.x} y={point.y} width="10" />
+                            <image href="worker.png" key={index} x={point.x} y={point.y} width="10" height="15"/>
                         );
                     } else {
                         let point = this.gamePointToScreenPoint(worker);
@@ -475,7 +487,7 @@ class GameCanvas extends Component {
                         point.y -= 15;
 
                         return (
-                            <image href="worker.png" key={index} x={point.x} y={point.y} width={10} />
+                            <image href="worker.png" key={index} x={point.x} y={point.y} width={10} height={15}/>
                         );
                     }
                 })
@@ -532,7 +544,7 @@ class GameCanvas extends Component {
                     point.y -= 20;
 
                     return (
-                        <image href="flag.png" key={index} x={point.x} y={point.y} width={15} />
+                        <image href="flag.png" key={index} x={point.x} y={point.y} width={15} height={20}/>
                     );
                 }
             )}

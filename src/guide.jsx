@@ -132,8 +132,8 @@ class Page extends Component {
                             <div key={index} className="ConstructionItem PageIllustration">
 
                               {(image.indexOf('.') > -1) ?
-                                  <img src={image} className="SmallIcon"/> :
-                                      <img src={houseImageMap[image]} className="SmallIcon"/>
+                                  <img src={image} className="SmallIcon" alt=""/> :
+                                      <img src={houseImageMap[image]} className="SmallIcon" alt=""/>
                                       }
 
                             </div>

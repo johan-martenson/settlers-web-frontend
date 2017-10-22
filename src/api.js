@@ -93,9 +93,10 @@ async function getViewForPlayer(url, player) {
       signs: [{type: 'gold', x: 3, y: 5, amount: 'small'}]
       animals: [{x: 4, y: 6}, ...]
       houses: [{x: 5, y: 3, type: foresterhut, playerId: 3, houseId: 19, state: "unfinished"}]
+      availableConstruction: {"3,5": ["flag", "small"], "7, 9": ["flag", "mine"]}
      */
 
-    let response = await fetch(url + "/viewForPlayer?player=" + player);
+    let response = await fetch(url + "/players/" + player + "/view");
 
     if (response.ok) {
         return await response.json();

@@ -375,6 +375,88 @@ class GameCanvas extends Component {
              }.bind(this) ()
             }
 
+            {this.props.showAvailableConstruction && Object.entries(this.props.availableConstruction).map(
+                (entry, index) => {
+
+                    let key = entry[0].split(',');
+                    let x = key[0];
+                    let y = key[1];
+
+                    let point = this.gamePointToScreenPoint({x: x, y: y});
+
+                    let available = entry[1];
+
+                    return (
+                        <g key={index}>
+
+                          {available.find((e) => e == "flag") &&
+                              <g>
+                              <line x1={point.x - 4}
+                                    y1={point.y}
+                                    x2={point.x - 4}
+                                    y2={point.y - 10}
+                                    stroke="orange"
+                                    />
+                                  <rect
+                                        x={point.x - 4}
+                                        y={point.y - 10}
+                                        width={5}
+                                        height={5}
+                                        fill="yellow"
+                                        stroke="orange"
+                                        />
+                                  </g>
+                          }
+
+                          {available.find((e) => e == "large") &&
+                                  <rect
+                                        x={point.x + 5}
+                                        y={point.y - 15}
+                                        width={15}
+                                        height={15}
+                                        stroke="orange"
+                                        fill="yellow"
+                                        />
+                          }
+
+                          {available.find((e) => e == "medium") &&
+                                      <rect
+                                            x={point.x + 5}
+                                            y={point.y - 10}
+                                            width={10}
+                                            height={10}
+                                            stroke="orange"
+                                            fill="yellow"
+                                            />
+                          }
+
+                          {available.find((e) => e == "small") &&
+                                      <rect
+                                            x={point.x + 5}
+                                            y={point.y - 6}
+                                            width={6}
+                                            height={6}
+                                            stroke="orange"
+                                            fill="yellow"
+                                            />
+                          }
+
+                          {available.find((e) => e == "mine") &&
+                                      <circle
+                                            cx={point.x + 6}
+                                            cy={point.y - 6}
+                                            width={6}
+                                            height={6}
+                                            stroke="orange"
+                                            fill="yellow"
+                                            />
+                          }
+
+                        </g>
+                    );
+                }
+            )}
+
             {this.props.houses.map(
                 (house, index) => {
 

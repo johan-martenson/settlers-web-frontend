@@ -91,6 +91,8 @@ class App extends Component {
             stones: [],
             borders: [],
             signs: [],
+            availableConstruction: {},
+            showAvailableConstruction: false,
             crops: [],
             animals: [],
             translateX: 0,
@@ -103,7 +105,7 @@ class App extends Component {
             player: 0,
             menuVisible: false,
             discoveredPoints: new Map(),
-            details: true
+            details: false
         };
     }
 
@@ -315,6 +317,7 @@ class App extends Component {
                         stones: data.stones,
                         borders: data.borders,
                         signs: data.signs,
+                        availableConstruction: data.availableConstruction,
                         crops: data.crops,
                         animals: data.animals,
                         discoveredPoints: new Map(data.discoveredPoints.map(
@@ -378,6 +381,7 @@ class App extends Component {
                             stones: data.stones,
                             borders: data.borders,
                             signs: data.signs,
+                            availableConstruction: data.availableConstruction,
                             crops: data.crops,
                             animals: data.animals,
                             translateX: translateX,
@@ -850,6 +854,7 @@ class App extends Component {
                 stones={this.state.stones}
                 borders={this.state.borders}
                 signs={this.state.signs}
+                availableConstruction={this.state.availableConstruction}
                 crops={this.state.crops}
                 animals={this.state.animals}
                 scale={this.state.scale}
@@ -863,9 +868,10 @@ class App extends Component {
                 hoverPoint={this.state.hoverPoint}
                 inFocus={!this.state.menuVisible}
                 onDoubleClick={this.onDoubleClick.bind(this)}
-                houseTitles={this.state.details}
+                houseTitles={true}
                 newRoad={this.state.newRoad}
                 possibleRoadConnections={this.state.possibleRoadConnections}
+                showAvailableConstruction={this.state.details}
                 />
 
               <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />

@@ -165,15 +165,15 @@ class GameCanvas extends Component {
             if (Math.abs(faultX) > Math.abs(faultY)) {
 
                 if (faultX > 0) {
-                    roundedGameX--;
-                } else {
                     roundedGameX++;
+                } else {
+                    roundedGameX--;
                 }
             } else if (Math.abs(faultX) < Math.abs(faultY)){
                 if (faultY > 0) {
-                    roundedGameY--;
-                } else {
                     roundedGameY++;
+                } else {
+                    roundedGameY--;
                 }
             } else {
                 roundedGameX++;

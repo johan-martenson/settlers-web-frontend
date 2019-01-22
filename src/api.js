@@ -1,3 +1,63 @@
+async function getGames(url) {
+    let response = await fetch("/settlers/api/games",
+                               {method: 'get'});
+
+    return await response.json();
+}
+
+async function getMaps() {
+    let response = await fetch("/settlers/api/maps",
+                               {method: 'get'});
+
+    return await response.json();
+}
+
+async function createGame(game) {
+    console.log("Creating game: " + JSON.stringify(game));
+    let response = await fetch("/settlers/api/games",
+                               {method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    name: game.name,
+                                    mapId: game.map,
+                                    players: game.players
+                                })
+                               });
+
+    let result = await response.json();
+    
+    console.log("Created game, received: " + JSON.stringify(result));
+    
+    return result;
+}
+
+async function deleteGame(gameId) {
+    console.log("Deleting game: " + gameId);
+
+    let response = await fetch("/settlers/api/games/" + gameId,
+                               {method: 'DELETE'});
+
+    return await response.json();
+}
+
+async function startGame(gameId) {
+    console.log("Starting game: " + gameId);
+
+    let response = await fetch("/settlers/api/games/" + gameId,
+                               {method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    status: 'STARTED'
+                                })
+                               });
+
+    return await response.json();
+}
+
 async function attackBuilding(house, numberOfAttackers, player, url) {
     let response = await fetch(url + "/houses/" + house.houseId,
                                {method: 'put',
@@ -13,11 +73,11 @@ async function attackBuilding(house, numberOfAttackers, player, url) {
     return await response.json();
 }
 
-async function getGameInformation(url) {
+async function getGameInformation(gameId) {
 
     // tickLength: 273
 
-    let response = await fetch(url + "/game");
+    let response = await fetch("/settlers/api/games/" + gameId);
 
     return await response.json();
 }
@@ -53,40 +113,49 @@ async function removeFlag(flagId, url) {
     return await response.json();
 }
 
-async function createBuilding(houseType, point, player, url) {
+async function createBuilding(houseType, point, gameId, playerId) {
 
     console.info("Creating house " + houseType + " at " + point);
 
-    let response = await fetch(url + "/houses",
+    let response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses",
                                {method: 'POST',
-                                body: JSON.stringify({type: houseType, x: point.x, y: point.y, playerId: player})
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({type: houseType, x: point.x, y: point.y, playerId: playerId})
                                });
     return await response.json();
 }
 
-async function createRoad(points, player, url) {
+async function createRoad(points, gameId, playerId) {
 
     console.info("Creating road " + JSON.stringify(points));
 
-    let response = await fetch(url + "/roads",
+    let response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/roads",
                                {method: 'POST',
-                                body: JSON.stringify({points: points, playerId: player})});
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({points: points, playerId: playerId})});
     return await response.json();
 }
 
-async function createFlag(point, player, url) {
+async function createFlag(point, gameId, playerId) {
 
     console.info("Creating flag at " + point);
 
-    let response = await fetch(url + "/flags",
+    let response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/flags",
                                {
                                    method: 'POST',
-                                   body: JSON.stringify({x: point.x, y: point.y, playerId: player})
+                                   headers: {
+                                       'Content-Type': 'application/json'
+                                   },
+                                   body: JSON.stringify({x: point.x, y: point.y})
                                });
     return await response.json();
 }
 
-async function getViewForPlayer(url, player) {
+async function getViewForPlayer(gameId, playerId) {
 
     /*
       border: [{ color: '#333333', playerId: 2, points: [x: 2, y: 3, ...]}, ...]
@@ -96,7 +165,7 @@ async function getViewForPlayer(url, player) {
       availableConstruction: {"3,5": ["flag", "small"], "7, 9": ["flag", "mine"]}
      */
 
-    let response = await fetch(url + "/players/" + player + "/view");
+    let response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/view");
 
     if (response.ok) {
         return await response.json();
@@ -105,15 +174,20 @@ async function getViewForPlayer(url, player) {
     throw new Error("Invalid request");
 }
 
-async function getPlayers(url) {
+async function getPlayers(gameId) {
 
     console.info("Get players");
 
-    let response = await fetch(url + "/players");
-    return await response.json();
+    let response = await fetch("settlers/api/games/" + gameId + "/players");
+
+    let result = await response.json();
+
+    console.log("Got players: " + JSON.stringify(result));
+    
+    return result;
 }
 
-async function getHouseInformation(houseId, playerId, url) {
+async function getHouseInformation(houseId, gameId, playerId) {
     // x:
     // y:
     // inventory: {'gold': 3}
@@ -121,11 +195,11 @@ async function getHouseInformation(houseId, playerId, url) {
     // maxAttackers: 23
 
 
-    let response = await fetch(url + "/houses/" + houseId + "?playerId=" + playerId);
+    let response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses/" + houseId);
     return await response.json();
 }
 
-async function getInformationOnPoint(point, url, player) {
+async function getInformationOnPoint(point, gameId, playerId) {
     // x, y
     // canBuild: ['small', 'medium', 'large', 'flag', 'mine', 'harbor']
     // isType: ('flag' | 'building' | 'stone' | 'tree')
@@ -134,7 +208,7 @@ async function getInformationOnPoint(point, url, player) {
 
     console.info("Get information on point");
 
-    let response = await fetch(url + "/points?x=" + point.x+"&y=" + point.y + "&playerId=" + player);
+    let response = await fetch("/settlers/api/games/" + gameId + "/map/points?x=" + point.x+"&y=" + point.y + "&playerId=" + playerId);
     return await response.json();
 }
 
@@ -150,8 +224,8 @@ async function callGeologist(point, player, url) {
     return await response.json();
 }
 
-async function getTerrain(url) {
-    let response = await fetch(url + '/terrain');
+async function getTerrain(gameId) {
+    let response = await fetch('/settlers/api/games/' + gameId + '/map/terrain');
     return await response.json();
 }
 
@@ -224,5 +298,10 @@ export {
     LARGE_HOUSES,
     removeFlag,
     materialToColor,
-    attackBuilding
+    attackBuilding,
+    getGames,
+    getMaps,
+    createGame,
+    deleteGame,
+    startGame
 };

@@ -1,19 +1,18 @@
 import React, { Component } from 'react';
 import {
-    MenuButton,
-    EnemyHouseInfo,
-    ConstructionInfo,
     ServerUnreachable,
     vegetationToInt,
-    GameCanvas,
-    Menu,
-    FriendlyHouseInfo,
-    FriendlyFlagInfo
+    GameCanvas
 } from './components.jsx';
 
-import {
-    Guide
-} from './guide.jsx';
+import FriendlyFlagInfo from './friendly_flag_info.js';
+import MenuButton from './menu_button.js';
+import { ConstructionInfo } from './construction_info.js';
+import FriendlyHouseInfo from './friendly_house_info.js';
+import EnemyHouseInfo from './enemy_house_info.js';
+import GameMenu from './game_menu.js';
+
+import Guide from './guide.jsx';
 
 import {
     setSpeed,
@@ -305,7 +304,7 @@ class App extends Component {
 
         if (this.state.player) {
         
-            getViewForPlayer(this.props.url, this.state.player).then(
+            getViewForPlayer(this.props.gameId, this.state.player).then(
                 (data) => {
 
                     this.setState({
@@ -350,7 +349,7 @@ class App extends Component {
         }
 
         /* Fetch the view for the first time and center on the player's headquarter */
-        getPlayers(this.props.url).then(
+        getPlayers(this.props.gameId).then(
             (players) => {
                 this.onCanReachServer("get players");
 
@@ -361,7 +360,7 @@ class App extends Component {
                     player: players[0].id
                 });
 
-                getViewForPlayer(this.props.url, players[0].id).then(
+                getViewForPlayer(this.props.gameId, players[0].id).then(
                     (data) => {
 
                         console.info("Got initial data for player");
@@ -403,7 +402,7 @@ class App extends Component {
         // Get the terrain once
         if (this.state.terrain.length === 0) {
             console.info("Getting terrain from the server");
-            getTerrain(this.props.url).then(
+            getTerrain(this.props.gameId).then(
                 (data) => {
                     console.info(JSON.stringify("Got terrain data from server"));
 
@@ -473,8 +472,8 @@ class App extends Component {
                 console.info("Placing road directly to flag");
                 
                 createRoad(this.state.newRoad.concat(point),
-                           this.state.player,
-                           this.props.url).then(
+                           this.props.gameId,
+                           this.state.player).then(
                                () => this.onCanReachServer("create road")
                            ).catch(
                                () => this.onCannotReachServer("create road")
@@ -494,7 +493,7 @@ class App extends Component {
                 });
 
                 /* Get the available connections from the added point */
-                getInformationOnPoint(point, this.props.url, this.state.player).then(
+                getInformationOnPoint(point, this.props.gameId, this.state.player).then(
                     (data) => {
                         this.onCanReachServer("get information about point");
                                               
@@ -520,7 +519,7 @@ class App extends Component {
         }
     }
 
-    /* Determine if the given point is discovered by the curren player */
+    /* Determine if the given point is discovered by the current player */
     pointIsDiscovered(point) {
         let key = "x" + point.x + "y" + point.y;
         return this.state.discoveredPoints.has(key);
@@ -539,8 +538,8 @@ class App extends Component {
                     console.info("Created flag");
 
                     createRoad(this.state.newRoad,
-                               this.state.player,
-                               this.props.url).then(
+                               this.props.gameId,
+                               this.state.player).then(
                                    (data) => {
                                        this.onCanReachServer("build road");
 
@@ -625,7 +624,7 @@ class App extends Component {
         }
 
         /* Ask the server for what can be done on the spot */
-        getInformationOnPoint(point, this.props.url, this.state.player).then(
+        getInformationOnPoint(point, this.props.gameId, this.state.player).then(
             (data) => {
 
                 this.onCanReachServer("get point information");
@@ -665,7 +664,7 @@ class App extends Component {
         });
 
         /* Get the possible connections from the server and draw them */
-        getInformationOnPoint(point, this.props.url, this.state.player).then(
+        getInformationOnPoint(point, this.props.gameId, this.state.player).then(
             (data) => {
                 this.onCanReachServer("get information about point");
 
@@ -831,115 +830,119 @@ class App extends Component {
 
         return (
             <div
-              className="App"
-              ref={(selfName) => {this.selfName = selfName;}}
-              onMouseDown={this.onMouseDown}
-              onMouseMove={this.onMouseMove}
-              onMouseUp={this.onMouseUp}
-              onKeyDown={this.onKeyDown}
-              onTouchStart={this.onTouchStart}
-              onTouchMove={this.onTouchMove}
-              onTouchEnd={this.onTouchEnd}
-              onTouchCancel={this.onTouchCancel}
-              tabIndex="1">
-
-              <GameCanvas
-                terrain={this.state.terrain}
-                discoveredPoints={this.state.discoveredPoints}
-                roads={this.state.roads}
-                houses={this.state.houses}
-                trees={this.state.trees}
-                flags={this.state.flags}
-                workers={this.state.workers}
-                stones={this.state.stones}
-                borders={this.state.borders}
-                signs={this.state.signs}
-                availableConstruction={this.state.availableConstruction}
-                crops={this.state.crops}
-                animals={this.state.animals}
-                scale={this.state.scale}
-                translateX={this.state.translateX}
-                translateY={this.state.translateY}
-                screenWidth={globalSyncState.width}
-                screenHeight={globalSyncState.height}
+                className="App"
+                ref={(selfName) => {this.selfName = selfName;}}
+                onMouseDown={this.onMouseDown}
+                onMouseMove={this.onMouseMove}
+                onMouseUp={this.onMouseUp}
                 onKeyDown={this.onKeyDown}
-                onPointClicked={this.onPointClicked.bind(this)}
-                selectedPoint={this.state.selected}
-                hoverPoint={this.state.hoverPoint}
-                inFocus={!this.state.menuVisible}
-                onDoubleClick={this.onDoubleClick.bind(this)}
-                houseTitles={true}
-                newRoad={this.state.newRoad}
-                possibleRoadConnections={this.state.possibleRoadConnections}
-                showAvailableConstruction={this.state.details}
+                onTouchStart={this.onTouchStart}
+                onTouchMove={this.onTouchMove}
+                onTouchEnd={this.onTouchEnd}
+                onTouchCancel={this.onTouchCancel}
+                tabIndex="1">
+
+                <GameCanvas
+                    terrain={this.state.terrain}
+                    discoveredPoints={this.state.discoveredPoints}
+                    roads={this.state.roads}
+                    houses={this.state.houses}
+                    trees={this.state.trees}
+                    flags={this.state.flags}
+                    workers={this.state.workers}
+                    stones={this.state.stones}
+                    borders={this.state.borders}
+                    signs={this.state.signs}
+                    availableConstruction={this.state.availableConstruction}
+                    crops={this.state.crops}
+                    animals={this.state.animals}
+                    scale={this.state.scale}
+                    translateX={this.state.translateX}
+                    translateY={this.state.translateY}
+                    screenWidth={globalSyncState.width}
+                    screenHeight={globalSyncState.height}
+                    onKeyDown={this.onKeyDown}
+                    onPointClicked={this.onPointClicked.bind(this)}
+                    selectedPoint={this.state.selected}
+                    hoverPoint={this.state.hoverPoint}
+                    inFocus={!this.state.menuVisible}
+                    onDoubleClick={this.onDoubleClick.bind(this)}
+                    houseTitles={true}
+                    newRoad={this.state.newRoad}
+                    possibleRoadConnections={this.state.possibleRoadConnections}
+                    showAvailableConstruction={this.state.details}
                 />
 
               <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
 
               {this.state.menuVisible &&
-                  <Menu
-                        currentPlayer={this.state.player}
-                        url={this.props.url}
-                        closeMenu={this.closeActiveMenu.bind(this)}
-                        onPlayerSelected={this.onPlayerSelected.bind(this)}
-                        zoom={this.zoom.bind(this)}
-                        currentZoom={this.state.scale}
-                        minZoom={MIN_SCALE}
-                        maxZoom={MAX_SCALE}
-                        adjustSpeed={this.onSpeedSliderChange.bind(this)}
-                        showHelp={this.showHelp.bind(this)}
+                  <GameMenu
+                      currentPlayer={this.state.player}
+                      url={this.props.url}
+                      onCloseMenu={this.closeActiveMenu.bind(this)}
+                      onPlayerSelected={this.onPlayerSelected.bind(this)}
+                      onChangedzoom={this.zoom.bind(this)}
+                      currentZoom={this.state.scale}
+                      minZoom={MIN_SCALE}
+                      maxZoom={MAX_SCALE}
+                      adjustSpeed={this.onSpeedSliderChange.bind(this)}
+                      showHelp={this.showHelp.bind(this)}
+                      gameId={this.props.gameId}
                   />
               }
 
               {typeof(this.state.showFriendlyHouseInfo) !== "undefined" &&
-                  <FriendlyHouseInfo house={this.state.showFriendlyHouseInfo.house}
-                                         url={this.props.url}
-                                         player={this.state.player}
-                                         closeDialog={this.closeActiveMenu.bind(this)}
-                                         onCanReachServer={this.onCanReachServer.bind(this)}
-                                         onCannotReachServer={this.onCannotReachServer.bind(this)}
-                                         />
+                  <FriendlyHouseInfo
+                      house={this.state.showFriendlyHouseInfo.house}
+                      url={this.props.url}
+                      player={this.state.player}
+                      closeDialog={this.closeActiveMenu.bind(this)}
+                      onCanReachServer={this.onCanReachServer.bind(this)}
+                      onCannotReachServer={this.onCannotReachServer.bind(this)}
+                  />
               }
 
               {typeof(this.state.showFriendlyFlagInfo) !== "undefined" &&
-                  <FriendlyFlagInfo flag={this.state.showFriendlyFlagInfo.flag}
-                                            closeDialog={this.closeActiveMenu.bind(this)}
-                                            url={this.props.url}
-                                            onCanReachServer={this.onCanReachServer.bind(this)}
-                                            onCannotReachServer={this.onCannotReachServer.bind(this)}
-                                            startNewRoad={this.startNewRoad.bind(this)}
-                                            player={this.state.player}
-                                            />
+                  <FriendlyFlagInfo
+                      flag={this.state.showFriendlyFlagInfo.flag}
+                      closeDialog={this.closeActiveMenu.bind(this)}
+                      url={this.props.url}
+                      onCanReachServer={this.onCanReachServer.bind(this)}
+                      onCannotReachServer={this.onCannotReachServer.bind(this)}
+                      startNewRoad={this.startNewRoad.bind(this)}
+                      player={this.state.player}
+                  />
               }
 
               {typeof(this.state.showEnemyHouseInfo) !== "undefined" &&
-                  <EnemyHouseInfo house={this.state.showEnemyHouseInfo.house}
-                                      url={this.props.url}
-                                      closeDialog={this.closeActiveMenu.bind(this)}
-                                      onCanReachServer={this.onCanReachServer.bind(this)}
-                                      onCannotReachServer={this.onCannotReachServer.bind(this)}
-                                      player={this.state.player}
-                                      />
+                  <EnemyHouseInfo
+                      house={this.state.showEnemyHouseInfo.house}
+                      url={this.props.url}
+                      closeDialog={this.closeActiveMenu.bind(this)}
+                      onCanReachServer={this.onCanReachServer.bind(this)}
+                      onCannotReachServer={this.onCannotReachServer.bind(this)}
+                      player={this.state.player}
+                  />
               }
 
               {typeof(this.state.showHelp) !== "undefined" &&
-                  <Guide closeDialog={this.closeActiveMenu.bind(this)}/>
+                  <Guide closeDialog={this.closeActiveMenu.bind(this)} />
               }
 
               {typeof(this.state.serverUnreachable) !== "undefined" &&
-                  <ServerUnreachable command={this.state.serverUnreachable}
-                                                 />
+                  <ServerUnreachable command={this.state.serverUnreachable} />
               }
 
               {typeof(this.state.showConstructionInfo) !== "undefined" &&
                   <ConstructionInfo point={this.state.showConstructionInfo}
-                                        closeDialog={this.closeActiveMenu.bind(this)}
-                                        url={this.props.url}
-                                        player={this.state.player}
-                                        onCanReachServer={this.onCanReachServer.bind(this)}
-                                        onCannotReachServer={this.onCannotReachServer.bind(this)}
-                                        startNewRoad={this.startNewRoad.bind(this)}
-                                        />
+                      closeDialog={this.closeActiveMenu.bind(this)}
+                      url={this.props.url}
+                      player={this.state.player}
+                      onCanReachServer={this.onCanReachServer.bind(this)}
+                      onCannotReachServer={this.onCannotReachServer.bind(this)}
+                      startNewRoad={this.startNewRoad.bind(this)}
+                      gameId={this.props.gameId}
+                  />
               }
             </div>
         );

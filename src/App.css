@@ -2,7 +2,9 @@
     --high-light: #3333AA;
     --dialog-background-color: white;
     --high-light-error: #993333;
-    --hover-color: lightgray;
+    --hover-color: orange;
+    --button-color: lightgray;
+    --disabled-color: white;
     --selected-color: #333;
     --button-rounded-corner: 0.3rem;
     --button-margin: 0.5rem;
@@ -13,6 +15,10 @@
 
 * {
     font-family: Verdana;
+}
+
+body {
+    background-color: gray;
 }
 
 .h1 {
@@ -40,6 +46,7 @@ h1 {
     padding: var(--button-padding);
     text-align: center;
     border-radius: var(--button-rounded-corner);
+    background-color: var(--button-color);
 }
 
 .Button:hover {
@@ -232,6 +239,11 @@ h1 {
     border-radius: 0.2rem;
     margin: 0;
     transform: translateX(-0.25rem)
+}
+
+.Slider .SliderIndicator:hover {
+    background-color: var(--hover-color);
+    cursor: pointer;
 }
 
 .Slider .SliderLessLabel:hover {

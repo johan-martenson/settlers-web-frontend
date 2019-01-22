@@ -2,13 +2,18 @@ import React, { Component } from 'react';
 
 import ReactDOM from 'react-dom';
 import App from './App';
+import {Lobby} from './lobby.js'
 import './index.css';
+import { FillInPlayerInformation } from './fill_in_player_information.js';
 
 class GameInit extends Component {
+
     constructor(props) {
         super(props);
 
-        this.state = {};
+        this.state = {
+            state: "ENTER_PLAYER_INFORMATION"
+        };
 
         this.setHost = this.setHost.bind(this);
     }
@@ -20,16 +25,33 @@ class GameInit extends Component {
         );
     }
 
+    onPlayerInformationDone(player) {
+        this.setState(
+            {
+                player: player,
+                state: "LOBBY"
+            }
+        );
+    }
+    
     render() {
 
         return (
             <div>
 
-              {typeof(this.state.host) !== "undefined" &&
+            {this.state.state === "PLAY_GAME" &&
                   <App url={this.state.host}/>
-              }
+            }
 
-              {(typeof(this.state.host) === "undefined") &&
+            {this.state.state === "ENTER_PLAYER_INFORMATION" &&
+             <FillInPlayerInformation onPlayerInformationDone={this.onPlayerInformationDone.bind(this)} />
+            }
+
+            {this.state.state === "LOBBY" &&
+             <Lobby apiHost={this.state.host} player={this.state.player}/>
+            }
+
+            {this.state.state === "SELECT_HOST" &&
                   <div>
                       <div className="Dialog">
                       <h1>Select host</h1>

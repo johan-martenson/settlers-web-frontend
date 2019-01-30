@@ -1,0 +1,11 @@
+.SetNameField {
+    margin-right: var(--button-margin);
+    width: 70%;
+    vertical-align: middle;
+}
+
+.SetNameButton {
+    margin-right: var(--button-margin);
+    width: 10%;
+    vertical-align: middle;
+}

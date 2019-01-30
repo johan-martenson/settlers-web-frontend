@@ -1,0 +1,13 @@
+.GameOptionsContainer {
+    background-color: lightblue;
+}
+
+.ResourceButton {
+    float: left;
+    vertical-align: middle;
+}
+
+.ResourceLable {
+    float: left;
+    vertical-align: middle;
+}

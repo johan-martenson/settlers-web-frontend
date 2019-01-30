@@ -4,7 +4,7 @@
     --high-light-error: #993333;
     --hover-color: orange;
     --button-color: lightgray;
-    --disabled-color: white;
+    --disabled-color: gray;
     --selected-color: #333;
     --button-rounded-corner: 0.3rem;
     --button-margin: 0.5rem;
@@ -47,11 +47,20 @@ h1 {
     text-align: center;
     border-radius: var(--button-rounded-corner);
     background-color: var(--button-color);
+    color: white;
 }
 
 .Button:hover {
     background-color: var(--hover-color);
     border-radius: var(--button-rounded-corner);
+}
+
+.Disabled {
+    color: var(--disabled-color) !important;
+}
+
+.Disabled:hover {
+    background-color: (--button-color) !important;
 }
 
 .Previous {
@@ -348,6 +357,21 @@ h1 {
 }
 
 .PageParagraph::first-letter {
-    //    text-transform: uppercase bold;
+/*    //    text-transform: uppercase bold;*/
     font-weight: bold;
+}
+
+.Row:before,
+.Row:after {
+    content: "";
+    display: table;
+    clear:both;
+}
+
+.Row {
+    clear: both;
+}
+
+.Row > .RowItem {
+    float: left;
 }

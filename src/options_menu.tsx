@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Dialog, DialogSection } from './dialog';
 import Slider from './slider';
+import OnOffSlider from './on_off_slider';
 
 interface OptionMenuProps {
     onClose: (() => void)
@@ -8,6 +9,8 @@ interface OptionMenuProps {
     maxZoom: number
     minZoom: number
     currentZoom: number
+    currentShowTitles: boolean
+    setShowTitles: ((showTitles: boolean) => void)
 }
 interface OptionMenuState {
     currentSpeed?: number
@@ -44,7 +47,13 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
                         onValue={this.props.onChangedZoom}
                     />
                 </DialogSection>
-            
+
+                <DialogSection label="Show house names">
+                    <OnOffSlider
+                        onValueChange={this.props.setShowTitles.bind(this)}
+                        initialValue={this.props.currentShowTitles} />
+                </DialogSection>
+                
                 <DialogSection label="Game speed">
 
                     <Slider max={10}

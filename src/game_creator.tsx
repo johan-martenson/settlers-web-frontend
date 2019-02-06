@@ -37,10 +37,8 @@ interface GameCreatorProps {
     onCreateGameDone: (() => void)
 }
 
-type GameCreatorStates = "GET_NAME_FOR_GAME" | "CREATE_GAME"
-
 interface GameCreatorState {
-    state: GameCreatorStates
+    state: "GET_NAME_FOR_GAME" | "CREATE_GAME"
     players: Player[]
     map?: MapInformation
     game?: GameInformation
@@ -125,10 +123,6 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         return false;
     }
 
-    createNewGame() {
-        
-    }
-    
     render() {
 
         return (
@@ -203,7 +197,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                         <ManagePlayers players={this.state.players} selfPlayerIndex={0} />
                         <GameOptions />
                         <Row>
-                            <Button label="Delete game" onButtonClicked={this.onDeleteGame}/>
+                            <Button label="Delete game" onButtonClicked={this.onDeleteGame.bind(this)}/>
                             <Button label="Start game"
                                 onButtonClicked={this.onStartGame.bind(this)}
                                 disabled={!this.state.map}

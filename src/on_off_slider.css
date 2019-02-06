@@ -1,0 +1,22 @@
+.OnOffContainer {
+    width: 5em;
+    background-color: lightgray;
+    margin: 0;
+    height: 2em;
+}
+
+.OnOffMarker {
+    width: 2em;
+    background-color: var(--selected-color);
+    height: 100%;
+    cursor: pointer;
+    border-radius: 0.2rem;
+}
+
+.On {
+    float: left
+}
+
+.Off {
+    float: right
+}

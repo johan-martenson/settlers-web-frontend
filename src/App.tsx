@@ -4,7 +4,7 @@ import {
     GameCanvas,
     TerrainList,
     ScreenPoint
-} from './components';
+} from './game_render';
 
 import { pointToString, pointSetToStringSet } from './utils'
 
@@ -96,7 +96,6 @@ interface AppProps {
 }
 
 interface AppState {
-    details: boolean
     houses: HouseInformation[]
     workers: WorkerInformation[]
     roads: RoadInformation[]
@@ -114,7 +113,6 @@ interface AppState {
     possibleRoadConnections?: Point[]
     
     selected: Point
-    hoverPoint?: Point
 
     scale: number
 
@@ -130,13 +128,15 @@ interface AppState {
 
     activeMenu?: 0 | 1 | 2 | 3 | 4;
     
-    showAvailableConstruction: boolean
     showFriendlyHouseInfo?: ShowFriendlyHouseInfo
     showFriendlyFlagInfo?: ShowFriendlyFlagInfo
     showConstructionInfo?: PointInformation
     showEnemyHouseInfo?: ShowEnemyHouseInfo
     showHelp?: boolean
     menuVisible: boolean
+
+    showTitles: boolean
+    showAvailableConstruction: boolean
 
     serverUnreachable?: string
 }
@@ -162,6 +162,9 @@ class App extends Component<AppProps, AppState> {
 
         this.periodicFetch = this.periodicFetch.bind(this);
         this.toggleDetails = this.toggleDetails.bind(this);
+
+        this.zoomOut = this.zoomOut.bind(this);
+        this.zoomIn = this.zoomIn.bind(this);
 
         this.keyHandlers.set(27, this.closeActiveMenu) // ESC
         this.keyHandlers.set(32, this.toggleDetails)   // SPACE
@@ -203,13 +206,19 @@ class App extends Component<AppProps, AppState> {
             player: props.selfPlayerId,
             menuVisible: false,
             discoveredPoints: new Set(),
-            details: false
+            showTitles: false
         };
     }
 
     toggleDetails() {
-        console.info("Toggling details, was " + this.state.details);
-        this.setState({details: !this.state.details});
+        const current = this.state.showTitles || this.state.showAvailableConstruction;
+        
+        this.setState(
+            {
+                showTitles: !current,
+                showAvailableConstruction: !current
+            }
+        );
     }
 
     closeActiveMenu() {
@@ -228,11 +237,7 @@ class App extends Component<AppProps, AppState> {
     }
     
     onPlayerSelected(player: PlayerInformation) {
-        console.info("Selected player " + player);
-
-        console.info(" - Player id " + player.id);
-        console.info(" - Player name " + player.name);
-        console.info(" - Center spot " + player.centerPoint);
+        console.info("Selected player " + JSON.stringify(player));
 
         let newTranslateX = this.state.translateX;
         let newTranslateY = this.state.translateY;
@@ -419,8 +424,7 @@ class App extends Component<AppProps, AppState> {
         /* Fetch the view for the first time and center on the player's headquarter */
         const players = await getPlayers(this.props.gameId);
 
-        console.info("Got players");
-        console.info(players);
+        console.info("Got players: " + JSON.stringify(players));
 
         this.setState({
             player: players[0].id
@@ -462,7 +466,6 @@ class App extends Component<AppProps, AppState> {
 
         // Get the terrain once
         if (this.state.terrain.length === 0) {
-            console.info("Getting terrain from the server");
             const view = await getTerrain(this.props.gameId);
 
             console.info(JSON.stringify("Got terrain view from server"));
@@ -653,8 +656,6 @@ class App extends Component<AppProps, AppState> {
         /* Handle the case where a flag was double clicked */
         const flag = this.state.flags.find((flag) => flag.x === point.x && flag.y === point.y);
 
-        console.info("Found this flag on the spot: " + JSON.stringify(flag));
-
         if (flag) {
 
             console.info("Clicked flag");
@@ -727,42 +728,10 @@ class App extends Component<AppProps, AppState> {
             );
     }
 
-    screenPointToGamePoint(screenPoint: ScreenPoint) {
-
-        const gameX = (screenPoint.x - this.state.translateX) / this.state.scale;
-        const gameY = (screenPoint.y - this.state.translateY) / this.state.scale;
-
-        let roundedGameX = Math.round(gameX);
-        let roundedGameY = Math.round(gameY);
-
-        const faultX = gameX - roundedGameX;
-        const faultY = gameY - roundedGameY;
-
-        /* Call the handler directly if both points are odd or even */
-        if ((roundedGameX + roundedGameY) % 2 !== 0) {
-
-            /* Find the closest valid point (odd-odd, or even-even) */
-            if (Math.abs(faultX) > Math.abs(faultY)) {
-
-                if (faultX > 0) {
-                    roundedGameX--;
-                } else {
-                    roundedGameX++;
-                }
-            } else if (Math.abs(faultX) < Math.abs(faultY)){
-                if (faultY > 0) {
-                    roundedGameY--;
-                } else {
-                    roundedGameY++;
-                }
-            } else {
-                roundedGameX++;
-            }
-        }
-
-        return {x: roundedGameX, y: roundedGameY};
+    setShowTitles(showTitles: boolean) {
+        this.setState({showTitles: showTitles});
     }
-
+    
     copyTouch(touch: React.Touch): StoredTouch {
         return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY };
     }
@@ -917,71 +886,71 @@ class App extends Component<AppProps, AppState> {
                     onKeyDown={this.onKeyDown}
                     onPointClicked={this.onPointClicked.bind(this)}
                     selectedPoint={this.state.selected}
-                    hoverPoint={this.state.hoverPoint}
                     onDoubleClick={this.onDoubleClick.bind(this)}
-                    showHouseTitles={true}
+                    showHouseTitles={this.state.showTitles}
                     newRoad={this.state.newRoad}
                     possibleRoadConnections={this.state.possibleRoadConnections}
-                    showAvailableConstruction={this.state.details}
+                    showAvailableConstruction={this.state.showAvailableConstruction}
                 />
 
-              <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
+                <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
 
-              {this.state.menuVisible &&
-                  <GameMenu
-                      currentPlayerId={this.state.player}
-                      onCloseMenu={this.closeActiveMenu.bind(this)}
-                      onPlayerSelected={this.onPlayerSelected.bind(this)}
-                      onChangedZoom={this.zoom.bind(this)}
-                      currentZoom={this.state.scale}
-                      minZoom={MIN_SCALE}
-                      maxZoom={MAX_SCALE}
-                      adjustSpeed={this.onSpeedSliderChange.bind(this)}
-                      gameId={this.props.gameId}
-                  />
-              }
+                {this.state.menuVisible &&
+                    <GameMenu
+                        currentPlayerId={this.state.player}
+                        onCloseMenu={this.closeActiveMenu.bind(this)}
+                        onPlayerSelected={this.onPlayerSelected.bind(this)}
+                        onChangedZoom={this.zoom.bind(this)}
+                        currentZoom={this.state.scale}
+                        minZoom={MIN_SCALE}
+                        maxZoom={MAX_SCALE}
+                        adjustSpeed={this.onSpeedSliderChange.bind(this)}
+                        gameId={this.props.gameId}
+                        setShowTitles={this.setShowTitles.bind(this)}
+                        currentShowTitles={this.state.showTitles}
+                    />
+                }
 
-              {this.state.showFriendlyHouseInfo &&
-                  <FriendlyHouseInfo
-                      house={this.state.showFriendlyHouseInfo.house}
-                      gameId={this.props.gameId}
-                      playerId={this.state.player}
-                      closeDialog={this.closeActiveMenu.bind(this)}
+                {this.state.showFriendlyHouseInfo &&
+                    <FriendlyHouseInfo
+                        house={this.state.showFriendlyHouseInfo.house}
+                        gameId={this.props.gameId}
+                        playerId={this.state.player}
+                        closeDialog={this.closeActiveMenu.bind(this)}
+                    />
+                }
 
-                  />
-              }
+                {this.state.showFriendlyFlagInfo &&
+                    <FriendlyFlagInfo
+                        flag={this.state.showFriendlyFlagInfo.flag}
+                        closeDialog={this.closeActiveMenu.bind(this)}
+                        startNewRoad={this.startNewRoad.bind(this)}
+                        playerId={this.state.player}
+                        gameId={this.props.gameId}
+                   />
+                }
 
-              {this.state.showFriendlyFlagInfo &&
-                  <FriendlyFlagInfo
-                      flag={this.state.showFriendlyFlagInfo.flag}
-                      closeDialog={this.closeActiveMenu.bind(this)}
-                      startNewRoad={this.startNewRoad.bind(this)}
-                      playerId={this.state.player}
-                      gameId={this.props.gameId}
-                 />
-              }
+                {this.state.showEnemyHouseInfo &&
+                    <EnemyHouseInfo
+                        house={this.state.showEnemyHouseInfo.house}
+                        closeDialog={this.closeActiveMenu.bind(this)}
+                        playerId={this.state.player}
+                        gameId={this.props.gameId}
+                    />
+                }
 
-              {this.state.showEnemyHouseInfo &&
-                  <EnemyHouseInfo
-                      house={this.state.showEnemyHouseInfo.house}
-                      closeDialog={this.closeActiveMenu.bind(this)}
-                      playerId={this.state.player}
-                      gameId={this.props.gameId}
-                  />
-              }
+                {this.state.showHelp &&
+                    <Guide onClose={this.closeActiveMenu.bind(this)} />
+                }
 
-              {this.state.showHelp &&
-                  <Guide onClose={this.closeActiveMenu.bind(this)} />
-              }
-
-              {this.state.showConstructionInfo &&
-                  <ConstructionInfo point={this.state.showConstructionInfo}
-                      closeDialog={this.closeActiveMenu.bind(this)}
-                      playerId={this.state.player}
-                      startNewRoad={this.startNewRoad.bind(this)}
-                      gameId={this.props.gameId}
-                  />
-              }
+                {this.state.showConstructionInfo &&
+                    <ConstructionInfo point={this.state.showConstructionInfo}
+                        closeDialog={this.closeActiveMenu.bind(this)}
+                        playerId={this.state.player}
+                        startNewRoad={this.startNewRoad.bind(this)}
+                        gameId={this.props.gameId}
+                    />
+                }
             </div>
         );
     }

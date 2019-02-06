@@ -13,7 +13,9 @@ interface GameMenuProps {
     maxZoom: number
     minZoom: number
     currentZoom: number
+    currentShowTitles: boolean
     adjustSpeed: ((speed: number) => void)
+    setShowTitles: ((showTitles: boolean) => void)
 }
 interface GameMenuState {
     state: "MAIN" | "OPTIONS" | "HELP"
@@ -56,10 +58,10 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                 {this.state.state === "MAIN" &&
                     <MainMenu
                         currentPlayerId={this.props.currentPlayerId}
+                        gameId={this.props.gameId}
                         onHelp={() => {this.setState({state: "HELP"})}}
                         onClose={this.onClose.bind(this)}
                         onChoose={this.onChoose.bind(this)}
-                        gameId={this.props.gameId}
                         onPlayerSelected={this.onPlayerSelected.bind(this)}
                     />
                 }
@@ -69,8 +71,11 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                         maxZoom={this.props.maxZoom}
                         minZoom={this.props.minZoom}
                         currentZoom={this.props.currentZoom}
+                        currentShowTitles={this.props.currentShowTitles}
                         onClose={() => {this.setState({state: "MAIN"})}}
-                        onChangedZoom={this.props.onChangedZoom} />
+                        onChangedZoom={this.props.onChangedZoom}
+                        setShowTitles={this.props.setShowTitles.bind(this)}
+                    />
                 }
 
                 {this.state.state === "HELP" &&

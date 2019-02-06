@@ -110,12 +110,10 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 
         if (this.canBuildMediumHouse()) {
             houseOptions.set("medium", "Medium");
-            houseInitialSelection = "medium";
         }
 
         if (this.canBuildLargeHouse()) {
             houseOptions.set("large", "Large");
-            houseInitialSelection = "large";
         }
         
         return (

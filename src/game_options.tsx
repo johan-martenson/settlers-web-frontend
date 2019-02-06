@@ -15,7 +15,6 @@ OPTIONS.set("LOW", "Sparse");
 OPTIONS.set("MEDIUM", "Medium");
 OPTIONS.set("HIGH", "Plenty");
 
-
 class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
 
     allowOthersToJoin(allow: boolean) {

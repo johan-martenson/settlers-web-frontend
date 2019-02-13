@@ -13,10 +13,14 @@
     border-radius: 0.2rem;
 }
 
+.OnOffMarker:hover {
+    background-color: var(--hover-color);
+}
+
 .On {
-    float: left
+    float: right
 }
 
 .Off {
-    float: right
+    float: left
 }

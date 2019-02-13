@@ -1,31 +1,39 @@
 import React, { Component } from 'react'
 
 interface RowProps {
-    children: (string | JSX.Element)[]
+    children: (string | JSX.Element | false | string | undefined)[]
+    align?: "left" | "right"
+    className?: string
 }
-interface RowState {}
+interface RowState { }
 
 class Row extends Component<RowProps, RowState> {
 
-    isChildrenArray(children: string | JSX.Element[]): children is JSX.Element[] {
-        return typeof(children) !== "string";
-    }
-   
     render() {
 
-        console.log(this.props.children);
+        let childClassName = "RowItemLeft";
+        let className = "Row";
+
+        if (this.props.className) {
+            className = className + " " + this.props.className;
+        }
+
+        console.log(className);
+
+        if (this.props.align && this.props.align === "right") {
+            childClassName = "RowItemRight";
+        }
 
         const children = React.Children.map(this.props.children,
-                                            child => {
-                                                return (
-                                                        <div className="RowItem">{child}</div>
-                                                );
-                                            }
-                                           );
-                           
-        return(
-            <div className="Row">
+            child => {
+                return (
+                    <div className={childClassName}>{child}</div>
+                );
+            }
+        );
 
+        return (
+            <div className={className}>
                 {children}
             </div>
         );

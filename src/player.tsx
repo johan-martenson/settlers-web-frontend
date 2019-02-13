@@ -1,8 +1,9 @@
 import React, { Component, createRef } from 'react';
 import Button from './button';
-import Row from './row';
+import Card from './card';
+import './player.css';
+import RawRow from './raw_row';
 
-import './player.css'
 
 export interface IPlayer {
     type: string;
@@ -28,16 +29,16 @@ interface PlayerProps {
 class Player extends Component<PlayerProps, PlayerState> {
 
     private nameFieldRef = createRef<HTMLInputElement>();
-    
+
     constructor(props: PlayerProps) {
         super(props);
-        
+
         let isSelf = false;
-        
+
         if (props.isSelf) {
             isSelf = true;
         }
-        
+
         this.state = {
             type: props.player.type,
             name: props.player.name,
@@ -50,14 +51,14 @@ class Player extends Component<PlayerProps, PlayerState> {
     changeName() {
 
         console.log("CHANGING NAME");
-        
+
         if (!this.props.onNameChanged) {
             console.log("No callback setup");
             return;
         }
 
         const nameField = this.nameFieldRef.current;
-        
+
         if (!nameField || nameField.value === "") {
             console.log("No value to read")
             return;
@@ -66,29 +67,33 @@ class Player extends Component<PlayerProps, PlayerState> {
         console.log("Calling callback")
         this.props.onNameChanged(nameField.value);
     }
-    
+
     render() {
 
-        console.log(this.props.player);
         return (
-            <div className="Player" onClick={() => this.setState({expanded: !this.state.expanded})}>
-                <div>{this.props.player.name} {this.state.type === "COMPUTER" && "(computer)"}</div>
+            <div onClick={() => this.setState({ expanded: !this.state.expanded })}>
+                <Card className="Player">
+                    <div className="PlayerNameLabel">{this.props.player.name} {this.state.type === "COMPUTER" && "(computer)"}</div>
 
-                {this.state.type === "COMPUTER" && this.state.expanded &&
-                    <Row>Change name: 
-                        <input type="text" className="SetNameField" placeholder="Name" ref={this.nameFieldRef} />
-                        <Button label="Ok" className="SetNameButton" onButtonClicked={this.changeName.bind(this)} />
-                    </Row>
-                }
+                    {this.state.type === "COMPUTER" && this.state.expanded &&
+                        <>
+                            <div className="SetNameLabel">Change name:</div>
+                            <RawRow>
+                                <input type="text" className="SetNameField" placeholder="Name" ref={this.nameFieldRef} />
+                                <Button label="Ok" className="SetNameButton" onButtonClicked={this.changeName.bind(this)} />
+                            </RawRow>
+                        </>
+                    }
 
-                {!this.props.isSelf && this.props.onPlayerRemoved && this.state.expanded &&
-                    <Button label="Remove" className="RemovePlayerButton" onButtonClicked={this.props.onPlayerRemoved}/>
-                }        
+                    {!this.props.isSelf && this.props.onPlayerRemoved && this.state.expanded &&
+                        <Button label="Remove" className="RemovePlayerButton" onButtonClicked={this.props.onPlayerRemoved} />
+                    }
 
+                </Card>
             </div>
-                
         );
     }
 }
 
 export { Player };
+

@@ -20,14 +20,14 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
 
     constructor(props: FillInPlayerInformationProps) {
         super(props);
-        
-        this.state = {userNameEntered: false};
+
+        this.state = { userNameEntered: false };
     }
-    
+
     onPlayerInformationDone() {
 
         if (this.nameFieldRef && this.nameFieldRef.current && this.nameFieldRef.current.value !== "") {
-        
+
             this.props.onPlayerInformationDone(
                 {
                     name: this.nameFieldRef.current.value
@@ -35,9 +35,9 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
             );
         }
     }
-    
+
     render() {
-        return(
+        return (
             <Dialog heading="Enter player information" noCloseButton={true}>
                 <div>Name:
                     <input type="text" placeholder="Name" ref={this.nameFieldRef}
@@ -48,11 +48,11 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                                 this.nameFieldRef.current.value !== "") {
 
                                 if (!this.state.userNameEntered) {
-                                    this.setState({userNameEntered: true});
+                                    this.setState({ userNameEntered: true });
                                 }
                             } else {
                                 if (this.state.userNameEntered) {
-                                    this.setState({userNameEntered: false});
+                                    this.setState({ userNameEntered: false });
                                 }
                             }
                         }}

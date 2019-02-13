@@ -21,40 +21,40 @@ class Guide extends Component<GuideProps, GuideState> {
     constructor(props: GuideProps) {
         super(props);
 
-        this.state = {page: 0};
+        this.state = { page: 0 };
     }
 
     render() {
         console.log("Rendering guide");
 
         const page: PageType = HELP_PAGES[this.state.page];
-        
+
         return (
-              <Dialog className="Guide" onCloseDialog={this.props.onClose}>
+            <Dialog className="Guide" onCloseDialog={this.props.onClose}>
 
-                  <Page page={page}/>
+                <Page page={page} />
 
-                  <div>
-                      {this.state.page > 0 &&
-                          <Button label="Previous" className="GuidePrevious"
-                              onButtonClicked={
-                                  () => {
-                                      this.setState({page: this.state.page - 1});
-                                  }
-                              }
-                          />
-                      }
+                <div>
+                    {this.state.page > 0 &&
+                        <Button label="Previous" className="GuidePrevious"
+                            onButtonClicked={
+                                () => {
+                                    this.setState({ page: this.state.page - 1 });
+                                }
+                            }
+                        />
+                    }
 
-                      {this.state.page < HELP_PAGES.length - 1 &&
-                          <Button label="Next" className="GuideNext"
-                              onButtonClicked={
-                                  () => {
-                                      this.setState({page: this.state.page + 1});
-                                  }
-                              }
-                          />
-                      }
-                  </div>
+                    {this.state.page < HELP_PAGES.length - 1 &&
+                        <Button label="Next" className="GuideNext"
+                            onButtonClicked={
+                                () => {
+                                    this.setState({ page: this.state.page + 1 });
+                                }
+                            }
+                        />
+                    }
+                </div>
 
             </Dialog>
         );
@@ -65,7 +65,7 @@ interface PageProps {
     page: PageType
 }
 
-interface PageState {}
+interface PageState { }
 
 class Page extends Component<PageProps, PageState> {
 
@@ -74,38 +74,38 @@ class Page extends Component<PageProps, PageState> {
         return (
             <div className="Page">
 
-              <h1 className="PageTitle">{this.props.page.title}</h1>
+                <h1 className="PageTitle">{this.props.page.title}</h1>
 
-              <div className="DialogSection PageIllustrations">
+                <div className="DialogSection PageIllustrations">
 
-                {this.props.page.pictures.map(
-                    (image, index) => {
-                        return (
-                            <div key={index} className="ConstructionItem PageIllustration">
+                    {this.props.page.pictures.map(
+                        (image, index) => {
+                            return (
+                                <div key={index} className="ConstructionItem PageIllustration">
 
-                              {isBuildingString(image) ?
-                                  <img src={houseImageMap.get(image)} className="SmallIcon" alt=                                  ""/> :
-                                  <img src={image} className="SmallIcon" alt=""/>
-                              }
+                                    {isBuildingString(image) ?
+                                        <img src={houseImageMap.get(image)} className="SmallIcon" alt="" /> :
+                                        <img src={image} className="SmallIcon" alt="" />
+                                    }
 
-                            </div>
-                        );
+                                </div>
+                            );
+                        }
+                    )
                     }
-                )
-                }
 
-              </div>
+                </div>
 
-              <div className="PageDescription">
-                {this.props.page.description.map(
-                    (text, index) => {
-                        return (
-                            <p key={index} className="PageParagraph">{text}</p>
-                        );
+                <div className="PageDescription">
+                    {this.props.page.description.map(
+                        (text, index) => {
+                            return (
+                                <p key={index} className="PageParagraph">{text}</p>
+                            );
+                        }
+                    )
                     }
-                )
-                }
-              </div>
+                </div>
             </div>
         );
     };

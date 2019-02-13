@@ -11,7 +11,7 @@ interface DialogProps {
     id?: string
 }
 
-interface DialogState {}
+interface DialogState { }
 
 class Dialog extends Component<DialogProps, DialogState> {
 
@@ -29,17 +29,16 @@ class Dialog extends Component<DialogProps, DialogState> {
                 {this.props.heading &&
                     <h1>{this.props.heading}</h1>
                 }
-            
+
                 {this.props.children}
 
                 {!this.props.noCloseButton &&
                     <Button label={closeLabel} onButtonClicked={
-                        () =>
-                            {
-                                if (this.props.onCloseDialog) {
-                                    this.props.onCloseDialog()
-                                }
+                        () => {
+                            if (this.props.onCloseDialog) {
+                                this.props.onCloseDialog()
                             }
+                        }
                     }
                     />
                 }
@@ -60,7 +59,7 @@ class DialogSection extends Component<DialogSectionProps, DialogSectionState> {
     render() {
         return (
             <div className="DialogSection">
-                {this.props.label && <MenuSectionLabel label={this.props.label}/>}
+                {this.props.label && <MenuSectionLabel label={this.props.label} />}
                 {this.props.children}
             </div>
         );

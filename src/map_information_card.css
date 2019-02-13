@@ -1,0 +1,24 @@
+.MapCardTitle {
+    float: left;
+    width: 50%;
+    vertical-align: top;
+    text-align: left;
+}
+
+.ExpandCollapseButton {
+    float: right;
+    width: 10em;
+    vertical-align: top;
+}
+
+.MapThumbnail {
+    float: right;
+}
+
+.MapCardAttributes {
+    float: left;
+}
+
+.MapCardAttribute {
+    text-align: left;
+}

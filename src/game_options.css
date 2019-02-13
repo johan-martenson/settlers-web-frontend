@@ -1,13 +1,26 @@
 .GameOptionsContainer {
-    background-color: lightblue;
+    padding: 1em;
+}
+
+.ResourceButtons {
+    float: right;
 }
 
 .ResourceButton {
-    float: left;
+    float: right;
     vertical-align: middle;
 }
 
 .ResourceLable {
     float: left;
     vertical-align: middle;
+}
+
+.Label {
+    float: left;
+    margin-right: 4em;
+}
+
+.OthersCanJoinSlider {
+    float: right;
 }

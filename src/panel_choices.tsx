@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 
-interface PanelChoicesProps {}
-interface PanelChoicesState {}
+interface PanelChoicesProps { }
+interface PanelChoicesState { }
 
 class PanelChoices extends Component {
 
     render() {
-        return(
+        return (
             <div>{this.props.children}</div>
         );
     }

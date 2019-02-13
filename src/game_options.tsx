@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
-import Checkbox from './checkbox';
-import Row from './row'
-import Button from './button'
-import SelectableButtonRow from './selectable_button_row'
-
 import './game_options.css';
+import OnOffSlider from './on_off_slider';
+import Row from './row';
+import SelectableButtonRow from './selectable_button_row';
+import RawRow from './raw_row';
 
-interface GameOptionsProps {}
-interface GameOptionsState {}
+interface GameOptionsProps { }
+interface GameOptionsState { }
 
 const OPTIONS = new Map();
 
@@ -29,17 +28,20 @@ class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
     setAvailableResources(level: "LOW" | "MEDIUM" | "HIGH"): void {
         console.log("Play with resources set to " + level);
     }
-    
+
     render() {
 
-       
         return (
             <div className="GameOptionsContainer">
-                <div>Allow others to join?<Checkbox onCheckboxChange={this.allowOthersToJoin}/></div>
-                <div>
+                <RawRow>
+                    <div className="Label">Allow others to join?</div>
+                    <OnOffSlider className="OthersCanJoinSlider" initialValue={true} onValueChange={(value) => console.log(value)} />
+                </RawRow>
 
+                <RawRow>
                     <div className="ResourceLable">Amount of initial resources</div>
                     <SelectableButtonRow
+                        className="ResourceButtons"
                         values={OPTIONS} initialValue="MEDIUM"
                         onSelected={
                             (value: string) => {
@@ -53,7 +55,7 @@ class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
                             }
                         }
                     />
-                </div>
+                </RawRow>
             </div>
         );
     }

@@ -22,7 +22,7 @@ class Button extends Component<ButtonProps, ButtonState> {
             this.props.onButtonClicked();
         }
     }
-    
+
     render() {
         let className = "Button";
 
@@ -37,26 +37,26 @@ class Button extends Component<ButtonProps, ButtonState> {
         if (this.props.disabled) {
             className = className + " Disabled"
         }
-        
+
         return (
-                <div className={className}
-                    id={this.props.id ? this.props.id : ""}
-                    onClick={
-                        (event: React.SyntheticEvent) => {
-                            this.onClicked();
-                            event.stopPropagation();
-                        }
+            <div className={className}
+                id={this.props.id ? this.props.id : ""}
+                onClick={
+                    (event: React.SyntheticEvent) => {
+                        this.onClicked();
+                        event.stopPropagation();
                     }
-                    onTouchStart={
-                        (event: React.SyntheticEvent) => {
-                            this.onClicked();
-                            event.stopPropagation();
-                        }
+                }
+                onTouchStart={
+                    (event: React.SyntheticEvent) => {
+                        this.onClicked();
+                        event.stopPropagation();
                     }
-                >
+                }
+            >
 
                 {this.props.image &&
-                    <img src={this.props.image} className="SmallIcon" alt={this.props.imageLabel}/>
+                    <img src={this.props.image} className="SmallIcon" alt={this.props.imageLabel} />
                 }
 
                 <div>{this.props.label}</div>

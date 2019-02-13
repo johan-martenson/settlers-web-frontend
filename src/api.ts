@@ -1,10 +1,10 @@
-import { LargeBuilding, MediumBuilding, SmallBuilding, AnyBuilding } from './buildings'
+import { AnyBuilding, LargeBuilding, MediumBuilding, SmallBuilding } from './buildings';
 
-export type GameId   = string
+export type GameId = string
 export type PlayerId = string
-export type MapId    = string
-export type HouseId  = string
-export type FlagId   = string
+export type MapId = string
+export type HouseId = string
+export type FlagId = string
 
 export type PointString = string;
 
@@ -34,7 +34,7 @@ export interface PointInformation {
     readonly possibleRoadConnections: Point[]
 }
 
-export interface TreeInformation extends Point {}
+export interface TreeInformation extends Point { }
 
 export type TileInformation = "GRASS" | "MOUNTAIN" | "SWAMP" | "WATER" | "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE"
 
@@ -68,15 +68,19 @@ export interface MapInformation {
     title: string
     id: MapId
     maxPlayers: number
+    author: string
+    width: number
+    height: number
+    startingPoints: Point[]
 }
 
-export interface CropInformation extends Point {}
+export interface CropInformation extends Point { }
 
 export interface SignInformation extends Point {
     type: "iron"
 }
 
-export interface StoneInformation extends Point {}
+export interface StoneInformation extends Point { }
 
 export interface WorkerInformation extends Point {
     inside: boolean
@@ -129,22 +133,39 @@ export interface PlayerViewInformation {
 }
 
 async function getGames(): Promise<GameInformation[]> {
-    const response = await fetch("/settlers/api/games", {method: 'get'});
+    const response = await fetch("/settlers/api/games", { method: 'get' });
+
+    return await response.json();
+}
+
+async function addPlayerToGame(gameId: GameId, name: string, color: string): Promise<PlayerInformation> {
+    const response = await fetch("/settlers/api/games/" + gameId + "/players",
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(
+                {
+                    name: name,
+                    color: color
+                }
+            )
+        }
+    )
 
     return await response.json();
 }
 
 async function getMaps(): Promise<MapInformation[]> {
     const response = await fetch("/settlers/api/maps",
-                               {method: 'get'});
+        { method: 'get' });
 
     return await response.json();
 }
 
 
 async function createGame(game: GameToCreate): Promise<GameInformation> {
-    console.log("Creating game: " + JSON.stringify(game));
-
     let gameBody: GameToCreate = {}
 
     if (game.name) {
@@ -159,26 +180,25 @@ async function createGame(game: GameToCreate): Promise<GameInformation> {
         gameBody.players = game.players;
     }
 
-    const response = await fetch("/settlers/api/games",
-                               {method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(gameBody)
-                               });
+    console.log("Creating game: " + JSON.stringify(gameBody));
 
-    const result = await response.json();
-    
-    console.log("Created game, received: " + JSON.stringify(result));
-    
-    return result;
+    const response = await fetch("/settlers/api/games",
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(gameBody)
+        });
+
+    return await response.json();
 }
 
 async function deleteGame(gameId: GameId): Promise<void> {
     console.log("Deleting game: " + gameId);
 
     const response = await fetch("/settlers/api/games/" + gameId,
-                               {method: 'DELETE'});
+        { method: 'DELETE' });
 
     return await response.json();
 }
@@ -187,14 +207,15 @@ async function setMapForGame(mapId: MapId, gameId: GameId): Promise<void> {
     console.log("Setting map to " + mapId + " for game " + gameId);
 
     const response = await fetch("/settlers/api/games/" + gameId,
-                                 {method: 'PATCH',
-                                  headers: {
-                                      'Content-Type': 'application/json'
-                                  },
-                                  body: JSON.stringify({
-                                      mapId: mapId
-                                  })
-                                 });
+        {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                mapId: mapId
+            })
+        });
 
     return;
 }
@@ -203,30 +224,32 @@ async function startGame(gameId: GameId): Promise<GameInformation> {
     console.log("Starting game: " + gameId);
 
     const response = await fetch("/settlers/api/games/" + gameId,
-                               {method: 'PATCH',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    status: 'STARTED'
-                                })
-                               });
+        {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: 'STARTED'
+            })
+        });
 
     return await response.json();
 }
 
 async function attackBuilding(houseId: HouseId, numberOfAttackers: number, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
     const response = await fetch("/settlers/api/games/" + gameId + "/houses/" + houseId,
-                               {method: 'put',
-                                body: JSON.stringify({
-                                    attacked:
-                                    {
-                                        by: playerId,
-                                        attackers: numberOfAttackers
-                                    }
-                                }
-                                                    )
-                               });
+        {
+            method: 'put',
+            body: JSON.stringify({
+                attacked:
+                {
+                    by: playerId,
+                    attackers: numberOfAttackers
+                }
+            }
+            )
+        });
     return await response.json();
 }
 
@@ -244,12 +267,12 @@ async function setSpeed(tickLength: number, gameId: GameId): Promise<void> {
     console.info("Updating speed " + tickLength);
 
     const response = await fetch("/settlers/api/games/" + gameId,
-                               {
-                                   method: 'put',
-                                   body: JSON.stringify({
-                                       tickLength: tickLength
-                                   })
-                               });
+        {
+            method: 'put',
+            body: JSON.stringify({
+                tickLength: tickLength
+            })
+        });
 
     return await response.json();
 }
@@ -258,7 +281,7 @@ async function removeHouse(houseId: HouseId, gameId: GameId): Promise<void> {
 
     console.info("Removing house " + houseId);
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/houses/" + houseId, {method: 'delete'});
+    const response = await fetch("/settlers/api/games/" + gameId + "/houses/" + houseId, { method: 'delete' });
 
     return await response.json();
 }
@@ -267,7 +290,7 @@ async function removeFlag(flagId: string, gameId: GameId): Promise<void> {
 
     console.info("Removing flag " + flagId);
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/flags/" + flagId, {method: 'delete'});
+    const response = await fetch("/settlers/api/games/" + gameId + "/flags/" + flagId, { method: 'delete' });
 
     return await response.json();
 }
@@ -277,12 +300,13 @@ async function createBuilding(houseType: AnyBuilding, point: Point, gameId: Game
     console.info("Creating house " + houseType + " at " + point);
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses",
-                               {method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({type: houseType, x: point.x, y: point.y, playerId: playerId})
-                               });
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ type: houseType, x: point.x, y: point.y, playerId: playerId })
+        });
     return await response.json();
 }
 
@@ -291,11 +315,13 @@ async function createRoad(points: Point[], gameId: GameId, playerId: PlayerId): 
     console.info("Creating road " + JSON.stringify(points));
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/roads",
-                               {method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({points: points, playerId: playerId})});
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ points: points, playerId: playerId })
+        });
     return await response.json();
 }
 
@@ -304,13 +330,13 @@ async function createFlag(point: Point, gameId: GameId, playerId: PlayerId): Pro
     console.info("Creating flag at " + point);
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/flags",
-                               {
-                                   method: 'POST',
-                                   headers: {
-                                       'Content-Type': 'application/json'
-                                   },
-                                   body: JSON.stringify({x: point.x, y: point.y})
-                               });
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ x: point.x, y: point.y })
+        });
     return await response.json();
 }
 
@@ -341,8 +367,6 @@ async function getPlayers(gameId: GameId): Promise<PlayerInformation[]> {
 
     const result = await response.json();
 
-    console.log("Got players: " + JSON.stringify(result));
-    
     return result;
 }
 
@@ -367,19 +391,25 @@ async function getInformationOnPoint(point: Point, gameId: GameId, playerId: Pla
 
     console.info("Get information on point");
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/map/points?x=" + point.x+"&y=" + point.y + "&playerId=" + playerId);
+    const response = await fetch("/settlers/api/games/" + gameId + "/map/points?x=" + point.x + "&y=" + point.y + "&playerId=" + playerId);
     return await response.json();
 }
 
 async function callGeologist(point: Point, gameId: GameId, playerId: PlayerId) {
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/points?x=" + point.x+"&y=" + point.y + "&playerId=" + playerId,
-                               {method: 'put',
-                                body: JSON.stringify(
-                                    {geologistNeeded: true}
-                                )
-                               });
+    const response = await fetch("/settlers/api/games/" + gameId + "/points?x=" + point.x + "&y=" + point.y + "&playerId=" + playerId,
+        {
+            method: 'put',
+            body: JSON.stringify(
+                { geologistNeeded: true }
+            )
+        });
 
+    return await response.json();
+}
+
+async function getTerrainForMap(mapId: MapId): Promise<TerrainInformation> {
+    const response = await fetch('/settlers/api/maps/' + mapId + "/terrain")
     return await response.json();
 }
 
@@ -389,46 +419,47 @@ async function getTerrain(gameId: GameId): Promise<TerrainInformation> {
 }
 
 async function sendScout(point: Point, gameId: GameId, playerId: PlayerId) {
-    const response = await fetch("/settlers/api/games/" + gameId + "/points?x=" + point.x+"&y=" + point.y + "&playerId=" + playerId,
-                               {method: 'put',
-                                body: JSON.stringify(
-                                    {scoutNeeded: true}
-                                )
-                               });
+    const response = await fetch("/settlers/api/games/" + gameId + "/points?x=" + point.x + "&y=" + point.y + "&playerId=" + playerId,
+        {
+            method: 'put',
+            body: JSON.stringify(
+                { scoutNeeded: true }
+            )
+        });
 
     return await response.json();
 }
 
 const SMALL_HOUSES: SmallBuilding[] = ["ForesterHut",
-                    "Woodcutter",
-                    "Well",
-                    "Quarry",
-                    "Barracks",
-                    "GuardHouse",
-                    "HunterHut",
-                    "Fishery",
-                    "GoldMine",
-                    "IronMine",
-                    "CoalMine",
-                    "GraniteMine",
-                  ];
+    "Woodcutter",
+    "Well",
+    "Quarry",
+    "Barracks",
+    "GuardHouse",
+    "HunterHut",
+    "Fishery",
+    "GoldMine",
+    "IronMine",
+    "CoalMine",
+    "GraniteMine",
+];
 
 const MEDIUM_HOUSES: MediumBuilding[] = ["Sawmill",
-                     "WatchTower",
-                     "Mill",
-                     "Bakery",
-                     "Mint",
-                     "SlaughterHouse",
-                     "Catapult",
-                     "Mint"
-                    ];
+    "WatchTower",
+    "Mill",
+    "Bakery",
+    "Mint",
+    "SlaughterHouse",
+    "Catapult",
+    "Mint"
+];
 
 const LARGE_HOUSES: LargeBuilding[] = ["Headquarter",
-                    "Farm",
-                    "PigFarm",
-                    "DonkeyFarm",
-                    "Fortress"
-                   ];
+    "Farm",
+    "PigFarm",
+    "DonkeyFarm",
+    "Fortress"
+];
 
 const materialToColor = new Map<string, string>();
 
@@ -438,30 +469,5 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export {
-    getGameInformation,
-    removeHouse,
-    setSpeed,
-    sendScout,
-    callGeologist,
-    getTerrain,
-    getHouseInformation,
-    getPlayers,
-    getInformationOnPoint,
-    getViewForPlayer,
-    createBuilding,
-    createFlag,
-    createRoad,
-    SMALL_HOUSES,
-    MEDIUM_HOUSES,
-    LARGE_HOUSES,
-    removeFlag,
-    materialToColor,
-    attackBuilding,
-    getGames,
-    getMaps,
-    createGame,
-    deleteGame,
-    startGame,
-    setMapForGame
-};
+export { getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addPlayerToGame };
+

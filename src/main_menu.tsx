@@ -11,6 +11,7 @@ interface MainMenuProps {
     onClose: (() => void)
     onChoose: (() => void)
     onHelp: (() => void)
+    onLeaveGame: (() => void)
 }
 
 interface MainMenuState {
@@ -32,7 +33,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
     async componentDidMount() {
         const game = await getGameInformation(this.props.gameId);
 
-        this.setState({currentSpeed: 50}); //game.tickLength});
+        this.setState({ currentSpeed: 50 }); //game.tickLength});
     }
 
     onOptions() {
@@ -42,7 +43,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
             }
         );
     }
-    
+
     onPlayerSelected(player: PlayerInformation) {
         this.props.onPlayerSelected(player);
     }
@@ -63,7 +64,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
                     <Button label="Options" onButtonClicked={this.props.onChoose} />
 
                     <Button label="Help" onButtonClicked={this.props.onHelp} />
-
+                    <Button label="Leave game" onButtonClicked={this.props.onLeaveGame} />
                 </DialogSection>
 
             </Dialog>

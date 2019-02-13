@@ -1,15 +1,12 @@
 import React, { Component } from 'react';
+import { GameInformation, getGames } from './api';
 import Button from './button';
-import { PlayerId, GameId, GameInformation, getGames } from './api';
-import { GameCreator } from './game_creator';
-import App from './App';
-import { Dialog } from './dialog';
-import { EnteredPlayerInformation } from './fill_in_player_information';
-
 import './game_list.css';
+
 
 interface GameListProps {
     hideStarted: boolean
+    onJoinGame: ((game: GameInformation) => void)
 }
 
 interface GameListState {
@@ -33,7 +30,7 @@ class GameList extends Component<GameListProps, GameListState> {
                 games: games,
             });
     }
-    
+
     render() {
         return (
             <div className="GameList">
@@ -59,16 +56,16 @@ class GameList extends Component<GameListProps, GameListState> {
                                     }
                                 />
 
-                                <Button label="Join" className="Choice" onButtonClicked={() => {}}/>
-                                        
+                                <Button label="Join" className="Choice" onButtonClicked={() => this.props.onJoinGame(game)} />
+
                             </div>);
-                        }
-                    )
+                    }
+                )
                 }
 
-            {!this.state.games &&
-                function () {return (<div>Loading...</div>);} ()
-            }
+                {!this.state.games &&
+                    function () { return (<div>Loading...</div>); }()
+                }
 
             </div>
         );

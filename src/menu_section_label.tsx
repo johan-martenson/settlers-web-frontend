@@ -4,11 +4,11 @@ interface MenuSectionLabelProps {
     label: string
 }
 
-interface MenuSectionLabelState {}
+interface MenuSectionLabelState { }
 
 class MenuSectionLabel extends Component<MenuSectionLabelProps, MenuSectionLabelState> {
     render() {
-        return(
+        return (
             <div className="MenuSectionLabel">{this.props.label}</div>
         );
     }

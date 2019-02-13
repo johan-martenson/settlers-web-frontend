@@ -24,8 +24,8 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         super(props);
 
         const players = props.players || [];
-        
-        this.state = {players: players};
+
+        this.state = { players: players };
     }
 
     addAiPlayer() {
@@ -34,7 +34,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
             type: "COMPUTER",
             color: "#777777"
         };
-        
+
         this.setState(
             {
                 players: this.state.players.concat([aiPlayer])
@@ -47,13 +47,13 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         const players = [...this.state.players];
 
         players[index].name = name;
-        
-        this.setState({players: players});
-        
+
+        this.setState({ players: players });
+
         console.log("Name changed to " + name)
         console.log(index);
     }
-    
+
     removePlayer(player: PlayerType) {
         this.setState(
             {
@@ -61,12 +61,10 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
             }
         );
     }
-    
+
     render() {
 
-        console.log(this.state);
-        
-        return(
+        return (
             <div className="PlayerList">
                 {this.state.players.map(
                     (player, index) => {
@@ -74,23 +72,23 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
                             <div key={index}>
 
                                 {index === this.props.selfPlayerIndex &&
-                                 <Player key={index} isSelf={true}
-                                     onNameChanged={
-                                     (name: string) => {
-                                         this.onNameChanged(name, index);
-                                     }
-                                 }
-                                     player={player} />
+                                    <Player key={index} isSelf={true}
+                                        onNameChanged={
+                                            (name: string) => {
+                                                this.onNameChanged(name, index);
+                                            }
+                                        }
+                                        player={player} />
                                 }
 
                                 {index !== this.props.selfPlayerIndex &&
-                                 <Player key={index} player={player}
-                                     onNameChanged={
-                                     (name: string) => {
-                                         this.onNameChanged(name, index);
-                                     }
-                                 }
-                                     onPlayerRemoved={() => {this.removePlayer(player);}} />
+                                    <Player key={index} player={player}
+                                        onNameChanged={
+                                            (name: string) => {
+                                                this.onNameChanged(name, index);
+                                            }
+                                        }
+                                        onPlayerRemoved={() => { this.removePlayer(player); }} />
                                 }
                             </div>
                         );

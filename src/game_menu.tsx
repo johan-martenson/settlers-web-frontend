@@ -16,6 +16,7 @@ interface GameMenuProps {
     currentShowTitles: boolean
     adjustSpeed: ((speed: number) => void)
     setShowTitles: ((showTitles: boolean) => void)
+    onLeaveGame: (() => void)
 }
 interface GameMenuState {
     state: "MAIN" | "OPTIONS" | "HELP"
@@ -44,13 +45,13 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
     }
 
     onChoose() {
-        this.setState({state: "OPTIONS"}); 
+        this.setState({ state: "OPTIONS" });
     }
-    
+
     onPlayerSelected(player: PlayerInformation) {
         this.props.onPlayerSelected(player);
     }
-    
+
     render() {
 
         return (
@@ -59,10 +60,11 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                     <MainMenu
                         currentPlayerId={this.props.currentPlayerId}
                         gameId={this.props.gameId}
-                        onHelp={() => {this.setState({state: "HELP"})}}
+                        onHelp={() => { this.setState({ state: "HELP" }) }}
                         onClose={this.onClose.bind(this)}
                         onChoose={this.onChoose.bind(this)}
                         onPlayerSelected={this.onPlayerSelected.bind(this)}
+                        onLeaveGame={this.props.onLeaveGame}
                     />
                 }
 
@@ -72,14 +74,14 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                         minZoom={this.props.minZoom}
                         currentZoom={this.props.currentZoom}
                         currentShowTitles={this.props.currentShowTitles}
-                        onClose={() => {this.setState({state: "MAIN"})}}
+                        onClose={() => { this.setState({ state: "MAIN" }) }}
                         onChangedZoom={this.props.onChangedZoom}
                         setShowTitles={this.props.setShowTitles.bind(this)}
                     />
                 }
 
                 {this.state.state === "HELP" &&
-                    <Guide onClose={() => {this.setState({state: "MAIN"})}} />
+                    <Guide onClose={() => { this.setState({ state: "MAIN" }) }} />
                 }
             </div>
         );

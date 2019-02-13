@@ -10,7 +10,7 @@ interface FriendlyFlagInfoProps {
     playerId: PlayerId
     startNewRoad: ((flag: FlagInformation) => void)
 }
-interface FriendlyFlagInfoState {}
+interface FriendlyFlagInfoState { }
 
 class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfoState> {
 
@@ -28,7 +28,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                             async () => {
                                 console.log("Removing flag");
                                 await removeFlag(this.props.flag.id, this.props.gameId);
-                                
+
                                 this.props.closeDialog();
                             }
                         }

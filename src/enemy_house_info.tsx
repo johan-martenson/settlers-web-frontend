@@ -11,16 +11,16 @@ interface EnemyHouseInfoProps {
     closeDialog: (() => void)
 }
 
-interface EnemyHouseInfoState {}
+interface EnemyHouseInfoState { }
 
 class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState> {
 
     render() {
         return (
-            
+
             <Dialog heading={this.props.house.type}>
 
-                <img src="house.png" className="MediumIcon" alt="House"/>
+                <img src="house.png" className="MediumIcon" alt="House" />
 
                 <Button label="Attack"
                     onButtonClicked={

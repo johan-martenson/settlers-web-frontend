@@ -92,7 +92,7 @@ h1 {
 .MenuButtonBar {
     width: 3rem;
     height: 0.2rem;
-    background-color: var(--hover-color);
+    background-color: var(--button-color);
     margin: 0.4rem 0rem;
 }
 
@@ -164,7 +164,7 @@ h1 {
     width: 30%;
     bottom: 0%;
     left: 0;
-    marginLeft: -10%;
+    margin-left: -10%;
     background-color: var(--dialog-background-color);
     z-index: 500;
 }
@@ -372,6 +372,10 @@ h1 {
     clear: both;
 }
 
-.Row > .RowItem {
+.Row > .RowItemLeft {
     float: left;
+}
+
+.Row > .RowItemRight {
+    float: right;
 }

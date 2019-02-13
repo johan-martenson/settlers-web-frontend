@@ -1,14 +1,15 @@
 import React, { Component } from 'react';
-import { Point,
-         PlayerId,
-         GameId,
-         PointInformation,
-         createBuilding,
-         createFlag,
-         SMALL_HOUSES,
-         MEDIUM_HOUSES,
-         LARGE_HOUSES
-       } from './api';
+import {
+    Point,
+    PlayerId,
+    GameId,
+    PointInformation,
+    createBuilding,
+    createFlag,
+    SMALL_HOUSES,
+    MEDIUM_HOUSES,
+    LARGE_HOUSES
+} from './api';
 import { camelCaseToWords } from './utils';
 import Button from './button';
 import houseImageMap from './images';
@@ -81,13 +82,13 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
     canBuildRoad() {
         return this.props.point.is === "flag";
     }
-    
+
     shouldComponentUpdate(nextProps: ConstructionInfoProps, nextState: ConstructionInfoState) {
         return nextState.selected !== this.state.selected ||
             nextState.buildingSizeSelected !== this.state.buildingSizeSelected;
     }
 
-    render () {
+    render() {
 
         let constructionOptions = new Map();
         let constructionInitialSelection = this.canBuildHouse() ? "Buildings" : "FlagsAndRoads";
@@ -115,7 +116,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
         if (this.canBuildLargeHouse()) {
             houseOptions.set("large", "Large");
         }
-        
+
         return (
             <Dialog id="ConstructionInfo" heading="Construction" onCloseDialog={this.props.closeDialog}>
 
@@ -147,8 +148,8 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                     async () => {
                                         console.info("Raising flag");
                                         await createFlag(this.props.point,
-                                                         this.props.gameId,
-                                                         this.props.playerId);
+                                            this.props.gameId,
+                                            this.props.playerId);
 
                                         this.props.closeDialog();
                                     }
@@ -161,7 +162,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                     image="road-1.png"
                                     imageLabel="Road"
                                     onButtonClicked={
-                                        async () =>{
+                                        async () => {
                                             console.info("Starting to build road");
 
                                             await this.props.startNewRoad(this.props.point);
@@ -174,7 +175,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                         </div>
                     </DialogSection>
                 }
-              
+
                 {this.state.selected === "Buildings" &&
                     <SelectableButtonRow values={houseOptions}
                         initialValue={houseInitialSelection}
@@ -207,9 +208,9 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         async () => {
                                             console.info("Creating house");
                                             await createBuilding(house,
-                                                                 this.props.point,
-                                                                 this.props.gameId,
-                                                                 this.props.playerId);
+                                                this.props.point,
+                                                this.props.gameId,
+                                                this.props.playerId);
 
                                             this.props.closeDialog();
                                         }
@@ -221,9 +222,9 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                     </DialogSection>
                 }
 
-                {this.state.selected === "Buildings"          &&
-                 this.canBuildMediumHouse()                   &&
-                 this.state.buildingSizeSelected === "medium" &&
+                {this.state.selected === "Buildings" &&
+                    this.canBuildMediumHouse() &&
+                    this.state.buildingSizeSelected === "medium" &&
                     <DialogSection>
                         {MEDIUM_HOUSES.map((house, index) => {
 
@@ -237,9 +238,9 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         async () => {
                                             console.info("Creating house");
                                             await createBuilding(house,
-                                                                 this.props.point,
-                                                                 this.props.gameId,
-                                                                 this.props.playerId);
+                                                this.props.point,
+                                                this.props.gameId,
+                                                this.props.playerId);
 
                                             this.props.closeDialog();
                                         }
@@ -251,9 +252,9 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                     </DialogSection>
                 }
 
-                {this.state.selected === "Buildings"         &&
-                 this.canBuildLargeHouse()                   &&
-                 this.state.buildingSizeSelected === "large" &&
+                {this.state.selected === "Buildings" &&
+                    this.canBuildLargeHouse() &&
+                    this.state.buildingSizeSelected === "large" &&
                     <DialogSection>
                         {LARGE_HOUSES.map((house, index) => {
 
@@ -271,9 +272,9 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                             async () => {
                                                 console.info("Creating house");
                                                 await createBuilding(house,
-                                                                     this.props.point,
-                                                                     this.props.gameId,
-                                                                     this.props.playerId);
+                                                    this.props.point,
+                                                    this.props.gameId,
+                                                    this.props.playerId);
 
                                                 this.props.closeDialog();
                                             }

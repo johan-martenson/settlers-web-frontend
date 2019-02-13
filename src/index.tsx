@@ -6,7 +6,7 @@ import { Lobby } from './lobby'
 import './index.css';
 import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information';
 
-interface GameInitProps {}
+interface GameInitProps { }
 interface GameInitState {
     state: "ENTER_PLAYER_INFORMATION" | "LOBBY" | "PLAY_GAME"
     player?: EnteredPlayerInformation
@@ -23,6 +23,9 @@ class GameInit extends Component<GameInitProps, GameInitState> {
     }
 
     onPlayerInformationDone(player: EnteredPlayerInformation) {
+
+        console.log("Player entering lobby: " + JSON.stringify(player));
+
         this.setState(
             {
                 player: player,
@@ -30,7 +33,7 @@ class GameInit extends Component<GameInitProps, GameInitState> {
             }
         );
     }
-    
+
     render() {
 
         return (
@@ -41,7 +44,7 @@ class GameInit extends Component<GameInitProps, GameInitState> {
                 }
 
                 {this.state.state === "LOBBY" && this.state.player &&
-                    <Lobby player={this.state.player}/>
+                    <Lobby player={this.state.player} />
                 }
             </div>
         );

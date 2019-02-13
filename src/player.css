@@ -1,11 +1,27 @@
+.PlayerNameLabel {
+    text-align: left;
+}
+
+.SetNameLabel {
+    float: left;
+    width: 10em;
+    text-align: left;
+}
+
 .SetNameField {
     margin-right: var(--button-margin);
-    width: 70%;
     vertical-align: middle;
+    float: left;
+    width: 7em;
 }
 
 .SetNameButton {
     margin-right: var(--button-margin);
-    width: 10%;
     vertical-align: middle;
+    float: right;
+    width: 3em;
+}
+
+.RemovePlayerButton {
+    
 }

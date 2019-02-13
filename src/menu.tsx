@@ -1,17 +1,17 @@
 import React, { Component } from 'react';
 import MenuSectionLabel from './menu_section_label';
 
-interface MenuProps {}
+interface MenuProps { }
 
-interface MenuState {}
+interface MenuState { }
 
 class Menu extends Component<MenuProps, MenuState> {
 
     render() {
         return (
-                <div className="Menu">
-                    {this.props.children}
-                </div>
+            <div className="Menu">
+                {this.props.children}
+            </div>
         );
     }
 }
@@ -22,7 +22,7 @@ interface MenuSectionProps {
     label?: string
 }
 
-interface MenuSectionState {}
+interface MenuSectionState { }
 
 class MenuSection extends Component<MenuSectionProps, MenuSectionState> {
 
@@ -38,7 +38,7 @@ class MenuSection extends Component<MenuSectionProps, MenuSectionState> {
         }
         return (
             <div className={className}>
-                {this.props.label && <MenuSectionLabel label={this.props.label}/>}
+                {this.props.label && <MenuSectionLabel label={this.props.label} />}
                 {this.props.children}
             </div>
         );

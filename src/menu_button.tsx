@@ -4,7 +4,7 @@ interface MenuButtonProps {
     onMenuButtonClicked: (() => void)
 }
 
-interface MenuButtonState {}
+interface MenuButtonState { }
 
 class MenuButton extends Component<MenuButtonProps, MenuButtonState> {
     render() {
@@ -23,9 +23,9 @@ class MenuButton extends Component<MenuButtonProps, MenuButtonState> {
                     }
                 }
             >
-                <div className="MenuButtonBar"/>
-                <div className="MenuButtonBar"/>
-                <div className="MenuButtonBar"/>
+                <div className="MenuButtonBar" />
+                <div className="MenuButtonBar" />
+                <div className="MenuButtonBar" />
             </div>
         );
     }

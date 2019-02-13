@@ -12,7 +12,7 @@ interface FriendlyHouseInfoProps {
     closeDialog: (() => void)
 }
 
-interface FriendlyHouseInfoState {}
+interface FriendlyHouseInfoState { }
 
 class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseInfoState> {
 
@@ -21,7 +21,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
         return (
             <Dialog heading={this.props.house.type}>
 
-                <img src={houseImageMap.get(this.props.house.type)} className="MediumIcon" alt="House"/>
+                <img src={houseImageMap.get(this.props.house.type)} className="MediumIcon" alt="House" />
 
                 {(this.props.house.type === "Headquarter") &&
                     <DialogSection label="Inventory">

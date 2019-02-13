@@ -18,7 +18,7 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
 
         this.state = {}
     }
-    
+
     render() {
 
         return (
@@ -33,7 +33,7 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
                         selectedMap={this.state.map}
                         onMapSelected={
                             (map) => {
-                                this.setState({map: map});
+                                this.setState({ map: map });
                                 this.props.onMapSelected(map);
                             }
                         }
@@ -44,7 +44,7 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
                     <MapList
                         onMapSelected={
                             (map) => {
-                                this.setState({map: map});
+                                this.setState({ map: map });
                                 this.props.onMapSelected(map);
                             }
                         }

@@ -33,7 +33,7 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
     adjustSpeed(speed: number) {
         //FIXME: actually adjust the speed
     }
-    
+
     render() {
         return (
             <Dialog heading="Options" onCloseDialog={this.onClose.bind(this)}>
@@ -53,7 +53,7 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
                         onValueChange={this.props.setShowTitles.bind(this)}
                         initialValue={this.props.currentShowTitles} />
                 </DialogSection>
-                
+
                 <DialogSection label="Game speed">
 
                     <Slider max={10}
@@ -64,8 +64,8 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
                         step={1}
                         onValue={this.adjustSpeed}
                     />
-            </DialogSection>
-        </Dialog>
+                </DialogSection>
+            </Dialog>
         );
     }
 }

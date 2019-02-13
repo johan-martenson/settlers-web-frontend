@@ -26,7 +26,7 @@ class Slider extends Component<SliderProps, SliderState> {
 
     private scaleRef = React.createRef<HTMLDivElement>();
     private indicatorRef = React.createRef<HTMLDivElement>();
-    
+
     constructor(props: SliderProps) {
         super(props);
 
@@ -46,7 +46,7 @@ class Slider extends Component<SliderProps, SliderState> {
 
             return;
         }
-        
+
         this.setState({
             scaleLength: scale.clientWidth
         });
@@ -58,10 +58,10 @@ class Slider extends Component<SliderProps, SliderState> {
 
             return;
         }
-        
+
         indicator.focus();
     }
-    
+
     render() {
         const percentage = (this.state.value - this.props.min) / (this.props.max - this.props.min);
 
@@ -72,19 +72,19 @@ class Slider extends Component<SliderProps, SliderState> {
                         console.info("Decreasing");
 
                         let newValue = 0;
-                       
+
                         if (this.state.value - this.state.step < this.props.min) {
                             newValue = this.props.min;
                         } else {
                             newValue = this.state.value - this.state.step;
                         }
 
-                        this.setState({value: newValue});
+                        this.setState({ value: newValue });
                         this.props.onValue(newValue);
 
                         event.stopPropagation();
                     }
-                } >
+                    } >
                     {this.props.less}
                 </div>
                 <div className="SliderScale" ref={this.scaleRef}
@@ -98,7 +98,7 @@ class Slider extends Component<SliderProps, SliderState> {
 
                                 return;
                             }
-                        
+
                             if (event.target === indicator) {
 
                                 /* Convert to game coordinates */
@@ -123,18 +123,18 @@ class Slider extends Component<SliderProps, SliderState> {
 
                                 return;
                             }
-                        
+
                             /* Convert to game coordinates */
                             const dim = event.currentTarget.getBoundingClientRect();
                             let relativeX = event.clientX - dim.left;
-                        
+
                             relativeX -= immediateState.clickOffset;
 
                             const newPercentage = relativeX / scale.clientWidth;
                             const newValue = (this.props.max - this.props.min) * newPercentage + this.props.min;
 
                             if (newValue >= this.props.min && newValue <= this.props.max) {
-                                this.setState({value: newValue});
+                                this.setState({ value: newValue });
 
                                 this.props.onValue(newValue);
                             }
@@ -143,7 +143,7 @@ class Slider extends Component<SliderProps, SliderState> {
                         }
                     }
                     }
-                  
+
                     onMouseUp={
                         (event: React.MouseEvent) => {
 
@@ -165,33 +165,33 @@ class Slider extends Component<SliderProps, SliderState> {
                         }
                     }
                 >
-                <div className="SliderIndicator"
-                    tabIndex={0}
-                    ref={this.indicatorRef}
-                    style={
-                        {left: "" + (percentage * 100) + "%"}
+                    <div className="SliderIndicator"
+                        tabIndex={0}
+                        ref={this.indicatorRef}
+                        style={
+                            { left: "" + (percentage * 100) + "%" }
+                        }
+                    />
+                </div>
+                <div className="SliderMoreLabel Button"
+                    onClick={() => {
+                        console.info("Decreasing");
+
+                        let newValue = 0;
+
+                        if (this.state.value + this.state.step > this.props.max) {
+                            newValue = this.props.max;
+                        } else {
+                            newValue = this.state.value + this.state.step;
+                        }
+
+                        this.setState({ value: newValue });
+                        this.props.onValue(newValue);
                     }
-                />
-            </div>
-            <div className="SliderMoreLabel Button"
-                onClick={() => {
-                    console.info("Decreasing");
-
-                    let newValue = 0;
-
-                    if (this.state.value + this.state.step > this.props.max) {
-                        newValue = this.props.max;
-                    } else {
-                        newValue = this.state.value + this.state.step;
                     }
-
-                    this.setState({value: newValue});
-                    this.props.onValue(newValue);
-                }
-                }
-            >
-                {this.props.more}
-            </div>
+                >
+                    {this.props.more}
+                </div>
             </MenuSection>
         );
     }

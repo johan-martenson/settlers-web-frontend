@@ -44,7 +44,7 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
             gettingPlayers: false
         });
     }
-    
+
     componentDidMount() {
 
         if (this.state.players.length === 0 && this.state.gettingPlayers === false) {
@@ -56,34 +56,34 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
             this.updatePlayers();
         }
     }
-    
-    render () {
+
+    render() {
         return (
             <div className="PlayerSelect">
-              {this.state.players.map(
-                  (player, index) => {
+                {this.state.players.map(
+                    (player, index) => {
 
-                      if (this.props.currentPlayer && this.props.currentPlayer === player.id) {
-                          return (
-                              <Button label={player.name}
-                                  key={player.id}
-                                  id={player.id}
-                                  selected={true}
-                                  onButtonClicked={() => {this.props.onPlayerSelected(player)}}
-                              />
-                          );
-                      } else {
-                          return (
-                              <Button label={player.name}
-                                  key={player.id}
-                                  id={player.id}
-                                  onButtonClicked={() => {this.props.onPlayerSelected(player)}}
-                              />
-                          );
-                      }
-                  }
-              )
-              }
+                        if (this.props.currentPlayer && this.props.currentPlayer === player.id) {
+                            return (
+                                <Button label={player.name}
+                                    key={player.id}
+                                    id={player.id}
+                                    selected={true}
+                                    onButtonClicked={() => { this.props.onPlayerSelected(player) }}
+                                />
+                            );
+                        } else {
+                            return (
+                                <Button label={player.name}
+                                    key={player.id}
+                                    id={player.id}
+                                    onButtonClicked={() => { this.props.onPlayerSelected(player) }}
+                                />
+                            );
+                        }
+                    }
+                )
+                }
             </div>
         );
     }

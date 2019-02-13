@@ -6,14 +6,14 @@ import {
     ScreenPoint
 } from './game_render';
 
-import { pointToString, pointSetToStringSet } from './utils'
+import { pointToString, pointSetToStringSet, terrainInformationToTerrainList } from './utils'
 
-import FriendlyFlagInfo     from './friendly_flag_info';
-import MenuButton           from './menu_button';
+import FriendlyFlagInfo from './friendly_flag_info';
+import MenuButton from './menu_button';
 import { ConstructionInfo } from './construction_info';
-import FriendlyHouseInfo    from './friendly_house_info';
-import EnemyHouseInfo       from './enemy_house_info';
-import GameMenu             from './game_menu';
+import FriendlyHouseInfo from './friendly_house_info';
+import EnemyHouseInfo from './enemy_house_info';
+import GameMenu from './game_menu';
 
 import Guide from './guide';
 
@@ -93,6 +93,7 @@ interface ShowEnemyHouseInfo {
 interface AppProps {
     selfPlayerId: PlayerId
     gameId: GameId
+    onLeaveGame: (() => void)
 }
 
 interface AppState {
@@ -111,13 +112,13 @@ interface AppState {
 
     newRoad?: Point[]
     possibleRoadConnections?: Point[]
-    
+
     selected: Point
 
     scale: number
 
     terrain: TerrainList
-    
+
     translateX: number
     translateY: number
 
@@ -127,7 +128,7 @@ interface AppState {
     player: PlayerId
 
     activeMenu?: 0 | 1 | 2 | 3 | 4;
-    
+
     showFriendlyHouseInfo?: ShowFriendlyHouseInfo
     showFriendlyFlagInfo?: ShowFriendlyFlagInfo
     showConstructionInfo?: PointInformation
@@ -145,7 +146,7 @@ class App extends Component<AppProps, AppState> {
 
     private keyHandlers: Map<number, (() => void)> = new Map();
     private selfNameRef = React.createRef<HTMLDivElement>();
-    
+
     constructor(props: AppProps) {
         super(props);
 
@@ -182,7 +183,7 @@ class App extends Component<AppProps, AppState> {
         this.moveGameDown = this.moveGameDown.bind(this);
 
         this.closeActiveMenu = this.closeActiveMenu.bind(this);
-        
+
         this.state = {
             houses: [],
             workers: [],
@@ -198,7 +199,7 @@ class App extends Component<AppProps, AppState> {
             animals: [],
             translateX: 0,
             translateY: 0,
-            selected: {x: 0, y: 0},
+            selected: { x: 0, y: 0 },
             scale: 30,
             terrain: [],
             gameWidth: 0,
@@ -212,7 +213,7 @@ class App extends Component<AppProps, AppState> {
 
     toggleDetails() {
         const current = this.state.showTitles || this.state.showAvailableConstruction;
-        
+
         this.setState(
             {
                 showTitles: !current,
@@ -235,7 +236,7 @@ class App extends Component<AppProps, AppState> {
             }
         );
     }
-    
+
     onPlayerSelected(player: PlayerInformation) {
         console.info("Selected player " + JSON.stringify(player));
 
@@ -243,13 +244,13 @@ class App extends Component<AppProps, AppState> {
         let newTranslateY = this.state.translateY;
 
         if (player.centerPoint) {
-            newTranslateX = (globalSyncState.width  / 2) - player.centerPoint.x * this.state.scale;
+            newTranslateX = (globalSyncState.width / 2) - player.centerPoint.x * this.state.scale;
             newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * this.state.scale - globalSyncState.height;
         }
 
         this.setState({
-	    translateX: newTranslateX,
-	    translateY: newTranslateY,
+            translateX: newTranslateX,
+            translateY: newTranslateY,
             player: player.id,
             discoveredPoints: pointSetToStringSet(player.discoveredPoints)
         });
@@ -262,7 +263,6 @@ class App extends Component<AppProps, AppState> {
                 showFriendlyHouseInfo: undefined
             }
         );
-        
     }
 
     showMenu() {
@@ -290,28 +290,28 @@ class App extends Component<AppProps, AppState> {
 
     moveGameUp() {
         this.setState({
-	    translateY: this.state.translateY + 10
+            translateY: this.state.translateY + 10
         });
     }
 
     moveGameDown() {
         this.setState({
-	    translateY: this.state.translateY - 10
+            translateY: this.state.translateY - 10
         });
     }
 
     moveGameRight() {
         this.setState({
-	    translateX: this.state.translateX - 10
+            translateX: this.state.translateX - 10
         });
     }
 
     moveGameLeft() {
         this.setState({
-	    translateX: this.state.translateX + 10
+            translateX: this.state.translateX + 10
         });
     }
-    
+
     zoomIn() {
         this.zoom(this.state.scale + 1);
     }
@@ -325,19 +325,19 @@ class App extends Component<AppProps, AppState> {
         scale = Math.max(scale, MIN_SCALE);
 
         const newTranslateX = globalSyncState.width / 2 - (((globalSyncState.width / 2) - this.state.translateX) / this.state.scale) * scale;
-        const newTranslateY = -globalSyncState.height + (globalSyncState.height - (globalSyncState.height / 2) + this.state.translateY)/this.state.scale * scale + (globalSyncState.height / 2);
+        const newTranslateY = -globalSyncState.height + (globalSyncState.height - (globalSyncState.height / 2) + this.state.translateY) / this.state.scale * scale + (globalSyncState.height / 2);
 
         this.setState({
-	    translateX: newTranslateX,
-	    translateY: newTranslateY,
-	    scale: scale
+            translateX: newTranslateX,
+            translateY: newTranslateY,
+            scale: scale
         });
     }
 
     onSpeedSliderChange(value: number) {
         setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.gameId);
     }
-    
+
     zoomOut() {
         this.zoom(this.state.scale - 1);
     }
@@ -355,20 +355,20 @@ class App extends Component<AppProps, AppState> {
     }
 
     onMouseMove(event: React.MouseEvent) {
-	if (globalSyncState.mouseDown) {
-	    const deltaX = (event.pageX - globalSyncState.mouseDownX);
-	    const deltaY = (event.pageY - globalSyncState.mouseDownY);
+        if (globalSyncState.mouseDown) {
+            const deltaX = (event.pageX - globalSyncState.mouseDownX);
+            const deltaY = (event.pageY - globalSyncState.mouseDownY);
 
             /* Detect move to separate move from click */
-            if (deltaX*deltaX + deltaY*deltaY > 25) {
+            if (deltaX * deltaX + deltaY * deltaY > 25) {
                 globalSyncState.mouseMoving = true;
             }
-            
-	    this.setState({
-		translateX: globalSyncState.translateXAtMouseDown + deltaX,
-		translateY: globalSyncState.translateYAtMouseDown + deltaY
-	    });
-	}
+
+            this.setState({
+                translateX: globalSyncState.translateXAtMouseDown + deltaX,
+                translateY: globalSyncState.translateYAtMouseDown + deltaY
+            });
+        }
 
         event.stopPropagation();
     }
@@ -382,7 +382,7 @@ class App extends Component<AppProps, AppState> {
     async periodicFetch() {
 
         if (this.state.player) {
-        
+
             const view = await getViewForPlayer(this.props.gameId, this.state.player);
 
             this.setState({
@@ -407,13 +407,13 @@ class App extends Component<AppProps, AppState> {
     async componentDidMount() {
 
         if (this.selfNameRef.current) {
-        
+
             // Store the width and height of the canvas when it's been rendered
             globalSyncState.width = this.selfNameRef.current.clientWidth;
             globalSyncState.height = this.selfNameRef.current.clientHeight;
 
             console.info("Screen width: " + globalSyncState.width + ", height: " + globalSyncState.height);
-                        
+
             /* Request focus if the game is not blocked */
             if (!this.state.menuVisible) {
                 console.info("Putting focus on main game screen");
@@ -422,25 +422,15 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Fetch the view for the first time and center on the player's headquarter */
-        const players = await getPlayers(this.props.gameId);
-
-        console.info("Got players: " + JSON.stringify(players));
-
-        this.setState({
-            player: players[0].id
-        });
-
-        const view = await getViewForPlayer(this.props.gameId, players[0].id);
-
-        console.info("Got initial view for player");
+        const view = await getViewForPlayer(this.props.gameId, this.props.selfPlayerId);
 
         // Center the view on the headquarter on the first update
         const headquarter = view.houses.find(h => h.type === "Headquarter");
 
         if (headquarter) {
-                        
-            const translateX = (globalSyncState.width / 2) - headquarter.x*this.state.scale;
-            const translateY = -globalSyncState.height + (globalSyncState.height / 2) + headquarter.y*this.state.scale;
+
+            const translateX = (globalSyncState.width / 2) - headquarter.x * this.state.scale;
+            const translateY = -globalSyncState.height + (globalSyncState.height / 2) + headquarter.y * this.state.scale;
 
             this.setState({
                 houses: view.houses,
@@ -458,7 +448,7 @@ class App extends Component<AppProps, AppState> {
                 translateY: translateY,
                 discoveredPoints: new Set<string>(view.discoveredPoints.map(pointToString))
             });
-            
+
         }
 
         // Start getting game updates continuously from the server
@@ -468,37 +458,7 @@ class App extends Component<AppProps, AppState> {
         if (this.state.terrain.length === 0) {
             const view = await getTerrain(this.props.gameId);
 
-            console.info(JSON.stringify("Got terrain view from server"));
-
-            let start = 1;
-            let count = 0;
-            const terrain = new Array(((view.width * view.height) / 2) + 1);
-
-            for (let y = 1; y < view.height; y++) {
-                for (let x = start; x + 1 < view.width; x+= 2) {
-
-                    const point: Point = {
-                        x: Number(x),
-                        y: Number(y)
-                    };
-
-                    const tile = {
-                        point: point,
-                        straightBelow: vegetationToInt.get(view.straightBelow[count]),
-                        belowToTheRight: vegetationToInt.get(view.belowToTheRight[count])
-                    };
-
-                    terrain[count] = tile;
-
-                    count++;
-                }
-
-                if (start === 1) {
-                    start = 2;
-                } else {
-                    start = 1;
-                }
-            }
+            const terrain = terrainInformationToTerrainList(view);
 
             this.setState({
                 terrain: terrain,
@@ -509,16 +469,16 @@ class App extends Component<AppProps, AppState> {
 
         /* Listen for changes in the window size */
         window.addEventListener("resize",
-                                () => {
-                                    if (this.selfNameRef.current) {
-                                        globalSyncState.width = this.selfNameRef.current.clientWidth;
-                                        globalSyncState.height = this.selfNameRef.current.clientHeight;
-                                    }
-                                }
-                               );
+            () => {
+                if (this.selfNameRef.current) {
+                    globalSyncState.width = this.selfNameRef.current.clientWidth;
+                    globalSyncState.height = this.selfNameRef.current.clientHeight;
+                }
+            }
+        );
     }
 
-    onPointClicked(point: Point) {
+    async onPointClicked(point: Point) {
         console.info("Point clicked");
 
         /* Filter clicks that are really the end of moving the mouse */
@@ -535,19 +495,17 @@ class App extends Component<AppProps, AppState> {
             if (this.state.flags.find((f) => f.x === point.x && f.y === point.y)) {
 
                 console.info("Placing road directly to flag");
-                
-                createRoad(this.state.newRoad.concat(point),
-                           this.props.gameId,
-                           this.state.player).then(
-                           ).catch(
-                           );
+
+                await createRoad(this.state.newRoad.concat(point),
+                    this.props.gameId,
+                    this.state.player);
 
                 this.setState({
                     newRoad: undefined,
                     possibleRoadConnections: []
                 });
 
-            /* If the point is new, add it to the ongoing road */
+                /* If the point is new, add it to the ongoing road */
             } else if (recent.x !== point.x || recent.y !== point.y) {
                 console.info("Adding segment to road (onPointClicked) " + JSON.stringify(point));
 
@@ -556,21 +514,14 @@ class App extends Component<AppProps, AppState> {
                 });
 
                 /* Get the available connections from the added point */
-                getInformationOnPoint(point, this.props.gameId, this.state.player).then(
-                    (data) => {
-                        console.info("Got possible points 2");
+                const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
 
-                        this.setState({
-                            possibleRoadConnections: data.possibleRoadConnections
-                        });
-                    }
-                ).catch(
-                    (reason: any) => {
-                    }
-                );
+                this.setState({
+                    possibleRoadConnections: pointInformation.possibleRoadConnections
+                });
             }
 
-        /* Select the point */
+            /* Select the point */
         } else {
             console.info("Selecting point: " + point.x + ", " + point.y);
             this.setState({
@@ -596,20 +547,20 @@ class App extends Component<AppProps, AppState> {
 
                     if (this.state.newRoad) {
                         createRoad(this.state.newRoad,
-                                   this.props.gameId,
-                                   this.state.player).then(
-                                       (flag) => {
-                                           console.info("Created road");
-                                          
-                                           this.setState({
-                                               newRoad: undefined,
-                                               possibleRoadConnections: undefined
-                                           });
-                                       }
-                                   ).catch(
-                                       (reason: any) => {
-                                       }
-                                   );
+                            this.props.gameId,
+                            this.state.player).then(
+                                (flag) => {
+                                    console.info("Created road");
+
+                                    this.setState({
+                                        newRoad: undefined,
+                                        possibleRoadConnections: undefined
+                                    });
+                                }
+                            ).catch(
+                                (reason: any) => {
+                                }
+                            );
                     }
                 }).catch(
                     (reason: any) => {
@@ -617,7 +568,7 @@ class App extends Component<AppProps, AppState> {
 
             return;
         }
-        
+
         /* Ignore double clicks on undiscovered land */
         if (!this.pointIsDiscovered(point)) {
             console.info("Ignoring un-discovered point");
@@ -638,7 +589,7 @@ class App extends Component<AppProps, AppState> {
 
                 this.setState({
                     menuVisible: false,
-                    showFriendlyHouseInfo: {house: house},
+                    showFriendlyHouseInfo: { house: house },
                     activeMenu: MENU_FRIENDLY_HOUSE
                 });
             } else {
@@ -646,7 +597,7 @@ class App extends Component<AppProps, AppState> {
                 /* Show minimal house info for enemy's house */
                 this.setState({
                     menuVisible: false,
-                    showEnemyHouseInfo: {house: house}
+                    showEnemyHouseInfo: { house: house }
                 });
             }
 
@@ -660,6 +611,14 @@ class App extends Component<AppProps, AppState> {
 
             console.info("Clicked flag");
 
+            console.log(flag);
+            console.log(flag.playerId)
+            console.log(this.state.player);
+            console.log(flag.playerId == this.state.player);
+            console.log(flag.playerId === this.state.player);
+            console.log(typeof flag.playerId);
+            console.log(typeof this.state.player);
+
             /* Show friendly flag dialog */
             if (flag.playerId === this.state.player) {
                 console.info("Friendly flag");
@@ -667,7 +626,7 @@ class App extends Component<AppProps, AppState> {
                 this.setState(
                     {
                         menuVisible: false,
-                        showFriendlyFlagInfo: {flag: flag},
+                        showFriendlyFlagInfo: { flag: flag },
                         activeMenu: MENU_FRIENDLY_FLAG
                     }
                 );
@@ -696,7 +655,7 @@ class App extends Component<AppProps, AppState> {
 
         return true;
     }
-    
+
     onKeyDown(event: React.KeyboardEvent) {
         console.info("Key down: " + event.which);
 
@@ -729,13 +688,13 @@ class App extends Component<AppProps, AppState> {
     }
 
     setShowTitles(showTitles: boolean) {
-        this.setState({showTitles: showTitles});
+        this.setState({ showTitles: showTitles });
     }
-    
+
     copyTouch(touch: React.Touch): StoredTouch {
         return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY };
     }
- 
+
     onTouchStart(event: React.TouchEvent) {
 
         event.preventDefault();
@@ -781,20 +740,20 @@ class App extends Component<AppProps, AppState> {
             if (!touch || !touch.identifier) {
                 continue;
             }
-            
+
             if (globalSyncState.touchMoveOngoing && touch.identifier === globalSyncState.touchIdentifier) {
-	        const deltaX = (touch.pageX - globalSyncState.mouseDownX);
-	        const deltaY = (touch.pageY - globalSyncState.mouseDownY);
+                const deltaX = (touch.pageX - globalSyncState.mouseDownX);
+                const deltaY = (touch.pageY - globalSyncState.mouseDownY);
 
                 /* Detect move to separate move from click */
-                if (deltaX*deltaX + deltaY*deltaY > 25) {
+                if (deltaX * deltaX + deltaY * deltaY > 25) {
                     globalSyncState.mouseMoving = true;
                 }
 
-	        this.setState({
-		    translateX: globalSyncState.translateXAtMouseDown + deltaX,
-		    translateY: globalSyncState.translateYAtMouseDown + deltaY
-	        });
+                this.setState({
+                    translateX: globalSyncState.translateXAtMouseDown + deltaX,
+                    translateY: globalSyncState.translateYAtMouseDown + deltaY
+                });
             }
 
             /* Store ongoing touches just because ... */
@@ -891,6 +850,8 @@ class App extends Component<AppProps, AppState> {
                     newRoad={this.state.newRoad}
                     possibleRoadConnections={this.state.possibleRoadConnections}
                     showAvailableConstruction={this.state.showAvailableConstruction}
+                    width={globalSyncState.width}
+                    height={globalSyncState.height}
                 />
 
                 <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
@@ -908,6 +869,7 @@ class App extends Component<AppProps, AppState> {
                         gameId={this.props.gameId}
                         setShowTitles={this.setShowTitles.bind(this)}
                         currentShowTitles={this.state.showTitles}
+                        onLeaveGame={this.props.onLeaveGame}
                     />
                 }
 
@@ -927,7 +889,7 @@ class App extends Component<AppProps, AppState> {
                         startNewRoad={this.startNewRoad.bind(this)}
                         playerId={this.state.player}
                         gameId={this.props.gameId}
-                   />
+                    />
                 }
 
                 {this.state.showEnemyHouseInfo &&

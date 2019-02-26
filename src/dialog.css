@@ -1,0 +1,55 @@
+.Dialog {
+    padding-left: 2em;
+    padding-right: 2em;
+    margin: 0 auto;
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+    background-color: var(--dialog-background-color);
+    border-radius: var(--dialog-rounded-corner);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.Dialog h2 {
+    text-align: left;
+}
+
+.DialogSection {
+    margin-top: 0;
+    margin-bottom: 0;
+    max-height: 100%;
+}
+
+.DialogSection h3 {
+    margin-top: 0;
+    margin-bottom: 0;
+    text-align: left;
+}
+
+.DialogSection::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+/* Adjust for screens larger than mobile */
+@media screen and (min-width: 1000px) {
+    .Dialog {
+        position: relative;
+        padding-left: 2em;
+        padding-right: 2em;
+        margin: 0 auto;
+        width: 70vw;
+        z-index: 999;
+        background-color: var(--dialog-background-color);
+        border-radius: var(--dialog-rounded-corner);
+        height: 80vh;
+    }
+}
+
+.BottomButtons {
+    display: flex;
+    justify-content: center;
+}

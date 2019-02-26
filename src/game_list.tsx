@@ -7,6 +7,7 @@ import './game_list.css';
 interface GameListProps {
     hideStarted: boolean
     onJoinGame: ((game: GameInformation) => void)
+    onObserveGame: ((game: GameInformation) => void)
 }
 
 interface GameListState {
@@ -48,16 +49,18 @@ class GameList extends Component<GameListProps, GameListState> {
                         return (
                             <div key={index} className="GameItem">
                                 <div className="Title">Title: {game.name}</div>
-                                <Button label="View" className="Choice"
-                                    onButtonClicked={
-                                        () => {
-                                            console.log("Clicked view game " + index);
+                                <div className="GameItemButtons">
+                                    <Button label="View" className="Choice"
+                                        onButtonClicked={
+                                            () => {
+                                                console.log("Clicked view game " + index);
+                                            }
                                         }
-                                    }
-                                />
+                                    />
 
-                                <Button label="Join" className="Choice" onButtonClicked={() => this.props.onJoinGame(game)} />
-
+                                    <Button label="Observe" onButtonClicked={() => this.props.onObserveGame(game)} />
+                                    <Button label="Join" className="Choice" onButtonClicked={() => this.props.onJoinGame(game)} />
+                                </div>
                             </div>);
                     }
                 )

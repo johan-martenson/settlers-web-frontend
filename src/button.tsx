@@ -1,5 +1,8 @@
 import React, { Component } from 'react';
 
+import './App.css'
+import './button.css'
+
 interface ButtonProps {
     selected?: boolean
     className?: string
@@ -38,6 +41,8 @@ class Button extends Component<ButtonProps, ButtonState> {
             className = className + " Disabled"
         }
 
+        const heading = this.props.label ? this.props.label : "";
+
         return (
             <div className={className}
                 id={this.props.id ? this.props.id : ""}
@@ -59,7 +64,7 @@ class Button extends Component<ButtonProps, ButtonState> {
                     <img src={this.props.image} className="SmallIcon" alt={this.props.imageLabel} />
                 }
 
-                <div>{this.props.label}</div>
+                <div>{this.props.children ? this.props.children : heading}</div>
             </div>
         );
     }

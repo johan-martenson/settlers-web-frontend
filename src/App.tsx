@@ -93,6 +93,7 @@ interface ShowEnemyHouseInfo {
 interface AppProps {
     selfPlayerId: PlayerId
     gameId: GameId
+    observe?: boolean
     onLeaveGame: (() => void)
 }
 
@@ -481,6 +482,11 @@ class App extends Component<AppProps, AppState> {
     async onPointClicked(point: Point) {
         console.info("Point clicked");
 
+        /* Ignore clicks if the player is an observer */
+        if (this.props.observe) {
+            return;
+        }
+
         /* Filter clicks that are really the end of moving the mouse */
         if (globalSyncState.mouseMoving) {
             return;
@@ -537,6 +543,11 @@ class App extends Component<AppProps, AppState> {
 
     onDoubleClick(point: Point) {
         console.info("Double click on " + point.x + ", " + point.y);
+
+        /* Ignore double clicks if the player is an observer */
+        if (this.props.observe){
+            return;
+        }
 
         /* First, handle double clicks differently if a new road is being created */
         if (this.state.newRoad) {

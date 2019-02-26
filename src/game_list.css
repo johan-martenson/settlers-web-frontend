@@ -1,29 +1,23 @@
 .GameItem .Title {
-    float:left;
-    width: 60%;
     margin-right: var(--button-margin);
     text-align: left;
 }
 
 .GameItem .Button {
-    float:left;
     margin-right: var(--button-margin);
-    width: 10%;
-}
-
-.GameItem:before,
-.GameItem:after {
-    content: "";
-    display: table;
-}
-
-.GameItem:after {
-    clear: both;
 }
 
 .GameItem {
-    clear: both;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.GameItemButtons{
+    display: flex;
+    flex-direction: row;
 }
 
 .GameList {
+    width: 100%;
 }

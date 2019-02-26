@@ -1,6 +1,5 @@
 .PlayerList .Player {
     border-radius: var(--button-rounded-corner);
-    float:left;
     width: 15em;
     margin: var(--button-margin);
     background-color: lightblue;
@@ -8,20 +7,11 @@
 }
 
 .PlayerList .Button {
-    float:left;
     margin-right: var(--button-margin);
 }
 
-.PlayerList:before,
-.PlayerList:after {
-    content: "";
-    display: table;
-}
-
-.PlayerList:after {
-    clear: both;
-}
-
 .PlayerList {
-    clear: both;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
 }

@@ -1,18 +1,24 @@
+.Row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.Row.MapListItem {
+    margin-bottom: 0.5rem;
+}
+
 .Row > .MapTitle {
-    float: left;
 }
 
 .Row > .MapButtons {
-    float: right;
 }
 
 .MapInformationCard {
-    float: left;
     width: 75%;
-    display: table;
 }
 
 .MapSelectButton {
-    float: right;
     width: 7em;
 }

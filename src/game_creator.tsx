@@ -1,6 +1,5 @@
 import React, { Component, createRef } from 'react';
 import Button from './button';
-import { MapList } from './map_list'
 import {
     MapInformation,
     GameId,
@@ -12,12 +11,11 @@ import {
     setMapForGame
 } from './api';
 
-import MenuSectionLabel from './menu_section_label';
 import ManagePlayers from './manage_players';
 import { Dialog, DialogSection } from './dialog';
 import MapSelection from './map_selection';
 import GameOptions from './game_options'
-import Row from './row'
+import BottomButtons from './bottom_buttons'
 
 interface SelfPlayer {
     name: string
@@ -139,7 +137,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                                 }
                                 }
                             />
-                            <Row>
+                            <BottomButtons>
                                 <Button label="Cancel" onButtonClicked={this.props.onGameCreateCanceled} />
                                 <Button label="Create game"
                                     disabled={!this.state.isNameReady && !this.state.map}
@@ -185,7 +183,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                                         }
                                     }
                                 />
-                            </Row>
+                            </BottomButtons>
                         </DialogSection>
                     </Dialog>
                 }
@@ -195,13 +193,13 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                         <MapSelection onMapSelected={this.onMapSelected.bind(this)} />
                         <ManagePlayers players={this.state.players} selfPlayerIndex={0} />
                         <GameOptions />
-                        <Row>
+                        <BottomButtons>
                             <Button label="Delete game" onButtonClicked={this.onDeleteGame.bind(this)} />
                             <Button label="Start game"
                                 onButtonClicked={this.onStartGame.bind(this)}
                                 disabled={!this.state.map}
                             />
-                        </Row>
+                        </BottomButtons>
                     </Dialog>
                 }
 

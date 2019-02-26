@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import Button from './button';
 import MenuSectionLabel from './menu_section_label';
 
+import './dialog.css'
+
 interface DialogProps {
     closeLabel?: string
     heading?: string

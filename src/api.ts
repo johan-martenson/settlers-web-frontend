@@ -36,13 +36,14 @@ export interface PointInformation {
 
 export interface TreeInformation extends Point { }
 
-export type TileInformation = "GRASS" | "MOUNTAIN" | "SWAMP" | "WATER" | "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE"
+export type TileInformation = "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE" | "SA"
 
 export interface TerrainInformation {
     width: number
     height: number
     straightBelow: TileInformation[]
     belowToTheRight: TileInformation[]
+    heights: { x: number, y: number, height: number }[]
 }
 
 export interface RoadInformation {
@@ -56,7 +57,6 @@ export interface PlayerInformation {
     readonly discoveredPoints: Set<Point>
 }
 
-//FIXME: restrict status to only the allowed values
 export interface GameInformation {
     players: PlayerInformation[]
     id: GameId
@@ -97,14 +97,12 @@ export interface AnimalInformation extends Point {
     percentageTraveled: number
 }
 
-export interface HouseInformation {
+export interface HouseInformation extends Point {
     id: HouseId
     playerId: PlayerId
     type: AnyBuilding
     inventory: Map<string, number>
     state: "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED"
-    x: number
-    y: number
 }
 
 export interface FlagInformation extends Point {

@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Button from './button';
+import './map_selection.css';
 import { MapList } from './map_list'
 import { MapInformation } from './api'
 
@@ -22,7 +23,7 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
     render() {
 
         return (
-            <div>
+            <div className="MapSelection">
 
                 <div>
                     Map: {this.state.map && this.state.map.title}

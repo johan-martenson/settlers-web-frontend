@@ -1,8 +1,9 @@
 .OnOffContainer {
-    width: 5em;
+    width: 4em;
     background-color: lightgray;
     margin: 0;
     height: 2em;
+    border-radius: 0.4rem;
 }
 
 .OnOffMarker {
@@ -10,7 +11,7 @@
     background-color: var(--selected-color);
     height: 100%;
     cursor: pointer;
-    border-radius: 0.2rem;
+    border-radius: 1rem;
 }
 
 .OnOffMarker:hover {
@@ -22,5 +23,6 @@
 }
 
 .Off {
+    background-color: var(--disabled-color);
     float: left
 }

@@ -21,6 +21,10 @@ body {
     background-color: gray;
 }
 
+div {
+    box-sizing: border-box;
+}
+
 .h1 {
     text-transform: capitalize;
 }
@@ -122,21 +126,6 @@ h1 {
     height: 100%;
 }
 
-.Dialog {
-    top: 0;
-    left: 0;
-    padding-left: 2em;
-    padding-right: 2em;
-    margin: 0 auto;
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    z-index: 999;
-    background-color: var(--dialog-background-color);
-    border-radius: var(--dialog-rounded-corner);
-    text-align: center;
-}
-
 .MediumIcon {
     width: 100px;
 }
@@ -147,10 +136,6 @@ h1 {
 
 .RoadIcon {
     width: 200px;
-}
-
-.Dialog h2 {
-    text-align: left;
 }
 
 .TransientErrorMessage {
@@ -173,30 +158,11 @@ h1 {
     float: left;
 }
 
-.DialogSection {
-    margin-top: 0;
-    margin-bottom: 0;
-    max-height: 100%;
-}
-
-.DialogSection h3 {
-    margin-top: 0;
-    margin-bottom: 0;
-    text-align: left;
-}
-
-.DialogSection::after {
-    content: "";
-    clear: both;
-    display: table;
-}
-
 .PanelChoice {
     float: left;
 }
 
 .Choice {
-    float:left;
     margin-right: var(--button-margin);
 }
 
@@ -291,24 +257,6 @@ h1 {
     text-transform: uppercase;
 }
 
-/* Adjust for screens larger than mobile */
-@media screen and (min-width: 1000px) {
-    .Dialog {
-        padding-left: 2em;
-        padding-right: 2em;
-        margin: 0 auto;
-        position: absolute;
-        width: 40%;
-        top: 10%;
-        left: 30%;
-        marginLeft: -20%;
-        z-index: 999;
-        background-color: var(--dialog-background-color);
-        border-radius: var(--dialog-rounded-corner);
-        max-height: 80%;
-    }
-}
-
 .App {
     text-align: center;
 }
@@ -359,23 +307,4 @@ h1 {
 .PageParagraph::first-letter {
 /*    //    text-transform: uppercase bold;*/
     font-weight: bold;
-}
-
-.Row:before,
-.Row:after {
-    content: "";
-    display: table;
-    clear:both;
-}
-
-.Row {
-    clear: both;
-}
-
-.Row > .RowItemLeft {
-    float: left;
-}
-
-.Row > .RowItemRight {
-    float: right;
 }

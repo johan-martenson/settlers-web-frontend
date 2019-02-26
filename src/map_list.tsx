@@ -45,7 +45,7 @@ class MapList extends Component<MapListProps, MapListState> {
                     (map, index) => {
 
                         return (
-                            <RawRow key={index}>
+                            <RawRow key={index} className="MapListItem">
 
                                 <div className="MapInformationCard">
                                     <MapInformationCard map={map} />

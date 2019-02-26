@@ -13,6 +13,7 @@ interface LobbyState {
     gameId?: GameId
     selfPlayerId?: PlayerId
     state: LobbyStates
+    observe?: boolean
 }
 
 interface LobbyProps {
@@ -76,13 +77,19 @@ class Lobby extends Component<LobbyProps, LobbyState> {
 
                 {this.state.state === "LIST_GAMES" &&
                     <Dialog heading="Join an existing game or create a new game" noCloseButton={true}>
-                        <GameList hideStarted={true} onJoinGame={this.onJoinGame.bind(this)} />
+                        <GameList hideStarted={true} onJoinGame={this.onJoinGame.bind(this)} onObserveGame={this.onObserveGame.bind(this)} />
                         <Button label="Create new game" onButtonClicked={this.createNewGame.bind(this)} />
                     </Dialog>
                 }
 
                 {this.state.state === "PLAY_GAME" && this.state.gameId && this.state.selfPlayerId &&
-                    <App gameId={this.state.gameId} selfPlayerId={this.state.selfPlayerId} onLeaveGame={() => this.setState({ state: "LIST_GAMES" })} />
+                    <App gameId={this.state.gameId}
+                        selfPlayerId={this.state.selfPlayerId}
+                        observe={this.state.observe}
+                        onLeaveGame={
+                            () => this.setState({ state: "LIST_GAMES" })
+                        }
+                    />
                 }
 
                 {this.state.state === "WAIT_FOR_GAME" &&
@@ -91,6 +98,16 @@ class Lobby extends Component<LobbyProps, LobbyState> {
 
             </div>
 
+        );
+    }
+
+    onObserveGame(game: GameInformation) {
+        this.setState(
+            {
+                gameId: game.id,
+                observe: true,
+                state: "PLAY_GAME"
+            }
         );
     }
 

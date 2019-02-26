@@ -1,6 +1,9 @@
 import React, { Component } from 'react'
+import './row.css'
 
-interface RawRowProps { }
+interface RawRowProps {
+    className?: string
+}
 
 interface RawRowState { }
 
@@ -8,8 +11,14 @@ class RawRow extends Component<RawRowProps, RawRowState> {
 
     render() {
 
+        let className = "Row";
+
+        if (this.props.className) {
+            className = `${className} ${this.props.className}`;
+        }
+
         return (
-            <div className="Row">
+            <div className={className}>
                 {this.props.children}
             </div>
         );

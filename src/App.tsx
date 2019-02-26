@@ -1,50 +1,15 @@
 import React, { Component } from 'react';
-import {
-    vegetationToInt,
-    GameCanvas,
-    TerrainList,
-    ScreenPoint
-} from './game_render';
-
-import { pointToString, pointSetToStringSet, terrainInformationToTerrainList } from './utils'
-
-import FriendlyFlagInfo from './friendly_flag_info';
-import MenuButton from './menu_button';
-import { ConstructionInfo } from './construction_info';
-import FriendlyHouseInfo from './friendly_house_info';
-import EnemyHouseInfo from './enemy_house_info';
-import GameMenu from './game_menu';
-
-import Guide from './guide';
-
-import {
-    setSpeed,
-    getTerrain,
-    getViewForPlayer,
-    getInformationOnPoint,
-    createFlag,
-    createRoad,
-    getPlayers,
-    PlayerInformation,
-    HouseInformation,
-    WorkerInformation,
-    RoadInformation,
-    FlagInformation,
-    TreeInformation,
-    StoneInformation,
-    BorderInformation,
-    SignInformation,
-    AvailableConstruction,
-    CropInformation,
-    AnimalInformation,
-    PointInformation,
-    PointString,
-    Point,
-    PlayerId,
-    GameId
-} from './api';
-
+import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import './App.css';
+import { ConstructionInfo } from './construction_info';
+import EnemyHouseInfo from './enemy_house_info';
+import FriendlyFlagInfo from './friendly_flag_info';
+import FriendlyHouseInfo from './friendly_house_info';
+import GameMenu from './game_menu';
+import { GameCanvas, TerrainList } from './game_render';
+import Guide from './guide';
+import MenuButton from './menu_button';
+import { pointSetToStringSet, pointToString, terrainInformationToTerrainList } from './utils';
 
 const MENU_MENU = 0;
 const MENU_FRIENDLY_HOUSE = 1;
@@ -545,7 +510,7 @@ class App extends Component<AppProps, AppState> {
         console.info("Double click on " + point.x + ", " + point.y);
 
         /* Ignore double clicks if the player is an observer */
-        if (this.props.observe){
+        if (this.props.observe) {
             return;
         }
 

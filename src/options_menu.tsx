@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Dialog, DialogSection } from './dialog';
-import Slider from './slider';
 import OnOffSlider from './on_off_slider';
+import Slider from './slider';
 
 interface OptionMenuProps {
     onClose: (() => void)

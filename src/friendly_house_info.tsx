@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
+import { GameId, HouseInformation, PlayerId, removeHouse } from './api';
 import Button from './button';
-import { PlayerId, GameId, HouseInformation, removeHouse } from './api';
-import houseImageMap from './images';
-import HeadquarterInfo from './headquarter_info';
 import { Dialog, DialogSection } from './dialog';
+import HeadquarterInfo from './headquarter_info';
+import houseImageMap from './images';
 
 interface FriendlyHouseInfoProps {
     house: HouseInformation

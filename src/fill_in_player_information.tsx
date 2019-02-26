@@ -68,6 +68,5 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
     }
 }
 
-export {
-    FillInPlayerInformation
-};
+export { FillInPlayerInformation };
+

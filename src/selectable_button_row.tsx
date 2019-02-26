@@ -1,6 +1,6 @@
-import React, { Component } from 'react'
-import Button from './button'
-import Row from './row'
+import React, { Component } from 'react';
+import Button from './button';
+import Row from './row';
 
 interface SelectableButtonRowProps {
     values: Map<string, string>

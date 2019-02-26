@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import OptionMenu from './options_menu';
+import { GameId, PlayerId, PlayerInformation } from './api';
 import Guide from './guide';
 import MainMenu from './main_menu';
-import { GameId, PlayerInformation, PlayerId } from './api'
+import OptionMenu from './options_menu';
 
 interface GameMenuProps {
     onCloseMenu: (() => void)

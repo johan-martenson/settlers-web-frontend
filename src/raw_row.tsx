@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import './row.css'
+import React, { Component } from 'react';
+import './row.css';
 
 interface RawRowProps {
     className?: string

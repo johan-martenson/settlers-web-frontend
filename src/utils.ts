@@ -1,4 +1,4 @@
-import { Point, TerrainInformation, TileInformation } from './api'
+import { Point, TerrainInformation, TileInformation } from './api';
 
 const vegetationToInt = new Map<TileInformation, number>();
 
@@ -76,11 +76,5 @@ function terrainInformationToTerrainList(view: TerrainInformation) {
     return terrain;
 }
 
-export {
-    camelCaseToWords,
-    pointToString,
-    pointSetToStringSet,
-    terrainInformationToTerrainList,
-    vegetationToInt,
-    intToVegetationColor
-};
+export { camelCaseToWords, pointToString, pointSetToStringSet, terrainInformationToTerrainList, vegetationToInt, intToVegetationColor };
+

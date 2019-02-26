@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { Dialog, DialogSection } from './dialog';
+import { callGeologist, FlagInformation, GameId, PlayerId, removeFlag, sendScout } from './api';
 import Button from './button';
-import { PlayerId, GameId, FlagInformation, removeFlag, callGeologist, sendScout } from './api';
+import { Dialog, DialogSection } from './dialog';
 
 interface FriendlyFlagInfoProps {
     closeDialog: (() => void)

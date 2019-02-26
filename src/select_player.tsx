@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
+import { getPlayers, PlayerId, PlayerInformation } from './api';
 import Button from './button';
-import { PlayerId, PlayerInformation, getPlayers } from './api';
-import { Player } from './player';
 
 interface SelectPlayerState {
     players: PlayerInformation[];

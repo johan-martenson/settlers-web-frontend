@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
-import { getMaps, MapId, MapInformation } from './api';
+import { getMaps, MapInformation } from './api';
 import Button from './button';
-import MapInformationCard from './map_information_card'
-import Row from './row';
+import MapInformationCard from './map_information_card';
 import './map_list.css';
 import RawRow from './raw_row';
 

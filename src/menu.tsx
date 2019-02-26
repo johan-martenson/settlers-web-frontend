@@ -45,7 +45,5 @@ class MenuSection extends Component<MenuSectionProps, MenuSectionState> {
     }
 }
 
-export {
-    Menu,
-    MenuSection
-};
+export { Menu, MenuSection };
+

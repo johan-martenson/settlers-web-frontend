@@ -1,9 +1,8 @@
 import React, { Component } from 'react';
 import './game_options.css';
 import OnOffSlider from './on_off_slider';
-import Row from './row';
-import SelectableButtonRow from './selectable_button_row';
 import RawRow from './raw_row';
+import SelectableButtonRow from './selectable_button_row';
 
 interface GameOptionsProps { }
 interface GameOptionsState { }

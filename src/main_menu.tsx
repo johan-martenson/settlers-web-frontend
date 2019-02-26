@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { Dialog, DialogSection } from './dialog';
+import { GameId, getGameInformation, PlayerId, PlayerInformation } from './api';
 import Button from './button';
-import { GameId, PlayerInformation, PlayerId, getGameInformation } from './api';
+import { Dialog, DialogSection } from './dialog';
 import SelectPlayer from './select_player';
 
 interface MainMenuProps {

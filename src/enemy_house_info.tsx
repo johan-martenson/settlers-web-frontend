@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
+import { attackBuilding, GameId, HouseInformation, PlayerId } from './api';
 import Button from './button';
-import { PlayerId, GameId, HouseInformation, attackBuilding } from './api';
 import { Dialog } from './dialog';
-import { AnyBuilding } from './buildings';
 
 interface EnemyHouseInfoProps {
     house: HouseInformation

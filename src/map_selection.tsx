@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
-import Button from './button';
+import { MapInformation } from './api';
+import { MapList } from './map_list';
 import './map_selection.css';
-import { MapList } from './map_list'
-import { MapInformation } from './api'
 
 interface MapSelectionProps {
     onMapSelected: ((map: MapInformation) => void)

@@ -1,21 +1,10 @@
 import React, { Component } from 'react';
-import {
-    Point,
-    PlayerId,
-    GameId,
-    PointInformation,
-    createBuilding,
-    createFlag,
-    SMALL_HOUSES,
-    MEDIUM_HOUSES,
-    LARGE_HOUSES
-} from './api';
-import { camelCaseToWords } from './utils';
+import { createBuilding, createFlag, GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api';
 import Button from './button';
-import houseImageMap from './images';
 import { Dialog, DialogSection } from './dialog';
-import Row from './row'
-import SelectableButtonRow from './selectable_button_row'
+import houseImageMap from './images';
+import SelectableButtonRow from './selectable_button_row';
+import { camelCaseToWords } from './utils';
 
 interface ConstructionInfoProps {
     selected?: "Buildings" | "FlagsAndRoads"
@@ -293,3 +282,4 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 }
 
 export { ConstructionInfo };
+

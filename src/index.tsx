@@ -1,10 +1,9 @@
 import React, { Component } from 'react';
-
 import ReactDOM from 'react-dom';
-import App from './App';
-import { Lobby } from './lobby'
-import './index.css';
 import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information';
+import './index.css';
+import { Lobby } from './lobby';
+
 
 interface GameInitProps { }
 interface GameInitState {

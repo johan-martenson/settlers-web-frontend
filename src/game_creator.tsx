@@ -1,21 +1,12 @@
 import React, { Component, createRef } from 'react';
+import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame } from './api';
+import BottomButtons from './bottom_buttons';
 import Button from './button';
-import {
-    MapInformation,
-    GameId,
-    PlayerId,
-    GameInformation,
-    createGame,
-    deleteGame,
-    startGame,
-    setMapForGame
-} from './api';
-
-import ManagePlayers from './manage_players';
 import { Dialog, DialogSection } from './dialog';
+import GameOptions from './game_options';
+import ManagePlayers from './manage_players';
 import MapSelection from './map_selection';
-import GameOptions from './game_options'
-import BottomButtons from './bottom_buttons'
+
 
 interface SelfPlayer {
     name: string
@@ -208,6 +199,5 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
     }
 }
 
-export {
-    GameCreator
-};
+export { GameCreator };
+

@@ -4,7 +4,6 @@ import Card from './card';
 import './player.css';
 import RawRow from './raw_row';
 
-
 export interface IPlayer {
     type: string;
     name: string;

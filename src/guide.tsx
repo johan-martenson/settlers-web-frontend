@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import houseImageMap from './images';
+import { AnyBuilding } from './buildings';
 import Button from './button';
 import { Dialog } from './dialog';
 import { HELP_PAGES, PageType } from './help_pages';
-import { AnyBuilding } from './buildings';
+import houseImageMap from './images';
 
 interface GuideProps {
     onClose: (() => void)

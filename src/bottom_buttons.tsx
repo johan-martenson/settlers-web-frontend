@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import './dialog.css'
+import React, { Component } from 'react';
+import './dialog.css';
 
 interface BottomButtonsProps {
     children: (string | JSX.Element | false | string | undefined)[]

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getTerrainForMap, MapId, MapInformation } from './api';
+import { getTerrainForMap, MapInformation } from './api';
 import Button from './button';
 import Card from './card';
 import { intToVegetationColor, TerrainList } from './game_render';

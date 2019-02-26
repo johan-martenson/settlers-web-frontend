@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TileInformation, TreeInformation, WorkerInformation } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import houseImageMap from './images';
-import { camelCaseToWords, pointToString, intToVegetationColor, vegetationToInt } from './utils';
+import { camelCaseToWords, intToVegetationColor, pointToString, vegetationToInt } from './utils';
 
 
 function stringToPoint(pointString: string): Point {
@@ -201,6 +201,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx.save();
 
             ctx.fillStyle = colorBelow;
+            //ctx.createLinearGradient(x0, y0, x1, y1);
 
             ctx.beginPath()
 

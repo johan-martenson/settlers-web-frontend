@@ -1,15 +1,12 @@
-import React from 'react';
-import { storiesOf } from '@storybook/react';
-import { linkTo } from '@storybook/addon-links';
 import { action } from '@storybook/addon-actions';
+import { storiesOf } from '@storybook/react';
+import React from 'react';
 import Button from '../button';
-import Welcome from './Welcome';
-import Card from '../card'
-import OnOffSlider from '../on_off_slider'
-import { Player } from '../player'
-import Slider from '../slider'
-import { MapList } from '../map_list';
+import Card from '../card';
 import MapInformationCard from '../map_information_card';
+import OnOffSlider from '../on_off_slider';
+import { Player } from '../player';
+import Slider from '../slider';
 
 storiesOf('Button', module)
   .add('with text', () => (
@@ -75,13 +72,13 @@ const maps = [
     width: 100,
     height: 100,
     startingPoints: [
-      {x: 2, y: 2},
-      {x: 23, y: 23},
-      {x: 75, y: 75},
-      {x: 70, y: 20},
-      {x: 20, y: 70},
-      {x: 2, y: 15},
-      {x: 40, y: 5},
+      { x: 2, y: 2 },
+      { x: 23, y: 23 },
+      { x: 75, y: 75 },
+      { x: 70, y: 20 },
+      { x: 20, y: 70 },
+      { x: 2, y: 15 },
+      { x: 40, y: 5 },
     ]
   }
 ]

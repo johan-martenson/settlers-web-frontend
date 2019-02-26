@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { GameId, PlayerId, HouseInformation, getHouseInformation } from './api';
+import { GameId, getHouseInformation, HouseInformation, PlayerId } from './api';
 
 interface HeadquarterInfoProps {
     house: HouseInformation

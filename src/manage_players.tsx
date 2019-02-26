@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import Button from './button';
 import { Player } from './player';
-
 import './select_player.css';
 
 export interface PlayerType {

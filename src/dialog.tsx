@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import Button from './button';
+import './dialog.css';
 import MenuSectionLabel from './menu_section_label';
 
-import './dialog.css'
 
 interface DialogProps {
     closeLabel?: string
@@ -68,6 +68,5 @@ class DialogSection extends Component<DialogSectionProps, DialogSectionState> {
     }
 }
 
-export {
-    Dialog, DialogSection
-};
+export { Dialog, DialogSection };
+

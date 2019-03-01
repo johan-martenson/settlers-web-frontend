@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation, HeightInformation } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HeightInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import houseImageMap from './images';
-import { camelCaseToWords, getNormalForTriangle, intToVegetationColor, Point3D, pointToString, vegetationToInt, getDotProduct } from './utils';
+import { camelCaseToWords, getDotProduct, getNormalForTriangle, intToVegetationColor, pointToString, vegetationToInt } from './utils';
 
 
 function stringToPoint(pointString: string): Point {
@@ -272,16 +272,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx.save();
 
             if (colorBelow === 'green') {
-                let rgb = [0, 150  + (20 * Math.abs(intensity1)), 0];
+                let rgb = [0, 150 + (20 * Math.abs(intensity1)), 0];
 
                 const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
 
                 ctx.fillStyle = fillStyle;
             } else if (colorBelow === 'gray') {
                 let rgb = [
-                    150  + (20 * Math.abs(intensity1)), 
-                    150  + (20 * Math.abs(intensity1)), 
-                    150  + (20 * Math.abs(intensity1)), 
+                    150 + (20 * Math.abs(intensity1)),
+                    150 + (20 * Math.abs(intensity1)),
+                    150 + (20 * Math.abs(intensity1)),
                 ];
 
                 const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
@@ -316,16 +316,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const intensity2 = this.getBrightnessForTriangle(gamePoint, gamePointRight, gamePointDownRight, lightVector);
             if (colorDownRight === 'green') {
-                let rgb = [0, 150  + (20 * Math.abs(intensity2)), 0];
+                let rgb = [0, 150 + (20 * Math.abs(intensity2)), 0];
 
                 const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
 
                 ctx.fillStyle = fillStyle;
             } else if (colorBelow === 'gray') {
                 let rgb = [
-                    150  + (20 * Math.abs(intensity2)), 
-                    150  + (20 * Math.abs(intensity2)), 
-                    150  + (20 * Math.abs(intensity2)), 
+                    150 + (20 * Math.abs(intensity2)),
+                    150 + (20 * Math.abs(intensity2)),
+                    150 + (20 * Math.abs(intensity2)),
                 ];
 
                 const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';

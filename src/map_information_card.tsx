@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 import { getTerrainForMap, MapInformation } from './api';
 import Button from './button';
 import Card from './card';
+import ExpandCollapseToggle from './expand_collapse_toggle';
 import { intToVegetationColor, TerrainList } from './game_render';
 import './map_information_card.css';
 import RawRow from './raw_row';
 import { terrainInformationToTerrainList } from './utils';
-import ExpandCollapseToggle from './expand_collapse_toggle';
 
 interface MapThumbnailProps {
     map: MapInformation

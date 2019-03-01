@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation, HeightInformation } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HeightInformation, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import './App.css';
 import { ConstructionInfo } from './construction_info';
 import EnemyHouseInfo from './enemy_house_info';

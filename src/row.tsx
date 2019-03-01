@@ -19,8 +19,6 @@ class Row extends Component<RowProps, RowState> {
             className = className + " " + this.props.className;
         }
 
-        console.log(className);
-
         if (this.props.align && this.props.align === "right") {
             childClassName = "RowItemRight";
         }

@@ -5,7 +5,6 @@ import './map_list.css';
 
 interface MapListProps {
     onMapSelected: ((map: MapInformation) => void)
-    selectedMap?: MapInformation
 }
 
 interface MapListState {
@@ -43,7 +42,7 @@ class MapList extends Component<MapListProps, MapListState> {
 
                         return (
                             <div key={index} className="MapListItem">
-                                <MapInformationCard map={map} onMapSelected={this.onMapSelected.bind(this)}/>
+                                <MapInformationCard map={map} onMapSelected={this.onMapSelected.bind(this)} />
                             </div>
                         );
                     }

@@ -1,8 +1,8 @@
 import React, { Component, createRef } from 'react';
 import Button from './button';
 import Card from './card';
-import './player.css';
 import ExpandCollapseToggle from './expand_collapse_toggle';
+import './player.css';
 
 export interface IPlayer {
     type: string;

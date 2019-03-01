@@ -28,28 +28,14 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
                     Map: {this.state.map && this.state.map.title}
                 </div>
 
-                {this.state.map &&
-                    <MapList
-                        selectedMap={this.state.map}
-                        onMapSelected={
-                            (map) => {
-                                this.setState({ map: map });
-                                this.props.onMapSelected(map);
-                            }
+                <MapList
+                    onMapSelected={
+                        (map) => {
+                            this.setState({ map: map });
+                            this.props.onMapSelected(map);
                         }
-                    />
-                }
-
-                {!this.state.map &&
-                    <MapList
-                        onMapSelected={
-                            (map) => {
-                                this.setState({ map: map });
-                                this.props.onMapSelected(map);
-                            }
-                        }
-                    />
-                }
+                    }
+                />
             </div>
         );
     }

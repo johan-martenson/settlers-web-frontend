@@ -10,6 +10,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 .Dialog h2 {
@@ -46,6 +48,8 @@
         background-color: var(--dialog-background-color);
         border-radius: var(--dialog-rounded-corner);
         height: 80vh;
+        margin-top: auto;
+        margin-bottom: auto;
     }
 }
 

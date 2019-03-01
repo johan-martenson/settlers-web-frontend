@@ -2,12 +2,11 @@ import React, { Component, createRef } from 'react';
 import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame } from './api';
 import BottomButtons from './bottom_buttons';
 import Button from './button';
-import { Dialog, DialogSection } from './dialog';
+import { Dialog } from './dialog';
+import './game_creator.css';
 import GameOptions from './game_options';
 import ManagePlayers from './manage_players';
 import MapSelection from './map_selection';
-import './game_creator.css';
-
 
 interface SelfPlayer {
     name: string

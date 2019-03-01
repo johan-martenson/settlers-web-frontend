@@ -76,5 +76,63 @@ function terrainInformationToTerrainList(view: TerrainInformation) {
     return terrain;
 }
 
-export { camelCaseToWords, pointToString, pointSetToStringSet, terrainInformationToTerrainList, vegetationToInt, intToVegetationColor };
+export interface Point3D {
+    x: number
+    y: number
+    z: number
+}
+
+interface Vector {
+    x: number
+    y: number
+    z: number
+}
+
+function vectorFromPoints(p1: Point3D, p2: Point3D): Vector {
+    return {
+        x: p1.x - p2.x,
+        y: p1.y - p2.y,
+        z: p1.z - p2.z
+    };
+}
+
+function crossProduct(vector1: Vector, vector2: Vector): Vector {
+    return {
+        x: vector1.y * vector2.z - vector1.z * vector2.y,
+        y: vector1.z * vector2.x - vector1.x * vector2.z,
+        z: vector1.x * vector2.y - vector1.y * vector2.x
+    }
+}
+
+function lengthOfVector(vector: Vector): number {
+    return Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+}
+
+function normalize(vector: Vector): Vector {
+    const length = lengthOfVector(vector);
+
+    return {
+        x: vector.x / length,
+        y: vector.y / length,
+        z: vector.z / length
+    }
+}
+
+function getNormalForTriangle(p1: Point3D, p2: Point3D, p3: Point3D) {
+
+    const vector1 = vectorFromPoints(p1, p2);
+    const vector2 = vectorFromPoints(p1, p3);
+
+    const normal = crossProduct(vector1, vector2);
+
+    const normalized = normalize(normal);
+
+    return normalized;
+}
+
+function getDotProduct(v1: Vector, v2: Vector): number {
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+export { getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, pointSetToStringSet, terrainInformationToTerrainList, vegetationToInt, intToVegetationColor };
 

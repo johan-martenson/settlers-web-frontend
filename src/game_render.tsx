@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation, HeightInformation } from './api';
 import houseImageMap from './images';
-import { camelCaseToWords, intToVegetationColor, pointToString, vegetationToInt } from './utils';
+import { camelCaseToWords, getNormalForTriangle, intToVegetationColor, Point3D, pointToString, vegetationToInt, getDotProduct } from './utils';
 
 
 function stringToPoint(pointString: string): Point {
@@ -30,9 +30,12 @@ export interface Tile {
 
 export type TerrainList = Array<Tile>
 
+export type HeightList = Array<HeightInformation>
+
 interface GameCanvasProps {
     scale: number
     terrain: TerrainList
+    heights: HeightList
     translateX: number
     translateY: number
     screenWidth: number
@@ -67,11 +70,13 @@ interface GameCanvasState {
     hoverPoint?: Point
     context?: CanvasRenderingContext2D
     images: Map<string, HTMLImageElement>
+    builtHeightMap: boolean
 }
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     private selfRef = React.createRef<HTMLCanvasElement>();
+    heights: number[][]
 
     constructor(props: GameCanvasProps) {
         super(props);
@@ -81,14 +86,46 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.screenPointToGamePoint = this.screenPointToGamePoint.bind(this);
         this.onClick = this.onClick.bind(this);
         this.onDoubleClick = this.onDoubleClick.bind(this);
+        this.getHeightForPoint = this.getHeightForPoint.bind(this);
+        this.pointToPoint3D = this.pointToPoint3D.bind(this);
 
         this.state = {
-            images: new Map()
+            images: new Map(),
+            builtHeightMap: false
         };
 
         this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", "flag.png"]);
 
         this.loadImages(Array.from(new Set(houseImageMap.values())));
+
+        /* Create the height array */
+        this.heights = Array<Array<number>>();
+
+        /* Assign heights */
+        if (this.props.heights && this.props.heights.length > 0) {
+            this.buildHeightMap();
+        }
+    }
+
+    buildHeightMap() {
+
+        for (let x = 0; x <= this.props.width; x++) {
+            this.heights[x] = new Array<number>();
+
+            for (let y = 0; y <= this.props.height; y++) {
+                this.heights[x][y] = 0;
+            }
+        }
+
+        for (const heightInformation of this.props.heights) {
+            const x = heightInformation.x;
+            const y = heightInformation.y;
+            const height = heightInformation.height;
+
+            this.heights[x][y] = height;
+        }
+
+        this.setState({ builtHeightMap: true });
     }
 
     loadImages(sources: string[]) {
@@ -140,8 +177,33 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         return true;
     }
 
+    getHeightForPoint(point: Point) {
+        try {
+            const height = this.heights[point.x][point.y];
+            return this.heights[point.x][point.y];
+        } catch (e) {
+        }
+
+        return this.heights[point.x][point.y];
+    }
+
+    pointToPoint3D(point: Point) {
+        const height = this.getHeightForPoint(point)
+        return {
+            x: point.x,
+            y: point.y,
+            z: height
+        };
+    }
+
     componentDidUpdate() {
 
+        /* Handle update of heights if needed */
+        if (!this.state.builtHeightMap && this.props.heights && this.props.heights.length > 0) {
+            this.buildHeightMap();
+        }
+
+        /* Draw */
         if (!this.selfRef.current) {
             console.log("ERROR: no self ref");
             return;
@@ -182,14 +244,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue;
             }
 
-            const point = this.gamePointToScreenPoint(tile.point);
-            const right = this.gamePointToScreenPoint({ x: tile.point.x + 2, y: tile.point.y });
-            const downLeft = this.gamePointToScreenPoint({ x: tile.point.x - 1, y: tile.point.y - 1 });
-            const downRight = this.gamePointToScreenPoint({ x: tile.point.x + 1, y: tile.point.y - 1 });
+            const gamePoint = tile.point;
+            const gamePointRight = { x: tile.point.x + 2, y: tile.point.y };
+            const gamePointDownLeft = { x: tile.point.x - 1, y: tile.point.y - 1 };
+            const gamePointDownRight = { x: tile.point.x + 1, y: tile.point.y - 1 };
+
+            const point = this.gamePointToScreenPoint(gamePoint);
+            const right = this.gamePointToScreenPoint(gamePointRight);
+            const downLeft = this.gamePointToScreenPoint(gamePointDownLeft);
+            const downRight = this.gamePointToScreenPoint(gamePointDownRight);
 
             if (right.x < 0 || downLeft.x > width || downLeft.y < 0 || point.y > height) {
                 continue;
             }
+
+            const lightVector = { x: -1, y: -1, z: 0 };
 
             /* Draw the tile right below */
             const colorBelow = intToVegetationColor.get(tile.straightBelow);
@@ -198,9 +267,30 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue;
             }
 
+            const intensity1 = this.getBrightnessForTriangle(gamePoint, gamePointDownLeft, gamePointDownRight, lightVector);
+
             ctx.save();
 
-            ctx.fillStyle = colorBelow;
+            if (colorBelow === 'green') {
+                let rgb = [0, 150  + (20 * Math.abs(intensity1)), 0];
+
+                const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+
+                ctx.fillStyle = fillStyle;
+            } else if (colorBelow === 'gray') {
+                let rgb = [
+                    150  + (20 * Math.abs(intensity1)), 
+                    150  + (20 * Math.abs(intensity1)), 
+                    150  + (20 * Math.abs(intensity1)), 
+                ];
+
+                const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+
+                ctx.fillStyle = fillStyle;
+            } else {
+                ctx.fillStyle = colorBelow;
+            }
+
             //ctx.createLinearGradient(x0, y0, x1, y1);
 
             ctx.beginPath()
@@ -224,7 +314,26 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             ctx.save();
 
-            ctx.fillStyle = colorDownRight;
+            const intensity2 = this.getBrightnessForTriangle(gamePoint, gamePointRight, gamePointDownRight, lightVector);
+            if (colorDownRight === 'green') {
+                let rgb = [0, 150  + (20 * Math.abs(intensity2)), 0];
+
+                const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+
+                ctx.fillStyle = fillStyle;
+            } else if (colorBelow === 'gray') {
+                let rgb = [
+                    150  + (20 * Math.abs(intensity2)), 
+                    150  + (20 * Math.abs(intensity2)), 
+                    150  + (20 * Math.abs(intensity2)), 
+                ];
+
+                const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+
+                ctx.fillStyle = fillStyle;
+            } else {
+                ctx.fillStyle = colorDownRight;
+            }
 
             ctx.beginPath()
 
@@ -802,6 +911,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             ctx.restore();
         }
+    }
+
+    private getBrightnessForTriangle(gamePoint: Point, gamePointDownLeft: { x: number; y: number; }, gamePointDownRight: { x: number; y: number; }, lightVector: { x: number; y: number; z: number; }) {
+        const points3d = [
+            this.pointToPoint3D(gamePoint),
+            this.pointToPoint3D(gamePointDownLeft),
+            this.pointToPoint3D(gamePointDownRight)
+        ];
+        const normal = getNormalForTriangle(points3d[0], points3d[1], points3d[2]);
+        const alignment = getDotProduct(normal, lightVector);
+        return alignment;
     }
 
     saveContext(context: CanvasRenderingContext2D) {

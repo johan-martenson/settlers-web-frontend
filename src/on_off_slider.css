@@ -4,6 +4,8 @@
     margin: 0;
     height: 2em;
     border-radius: 0.4rem;
+    display: flex;
+    flex-direction: row;
 }
 
 .OnOffMarker {
@@ -19,10 +21,10 @@
 }
 
 .On {
-    float: right
+    margin-left: auto;
 }
 
 .Off {
     background-color: var(--disabled-color);
-    float: left
+    margin-right: auto;
 }

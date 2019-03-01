@@ -4,9 +4,12 @@
     text-align: left;
 }
 
-.ExpandCollapseButton {
-    width: 10em;
+.ExpandAndSelectButtons {
+    width: 7em;
     vertical-align: top;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
 }
 
 .MapThumbnail {
@@ -17,4 +20,11 @@
 
 .MapCardAttribute {
     text-align: left;
+}
+
+.MapCardTop {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
 }

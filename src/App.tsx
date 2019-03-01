@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation, HeightInformation } from './api';
 import './App.css';
 import { ConstructionInfo } from './construction_info';
 import EnemyHouseInfo from './enemy_house_info';
@@ -84,6 +84,7 @@ interface AppState {
     scale: number
 
     terrain: TerrainList
+    heights: HeightInformation[]
 
     translateX: number
     translateY: number
@@ -163,11 +164,12 @@ class App extends Component<AppProps, AppState> {
             showAvailableConstruction: false,
             crops: [],
             animals: [],
+            terrain: [],
+            heights: [],
             translateX: 0,
             translateY: 0,
             selected: { x: 0, y: 0 },
             scale: 30,
-            terrain: [],
             gameWidth: 0,
             gameHeight: 0,
             player: props.selfPlayerId,
@@ -422,14 +424,15 @@ class App extends Component<AppProps, AppState> {
 
         // Get the terrain once
         if (this.state.terrain.length === 0) {
-            const view = await getTerrain(this.props.gameId);
+            const terrain = await getTerrain(this.props.gameId);
 
-            const terrain = terrainInformationToTerrainList(view);
+            const terrainList = terrainInformationToTerrainList(terrain);
 
             this.setState({
-                terrain: terrain,
-                gameWidth: view.width,
-                gameHeight: view.height
+                terrain: terrainList,
+                gameWidth: terrain.width,
+                gameHeight: terrain.height,
+                heights: terrain.heights
             });
         }
 
@@ -828,6 +831,7 @@ class App extends Component<AppProps, AppState> {
                     showAvailableConstruction={this.state.showAvailableConstruction}
                     width={globalSyncState.width}
                     height={globalSyncState.height}
+                    heights={this.state.heights}
                 />
 
                 <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />

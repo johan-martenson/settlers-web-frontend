@@ -6,6 +6,7 @@ import { intToVegetationColor, TerrainList } from './game_render';
 import './map_information_card.css';
 import RawRow from './raw_row';
 import { terrainInformationToTerrainList } from './utils';
+import ExpandCollapseToggle from './expand_collapse_toggle';
 
 interface MapThumbnailProps {
     map: MapInformation
@@ -119,6 +120,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
 
 interface MapInformationCardProps {
     map: MapInformation
+    onMapSelected?: ((map: MapInformation) => void)
 }
 
 interface MapInformationCardState {
@@ -133,22 +135,23 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
         this.state = { expanded: false };
     }
 
+    onMapSelected() {
+        if (this.props.onMapSelected) {
+            this.props.onMapSelected(this.props.map);
+        }
+    }
+
     render() {
         return (
             <Card>
-                <RawRow>
+                <div className="MapCardTop">
                     <div className="MapCardTitle">{this.props.map.title}</div>
 
-                    <div className="ExpandCollapseButton">
-                        {!this.state.expanded &&
-                            <Button label="Expand" onButtonClicked={() => this.setState({ expanded: true })} />
-                        }
-
-                        {this.state.expanded &&
-                            <Button label="Collapse" onButtonClicked={() => this.setState({ expanded: false })} />
-                        }
+                    <div className="ExpandAndSelectButtons">
+                        <Button onButtonClicked={() => this.onMapSelected()}>Select</Button>
+                        <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
                     </div>
-                </RawRow>
+                </div>
 
                 <div style={{ display: this.state.expanded ? undefined : "none" }}>
                     <RawRow>

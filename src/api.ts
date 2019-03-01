@@ -38,12 +38,16 @@ export interface TreeInformation extends Point { }
 
 export type TileInformation = "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE" | "SA"
 
+export interface HeightInformation extends Point{
+    height: number
+}
+
 export interface TerrainInformation {
     width: number
     height: number
     straightBelow: TileInformation[]
     belowToTheRight: TileInformation[]
-    heights: { x: number, y: number, height: number }[]
+    heights: HeightInformation[]
 }
 
 export interface RoadInformation {

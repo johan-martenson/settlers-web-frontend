@@ -5,20 +5,18 @@
     align-items: center;
 }
 
-.Row.MapListItem {
+.MapListItem {
     margin-bottom: 0.5rem;
 }
 
-.Row > .MapTitle {
-}
-
-.Row > .MapButtons {
-}
-
 .MapInformationCard {
-    width: 75%;
+    width: 100%;
+    max-height: 5rem;
 }
 
-.MapSelectButton {
-    width: 7em;
+.MapList {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }

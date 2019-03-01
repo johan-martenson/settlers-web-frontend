@@ -2,7 +2,7 @@ import React, { Component, createRef } from 'react';
 import Button from './button';
 import Card from './card';
 import './player.css';
-import RawRow from './raw_row';
+import ExpandCollapseToggle from './expand_collapse_toggle';
 
 export interface IPlayer {
     type: string;
@@ -70,18 +70,18 @@ class Player extends Component<PlayerProps, PlayerState> {
     render() {
 
         return (
-            <div onClick={() => this.setState({ expanded: !this.state.expanded })}>
+            <div>
                 <Card className="Player">
-                    <div className="PlayerNameLabel">{this.props.player.name} {this.state.type === "COMPUTER" && "(computer)"}</div>
-
+                    <div className="PlayerTop">
+                        <div className="PlayerNameLabel">{this.props.player.name} {this.state.type === "COMPUTER" && "(computer)"}</div>
+                        <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
+                    </div>
                     {this.state.type === "COMPUTER" && this.state.expanded &&
-                        <>
+                        <div className="SetName">
                             <div className="SetNameLabel">Change name:</div>
-                            <RawRow>
-                                <input type="text" className="SetNameField" placeholder="Name" ref={this.nameFieldRef} />
-                                <Button label="Ok" className="SetNameButton" onButtonClicked={this.changeName.bind(this)} />
-                            </RawRow>
-                        </>
+                            <input type="text" className="SetNameField" placeholder="Name" ref={this.nameFieldRef} />
+                            <Button label="Ok" className="SetNameButton" onButtonClicked={this.changeName.bind(this)} />
+                        </div>
                     }
 
                     {!this.props.isSelf && this.props.onPlayerRemoved && this.state.expanded &&

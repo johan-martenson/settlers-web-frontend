@@ -65,6 +65,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
         return (
             <div className="PlayerList">
+                Manage players
                 {this.state.players.map(
                     (player, index) => {
                         return (

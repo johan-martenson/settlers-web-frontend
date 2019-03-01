@@ -1,9 +1,13 @@
+.SetName {
+    display: flex;
+    flex-direction: row;
+}
+
 .PlayerNameLabel {
     text-align: left;
 }
 
 .SetNameLabel {
-    float: left;
     width: 10em;
     text-align: left;
 }
@@ -11,17 +15,17 @@
 .SetNameField {
     margin-right: var(--button-margin);
     vertical-align: middle;
-    float: left;
     width: 7em;
 }
 
 .SetNameButton {
     margin-right: var(--button-margin);
     vertical-align: middle;
-    float: right;
     width: 3em;
 }
 
-.RemovePlayerButton {
-    
+.PlayerTop {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
 }

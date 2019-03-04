@@ -44,17 +44,29 @@ class Button extends Component<ButtonProps, ButtonState> {
 
         return (
             <div className={className}
+                tabIndex={0}
                 id={this.props.id ? this.props.id : ""}
+
                 onClick={
                     (event: React.SyntheticEvent) => {
                         this.onClicked();
                         event.stopPropagation();
                     }
                 }
+
                 onTouchStart={
                     (event: React.SyntheticEvent) => {
                         this.onClicked();
                         event.stopPropagation();
+                    }
+                }
+
+                onKeyDown={
+                    (event: React.KeyboardEvent<Element>) => {
+                        if (event.keyCode === 13) {
+                            this.onClicked();
+                            event.stopPropagation();
+                        }
                     }
                 }
             >

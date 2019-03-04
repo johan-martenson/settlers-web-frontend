@@ -38,9 +38,7 @@ export interface TreeInformation extends Point { }
 
 export type TileInformation = "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE" | "SA"
 
-export interface HeightInformation extends Point {
-    height: number
-}
+export type HeightInformation = number;
 
 export interface TerrainInformation {
     width: number

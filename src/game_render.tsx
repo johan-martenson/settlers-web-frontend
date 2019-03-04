@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HeightInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import houseImageMap from './images';
-import { camelCaseToWords, getDotProduct, getNormalForTriangle, intToVegetationColor, pointToString, vegetationToInt } from './utils';
+import { camelCaseToWords, getBrightnessForNormals, getDotProduct, getGradientLineForTriangle, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, pointToString, Vector, vegetationToInt, arrayToRgbStyle, Point3D } from './utils';
 
 
 function stringToPoint(pointString: string): Point {
@@ -22,20 +22,18 @@ export interface ScreenPoint {
 
 type vegetationInt = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
-export interface Tile {
+export interface TerrainAtPoint {
+    point: Point
     straightBelow: vegetationInt
     belowToTheRight: vegetationInt
-    point: Point
+    height: number
 }
-
-export type TerrainList = Array<Tile>
 
 export type HeightList = Array<HeightInformation>
 
 interface GameCanvasProps {
     scale: number
-    terrain: TerrainList
-    heights: HeightList
+    terrain: Array<TerrainAtPoint>
     translateX: number
     translateY: number
     screenWidth: number
@@ -71,12 +69,14 @@ interface GameCanvasState {
     context?: CanvasRenderingContext2D
     images: Map<string, HTMLImageElement>
     builtHeightMap: boolean
+    straightBelowNormals?: Map<number, Map<number, Vector>>
+    downRightNormals?: Map<number, Map<number, Vector>>
 }
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     private selfRef = React.createRef<HTMLCanvasElement>();
-    heights: number[][]
+    terrain: TerrainAtPoint[][]
 
     constructor(props: GameCanvasProps) {
         super(props);
@@ -99,33 +99,107 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.loadImages(Array.from(new Set(houseImageMap.values())));
 
         /* Create the height array */
-        this.heights = Array<Array<number>>();
+        this.terrain = Array<Array<TerrainAtPoint>>();
 
         /* Assign heights */
-        if (this.props.heights && this.props.heights.length > 0) {
+        if (this.props.terrain && this.props.terrain.length > 0) {
             this.buildHeightMap();
         }
     }
 
     buildHeightMap() {
 
-        for (let x = 0; x <= this.props.width; x++) {
-            this.heights[x] = new Array<number>();
+        /* Create the array to hold the terrain information */
+        this.props.terrain.forEach(
+            (terrainAtPoint: TerrainAtPoint) => {
+                const point = terrainAtPoint.point;
 
-            for (let y = 0; y <= this.props.height; y++) {
-                this.heights[x][y] = 0;
+                if (!this.terrain[point.x]) {
+                    this.terrain[point.x] = new Array<TerrainAtPoint>();
+                }
+
+                this.terrain[point.x][point.y] = terrainAtPoint;
             }
-        }
+        );
 
-        for (const heightInformation of this.props.heights) {
-            const x = heightInformation.x;
-            const y = heightInformation.y;
-            const height = heightInformation.height;
+        /* Calculate and store the normals per triangle */
+        const straightBelowNormals = new Map<number, Map<number, Vector>>();
+        const downRightNormals = new Map<number, Map<number, Vector>>();
 
-            this.heights[x][y] = height;
-        }
+        this.props.terrain.forEach(
+            (terrainAtPoint: TerrainAtPoint) => {
 
-        this.setState({ builtHeightMap: true });
+                const point = {
+                    x: terrainAtPoint.point.x,
+                    y: terrainAtPoint.point.y,
+                    z: terrainAtPoint.height
+                };
+
+                const pointDownLeft = getPointDownLeft(point);
+                const pointDownRight = getPointDownRight(point);
+                const pointRight = getPointRight(point);
+
+                const downLeftHeight = this.getHeightForPoint(pointDownLeft);
+                const downRightHeight = this.getHeightForPoint(pointDownRight);
+                const rightHeight = this.getHeightForPoint(pointRight);
+
+                if (downLeftHeight && downRightHeight) {
+                    const pointDownLeft3d = {
+                        x: pointDownLeft.x,
+                        y: pointDownLeft.y,
+                        z: downLeftHeight
+                    }
+
+                    const pointDownRight3d = {
+                        x: pointDownRight.x,
+                        y: pointDownRight.y,
+                        z: downRightHeight
+                    }
+
+                    let xStraightBelowMap = straightBelowNormals.get(point.x);
+
+                    if (!xStraightBelowMap) {
+                        xStraightBelowMap = new Map<number, Vector>();
+                        straightBelowNormals.set(point.x, xStraightBelowMap);
+                    }
+
+                    xStraightBelowMap.set(point.y, getNormalForTriangle(point, pointDownLeft3d, pointDownRight3d));
+                }
+
+                if (downRightHeight && rightHeight) {
+
+                    const pointRight3d = {
+                        x: pointRight.x,
+                        y: pointRight.y,
+                        z: rightHeight
+                    }
+
+                    const pointDownRight3d = {
+                        x: pointDownRight.x,
+                        y: pointDownRight.y,
+                        z: downRightHeight
+                    }
+
+                    let xDownRightMap = downRightNormals.get(point.x);
+
+
+                    if (!xDownRightMap) {
+                        xDownRightMap = new Map<number, Vector>();
+                        downRightNormals.set(point.x, xDownRightMap);
+                    }
+
+                    xDownRightMap.set(point.y, getNormalForTriangle(point, pointDownRight3d, pointRight3d));
+                }
+            }
+        );
+
+        this.setState(
+            {
+                builtHeightMap: true,
+                straightBelowNormals: straightBelowNormals,
+                downRightNormals: downRightNormals
+            }
+        );
     }
 
     loadImages(sources: string[]) {
@@ -177,18 +251,30 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         return true;
     }
 
-    getHeightForPoint(point: Point) {
-        try {
-            const height = this.heights[point.x][point.y];
-            return this.heights[point.x][point.y];
-        } catch (e) {
+    getHeightForPoint(point: Point): number | undefined {
+        const xTerrainArray = this.terrain[point.x];
+
+        if (!xTerrainArray) {
+            return undefined;
         }
 
-        return this.heights[point.x][point.y];
+        const yTerrainArray = xTerrainArray[point.y];
+
+        if (!yTerrainArray) {
+            return undefined;
+        }
+
+        const height = yTerrainArray.height;
+        return height;
     }
 
-    pointToPoint3D(point: Point) {
+    pointToPoint3D(point: Point): Point3D | undefined {
         const height = this.getHeightForPoint(point)
+
+        if (!height) {
+            return undefined;
+        }
+
         return {
             x: point.x,
             y: point.y,
@@ -196,11 +282,68 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         };
     }
 
+    getNormalStraightBelow(point: Point): Vector | undefined {
+
+        if (!this.state.straightBelowNormals) {
+            console.log("NO STATE STRAIGHT BELOW NORMALS");
+
+            return undefined;
+        }
+
+        const xStraightBelowMap = this.state.straightBelowNormals.get(point.x);
+
+        if (!xStraightBelowMap) {
+            console.log("NO STRAIGHT BELOW MAP");
+
+            return undefined;
+        }
+
+        const normal = xStraightBelowMap.get(point.y);
+
+        return normal;
+    }
+
+    getNormalDownRight(point: Point): Vector | undefined {
+
+        if (!this.state.downRightNormals) {
+            return undefined;
+        }
+
+        const xDownRightMap = this.state.downRightNormals.get(point.x);
+
+        if (!xDownRightMap) {
+            return undefined;
+        }
+
+        const normal = xDownRightMap.get(point.y);
+
+        return normal;
+    }
+
+    getSurroundingNormals(gamePoint: Point): (Vector | undefined)[] {
+        const normalUpLeft = this.getNormalStraightBelow(getPointUpLeft(gamePoint))
+        const normalAbove = this.getNormalDownRight(getPointUpLeft(gamePoint))
+        const normalUpRight = this.getNormalStraightBelow(getPointUpRight(gamePoint))
+        const normalDownRight = this.getNormalDownRight(gamePoint)
+        const normalBelow = this.getNormalStraightBelow(gamePoint)
+        const normalDownLeft = this.getNormalDownRight(getPointLeft(gamePoint))
+
+        return [
+            normalUpLeft,
+            normalAbove,
+            normalUpRight,
+            normalDownRight,
+            normalBelow,
+            normalDownLeft
+        ];
+    }
+
     componentDidUpdate() {
 
         /* Handle update of heights if needed */
-        if (!this.state.builtHeightMap && this.props.heights && this.props.heights.length > 0) {
+        if (!this.state.builtHeightMap && this.props.terrain && this.props.terrain.length > 0) {
             this.buildHeightMap();
+            return;
         }
 
         /* Draw */
@@ -267,6 +410,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue;
             }
 
+            /* Get intensity for each point */
+            const intensityPoint = getBrightnessForNormals(this.getSurroundingNormals(gamePoint), lightVector);
+            const intensityPointDownLeft = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownLeft), lightVector);
+            const intensityPointDownRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownRight), lightVector);
+            const intensityPointRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointRight), lightVector);
+
             const intensity1 = this.getBrightnessForTriangle(gamePoint, gamePointDownLeft, gamePointDownRight, lightVector);
 
             ctx.save();
@@ -274,24 +423,69 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (colorBelow === 'green') {
                 let rgb = [0, 150 + (20 * Math.abs(intensity1)), 0];
 
-                const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+                //const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+                const fillStyle = arrayToRgbStyle(rgb);
 
                 ctx.fillStyle = fillStyle;
             } else if (colorBelow === 'gray') {
-                let rgb = [
-                    150 + (20 * Math.abs(intensity1)),
-                    150 + (20 * Math.abs(intensity1)),
-                    150 + (20 * Math.abs(intensity1)),
+
+                const minIntensity = Math.min(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
+                const maxIntensity = Math.max(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
+
+                const minColor = [
+                    150 + (20 * Math.abs(minIntensity)),
+                    150 + (20 * Math.abs(minIntensity)),
+                    150 + (20 * Math.abs(minIntensity)),
                 ];
 
-                const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+                if (minIntensity === maxIntensity) {
+                    ctx.fillStyle = arrayToRgbStyle(minColor);
+                    //ctx.fillStyle = 'gray';
+                } else {
 
-                ctx.fillStyle = fillStyle;
+                    const maxColor = [
+                        150 + (20 * Math.abs(maxIntensity)),
+                        150 + (20 * Math.abs(maxIntensity)),
+                        150 + (20 * Math.abs(maxIntensity)),
+                    ];
+
+                    const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownLeft, intensityPointDownLeft, gamePointDownRight, intensityPointDownRight);
+
+                    const gradientScreenPoints = [
+                        this.gamePointToScreenPoint(gradientGamePoints[0]),
+                        this.gamePointToScreenPoint(gradientGamePoints[1])
+                    ];
+
+                    if (gradientGamePoints[0].x === gradientGamePoints[1].x && gradientGamePoints[0].y === gradientGamePoints[1].y ) {
+                        console.log();
+                        console.log("THEY ARE EQUAL");
+                        console.log(gamePoint);
+                        console.log(gradientGamePoints);
+                        console.log(gradientScreenPoints);
+                    }
+
+                    console.log(JSON.stringify(gamePoint) + ": " + JSON.stringify(gradientGamePoints) + " (" + JSON.stringify(gradientScreenPoints) + ")");
+
+                    try {
+                        const gradient = ctx.createLinearGradient(
+                            gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
+                        );
+                        gradient.addColorStop(0, arrayToRgbStyle(maxColor));
+                        gradient.addColorStop(1, arrayToRgbStyle(minColor));
+
+                        ctx.fillStyle = gradient;
+                    } catch (e) {
+                        console.log("");
+
+                        console.log("FAILED!");
+                        console.log(gradientGamePoints);
+                        console.log(gradientScreenPoints);
+                    }
+
+                }
             } else {
                 ctx.fillStyle = colorBelow;
             }
-
-            //ctx.createLinearGradient(x0, y0, x1, y1);
 
             ctx.beginPath()
 
@@ -314,23 +508,57 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             ctx.save();
 
-            const intensity2 = this.getBrightnessForTriangle(gamePoint, gamePointRight, gamePointDownRight, lightVector);
+            const intensity2 = this.getBrightnessForTriangle(gamePoint, gamePointDownRight, gamePointRight, lightVector);
             if (colorDownRight === 'green') {
                 let rgb = [0, 150 + (20 * Math.abs(intensity2)), 0];
 
-                const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+                //const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+                const fillStyle = arrayToRgbStyle(rgb);
 
                 ctx.fillStyle = fillStyle;
             } else if (colorBelow === 'gray') {
-                let rgb = [
-                    150 + (20 * Math.abs(intensity2)),
-                    150 + (20 * Math.abs(intensity2)),
-                    150 + (20 * Math.abs(intensity2)),
+                const minIntensity = Math.min(intensityPoint, intensityPointDownRight, intensityPointRight);
+                const maxIntensity = Math.max(intensityPoint, intensityPointDownRight, intensityPointRight);
+
+                const minColor = [
+                    150 + (20 * Math.abs(minIntensity)),
+                    150 + (20 * Math.abs(minIntensity)),
+                    150 + (20 * Math.abs(minIntensity)),
                 ];
 
-                const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+                if (minIntensity === maxIntensity) {
+                    ctx.fillStyle = arrayToRgbStyle(minColor);
+                } else {
 
-                ctx.fillStyle = fillStyle;
+                    const maxColor = [
+                        150 + (20 * Math.abs(maxIntensity)),
+                        150 + (20 * Math.abs(maxIntensity)),
+                        150 + (20 * Math.abs(maxIntensity)),
+                    ];
+
+                    const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownRight, intensityPointDownRight, gamePointRight, intensityPointRight);
+
+                    const gradientScreenPoints = [
+                        this.gamePointToScreenPoint(gradientGamePoints[0]),
+                        this.gamePointToScreenPoint(gradientGamePoints[1])
+                    ];
+
+                    try {
+                        const gradient = ctx.createLinearGradient(
+                            gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
+                        );
+                        gradient.addColorStop(0, arrayToRgbStyle(maxColor));
+                        gradient.addColorStop(1, arrayToRgbStyle(minColor));
+
+                        ctx.fillStyle = gradient;
+                    } catch (e) {
+                        console.log("");
+
+                        console.log("FAILED!");
+                        console.log(gradientGamePoints);
+                        console.log(gradientScreenPoints);
+                    }
+                }
             } else {
                 ctx.fillStyle = colorDownRight;
             }
@@ -914,13 +1142,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     private getBrightnessForTriangle(gamePoint: Point, gamePointDownLeft: { x: number; y: number; }, gamePointDownRight: { x: number; y: number; }, lightVector: { x: number; y: number; z: number; }) {
-        const points3d = [
-            this.pointToPoint3D(gamePoint),
-            this.pointToPoint3D(gamePointDownLeft),
-            this.pointToPoint3D(gamePointDownRight)
-        ];
-        const normal = getNormalForTriangle(points3d[0], points3d[1], points3d[2]);
+
+        const normal = getNormalForTriangle(this.pointToPoint3D(gamePoint), this.pointToPoint3D(gamePointDownLeft), this.pointToPoint3D(gamePointDownRight));
+
         const alignment = getDotProduct(normal, lightVector);
+
         return alignment;
     }
 

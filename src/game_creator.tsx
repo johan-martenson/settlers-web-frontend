@@ -56,6 +56,13 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         };
     }
 
+    componentDidMount() {
+
+        if (this.titleFieldRef && this.titleFieldRef.current) {
+            this.titleFieldRef.current.focus();
+        }
+    }
+
     async onMapSelected(map: MapInformation) {
 
         if (this.state.game) {

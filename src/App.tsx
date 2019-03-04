@@ -6,10 +6,10 @@ import EnemyHouseInfo from './enemy_house_info';
 import FriendlyFlagInfo from './friendly_flag_info';
 import FriendlyHouseInfo from './friendly_house_info';
 import GameMenu from './game_menu';
-import { GameCanvas, TerrainList } from './game_render';
+import { GameCanvas, TerrainAtPoint } from './game_render';
 import Guide from './guide';
 import MenuButton from './menu_button';
-import { pointSetToStringSet, pointToString, terrainInformationToTerrainList } from './utils';
+import { pointSetToStringSet, pointToString, terrainInformationToTerrainAtPointList } from './utils';
 
 const MENU_MENU = 0;
 const MENU_FRIENDLY_HOUSE = 1;
@@ -83,8 +83,7 @@ interface AppState {
 
     scale: number
 
-    terrain: TerrainList
-    heights: HeightInformation[]
+    terrain: Array<TerrainAtPoint>
 
     translateX: number
     translateY: number
@@ -164,8 +163,7 @@ class App extends Component<AppProps, AppState> {
             showAvailableConstruction: false,
             crops: [],
             animals: [],
-            terrain: [],
-            heights: [],
+            terrain: new Array<TerrainAtPoint>(),
             translateX: 0,
             translateY: 0,
             selected: { x: 0, y: 0 },
@@ -426,13 +424,12 @@ class App extends Component<AppProps, AppState> {
         if (this.state.terrain.length === 0) {
             const terrain = await getTerrain(this.props.gameId);
 
-            const terrainList = terrainInformationToTerrainList(terrain);
+            const terrainList = terrainInformationToTerrainAtPointList(terrain);
 
             this.setState({
                 terrain: terrainList,
                 gameWidth: terrain.width,
                 gameHeight: terrain.height,
-                heights: terrain.heights
             });
         }
 
@@ -497,6 +494,15 @@ class App extends Component<AppProps, AppState> {
 
             /* Select the point */
         } else {
+
+            this.state.terrain.forEach(
+                (terrainInfo) => {
+                    if (terrainInfo.point.x === point.x && terrainInfo.point.y === point.y) {
+                        console.log("Height: " + terrainInfo.height);
+                        
+                    }
+                })
+
             console.info("Selecting point: " + point.x + ", " + point.y);
             this.setState({
                 selected: point
@@ -831,7 +837,6 @@ class App extends Component<AppProps, AppState> {
                     showAvailableConstruction={this.state.showAvailableConstruction}
                     width={globalSyncState.width}
                     height={globalSyncState.height}
-                    heights={this.state.heights}
                 />
 
                 <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />

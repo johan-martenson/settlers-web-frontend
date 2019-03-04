@@ -3,10 +3,10 @@ import { getTerrainForMap, MapInformation } from './api';
 import Button from './button';
 import Card from './card';
 import ExpandCollapseToggle from './expand_collapse_toggle';
-import { intToVegetationColor, TerrainList } from './game_render';
+import { intToVegetationColor, TerrainAtPoint } from './game_render';
 import './map_information_card.css';
 import RawRow from './raw_row';
-import { terrainInformationToTerrainList } from './utils';
+import { terrainInformationToTerrainAtPointList } from './utils';
 
 interface MapThumbnailProps {
     map: MapInformation
@@ -14,7 +14,7 @@ interface MapThumbnailProps {
 }
 
 interface MapThumbnailState {
-    terrain?: TerrainList
+    terrain?: TerrainAtPoint[]
 }
 
 class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
@@ -35,7 +35,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
         if (!this.state.terrain) {
             const terrain = await getTerrainForMap(this.props.map.id);
 
-            this.setState({ terrain: terrainInformationToTerrainList(terrain) });
+            this.setState({ terrain: terrainInformationToTerrainAtPointList(terrain) });
         }
     }
 

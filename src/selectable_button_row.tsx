@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import Button from './button';
-import Row from './row';
+import './selectable_button_row.css';
 
 interface SelectableButtonRowProps {
     values: Map<string, string>
@@ -27,14 +27,14 @@ class SelectableButtonRow extends Component<SelectableButtonRowProps, Selectable
 
     render() {
 
-        let className = ""
+        let className = "SelectableButtonRowContainer"
 
         if (this.props.className) {
-            className = this.props.className;
+            className = " " + this.props.className;
         }
 
         return (
-            <Row className={className}>
+            <div className={className}>
                 {Array.from(this.props.values.keys()).map(
                     (key: string, index) => {
                         const value = this.props.values.get(key);
@@ -68,7 +68,7 @@ class SelectableButtonRow extends Component<SelectableButtonRowProps, Selectable
                     }
                 )
                 }
-            </Row>
+            </div>
         );
     }
 }

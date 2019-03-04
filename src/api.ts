@@ -286,7 +286,7 @@ async function removeHouse(houseId: HouseId, gameId: GameId): Promise<void> {
     return await response.json();
 }
 
-async function removeFlag(flagId: string, gameId: GameId): Promise<void> {
+async function removeFlag(flagId: FlagId, gameId: GameId): Promise<void> {
 
     console.info("Removing flag " + flagId);
 
@@ -430,7 +430,8 @@ async function sendScout(point: Point, gameId: GameId, playerId: PlayerId) {
     return await response.json();
 }
 
-const SMALL_HOUSES: SmallBuilding[] = ["ForesterHut",
+const SMALL_HOUSES: SmallBuilding[] = [
+    "ForesterHut",
     "Woodcutter",
     "Well",
     "Quarry",
@@ -444,7 +445,8 @@ const SMALL_HOUSES: SmallBuilding[] = ["ForesterHut",
     "GraniteMine",
 ];
 
-const MEDIUM_HOUSES: MediumBuilding[] = ["Sawmill",
+const MEDIUM_HOUSES: MediumBuilding[] = [
+    "Sawmill",
     "WatchTower",
     "Mill",
     "Bakery",
@@ -454,14 +456,16 @@ const MEDIUM_HOUSES: MediumBuilding[] = ["Sawmill",
     "Mint"
 ];
 
-const LARGE_HOUSES: LargeBuilding[] = ["Headquarter",
+const LARGE_HOUSES: LargeBuilding[] = [
+    "Headquarter",
     "Farm",
     "PigFarm",
     "DonkeyFarm",
     "Fortress"
 ];
 
-const materialToColor = new Map<string, string>();
+type material = "gold" | "iron" | "coal" | "stone" | "water"
+const materialToColor = new Map<material, string>();
 
 materialToColor.set("gold", "yellow");
 materialToColor.set("iron", "red");

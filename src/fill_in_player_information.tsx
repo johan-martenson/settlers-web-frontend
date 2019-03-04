@@ -36,26 +36,50 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         }
     }
 
+    componentDidMount() {
+
+        if (this.nameFieldRef && this.nameFieldRef.current) {
+            this.nameFieldRef.current.focus();
+        }
+    }
+
+    onInformationEntered() {
+
+        if (this.nameFieldRef &&
+            this.nameFieldRef.current &&
+            this.nameFieldRef.current.value !== "") {
+
+            if (!this.state.userNameEntered) {
+                this.setState({ userNameEntered: true });
+            }
+        } else {
+            if (this.state.userNameEntered) {
+                this.setState({ userNameEntered: false });
+            }
+        }
+    }
+
     render() {
         return (
             <Dialog heading="Enter player information" noCloseButton={true}>
                 <div>Name:
                     <input type="text" placeholder="Name" ref={this.nameFieldRef}
-                        onChange={(e: React.FormEvent<HTMLInputElement>) => {
+                        onChange={
+                            (e: React.FormEvent<HTMLInputElement>) => {
+                                this.onInformationEntered();
+                            }
+                        }
 
-                            if (this.nameFieldRef &&
-                                this.nameFieldRef.current &&
-                                this.nameFieldRef.current.value !== "") {
+                        onKeyDown={
+                            (e: React.KeyboardEvent<Element>) => {
+                                if (e.keyCode === 13) {
 
-                                if (!this.state.userNameEntered) {
-                                    this.setState({ userNameEntered: true });
-                                }
-                            } else {
-                                if (this.state.userNameEntered) {
-                                    this.setState({ userNameEntered: false });
+                                    if (this.state.userNameEntered) {
+                                        this.onPlayerInformationDone();
+                                    }
                                 }
                             }
-                        }}
+                        }
                     />
                 </div>
 

@@ -28,7 +28,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
     }
 
     addAiPlayer() {
-        let aiPlayer: PlayerType = {
+        const aiPlayer: PlayerType = {
             name: "An AI player",
             type: "COMPUTER",
             color: "#777777"

@@ -46,9 +46,6 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
             return;
         }
 
-        const width = this.selfRef.current.width;
-        const height = this.selfRef.current.height;
-
         const ctx = this.selfRef.current.getContext("2d");
 
         if (!ctx || !this.isContext2D(ctx)) {
@@ -60,17 +57,19 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
         /* Draw the terrain */
         if (this.state.terrain) {
 
-            this.state.terrain.forEach(tile => {
+            this.state.terrain.forEach(pointTerrainInformation => {
 
-                const colorStraightBelow = intToVegetationColor.get(tile.straightBelow);
-                const colorBelowToTheRight = intToVegetationColor.get(tile.belowToTheRight);
+                const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.straightBelow);
+                const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.belowToTheRight);
+
+                const point = pointTerrainInformation.point;
 
                 if (colorStraightBelow) {
                     ctx.save();
 
                     ctx.beginPath();
                     ctx.fillStyle = colorStraightBelow
-                    ctx.rect(tile.point.x, tile.point.y, 1, 1);
+                    ctx.rect(point.x, point.y, 1, 1);
                     ctx.fill();
 
                     ctx.restore();
@@ -81,7 +80,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
 
                     ctx.beginPath();
                     ctx.fillStyle = colorBelowToTheRight
-                    ctx.rect(tile.point.x + 1, tile.point.y, 1, 1);
+                    ctx.rect(point.x + 1, point.y, 1, 1);
                     ctx.fill();
 
                     ctx.restore();

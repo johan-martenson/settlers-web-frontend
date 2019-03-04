@@ -19,11 +19,7 @@ class Dialog extends Component<DialogProps, DialogState> {
 
     render() {
 
-        let closeLabel = "Close";
-
-        if (this.props.closeLabel) {
-            closeLabel = this.props.closeLabel;
-        }
+        const closeLabel = this.props.closeLabel ? this.props.closeLabel : "Close";
 
         return (
             <div className="Dialog" id={this.props.id}>

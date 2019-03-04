@@ -47,9 +47,6 @@ class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCo
             return;
         }
 
-        const width = this.selfRef.current.width;
-        const height = this.selfRef.current.height;
-
         const ctx = this.selfRef.current.getContext("2d");
 
         if (!ctx || !this.isContext2D(ctx)) {

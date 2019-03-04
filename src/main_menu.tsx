@@ -62,7 +62,6 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
 
                 <DialogSection>
                     <Button label="Options" onButtonClicked={this.props.onChoose} />
-
                     <Button label="Help" onButtonClicked={this.props.onHelp} />
                     <Button label="Leave game" onButtonClicked={this.props.onLeaveGame} />
                 </DialogSection>

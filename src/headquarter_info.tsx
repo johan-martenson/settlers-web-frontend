@@ -19,16 +19,10 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
     constructor(props: HeadquarterInfoProps) {
         super(props);
 
-        let itemsPerPage = 10;
-
-        if (this.props.itemsPerPage) {
-            itemsPerPage = this.props.itemsPerPage;
-        }
-
         this.state = {
             inventory: new Map(),
             page: 0,
-            itemsPerPage: itemsPerPage
+            itemsPerPage: this.props.itemsPerPage ? this.props.itemsPerPage : 10
         };
     }
 
@@ -81,16 +75,19 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
                 }
 
                 {(this.state.page + 1) * this.state.itemsPerPage < Object.keys(this.state.inventory).length &&
-                    <div className="Next Button" onClick={() => {
-                        if ((this.state.page + 1) * this.state.itemsPerPage <
-                            Object.keys(this.state.inventory).length) {
-                            this.setState({
-                                page: this.state.page + 1
-                            });
+                    <div className="Next Button" onClick={
+                        () => {
+                            if ((this.state.page + 1) * this.state.itemsPerPage <
+                                Object.keys(this.state.inventory).length) {
+                                this.setState({
+                                    page: this.state.page + 1
+                                });
+                            }
                         }
                     }
-                    }
-                    >Next</div>}
+                    >
+                        Next
+                    </div>}
             </div>
         );
     }

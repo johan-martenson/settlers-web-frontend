@@ -13,13 +13,11 @@ interface ButtonProps {
     onButtonClicked: (() => void)
 }
 
-interface ButtonState {
-}
+interface ButtonState { }
 
 class Button extends Component<ButtonProps, ButtonState> {
 
     onClicked() {
-
         if (!this.props.disabled) {
             this.props.onButtonClicked();
         }

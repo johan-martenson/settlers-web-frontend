@@ -109,9 +109,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
         /* Handle the case when it's not possible to create a game */
         if (this.titleFieldRef && this.titleFieldRef.current && this.titleFieldRef.current.value !== "") {
-
             return true;
-
         }
 
         /* Handle the case when it's possible to create a game */
@@ -198,10 +196,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                         </div>
                         <BottomButtons>
                             <Button label="Delete game" onButtonClicked={this.onDeleteGame.bind(this)} />
-                            <Button label="Start game"
-                                onButtonClicked={this.onStartGame.bind(this)}
-                                disabled={!this.state.map}
-                            />
+                            <Button label="Start game" onButtonClicked={this.onStartGame.bind(this)} disabled={!this.state.map} />
                         </BottomButtons>
                     </Dialog>
                 }

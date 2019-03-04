@@ -68,22 +68,23 @@ class Slider extends Component<SliderProps, SliderState> {
         return (
             <MenuSection className="Slider">
                 <div className="SliderLessLabel Button"
-                    onClick={(event: React.MouseEvent) => {
-                        console.info("Decreasing");
+                    onClick={
+                        (event: React.MouseEvent) => {
+                            console.info("Decreasing");
 
-                        let newValue = 0;
+                            let newValue = 0;
 
-                        if (this.state.value - this.state.step < this.props.min) {
-                            newValue = this.props.min;
-                        } else {
-                            newValue = this.state.value - this.state.step;
+                            if (this.state.value - this.state.step < this.props.min) {
+                                newValue = this.props.min;
+                            } else {
+                                newValue = this.state.value - this.state.step;
+                            }
+
+                            this.setState({ value: newValue });
+                            this.props.onValue(newValue);
+
+                            event.stopPropagation();
                         }
-
-                        this.setState({ value: newValue });
-                        this.props.onValue(newValue);
-
-                        event.stopPropagation();
-                    }
                     } >
                     {this.props.less}
                 </div>
@@ -113,35 +114,34 @@ class Slider extends Component<SliderProps, SliderState> {
                         }
                     }
 
-                    onMouseMove={(event: React.MouseEvent) => {
-                        if (immediateState.dragging) {
+                    onMouseMove={
+                        (event: React.MouseEvent) => {
+                            if (immediateState.dragging) {
 
-                            const scale = this.scaleRef.current;
+                                const scale = this.scaleRef.current;
 
-                            if (!scale) {
-                                console.log("ERROR: doesn't have scale ref");
+                                if (!scale) {
+                                    console.log("ERROR: doesn't have scale ref");
 
-                                return;
+                                    return;
+                                }
+
+                                /* Convert to game coordinates */
+                                const dim = event.currentTarget.getBoundingClientRect();
+                                const relativeX = event.clientX - dim.left - immediateState.clickOffset;
+
+                                const newPercentage = relativeX / scale.clientWidth;
+                                const newValue = (this.props.max - this.props.min) * newPercentage + this.props.min;
+
+                                if (newValue >= this.props.min && newValue <= this.props.max) {
+                                    this.setState({ value: newValue });
+
+                                    this.props.onValue(newValue);
+                                }
+
+                                event.stopPropagation();
                             }
-
-                            /* Convert to game coordinates */
-                            const dim = event.currentTarget.getBoundingClientRect();
-                            let relativeX = event.clientX - dim.left;
-
-                            relativeX -= immediateState.clickOffset;
-
-                            const newPercentage = relativeX / scale.clientWidth;
-                            const newValue = (this.props.max - this.props.min) * newPercentage + this.props.min;
-
-                            if (newValue >= this.props.min && newValue <= this.props.max) {
-                                this.setState({ value: newValue });
-
-                                this.props.onValue(newValue);
-                            }
-
-                            event.stopPropagation();
                         }
-                    }
                     }
 
                     onMouseUp={
@@ -174,20 +174,21 @@ class Slider extends Component<SliderProps, SliderState> {
                     />
                 </div>
                 <div className="SliderMoreLabel Button"
-                    onClick={() => {
-                        console.info("Decreasing");
+                    onClick={
+                        () => {
+                            console.info("Decreasing");
 
-                        let newValue = 0;
+                            let newValue = 0;
 
-                        if (this.state.value + this.state.step > this.props.max) {
-                            newValue = this.props.max;
-                        } else {
-                            newValue = this.state.value + this.state.step;
+                            if (this.state.value + this.state.step > this.props.max) {
+                                newValue = this.props.max;
+                            } else {
+                                newValue = this.state.value + this.state.step;
+                            }
+
+                            this.setState({ value: newValue });
+                            this.props.onValue(newValue);
                         }
-
-                        this.setState({ value: newValue });
-                        this.props.onValue(newValue);
-                    }
                     }
                 >
                     {this.props.more}

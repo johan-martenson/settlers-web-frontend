@@ -9,7 +9,7 @@ export interface PageType {
     description: string[]
 }
 
-let HELP_PAGES: PageType[] = [
+const HELP_PAGES: PageType[] = [
     {
         page: 'construction',
         title: 'Getting started with construction',

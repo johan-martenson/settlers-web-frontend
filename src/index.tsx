@@ -37,7 +37,6 @@ class GameInit extends Component<GameInitProps, GameInitState> {
 
         return (
             <div>
-
                 {this.state.state === "ENTER_PLAYER_INFORMATION" &&
                     <FillInPlayerInformation onPlayerInformationDone={this.onPlayerInformationDone.bind(this)} />
                 }

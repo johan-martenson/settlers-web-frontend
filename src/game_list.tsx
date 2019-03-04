@@ -3,7 +3,6 @@ import { GameInformation, getGames } from './api';
 import Button from './button';
 import './game_list.css';
 
-
 interface GameListProps {
     hideStarted: boolean
     onJoinGame: ((game: GameInformation) => void)
@@ -29,7 +28,8 @@ class GameList extends Component<GameListProps, GameListState> {
         this.setState(
             {
                 games: games,
-            });
+            }
+        );
     }
 
     render() {

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HeightInformation, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import './App.css';
 import { ConstructionInfo } from './construction_info';
 import EnemyHouseInfo from './enemy_house_info';
@@ -9,7 +9,7 @@ import GameMenu from './game_menu';
 import { GameCanvas, TerrainAtPoint } from './game_render';
 import Guide from './guide';
 import MenuButton from './menu_button';
-import { pointSetToStringSet, pointToString, terrainInformationToTerrainAtPointList } from './utils';
+import { pointToString, terrainInformationToTerrainAtPointList } from './utils';
 
 const MENU_MENU = 0;
 const MENU_FRIENDLY_HOUSE = 1;
@@ -214,11 +214,19 @@ class App extends Component<AppProps, AppState> {
             newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * this.state.scale - globalSyncState.height;
         }
 
+        const discoveredPointsAsStrings = new Set<PointString>();
+
+        player.discoveredPoints.forEach(
+            (point: Point) => {
+                discoveredPointsAsStrings.add(pointToString(point));
+            }
+        )
+
         this.setState({
             translateX: newTranslateX,
             translateY: newTranslateY,
             player: player.id,
-            discoveredPoints: pointSetToStringSet(player.discoveredPoints)
+            discoveredPoints: discoveredPointsAsStrings
         });
     }
 
@@ -499,7 +507,7 @@ class App extends Component<AppProps, AppState> {
                 (terrainInfo) => {
                     if (terrainInfo.point.x === point.x && terrainInfo.point.y === point.y) {
                         console.log("Height: " + terrainInfo.height);
-                        
+
                     }
                 })
 
@@ -515,7 +523,7 @@ class App extends Component<AppProps, AppState> {
         return this.state.discoveredPoints.has(pointToString(point));
     }
 
-    onDoubleClick(point: Point) {
+    async onDoubleClick(point: Point): Promise<void> {
         console.info("Double click on " + point.x + ", " + point.y);
 
         /* Ignore double clicks if the player is an observer */
@@ -526,30 +534,21 @@ class App extends Component<AppProps, AppState> {
         /* First, handle double clicks differently if a new road is being created */
         if (this.state.newRoad) {
 
-            createFlag(point, this.props.gameId, this.state.player).then(
-                (flag) => {
-                    console.info("Created flag");
+            const flag = await createFlag(point, this.props.gameId, this.state.player);
 
-                    if (this.state.newRoad) {
-                        createRoad(this.state.newRoad,
-                            this.props.gameId,
-                            this.state.player).then(
-                                (flag) => {
-                                    console.info("Created road");
+            console.info("Created flag");
 
-                                    this.setState({
-                                        newRoad: undefined,
-                                        possibleRoadConnections: undefined
-                                    });
-                                }
-                            ).catch(
-                                (reason: any) => {
-                                }
-                            );
+            if (this.state.newRoad) {
+                const road = await createRoad(this.state.newRoad, this.props.gameId, this.state.player);
+                console.info("Created road");
+
+                this.setState(
+                    {
+                        newRoad: undefined,
+                        possibleRoadConnections: undefined
                     }
-                }).catch(
-                    (reason: any) => {
-                    });
+                );
+            }
 
             return;
         }
@@ -557,7 +556,7 @@ class App extends Component<AppProps, AppState> {
         /* Ignore double clicks on undiscovered land */
         if (!this.pointIsDiscovered(point)) {
             console.info("Ignoring un-discovered point");
-            return true;
+            return;
         }
 
         /* Handle click on house */
@@ -586,7 +585,7 @@ class App extends Component<AppProps, AppState> {
                 });
             }
 
-            return true;
+            return;
         }
 
         /* Handle the case where a flag was double clicked */
@@ -595,14 +594,6 @@ class App extends Component<AppProps, AppState> {
         if (flag) {
 
             console.info("Clicked flag");
-
-            console.log(flag);
-            console.log(flag.playerId)
-            console.log(this.state.player);
-            console.log(flag.playerId == this.state.player);
-            console.log(flag.playerId === this.state.player);
-            console.log(typeof flag.playerId);
-            console.log(typeof this.state.player);
 
             /* Show friendly flag dialog */
             if (flag.playerId === this.state.player) {
@@ -617,28 +608,26 @@ class App extends Component<AppProps, AppState> {
                 );
             }
 
-            return true;
+            return;
         }
 
         /* Ask the server for what can be done on the spot */
-        getInformationOnPoint(point, this.props.gameId, this.state.player).then(
-            (pointInformation) => {
+        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
 
-                // x, y
-                // canBuild: ['small', 'medium', 'large', 'flag', 'mine', 'harbor']
-                // isType: ('flag' | 'building' | 'stone' | 'tree')
-                // (building: {type: ..., } | 
-                if (pointInformation.canBuild && pointInformation.canBuild.length !== 0) {
-                    this.setState({
-                        showConstructionInfo: pointInformation,
-                        activeMenu: MENU_CONSTRUCTION
-                    });
+        // x, y
+        // canBuild: ['small', 'medium', 'large', 'flag', 'mine', 'harbor']
+        // isType: ('flag' | 'building' | 'stone' | 'tree')
+        // (building: {type: ..., } | 
+        if (pointInformation.canBuild && pointInformation.canBuild.length !== 0) {
+            this.setState(
+                {
+                    showConstructionInfo: pointInformation,
+                    activeMenu: MENU_CONSTRUCTION
                 }
-            }).catch(
-                (reason: any) => {
-                });
+            );
+        }
 
-        return true;
+        return;
     }
 
     onKeyDown(event: React.KeyboardEvent) {
@@ -653,23 +642,23 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
-    startNewRoad(point: Point) {
+    async startNewRoad(point: Point) {
 
         /* Start the list of points in the new road with the clicked point */
         console.info("Add segment to road (startNewRoad) " + JSON.stringify(point));
-        this.setState({
-            newRoad: [point]
-        });
+        this.setState(
+            {
+                newRoad: [point]
+            }
+        );
 
         /* Get the possible connections from the server and draw them */
-        getInformationOnPoint(point, this.props.gameId, this.state.player).then(
-            (pointInformation) => {
-                this.setState({
-                    possibleRoadConnections: pointInformation.possibleRoadConnections
-                });
-            }).catch(
-
-            );
+        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
+        this.setState(
+            {
+                possibleRoadConnections: pointInformation.possibleRoadConnections
+            }
+        );
     }
 
     setShowTitles(showTitles: boolean) {

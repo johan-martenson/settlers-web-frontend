@@ -22,7 +22,7 @@ class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCo
         }
     }
 
-    onClick() {
+    onClick(): void {
         if (this.state.expanded) {
             this.props.onCollapse();
         } else {

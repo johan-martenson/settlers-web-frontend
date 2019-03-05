@@ -26,11 +26,11 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
         };
     }
 
-    onClose() {
+    onClose(): void {
         this.props.onClose();
     }
 
-    adjustSpeed(speed: number) {
+    adjustSpeed(speed: number): void {
         //FIXME: actually adjust the speed
     }
 

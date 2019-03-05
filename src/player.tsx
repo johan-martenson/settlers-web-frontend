@@ -47,7 +47,7 @@ class Player extends Component<PlayerProps, PlayerState> {
         };
     }
 
-    changeName() {
+    changeName(): void {
 
         console.log("CHANGING NAME");
 

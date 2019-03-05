@@ -32,7 +32,7 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
         };
     }
 
-    onOptions() {
+    onOptions(): void {
         this.setState(
             {
                 state: "OPTIONS"
@@ -40,15 +40,15 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
         );
     }
 
-    onClose() {
+    onClose(): void {
         this.props.onCloseMenu();
     }
 
-    onChoose() {
+    onChoose(): void {
         this.setState({ state: "OPTIONS" });
     }
 
-    onPlayerSelected(player: PlayerInformation) {
+    onPlayerSelected(player: PlayerInformation): void {
         this.props.onPlayerSelected(player);
     }
 

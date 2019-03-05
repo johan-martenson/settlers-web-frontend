@@ -27,7 +27,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         this.state = { players: players };
     }
 
-    addAiPlayer() {
+    addAiPlayer(): void {
         const aiPlayer: PlayerType = {
             name: "An AI player",
             type: "COMPUTER",
@@ -41,7 +41,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         );
     }
 
-    onNameChanged(name: string, index: number) {
+    onNameChanged(name: string, index: number): void {
 
         const players = [...this.state.players];
 
@@ -53,7 +53,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         console.log(index);
     }
 
-    removePlayer(player: PlayerType) {
+    removePlayer(player: PlayerType): void {
         this.setState(
             {
                 players: this.state.players.filter(e => e === player)

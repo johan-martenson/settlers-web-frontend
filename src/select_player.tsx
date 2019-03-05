@@ -34,7 +34,7 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
         return true;
     }
 
-    async updatePlayers() {
+    async updatePlayers(): Promise<void> {
 
         const players = await getPlayers(this.props.gameId);
 

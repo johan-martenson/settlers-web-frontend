@@ -31,26 +31,26 @@ class Lobby extends Component<LobbyProps, LobbyState> {
         this.onCreateGameDone.bind(this);
     }
 
-    createNewGame() {
+    createNewGame(): void {
 
         this.setState(
             { state: "CREATE_GAME" }
         );
     }
 
-    onCreateGameDone() {
+    onCreateGameDone(): void {
         this.setState(
             { state: "LIST_GAMES" }
         );
     }
 
-    onGameCreateCanceled() {
+    onGameCreateCanceled(): void {
         this.setState(
             { state: "LIST_GAMES" }
         );
     }
 
-    onGameStarted(gameId: GameId, selfPlayerId: PlayerId) {
+    onGameStarted(gameId: GameId, selfPlayerId: PlayerId): void {
 
         this.setState(
             {

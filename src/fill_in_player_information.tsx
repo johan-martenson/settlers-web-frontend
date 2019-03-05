@@ -24,7 +24,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         this.state = { userNameEntered: false };
     }
 
-    onPlayerInformationDone() {
+    onPlayerInformationDone(): void {
 
         if (this.nameFieldRef && this.nameFieldRef.current && this.nameFieldRef.current.value !== "") {
 
@@ -43,7 +43,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         }
     }
 
-    onInformationEntered() {
+    onInformationEntered(): void {
 
         if (this.nameFieldRef &&
             this.nameFieldRef.current &&

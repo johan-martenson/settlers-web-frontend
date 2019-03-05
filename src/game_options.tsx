@@ -15,7 +15,7 @@ OPTIONS.set("HIGH", "Plenty");
 
 class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
 
-    allowOthersToJoin(allow: boolean) {
+    allowOthersToJoin(allow: boolean): void {
 
         if (allow) {
             console.log("Ok, others can join");

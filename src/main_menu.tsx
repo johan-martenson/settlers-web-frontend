@@ -36,7 +36,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
         this.setState({ currentSpeed: 50 }); //game.tickLength});
     }
 
-    onOptions() {
+    onOptions(): void {
         this.setState(
             {
                 state: "OPTIONS"
@@ -44,7 +44,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
         );
     }
 
-    onPlayerSelected(player: PlayerInformation) {
+    onPlayerSelected(player: PlayerInformation): void {
         this.props.onPlayerSelected(player);
     }
 

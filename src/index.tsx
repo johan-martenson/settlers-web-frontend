@@ -21,7 +21,7 @@ class GameInit extends Component<GameInitProps, GameInitState> {
         };
     }
 
-    onPlayerInformationDone(player: EnteredPlayerInformation) {
+    onPlayerInformationDone(player: EnteredPlayerInformation): void {
 
         console.log("Player entering lobby: " + JSON.stringify(player));
 

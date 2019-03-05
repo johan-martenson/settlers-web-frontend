@@ -177,7 +177,7 @@ class App extends Component<AppProps, AppState> {
         };
     }
 
-    toggleDetails() {
+    toggleDetails(): void {
         const current = this.state.showTitles || this.state.showAvailableConstruction;
 
         this.setState(
@@ -188,7 +188,7 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
-    closeActiveMenu() {
+    closeActiveMenu(): void {
 
         this.setState(
             {
@@ -203,7 +203,7 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
-    onPlayerSelected(player: PlayerInformation) {
+    onPlayerSelected(player: PlayerInformation): void {
         console.info("Selected player " + JSON.stringify(player));
 
         let newTranslateX = this.state.translateX;
@@ -230,7 +230,7 @@ class App extends Component<AppProps, AppState> {
         });
     }
 
-    closeFriendlyHouseInfo() {
+    closeFriendlyHouseInfo(): void {
         console.info("Closing friendly house info");
         this.setState(
             {
@@ -239,7 +239,7 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
-    showMenu() {
+    showMenu(): void {
 
         /* Close active dialogs first */
         this.closeActiveMenu();
@@ -253,7 +253,7 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
-    showHelp() {
+    showHelp(): void {
         this.setState(
             {
                 activeMenu: MENU_GUIDE,
@@ -262,37 +262,37 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
-    moveGameUp() {
+    moveGameUp(): void {
         this.setState({
             translateY: this.state.translateY + 10
         });
     }
 
-    moveGameDown() {
+    moveGameDown(): void {
         this.setState({
             translateY: this.state.translateY - 10
         });
     }
 
-    moveGameRight() {
+    moveGameRight(): void {
         this.setState({
             translateX: this.state.translateX - 10
         });
     }
 
-    moveGameLeft() {
+    moveGameLeft(): void {
         this.setState({
             translateX: this.state.translateX + 10
         });
     }
 
-    zoomIn() {
+    zoomIn(): void {
         this.zoom(this.state.scale + 1);
     }
 
 
     /* Should move to the game canvas so the app doesn't have to know about this */
-    zoom(scale: number) {
+    zoom(scale: number): void {
 
         /* Center after zooming */
         scale = Math.min(scale, MAX_SCALE);
@@ -308,15 +308,15 @@ class App extends Component<AppProps, AppState> {
         });
     }
 
-    onSpeedSliderChange(value: number) {
+    onSpeedSliderChange(value: number): void {
         setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.gameId);
     }
 
-    zoomOut() {
+    zoomOut(): void {
         this.zoom(this.state.scale - 1);
     }
 
-    onMouseDown(event: React.MouseEvent) {
+    onMouseDown(event: React.MouseEvent): void {
         globalSyncState.mouseDown = true;
         globalSyncState.mouseDownX = event.pageX;
         globalSyncState.mouseDownY = event.pageY;
@@ -328,7 +328,7 @@ class App extends Component<AppProps, AppState> {
         event.stopPropagation();
     }
 
-    onMouseMove(event: React.MouseEvent) {
+    onMouseMove(event: React.MouseEvent): void {
         if (globalSyncState.mouseDown) {
             const deltaX = (event.pageX - globalSyncState.mouseDownX);
             const deltaY = (event.pageY - globalSyncState.mouseDownY);
@@ -347,13 +347,13 @@ class App extends Component<AppProps, AppState> {
         event.stopPropagation();
     }
 
-    onMouseUp(event: React.MouseEvent) {
+    onMouseUp(event: React.MouseEvent): void {
         globalSyncState.mouseDown = false;
 
         event.stopPropagation();
     }
 
-    async periodicFetch() {
+    async periodicFetch(): Promise<void> {
 
         if (this.state.player) {
 
@@ -378,7 +378,7 @@ class App extends Component<AppProps, AppState> {
         setTimeout(this.periodicFetch, 100);
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         if (this.selfNameRef.current) {
 
@@ -452,7 +452,7 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
-    async onPointClicked(point: Point) {
+    async onPointClicked(point: Point): Promise<void> {
         console.info("Point clicked");
 
         /* Ignore clicks if the player is an observer */
@@ -519,7 +519,7 @@ class App extends Component<AppProps, AppState> {
     }
 
     /* Determine if the given point is discovered by the current player */
-    pointIsDiscovered(point: Point) {
+    pointIsDiscovered(point: Point): boolean {
         return this.state.discoveredPoints.has(pointToString(point));
     }
 
@@ -630,7 +630,7 @@ class App extends Component<AppProps, AppState> {
         return;
     }
 
-    onKeyDown(event: React.KeyboardEvent) {
+    onKeyDown(event: React.KeyboardEvent): void {
         console.info("Key down: " + event.which);
 
         if (event.which) {
@@ -642,7 +642,7 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
-    async startNewRoad(point: Point) {
+    async startNewRoad(point: Point): Promise<void> {
 
         /* Start the list of points in the new road with the clicked point */
         console.info("Add segment to road (startNewRoad) " + JSON.stringify(point));
@@ -661,7 +661,7 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
-    setShowTitles(showTitles: boolean) {
+    setShowTitles(showTitles: boolean): void {
         this.setState({ showTitles: showTitles });
     }
 
@@ -669,7 +669,7 @@ class App extends Component<AppProps, AppState> {
         return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY };
     }
 
-    onTouchStart(event: React.TouchEvent) {
+    onTouchStart(event: React.TouchEvent): void {
 
         event.preventDefault();
 
@@ -702,7 +702,7 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
-    onTouchMove(event: React.TouchEvent) {
+    onTouchMove(event: React.TouchEvent): void {
 
         event.preventDefault();
 
@@ -746,7 +746,7 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
-    onTouchCancel(event: React.TouchEvent) {
+    onTouchCancel(event: React.TouchEvent): void {
         event.preventDefault();
 
         console.log("touchcancel.");
@@ -761,7 +761,7 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
-    onTouchEnd(event: React.TouchEvent) {
+    onTouchEnd(event: React.TouchEvent): void {
 
         event.preventDefault();
 

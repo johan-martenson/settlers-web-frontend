@@ -43,31 +43,55 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
         };
     }
 
-    canRaiseFlag() {
-        return this.props.point.canBuild.find((x) => x === "flag");
+    canRaiseFlag(): boolean {
+        if (this.props.point.canBuild.find((x) => x === "flag")) {
+            return true;
+        }
+
+        return false;
     }
 
-    canBuildHouse() {
-        return this.canBuildSmallHouse() || this.canBuildMediumHouse() || this.canBuildLargeHouse();
+    canBuildHouse(): boolean {
+        if (this.canBuildSmallHouse() || this.canBuildMediumHouse() || this.canBuildLargeHouse()) {
+            return true;
+        }
+
+        return false;
     }
 
-    canBuildLargeHouse() {
-        return this.props.point.canBuild.find((x) => x === "large");
+    canBuildLargeHouse(): boolean {
+        if (this.props.point.canBuild.find((x) => x === "large")) {
+            return true;
+        }
+
+        return false;
     }
 
-    canBuildMediumHouse() {
-        return this.props.point.canBuild.find((x) => x === "medium");
+    canBuildMediumHouse(): boolean {
+        if (this.props.point.canBuild.find((x) => x === "medium")) {
+            return true;
+        }
+
+        return false;
     }
 
-    canBuildSmallHouse() {
-        return this.props.point.canBuild.find((x) => x === "small");
+    canBuildSmallHouse(): boolean {
+        if (this.props.point.canBuild.find((x) => x === "small")) {
+            return true;
+        }
+
+        return false;
     }
 
-    canBuildMine() {
-        return this.props.point.canBuild.find((x) => x === "mine");
+    canBuildMine(): boolean {
+        if (this.props.point.canBuild.find((x) => x === "mine")) {
+            return true;
+        }
+
+        return false;
     }
 
-    canBuildRoad() {
+    canBuildRoad(): boolean {
         return this.props.point.is === "flag";
     }
 
@@ -78,8 +102,8 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 
     render() {
 
-        let constructionOptions = new Map();
-        let constructionInitialSelection = this.canBuildHouse() ? "Buildings" : "FlagsAndRoads";
+        const constructionOptions = new Map();
+        const constructionInitialSelection = this.canBuildHouse() ? "Buildings" : "FlagsAndRoads";
 
         if (this.canBuildHouse()) {
             constructionOptions.set("Buildings", "Buildings");
@@ -89,7 +113,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
             constructionOptions.set("FlagsAndRoads", "Flags and roads");
         }
 
-        let houseOptions = new Map();
+        const houseOptions = new Map();
         let houseInitialSelection;
 
         if (this.canBuildSmallHouse()) {

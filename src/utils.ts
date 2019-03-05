@@ -28,22 +28,12 @@ intToVegetationColor.set(8, "darkorange");
 intToVegetationColor.set(9, "orange");
 
 // FIXME: make a proper implementation
-let camelCaseToWords = function (camelCaseStr: string): string {
+function camelCaseToWords(camelCaseStr: string): string {
     return camelCaseStr;
 }
 
 function pointToString(point: Point): string {
     return "" + point.x + "," + point.y;
-}
-
-function pointSetToStringSet(pointSet: Set<Point>): Set<string> {
-    let stringSet = new Set<string>();
-
-    for (let point in pointSet) {
-        console.log(typeof (point));
-    }
-
-    return stringSet;
 }
 
 function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInformation): Array<TerrainAtPoint> {
@@ -93,6 +83,8 @@ export interface Vector {
     z: number
 }
 
+export interface NormalizedVector extends Vector { }
+
 function vectorFromPoints(p1: Point3D, p2: Point3D): Vector {
     return {
         x: p1.x - p2.x,
@@ -113,7 +105,7 @@ function lengthOfVector(vector: Vector): number {
     return Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
 }
 
-function normalize(vector: Vector): Vector {
+function normalize(vector: Vector): NormalizedVector {
     const length = lengthOfVector(vector);
 
     return {
@@ -123,7 +115,7 @@ function normalize(vector: Vector): Vector {
     }
 }
 
-function getNormalForTriangle(p1: Point3D | undefined, p2: Point3D | undefined, p3: Point3D | undefined) {
+function getNormalForTriangle(p1: Point3D | undefined, p2: Point3D | undefined, p3: Point3D | undefined): NormalizedVector {
 
     if (!p1 || !p2 || !p3) {
         return { x: 0, y: 0, z: 1 };
@@ -236,25 +228,6 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
                 pointLow
             ];
 
-            if (Number.isNaN(result[0].x) || result[0].x === Infinity || Number.isNaN(result[0].y) || result[0].y === Infinity ||
-                Number.isNaN(result[1].x) || result[1].x === Infinity || Number.isNaN(result[1].y) || result[1].y === Infinity) {
-                console.log("NAN or INF at 0");
-            }
-
-            if (result[0].x === result[1].x && result[0].y === result[1].y) {
-                console.log(" -- SAME AT EXIT 0");
-
-                
-                console.log(pointHigh);
-                console.log(intensity1);
-
-                console.log(pointMedium);
-                console.log(intensity2);
-
-                console.log(pointLow);
-                console.log(intensity3);
-            }
-
             return result;
         } else {
 
@@ -269,25 +242,6 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
 
                 const result = [p5, pointLow];
 
-                if (Number.isNaN(result[0].x) || result[0].x === Infinity || Number.isNaN(result[0].y) || result[0].y === Infinity ||
-                    Number.isNaN(result[1].x) || result[1].x === Infinity || Number.isNaN(result[1].y) || result[1].y === Infinity) {
-                    console.log("NAN or INF at 1");
-                }
-
-                if (result[0].x === result[1].x && result[0].y === result[1].y) {
-                    console.log(" -- SAME AT EXIT 1");
-    
-                    
-                    console.log(pointHigh);
-                    console.log(intensity1);
-    
-                    console.log(pointMedium);
-                    console.log(intensity2);
-    
-                    console.log(pointLow);
-                    console.log(intensity3);
-                }
-    
                 return result;
             } else {
 
@@ -298,31 +252,6 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
                 const p5 = getIntersection(line1, line2);
 
                 const result = [p5, pointLow];
-
-                if (Number.isNaN(result[0].x) || result[0].x === Infinity || Number.isNaN(result[0].y) || result[0].y === Infinity ||
-                    Number.isNaN(result[1].x) || result[1].x === Infinity || Number.isNaN(result[1].y) || result[1].y === Infinity) {
-                    console.log("NAN or INF at 2");
-                }
-
-                if (result[0].x === result[1].x && result[0].y === result[1].y) {
-                    console.log(" -- SAME AT EXIT 2");
-    
-                    console.log(pointHigh);
-                    console.log(intensityMax);
-    
-                    console.log(pointMedium);
-                    console.log(partialIntensity);
-    
-                    console.log(pointLow);
-                    console.log(intensityMin);
-
-                    console.log("Line 1");
-                    console.log(line1);
-
-                    console.log("Line 2");
-                    console.log(line2);
-                }
-    
 
                 return result;
             }
@@ -351,20 +280,6 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
                 }
             ];
 
-            if (result[0].x === result[1].x && result[0].y === result[1].y) {
-                console.log(" -- SAME AT EXIT 3");
-
-                
-                console.log(pointHigh);
-                console.log(intensity1);
-
-                console.log(pointMedium);
-                console.log(intensity2);
-
-                console.log(pointLow);
-                console.log(intensity3);
-            }
-
             return result;
         } else {
 
@@ -375,37 +290,6 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
             const p5 = getIntersection(line1, line2);
 
             const result = [pointHigh, p5];
-
-            if (Number.isNaN(result[0].x) || result[0].x === Infinity || Number.isNaN(result[0].y) || result[0].y === Infinity ||
-                Number.isNaN(result[1].x) || result[1].x === Infinity || Number.isNaN(result[1].y) || result[1].y === Infinity) {
-                console.log("NAN or INF at 4");
-
-                console.log(pointHigh);
-                console.log(intensity1);
-
-                console.log(pointMedium);
-                console.log(intensity2);
-
-                console.log(pointLow);
-                console.log(intensity3);
-
-                console.log("P4 (should be same as medium)");
-                console.log(p4);
-            }
-
-            if (result[0].x === result[1].x && result[0].y === result[1].y) {
-                console.log(" -- SAME AT EXIT 4");
-
-                
-                console.log(pointHigh);
-                console.log(intensity1);
-
-                console.log(pointMedium);
-                console.log(intensity2);
-
-                console.log(pointLow);
-                console.log(intensity3);
-            }
 
             return result;
         }
@@ -444,50 +328,42 @@ function sumVectors(v1: Vector | undefined, v2: Vector | undefined): Vector {
     }
 }
 
-function getAverageVectorNormalized(...vectors: Vector[]): Vector {
-    const combinedVector = vectors.reduce(sumVectors);
-
-    const normalized = normalize(combinedVector);
-
-    return normalized;
-}
-
-function getPointDownLeft(point: Point) {
+function getPointDownLeft(point: Point): Point {
     return {
         x: point.x - 1,
         y: point.y - 1
     }
 }
 
-function getPointDownRight(point: Point) {
+function getPointDownRight(point: Point): Point {
     return {
         x: point.x + 1,
         y: point.y - 1
     }
 }
 
-function getPointUpLeft(point: Point) {
+function getPointUpLeft(point: Point): Point {
     return {
         x: point.x - 1,
         y: point.y + 1
     }
 }
 
-function getPointUpRight(point: Point) {
+function getPointUpRight(point: Point): Point {
     return {
         x: point.x + 1,
         y: point.y + 1
     }
 }
 
-function getPointRight(point: Point) {
+function getPointRight(point: Point): Point {
     return {
         x: point.x + 2,
         y: point.y
     }
 }
 
-function getPointLeft(point: Point) {
+function getPointLeft(point: Point): Point {
     return {
         x: point.x - 2,
         y: point.y
@@ -508,7 +384,7 @@ function getBrightnessForNormals(normals: (Vector | undefined)[], lightVector: V
 
     const normalized = normalize(combinedVector);
 
-    return getDotProduct(normalized, lightVector);
+    return -getDotProduct(normalized, lightVector);
 }
 
 function arrayToRgbStyle(rgb: number[]): string {
@@ -522,5 +398,5 @@ function getPointAtLineGivenX(line: Line, x: number): Point {
     }
 }
 
-export { terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, pointSetToStringSet, vegetationToInt, intToVegetationColor };
+export { terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
 

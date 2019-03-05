@@ -107,7 +107,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    buildHeightMap() {
+    buildHeightMap(): void {
 
         /* Create the array to hold the terrain information */
         this.props.terrain.forEach(
@@ -202,7 +202,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         );
     }
 
-    loadImages(sources: string[]) {
+    loadImages(sources: string[]): void {
         for (let source of sources) {
             console.log("Loading " + source);
 
@@ -285,16 +285,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     getNormalStraightBelow(point: Point): Vector | undefined {
 
         if (!this.state.straightBelowNormals) {
-            console.log("NO STATE STRAIGHT BELOW NORMALS");
-
             return undefined;
         }
 
         const xStraightBelowMap = this.state.straightBelowNormals.get(point.x);
 
         if (!xStraightBelowMap) {
-            console.log("NO STRAIGHT BELOW MAP");
-
             return undefined;
         }
 
@@ -388,9 +384,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             const gamePoint = tile.point;
-            const gamePointRight = { x: tile.point.x + 2, y: tile.point.y };
-            const gamePointDownLeft = { x: tile.point.x - 1, y: tile.point.y - 1 };
-            const gamePointDownRight = { x: tile.point.x + 1, y: tile.point.y - 1 };
+            const gamePointRight = getPointRight(gamePoint);
+            const gamePointDownLeft = getPointDownLeft(gamePoint);
+            const gamePointDownRight = getPointDownRight(gamePoint);
 
             const point = this.gamePointToScreenPoint(gamePoint);
             const right = this.gamePointToScreenPoint(gamePointRight);
@@ -401,7 +397,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue;
             }
 
-            const lightVector = { x: -1, y: -1, z: 0 };
+            const lightVector = { x: -1, y: 1, z: -1 };
 
             /* Draw the tile right below */
             const colorBelow = intToVegetationColor.get(tile.straightBelow);
@@ -416,38 +412,47 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const intensityPointDownRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownRight), lightVector);
             const intensityPointRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointRight), lightVector);
 
-            const intensity1 = this.getBrightnessForTriangle(gamePoint, gamePointDownLeft, gamePointDownRight, lightVector);
+            /* Get the intensity for the triangle*/
+            //const intensity1 = this.getBrightnessForTriangle(gamePoint, gamePointDownLeft, gamePointDownRight, lightVector);
 
             ctx.save();
 
-            if (colorBelow === 'green') {
-                let rgb = [0, 150 + (20 * Math.abs(intensity1)), 0];
-
-                //const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
-                const fillStyle = arrayToRgbStyle(rgb);
-
-                ctx.fillStyle = fillStyle;
-            } else if (colorBelow === 'gray') {
-
+            if (colorBelow === 'green' || colorBelow === 'gray') {
                 const minIntensity = Math.min(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
                 const maxIntensity = Math.max(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
 
-                const minColor = [
-                    150 + (20 * Math.abs(minIntensity)),
-                    150 + (20 * Math.abs(minIntensity)),
-                    150 + (20 * Math.abs(minIntensity)),
-                ];
+                let minColor;
+                let maxColor;
+
+                if (colorBelow === 'green') {
+                    minColor = [
+                        0,
+                        120 + (40 * Math.abs(minIntensity)),
+                        0
+                    ];
+
+                    maxColor = [
+                        0,
+                        120 + (40 * Math.abs(maxIntensity)),
+                        0
+                    ];
+                } else {
+                    minColor = [
+                        140 + (40 * Math.abs(minIntensity)),
+                        140 + (40 * Math.abs(minIntensity)),
+                        140 + (40 * Math.abs(minIntensity)),
+                    ];
+
+                    maxColor = [
+                        140 + (40 * Math.abs(maxIntensity)),
+                        140 + (40 * Math.abs(maxIntensity)),
+                        140 + (40 * Math.abs(maxIntensity)),
+                    ];
+                }
 
                 if (minIntensity === maxIntensity) {
                     ctx.fillStyle = arrayToRgbStyle(minColor);
-                    //ctx.fillStyle = 'gray';
                 } else {
-
-                    const maxColor = [
-                        150 + (20 * Math.abs(maxIntensity)),
-                        150 + (20 * Math.abs(maxIntensity)),
-                        150 + (20 * Math.abs(maxIntensity)),
-                    ];
 
                     const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownLeft, intensityPointDownLeft, gamePointDownRight, intensityPointDownRight);
 
@@ -456,32 +461,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         this.gamePointToScreenPoint(gradientGamePoints[1])
                     ];
 
-                    if (gradientGamePoints[0].x === gradientGamePoints[1].x && gradientGamePoints[0].y === gradientGamePoints[1].y ) {
-                        console.log();
-                        console.log("THEY ARE EQUAL");
-                        console.log(gamePoint);
-                        console.log(gradientGamePoints);
-                        console.log(gradientScreenPoints);
-                    }
+                    const gradient = ctx.createLinearGradient(
+                        gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
+                    );
+                    gradient.addColorStop(0, arrayToRgbStyle(maxColor));
+                    gradient.addColorStop(1, arrayToRgbStyle(minColor));
 
-                    console.log(JSON.stringify(gamePoint) + ": " + JSON.stringify(gradientGamePoints) + " (" + JSON.stringify(gradientScreenPoints) + ")");
-
-                    try {
-                        const gradient = ctx.createLinearGradient(
-                            gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
-                        );
-                        gradient.addColorStop(0, arrayToRgbStyle(maxColor));
-                        gradient.addColorStop(1, arrayToRgbStyle(minColor));
-
-                        ctx.fillStyle = gradient;
-                    } catch (e) {
-                        console.log("");
-
-                        console.log("FAILED!");
-                        console.log(gradientGamePoints);
-                        console.log(gradientScreenPoints);
-                    }
-
+                    ctx.fillStyle = gradient;
                 }
             } else {
                 ctx.fillStyle = colorBelow;
@@ -508,33 +494,42 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             ctx.save();
 
-            const intensity2 = this.getBrightnessForTriangle(gamePoint, gamePointDownRight, gamePointRight, lightVector);
-            if (colorDownRight === 'green') {
-                let rgb = [0, 150 + (20 * Math.abs(intensity2)), 0];
-
-                //const fillStyle = 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
-                const fillStyle = arrayToRgbStyle(rgb);
-
-                ctx.fillStyle = fillStyle;
-            } else if (colorBelow === 'gray') {
+            if (colorDownRight === 'green' || colorDownRight === 'gray') {
                 const minIntensity = Math.min(intensityPoint, intensityPointDownRight, intensityPointRight);
                 const maxIntensity = Math.max(intensityPoint, intensityPointDownRight, intensityPointRight);
 
-                const minColor = [
-                    150 + (20 * Math.abs(minIntensity)),
-                    150 + (20 * Math.abs(minIntensity)),
-                    150 + (20 * Math.abs(minIntensity)),
-                ];
+                let minColor;
+                let maxColor;
+
+                if (colorDownRight === 'green') {
+                    minColor = [
+                        0,
+                        120 + (40 * Math.abs(minIntensity)),
+                        0
+                    ];
+
+                    maxColor = [
+                        0,
+                        120 + (40 * Math.abs(maxIntensity)),
+                        0
+                    ];
+                } else {
+                    minColor = [
+                        140 + (40 * Math.abs(minIntensity)),
+                        140 + (40 * Math.abs(minIntensity)),
+                        140 + (40 * Math.abs(minIntensity)),
+                    ];
+
+                    maxColor = [
+                        140 + (40 * Math.abs(maxIntensity)),
+                        140 + (40 * Math.abs(maxIntensity)),
+                        140 + (40 * Math.abs(maxIntensity)),
+                    ];
+                }
 
                 if (minIntensity === maxIntensity) {
                     ctx.fillStyle = arrayToRgbStyle(minColor);
                 } else {
-
-                    const maxColor = [
-                        150 + (20 * Math.abs(maxIntensity)),
-                        150 + (20 * Math.abs(maxIntensity)),
-                        150 + (20 * Math.abs(maxIntensity)),
-                    ];
 
                     const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownRight, intensityPointDownRight, gamePointRight, intensityPointRight);
 
@@ -543,37 +538,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         this.gamePointToScreenPoint(gradientGamePoints[1])
                     ];
 
-                    try {
-                        const gradient = ctx.createLinearGradient(
-                            gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
-                        );
-                        gradient.addColorStop(0, arrayToRgbStyle(maxColor));
-                        gradient.addColorStop(1, arrayToRgbStyle(minColor));
+                    const gradient = ctx.createLinearGradient(
+                        gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
+                    );
+                    gradient.addColorStop(0, arrayToRgbStyle(maxColor));
+                    gradient.addColorStop(1, arrayToRgbStyle(minColor));
 
-                        ctx.fillStyle = gradient;
-                    } catch (e) {
-                        console.log("");
-
-                        console.log("FAILED!");
-                        console.log(gradientGamePoints);
-                        console.log(gradientScreenPoints);
-                    }
+                    ctx.fillStyle = gradient;
                 }
-            } else {
-                ctx.fillStyle = colorDownRight;
+
+                ctx.beginPath()
+
+                ctx.moveTo(point.x, point.y);
+                ctx.lineTo(downRight.x, downRight.y);
+                ctx.lineTo(right.x, right.y);
+    
+                ctx.closePath();
+    
+                ctx.fill();
+    
+                ctx.restore();
             }
-
-            ctx.beginPath()
-
-            ctx.moveTo(point.x, point.y);
-            ctx.lineTo(downRight.x, downRight.y);
-            ctx.lineTo(right.x, right.y);
-
-            ctx.closePath();
-
-            ctx.fill();
-
-            ctx.restore();
         }
 
         /* Draw the roads */
@@ -1150,7 +1135,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         return alignment;
     }
 
-    saveContext(context: CanvasRenderingContext2D) {
+    saveContext(context: CanvasRenderingContext2D): void {
         this.setState(
             {
                 context: context
@@ -1158,7 +1143,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         );
     }
 
-    changedHouses(houses1: HouseInformation[], houses2: HouseInformation[]) {
+    changedHouses(houses1: HouseInformation[], houses2: HouseInformation[]): boolean {
 
         if (houses1.length !== houses2.length) {
             return true;
@@ -1180,18 +1165,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         return false;
     }
 
-    pointIsDiscovered(point: Point) {
+    pointIsDiscovered(point: Point): boolean {
         return this.props.discoveredPoints.has(pointToString(point));
     }
 
-    gamePointToScreenPoint(gamePoint: Point) {
+    gamePointToScreenPoint(gamePoint: Point): ScreenPoint {
         return {
             x: gamePoint.x * this.props.scale + this.props.translateX,
             y: this.props.screenHeight - gamePoint.y * this.props.scale + this.props.translateY
         };
     }
 
-    screenPointToGamePoint(screenPoint: ScreenPoint) {
+    screenPointToGamePoint(screenPoint: ScreenPoint): Point {
 
         const gameX = (screenPoint.x - this.props.translateX) / this.props.scale;
         const gameY = (this.props.screenHeight - screenPoint.y + this.props.translateY) / this.props.scale;
@@ -1227,7 +1212,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         return { x: roundedGameX, y: roundedGameY };
     }
 
-    async onClick(event: React.MouseEvent) {
+    async onClick(event: React.MouseEvent): Promise<void> {
 
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
             console.log("ERROR: Received invalid click event");
@@ -1249,7 +1234,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         event.stopPropagation();
     }
 
-    onDoubleClick(event: React.MouseEvent) {
+    onDoubleClick(event: React.MouseEvent): void {
 
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
             console.log("ERROR: Received invalid double click event");

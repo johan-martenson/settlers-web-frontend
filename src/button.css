@@ -12,3 +12,7 @@
     background-color: var(--hover-color);
     border-radius: var(--button-rounded-corner);
 }
+
+.Selected {
+    background-color: var(--hover-color);
+}

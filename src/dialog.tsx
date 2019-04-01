@@ -3,7 +3,6 @@ import Button from './button';
 import './dialog.css';
 import MenuSectionLabel from './menu_section_label';
 
-
 interface DialogProps {
     closeLabel?: string
     heading?: string
@@ -11,6 +10,7 @@ interface DialogProps {
     onCloseDialog?: (() => void)
     className?: string
     id?: string
+    floating?: boolean
 }
 
 interface DialogState { }
@@ -19,10 +19,22 @@ class Dialog extends Component<DialogProps, DialogState> {
 
     render() {
 
+        let className = "Dialog"
+
+        if (this.props.floating) {
+            className = className + " FloatingWindow";
+        } else {
+            className = className + " NonfloatingWindow";
+        }
+
+        if (this.props.className) {
+            className = className + " " + this.props.className;
+        }
+
         const closeLabel = this.props.closeLabel ? this.props.closeLabel : "Close";
 
         return (
-            <div className="Dialog" id={this.props.id}>
+            <div className={className} id={this.props.id}>
 
                 {this.props.heading &&
                     <h1>{this.props.heading}</h1>
@@ -31,7 +43,7 @@ class Dialog extends Component<DialogProps, DialogState> {
                 {this.props.children}
 
                 {!this.props.noCloseButton &&
-                    <Button label={closeLabel} onButtonClicked={
+                    <Button className="DialogCloseButton" label={closeLabel} onButtonClicked={
                         () => {
                             if (this.props.onCloseDialog) {
                                 this.props.onCloseDialog()
@@ -49,9 +61,7 @@ interface DialogSectionProps {
     label?: string
 }
 
-interface DialogSectionState {
-
-}
+interface DialogSectionState { }
 
 class DialogSection extends Component<DialogSectionProps, DialogSectionState> {
     render() {

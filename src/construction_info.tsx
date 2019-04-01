@@ -5,6 +5,7 @@ import { Dialog, DialogSection } from './dialog';
 import houseImageMap from './images';
 import SelectableButtonRow from './selectable_button_row';
 import { camelCaseToWords } from './utils';
+import './construction_info.css'
 
 interface ConstructionInfoProps {
     selected?: "Buildings" | "FlagsAndRoads"
@@ -130,7 +131,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
         }
 
         return (
-            <Dialog id="ConstructionInfo" heading="Construction" onCloseDialog={this.props.closeDialog}>
+            <Dialog id="ConstructionInfo" className="ConstructionInfoWindow" heading="Construction" onCloseDialog={this.props.closeDialog} floating={true}>
 
                 <SelectableButtonRow values={constructionOptions}
                     initialValue={constructionInitialSelection}

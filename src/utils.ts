@@ -3,33 +3,41 @@ import { TerrainAtPoint } from './game_render';
 
 const vegetationToInt = new Map<TileInformation, number>();
 
-vegetationToInt.set("G", 0);
-vegetationToInt.set("M", 1);
-vegetationToInt.set("SW", 2);
-vegetationToInt.set("W", 3);
-vegetationToInt.set("DW", 4);
-vegetationToInt.set("SN", 5);
-vegetationToInt.set("L", 6);
-vegetationToInt.set("MM", 7);
-vegetationToInt.set("ST", 8);
-vegetationToInt.set("DE", 9);
+vegetationToInt.set("G", 0);   // Grass
+vegetationToInt.set("M", 1);   // Mountain
+vegetationToInt.set("SW", 2);  // Swamp
+vegetationToInt.set("W", 3);   // Water
+vegetationToInt.set("DW", 4);  // Deep water
+vegetationToInt.set("SN", 5);  // Snow
+vegetationToInt.set("L", 6);   // Lava
+vegetationToInt.set("MM", 7);  // Mountain meadow
+vegetationToInt.set("ST", 8);  // Steppe
+vegetationToInt.set("DE", 9);  // Desert
+vegetationToInt.set("SA", 10); // Savannah
 
-const intToVegetationColor = new Map<number, string>();
+export type RgbColorArray = [number, number, number];
 
-intToVegetationColor.set(0, "green");
-intToVegetationColor.set(1, "gray");
-intToVegetationColor.set(2, "brown");
-intToVegetationColor.set(3, "lightblue");
-intToVegetationColor.set(4, "blue");
-intToVegetationColor.set(5, "white");
-intToVegetationColor.set(6, "red");
-intToVegetationColor.set(7, "lightgray");
-intToVegetationColor.set(8, "darkorange");
-intToVegetationColor.set(9, "orange");
+const intToVegetationColor = new Map<number, RgbColorArray>();
+
+intToVegetationColor.set(0, [0, 120, 0]);
+intToVegetationColor.set(1, [140, 140, 140]);
+intToVegetationColor.set(2, [140, 140, 20]);
+intToVegetationColor.set(3, [0, 0, 205]);
+intToVegetationColor.set(4, [0, 0, 205]);
+intToVegetationColor.set(5, [220, 220, 220]);
+intToVegetationColor.set(6, [220, 0, 0]);
+intToVegetationColor.set(7, [140, 140, 140]);
+intToVegetationColor.set(8, [230, 110, 0]);
+intToVegetationColor.set(9, [230, 200, 0]);
+intToVegetationColor.set(10, [100, 70, 70]);
 
 // FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {
     return camelCaseStr;
+}
+
+function isContext2D(context: RenderingContext): context is CanvasRenderingContext2D {
+    return true;
 }
 
 function pointToString(point: Point): string {
@@ -60,10 +68,10 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
             terrain[count] = tile;
             count++;
         }
+
         if (start === 1) {
             start = 2;
-        }
-        else {
+        } else {
             start = 1;
         }
     }
@@ -281,10 +289,20 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
             ];
 
             return result;
+
+            /* Handle the case where the line is fully vertical */
+        } else if (p4.x === pointLow.x) {
+            return [
+                pointHigh,
+                {
+                    x: p4.x,
+                    y: pointHigh.y
+                }
+            ]
         } else {
 
             /* Get L2 */
-            const line2 = getOrthogonalLine(line1, p4);
+            const line2 = getOrthogonalLine(line1, pointHigh);
 
             /* Get point where L1 & L2 intersect */
             const p5 = getIntersection(line1, line2);
@@ -398,5 +416,5 @@ function getPointAtLineGivenX(line: Line, x: number): Point {
     }
 }
 
-export { terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+export { isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
 

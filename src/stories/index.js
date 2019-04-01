@@ -7,6 +7,8 @@ import MapInformationCard from '../map_information_card';
 import OnOffSlider from '../on_off_slider';
 import { Player } from '../player';
 import Slider from '../slider';
+import GradientTriangleDemo from '../gradient_triangle_demo';
+import RotatingTriangle from '../rotating_triangle';
 
 storiesOf('Button', module)
   .add('with text', () => (
@@ -88,3 +90,18 @@ storiesOf('Mapentry', module)
     <MapInformationCard map={maps[0]} />
   )
   )
+
+storiesOf('GradientTriangle', module)
+  .add('Start',
+    () => (
+      <GradientTriangleDemo />
+    ));
+
+storiesOf('RotatingTriangle', module)
+  .add('1 1 0',
+    () => (<div>
+      <RotatingTriangle intensities={[1, 1, 0]}/>
+      <RotatingTriangle intensities={[1, 0, 0]}/>
+      <RotatingTriangle intensities={[1, 0.2, 0]}/>
+      </div>
+    ));

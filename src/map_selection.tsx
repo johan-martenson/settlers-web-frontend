@@ -5,6 +5,7 @@ import './map_selection.css';
 
 interface MapSelectionProps {
     onMapSelected: ((map: MapInformation) => void)
+    className?: string
 }
 
 interface MapSelectionState {
@@ -21,12 +22,12 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
 
     render() {
 
-        return (
-            <div className="MapSelection">
+        let className = this.props.className ? this.props.className : "";
 
-                <div>
-                    Map: {this.state.map && this.state.map.title}
-                </div>
+        className = className + " MapSelection";
+
+        return (
+            <div className={className}>
 
                 <MapList
                     onMapSelected={

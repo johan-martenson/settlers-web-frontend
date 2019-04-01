@@ -1,5 +1,5 @@
 import React, { Component, createRef } from 'react';
-import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame } from './api';
+import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel } from './api';
 import BottomButtons from './bottom_buttons';
 import Button from './button';
 import { Dialog } from './dialog';
@@ -7,6 +7,8 @@ import './game_creator.css';
 import GameOptions from './game_options';
 import ManagePlayers from './manage_players';
 import MapSelection from './map_selection';
+import MapInformationCard from './map_information_card';
+import './game_creator.css'
 
 interface SelfPlayer {
     name: string
@@ -63,10 +65,9 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         }
     }
 
-    async onMapSelected(map: MapInformation) {
+    async onMapSelected(map: MapInformation): Promise<void> {
 
         if (this.state.game) {
-
             console.log("Set map for game: " + JSON.stringify(map));
 
             await setMapForGame(map.id, this.state.game.id);
@@ -77,7 +78,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         }
     }
 
-    async onStartGame() {
+    async onStartGame(): Promise<void> {
 
         if (!this.state.game) {
             console.log("ERROR: there is no game to start");
@@ -96,7 +97,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         this.props.onGameStarted(this.state.game.id, this.state.selfPlayerId);
     }
 
-    onDeleteGame() {
+    onDeleteGame(): void {
 
         if (this.state.game) {
             deleteGame(this.state.game.id);
@@ -116,6 +117,57 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         return false;
     }
 
+    async setOthersCanJoin(othersCanJoin: boolean) {
+
+    }
+
+    async setAvailableResources(level: ResourceLevel) {
+
+        if (this.state.game) {
+            await setResourceLevelForGame(level, this.state.game.id);
+        }
+    }
+
+    async startCreatingGame(): Promise<void> {
+
+        const titleField = this.titleFieldRef.current;
+
+        if (!titleField || titleField.value === "") {
+            console.log("ERROR: title field is empty");
+
+            return;
+        }
+
+        const gameTitle = titleField.value;
+
+        const game: GameInformation = await createGame({
+            name: gameTitle,
+            map: undefined,
+            players: this.state.players
+        })
+
+        /* Find the self player id */
+        let selfPlayerId;
+
+        for (let i = 0; i < game.players.length; i++) {
+            const player = game.players[i];
+
+            if (player.name === this.props.selfPlayer.name) {
+                selfPlayerId = player.id;
+
+                break;
+            }
+        }
+
+        this.setState(
+            {
+                state: "CREATE_GAME",
+                game: game,
+                selfPlayerId: selfPlayerId
+            }
+        );
+    }
+
     render() {
 
         return (
@@ -127,11 +179,20 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                             <div>Enter a new for the game:</div>
                             <input type="text" placeholder="Name..."
                                 ref={this.titleFieldRef}
-                                onChange={(e: React.FormEvent<HTMLInputElement>) => {
-                                    if (this.isNameReady()) {
-                                        this.setState({ isNameReady: true });
+                                onChange={
+                                    (e: React.FormEvent<HTMLInputElement>) => {
+                                        if (this.isNameReady()) {
+                                            this.setState({ isNameReady: true });
+                                        }
                                     }
                                 }
+
+                                onKeyPress={
+                                    (event) => {
+                                        if (event.key === "Enter" && this.state.isNameReady) {
+                                            this.startCreatingGame();
+                                        }
+                                    }
                                 }
                             />
                         </div>
@@ -141,43 +202,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                                 disabled={!this.state.isNameReady && !this.state.map}
                                 onButtonClicked={
                                     async () => {
-
-                                        const titleField = this.titleFieldRef.current;
-
-                                        if (!titleField || titleField.value === "") {
-                                            console.log("ERROR: title field is empty");
-
-                                            return;
-                                        }
-
-                                        const gameTitle = titleField.value;
-
-                                        const game: GameInformation = await createGame({
-                                            name: gameTitle,
-                                            map: undefined,
-                                            players: this.state.players
-                                        })
-
-                                        /* Find the self player id */
-                                        let selfPlayerId;
-
-                                        for (let i = 0; i < game.players.length; i++) {
-                                            const player = game.players[i];
-
-                                            if (player.name === this.props.selfPlayer.name) {
-                                                selfPlayerId = player.id;
-
-                                                break;
-                                            }
-                                        }
-
-                                        this.setState(
-                                            {
-                                                state: "CREATE_GAME",
-                                                game: game,
-                                                selfPlayerId: selfPlayerId
-                                            }
-                                        );
+                                        this.startCreatingGame();
                                     }
                                 }
                             />
@@ -190,9 +215,18 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                         <div className="CreateGameColumns">
                             <div className="PlayersAndOptions">
                                 <ManagePlayers players={this.state.players} selfPlayerIndex={0} />
-                                <GameOptions />
+                                <GameOptions setAvailableResources={this.setAvailableResources.bind(this)} setOthersCanJoin={this.setOthersCanJoin.bind(this)} />
                             </div>
-                            <MapSelection onMapSelected={this.onMapSelected.bind(this)} />
+
+                            <div className="MapColumn">
+                                Select map
+
+                                {this.state.map &&
+                                    <MapInformationCard map={this.state.map} expanded={true} controls={false} />
+                                }
+
+                                <MapSelection onMapSelected={this.onMapSelected.bind(this)} className={this.state.map ? "SmallMapSelection" : "FullMapSelection"}/>
+                            </div>
                         </div>
                         <BottomButtons>
                             <Button label="Delete game" onButtonClicked={this.onDeleteGame.bind(this)} />

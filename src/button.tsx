@@ -30,6 +30,12 @@ class Button extends Component<ButtonProps, ButtonState> {
         }
     }
 
+    focus(): void {
+        if (this.selfButtonRef && this.selfButtonRef.current) {
+            this.selfButtonRef.current.focus();
+        }
+    }
+
     onClicked(): void {
         if (!this.props.disabled) {
             this.props.onButtonClicked();

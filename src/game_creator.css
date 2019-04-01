@@ -18,3 +18,18 @@
     width: 100%;
     height: 90%;
 }
+
+.MapColumn {
+    display: flex;
+    flex-direction: column;
+}
+
+.SmallMapSelection {
+    height: 40vh;
+    overflow-y: auto;
+}
+
+.FullMapSelection {
+    height: 70vh;
+    overflow-y: auto;
+}

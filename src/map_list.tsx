@@ -30,7 +30,7 @@ class MapList extends Component<MapListProps, MapListState> {
         );
     }
 
-    onMapSelected(map: MapInformation) {
+    onMapSelected(map: MapInformation): void {
         this.props.onMapSelected(map);
     }
 

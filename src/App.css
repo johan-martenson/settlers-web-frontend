@@ -158,10 +158,6 @@ h1 {
     float: left;
 }
 
-.PanelChoice {
-    float: left;
-}
-
 .Choice {
     margin-right: var(--button-margin);
 }
@@ -171,14 +167,6 @@ h1 {
     background-color: var(--hover-color);
     border-radius: var(--button-rounded-corner);
 }
-
-
-.PanelChoices::after {
-    content: "";
-    clear: both;
-    display: table;
-}
-
 
 .Slider {
     display: flex;

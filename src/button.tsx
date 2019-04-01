@@ -10,12 +10,25 @@ interface ButtonProps {
     image?: string
     imageLabel?: string
     disabled?: boolean
+    autoFocus?: true
     onButtonClicked: (() => void)
 }
 
 interface ButtonState { }
 
 class Button extends Component<ButtonProps, ButtonState> {
+    private selfButtonRef = React.createRef<HTMLDivElement>();
+
+    constructor(props: ButtonProps) {
+        super(props);
+    }
+
+    componentDidMount() {
+
+        if (this.props.autoFocus && this.selfButtonRef && this.selfButtonRef.current) {
+            this.selfButtonRef.current.focus();
+        }
+    }
 
     onClicked(): void {
         if (!this.props.disabled) {
@@ -67,6 +80,8 @@ class Button extends Component<ButtonProps, ButtonState> {
                         }
                     }
                 }
+
+                ref={this.selfButtonRef}
             >
 
                 {this.props.image &&

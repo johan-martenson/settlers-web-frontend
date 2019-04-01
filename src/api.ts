@@ -9,6 +9,7 @@ export type FlagId = string
 export type PointString = string;
 
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine";
+export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
 
 interface Player {
     name: string
@@ -218,6 +219,26 @@ async function setMapForGame(mapId: MapId, gameId: GameId): Promise<void> {
         });
 
     return;
+}
+
+async function setResourceLevelForGame(level: ResourceLevel, gameId: GameId): Promise<GameInformation> {
+    console.log("Setting resource level for game");
+
+    const response = await fetch("/settlers/api/games/" + gameId,
+        {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(
+                {
+                    resources: level
+                }
+            )
+        }
+    )
+
+    return await response.json();
 }
 
 async function startGame(gameId: GameId): Promise<GameInformation> {
@@ -473,5 +494,5 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export { getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addPlayerToGame };
+export { setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addPlayerToGame };
 

@@ -628,9 +628,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw available construction */
         if (this.props.showAvailableConstruction) {
 
-            let first0 = true;
-            let first1 = true;
-
             Object.entries(this.props.availableConstruction).map(
                 (entry, index) => {
                     const gamePoint = stringToPoint(entry[0]);
@@ -645,6 +642,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             ctx.save();
 
                             ctx.fillStyle = 'yellow';
+                            ctx.strokeStyle = 'yellow';
 
                             ctx.beginPath();
 

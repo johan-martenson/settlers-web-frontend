@@ -638,7 +638,59 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         const available = entry[1];
 
-                        if (available.includes("flag")) {
+                        if (available.includes("large")) {
+                            ctx.save();
+
+                            ctx.beginPath();
+                            ctx.fillStyle = 'yellow';
+                            ctx.strokeStyle = 'black';
+
+                            ctx.rect(point.x - 7, point.y - 15, 15, 15);
+
+                            ctx.fill();
+                            ctx.stroke();
+
+                            ctx.restore();
+                        } else if (available.includes("medium")) {
+                            ctx.save();
+
+                            ctx.beginPath();
+                            ctx.fillStyle = 'yellow';
+                            ctx.strokeStyle = 'black';
+
+                            ctx.rect(point.x - 5, point.y - 10, 10, 10);
+
+                            ctx.fill();
+                            ctx.stroke();
+
+                            ctx.restore();
+                        } else if (available.includes("small")) {
+                            ctx.save();
+
+                            ctx.beginPath();
+                            ctx.fillStyle = 'yellow';
+                            ctx.strokeStyle = 'black'
+
+                            ctx.rect(point.x - 3, point.y - 6, 6, 6);
+
+                            ctx.fill();
+                            ctx.stroke();
+
+                            ctx.restore();
+                        } else if (available.includes("mine")) {
+                            ctx.save();
+
+                            ctx.beginPath();
+                            ctx.fillStyle = 'yellow';
+                            ctx.strokeStyle = 'black'
+
+                            ctx.arc(point.x - 3, point.y - 6, 6, 0, 2 * Math.PI);
+
+                            ctx.fill();
+                            ctx.stroke();
+
+                            ctx.restore();
+                        } else if (available.includes("flag")) {
                             ctx.save();
 
                             ctx.fillStyle = 'yellow';
@@ -646,68 +698,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                             ctx.beginPath();
 
-                            ctx.moveTo(point.x - 4, point.y);
-                            ctx.lineTo(point.x - 4, point.y - 10);
+                            ctx.moveTo(point.x - 2, point.y);
+                            ctx.lineTo(point.x - 2, point.y - 10);
 
                             ctx.closePath();
 
                             ctx.stroke();
 
-                            ctx.rect(point.x - 4, point.y - 10, 5, 5);
+                            ctx.rect(point.x - 2, point.y - 10, 5, 5);
 
                             ctx.fill();
-
-                            ctx.restore();
-                        }
-
-                        if (available.includes("large")) {
-                            ctx.save();
-
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-
-                            ctx.rect(point.x + 5, point.y - 15, 15, 15);
-
-                            ctx.fill();
-
-                            ctx.restore();
-                        }
-
-                        if (available.includes("medium")) {
-                            ctx.save();
-
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-
-                            ctx.rect(point.x + 5, point.y - 10, 10, 10);
-
-                            ctx.fill();
-
-                            ctx.restore();
-                        }
-
-                        if (available.includes("small")) {
-                            ctx.save();
-
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-
-                            ctx.rect(point.x + 5, point.y - 6, 6, 6);
-
-                            ctx.fill();
-
-                            ctx.restore();
-                        }
-
-                        if (available.includes("mine")) {
-                            ctx.save();
-
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-
-                            ctx.arc(point.x + 5, point.y - 6, 6, 0, 2 * Math.PI);
-
-                            ctx.fill();
+                            ctx.stroke();
 
                             ctx.restore();
                         }

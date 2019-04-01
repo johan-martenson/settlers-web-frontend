@@ -78,7 +78,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
                 {this.state.state === "LIST_GAMES" &&
                     <Dialog heading="Join an existing game or create a new game" noCloseButton={true}>
                         <GameList hideStarted={true} onJoinGame={this.onJoinGame.bind(this)} onObserveGame={this.onObserveGame.bind(this)} />
-                        <Button label="Create new game" onButtonClicked={this.createNewGame.bind(this)} />
+                        <Button label="Create new game" onButtonClicked={this.createNewGame.bind(this)} autoFocus />
                     </Dialog>
                 }
 

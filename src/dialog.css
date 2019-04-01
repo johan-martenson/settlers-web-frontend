@@ -30,23 +30,23 @@
     text-align: left;
 }
 
-.DialogSection::after {
-    content: "";
-    clear: both;
-    display: table;
-}
-
 /* Adjust for screens larger than mobile */
 @media screen and (min-width: 1000px) {
-    .Dialog {
-        position: relative;
-        padding-left: 2em;
-        padding-right: 2em;
+    .FloatingWindow {
+        position: absolute;
+        left: 20vw;
+        top: 10vh;
         margin: 0 auto;
-        width: 70vw;
-        z-index: 999;
-        background-color: var(--dialog-background-color);
-        border-radius: var(--dialog-rounded-corner);
+        width: 40vw;
+        height: 80vh;
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+
+    .NonfloatingWindow {
+        margin-left: auto;
+        margin-right: auto;
+        width: 40vw;
         height: 80vh;
         margin-top: auto;
         margin-bottom: auto;
@@ -56,4 +56,10 @@
 .BottomButtons {
     display: flex;
     justify-content: center;
+}
+
+.DialogCloseButton {
+    margin-top: auto;
+    margin-right: auto;
+    margin-left: auto;
 }

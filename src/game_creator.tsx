@@ -41,6 +41,7 @@ interface GameCreatorState {
 class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
     private titleFieldRef = createRef<HTMLInputElement>();
+    private createGameButtonRef = createRef<Button>();
 
     constructor(props: GameCreatorProps) {
         super(props);
@@ -75,6 +76,11 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
             this.setState({
                 map: map,
             });
+
+            /* Set focus on the start game button */
+            if (this.createGameButtonRef && this.createGameButtonRef.current) {
+                this.createGameButtonRef.current.focus();
+            }
         }
     }
 
@@ -230,7 +236,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                         </div>
                         <BottomButtons>
                             <Button label="Delete game" onButtonClicked={this.onDeleteGame.bind(this)} />
-                            <Button label="Start game" onButtonClicked={this.onStartGame.bind(this)} disabled={!this.state.map} />
+                            <Button label="Start game" onButtonClicked={this.onStartGame.bind(this)} disabled={!this.state.map} ref={this.createGameButtonRef}/>
                         </BottomButtons>
                     </Dialog>
                 }

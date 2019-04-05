@@ -1092,13 +1092,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx.save();
 
             ctx.beginPath();
-            ctx.fillStyle = 'brown';
+            ctx.fillStyle = 'orange';
+            ctx.strokeStyle = 'brown';
+
             ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI);
 
-            ctx.fillStyle = 'orange';
-            ctx.arc(screenPoint.x, screenPoint.y, 5, 0, 2 * Math.PI);
-
             ctx.fill();
+            ctx.stroke();
 
             ctx.restore();
         }

@@ -468,7 +468,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const colorDownRight = intToVegetationColor.get(tile.belowToTheRight);
 
             if (!colorDownRight) {
-                console.log("NO COLOR FOR VEGETATION");
+                console.log("NO COLOR FOR VEGETATION DOWN RIGHT");
                 console.log(tile.belowToTheRight);
 
                 continue;
@@ -694,18 +694,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             ctx.save();
 
                             ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'yellow';
+                            ctx.strokeStyle = 'black';
 
                             ctx.beginPath();
 
                             ctx.moveTo(point.x - 2, point.y);
                             ctx.lineTo(point.x - 2, point.y - 10);
+                            ctx.lineTo(point.x + 3, point.y - 10);
+                            ctx.lineTo(point.x + 3, point.y - 5);
+                            ctx.lineTo(point.x, point.y - 5);
+                            ctx.lineTo(point.x, point.y);
 
                             ctx.closePath();
-
-                            ctx.stroke();
-
-                            ctx.rect(point.x - 2, point.y - 10, 5, 5);
 
                             ctx.fill();
                             ctx.stroke();

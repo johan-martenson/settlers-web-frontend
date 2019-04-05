@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, createBuilding } from './api';
 import './App.css';
 import { ConstructionInfo } from './construction_info';
 import EnemyHouseInfo from './enemy_house_info';
@@ -9,7 +9,8 @@ import GameMenu from './game_menu';
 import { GameCanvas, TerrainAtPoint } from './game_render';
 import Guide from './guide';
 import MenuButton from './menu_button';
-import { pointToString, terrainInformationToTerrainAtPointList } from './utils';
+import { pointToString, terrainInformationToTerrainAtPointList, removeHouseAtPoint } from './utils';
+import TypeControl from './type_control';
 
 const MENU_MENU = 0;
 const MENU_FRIENDLY_HOUSE = 1;
@@ -35,6 +36,7 @@ let globalSyncState = {
     height: 0
 };
 
+/* Track ongoing touches to make touch control work */
 const ongoingTouches: Map<any, StoredTouch> = new Map();
 
 interface StoredTouch {
@@ -112,6 +114,8 @@ class App extends Component<AppProps, AppState> {
 
     private keyHandlers: Map<number, (() => void)> = new Map();
     private selfNameRef = React.createRef<HTMLDivElement>();
+    private typeControlRef = React.createRef<TypeControl>();
+    private commands: Map<string, (() => void)>;
 
     constructor(props: AppProps) {
         super(props);
@@ -126,6 +130,7 @@ class App extends Component<AppProps, AppState> {
         this.onTouchCancel = this.onTouchCancel.bind(this);
 
         this.onKeyDown = this.onKeyDown.bind(this);
+        this.onKeyPress = this.onKeyPress.bind(this);
 
         this.periodicFetch = this.periodicFetch.bind(this);
         this.toggleDetails = this.toggleDetails.bind(this);
@@ -175,6 +180,20 @@ class App extends Component<AppProps, AppState> {
             discoveredPoints: new Set(),
             showTitles: false
         };
+
+        /* Set up type control commands */
+        this.commands = new Map();
+
+        //SMALL_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building small building: " + building) }));
+        //MEDIUM_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building medium building: " + building) }));
+        //LARGE_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building large building: " + building) }));
+        SMALL_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
+        MEDIUM_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
+        LARGE_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
+
+        this.commands.set("road", () => { console.log("Building road") });
+        this.commands.set("flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) });
+        this.commands.set("remove", () => { removeHouseAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
     }
 
     toggleDetails(): void {
@@ -289,7 +308,6 @@ class App extends Component<AppProps, AppState> {
     zoomIn(): void {
         this.zoom(this.state.scale + 1);
     }
-
 
     /* Should move to the game canvas so the app doesn't have to know about this */
     zoom(scale: number): void {
@@ -614,6 +632,9 @@ class App extends Component<AppProps, AppState> {
         /* Ask the server for what can be done on the spot */
         const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
 
+        console.log(pointInformation);
+
+
         // x, y
         // canBuild: ['small', 'medium', 'large', 'flag', 'mine', 'harbor']
         // isType: ('flag' | 'building' | 'stone' | 'tree')
@@ -631,14 +652,50 @@ class App extends Component<AppProps, AppState> {
     }
 
     onKeyDown(event: React.KeyboardEvent): void {
-        console.info("Key down: " + event.which);
+        console.info("Key down: " + event.key);
 
-        if (event.which) {
-            const handler = this.keyHandlers.get(event.which);
+        if (event.key === "Escape") {
 
-            if (handler) {
-                handler();
+            /* Close the active menu (if there is an active menu) */
+            if (this.state.activeMenu) {
+
+                /* Otherwise, send the escape to the type controller */
+            } else if (this.typeControlRef && this.typeControlRef.current) {
+                this.typeControlRef.current.onKeyDown(event);
             }
+        } else if (event.key === " ") {
+            this.toggleDetails();
+        } else if (event.key === "Up") {
+            this.moveGameUp();
+        } else if (event.key === "Right") {
+            this.moveGameRight();
+        } else if (event.key === "Down") {
+            this.moveGameDown();
+        } else if (event.key === "Left") {
+            this.moveGameLeft();
+        } else if (event.key === "+") {
+            this.zoomIn();
+        } else if (event.key === "-") {
+            this.zoomOut();
+        } else if (event.key === "M") {
+            this.showMenu();
+        } else {
+            if (this.typeControlRef && this.typeControlRef.current) {
+                this.typeControlRef.current.onKeyDown(event);
+            }
+        }
+    }
+
+    onKeyPress(event: React.KeyboardEvent<HTMLDivElement>): void {
+        console.log("Key pressed: " + event.key);
+
+        /* Filter out some input that should not result in type control */
+        if (event.key === "+" || event.key === "-") {
+            return;
+        }
+
+        if (this.typeControlRef && this.typeControlRef.current) {
+            this.typeControlRef.current.onKeyPress(event);
         }
     }
 
@@ -791,6 +848,7 @@ class App extends Component<AppProps, AppState> {
                 onMouseMove={this.onMouseMove}
                 onMouseUp={this.onMouseUp}
                 onKeyDown={this.onKeyDown}
+                onKeyPress={this.onKeyPress}
                 onTouchStart={this.onTouchStart}
                 onTouchMove={this.onTouchMove}
                 onTouchEnd={this.onTouchEnd}
@@ -887,6 +945,8 @@ class App extends Component<AppProps, AppState> {
                         gameId={this.props.gameId}
                     />
                 }
+
+                <TypeControl commands={this.commands} ref={this.typeControlRef} />
             </div>
         );
     }

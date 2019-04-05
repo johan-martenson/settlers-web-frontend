@@ -20,7 +20,6 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
     }
 
     onKeyDown(event: React.KeyboardEvent): void {
-        console.log("Typed: " + event.key);
 
         /* Clear the command if escape is pressed */
         if (event.key === "Escape") {
@@ -33,18 +32,18 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
             /* Run the command if enter is pressed */
         } else if (event.key === "Enter") {
 
-            console.log("Current input is: " + this.state.input);
+            console.log("Running command based on current input: " + this.state.input);
 
             /* Find the matching command */
             let commandHit;
 
-            this.props.commands.forEach(
-                (fn, command) => {
-                    if (command.toLowerCase().startsWith(this.state.input.toLowerCase())) {
-                        commandHit = command;
-                    }
+            for (const command of Array.from(this.props.commands.keys())) {
+                if (command.toLowerCase().startsWith(this.state.input.toLowerCase())) {
+                    commandHit = command;
+
+                    break;
                 }
-            )
+            }
 
             console.log("Command hit: " + commandHit);
 
@@ -58,14 +57,14 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
                     fn();
                 }
-            }
 
-            /* Clear the input */
-            this.setState(
-                {
-                    input: ""
-                }
-            )
+                /* Clear the input */
+                this.setState(
+                    {
+                        input: ""
+                    }
+                )
+            }
 
             /* Remove the last entered character if backspace is pressed */
         } else if (event.key === "Backspace") {
@@ -78,7 +77,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
     }
 
     onKeyPress(event: React.KeyboardEvent<HTMLDivElement>): void {
-        console.log("Key pressed: " + event.key);
+        console.log("Key pressed: " + event.key + ", input was: " + this.state.input);
 
         /* Filter enter presses (they are handled by onKeyDown) */
         if (event.key === "Enter") {

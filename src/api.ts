@@ -165,7 +165,6 @@ async function getMaps(): Promise<MapInformation[]> {
     return await response.json();
 }
 
-
 async function createGame(game: GameToCreate): Promise<GameInformation> {
     let gameBody: GameToCreate = {}
 
@@ -391,6 +390,12 @@ async function getPlayers(gameId: GameId): Promise<PlayerInformation[]> {
     return result;
 }
 
+async function getHousesForPlayer(playerId: PlayerId, gameId: GameId): Promise<HouseInformation[]> {
+    const response = await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/houses');
+
+    return await response.json();
+}
+
 async function getHouseInformation(houseId: HouseId, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
     // x:
     // y:
@@ -494,5 +499,5 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export { setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addPlayerToGame };
+export { getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addPlayerToGame };
 

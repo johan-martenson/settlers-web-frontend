@@ -16,7 +16,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
 
     render() {
         return (
-            <Dialog heading="Flag" onCloseDialog={this.props.closeDialog}>
+            <Dialog heading="Flag" onCloseDialog={this.props.closeDialog} floating>
 
                 <DialogSection>
 

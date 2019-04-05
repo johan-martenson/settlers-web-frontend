@@ -1,0 +1,21 @@
+.InputWithNoMatches {
+    color: red;
+}
+
+.MatchingPart {
+    font-weight: bold;
+}
+
+.TypeControl {
+    position: absolute;
+    z-index: 99;
+    right: 0;
+    bottom: 0;
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 0.7rem;
+}
+
+.Alternative {
+    text-align: left;
+}

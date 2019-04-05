@@ -9,6 +9,8 @@ import { Player } from '../player';
 import Slider from '../slider';
 import GradientTriangleDemo from '../gradient_triangle_demo';
 import RotatingTriangle from '../rotating_triangle';
+import TypeControlDemo from '../type_control_demo';
+import { SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES } from '../api';
 
 storiesOf('Button', module)
   .add('with text', () => (
@@ -100,8 +102,28 @@ storiesOf('GradientTriangle', module)
 storiesOf('RotatingTriangle', module)
   .add('1 1 0',
     () => (<div>
-      <RotatingTriangle intensities={[1, 1, 0]}/>
-      <RotatingTriangle intensities={[1, 0, 0]}/>
-      <RotatingTriangle intensities={[1, 0.2, 0]}/>
-      </div>
+      <RotatingTriangle intensities={[1, 1, 0]} />
+      <RotatingTriangle intensities={[1, 0, 0]} />
+      <RotatingTriangle intensities={[1, 0.2, 0]} />
+    </div>
     ));
+
+const commands = new Map();
+
+SMALL_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building medium building: " + building) }));
+MEDIUM_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building medium building: " + building) }));
+LARGE_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building large building: " + building) }));
+
+commands.set("road", () => { console.log("Building road") })
+commands.set("flag", () => { console.log("Raising flag") })
+commands.set("remove", () => { console.log("Remove building")})
+
+
+storiesOf('TypeControl', module)
+  .add('Typing',
+    () => (
+      <TypeControlDemo commands={commands} />
+    ));
+
+
+

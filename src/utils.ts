@@ -1,4 +1,4 @@
-import { Point, TerrainInformation, TileInformation } from './api';
+import { Point, TerrainInformation, TileInformation, getHousesForPlayer, PlayerId, GameId, removeHouse } from './api';
 import { TerrainAtPoint } from './game_render';
 
 const vegetationToInt = new Map<TileInformation, number>();
@@ -416,5 +416,26 @@ function getPointAtLineGivenX(line: Line, x: number): Point {
     }
 }
 
-export { isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
+
+    /* Get the player's houses */
+    const buildings = await getHousesForPlayer(playerId, gameId);
+
+    /* Find the one on the point */
+    let buildingOnPoint;
+
+    for (const building of buildings) {
+        if (building.x === point.x && building.y === point.y) {
+            buildingOnPoint = building;
+
+            break;
+        }
+    }
+
+    if (buildingOnPoint) {
+        removeHouse(buildingOnPoint.id, gameId);
+    }
+}
+
+export { removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
 

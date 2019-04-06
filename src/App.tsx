@@ -184,16 +184,13 @@ class App extends Component<AppProps, AppState> {
         /* Set up type control commands */
         this.commands = new Map();
 
-        //SMALL_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building small building: " + building) }));
-        //MEDIUM_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building medium building: " + building) }));
-        //LARGE_HOUSES.forEach((building) => commands.set(building, () => { console.log("Building large building: " + building) }));
         SMALL_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
         MEDIUM_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
         LARGE_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
 
-        this.commands.set("road", () => { console.log("Building road") });
-        this.commands.set("flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) });
-        this.commands.set("remove", () => { removeHouseAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+        this.commands.set("Road", () => { console.log("Building road") });
+        this.commands.set("Flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) });
+        this.commands.set("Remove house", () => { removeHouseAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
     }
 
     toggleDetails(): void {
@@ -658,11 +655,17 @@ class App extends Component<AppProps, AppState> {
 
             /* Close the active menu (if there is an active menu) */
             if (this.state.activeMenu) {
+                this.closeActiveMenu();
 
-                /* Otherwise, send the escape to the type controller */
+            /* Stop building a new road */
+            } else if (this.state.newRoad) {
+                this.setState({ newRoad: undefined, possibleRoadConnections: [] });
+
+            /* Otherwise, send the escape to the type controller */
             } else if (this.typeControlRef && this.typeControlRef.current) {
                 this.typeControlRef.current.onKeyDown(event);
             }
+
         } else if (event.key === " ") {
             this.toggleDetails();
         } else if (event.key === "Up") {

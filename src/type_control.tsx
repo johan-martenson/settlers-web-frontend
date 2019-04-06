@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './type_control.css';
+import ExpandCollapseToggle from './expand_collapse_toggle';
 
 interface TypeControlProps {
     commands: Map<string, (() => void)>
@@ -7,6 +8,7 @@ interface TypeControlProps {
 
 interface TypeControlState {
     input: string
+    expanded: boolean
 }
 
 class TypeControl extends Component<TypeControlProps, TypeControlState> {
@@ -15,7 +17,8 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
         super(props);
 
         this.state = {
-            input: ""
+            input: "",
+            expanded: false
         }
     }
 
@@ -84,6 +87,11 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
             return;
         }
 
+        /* Filter initial space */
+        if (this.state.input === "" && event.key === " ") {
+            return;
+        }
+
         this.setState(
             {
                 input: this.state.input + event.key
@@ -93,34 +101,51 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
     render() {
 
-        const hits = new Array<string>();
+        let hasMatch = false;
+        const inputToMatch = this.state.input.toLowerCase();
 
         if (this.state.input.length > 0) {
             this.props.commands.forEach((fn, command) => {
 
-                if (command.toLowerCase().startsWith(this.state.input.toLowerCase())) {
-                    hits.push(command);
+                if (command.toLowerCase().startsWith(inputToMatch)) {
+                    hasMatch = true;
                 }
             });
         }
 
         let className = "Input"
 
-        if (this.state.input.length > 0 && hits.length === 0) {
+        if (this.state.input.length > 0 && !hasMatch) {
             className = "InputWithNoMatches"
         }
 
         return (
             <div className="TypeControl">
 
+                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} inverted />
                 <div className={className}>{this.state.input}</div>
 
-                {hits.map(
-                    (hit, index) => {
-                        return <div key={index} className="Alternative">
-                            <span className="MatchingPart">{hit.substring(0, this.state.input.length)}</span>
-                            <span className="RemainingPart">{hit.substring(this.state.input.length, hit.length)}</span>
-                        </div>;
+                {Array.from(this.props.commands.keys()).map(
+                    (option, index) => {
+
+                        if (inputToMatch.length > 0 && option.toLowerCase().startsWith(inputToMatch)) {
+
+                            return (
+                                <div key={index} className="Alternative">
+                                    <span className="MatchingPart">{option.substring(0, this.state.input.length)}</span>
+                                    <span className="RemainingPart">{option.substring(this.state.input.length, option.length)}</span>
+                                </div>
+                            );
+                        } else {
+
+                            if (this.state.expanded) {
+                                return (
+                                    <div key={index} className="Alternative">{option}</div>
+                                );
+                            } else {
+                                return null;
+                            }
+                        }
                     }
                 )
                 }

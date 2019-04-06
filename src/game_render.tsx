@@ -128,7 +128,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.terrain.forEach(
             (terrainAtPoint: TerrainAtPoint) => {
 
-                const point = {
+                const point = terrainAtPoint.point;
+
+                const point3d: Point3D = {
                     x: terrainAtPoint.point.x,
                     y: terrainAtPoint.point.y,
                     z: terrainAtPoint.height
@@ -143,51 +145,51 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const rightHeight = this.getHeightForPoint(pointRight);
 
                 if (downLeftHeight && downRightHeight) {
-                    const pointDownLeft3d = {
+                    const pointDownLeft3d: Point3D = {
                         x: pointDownLeft.x,
                         y: pointDownLeft.y,
                         z: downLeftHeight
                     }
 
-                    const pointDownRight3d = {
+                    const pointDownRight3d: Point3D = {
                         x: pointDownRight.x,
                         y: pointDownRight.y,
                         z: downRightHeight
                     }
 
-                    let xStraightBelowMap = straightBelowNormals.get(point.x);
+                    let xStraightBelowMap = straightBelowNormals.get(point3d.x);
 
                     if (!xStraightBelowMap) {
                         xStraightBelowMap = new Map<number, Vector>();
-                        straightBelowNormals.set(point.x, xStraightBelowMap);
+                        straightBelowNormals.set(point3d.x, xStraightBelowMap);
                     }
 
-                    xStraightBelowMap.set(point.y, getNormalForTriangle(point, pointDownLeft3d, pointDownRight3d));
+                    xStraightBelowMap.set(point3d.y, getNormalForTriangle(point3d, pointDownLeft3d, pointDownRight3d));
                 }
 
                 if (downRightHeight && rightHeight) {
 
-                    const pointRight3d = {
+                    const pointRight3d: Point3D = {
                         x: pointRight.x,
                         y: pointRight.y,
                         z: rightHeight
                     }
 
-                    const pointDownRight3d = {
+                    const pointDownRight3d: Point3D = {
                         x: pointDownRight.x,
                         y: pointDownRight.y,
                         z: downRightHeight
                     }
 
-                    let xDownRightMap = downRightNormals.get(point.x);
+                    let xDownRightMap = downRightNormals.get(point3d.x);
 
 
                     if (!xDownRightMap) {
                         xDownRightMap = new Map<number, Vector>();
-                        downRightNormals.set(point.x, xDownRightMap);
+                        downRightNormals.set(point3d.x, xDownRightMap);
                     }
 
-                    xDownRightMap.set(point.y, getNormalForTriangle(point, pointDownRight3d, pointRight3d));
+                    xDownRightMap.set(point3d.y, getNormalForTriangle(point3d, pointDownRight3d, pointRight3d));
                 }
             }
         );
@@ -384,13 +386,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const gamePointDownLeft = getPointDownLeft(gamePoint);
             const gamePointDownRight = getPointDownRight(gamePoint);
 
-            const point = this.gamePointToScreenPoint(gamePoint);
-            const right = this.gamePointToScreenPoint(gamePointRight);
-            const downLeft = this.gamePointToScreenPoint(gamePointDownLeft);
-            const downRight = this.gamePointToScreenPoint(gamePointDownRight);
+            const screenPoint = this.gamePointToScreenPoint(gamePoint);
+            const screenPointRight = this.gamePointToScreenPoint(gamePointRight);
+            const screenPointDownLeft = this.gamePointToScreenPoint(gamePointDownLeft);
+            const screenPointDownRight = this.gamePointToScreenPoint(gamePointDownRight);
 
             /* Filter the cases where both triangles are outside of the screen */
-            if (right.x < 0 || downLeft.x > width || downLeft.y < 0 || point.y > height) {
+            if (screenPointRight.x < 0 || screenPointDownLeft.x > width || screenPointDownLeft.y < 0 || screenPoint.y > height) {
                 continue;
             }
 
@@ -404,124 +406,128 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const intensityPointRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointRight), lightVector);
 
             /* Draw the tile right below */
-            const colorBelow = intToVegetationColor.get(tile.straightBelow);
+            if (this.pointIsDiscovered(gamePointDownLeft) && this.pointIsDiscovered(gamePointDownRight)) {
+                const colorBelow = intToVegetationColor.get(tile.straightBelow);
 
-            /* Skip this draw if there is no defined color. This is an error */
-            if (!colorBelow) {
-                console.log("NO COLOR FOR BELOW");
-                console.log(tile.straightBelow);
-                
-                continue;
-            }
+                /* Skip this draw if there is no defined color. This is an error */
+                if (!colorBelow) {
+                    console.log("NO COLOR FOR BELOW");
+                    console.log(tile.straightBelow);
 
-            ctx.save();
+                    continue;
+                }
 
-            const minIntensityBelow = Math.min(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
-            const maxIntensityBelow = Math.max(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
+                ctx.save();
 
-            const minColorBelow: RgbColorArray = [
-                colorBelow[0] + 40 * Math.abs(minIntensityBelow),
-                colorBelow[1] + 40 * Math.abs(minIntensityBelow),
-                colorBelow[2] + 40 * Math.abs(minIntensityBelow)
-            ];
+                const minIntensityBelow = Math.min(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
+                const maxIntensityBelow = Math.max(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
 
-            const maxColorBelow: RgbColorArray = [
-                colorBelow[0] + 40 * Math.abs(maxIntensityBelow),
-                colorBelow[1] + 40 * Math.abs(maxIntensityBelow),
-                colorBelow[2] + 40 * Math.abs(maxIntensityBelow)
-            ];
-
-            if (minIntensityBelow === maxIntensityBelow) {
-                ctx.fillStyle = arrayToRgbStyle(minColorBelow);
-            } else {
-
-                const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownLeft, intensityPointDownLeft, gamePointDownRight, intensityPointDownRight);
-
-                const gradientScreenPoints = [
-                    this.gamePointToScreenPoint(gradientGamePoints[0]),
-                    this.gamePointToScreenPoint(gradientGamePoints[1])
+                const minColorBelow: RgbColorArray = [
+                    colorBelow[0] + 40 * Math.abs(minIntensityBelow),
+                    colorBelow[1] + 40 * Math.abs(minIntensityBelow),
+                    colorBelow[2] + 40 * Math.abs(minIntensityBelow)
                 ];
 
-                const gradient = ctx.createLinearGradient(
-                    gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
-                );
+                const maxColorBelow: RgbColorArray = [
+                    colorBelow[0] + 40 * Math.abs(maxIntensityBelow),
+                    colorBelow[1] + 40 * Math.abs(maxIntensityBelow),
+                    colorBelow[2] + 40 * Math.abs(maxIntensityBelow)
+                ];
 
-                gradient.addColorStop(0, arrayToRgbStyle(maxColorBelow));
-                gradient.addColorStop(1, arrayToRgbStyle(minColorBelow));
+                if (minIntensityBelow === maxIntensityBelow) {
+                    ctx.fillStyle = arrayToRgbStyle(minColorBelow);
+                } else {
 
-                ctx.fillStyle = gradient;
+                    const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownLeft, intensityPointDownLeft, gamePointDownRight, intensityPointDownRight);
+
+                    const gradientScreenPoints = [
+                        this.gamePointToScreenPoint(gradientGamePoints[0]),
+                        this.gamePointToScreenPoint(gradientGamePoints[1])
+                    ];
+
+                    const gradient = ctx.createLinearGradient(
+                        gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
+                    );
+
+                    gradient.addColorStop(0, arrayToRgbStyle(maxColorBelow));
+                    gradient.addColorStop(1, arrayToRgbStyle(minColorBelow));
+
+                    ctx.fillStyle = gradient;
+                }
+
+                ctx.beginPath()
+
+                ctx.moveTo(screenPoint.x, screenPoint.y);
+                ctx.lineTo(screenPointDownLeft.x, screenPointDownLeft.y);
+                ctx.lineTo(screenPointDownRight.x, screenPointDownRight.y);
+
+                ctx.closePath();
+
+                ctx.fill();
+
+                ctx.restore();
             }
-
-            ctx.beginPath()
-
-            ctx.moveTo(point.x, point.y);
-            ctx.lineTo(downLeft.x, downLeft.y);
-            ctx.lineTo(downRight.x, downRight.y);
-
-            ctx.closePath();
-
-            ctx.fill();
-
-            ctx.restore();
 
             /* Draw the tile down right */
-            const colorDownRight = intToVegetationColor.get(tile.belowToTheRight);
+            if (this.pointIsDiscovered(gamePointDownRight) && this.pointIsDiscovered(gamePointRight)) {
+                const colorDownRight = intToVegetationColor.get(tile.belowToTheRight);
 
-            if (!colorDownRight) {
-                console.log("NO COLOR FOR VEGETATION DOWN RIGHT");
-                console.log(tile.belowToTheRight);
+                if (!colorDownRight) {
+                    console.log("NO COLOR FOR VEGETATION DOWN RIGHT");
+                    console.log(tile.belowToTheRight);
 
-                continue;
-            }
+                    continue;
+                }
 
-            ctx.save();
+                ctx.save();
 
-            const minIntensityDownRight = Math.min(intensityPoint, intensityPointDownRight, intensityPointRight);
-            const maxIntensityDownRight = Math.max(intensityPoint, intensityPointDownRight, intensityPointRight);
+                const minIntensityDownRight = Math.min(intensityPoint, intensityPointDownRight, intensityPointRight);
+                const maxIntensityDownRight = Math.max(intensityPoint, intensityPointDownRight, intensityPointRight);
 
-            const minColorDownRight = [
-                colorDownRight[0] + 40 * Math.abs(minIntensityDownRight),
-                colorDownRight[1] + 40 * Math.abs(minIntensityDownRight),
-                colorDownRight[2] + 40 * Math.abs(minIntensityDownRight)
-            ];
-
-            const maxColorDownRight = [
-                colorDownRight[0] + 40 * Math.abs(maxIntensityDownRight),
-                colorDownRight[1] + 40 * Math.abs(maxIntensityDownRight),
-                colorDownRight[2] + 40 * Math.abs(maxIntensityDownRight)
-            ];
-
-            if (minIntensityDownRight === maxIntensityDownRight) {
-                ctx.fillStyle = arrayToRgbStyle(minColorDownRight);
-            } else {
-
-                const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownRight, intensityPointDownRight, gamePointRight, intensityPointRight);
-
-                const gradientScreenPoints = [
-                    this.gamePointToScreenPoint(gradientGamePoints[0]),
-                    this.gamePointToScreenPoint(gradientGamePoints[1])
+                const minColorDownRight = [
+                    colorDownRight[0] + 40 * Math.abs(minIntensityDownRight),
+                    colorDownRight[1] + 40 * Math.abs(minIntensityDownRight),
+                    colorDownRight[2] + 40 * Math.abs(minIntensityDownRight)
                 ];
 
-                const gradient = ctx.createLinearGradient(
-                    gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
-                );
-                gradient.addColorStop(0, arrayToRgbStyle(maxColorDownRight));
-                gradient.addColorStop(1, arrayToRgbStyle(minColorDownRight));
+                const maxColorDownRight = [
+                    colorDownRight[0] + 40 * Math.abs(maxIntensityDownRight),
+                    colorDownRight[1] + 40 * Math.abs(maxIntensityDownRight),
+                    colorDownRight[2] + 40 * Math.abs(maxIntensityDownRight)
+                ];
 
-                ctx.fillStyle = gradient;
+                if (minIntensityDownRight === maxIntensityDownRight) {
+                    ctx.fillStyle = arrayToRgbStyle(minColorDownRight);
+                } else {
+
+                    const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownRight, intensityPointDownRight, gamePointRight, intensityPointRight);
+
+                    const gradientScreenPoints = [
+                        this.gamePointToScreenPoint(gradientGamePoints[0]),
+                        this.gamePointToScreenPoint(gradientGamePoints[1])
+                    ];
+
+                    const gradient = ctx.createLinearGradient(
+                        gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
+                    );
+                    gradient.addColorStop(0, arrayToRgbStyle(maxColorDownRight));
+                    gradient.addColorStop(1, arrayToRgbStyle(minColorDownRight));
+
+                    ctx.fillStyle = gradient;
+                }
+
+                ctx.beginPath()
+
+                ctx.moveTo(screenPoint.x, screenPoint.y);
+                ctx.lineTo(screenPointDownRight.x, screenPointDownRight.y);
+                ctx.lineTo(screenPointRight.x, screenPointRight.y);
+
+                ctx.closePath();
+
+                ctx.fill();
+
+                ctx.restore();
             }
-
-            ctx.beginPath()
-
-            ctx.moveTo(point.x, point.y);
-            ctx.lineTo(downRight.x, downRight.y);
-            ctx.lineTo(right.x, right.y);
-
-            ctx.closePath();
-
-            ctx.fill();
-
-            ctx.restore();
         }
 
         /* Draw the roads */

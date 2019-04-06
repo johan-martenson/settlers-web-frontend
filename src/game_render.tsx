@@ -144,7 +144,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const downRightHeight = this.getHeightForPoint(pointDownRight);
                 const rightHeight = this.getHeightForPoint(pointRight);
 
-                if (downLeftHeight && downRightHeight) {
+                if (downLeftHeight !== undefined && downRightHeight !== undefined) {
                     const pointDownLeft3d: Point3D = {
                         x: pointDownLeft.x,
                         y: pointDownLeft.y,
@@ -167,7 +167,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     xStraightBelowMap.set(point3d.y, getNormalForTriangle(point3d, pointDownLeft3d, pointDownRight3d));
                 }
 
-                if (downRightHeight && rightHeight) {
+                if (downRightHeight !== undefined && rightHeight !== undefined) {
 
                     const pointRight3d: Point3D = {
                         x: pointRight.x,
@@ -268,7 +268,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     pointToPoint3D(point: Point): Point3D | undefined {
         const height = this.getHeightForPoint(point)
 
-        if (!height) {
+        if (height === undefined) {
             return undefined;
         }
 
@@ -376,15 +376,20 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue;
             }
 
+            const gamePoint = tile.point;
+
             /* Filter points that are not yet discovered */
-            if (!this.pointIsDiscovered(tile.point)) {
+            if (!this.pointIsDiscovered(gamePoint)) {
                 continue;
             }
 
-            const gamePoint = tile.point;
             const gamePointRight = getPointRight(gamePoint);
             const gamePointDownLeft = getPointDownLeft(gamePoint);
             const gamePointDownRight = getPointDownRight(gamePoint);
+
+            const gamePointRightDiscovered = this.pointIsDiscovered(gamePointRight);
+            const gamePointDownLeftDiscovered = this.pointIsDiscovered(gamePointDownLeft);
+            const gamePointDownRightDiscovered = this.pointIsDiscovered(gamePointDownRight);
 
             const screenPoint = this.gamePointToScreenPoint(gamePoint);
             const screenPointRight = this.gamePointToScreenPoint(gamePointRight);
@@ -396,17 +401,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue;
             }
 
+            /* Filter the case where the game point down right is not discovered because it's part of both triangles so then there is nothing to draw */
+            if (!gamePointDownRightDiscovered) {
+                continue;
+            }
+
             /* Define the light vector */
             const lightVector = { x: -1, y: 1, z: -1 };
 
             /* Get intensity for each point */
             const intensityPoint = getBrightnessForNormals(this.getSurroundingNormals(gamePoint), lightVector);
-            const intensityPointDownLeft = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownLeft), lightVector);
             const intensityPointDownRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownRight), lightVector);
-            const intensityPointRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointRight), lightVector);
 
             /* Draw the tile right below */
-            if (this.pointIsDiscovered(gamePointDownLeft) && this.pointIsDiscovered(gamePointDownRight)) {
+            if (gamePointDownLeftDiscovered && gamePointDownRightDiscovered) {
+
+                /* Get the brightness for the game point down left here because now we know that it is discovered */
+                const intensityPointDownLeft = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownLeft), lightVector);
                 const colorBelow = intToVegetationColor.get(tile.straightBelow);
 
                 /* Skip this draw if there is no defined color. This is an error */
@@ -469,7 +480,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             /* Draw the tile down right */
-            if (this.pointIsDiscovered(gamePointDownRight) && this.pointIsDiscovered(gamePointRight)) {
+            if (gamePointDownRightDiscovered && gamePointRightDiscovered) {
+
+                /* Get the brightness for the game point right here because now we know that the point is discovered */
+                const intensityPointRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointRight), lightVector);
                 const colorDownRight = intToVegetationColor.get(tile.belowToTheRight);
 
                 if (!colorDownRight) {
@@ -1108,15 +1122,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             ctx.restore();
         }
-    }
-
-    private getBrightnessForTriangle(gamePoint: Point, gamePointDownLeft: { x: number; y: number; }, gamePointDownRight: { x: number; y: number; }, lightVector: { x: number; y: number; z: number; }) {
-
-        const normal = getNormalForTriangle(this.pointToPoint3D(gamePoint), this.pointToPoint3D(gamePointDownLeft), this.pointToPoint3D(gamePointDownRight));
-
-        const alignment = getDotProduct(normal, lightVector);
-
-        return alignment;
     }
 
     saveContext(context: CanvasRenderingContext2D): void {

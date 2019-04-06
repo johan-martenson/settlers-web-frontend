@@ -123,11 +123,7 @@ function normalize(vector: Vector): NormalizedVector {
     }
 }
 
-function getNormalForTriangle(p1: Point3D | undefined, p2: Point3D | undefined, p3: Point3D | undefined): NormalizedVector {
-
-    if (!p1 || !p2 || !p3) {
-        return { x: 0, y: 0, z: 1 };
-    }
+function getNormalForTriangle(p1: Point3D, p2: Point3D, p3: Point3D): NormalizedVector {
 
     const vector1 = vectorFromPoints(p1, p2);
     const vector2 = vectorFromPoints(p1, p3);

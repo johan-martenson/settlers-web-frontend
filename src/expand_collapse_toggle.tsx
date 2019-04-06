@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
 import './expand_collapse_toggle.css';
+import { isContext2D } from './utils';
 
 interface ExpandCollapseToggleProps {
     expanded?: boolean
+    inverted?: boolean
     onExpand: (() => void)
     onCollapse: (() => void)
 }
@@ -32,10 +34,6 @@ class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCo
         this.setState({ expanded: !this.state.expanded });
     }
 
-    isContext2D(context: RenderingContext): context is CanvasRenderingContext2D {
-        return true;
-    }
-
     componentDidMount() {
         this.componentDidUpdate();
     }
@@ -49,7 +47,7 @@ class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCo
 
         const ctx = this.selfRef.current.getContext("2d");
 
-        if (!ctx || !this.isContext2D(ctx)) {
+        if (!ctx || !isContext2D(ctx)) {
             console.log("ERROR: No or invalid context");
             console.log(ctx);
             return;
@@ -58,7 +56,7 @@ class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCo
         /* Clear the screen */
         ctx.clearRect(0, 0, 20, 20);
 
-        if (this.state.expanded) {
+        if ((this.state.expanded && !this.props.inverted) || !this.state.expanded && this.props.inverted) {
 
             ctx.save();
 

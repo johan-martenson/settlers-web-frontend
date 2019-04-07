@@ -31,6 +31,8 @@ intToVegetationColor.set(8, [230, 110, 0]);
 intToVegetationColor.set(9, [230, 200, 0]);
 intToVegetationColor.set(10, [100, 70, 70]);
 
+const MINIMAL_DIFFERENCE = 0.0000001;
+
 // FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {
     return camelCaseStr;
@@ -174,6 +176,11 @@ function getIntersection(line1: Line, line2: Line): Point {
     }
 }
 
+function almostEquals(a: number, b: number): boolean {
+    const difference = a - b;
+    return difference < MINIMAL_DIFFERENCE && difference > -MINIMAL_DIFFERENCE;
+}
+
 function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, intensity2: number, p3: Point, intensity3: number): Point[] {
 
     const intensityMax = Math.max(intensity1, intensity2, intensity3);
@@ -220,7 +227,7 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
     const midIntensityProportion = intensityPartialRange / intensityFullRange;
 
     /* Handle the special case where partial and full intensity are the same -- p4 and pointHigh are on the same line */
-    if (intensityMax === partialIntensity) {
+    if (almostEquals(intensityMax, partialIntensity)) {
 
         /* Handle the special case where pointHigh and pointMedium are on the same vertical line */
         if (pointHigh.x === pointMedium.x) {
@@ -239,7 +246,7 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
             const line1 = getLineBetweenPoints(pointHigh, pointMedium);
 
             /* Handle the special case where L1 is parallel with the X axis. */
-            if (line1.k === 0) {
+            if (almostEquals(line1.k, 0)) {
 
                 /* Get the point at L1 where x = pointLow.x */
                 const p5 = getPointAtLineGivenX(line1, pointLow.x);
@@ -275,7 +282,7 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
         const line1 = getLineBetweenPoints(p4, pointLow);
 
         /* Handle the case where the line is parallel with the X axis */
-        if (line1.k === 0) {
+        if (almostEquals(line1.k, 0)) {
             const result = [
                 pointHigh,
                 {
@@ -287,7 +294,7 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
             return result;
 
             /* Handle the case where the line is fully vertical */
-        } else if (p4.x === pointLow.x) {
+        } else if (almostEquals(p4.x, pointLow.x)) {
             return [
                 pointHigh,
                 {

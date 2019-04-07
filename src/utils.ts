@@ -230,7 +230,7 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
     if (almostEquals(intensityMax, partialIntensity)) {
 
         /* Handle the special case where pointHigh and pointMedium are on the same vertical line */
-        if (pointHigh.x === pointMedium.x) {
+        if (almostEquals(pointHigh.x, pointMedium.x)) {
             const result = [
                 {
                     x: pointHigh.x,
@@ -440,5 +440,5 @@ async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: Player
     }
 }
 
-export { removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+export { almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
 

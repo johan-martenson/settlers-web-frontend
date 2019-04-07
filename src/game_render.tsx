@@ -104,6 +104,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.props.terrain && this.props.terrain.length > 0) {
             this.buildHeightMap();
         }
+
+        /* Define the light vector */
+        this.lightVector = { x: -1, y: 1, z: -1 };
     }
 
     buildHeightMap(): void {
@@ -410,8 +413,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const lightVector = { x: -1, y: 1, z: -1 };
 
             /* Get intensity for each point */
-            const intensityPoint = getBrightnessForNormals(this.getSurroundingNormals(gamePoint), lightVector);
-            const intensityPointDownRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownRight), lightVector);
+            const intensityPoint = getBrightnessForNormals(this.getSurroundingNormals(gamePoint), this.lightVector);
+            const intensityPointDownRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownRight), this.lightVector);
 
             /* Draw the tile right below */
             if (gamePointDownLeftDiscovered && gamePointDownRightDiscovered) {
@@ -483,7 +486,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (gamePointDownRightDiscovered && gamePointRightDiscovered) {
 
                 /* Get the brightness for the game point right here because now we know that the point is discovered */
-                const intensityPointRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointRight), lightVector);
+                const intensityPointRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointRight), this.lightVector);
                 const colorDownRight = intToVegetationColor.get(tile.belowToTheRight);
 
                 if (!colorDownRight) {

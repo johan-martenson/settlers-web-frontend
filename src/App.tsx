@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, createBuilding } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, createFlag, createRoad, CropInformation, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, PlayerId, PlayerInformation, Point, PointInformation, PointString, RoadInformation, setSpeed, SignInformation, StoneInformation, TreeInformation, WorkerInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, createBuilding, findPossibleNewRoad } from './api';
 import './App.css';
 import { ConstructionInfo } from './construction_info';
 import EnemyHouseInfo from './enemy_house_info';
@@ -9,7 +9,7 @@ import GameMenu from './game_menu';
 import { GameCanvas, TerrainAtPoint } from './game_render';
 import Guide from './guide';
 import MenuButton from './menu_button';
-import { pointToString, terrainInformationToTerrainAtPointList, removeHouseAtPoint } from './utils';
+import { pointToString, terrainInformationToTerrainAtPointList, removeHouseAtPoint, isRoadAtPoint } from './utils';
 import TypeControl from './type_control';
 
 const MENU_MENU = 0;
@@ -481,16 +481,43 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* A road is being built */
-        if (this.state.newRoad) {
-
+        if (this.state.newRoad && this.state.possibleRoadConnections) {
+            console.log("A road is being built, currently: " + JSON.stringify(this.state.newRoad));
+            
             const recent = this.state.newRoad[this.state.newRoad.length - 1];
+
+            /* Create the possible new road including the addition */
+            let possibleNewRoad = this.state.newRoad
+
+            /* Handle the case where one of the directly adjacent possible new road connections is selected */
+            if (this.state.possibleRoadConnections.find(e => e.x === point.x && e.y === point.y)) {
+                possibleNewRoad.push(point);
+
+            /* Handle the case where a point further away was clicked */
+            } else {
+
+                /* Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road */
+                const possibleNewRoadSegment = await findPossibleNewRoad(recent, point, this.state.newRoad, this.props.gameId, this.props.selfPlayerId);
+
+                if (possibleNewRoadSegment) {
+                    possibleNewRoad.push(...possibleNewRoadSegment.possibleNewRoad.slice(1));
+                } else {
+
+                    /* Ignore the click if no possible road is available */
+                    console.log("Not possible to include in road. Ignoring.");
+                    
+                    return;
+                }
+            }
+
+            console.log("New possible road is: " + JSON.stringify(possibleNewRoad));
 
             /* Handle the case when a flag is clicked and create a road to it */
             if (this.state.flags.find((f) => f.x === point.x && f.y === point.y)) {
 
                 console.info("Placing road directly to flag");
 
-                await createRoad(this.state.newRoad.concat(point),
+                await createRoad(possibleNewRoad,
                     this.props.gameId,
                     this.state.player);
 
@@ -499,18 +526,33 @@ class App extends Component<AppProps, AppState> {
                     possibleRoadConnections: []
                 });
 
-                /* If the point is new, add it to the ongoing road */
-            } else if (recent.x !== point.x || recent.y !== point.y) {
-                console.info("Adding segment to road (onPointClicked) " + JSON.stringify(point));
+            /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
+            } else if (isRoadAtPoint(point, this.state.roads)) {
+
+                console.info('Placing flag for road');
+
+                await createFlag(point, this.props.gameId, this.props.selfPlayerId);
+
+                console.log("Creating road to flag");
+
+                await createRoad(possibleNewRoad, this.props.gameId, this.props.selfPlayerId);
 
                 this.setState({
-                    newRoad: this.state.newRoad.concat(point)
+                    newRoad: undefined,
+                    possibleRoadConnections: []
                 });
+
+            /* Add the new possible road points to the ongoing road and don't create the road*/
+            } else if (recent.x !== point.x || recent.y !== point.y) {
+                console.info("Continuing road building with extended road segment");
 
                 /* Get the available connections from the added point */
                 const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
 
+                console.log("Possible new road direct adjacent road connections: " + JSON.stringify(pointInformation.possibleRoadConnections));
+
                 this.setState({
+                    newRoad: possibleNewRoad,
                     possibleRoadConnections: pointInformation.possibleRoadConnections
                 });
             }
@@ -706,16 +748,13 @@ class App extends Component<AppProps, AppState> {
 
         /* Start the list of points in the new road with the clicked point */
         console.info("Add segment to road (startNewRoad) " + JSON.stringify(point));
-        this.setState(
-            {
-                newRoad: [point]
-            }
-        );
 
         /* Get the possible connections from the server and draw them */
         const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
+
         this.setState(
             {
+                newRoad: [point],
                 possibleRoadConnections: pointInformation.possibleRoadConnections
             }
         );

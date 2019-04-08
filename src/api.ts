@@ -133,6 +133,11 @@ export interface PlayerViewInformation {
     availableConstruction: Map<PointString, AvailableConstruction>
 }
 
+export interface PossibleNewRoadInformation {
+    possibleNewRoad: Point[]
+    closesRoad: boolean
+}
+
 async function getGames(): Promise<GameInformation[]> {
     const response = await fetch("/settlers/api/games", { method: 'get' });
 
@@ -456,6 +461,44 @@ async function sendScout(point: Point, gameId: GameId, playerId: PlayerId) {
     return await response.json();
 }
 
+async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[], gameId: GameId, playerId: PlayerId): Promise<PossibleNewRoadInformation | undefined> {
+    const response = await fetch('/settlers/api/rpc/games/' + gameId + '/players/' + playerId + '/find-new-road',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(
+                {
+                    from: from,
+                    to: to,
+                    avoid: avoid
+                }
+            )
+        }
+    );
+    console.log("Got response");
+    console.log(response);
+    
+    const body = await response.json();
+    console.log("Got json body");
+
+        console.log(body);
+        
+
+    if (body.road_is_possible) {
+        const possibleNewRoad: PossibleNewRoadInformation = {
+            possibleNewRoad: body.possible_road,
+            closesRoad: body.closes_road
+        };
+
+        return possibleNewRoad;
+    } else {
+        return undefined;
+    }
+
+}
+
 const SMALL_HOUSES: SmallBuilding[] = [
     "ForesterHut",
     "Woodcutter",
@@ -499,5 +542,5 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export { getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addPlayerToGame };
+export { findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addPlayerToGame };
 

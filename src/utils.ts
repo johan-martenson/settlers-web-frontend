@@ -1,4 +1,4 @@
-import { Point, TerrainInformation, TileInformation, getHousesForPlayer, PlayerId, GameId, removeHouse } from './api';
+import { Point, TerrainInformation, TileInformation, getHousesForPlayer, PlayerId, GameId, removeHouse, RoadInformation } from './api';
 import { TerrainAtPoint } from './game_render';
 
 const vegetationToInt = new Map<TileInformation, number>();
@@ -440,5 +440,26 @@ async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: Player
     }
 }
 
-export { almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+function isRoadAtPoint(point: Point, roads: RoadInformation[]): boolean {
+
+    let roadAtPoint = false;
+
+    roads.forEach(
+        road => {
+            road.points.forEach(
+                roadPoint => {
+
+                    if (point.x === roadPoint.x && point.y === roadPoint.y) {
+
+                        roadAtPoint = true;
+                    }
+                }
+            )
+        }
+    );
+
+    return roadAtPoint;
+}
+
+export { isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
 

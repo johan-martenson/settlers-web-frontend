@@ -33,6 +33,8 @@ export interface PointInformation {
     readonly x: number
     readonly y: number
     readonly possibleRoadConnections: Point[]
+    readonly buildingId?: HouseId
+    readonly flagId?: FlagId
 }
 
 export interface TreeInformation extends Point { }

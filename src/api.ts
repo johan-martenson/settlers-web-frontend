@@ -425,6 +425,8 @@ async function getInformationOnPoint(point: Point, gameId: GameId, playerId: Pla
     // isType: ('flag' | 'building' | 'stone' | 'tree')
     // (building: {type: ..., } |
     // possibleRoadConnections: [{x: 2, y:4}, ...]
+    // buildingId?
+    // flagId?
 
     console.info("Get information on point");
 

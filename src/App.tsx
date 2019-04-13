@@ -188,9 +188,22 @@ class App extends Component<AppProps, AppState> {
         MEDIUM_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
         LARGE_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
 
-        this.commands.set("Road", () => { console.log("Building road") });
+        this.commands.set("Road",
+            async () => {
+                console.log("Building road");
+                /* Get the possible connections from the server and draw them */
+                const pointInformation = await getInformationOnPoint(this.state.selected, this.props.gameId, this.state.player);
+
+                this.setState(
+                    {
+                        newRoad: [this.state.selected],
+                        possibleRoadConnections: pointInformation.possibleRoadConnections
+                    }
+                );
+            }
+        );
         this.commands.set("Flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) });
-        this.commands.set("Remove house", () => { removeHouseAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+        this.commands.set("Remove (house or flag)", () => { removeHouseOrFlagAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
     }
 
     toggleDetails(): void {

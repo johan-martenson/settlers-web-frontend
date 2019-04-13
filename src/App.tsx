@@ -496,7 +496,7 @@ class App extends Component<AppProps, AppState> {
         /* A road is being built */
         if (this.state.newRoad && this.state.possibleRoadConnections) {
             console.log("A road is being built, currently: " + JSON.stringify(this.state.newRoad));
-            
+
             const recent = this.state.newRoad[this.state.newRoad.length - 1];
 
             /* Create the possible new road including the addition */
@@ -506,7 +506,7 @@ class App extends Component<AppProps, AppState> {
             if (this.state.possibleRoadConnections.find(e => e.x === point.x && e.y === point.y)) {
                 possibleNewRoad.push(point);
 
-            /* Handle the case where a point further away was clicked */
+                /* Handle the case where a point further away was clicked */
             } else {
 
                 /* Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road */
@@ -518,7 +518,7 @@ class App extends Component<AppProps, AppState> {
 
                     /* Ignore the click if no possible road is available */
                     console.log("Not possible to include in road. Ignoring.");
-                    
+
                     return;
                 }
             }
@@ -539,7 +539,7 @@ class App extends Component<AppProps, AppState> {
                     possibleRoadConnections: []
                 });
 
-            /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
+                /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
             } else if (isRoadAtPoint(point, this.state.roads)) {
 
                 console.info('Placing flag for road');
@@ -555,7 +555,7 @@ class App extends Component<AppProps, AppState> {
                     possibleRoadConnections: []
                 });
 
-            /* Add the new possible road points to the ongoing road and don't create the road*/
+                /* Add the new possible road points to the ongoing road and don't create the road*/
             } else if (recent.x !== point.x || recent.y !== point.y) {
                 console.info("Continuing road building with extended road segment");
 
@@ -577,7 +577,6 @@ class App extends Component<AppProps, AppState> {
                 (terrainInfo) => {
                     if (terrainInfo.point.x === point.x && terrainInfo.point.y === point.y) {
                         console.log("Height: " + terrainInfo.height);
-
                     }
                 })
 
@@ -712,11 +711,11 @@ class App extends Component<AppProps, AppState> {
             if (this.state.activeMenu) {
                 this.closeActiveMenu();
 
-            /* Stop building a new road */
+                /* Stop building a new road */
             } else if (this.state.newRoad) {
                 this.setState({ newRoad: undefined, possibleRoadConnections: [] });
 
-            /* Otherwise, send the escape to the type controller */
+                /* Otherwise, send the escape to the type controller */
             } else if (this.typeControlRef && this.typeControlRef.current) {
                 this.typeControlRef.current.onKeyDown(event);
             }

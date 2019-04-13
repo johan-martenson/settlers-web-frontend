@@ -313,11 +313,15 @@ async function removeHouse(houseId: HouseId, gameId: GameId): Promise<void> {
     return await response.json();
 }
 
-async function removeFlag(flagId: FlagId, gameId: GameId): Promise<void> {
+async function removeFlag(flagId: FlagId, gameId: GameId, playerId: PlayerId): Promise<void> {
 
     console.info("Removing flag " + flagId);
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/flags/" + flagId, { method: 'delete' });
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/flags/" + flagId,
+        {
+            method: 'delete'
+        }
+    );
 
     return await response.json();
 }

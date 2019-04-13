@@ -486,10 +486,10 @@ async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[], gameI
         console.log(body);
         
 
-    if (body.road_is_possible) {
+    if (body.roadIsPossible) {
         const possibleNewRoad: PossibleNewRoadInformation = {
-            possibleNewRoad: body.possible_road,
-            closesRoad: body.closes_road
+            possibleNewRoad: body.possibleRoad,
+            closesRoad: body.closesRoad
         };
 
         return possibleNewRoad;

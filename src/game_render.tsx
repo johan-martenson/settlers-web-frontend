@@ -75,7 +75,8 @@ interface GameCanvasState {
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     private selfRef = React.createRef<HTMLCanvasElement>();
-    terrain: TerrainAtPoint[][]
+    private terrain: TerrainAtPoint[][]
+    private lightVector: Vector
 
     constructor(props: GameCanvasProps) {
         super(props);

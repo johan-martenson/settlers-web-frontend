@@ -619,7 +619,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             let previous = null;
 
-            for (let point of this.props.newRoad.map(this.gamePointToScreenPoint)) {
+            for (let point of this.props.newRoad) {
 
                 if (!this.pointIsDiscovered(point)) {
                     previous = null;
@@ -628,14 +628,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (previous) {
+
+                    const screenPointPrevious = this.gamePointToScreenPoint(previous);
+                    const screenPointCurrent = this.gamePointToScreenPoint(point);
+
                     ctx.save();
 
                     ctx.beginPath();
 
                     ctx.fillStyle = 'yellow';
+                    ctx.strokeStyle = 'yellow';
 
-                    ctx.moveTo(point.x, point.y);
-                    ctx.lineTo(previous.x, previous.y);
+                    ctx.moveTo(screenPointCurrent.x, screenPointCurrent.y);
+                    ctx.lineTo(screenPointPrevious.x, screenPointPrevious.y);
 
                     ctx.closePath();
 
@@ -1077,10 +1082,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     ctx.beginPath();
                     ctx.fillStyle = 'orange';
+                    ctx.strokeStyle = 'black';
 
-                    ctx.arc(screenPoint.x, screenPoint.y, 3, 0, 2 * Math.PI);
+                    ctx.arc(screenPoint.x, screenPoint.y, 6, 0, 2 * Math.PI);
 
                     ctx.fill();
+                    ctx.stroke();
 
                     ctx.restore();
                 }

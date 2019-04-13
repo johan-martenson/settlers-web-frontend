@@ -1,4 +1,4 @@
-import { Point, TerrainInformation, TileInformation, getHousesForPlayer, PlayerId, GameId, removeHouse, RoadInformation } from './api';
+import { Point, TerrainInformation, TileInformation, getHousesForPlayer, PlayerId, GameId, removeHouse, RoadInformation, getInformationOnPoint, removeFlag } from './api';
 import { TerrainAtPoint } from './game_render';
 
 const vegetationToInt = new Map<TileInformation, number>();
@@ -461,5 +461,15 @@ function isRoadAtPoint(point: Point, roads: RoadInformation[]): boolean {
     return roadAtPoint;
 }
 
-export { isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+async function removeHouseOrFlagAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
 
+    const pointInformation = await getInformationOnPoint(point, gameId, playerId);
+
+    if (pointInformation.is === "building" && pointInformation.buildingId) {
+        removeHouse(pointInformation.buildingId, gameId);
+    } else if (pointInformation.is=== "flag" && pointInformation.flagId) {
+        removeFlag(pointInformation.flagId, gameId, playerId);
+    }
+}
+
+export { removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };

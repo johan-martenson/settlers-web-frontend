@@ -27,7 +27,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                         onButtonClicked={
                             async () => {
                                 console.log("Removing flag");
-                                await removeFlag(this.props.flag.id, this.props.gameId);
+                                await removeFlag(this.props.flag.id, this.props.gameId, this.props.playerId);
 
                                 this.props.closeDialog();
                             }

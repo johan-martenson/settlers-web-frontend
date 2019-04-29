@@ -1,4 +1,4 @@
-import { Point, TerrainInformation, TileInformation, getHousesForPlayer, PlayerId, GameId, removeHouse, RoadInformation, getInformationOnPoint, removeFlag } from './api';
+import { Point, TerrainInformation, TileInformation, getHousesForPlayer, PlayerId, GameId, removeHouse, RoadInformation, getInformationOnPoint, removeFlag, SMALL_HOUSES } from './api';
 import { TerrainAtPoint } from './game_render';
 
 const vegetationToInt = new Map<TileInformation, number>();
@@ -181,6 +181,43 @@ function almostEquals(a: number, b: number): boolean {
     return difference < MINIMAL_DIFFERENCE && difference > -MINIMAL_DIFFERENCE;
 }
 
+/**
+ * Creates a gradient line for drawing a single-color shaded triangle given the brightness of the three points for use with the Canvas 2D rendering API.
+ * 
+ * @remarks
+ * This function does not handle the case where the three intensities are all the same.
+ * 
+ * The Canvas 2D rendering API can be used to draw linear gradients defined by two or more points:
+ * 
+ * |||||  ||||  |||  ||  |  
+ * |||||  ||||  |||  ||  |  
+ * P(start)--------------P(end)
+ * |||||  ||||  |||  ||  | 
+ * |||||  ||||  |||  ||  |  
+ * 
+ * The function finds two points P(start) and P(end) that defines a gradient so that the max point is parallel with the P(start), the min point is 
+ * parallel with the P(end), and the P(in-between) has the right intensity:
+ * 
+ * |||||  ||||  |||  ||  |  
+ * P(max) ------------ P(min)  
+ * | \ |  ||||  |||  /   |  
+ * ||| \  ||||  || / ||  |  
+ * ||||| \ |||   /   ||  |  
+ * |||||   \ | / ||  ||  |  
+ * |||||  || P(in-between)
+ * |||||  ||||  |||  ||  |  
+ * 
+ * 
+ * It does this by drawing the line from the max point to and through the in-between point it has to go to get the minimum intensity. Then it finds
+ *  an orthogonal line against it that cuts through the starting point.
+ * 
+ * @param p1 - The first point
+ * @param intensity1 - The intensity of the first point
+ * @param p2 - The second point
+ * @param intensity2 - The intensity of the second point
+ * @param p3 - The third point
+ * @param intensity3 - The intensity of the third point
+ */
 function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, intensity2: number, p3: Point, intensity3: number): Point[] {
 
     const intensityMax = Math.max(intensity1, intensity2, intensity3);
@@ -191,7 +228,7 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
 
     let pointHigh = p1;
     let pointLow = p1;
-    let pointMedium = p1;
+    let pointInBetween = p1;
 
     /* Find the highest point */
     if (intensity1 === intensityMax) {
@@ -213,24 +250,50 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
 
     /* Find the mid point */
     if (p1 !== pointHigh && p1 !== pointLow) {
-        pointMedium = p1;
+        pointInBetween = p1;
         partialIntensity = intensity1;
     } else if (p2 !== pointHigh && p2 !== pointLow) {
-        pointMedium = p2;
+        pointInBetween = p2;
         partialIntensity = intensity2
     } else {
-        pointMedium = p3;
+        pointInBetween = p3;
         partialIntensity = intensity3
     }
 
-    const intensityPartialRange = intensityMax - partialIntensity;
-    const midIntensityProportion = intensityPartialRange / intensityFullRange;
-
-    /* Handle the special case where partial and full intensity are the same -- p4 and pointHigh are on the same line */
+    /**
+     * Handle the special case where partial and full intensity are the same -- p4 and pointHigh are on the same line 
+     * 
+     * E.g.:
+     * 
+     * |||||  ||||  |||  ||  |  
+     * P(max) -- P(min)  ||  |
+     * | |||   / |  |||  ||  |  
+     * | ||| / |||  |||  ||  |  
+     * | | /  ||||  |||  ||  |  
+     * | / |  ||||  |||  ||  |  
+     * P(in-between) ||  ||  |
+     * |||||  ||||  |||  ||  |  
+     *
+     * or
+     * 
+     * P(max) ||||  |||  ||  |  
+     * | \ |  ||||  |||  ||  |  
+     * | | \  ||||  |||  ||  |  
+     * | ||| \ |||  |||  ||  |  
+     * | |||   \ |  |||  ||  |  
+     * | |||  || P(min)  ||  |
+     * | |||   / |  |||  ||  |  
+     * | ||| / |||  |||  ||  |  
+     * | | /  ||||  |||  ||  |  
+     * | / |  ||||  |||  ||  |  
+     * P(in-between) ||  ||  |
+     * |||||  ||||  |||  ||  |  
+     * 
+     */
     if (almostEquals(intensityMax, partialIntensity)) {
 
         /* Handle the special case where pointHigh and pointMedium are on the same vertical line */
-        if (almostEquals(pointHigh.x, pointMedium.x)) {
+        if (almostEquals(pointHigh.x, pointInBetween.x)) {
             const result = [
                 {
                     x: pointHigh.x,
@@ -240,80 +303,84 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
             ];
 
             return result;
-        } else {
-
-            /* Get L1 */
-            const line1 = getLineBetweenPoints(pointHigh, pointMedium);
-
-            /* Handle the special case where L1 is parallel with the X axis. */
-            if (almostEquals(line1.k, 0)) {
-
-                /* Get the point at L1 where x = pointLow.x */
-                const p5 = getPointAtLineGivenX(line1, pointLow.x);
-
-                const result = [p5, pointLow];
-
-                return result;
-            } else {
-
-                /* Get L2 */
-                const line2 = getOrthogonalLine(line1, pointLow);
-
-                /* Find intersection */
-                const p5 = getIntersection(line1, line2);
-
-                const result = [p5, pointLow];
-
-                return result;
-            }
         }
+
+        /* Handle the special case where pointHigh and pointMedium are on the same horizontal line */
+        if (almostEquals(pointHigh.y, pointInBetween.y)) {
+
+            const result = [
+                {
+                    x: pointLow.x,
+                    y: pointHigh.y
+                },
+                pointLow
+            ];
+
+            return result;
+        }
+
+        /* Get the line that goes through the maximum and in-between points */
+        const lineMaximum = getLineBetweenPoints(pointHigh, pointInBetween);
+        
+        /* Get the line that is orthogonal to the maximum line and crosses the minimum point */
+        const lineOrthogonal = getOrthogonalLine(lineMaximum, pointLow);
+
+        /* Find intersection between the maximum line and its orthogonal line that crosses through the minimum point */
+        const pointIntersect = getIntersection(lineMaximum, lineOrthogonal);
+
+        const result = [pointIntersect, pointLow];
+
+        return result;
     } else {
 
-        /*  Get p4 */
-        const dx = pointMedium.x - pointHigh.x;
-        const dy = pointMedium.y - pointHigh.y;
+        /* Handle the cases where the maximum and in-between intensities are not equal */
+        const intensityPartialRange = intensityMax - partialIntensity;
 
-        const p4 = {
+        /* Get the point where a line that cuts through the in-between point reaches the minimum intensity */
+        const dx = pointInBetween.x - pointHigh.x;
+        const dy = pointInBetween.y - pointHigh.y;
+
+        const pointSecondMinimum = {
             x: (intensityFullRange * dx) / intensityPartialRange + pointHigh.x,
             y: (intensityFullRange * dy) / intensityPartialRange + pointHigh.y
         }
 
-        /* Get L1 */
-        const line1 = getLineBetweenPoints(p4, pointLow);
-
         /* Handle the case where the line is parallel with the X axis */
-        if (almostEquals(line1.k, 0)) {
+        if (almostEquals(pointSecondMinimum.y, pointLow.y)) {
             const result = [
                 pointHigh,
                 {
                     x: pointHigh.x,
-                    y: pointMedium.y
+                    y: pointInBetween.y
                 }
             ];
 
             return result;
-
-            /* Handle the case where the line is fully vertical */
-        } else if (almostEquals(p4.x, pointLow.x)) {
+        }
+            
+        /* Handle the case where the line is parallel with the y axis */
+        if (almostEquals(pointSecondMinimum.x, pointLow.x)) {
             return [
                 pointHigh,
                 {
-                    x: p4.x,
+                    x: pointSecondMinimum.x,
                     y: pointHigh.y
                 }
             ]
-        } else {
-
-            /* Get L2 */
-            const line2 = getOrthogonalLine(line1, pointHigh);
-
-            /* Get point where L1 & L2 intersect */
-            const p5 = getIntersection(line1, line2);
-
-            const result = [pointHigh, p5];
-
-            return result;
         }
+
+        /* Get the line that cuts through p4 and the minimum point */
+        const lineMinimum = getLineBetweenPoints(pointSecondMinimum, pointLow);
+
+        /* Get the line that is orthogonal to the minimum line and cuts through the maximum point */
+        const lineOrthogonal = getOrthogonalLine(lineMinimum, pointHigh);
+
+        /* Get point where the minimum line and its orthogonal line through the maximum point intersect */
+        const pointIntersect = getIntersection(lineMinimum, lineOrthogonal);
+
+        const result = [pointHigh, pointIntersect];
+
+        return result;
     }
 }
 
@@ -472,4 +539,8 @@ async function removeHouseOrFlagAtPoint(point: Point, gameId: GameId, playerId: 
     }
 }
 
-export { removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+function same(point1: Point, point2: Point): boolean {
+    return point1.x === point2.x && point1.y === point2.y;
+}
+
+export { normalize, same, removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };

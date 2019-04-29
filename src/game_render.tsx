@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HeightInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import houseImageMap, { Filename } from './images';
-import { camelCaseToWords, getBrightnessForNormals, getDotProduct, getGradientLineForTriangle, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, pointToString, Vector, vegetationToInt, arrayToRgbStyle, Point3D, isContext2D, RgbColorArray } from './utils';
+import { almostEquals, arrayToRgbStyle, camelCaseToWords, getBrightnessForNormals, getGradientLineForTriangle, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, pointToString, RgbColorArray, same, Vector, vegetationToInt } from './utils';
 
 function stringToPoint(pointString: string): Point {
 
@@ -77,6 +77,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private selfRef = React.createRef<HTMLCanvasElement>();
     private terrain: TerrainAtPoint[][]
     private lightVector: Vector
+    private debuggedPoint: Point | undefined
 
     constructor(props: GameCanvasProps) {
         super(props);
@@ -107,7 +108,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Define the light vector */
-        this.lightVector = { x: -1, y: 1, z: -1 };
+        this.lightVector = normalize({ x: -1, y: 1, z: -1 });
     }
 
     buildHeightMap(): void {
@@ -334,7 +335,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             normalDownLeft
         ];
     }
-
     componentDidUpdate() {
 
         /* Handle update of heights if needed */
@@ -371,6 +371,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         ctx.restore();
 
+        let oncePerNewSelectionPoint = false;
+
+        if (this.props.selectedPoint && (!this.debuggedPoint || (this.debuggedPoint && !same(this.props.selectedPoint, this.debuggedPoint)))) {
+            oncePerNewSelectionPoint = true;
+            this.debuggedPoint = this.props.selectedPoint;
+        }
+
         /* Draw the tiles */
         for (let i = 0; i < this.props.terrain.length; i++) {
 
@@ -381,6 +388,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             const gamePoint = tile.point;
+
+            let debug = false;
+
+            if (oncePerNewSelectionPoint && this.debuggedPoint && same(this.debuggedPoint, gamePoint)) {
+                debug = true;
+                this.debuggedPoint = { x: gamePoint.x, y: gamePoint.y }
+                console.log("Debugging " + JSON.stringify(gamePoint));
+            }
 
             /* Filter points that are not yet discovered */
             if (!this.pointIsDiscovered(gamePoint)) {
@@ -410,9 +425,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue;
             }
 
-            /* Define the light vector */
-            const lightVector = { x: -1, y: 1, z: -1 };
-
             /* Get intensity for each point */
             const intensityPoint = getBrightnessForNormals(this.getSurroundingNormals(gamePoint), this.lightVector);
             const intensityPointDownRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownRight), this.lightVector);
@@ -421,7 +433,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (gamePointDownLeftDiscovered && gamePointDownRightDiscovered) {
 
                 /* Get the brightness for the game point down left here because now we know that it is discovered */
-                const intensityPointDownLeft = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownLeft), lightVector);
+                const intensityPointDownLeft = getBrightnessForNormals(this.getSurroundingNormals(gamePointDownLeft), this.lightVector);
                 const colorBelow = intToVegetationColor.get(tile.straightBelow);
 
                 /* Skip this draw if there is no defined color. This is an error */
@@ -438,18 +450,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const maxIntensityBelow = Math.max(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
 
                 const minColorBelow: RgbColorArray = [
-                    colorBelow[0] + 40 * Math.abs(minIntensityBelow),
-                    colorBelow[1] + 40 * Math.abs(minIntensityBelow),
-                    colorBelow[2] + 40 * Math.abs(minIntensityBelow)
+                    colorBelow[0] + 40 * minIntensityBelow,
+                    colorBelow[1] + 40 * minIntensityBelow,
+                    colorBelow[2] + 40 * minIntensityBelow
                 ];
 
                 const maxColorBelow: RgbColorArray = [
-                    colorBelow[0] + 40 * Math.abs(maxIntensityBelow),
-                    colorBelow[1] + 40 * Math.abs(maxIntensityBelow),
-                    colorBelow[2] + 40 * Math.abs(maxIntensityBelow)
+                    colorBelow[0] + 40 * maxIntensityBelow,
+                    colorBelow[1] + 40 * maxIntensityBelow,
+                    colorBelow[2] + 40 * maxIntensityBelow
                 ];
 
-                if (minIntensityBelow === maxIntensityBelow) {
+                if (almostEquals(minIntensityBelow, maxIntensityBelow)) {
                     ctx.fillStyle = arrayToRgbStyle(minColorBelow);
                 } else {
 
@@ -503,18 +515,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const maxIntensityDownRight = Math.max(intensityPoint, intensityPointDownRight, intensityPointRight);
 
                 const minColorDownRight = [
-                    colorDownRight[0] + 40 * Math.abs(minIntensityDownRight),
-                    colorDownRight[1] + 40 * Math.abs(minIntensityDownRight),
-                    colorDownRight[2] + 40 * Math.abs(minIntensityDownRight)
+                    colorDownRight[0] + 40 * minIntensityDownRight,
+                    colorDownRight[1] + 40 * minIntensityDownRight,
+                    colorDownRight[2] + 40 * minIntensityDownRight
                 ];
 
                 const maxColorDownRight = [
-                    colorDownRight[0] + 40 * Math.abs(maxIntensityDownRight),
-                    colorDownRight[1] + 40 * Math.abs(maxIntensityDownRight),
-                    colorDownRight[2] + 40 * Math.abs(maxIntensityDownRight)
+                    colorDownRight[0] + 40 * maxIntensityDownRight,
+                    colorDownRight[1] + 40 * maxIntensityDownRight,
+                    colorDownRight[2] + 40 * maxIntensityDownRight
                 ];
 
-                if (minIntensityDownRight === maxIntensityDownRight) {
+                if (almostEquals(minIntensityDownRight, maxIntensityDownRight)) {
                     ctx.fillStyle = arrayToRgbStyle(minColorDownRight);
                 } else {
 
@@ -528,6 +540,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const gradient = ctx.createLinearGradient(
                         gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
                     );
+
                     gradient.addColorStop(0, arrayToRgbStyle(maxColorDownRight));
                     gradient.addColorStop(1, arrayToRgbStyle(minColorDownRight));
 

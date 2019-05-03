@@ -9,7 +9,7 @@ import GameMenu from './game_menu';
 import { GameCanvas, TerrainAtPoint } from './game_render';
 import Guide from './guide';
 import MenuButton from './menu_button';
-import { pointToString, terrainInformationToTerrainAtPointList, removeHouseAtPoint, isRoadAtPoint, removeHouseOrFlagAtPoint } from './utils';
+import { pointToString, terrainInformationToTerrainAtPointList, removeHouseAtPoint, isRoadAtPoint, removeHouseOrFlagAtPoint, PointSet } from './utils';
 import TypeControl from './type_control';
 
 const MENU_MENU = 0;
@@ -76,7 +76,7 @@ interface AppState {
     crops: CropInformation[]
     animals: AnimalInformation[]
     availableConstruction: Map<PointString, AvailableConstruction>
-    discoveredPoints: Set<string>
+    discoveredPoints: PointSet
 
     newRoad?: Point[]
     possibleRoadConnections?: Point[]
@@ -177,7 +177,7 @@ class App extends Component<AppProps, AppState> {
             gameHeight: 0,
             player: props.selfPlayerId,
             menuVisible: false,
-            discoveredPoints: new Set(),
+            discoveredPoints: new PointSet(),
             showTitles: false
         };
 
@@ -243,11 +243,11 @@ class App extends Component<AppProps, AppState> {
             newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * this.state.scale - globalSyncState.height;
         }
 
-        const discoveredPointsAsStrings = new Set<PointString>();
+        const discoveredPointMap = new PointSet()
 
         player.discoveredPoints.forEach(
             (point: Point) => {
-                discoveredPointsAsStrings.add(pointToString(point));
+                discoveredPointMap.add(point);
             }
         )
 
@@ -255,7 +255,7 @@ class App extends Component<AppProps, AppState> {
             translateX: newTranslateX,
             translateY: newTranslateY,
             player: player.id,
-            discoveredPoints: discoveredPointsAsStrings
+            discoveredPoints: discoveredPointMap
         });
     }
 
@@ -399,7 +399,7 @@ class App extends Component<AppProps, AppState> {
                 availableConstruction: view.availableConstruction,
                 crops: view.crops,
                 animals: view.animals,
-                discoveredPoints: new Set<string>(view.discoveredPoints.map(pointToString))
+                discoveredPoints: new PointSet(view.discoveredPoints)
             });
         }
 
@@ -448,7 +448,7 @@ class App extends Component<AppProps, AppState> {
                 animals: view.animals,
                 translateX: translateX,
                 translateY: translateY,
-                discoveredPoints: new Set<string>(view.discoveredPoints.map(pointToString))
+                discoveredPoints: new PointSet(view.discoveredPoints)
             });
 
         }
@@ -587,11 +587,6 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
-    /* Determine if the given point is discovered by the current player */
-    pointIsDiscovered(point: Point): boolean {
-        return this.state.discoveredPoints.has(pointToString(point));
-    }
-
     async onDoubleClick(point: Point): Promise<void> {
         console.info("Double click on " + point.x + ", " + point.y);
 
@@ -623,7 +618,7 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Ignore double clicks on undiscovered land */
-        if (!this.pointIsDiscovered(point)) {
+        if (!this.state.discoveredPoints.has(point)) {
             console.info("Ignoring un-discovered point");
             return;
         }

@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HeightInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import houseImageMap, { Filename } from './images';
-import { almostEquals, arrayToRgbStyle, camelCaseToWords, getBrightnessForNormals, getGradientLineForTriangle, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, pointToString, RgbColorArray, same, Vector, vegetationToInt } from './utils';
+import { almostEquals, arrayToRgbStyle, camelCaseToWords, getBrightnessForNormals, getGradientLineForTriangle, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, pointToString, RgbColorArray, same, Vector, vegetationToInt, PointMap, PointSet } from './utils';
 
 function stringToPoint(pointString: string): Point {
 
@@ -50,7 +50,7 @@ interface GameCanvasProps {
     flags: FlagInformation[]
     possibleRoadConnections?: Point[]
     newRoad?: Point[]
-    discoveredPoints: Set<string>
+    discoveredPoints: PointSet
     showAvailableConstruction: boolean
     availableConstruction: Map<PointString, AvailableConstruction>
     showHouseTitles: boolean
@@ -68,8 +68,8 @@ interface GameCanvasState {
     context?: CanvasRenderingContext2D
     images: Map<Filename, HTMLImageElement>
     builtHeightMap: boolean
-    straightBelowNormals?: Map<number, Map<number, Vector>>
-    downRightNormals?: Map<number, Map<number, Vector>>
+    straightBelowNormals?: PointMap<Vector>
+    downRightNormals?: PointMap<Vector>
 }
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
@@ -82,7 +82,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     constructor(props: GameCanvasProps) {
         super(props);
 
-        this.pointIsDiscovered = this.pointIsDiscovered.bind(this);
         this.gamePointToScreenPoint = this.gamePointToScreenPoint.bind(this);
         this.screenPointToGamePoint = this.screenPointToGamePoint.bind(this);
         this.onClick = this.onClick.bind(this);
@@ -127,8 +126,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         );
 
         /* Calculate and store the normals per triangle */
-        const straightBelowNormals = new Map<number, Map<number, Vector>>();
-        const downRightNormals = new Map<number, Map<number, Vector>>();
+        const straightBelowNormals = new PointMap<Vector>()
+        const downRightNormals = new PointMap<Vector>()
 
         this.props.terrain.forEach(
             (terrainAtPoint: TerrainAtPoint) => {
@@ -162,14 +161,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         z: downRightHeight
                     }
 
-                    let xStraightBelowMap = straightBelowNormals.get(point3d.x);
-
-                    if (!xStraightBelowMap) {
-                        xStraightBelowMap = new Map<number, Vector>();
-                        straightBelowNormals.set(point3d.x, xStraightBelowMap);
-                    }
-
-                    xStraightBelowMap.set(point3d.y, getNormalForTriangle(point3d, pointDownLeft3d, pointDownRight3d));
+                    straightBelowNormals.set(point3d, getNormalForTriangle(point3d, pointDownLeft3d, pointDownRight3d))
                 }
 
                 if (downRightHeight !== undefined && rightHeight !== undefined) {
@@ -186,15 +178,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         z: downRightHeight
                     }
 
-                    let xDownRightMap = downRightNormals.get(point3d.x);
-
-
-                    if (!xDownRightMap) {
-                        xDownRightMap = new Map<number, Vector>();
-                        downRightNormals.set(point3d.x, xDownRightMap);
-                    }
-
-                    xDownRightMap.set(point3d.y, getNormalForTriangle(point3d, pointDownRight3d, pointRight3d));
+                    downRightNormals.set(point3d, getNormalForTriangle(point3d, pointDownRight3d, pointRight3d))
                 }
             }
         );
@@ -290,15 +274,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             return undefined;
         }
 
-        const xStraightBelowMap = this.state.straightBelowNormals.get(point.x);
-
-        if (!xStraightBelowMap) {
-            return undefined;
-        }
-
-        const normal = xStraightBelowMap.get(point.y);
-
-        return normal;
+        return this.state.straightBelowNormals.get(point)
     }
 
     getNormalDownRight(point: Point): Vector | undefined {
@@ -307,15 +283,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             return undefined;
         }
 
-        const xDownRightMap = this.state.downRightNormals.get(point.x);
-
-        if (!xDownRightMap) {
-            return undefined;
-        }
-
-        const normal = xDownRightMap.get(point.y);
-
-        return normal;
+        return this.state.downRightNormals.get(point)
     }
 
     getSurroundingNormals(gamePoint: Point): (Vector | undefined)[] {
@@ -335,6 +303,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             normalDownLeft
         ];
     }
+
     componentDidUpdate() {
 
         /* Handle update of heights if needed */
@@ -398,7 +367,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             /* Filter points that are not yet discovered */
-            if (!this.pointIsDiscovered(gamePoint)) {
+            if (!this.props.discoveredPoints.has(gamePoint)) {
+            //if (!this.pointIsDiscovered(gamePoint)) {
                 continue;
             }
 
@@ -406,9 +376,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const gamePointDownLeft = getPointDownLeft(gamePoint);
             const gamePointDownRight = getPointDownRight(gamePoint);
 
-            const gamePointRightDiscovered = this.pointIsDiscovered(gamePointRight);
-            const gamePointDownLeftDiscovered = this.pointIsDiscovered(gamePointDownLeft);
-            const gamePointDownRightDiscovered = this.pointIsDiscovered(gamePointDownRight);
+            const gamePointRightDiscovered =  this.props.discoveredPoints.has(gamePointRight) // this.pointIsDiscovered(gamePointRight);
+            const gamePointDownLeftDiscovered = this.props.discoveredPoints.has(gamePointDownLeft) // this.pointIsDiscovered(gamePointDownLeft);
+            const gamePointDownRightDiscovered = this.props.discoveredPoints.has(gamePointDownRight) // this.pointIsDiscovered(gamePointDownRight);
 
             const screenPoint = this.gamePointToScreenPoint(gamePoint);
             const screenPointRight = this.gamePointToScreenPoint(gamePointRight);
@@ -608,7 +578,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             for (let borderPoint of border.points) {
 
-                if (!this.pointIsDiscovered(borderPoint)) {
+                if (!this.props.discoveredPoints.has(borderPoint)) {
+                //if (!this.pointIsDiscovered(borderPoint)) {
                     continue;
                 }
 
@@ -635,7 +606,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             for (let point of this.props.newRoad) {
 
-                if (!this.pointIsDiscovered(point)) {
+                if (!this.props.discoveredPoints.has(point)) {
+                //if (!this.pointIsDiscovered(point)) {
                     previous = null;
 
                     continue;
@@ -674,7 +646,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 (entry, index) => {
                     const gamePoint = stringToPoint(entry[0]);
 
-                    if (this.pointIsDiscovered(gamePoint)) {
+                    if (this.props.discoveredPoints.has(gamePoint)) {
+                    //if (this.pointIsDiscovered(gamePoint)) {
 
                         const point = this.gamePointToScreenPoint(gamePoint);
 
@@ -763,7 +736,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.houses.map(
             (house, index) => {
 
-                if (!this.pointIsDiscovered({ x: house.x, y: house.y })) {
+                if (!this.props.discoveredPoints.has({x: house.x, y: house.y})) {
+                //if (!this.pointIsDiscovered({ x: house.x, y: house.y })) {
                     return null;
                 }
 
@@ -816,7 +790,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.trees.map(
             (tree, index) => {
 
-                if (!this.pointIsDiscovered(tree)) {
+                if (!this.props.discoveredPoints.has(tree)) {
+                //if (!this.pointIsDiscovered(tree)) {
                     return null;
                 }
 
@@ -840,7 +815,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.crops.map(
             (crop, index) => {
 
-                if (!this.pointIsDiscovered(crop)) {
+                if (this.props.discoveredPoints.has(crop)) {
+                //if (!this.pointIsDiscovered(crop)) {
                     return null;
                 }
 
@@ -864,7 +840,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.signs.map(
             (sign, index) => {
 
-                if (!this.pointIsDiscovered(sign)) {
+                if (!this.props.discoveredPoints.has(sign)) {
+                //if (!this.pointIsDiscovered(sign)) {
                     return;
                 }
 
@@ -889,7 +866,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.stones.map(
             (stone, index) => {
 
-                if (!this.pointIsDiscovered(stone)) {
+                if (!this.props.discoveredPoints.has(stone)) {
+                //if (!this.pointIsDiscovered(stone)) {
                     return null;
                 }
 
@@ -922,8 +900,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 } else if (worker.betweenPoints) {
 
-                    if (!this.pointIsDiscovered(worker.previous) &&
-                        !this.pointIsDiscovered(worker.next)) {
+                    if (!this.props.discoveredPoints.has(worker.previous) &&
+                        !this.props.discoveredPoints.has(worker.next)) {
+                    //if (!this.pointIsDiscovered(worker.previous) &&
+                    //    !this.pointIsDiscovered(worker.next)) {
                         return;
                     }
 
@@ -949,7 +929,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 } else {
 
-                    if (!this.pointIsDiscovered(worker)) {
+                    if (!this.props.discoveredPoints.has(worker)) {
+                    //if (!this.pointIsDiscovered(worker)) {
                         return;
                     }
 
@@ -975,8 +956,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             (animal, index) => {
                 if (animal.betweenPoints) {
 
-                    if (!this.pointIsDiscovered(animal.previous) &&
-                        !this.pointIsDiscovered(animal.next)) {
+                    if (!this.props.discoveredPoints.has(animal.previous) &&
+                        !this.props.discoveredPoints.has(animal.next)) {
+                    //if (!this.pointIsDiscovered(animal.previous) &&
+                    //    !this.pointIsDiscovered(animal.next)) {
                         return;
                     }
 
@@ -1001,7 +984,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 } else {
 
-                    if (!this.pointIsDiscovered(animal)) {
+                    if (!this.props.discoveredPoints.has(animal)) {
+                    //if (!this.pointIsDiscovered(animal)) {
                         return;
                     }
 
@@ -1026,7 +1010,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.flags.map(
             (flag, index) => {
 
-                if (!this.pointIsDiscovered(flag)) {
+                if (!this.props.discoveredPoints.has(flag)) {
+                //if (!this.pointIsDiscovered(flag)) {
                     return;
                 }
 
@@ -1053,7 +1038,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.props.houses.map(
                 (house, index) => {
 
-                    if (!this.pointIsDiscovered({ x: house.x, y: house.y })) {
+                    if (!this.props.discoveredPoints.has(house)) {
+                    //if (!this.pointIsDiscovered({ x: house.x, y: house.y })) {
                         return;
                     }
 
@@ -1086,7 +1072,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.props.possibleRoadConnections.map(
                 (point, index) => {
 
-                    if (!this.pointIsDiscovered(point)) {
+                    if (!this.props.discoveredPoints.has(point)) {
+                    //if (!this.pointIsDiscovered(point)) {
                         return;
                     }
 
@@ -1171,10 +1158,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         return false;
-    }
-
-    pointIsDiscovered(point: Point): boolean {
-        return this.props.discoveredPoints.has(pointToString(point));
     }
 
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {

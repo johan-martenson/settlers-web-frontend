@@ -77,9 +77,14 @@ class PointSet implements IterableIterator<Point> {
 
     private pointAsStringSet: Set<string>
 
-    constructor() {
+    constructor(pointSet?: Set<Point> | Point[]) {
         this.pointAsStringSet = new Set<string>()
-        this.pointAsStringSet.entries
+
+        if (pointSet) {
+            for (const point of pointSet) {
+                this.pointAsStringSet.add(pointToString(point))
+            }
+        }
     }
 
     add(point: Point): void {

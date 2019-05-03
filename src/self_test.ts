@@ -140,6 +140,28 @@ function testPointSet() {
     } else {
         console.log("NOT OK")
     }
+
+    /* Test creating a set from a regular set of points */
+    const regularPointSet = new Set<Point>()
+
+    regularPointSet.add(point0)
+    regularPointSet.add(point1)
+
+    const pointSetFromRegularSet = new PointSet(regularPointSet)
+
+    /* Verify that the new point set contains both points */
+    if (pointSetFromRegularSet.has(point0)) {
+        console.log("OK");
+    } else {
+        console.log("NOT OK")
+    }
+
+    if (pointSetFromRegularSet.has(point1)) {
+        console.log("OK");
+    } else {
+        console.log("NOT OK")
+    }
+
 }
 
 

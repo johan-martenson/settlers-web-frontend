@@ -1,4 +1,4 @@
-import { Point, TerrainInformation, TileInformation, getHousesForPlayer, PlayerId, GameId, removeHouse, RoadInformation, getInformationOnPoint, removeFlag, SMALL_HOUSES } from './api';
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, TileInformation } from './api';
 import { TerrainAtPoint } from './game_render';
 
 const vegetationToInt = new Map<TileInformation, number>();
@@ -33,6 +33,149 @@ intToVegetationColor.set(10, [100, 70, 70]);
 
 const MINIMAL_DIFFERENCE = 0.0000001;
 
+function pointToString(point: Point): string {
+    return "" + point.x + "," + point.y;
+}
+
+function stringToPoint(pointAsString: string): Point {
+    const [x, y] = pointAsString.split(',')
+
+    return { x: parseInt(x), y: parseInt(y) }
+}
+
+class PointSetIterator implements IterableIterator<Point> {
+
+    private pointIterator: IterableIterator<[string, string]>
+
+    constructor(stringIterator: IterableIterator<[string, string]>) {
+        this.pointIterator = stringIterator
+    }
+
+    [Symbol.iterator](): IterableIterator<Point> {
+        return this
+    }
+
+    next(value?: any): IteratorResult<Point> {
+        const iterationResult = this.pointIterator.next()
+
+        if (iterationResult.value) {
+
+            return {
+                done: iterationResult.done,
+                value: stringToPoint(iterationResult.value[0])
+            }
+        }
+
+        return {
+            done: iterationResult.done,
+            value: {x: 3, y: 2}
+        }
+    }
+}
+
+class PointSet implements IterableIterator<Point> {
+
+    private pointAsStringSet: Set<string>
+
+    constructor() {
+        this.pointAsStringSet = new Set<string>()
+        this.pointAsStringSet.entries
+    }
+
+    add(point: Point): void {
+        this.pointAsStringSet.add(pointToString(point))
+    }
+
+    delete(point: Point): void {
+        this.pointAsStringSet.delete(pointToString(point))
+    }
+
+    has(point: Point): boolean {
+        return this.pointAsStringSet.has(pointToString(point))
+    }
+
+    entries(): IterableIterator<Point> {
+        return new PointSetIterator(this.pointAsStringSet.entries());
+    }
+
+    size(): number {
+        return this.pointAsStringSet.size
+    }
+
+    [Symbol.iterator](): IterableIterator<Point> {
+        return new PointSetIterator(this.pointAsStringSet.entries())
+    }
+
+    next(value?: any): IteratorResult<Point> {
+        const s = new Set()
+        s
+        throw new Error("Method not implemented.");
+    }
+}
+
+class PointMapIterator implements IterableIterator<Point> {
+
+    private pointAsStringIterator: IterableIterator<string>
+
+    constructor(pointAsStringIterator: IterableIterator<string>) {
+        this.pointAsStringIterator = pointAsStringIterator
+    }
+
+    [Symbol.iterator](): IterableIterator<Point> {
+        return this
+    }
+
+    next(value?: any): IteratorResult<Point> {
+        const result = this.pointAsStringIterator.next()
+
+        if (!result.value) {
+            return {
+                done: result.done,
+                value: { x: 3, y: 4 }
+            }
+        }
+
+        return {
+            done: result.done,
+            value: stringToPoint(result.value)
+        }
+    }
+}
+
+class PointMap<T> {
+
+    private pointAsStringMap: Map<string, T>
+
+    constructor() {
+        this.pointAsStringMap = new Map<string, T>()
+    }
+
+    get size(): number {
+        return this.pointAsStringMap.size
+    }
+
+    set(point0: Point, arg1: T): void {
+        this.pointAsStringMap.set(pointToString(point0), arg1)
+    }
+
+    get(point0: Point): T | undefined {
+        return this.pointAsStringMap.get(pointToString(point0))
+    }
+
+    delete(point0: Point): void {
+        this.pointAsStringMap.delete(pointToString(point0))
+    }
+
+    has(point1: Point): boolean {
+        return this.pointAsStringMap.has(pointToString(point1))
+    }
+
+    keys(): IterableIterator<Point> {
+        this.pointAsStringMap.keys()
+        return new PointMapIterator(this.pointAsStringMap.keys())
+    }
+}
+
 // FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {
     return camelCaseStr;
@@ -40,10 +183,6 @@ function camelCaseToWords(camelCaseStr: string): string {
 
 function isContext2D(context: RenderingContext): context is CanvasRenderingContext2D {
     return true;
-}
-
-function pointToString(point: Point): string {
-    return "" + point.x + "," + point.y;
 }
 
 function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInformation): Array<TerrainAtPoint> {
@@ -321,7 +460,7 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
 
         /* Get the line that goes through the maximum and in-between points */
         const lineMaximum = getLineBetweenPoints(pointHigh, pointInBetween);
-        
+
         /* Get the line that is orthogonal to the maximum line and crosses the minimum point */
         const lineOrthogonal = getOrthogonalLine(lineMaximum, pointLow);
 
@@ -357,7 +496,7 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
 
             return result;
         }
-            
+
         /* Handle the case where the line is parallel with the y axis */
         if (almostEquals(pointSecondMinimum.x, pointLow.x)) {
             return [
@@ -534,7 +673,7 @@ async function removeHouseOrFlagAtPoint(point: Point, gameId: GameId, playerId: 
 
     if (pointInformation.is === "building" && pointInformation.buildingId) {
         removeHouse(pointInformation.buildingId, gameId);
-    } else if (pointInformation.is=== "flag" && pointInformation.flagId) {
+    } else if (pointInformation.is === "flag" && pointInformation.flagId) {
         removeFlag(pointInformation.flagId, gameId, playerId);
     }
 }
@@ -543,4 +682,5 @@ function same(point1: Point, point2: Point): boolean {
     return point1.x === point2.x && point1.y === point2.y;
 }
 
-export { normalize, same, removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+export { PointMap, PointSet, normalize, same, removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+

@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Button from './button';
 import { Dialog } from './dialog';
+import { do_self_test } from './self_test';
 
 export interface EnteredPlayerInformation {
     name: string
@@ -22,6 +23,10 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         super(props);
 
         this.state = { userNameEntered: false };
+
+        console.log("Running self test")
+
+        do_self_test()
     }
 
     onPlayerInformationDone(): void {

@@ -485,14 +485,8 @@ async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[], gameI
             )
         }
     );
-    console.log("Got response");
-    console.log(response);
-    
-    const body = await response.json();
-    console.log("Got json body");
 
-        console.log(body);
-        
+    const body = await response.json();
 
     if (body.roadIsPossible) {
         const possibleNewRoad: PossibleNewRoadInformation = {

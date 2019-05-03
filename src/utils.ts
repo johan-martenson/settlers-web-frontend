@@ -68,7 +68,7 @@ class PointSetIterator implements IterableIterator<Point> {
 
         return {
             done: iterationResult.done,
-            value: {x: 3, y: 2}
+            value: { x: 3, y: 2 }
         }
     }
 }
@@ -151,8 +151,18 @@ class PointMap<T> {
 
     private pointAsStringMap: Map<string, T>
 
-    constructor() {
-        this.pointAsStringMap = new Map<string, T>()
+    constructor(pointAsStringDict?: { [pointAsString: string]: T }) {
+
+        if (pointAsStringDict) {
+            this.pointAsStringMap = new Map<string, T>()
+
+            for (const key in pointAsStringDict) {
+                this.pointAsStringMap.set(key, pointAsStringDict[key])
+            }
+
+        } else {
+            this.pointAsStringMap = new Map<string, T>()
+        }
     }
 
     get size(): number {

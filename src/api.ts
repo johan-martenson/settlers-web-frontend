@@ -1,4 +1,5 @@
 import { AnyBuilding, LargeBuilding, MediumBuilding, SmallBuilding } from './buildings';
+import { PointMap } from './utils';
 
 export type GameId = string
 export type PlayerId = string
@@ -132,7 +133,7 @@ export interface PlayerViewInformation {
     crops: CropInformation[]
     animals: AnimalInformation[]
     discoveredPoints: Point[]
-    availableConstruction: Map<PointString, AvailableConstruction>
+    availableConstruction: PointMap<AvailableConstruction>
 }
 
 export interface PossibleNewRoadInformation {
@@ -384,7 +385,11 @@ async function getViewForPlayer(gameId: GameId, playerId: PlayerId): Promise<Pla
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/view");
 
     if (response.ok) {
-        return await response.json();
+        const view = await response.json();
+
+        view.availableConstruction = new PointMap(view.availableConstruction)
+
+        return view
     }
 
     throw new Error("Invalid request");

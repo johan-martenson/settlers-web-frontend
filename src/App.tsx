@@ -9,7 +9,7 @@ import GameMenu from './game_menu';
 import { GameCanvas, TerrainAtPoint } from './game_render';
 import Guide from './guide';
 import MenuButton from './menu_button';
-import { pointToString, terrainInformationToTerrainAtPointList, removeHouseAtPoint, isRoadAtPoint, removeHouseOrFlagAtPoint, PointSet } from './utils';
+import { pointToString, terrainInformationToTerrainAtPointList, removeHouseAtPoint, isRoadAtPoint, removeHouseOrFlagAtPoint, PointSet, PointMap } from './utils';
 import TypeControl from './type_control';
 
 const MENU_MENU = 0;
@@ -75,7 +75,7 @@ interface AppState {
     signs: SignInformation[]
     crops: CropInformation[]
     animals: AnimalInformation[]
-    availableConstruction: Map<PointString, AvailableConstruction>
+    availableConstruction: PointMap<AvailableConstruction>
     discoveredPoints: PointSet
 
     newRoad?: Point[]
@@ -164,7 +164,7 @@ class App extends Component<AppProps, AppState> {
             stones: [],
             borders: [],
             signs: [],
-            availableConstruction: new Map(),
+            availableConstruction: new PointMap(),
             showAvailableConstruction: false,
             crops: [],
             animals: [],
@@ -677,9 +677,6 @@ class App extends Component<AppProps, AppState> {
 
         /* Ask the server for what can be done on the spot */
         const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
-
-        console.log(pointInformation);
-
 
         // x, y
         // canBuild: ['small', 'medium', 'large', 'flag', 'mine', 'harbor']

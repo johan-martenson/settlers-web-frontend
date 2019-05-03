@@ -52,7 +52,7 @@ interface GameCanvasProps {
     newRoad?: Point[]
     discoveredPoints: PointSet
     showAvailableConstruction: boolean
-    availableConstruction: Map<PointString, AvailableConstruction>
+    availableConstruction: PointMap<AvailableConstruction>
     showHouseTitles: boolean
 
     width: number

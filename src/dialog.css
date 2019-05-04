@@ -30,6 +30,15 @@
     text-align: left;
 }
 
+/* Make dialogs occupy the full screen on small screens */
+@media (max-width: 999px) {
+    .Dialog {
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+}
+
 /* Adjust for screens larger than mobile */
 @media screen and (min-width: 1000px) {
     .FloatingWindow {

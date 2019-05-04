@@ -33,6 +33,9 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
 
         if (this.nameFieldRef && this.nameFieldRef.current && this.nameFieldRef.current.value !== "") {
 
+            /* Store the player name for next time */
+            localStorage.setItem("mostRecentPlayer", this.nameFieldRef.current.value)
+
             this.props.onPlayerInformationDone(
                 {
                     name: this.nameFieldRef.current.value
@@ -43,6 +46,20 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
 
     componentDidMount() {
 
+        /* Try to pre-populate the screen with the most recent player */
+        const lastPlayerName = localStorage.getItem("mostRecentPlayer")
+
+        if (lastPlayerName && this.nameFieldRef && this.nameFieldRef.current) {
+            this.nameFieldRef.current.value = lastPlayerName
+
+            this.setState(
+                {
+                    userNameEntered: true
+                }
+            )
+        }
+
+        /* Set focus on the name field */
         if (this.nameFieldRef && this.nameFieldRef.current) {
             this.nameFieldRef.current.focus();
         }

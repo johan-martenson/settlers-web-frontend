@@ -9,7 +9,7 @@ import GameMenu from './game_menu';
 import { GameCanvas, TerrainAtPoint } from './game_render';
 import Guide from './guide';
 import MenuButton from './menu_button';
-import { pointToString, terrainInformationToTerrainAtPointList, removeHouseAtPoint, isRoadAtPoint, removeHouseOrFlagAtPoint, PointSet, PointMap } from './utils';
+import { terrainInformationToTerrainAtPointList, isRoadAtPoint, removeHouseOrFlagAtPoint, PointSet, PointMap } from './utils';
 import TypeControl from './type_control';
 
 const MENU_MENU = 0;

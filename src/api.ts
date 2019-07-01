@@ -56,9 +56,13 @@ export interface RoadInformation {
     readonly points: Point[]
 }
 
+export type PlayerType = "HUMAN" | "COMPUTER"
+
 export interface PlayerInformation {
     readonly name: string
     readonly id: PlayerId
+    readonly type: PlayerType
+    readonly color: string
     readonly centerPoint: Point
     readonly discoveredPoints: Set<Point>
 }
@@ -147,7 +151,7 @@ async function getGames(): Promise<GameInformation[]> {
     return await response.json();
 }
 
-async function addPlayerToGame(gameId: GameId, name: string, color: string): Promise<PlayerInformation> {
+async function addComputerPlayerToGame(gameId: GameId, name: string, color: string): Promise<PlayerInformation> {
     const response = await fetch("/settlers/api/games/" + gameId + "/players",
         {
             method: 'POST',
@@ -581,5 +585,5 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export { findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addPlayerToGame };
+export { removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
 

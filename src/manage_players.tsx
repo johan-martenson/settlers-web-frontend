@@ -2,19 +2,23 @@ import React, { Component } from 'react';
 import Button from './button';
 import { Player } from './player';
 import './select_player.css';
+import { GameId, addComputerPlayerToGame, PlayerInformation, getPlayers, updatePlayer, removePlayerFromGame, PlayerType } from './api';
 
-export interface PlayerType {
+export interface PlayerCandidateType {
     name: string
     color: string
-    type: "HUMAN" | "COMPUTER"
+    type: PlayerType
 }
 
 interface ManagePlayersProps {
-    players: PlayerType[]
+    selfPlayer: PlayerInformation
     selfPlayerIndex: number
+    gameId: GameId
+    onPlayerAdded?: ((player: PlayerInformation) => void)
+    onPlayerRemoved?: ((player: PlayerInformation) => void)
 }
 interface ManagePlayersState {
-    players: PlayerType[]
+    players: PlayerInformation[]
 }
 
 class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
@@ -22,30 +26,39 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
     constructor(props: ManagePlayersProps) {
         super(props);
 
-        const players = props.players || [];
+        const players = [this.props.selfPlayer]
 
         this.state = { players: players };
     }
 
-    addAiPlayer(): void {
-        const aiPlayer: PlayerType = {
+    async addAiPlayer(): Promise<void> {
+
+        const aiPlayer: PlayerCandidateType = {
             name: "An AI player",
             type: "COMPUTER",
             color: "#777777"
         };
 
+        const addedPlayer = await addComputerPlayerToGame(this.props.gameId, aiPlayer.name, aiPlayer.color)
+
         this.setState(
             {
-                players: this.state.players.concat([aiPlayer])
+                players: this.state.players.concat([addedPlayer])
             }
         );
+
+        if (this.props.onPlayerAdded) {
+            this.props.onPlayerAdded(addedPlayer)
+        }
     }
 
-    onNameChanged(name: string, index: number): void {
+    async onNameChanged(name: string, index: number): Promise<void> {
 
-        const players = [...this.state.players];
+        const playerToUpdate = this.state.players[index]
 
-        players[index].name = name;
+        const updatedPlayer = await updatePlayer(this.props.gameId, playerToUpdate.id, name, this.state.players[index].color)
+
+        const players = await getPlayers(this.props.gameId)
 
         this.setState({ players: players });
 
@@ -53,12 +66,21 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         console.log(index);
     }
 
-    removePlayer(player: PlayerType): void {
+    async removePlayer(player: PlayerInformation): Promise<void> {
+
+        const removedPlayer = await removePlayerFromGame(this.props.gameId, player.id)
+
+        const players = await getPlayers(this.props.gameId)
+
         this.setState(
             {
-                players: this.state.players.filter(e => e === player)
+                players: players
             }
         );
+
+        if (this.props.onPlayerRemoved) {
+            this.props.onPlayerRemoved(player)
+        }
     }
 
     render() {

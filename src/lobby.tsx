@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { addPlayerToGame, GameId, GameInformation, getGameInformation, getPlayers, PlayerId } from './api';
+import { addComputerPlayerToGame, GameId, GameInformation, getGameInformation, getPlayers, PlayerId } from './api';
 import App from './App';
 import Button from './button';
 import { Dialog } from './dialog';
@@ -116,7 +116,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
         console.log("Joining game " + game.id + " as player " + JSON.stringify(this.props.player));
 
         try {
-            const player = await addPlayerToGame(game.id, this.props.player.name, "#123456");
+            const player = await addComputerPlayerToGame(game.id, this.props.player.name, "#123456");
             console.log("Added player to game " + JSON.stringify(player));
 
             const players = await getPlayers(game.id);

@@ -1,25 +1,17 @@
 import React, { Component, createRef } from 'react';
-import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel } from './api';
+import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel, PlayerInformation } from './api';
 import BottomButtons from './bottom_buttons';
 import Button from './button';
 import { Dialog } from './dialog';
 import './game_creator.css';
 import GameOptions from './game_options';
-import ManagePlayers from './manage_players';
 import MapSelection from './map_selection';
 import MapInformationCard from './map_information_card';
 import './game_creator.css'
+import ManagePlayers from './manage_players';
 
 interface SelfPlayer {
     name: string
-}
-
-export type PlayerType = "HUMAN" | "COMPUTER"
-
-export interface Player {
-    name: string
-    color: string
-    type: PlayerType
 }
 
 interface GameCreatorProps {
@@ -31,10 +23,9 @@ interface GameCreatorProps {
 
 interface GameCreatorState {
     state: "GET_NAME_FOR_GAME" | "CREATE_GAME"
-    players: Player[]
     map?: MapInformation
     game?: GameInformation
-    selfPlayerId?: PlayerId
+    selfPlayer?: PlayerInformation
     isNameReady: boolean
 }
 
@@ -49,13 +40,6 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         this.state = {
             state: "GET_NAME_FOR_GAME",
             isNameReady: false,
-            players: [
-                {
-                    name: this.props.selfPlayer.name,
-                    type: "HUMAN",
-                    color: "#0000CC"
-                }
-            ]
         };
     }
 
@@ -92,7 +76,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
             return;
         }
 
-        if (!this.state.selfPlayerId) {
+        if (!this.state.selfPlayer) {
             console.log("ERROR: can't start a game without knowing which player is 'self'");
 
             return;
@@ -100,7 +84,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
         await startGame(this.state.game.id);
 
-        this.props.onGameStarted(this.state.game.id, this.state.selfPlayerId);
+        this.props.onGameStarted(this.state.game.id, this.state.selfPlayer.id);
     }
 
     onDeleteGame(): void {
@@ -149,27 +133,23 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         const game: GameInformation = await createGame({
             name: gameTitle,
             map: undefined,
-            players: this.state.players
-        })
+            players: [
+                {
+                    name: this.props.selfPlayer.name,
+                    color: "0xAABBCC"
+                }
+            ]
+        }
+        )
 
         /* Find the self player id */
-        let selfPlayerId;
-
-        for (let i = 0; i < game.players.length; i++) {
-            const player = game.players[i];
-
-            if (player.name === this.props.selfPlayer.name) {
-                selfPlayerId = player.id;
-
-                break;
-            }
-        }
+        const selfPlayer = game.players[0]
 
         this.setState(
             {
                 state: "CREATE_GAME",
                 game: game,
-                selfPlayerId: selfPlayerId
+                selfPlayer: selfPlayer
             }
         );
     }
@@ -216,11 +196,11 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                     </Dialog>
                 }
 
-                {this.state.state === "CREATE_GAME" &&
+                {this.state.state === "CREATE_GAME" && this.state.game && this.state.selfPlayer &&
                     <Dialog heading="Create game" noCloseButton={true}>
                         <div className="CreateGameColumns">
                             <div className="PlayersAndOptions">
-                                <ManagePlayers players={this.state.players} selfPlayerIndex={0} />
+                                <ManagePlayers gameId={this.state.game.id} selfPlayer={this.state.selfPlayer} selfPlayerIndex={0} />
                                 <GameOptions setAvailableResources={this.setAvailableResources.bind(this)} setOthersCanJoin={this.setOthersCanJoin.bind(this)} />
                             </div>
 
@@ -231,12 +211,12 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                                     <MapInformationCard map={this.state.map} expanded={true} controls={false} />
                                 }
 
-                                <MapSelection onMapSelected={this.onMapSelected.bind(this)} className={this.state.map ? "SmallMapSelection" : "FullMapSelection"}/>
+                                <MapSelection onMapSelected={this.onMapSelected.bind(this)} className={this.state.map ? "SmallMapSelection" : "FullMapSelection"} />
                             </div>
                         </div>
                         <BottomButtons>
                             <Button label="Delete game" onButtonClicked={this.onDeleteGame.bind(this)} />
-                            <Button label="Start game" onButtonClicked={this.onStartGame.bind(this)} disabled={!this.state.map} ref={this.createGameButtonRef}/>
+                            <Button label="Start game" onButtonClicked={this.onStartGame.bind(this)} disabled={!this.state.map} ref={this.createGameButtonRef} />
                         </BottomButtons>
                     </Dialog>
                 }

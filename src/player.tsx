@@ -3,12 +3,7 @@ import Button from './button';
 import Card from './card';
 import ExpandCollapseToggle from './expand_collapse_toggle';
 import './player.css';
-
-export interface IPlayer {
-    type: string;
-    name: string;
-    id?: string
-}
+import { PlayerInformation } from './api';
 
 interface PlayerState {
     type: string
@@ -20,7 +15,7 @@ interface PlayerState {
 
 interface PlayerProps {
     isSelf?: boolean;
-    player: IPlayer;
+    player: PlayerInformation;
     onPlayerRemoved?: (() => void)
     onNameChanged?: ((name: string) => void)
 }

@@ -51,7 +51,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
     render() {
 
         return (
-            <Dialog heading="Menu" onCloseDialog={this.props.onClose}>
+            <Dialog heading="Menu" onCloseDialog={this.props.onClose} floating={true}>
 
                 <DialogSection label="Select player">
                     <SelectPlayer onPlayerSelected={this.props.onPlayerSelected}

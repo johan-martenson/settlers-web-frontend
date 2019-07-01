@@ -166,6 +166,38 @@ async function addPlayerToGame(gameId: GameId, name: string, color: string): Pro
     return await response.json();
 }
 
+async function updatePlayer(gameId: GameId, playerId: PlayerId, name: string, color: string): Promise<PlayerInformation> {
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId,
+        {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(
+                {
+                    name: name,
+                    color: color
+                }
+            )
+        }
+    )
+
+    return await response.json()
+}
+
+async function removePlayerFromGame(gameId: GameId, playerId: PlayerId): Promise<PlayerInformation> {
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId,
+        {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }
+    )
+
+    return await response.json()
+}
+
 async function getMaps(): Promise<MapInformation[]> {
     const response = await fetch("/settlers/api/maps",
         { method: 'get' });

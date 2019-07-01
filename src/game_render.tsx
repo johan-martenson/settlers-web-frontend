@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HeightInformation, HouseInformation, materialToColor, Point, PointString, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
+import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HeightInformation, HouseInformation, materialToColor, Point, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation } from './api';
 import houseImageMap, { Filename } from './images';
-import { almostEquals, arrayToRgbStyle, camelCaseToWords, getBrightnessForNormals, getGradientLineForTriangle, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, pointToString, RgbColorArray, same, Vector, vegetationToInt, PointMap, PointSet } from './utils';
+import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, PointMap, PointSet, same, Vector, vegetationToInt } from './utils';
 
 function stringToPoint(pointString: string): Point {
 
@@ -368,7 +368,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             /* Filter points that are not yet discovered */
             if (!this.props.discoveredPoints.has(gamePoint)) {
-            //if (!this.pointIsDiscovered(gamePoint)) {
                 continue;
             }
 
@@ -376,9 +375,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const gamePointDownLeft = getPointDownLeft(gamePoint);
             const gamePointDownRight = getPointDownRight(gamePoint);
 
-            const gamePointRightDiscovered =  this.props.discoveredPoints.has(gamePointRight) // this.pointIsDiscovered(gamePointRight);
-            const gamePointDownLeftDiscovered = this.props.discoveredPoints.has(gamePointDownLeft) // this.pointIsDiscovered(gamePointDownLeft);
-            const gamePointDownRightDiscovered = this.props.discoveredPoints.has(gamePointDownRight) // this.pointIsDiscovered(gamePointDownRight);
+            const gamePointRightDiscovered =  this.props.discoveredPoints.has(gamePointRight)
+            const gamePointDownLeftDiscovered = this.props.discoveredPoints.has(gamePointDownLeft)
+            const gamePointDownRightDiscovered = this.props.discoveredPoints.has(gamePointDownRight)
+
+            /* Filter the case where the game point down right is not discovered because it's part of both triangles so then there is nothing to draw */
+            if (!gamePointDownRightDiscovered) {
+                continue;
+            }
 
             const screenPoint = this.gamePointToScreenPoint(gamePoint);
             const screenPointRight = this.gamePointToScreenPoint(gamePointRight);
@@ -387,11 +391,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             /* Filter the cases where both triangles are outside of the screen */
             if (screenPointRight.x < 0 || screenPointDownLeft.x > width || screenPointDownLeft.y < 0 || screenPoint.y > height) {
-                continue;
-            }
-
-            /* Filter the case where the game point down right is not discovered because it's part of both triangles so then there is nothing to draw */
-            if (!gamePointDownRightDiscovered) {
                 continue;
             }
 
@@ -408,61 +407,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 /* Skip this draw if there is no defined color. This is an error */
                 if (!colorBelow) {
-                    console.log("NO COLOR FOR BELOW");
+                    console.log("NO COLOR FOR VEGETATION BELOW");
                     console.log(tile.straightBelow);
 
                     continue;
                 }
 
-                ctx.save();
-
-                const minIntensityBelow = Math.min(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
-                const maxIntensityBelow = Math.max(intensityPoint, intensityPointDownLeft, intensityPointDownRight);
-
-                const minColorBelow: RgbColorArray = [
-                    colorBelow[0] + 40 * minIntensityBelow,
-                    colorBelow[1] + 40 * minIntensityBelow,
-                    colorBelow[2] + 40 * minIntensityBelow
-                ];
-
-                const maxColorBelow: RgbColorArray = [
-                    colorBelow[0] + 40 * maxIntensityBelow,
-                    colorBelow[1] + 40 * maxIntensityBelow,
-                    colorBelow[2] + 40 * maxIntensityBelow
-                ];
-
-                if (almostEquals(minIntensityBelow, maxIntensityBelow)) {
-                    ctx.fillStyle = arrayToRgbStyle(minColorBelow);
-                } else {
-
-                    const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownLeft, intensityPointDownLeft, gamePointDownRight, intensityPointDownRight);
-
-                    const gradientScreenPoints = [
-                        this.gamePointToScreenPoint(gradientGamePoints[0]),
-                        this.gamePointToScreenPoint(gradientGamePoints[1])
-                    ];
-
-                    const gradient = ctx.createLinearGradient(
-                        gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
-                    );
-
-                    gradient.addColorStop(0, arrayToRgbStyle(maxColorBelow));
-                    gradient.addColorStop(1, arrayToRgbStyle(minColorBelow));
-
-                    ctx.fillStyle = gradient;
-                }
-
-                ctx.beginPath()
-
-                ctx.moveTo(screenPoint.x, screenPoint.y);
-                ctx.lineTo(screenPointDownLeft.x, screenPointDownLeft.y);
-                ctx.lineTo(screenPointDownRight.x, screenPointDownRight.y);
-
-                ctx.closePath();
-
-                ctx.fill();
-
-                ctx.restore();
+                drawGradientTriangle(ctx, colorBelow, screenPoint, screenPointDownLeft, screenPointDownRight, intensityPoint, intensityPointDownLeft, intensityPointDownRight);
             }
 
             /* Draw the tile down right */
@@ -472,6 +423,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const intensityPointRight = getBrightnessForNormals(this.getSurroundingNormals(gamePointRight), this.lightVector);
                 const colorDownRight = intToVegetationColor.get(tile.belowToTheRight);
 
+                /* Skip this draw if there is no defined color. This is an error */
                 if (!colorDownRight) {
                     console.log("NO COLOR FOR VEGETATION DOWN RIGHT");
                     console.log(tile.belowToTheRight);
@@ -479,55 +431,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue;
                 }
 
-                ctx.save();
-
-                const minIntensityDownRight = Math.min(intensityPoint, intensityPointDownRight, intensityPointRight);
-                const maxIntensityDownRight = Math.max(intensityPoint, intensityPointDownRight, intensityPointRight);
-
-                const minColorDownRight = [
-                    colorDownRight[0] + 40 * minIntensityDownRight,
-                    colorDownRight[1] + 40 * minIntensityDownRight,
-                    colorDownRight[2] + 40 * minIntensityDownRight
-                ];
-
-                const maxColorDownRight = [
-                    colorDownRight[0] + 40 * maxIntensityDownRight,
-                    colorDownRight[1] + 40 * maxIntensityDownRight,
-                    colorDownRight[2] + 40 * maxIntensityDownRight
-                ];
-
-                if (almostEquals(minIntensityDownRight, maxIntensityDownRight)) {
-                    ctx.fillStyle = arrayToRgbStyle(minColorDownRight);
-                } else {
-
-                    const gradientGamePoints = getGradientLineForTriangle(gamePoint, intensityPoint, gamePointDownRight, intensityPointDownRight, gamePointRight, intensityPointRight);
-
-                    const gradientScreenPoints = [
-                        this.gamePointToScreenPoint(gradientGamePoints[0]),
-                        this.gamePointToScreenPoint(gradientGamePoints[1])
-                    ];
-
-                    const gradient = ctx.createLinearGradient(
-                        gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
-                    );
-
-                    gradient.addColorStop(0, arrayToRgbStyle(maxColorDownRight));
-                    gradient.addColorStop(1, arrayToRgbStyle(minColorDownRight));
-
-                    ctx.fillStyle = gradient;
-                }
-
-                ctx.beginPath()
-
-                ctx.moveTo(screenPoint.x, screenPoint.y);
-                ctx.lineTo(screenPointDownRight.x, screenPointDownRight.y);
-                ctx.lineTo(screenPointRight.x, screenPointRight.y);
-
-                ctx.closePath();
-
-                ctx.fill();
-
-                ctx.restore();
+                drawGradientTriangle(ctx, colorDownRight, screenPoint, screenPointDownRight, screenPointRight, intensityPoint, intensityPointDownRight, intensityPointRight);
             }
         }
 
@@ -579,7 +483,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             for (let borderPoint of border.points) {
 
                 if (!this.props.discoveredPoints.has(borderPoint)) {
-                //if (!this.pointIsDiscovered(borderPoint)) {
                     continue;
                 }
 
@@ -607,7 +510,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             for (let point of this.props.newRoad) {
 
                 if (!this.props.discoveredPoints.has(point)) {
-                //if (!this.pointIsDiscovered(point)) {
                     previous = null;
 
                     continue;
@@ -647,7 +549,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const gamePoint = stringToPoint(entry[0]);
 
                     if (this.props.discoveredPoints.has(gamePoint)) {
-                    //if (this.pointIsDiscovered(gamePoint)) {
 
                         const point = this.gamePointToScreenPoint(gamePoint);
 
@@ -737,7 +638,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             (house, index) => {
 
                 if (!this.props.discoveredPoints.has({x: house.x, y: house.y})) {
-                //if (!this.pointIsDiscovered({ x: house.x, y: house.y })) {
                     return null;
                 }
 
@@ -791,7 +691,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             (tree, index) => {
 
                 if (!this.props.discoveredPoints.has(tree)) {
-                //if (!this.pointIsDiscovered(tree)) {
                     return null;
                 }
 
@@ -816,7 +715,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             (crop, index) => {
 
                 if (this.props.discoveredPoints.has(crop)) {
-                //if (!this.pointIsDiscovered(crop)) {
                     return null;
                 }
 
@@ -841,7 +739,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             (sign, index) => {
 
                 if (!this.props.discoveredPoints.has(sign)) {
-                //if (!this.pointIsDiscovered(sign)) {
                     return;
                 }
 
@@ -867,7 +764,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             (stone, index) => {
 
                 if (!this.props.discoveredPoints.has(stone)) {
-                //if (!this.pointIsDiscovered(stone)) {
                     return null;
                 }
 
@@ -902,8 +798,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (!this.props.discoveredPoints.has(worker.previous) &&
                         !this.props.discoveredPoints.has(worker.next)) {
-                    //if (!this.pointIsDiscovered(worker.previous) &&
-                    //    !this.pointIsDiscovered(worker.next)) {
                         return;
                     }
 
@@ -930,7 +824,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else {
 
                     if (!this.props.discoveredPoints.has(worker)) {
-                    //if (!this.pointIsDiscovered(worker)) {
                         return;
                     }
 
@@ -958,8 +851,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (!this.props.discoveredPoints.has(animal.previous) &&
                         !this.props.discoveredPoints.has(animal.next)) {
-                    //if (!this.pointIsDiscovered(animal.previous) &&
-                    //    !this.pointIsDiscovered(animal.next)) {
                         return;
                     }
 
@@ -985,7 +876,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else {
 
                     if (!this.props.discoveredPoints.has(animal)) {
-                    //if (!this.pointIsDiscovered(animal)) {
                         return;
                     }
 
@@ -1011,7 +901,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             (flag, index) => {
 
                 if (!this.props.discoveredPoints.has(flag)) {
-                //if (!this.pointIsDiscovered(flag)) {
                     return;
                 }
 
@@ -1039,7 +928,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 (house, index) => {
 
                     if (!this.props.discoveredPoints.has(house)) {
-                    //if (!this.pointIsDiscovered({ x: house.x, y: house.y })) {
                         return;
                     }
 
@@ -1073,7 +961,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 (point, index) => {
 
                     if (!this.props.discoveredPoints.has(point)) {
-                    //if (!this.pointIsDiscovered(point)) {
                         return;
                     }
 

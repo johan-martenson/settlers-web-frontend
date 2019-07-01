@@ -697,5 +697,53 @@ function same(point1: Point, point2: Point): boolean {
     return point1.x === point2.x && point1.y === point2.y;
 }
 
-export { PointMap, PointSet, normalize, same, removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
+function drawGradientTriangle(ctx: CanvasRenderingContext2D, color: RgbColorArray, point1: Point, point2: Point, point3: Point, intensity1: number, intensity2: number, intensity3: number) {
+
+    ctx.save();
+
+    const minIntensityBelow = Math.min(intensity1, intensity2, intensity3);
+    const maxIntensityBelow = Math.max(intensity1, intensity2, intensity3);
+
+    const minColorBelow: RgbColorArray = [
+        color[0] + 40 * minIntensityBelow,
+        color[1] + 40 * minIntensityBelow,
+        color[2] + 40 * minIntensityBelow
+    ];
+
+    const maxColorBelow: RgbColorArray = [
+        color[0] + 40 * maxIntensityBelow,
+        color[1] + 40 * maxIntensityBelow,
+        color[2] + 40 * maxIntensityBelow
+    ];
+
+    if (almostEquals(minIntensityBelow, maxIntensityBelow)) {
+        ctx.fillStyle = arrayToRgbStyle(minColorBelow);
+    } else {
+
+        const gradientScreenPoints = getGradientLineForTriangle(point1, intensity1, point2, intensity2, point3, intensity3);
+
+        const gradient = ctx.createLinearGradient(
+            gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
+        );
+
+        gradient.addColorStop(0, arrayToRgbStyle(maxColorBelow));
+        gradient.addColorStop(1, arrayToRgbStyle(minColorBelow));
+
+        ctx.fillStyle = gradient;
+    }
+
+    ctx.beginPath()
+
+    ctx.moveTo(point1.x, point1.y);
+    ctx.lineTo(point2.x, point2.y);
+    ctx.lineTo(point3.x, point3.y);
+
+    ctx.closePath();
+
+    ctx.fill();
+
+    ctx.restore();
+}
+
+export { drawGradientTriangle, PointMap, PointSet, normalize, same, removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, pointToString, vegetationToInt, intToVegetationColor };
 

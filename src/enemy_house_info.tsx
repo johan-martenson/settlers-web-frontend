@@ -17,7 +17,7 @@ class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState>
     render() {
         return (
 
-            <Dialog heading={this.props.house.type}>
+            <Dialog heading={this.props.house.type} floating>
 
                 <img src="house.png" className="MediumIcon" alt="House" />
 

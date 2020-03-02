@@ -11,6 +11,7 @@ export type PointString = string;
 
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine";
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
+export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood"
 
 interface Player {
     name: string
@@ -143,6 +144,37 @@ export interface PlayerViewInformation {
 export interface PossibleNewRoadInformation {
     possibleNewRoad: Point[]
     closesRoad: boolean
+}
+
+export interface Measurement {
+    time: number
+    values: number[]
+}
+
+export interface MaterialStatistics {
+    material: Material
+    materialStatistics: Measurement[]
+
+}
+
+export interface PlayerInformationLight {
+    name: string
+    color: string
+}
+
+export interface GameStatistics {
+    players: PlayerInformationLight[]
+    materialStatistics: MaterialStatistics[]
+}
+
+async function getGameStatistics(gameId: GameId): Promise<GameStatistics> {
+    const response = await fetch("/settlers/api/games/" + gameId + "/statistics/production", { method: 'get' });
+
+    const data = await response.json();
+
+    console.log(data)
+
+    return data
 }
 
 async function getGames(): Promise<GameInformation[]> {
@@ -576,8 +608,7 @@ const LARGE_HOUSES: LargeBuilding[] = [
     "Fortress"
 ];
 
-type material = "gold" | "iron" | "coal" | "stone" | "water"
-const materialToColor = new Map<material, string>();
+const materialToColor = new Map<Material, string>();
 
 materialToColor.set("gold", "yellow");
 materialToColor.set("iron", "red");
@@ -585,5 +616,5 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export { removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
+export { getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
 

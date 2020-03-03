@@ -11,6 +11,7 @@ import Guide from './guide';
 import MenuButton from './menu_button';
 import { terrainInformationToTerrainAtPointList, isRoadAtPoint, removeHouseOrFlagAtPoint, PointSet, PointMap } from './utils';
 import TypeControl from './type_control';
+import Statistics from './statistics';
 
 const MENU_MENU = 0;
 const MENU_FRIENDLY_HOUSE = 1;
@@ -102,6 +103,7 @@ interface AppState {
     showConstructionInfo?: PointInformation
     showEnemyHouseInfo?: ShowEnemyHouseInfo
     showHelp?: boolean
+    showStatistics?: boolean
     menuVisible: boolean
 
     showTitles: boolean
@@ -202,8 +204,11 @@ class App extends Component<AppProps, AppState> {
                 );
             }
         );
+
         this.commands.set("Flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) });
         this.commands.set("Remove (house or flag)", () => { removeHouseOrFlagAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+
+        this.commands.set("Statistics", () => this.setState({ showStatistics: true }))
     }
 
     toggleDetails(): void {
@@ -988,6 +993,12 @@ class App extends Component<AppProps, AppState> {
                         closeDialog={this.closeActiveMenu.bind(this)}
                         playerId={this.state.player}
                         startNewRoad={this.startNewRoad.bind(this)}
+                        gameId={this.props.gameId}
+                    />
+                }
+
+                {this.state.showStatistics &&
+                    <Statistics onClose={() => this.setState({ showStatistics: false })} 
                         gameId={this.props.gameId}
                     />
                 }

@@ -3,6 +3,7 @@ import { GameId, PlayerId, PlayerInformation } from './api';
 import Guide from './guide';
 import MainMenu from './main_menu';
 import OptionMenu from './options_menu';
+import Statistics from './statistics';
 
 interface GameMenuProps {
     onCloseMenu: (() => void)
@@ -19,7 +20,7 @@ interface GameMenuProps {
     onLeaveGame: (() => void)
 }
 interface GameMenuState {
-    state: "MAIN" | "OPTIONS" | "HELP"
+    state: "MAIN" | "OPTIONS" | "HELP" | "STATISTICS"
 }
 
 class GameMenu extends Component<GameMenuProps, GameMenuState> {
@@ -52,6 +53,14 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
         this.props.onPlayerSelected(player);
     }
 
+    onStatistics(): void {
+        this.setState(
+            {
+                state: "STATISTICS"
+            }
+        )
+    }
+
     render() {
 
         return (
@@ -65,6 +74,7 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                         onChoose={this.onChoose.bind(this)}
                         onPlayerSelected={this.onPlayerSelected.bind(this)}
                         onLeaveGame={this.props.onLeaveGame}
+                        onStatistics={this.onStatistics.bind(this)}
                     />
                 }
 
@@ -82,6 +92,12 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
 
                 {this.state.state === "HELP" &&
                     <Guide onClose={() => { this.setState({ state: "MAIN" }) }} />
+                }
+
+                {this.state.state === "STATISTICS" &&
+                    <Statistics onClose={() => { this.setState({ state: "MAIN" }) }} 
+                        gameId={this.props.gameId}
+                    />
                 }
             </div>
         );

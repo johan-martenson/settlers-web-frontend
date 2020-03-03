@@ -8,6 +8,7 @@ interface MainMenuProps {
     gameId: GameId
     currentPlayerId: PlayerId
     onPlayerSelected: ((player: PlayerInformation) => void)
+    onStatistics: (() => void)
     onClose: (() => void)
     onChoose: (() => void)
     onHelp: (() => void)
@@ -31,6 +32,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
     }
 
     async componentDidMount() {
+
         const game = await getGameInformation(this.props.gameId);
 
         this.setState({ currentSpeed: 50 }); //game.tickLength});
@@ -58,6 +60,10 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
                         currentPlayer={this.props.currentPlayerId}
                         gameId={this.props.gameId}
                     />
+                </DialogSection>
+
+                <DialogSection label="Game Utils">
+                    <Button label="Statistics" onButtonClicked={this.props.onStatistics}/>
                 </DialogSection>
 
                 <DialogSection>

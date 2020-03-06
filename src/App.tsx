@@ -209,6 +209,12 @@ class App extends Component<AppProps, AppState> {
         this.commands.set("Remove (house or flag)", () => { removeHouseOrFlagAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
 
         this.commands.set("Statistics", () => this.setState({ showStatistics: true }))
+
+        this.commands.set("Game id",
+            () => {
+                console.info("Game id: " + this.props.gameId)
+            }
+        )
     }
 
     toggleDetails(): void {
@@ -998,7 +1004,7 @@ class App extends Component<AppProps, AppState> {
                 }
 
                 {this.state.showStatistics &&
-                    <Statistics onClose={() => this.setState({ showStatistics: false })} 
+                    <Statistics onClose={() => this.setState({ showStatistics: false })}
                         gameId={this.props.gameId}
                     />
                 }

@@ -13,6 +13,20 @@ export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "min
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
 export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood"
 
+// fixme: add remaining materials
+export function isMaterial(material: string): material is Material {
+    if (material === "gold" ||
+        material === "iron" ||
+        material === "coal" ||
+        material === "stone" ||
+        material === "water" ||
+        material === "wood") {
+        return true
+    }
+
+    return false
+}
+
 interface Player {
     name: string
     color: string
@@ -113,6 +127,7 @@ export interface HouseInformation extends Point {
     playerId: PlayerId
     type: AnyBuilding
     inventory: Map<string, number>
+    resources: Map<Material, Map<"has" | "needs", number>>
     state: "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED"
 }
 
@@ -167,12 +182,26 @@ export interface GameStatistics {
     materialStatistics: MaterialStatistics[]
 }
 
+export interface LandDataPoint {
+    time: number
+    values: number[]
+}
+
+export interface LandStatistics {
+    players: PlayerInformationLight[]
+    landStatistics: LandDataPoint[]
+}
+
+async function getLandStatistics(gameId: GameId): Promise<LandStatistics> {
+    const response = await fetch("/settlers/api/games/" + gameId + "/statistics/land", { method: 'get' });
+
+    return await response.json();
+}
+
 async function getGameStatistics(gameId: GameId): Promise<GameStatistics> {
     const response = await fetch("/settlers/api/games/" + gameId + "/statistics/production", { method: 'get' });
 
     const data = await response.json();
-
-    console.log(data)
 
     return data
 }
@@ -373,11 +402,11 @@ async function setSpeed(tickLength: number, gameId: GameId): Promise<void> {
     return await response.json();
 }
 
-async function removeHouse(houseId: HouseId, gameId: GameId): Promise<void> {
+async function removeHouse(houseId: HouseId, playerId: PlayerId, gameId: GameId): Promise<void> {
 
     console.info("Removing house " + houseId);
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/houses/" + houseId, { method: 'delete' });
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses/" + houseId, { method: 'delete' });
 
     return await response.json();
 }
@@ -487,9 +516,34 @@ async function getHouseInformation(houseId: HouseId, gameId: GameId, playerId: P
     // type: 'headquarter'
     // maxAttackers: 23
 
-
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses/" + houseId);
-    return await response.json();
+    const receivedHouse = await response.json();
+
+    let resources = new Map<Material, Map<"has" | "needs", number>>()
+
+    for (const key of Object.keys(receivedHouse.resources)) {
+
+        if (!isMaterial(key)) {
+            continue
+        }
+
+        const hasAndNeedsMap = new Map<"has" | "needs", number>()
+
+        const hasAmount = receivedHouse.resources[key]["has"]
+        const needsAmount = receivedHouse.resources[key]["needs"]
+
+        hasAndNeedsMap.set("has", hasAmount)
+        hasAndNeedsMap.set("needs", needsAmount)
+
+        resources.set(key, hasAndNeedsMap)
+    }
+
+    let house = receivedHouse
+
+    house.resources = resources
+
+    return house
+
 }
 
 async function getInformationOnPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<PointInformation> {
@@ -616,5 +670,5 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export { getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
+export { getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
 

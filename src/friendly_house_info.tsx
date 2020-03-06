@@ -19,7 +19,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
     render() {
 
         return (
-            <Dialog heading={this.props.house.type}>
+            <Dialog heading={this.props.house.type} floating onCloseDialog={this.props.closeDialog}>
 
                 <img src={houseImageMap.get(this.props.house.type)} className="MediumIcon" alt="House" />
 
@@ -33,7 +33,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                     <Button label="Destroy"
                         onButtonClicked={
                             async () => {
-                                await removeHouse(this.props.house.id, this.props.gameId);
+                                await removeHouse(this.props.house.id, this.props.playerId, this.props.gameId);
 
                                 this.props.closeDialog();
                             }

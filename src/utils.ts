@@ -657,7 +657,7 @@ async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: Player
     }
 
     if (buildingOnPoint) {
-        removeHouse(buildingOnPoint.id, gameId);
+        removeHouse(buildingOnPoint.id, playerId, gameId);
     }
 }
 
@@ -687,7 +687,7 @@ async function removeHouseOrFlagAtPoint(point: Point, gameId: GameId, playerId: 
     const pointInformation = await getInformationOnPoint(point, gameId, playerId);
 
     if (pointInformation.is === "building" && pointInformation.buildingId) {
-        removeHouse(pointInformation.buildingId, gameId);
+        removeHouse(pointInformation.buildingId, playerId, gameId);
     } else if (pointInformation.is === "flag" && pointInformation.flagId) {
         removeFlag(pointInformation.flagId, gameId, playerId);
     }

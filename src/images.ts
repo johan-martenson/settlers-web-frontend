@@ -17,7 +17,7 @@ houseImageMap.set("GoldMine", "house.png");
 houseImageMap.set("IronMine", "house.png");
 houseImageMap.set("CoalMine", "house.png");
 houseImageMap.set("GraniteMine", "house.png");
-houseImageMap.set("Sawmill", "sawmill-small.png");
+houseImageMap.set("Sawmill", "house.png");
 houseImageMap.set("WatchTower", "house.png");
 houseImageMap.set("Mill", "house.png");
 houseImageMap.set("Mint", "house.png");

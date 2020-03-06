@@ -3,12 +3,16 @@ import ReactDOM from 'react-dom';
 import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information';
 import './index.css';
 import { Lobby } from './lobby';
+import { GameId, PlayerId, getPlayers } from './api'
+import App from './App'
 
 
 interface GameInitProps { }
 interface GameInitState {
     state: "ENTER_PLAYER_INFORMATION" | "LOBBY" | "PLAY_GAME"
     player?: EnteredPlayerInformation
+    gameId?: GameId
+    selfPlayerId?: PlayerId
 }
 
 class GameInit extends Component<GameInitProps, GameInitState> {
@@ -19,6 +23,24 @@ class GameInit extends Component<GameInitProps, GameInitState> {
         this.state = {
             state: "ENTER_PLAYER_INFORMATION"
         };
+    }
+
+    async componentDidMount() {
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get("gameId")
+
+        if (gameId) {
+            const players = await getPlayers(gameId)
+
+            this.setState(
+                {
+                    state: "PLAY_GAME",
+                    gameId: gameId,
+                    selfPlayerId: players[0].id
+                }
+            )
+        }
     }
 
     onPlayerInformationDone(player: EnteredPlayerInformation): void {
@@ -43,6 +65,15 @@ class GameInit extends Component<GameInitProps, GameInitState> {
 
                 {this.state.state === "LOBBY" && this.state.player &&
                     <Lobby player={this.state.player} />
+                }
+
+                {this.state.state === "PLAY_GAME" && this.state.gameId && this.state.selfPlayerId &&
+                    <App gameId={this.state.gameId}
+                        selfPlayerId={this.state.selfPlayerId}
+                        onLeaveGame={
+                            () => this.setState({ state: "LOBBY" })
+                        }
+                    />
                 }
             </div>
         );

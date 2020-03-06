@@ -375,7 +375,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const gamePointDownLeft = getPointDownLeft(gamePoint);
             const gamePointDownRight = getPointDownRight(gamePoint);
 
-            const gamePointRightDiscovered =  this.props.discoveredPoints.has(gamePointRight)
+            const gamePointRightDiscovered = this.props.discoveredPoints.has(gamePointRight)
             const gamePointDownLeftDiscovered = this.props.discoveredPoints.has(gamePointDownLeft)
             const gamePointDownRightDiscovered = this.props.discoveredPoints.has(gamePointDownRight)
 
@@ -413,7 +413,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue;
                 }
 
-                drawGradientTriangle(ctx, colorBelow, screenPoint, screenPointDownLeft, screenPointDownRight, intensityPoint, intensityPointDownLeft, intensityPointDownRight);
+                drawGradientTriangle(ctx,
+                    colorBelow,
+                    { x: screenPoint.x, y: screenPoint.y - 1 },
+                    { x: screenPointDownLeft.x - 1, y: screenPointDownLeft.y },
+                    { x: screenPointDownRight.x + 1, y: screenPointDownRight.y },
+                    intensityPoint,
+                    intensityPointDownLeft,
+                    intensityPointDownRight);
             }
 
             /* Draw the tile down right */
@@ -431,7 +438,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue;
                 }
 
-                drawGradientTriangle(ctx, colorDownRight, screenPoint, screenPointDownRight, screenPointRight, intensityPoint, intensityPointDownRight, intensityPointRight);
+                drawGradientTriangle(ctx,
+                    colorDownRight,
+                    { x: screenPoint.x - 1, y: screenPoint.y - 1},
+                    { x: screenPointDownRight.x, y: screenPointDownRight.y + 1},
+                    { x: screenPointRight.x + 1, y: screenPointRight.y - 1},
+                    intensityPoint,
+                    intensityPointDownRight,
+                    intensityPointRight);
             }
         }
 
@@ -637,7 +651,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.houses.map(
             (house, index) => {
 
-                if (!this.props.discoveredPoints.has({x: house.x, y: house.y})) {
+                if (!this.props.discoveredPoints.has({ x: house.x, y: house.y })) {
                     return null;
                 }
 
@@ -690,15 +704,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.trees.map(
             (tree, index) => {
 
-                if (!this.props.discoveredPoints.has(tree)) {
+                if (!this.props.discoveredPoints.has(tree) ||
+                    !this.props.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) ||
+                    !this.props.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) ||
+                    !this.props.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) ||
+                    !this.props.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) ||
+                    !this.props.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) ||
+                    !this.props.discoveredPoints.has({ x: tree.x + 2, y: tree.y })
+                ) {
                     return null;
                 }
 
                 const point = this.gamePointToScreenPoint(tree);
 
                 /* Draw the house next to the point, instead of on top */
-                point.x -= 1 * this.props.scale;
-                point.y -= 3 * this.props.scale;
+                point.x -= 0.5 * this.props.scale;
+                point.y -= 2.5 * this.props.scale;
 
                 const treeImage = this.state.images.get("tree.png");
 

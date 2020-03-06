@@ -1,0 +1,8 @@
+.InventoryLabelValuePair {
+    display: flex;
+    justify-content: space-between;
+}
+
+.InventoryLabel {}
+
+.InventoryValue {}

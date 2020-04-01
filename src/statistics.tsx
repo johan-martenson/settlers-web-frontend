@@ -158,9 +158,20 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         statisticsChoices.set("production", "Production Statistics")
         statisticsChoices.set("land", "Land")
 
+        const materialChoices = new Map<string, string>()
+        if (this.state.productionStatistics) {
+            this.state.productionStatistics.materialStatistics.map(
+                (materialStatistics, index) => {
+                    materialChoices.set("" + index, materialStatistics.material)
+                }
+            )
+        }
+
         return (
             <Dialog heading={titleLabel} onCloseDialog={this.onClose.bind(this)} floating >
-                <SelectableButtonRow values={statisticsChoices} onSelected={(value) => { this.setStatisticsMode(value) }} />
+                <SelectableButtonRow values={statisticsChoices} onSelected={(value) => { this.setStatisticsMode(value) }}
+                    initialValue={this.state.state.toLowerCase()}
+                />
 
                 <div>
                     <svg className="StatisticsContainer" ref={this.statisticsContainerRef} />
@@ -175,31 +186,21 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 {this.state.state === "PRODUCTION" &&
                     <>
 
-                        <div className="MaterialSelectButtons">
-                            {this.state.productionStatistics && this.state.productionStatistics.materialStatistics.map(
-                                (materialStatistics, index) => {
+                        {this.state.productionStatistics &&
+                            <SelectableButtonRow values={materialChoices}
+                                initialValue={"" + this.state.materialToShow}
+                                onSelected={
+                                    (value) => {
 
-                                    return (
-                                        <Button key={index}
-                                            onButtonClicked={
-                                                () => {
-                                                    this.setState(
-                                                        {
-                                                            materialToShow: index,
-                                                            drawnStatistics: false
-                                                        }
-                                                    )
-                                                }
+                                        this.setState(
+                                            {
+                                                materialToShow: Number(value),
+                                                drawnStatistics: false
                                             }
-                                        >
-                                            {materialStatistics.material}
-                                        </Button>
-                                    );
-                                }
-                            )
-
-                            }
-                        </div>
+                                        )
+                                    }
+                                } />
+                        }
                     </>
                 }
 
@@ -213,6 +214,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
     drawLandStatistics(statisticsSvgElement: SVGSVGElement, landStatistics: LandStatistics): void {
 
+        /*  Complement the reported land metrics */
         let augmentedLandStatistics: LandDataPoint[] = []
 
         let previousMeasurement = undefined
@@ -233,6 +235,13 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             previousMeasurement = measurement
         }
 
+        augmentedLandStatistics.push(
+            {
+                time: landStatistics.currentTime,
+                values: landStatistics.landStatistics[landStatistics.landStatistics.length - 1].values
+            }
+        )
+
         /* Define the full dimensions of the graph window */
         const fullHeight = 600
         const fullWidth = 600
@@ -244,13 +253,15 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const height = fullHeight - margin.right - margin.left
         const width = fullWidth - margin.top - margin.bottom
 
-        /* Calculate the max range of the axis */
+        /* Calculate the max range of both axis and the min time value */
         let maxTimeCalculated = 0
         let maxValueCalculated = 0
+        let minTimeCalculated = landStatistics.landStatistics[0].time
 
         landStatistics.landStatistics.forEach(
             (measurement: LandDataPoint) => {
                 maxTimeCalculated = Math.max(maxTimeCalculated, measurement.time)
+                minTimeCalculated = Math.min(minTimeCalculated, measurement.time)
 
                 const localMaxValue = Math.max(...measurement.values)
 
@@ -258,10 +269,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             }
         )
 
-
         /* Create each axis */
         const xScale = d3.scaleLinear()
-            .domain([0, maxTimeCalculated]).nice()
+            .domain([minTimeCalculated, maxTimeCalculated]).nice()
             .range([margin.left, width - margin.right])
 
         const yScale = d3.scaleLinear()
@@ -306,9 +316,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         /* Add the x axis */
-        statisticsSvg.append("g")
+/*        statisticsSvg.append("g")
             .attr("transform", "translate(0, " + height + ")")
-            .call(xAxis)
+            .call(xAxis)*/
 
         /* Add the y axis */
         statisticsSvg.append("g")
@@ -386,10 +396,28 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         }
     }
 
+    reduceDataArrayIfNeeded(dataArray: Measurement[], amount: number): Measurement[] {
+        const resultArray: Measurement[] = []
+
+        const ratio = Math.floor(dataArray.length / amount)
+
+        for (let i = 0; i < dataArray.length; i++) {
+            if (i !== 0 && i !== dataArray.length && i % ratio !== 0) {
+                continue
+            }
+
+            resultArray.push(dataArray[i])
+        }
+
+        return resultArray
+    }
+
     drawProductionStatistics(statisticsSvgElement: SVGSVGElement, gameStatistics: GameStatistics): void {
 
         /* Get the right material statistics to graph */
-        const resourceStatistics = gameStatistics.materialStatistics[this.state.materialToShow].materialStatistics
+        const resourceStatisticsFull = gameStatistics.materialStatistics[this.state.materialToShow].materialStatistics
+
+        const resourceStatistics = this.reduceDataArrayIfNeeded(resourceStatisticsFull, 30)
 
         /* Define the full dimensions of the graph window */
         const fullHeight = 600
@@ -453,9 +481,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         /* Add the x axis */
-        statisticsSvg.append("g")
+        /*statisticsSvg.append("g")
             .attr("transform", "translate(0, " + height + ")")
-            .call(xAxis)
+            .call(xAxis)*/
 
         /* Add the y axis */
         statisticsSvg.append("g")

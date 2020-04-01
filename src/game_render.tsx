@@ -334,9 +334,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         ctx.fillStyle = 'black';
 
-        ctx.rect(0, 0, width, height);
-
-        ctx.fill();
+        ctx.fillRect(0, 0, width, height);
 
         ctx.restore();
 
@@ -440,9 +438,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 drawGradientTriangle(ctx,
                     colorDownRight,
-                    { x: screenPoint.x - 1, y: screenPoint.y - 1},
-                    { x: screenPointDownRight.x, y: screenPointDownRight.y + 1},
-                    { x: screenPointRight.x + 1, y: screenPointRight.y - 1},
+                    { x: screenPoint.x - 1, y: screenPoint.y - 1 },
+                    { x: screenPointDownRight.x, y: screenPointDownRight.y + 1 },
+                    { x: screenPointRight.x + 1, y: screenPointRight.y - 1 },
                     intensityPoint,
                     intensityPointDownRight,
                     intensityPointRight);
@@ -511,6 +509,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 ctx.beginPath();
                 ctx.fillStyle = 'blue';
                 ctx.arc(screenPoint.x, screenPoint.y, 5, 0, 2 * Math.PI)
+                ctx.closePath()
                 ctx.fill();
                 ctx.restore();
             }
@@ -555,98 +554,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        /* Draw available construction */
-        if (this.props.showAvailableConstruction) {
-
-            Object.entries(this.props.availableConstruction).map(
-                (entry, index) => {
-                    const gamePoint = stringToPoint(entry[0]);
-
-                    if (this.props.discoveredPoints.has(gamePoint)) {
-
-                        const point = this.gamePointToScreenPoint(gamePoint);
-
-                        const available = entry[1];
-
-                        if (available.includes("large")) {
-                            ctx.save();
-
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black';
-
-                            ctx.rect(point.x - 7, point.y - 15, 15, 15);
-
-                            ctx.fill();
-                            ctx.stroke();
-
-                            ctx.restore();
-                        } else if (available.includes("medium")) {
-                            ctx.save();
-
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black';
-
-                            ctx.rect(point.x - 5, point.y - 10, 10, 10);
-
-                            ctx.fill();
-                            ctx.stroke();
-
-                            ctx.restore();
-                        } else if (available.includes("small")) {
-                            ctx.save();
-
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black'
-
-                            ctx.rect(point.x - 3, point.y - 6, 6, 6);
-
-                            ctx.fill();
-                            ctx.stroke();
-
-                            ctx.restore();
-                        } else if (available.includes("mine")) {
-                            ctx.save();
-
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black'
-
-                            ctx.arc(point.x - 3, point.y - 6, 6, 0, 2 * Math.PI);
-
-                            ctx.fill();
-                            ctx.stroke();
-
-                            ctx.restore();
-                        } else if (available.includes("flag")) {
-                            ctx.save();
-
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black';
-
-                            ctx.beginPath();
-
-                            ctx.moveTo(point.x - 2, point.y);
-                            ctx.lineTo(point.x - 2, point.y - 10);
-                            ctx.lineTo(point.x + 3, point.y - 10);
-                            ctx.lineTo(point.x + 3, point.y - 5);
-                            ctx.lineTo(point.x, point.y - 5);
-                            ctx.lineTo(point.x, point.y);
-
-                            ctx.closePath();
-
-                            ctx.fill();
-                            ctx.stroke();
-
-                            ctx.restore();
-                        }
-                    }
-                }
-            );
-        }
-
         /* Draw the houses */
         this.props.houses.map(
             (house, index) => {
@@ -676,24 +583,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     } else {
                         ctx.save();
 
-                        ctx.beginPath();
                         ctx.fillStyle = 'yellow'
 
-                        ctx.rect(point.x, point.y, 50, 50);
-
-                        ctx.fill();
+                        ctx.fillRect(point.x, point.y, 50, 50);
 
                         ctx.restore();
                     }
                 } else {
                     ctx.save();
 
-                    ctx.beginPath();
                     ctx.fillStyle = 'red'
 
-                    ctx.rect(point.x, point.y, 50, 50);
-
-                    ctx.fill();
+                    ctx.fillRect(point.x, point.y, 50, 50);
 
                     ctx.restore();
                 }
@@ -735,7 +636,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.crops.map(
             (crop, index) => {
 
-                if (this.props.discoveredPoints.has(crop)) {
+                if (!this.props.discoveredPoints.has(crop)) {
                     return null;
                 }
 
@@ -745,9 +646,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 ctx.fillStyle = 'orange';
 
+                ctx.beginPath()
+
                 ctx.ellipse(point.x, point.y,
-                    0.5 * this.props.scale, 1 * this.props.scale,
+                    1 * this.props.scale, 0.5 * this.props.scale,
                     0, 0, 2 * Math.PI);
+
+                ctx.closePath()
 
                 ctx.fill();
 
@@ -766,17 +671,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const point = this.gamePointToScreenPoint(sign);
                 const fillColor = materialToColor.get(sign.type);
 
+                ctx.save();
+
                 if (fillColor) {
-                    ctx.save();
-
                     ctx.fillStyle = fillColor;
-
-                    ctx.rect(point.x - 5, point.y - 5, 10, 10);
-
-                    ctx.fill();
-
-                    ctx.restore();
+                } else {
+                    ctx.fillStyle = "brown"
                 }
+
+                ctx.fillRect(point.x - 5, point.y - 5, 10, 10);
+
+                ctx.restore();
             }
         );
 
@@ -928,19 +833,106 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const point = this.gamePointToScreenPoint(flag);
 
                 /* Draw the flag slightly above the point */
-                point.y -= 20;
+                point.y -= 25
+                point.x = point.x - 3
 
                 const flagImage = this.state.images.get("flag.png");
 
                 if (flagImage) {
                     ctx.save();
 
-                    ctx.drawImage(flagImage, point.x, point.y, 20, 30);
+                    ctx.drawImage(flagImage, point.x, point.y, 10, 30);
 
                     ctx.restore();
                 }
             }
         );
+
+        /* Draw available construction */
+        if (this.props.showAvailableConstruction) {
+
+            for (const gamePoint of this.props.availableConstruction.keys()) {
+                const available = this.props.availableConstruction.get(gamePoint)
+
+                if (!available) {
+                    continue
+                }
+
+                if (this.props.discoveredPoints.has(gamePoint)) {
+
+                    const point = this.gamePointToScreenPoint(gamePoint);
+
+                    if (available.includes("large")) {
+                        ctx.save();
+
+                        ctx.fillStyle = 'yellow';
+                        ctx.strokeStyle = 'black';
+
+                        ctx.fillRect(point.x - 7, point.y - 15, 15, 15);
+
+                        ctx.strokeRect(point.x - 7, point.y - 15, 15, 15);
+
+                        ctx.restore();
+                    } else if (available.includes("medium")) {
+                        ctx.save();
+
+                        ctx.fillStyle = 'yellow';
+                        ctx.strokeStyle = 'black';
+
+                        ctx.fillRect(point.x - 5, point.y - 10, 10, 10);
+                        ctx.strokeRect(point.x - 5, point.y - 10, 10, 10);
+
+                        ctx.restore();
+                    } else if (available.includes("small")) {
+                        ctx.save();
+
+                        ctx.fillStyle = 'yellow';
+                        ctx.strokeStyle = 'black'
+
+                        ctx.fillRect(point.x - 3, point.y - 6, 6, 6);
+                        ctx.strokeRect(point.x - 3, point.y - 6, 6, 6);
+
+                        ctx.restore();
+                    } else if (available.includes("mine")) {
+                        ctx.save();
+
+                        ctx.beginPath();
+                        ctx.fillStyle = 'yellow';
+                        ctx.strokeStyle = 'black'
+
+                        ctx.arc(point.x - 3, point.y - 6, 6, 0, 2 * Math.PI);
+
+                        ctx.closePath()
+
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.restore();
+                    } else if (available.includes("flag")) {
+                        ctx.save();
+
+                        ctx.fillStyle = 'yellow';
+                        ctx.strokeStyle = 'black';
+
+                        ctx.beginPath();
+
+                        ctx.moveTo(point.x - 2, point.y);
+                        ctx.lineTo(point.x - 2, point.y - 10);
+                        ctx.lineTo(point.x + 3, point.y - 10);
+                        ctx.lineTo(point.x + 3, point.y - 5);
+                        ctx.lineTo(point.x, point.y - 5);
+                        ctx.lineTo(point.x, point.y);
+
+                        ctx.closePath();
+
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.restore();
+                    }
+                }
+            }
+        }
 
         /* Draw house titles */
         if (this.props.showHouseTitles) {
@@ -966,7 +958,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     ctx.save();
 
-                    ctx.beginPath();
                     ctx.fillStyle = 'yellow';
 
                     ctx.fillText(houseTitle, point.x, point.y - 5);
@@ -995,6 +986,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     ctx.arc(screenPoint.x, screenPoint.y, 6, 0, 2 * Math.PI);
 
+                    ctx.closePath()
+
                     ctx.fill();
                     ctx.stroke();
 
@@ -1014,6 +1007,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI);
 
+            ctx.closePath()
+
             ctx.fill();
             ctx.stroke();
 
@@ -1030,6 +1025,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx.strokeStyle = 'black';
 
             ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI);
+
+            ctx.closePath()
 
             ctx.fill();
             ctx.stroke();

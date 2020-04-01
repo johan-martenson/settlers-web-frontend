@@ -29,15 +29,20 @@ class GameInit extends Component<GameInitProps, GameInitState> {
 
         const urlParams = new URLSearchParams(window.location.search);
         const gameId = urlParams.get("gameId")
+        const playerId = urlParams.get("playerId")
 
         if (gameId) {
-            const players = await getPlayers(gameId)
+            let selfPlayerId = playerId
+
+            if (selfPlayerId === null || selfPlayerId === undefined) {
+                selfPlayerId = (await getPlayers(gameId))[0].id
+            }
 
             this.setState(
                 {
                     state: "PLAY_GAME",
                     gameId: gameId,
-                    selfPlayerId: players[0].id
+                    selfPlayerId: selfPlayerId
                 }
             )
         }

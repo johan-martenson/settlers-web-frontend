@@ -51,14 +51,9 @@ class Lobby extends Component<LobbyProps, LobbyState> {
     }
 
     onGameStarted(gameId: GameId, selfPlayerId: PlayerId): void {
+        console.info(window.location)
 
-        this.setState(
-            {
-                state: "PLAY_GAME",
-                gameId: gameId,
-                selfPlayerId: selfPlayerId
-            }
-        );
+        window.location.href = "?gameId=" + gameId + "&playerId=" + selfPlayerId
     }
 
     render() {

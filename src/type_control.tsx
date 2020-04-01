@@ -56,8 +56,6 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                 const fn = this.props.commands.get(commandHit);
 
                 if (fn) {
-                    console.log("Running the action");
-
                     fn();
                 }
 

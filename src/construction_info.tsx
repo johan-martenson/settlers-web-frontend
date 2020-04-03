@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { createBuilding, createFlag, GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api';
+import { removeRoad, createBuilding, createFlag, GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api';
 import Button from './button';
 import { Dialog, DialogSection } from './dialog';
 import houseImageMap from './images';
@@ -42,6 +42,14 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
             selected: selected,
             buildingSizeSelected: "small"
         };
+    }
+
+    canRemoveRoad(): boolean {
+        if (this.props.point.is === "road") {
+            return true
+        }
+
+        return false
     }
 
     canRaiseFlag(): boolean {
@@ -110,7 +118,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
             constructionOptions.set("Buildings", "Buildings");
         }
 
-        if (this.canRaiseFlag()) {
+        if (this.canRaiseFlag() || this.canRemoveRoad()) {
             constructionOptions.set("FlagsAndRoads", "Flags and roads");
         }
 
@@ -179,6 +187,27 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                             console.info("Starting to build road");
 
                                             await this.props.startNewRoad(this.props.point);
+
+                                            this.props.closeDialog();
+                                        }
+                                    }
+                                />
+                            }
+
+                            {this.canRemoveRoad() &&
+                                <Button className="ConstructionItem"
+                                    label="Dig up road"
+                                    image="scissor.png"
+                                    imageLabel="Scissor"
+                                    onButtonClicked={
+                                        async () => {
+                                            console.info("Starting to dig up road");
+
+                                            if (!this.props.point.roadId) {
+                                                return
+                                            }
+
+                                            await removeRoad(this.props.point.roadId, this.props.gameId, this.props.playerId)
 
                                             this.props.closeDialog();
                                         }

@@ -1,4 +1,4 @@
-import { AnyBuilding } from './buildings';
+import { AnyBuilding } from './api';
 
 export type Filename = string;
 

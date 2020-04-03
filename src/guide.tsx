@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AnyBuilding } from './buildings';
+import { AnyBuilding } from './api';
 import Button from './button';
 import { Dialog } from './dialog';
 import { HELP_PAGES, PageType } from './help_pages';

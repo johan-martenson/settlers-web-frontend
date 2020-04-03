@@ -1,0 +1,15 @@
+.coin {
+    height: 25px;
+    width: 25px;
+    background-color:yellow;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .coin-missing {
+    height: 25px;
+    width: 25px;
+    background-color: gray;
+    border-radius: 50%;
+    display: inline-block;
+  }

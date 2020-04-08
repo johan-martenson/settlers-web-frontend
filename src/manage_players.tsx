@@ -10,10 +10,23 @@ export interface PlayerCandidateType {
     type: PlayerType
 }
 
+const PLAYER_COLORS = [
+/*    "Yellow",
+    "Red",
+    "Blue",
+    "Green",
+    "Black",
+    "White"*/
+    "#AABBCC",
+    "#BBCCAA",
+    "#CCAABB"
+]
+
 interface ManagePlayersProps {
     selfPlayer: PlayerInformation
     selfPlayerIndex: number
     gameId: GameId
+    defaultComputerPlayers: number
     onPlayerAdded?: ((player: PlayerInformation) => void)
     onPlayerRemoved?: ((player: PlayerInformation) => void)
 }
@@ -29,6 +42,28 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         const players = [this.props.selfPlayer]
 
         this.state = { players: players };
+    }
+
+    async componentDidMount() {
+
+        let addedPlayers: PlayerInformation[] = []
+
+        console.info("Adding default computer players")
+
+        for (let i = 0; i < this.props.defaultComputerPlayers; i++) {
+            console.info("Adding computer player " + i)
+            const addedPlayer = await addComputerPlayerToGame(this.props.gameId, "Computer Player " + i, PLAYER_COLORS[i])
+
+            console.info(addedPlayer)
+
+            addedPlayers.push(addedPlayer)
+
+            if (this.props.onPlayerAdded) {
+                this.props.onPlayerAdded(addedPlayer)
+            }
+        }
+
+        this.setState({ players: addedPlayers.concat(this.state.players) })
     }
 
     async addAiPlayer(): Promise<void> {

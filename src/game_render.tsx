@@ -3,17 +3,6 @@ import { AnimalInformation, AvailableConstruction, BorderInformation, CropInform
 import houseImageMap, { Filename } from './images';
 import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, PointMap, PointSet, same, Vector, vegetationToInt } from './utils';
 
-function stringToPoint(pointString: string): Point {
-
-    const key = pointString.split(',');
-    const x = Number(key[0]);
-    const y = Number(key[1]);
-
-    const point: Point = { x: x, y: y };
-
-    return point
-}
-
 export interface ScreenPoint {
     x: number
     y: number
@@ -338,6 +327,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         ctx.restore();
 
+        const scaleY = this.props.scale * 0.5
+
+        this.selfRef.current.width = this.props.width
+        this.selfRef.current.height = this.props.height
+
         let oncePerNewSelectionPoint = false;
 
         if (this.props.selectedPoint && (!this.debuggedPoint || (this.debuggedPoint && !same(this.props.selectedPoint, this.debuggedPoint)))) {
@@ -566,7 +560,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 /* Draw the house next to the point, instead of on top */
                 point.x -= 1.5 * this.props.scale;
-                point.y -= 2 * this.props.scale;
+                point.y -= 2 * scaleY
 
                 const imageFilename = houseImageMap.get(house.type);
 
@@ -577,7 +571,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (houseImage) {
                         ctx.save();
 
-                        ctx.drawImage(houseImage, point.x, point.y, 3 * this.props.scale, 3 * this.props.scale);
+                        ctx.drawImage(houseImage, point.x, point.y, 3 * this.props.scale, 3 * scaleY);
 
                         ctx.restore();
                     } else {
@@ -620,13 +614,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 /* Draw the house next to the point, instead of on top */
                 point.x -= 0.5 * this.props.scale;
-                point.y -= 2.5 * this.props.scale;
+                point.y -= 2.5 * scaleY
 
                 const treeImage = this.state.images.get("tree.png");
 
                 if (treeImage) {
                     ctx.save();
-                    ctx.drawImage(treeImage, point.x, point.y, 1 * this.props.scale, 3 * this.props.scale);
+                    ctx.drawImage(treeImage, point.x, point.y, 1 * this.props.scale, 3 * scaleY);
                     ctx.restore();
                 }
             }
@@ -649,7 +643,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 ctx.beginPath()
 
                 ctx.ellipse(point.x, point.y,
-                    1 * this.props.scale, 0.5 * this.props.scale,
+                    1 * this.props.scale, 0.5 * scaleY,
                     0, 0, 2 * Math.PI);
 
                 ctx.closePath()
@@ -696,15 +690,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const point = this.gamePointToScreenPoint(stone);
 
                 /* Draw the stone next to the point, instead of on top */
-                point.x -= 10;
-                point.y -= 50;
+                point.x -= (2 * this.props.scale) / 2
+                point.y -= 3 * scaleY / 2
 
                 const stoneImage = this.state.images.get("stone.png");
 
                 if (stoneImage) {
                     ctx.save();
 
-                    ctx.drawImage(stoneImage, point.x, point.y, 20, 50);
+                    ctx.drawImage(stoneImage, point.x, point.y, 2 * this.props.scale, 3 * scaleY);
 
                     ctx.restore();
                 }
@@ -743,7 +737,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (workerImage) {
                         ctx.save();
 
-                        ctx.drawImage(workerImage, point.x, point.y, 10, 15);
+                        ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
 
                         ctx.restore();
                     }
@@ -762,7 +756,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (workerImage) {
                         ctx.save();
 
-                        ctx.drawImage(workerImage, point.x, point.y, 10, 15);
+                        ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
 
                         ctx.restore();
                     }
@@ -948,7 +942,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     /* Draw the house next to the point, instead of on top */
                     point.x -= 1.5 * this.props.scale; // 30
-                    point.y -= 2 * this.props.scale; // 15
+                    point.y -= 2 * scaleY; // 15
 
                     let houseTitle = camelCaseToWords(house.type);
 
@@ -958,6 +952,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     ctx.save();
 
+                    ctx.font = "20px sans-serif"
                     ctx.fillStyle = 'yellow';
 
                     ctx.fillText(houseTitle, point.x, point.y - 5);
@@ -1068,14 +1063,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {
         return {
             x: gamePoint.x * this.props.scale + this.props.translateX,
-            y: this.props.screenHeight - gamePoint.y * this.props.scale + this.props.translateY
+            y: this.props.screenHeight - gamePoint.y * this.props.scale * 0.5 + this.props.translateY
         };
     }
 
     screenPointToGamePoint(screenPoint: ScreenPoint): Point {
 
         const gameX = (screenPoint.x - this.props.translateX) / this.props.scale;
-        const gameY = (this.props.screenHeight - screenPoint.y + this.props.translateY) / this.props.scale;
+        const gameY = (this.props.screenHeight - screenPoint.y + this.props.translateY) / (this.props.scale * 0.5);
 
         let roundedGameX = Math.round(gameX);
         let roundedGameY = Math.round(gameY);
@@ -1206,7 +1201,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         );
     }
 };
-
 
 export { houseImageMap, GameCanvas, intToVegetationColor, vegetationToInt };
 

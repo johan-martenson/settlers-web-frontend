@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { evacuateHouseOnPoint, sendScout, AnimalInformation, AvailableConstruction, BorderInformation, callGeologist, createBuilding, createFlag, createRoad, CropInformation, findPossibleNewRoad, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, RoadId, RoadInformation, setSpeed, SignInformation, SMALL_HOUSES, StoneInformation, TreeInformation, WorkerInformation } from './api';
+import { HouseId, evacuateHouseOnPoint, sendScout, AnimalInformation, AvailableConstruction, BorderInformation, callGeologist, createBuilding, createFlag, createRoad, CropInformation, findPossibleNewRoad, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, RoadId, RoadInformation, setSpeed, SignInformation, SMALL_HOUSES, StoneInformation, TreeInformation, WorkerInformation, getPlayers } from './api';
 import './App.css';
 import { ConstructionInfo } from './construction_info';
 import EnemyHouseInfo from './enemy_house_info';
@@ -12,6 +12,7 @@ import MenuButton from './menu_button';
 import Statistics from './statistics';
 import TypeControl from './type_control';
 import { isRoadAtPoint, PointMap, PointSet, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils';
+import GameMessagesViewer from './game_messages_viewer';
 
 const MENU_MENU = 0;
 const MENU_FRIENDLY_HOUSE = 1;
@@ -19,8 +20,8 @@ const MENU_FRIENDLY_FLAG = 2;
 const MENU_CONSTRUCTION = 3;
 const MENU_GUIDE = 4;
 
-const MAX_SCALE = 50;
-const MIN_SCALE = 10;
+const MAX_SCALE = 80;
+const MIN_SCALE = 20;
 
 const LONGEST_TICK_LENGTH = 500;
 
@@ -174,7 +175,7 @@ class App extends Component<AppProps, AppState> {
             translateX: 0,
             translateY: 0,
             selected: { x: 0, y: 0 },
-            scale: 30,
+            scale: 50,
             gameWidth: 0,
             gameHeight: 0,
             player: props.selfPlayerId,
@@ -252,15 +253,45 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
+    goToHouse(houseId: HouseId) {
+        console.info("Go to house " + houseId)
+
+        for (let i = 0; i < this.state.houses.length; i++) {
+            const house = this.state.houses[i]
+
+            if (house.id === houseId) {
+                this.goToPoint({ x: house.x, y: house.y })
+
+                break
+            }
+        }
+    }
+
+    goToPoint(point: Point) {
+        console.info("Go to point" + JSON.stringify(point))
+
+        const scaleY = this.state.scale * 0.5
+
+        const newTranslateX = (globalSyncState.width / 2) - point.x * this.state.scale;
+        const newTranslateY = (globalSyncState.height / 2) + point.y * scaleY - globalSyncState.height;
+
+        this.setState({
+            translateX: newTranslateX,
+            translateY: newTranslateY
+        });
+    }
+
     onPlayerSelected(player: PlayerInformation): void {
         console.info("Selected player " + JSON.stringify(player));
+
+        const scaleY = this.state.scale * 0.5
 
         let newTranslateX = this.state.translateX;
         let newTranslateY = this.state.translateY;
 
         if (player.centerPoint) {
             newTranslateX = (globalSyncState.width / 2) - player.centerPoint.x * this.state.scale;
-            newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * this.state.scale - globalSyncState.height;
+            newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * scaleY - globalSyncState.height;
         }
 
         const discoveredPointMap = new PointSet()
@@ -346,8 +377,10 @@ class App extends Component<AppProps, AppState> {
         scale = Math.min(scale, MAX_SCALE);
         scale = Math.max(scale, MIN_SCALE);
 
+        const scaleY = this.state.scale * 0.5
+
         const newTranslateX = globalSyncState.width / 2 - (((globalSyncState.width / 2) - this.state.translateX) / this.state.scale) * scale;
-        const newTranslateY = -globalSyncState.height + (globalSyncState.height - (globalSyncState.height / 2) + this.state.translateY) / this.state.scale * scale + (globalSyncState.height / 2);
+        const newTranslateY = -globalSyncState.height + (globalSyncState.height - (globalSyncState.height / 2) + this.state.translateY) / scaleY * scaleY + (globalSyncState.height / 2);
 
         this.setState({
             translateX: newTranslateX,
@@ -428,6 +461,10 @@ class App extends Component<AppProps, AppState> {
 
     async componentDidMount(): Promise<void> {
 
+        const players = await getPlayers(this.props.gameId)
+
+        console.info("Players: " + JSON.stringify(players))
+
         if (this.selfNameRef.current) {
 
             // Store the width and height of the canvas when it's been rendered
@@ -450,9 +487,10 @@ class App extends Component<AppProps, AppState> {
         const headquarter = view.houses.find(h => h.type === "Headquarter");
 
         if (headquarter) {
+            const scaleY = this.state.scale * 0.5
 
             const translateX = (globalSyncState.width / 2) - headquarter.x * this.state.scale;
-            const translateY = -globalSyncState.height + (globalSyncState.height / 2) + headquarter.y * this.state.scale;
+            const translateY = -globalSyncState.height + (globalSyncState.height / 2) + headquarter.y * scaleY;
 
             this.setState({
                 houses: view.houses,
@@ -601,6 +639,7 @@ class App extends Component<AppProps, AppState> {
                 })
 
             console.info("Selecting point: " + point.x + ", " + point.y);
+
             this.setState({
                 selected: point
             });
@@ -1028,6 +1067,12 @@ class App extends Component<AppProps, AppState> {
                 }
 
                 <TypeControl commands={this.commands} ref={this.typeControlRef} />
+
+                <GameMessagesViewer gameId={this.props.gameId}
+                    playerId={this.props.selfPlayerId}
+                    onGoToHouse={this.goToHouse.bind(this)}
+                    onGoToPoint={this.goToPoint.bind(this)}
+                />
             </div>
         );
     }

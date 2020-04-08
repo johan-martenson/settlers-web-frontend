@@ -1,0 +1,21 @@
+.GameMessages {
+
+    position: absolute;
+    z-index: 99;
+    left: 0;
+    bottom: 0;
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 0.7rem;
+}
+
+.GameMessageList {
+    display: flex;
+    flex-direction: column;
+}
+
+.GameMessage {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}

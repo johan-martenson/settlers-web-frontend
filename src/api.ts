@@ -83,7 +83,7 @@ interface Player {
 
 interface GameToCreate {
     name?: string
-    map?: MapId
+    mapId?: MapId
     players?: Player[]
 }
 
@@ -282,6 +282,99 @@ export interface LandStatistics {
     landStatistics: LandDataPoint[]
 }
 
+/*
+* [
+*     {'type': 'MILITARY_BUILDING_OCCUPIED',
+*       'houseId': '123'
+*     },
+*
+*     {'type': 'NO_MORE_RESOURCES',
+*        'houseId': '123'
+*     },
+*
+*     {'type': 'BORDER_EXPANDED',
+*        'point': {x: 4, y: 8}
+*     }
+*
+*     {'type': 'UNDER_ATTACK',
+*        'houseId': '1234'
+*     }
+*
+*     {'type': 'GEOLOGIST_FIND',
+*        'point': {...}
+*        'material': 'IRON' | 'WATER' | 'COAL' | 'STONE'
+*     }
+* ]
+* */
+export interface GameMessage {
+    type: "MILITARY_BUILDING_READY" | "NO_MORE_RESOURCES" | 'MILITARY_BUILDING_OCCUPIED' | 'UNDER_ATTACK' | 'GEOLOGIST_FIND' | 'BUILDING_LOST' | 'BUILDING_CAPTURED' | 'STORE_HOUSE_IS_READY'
+}
+
+function isMilitaryBuildingReadyMessage(message: GameMessage): message is MilitaryBuildingReadyMessage {
+    return message.type === "MILITARY_BUILDING_READY"
+}
+
+function isNoMoreResourcesMessage(message: GameMessage): message is NoMoureResourcesMessage {
+    return message.type === "NO_MORE_RESOURCES"
+}
+
+function isMilitaryBuildingOccupiedMessage(message: GameMessage): message is MilitaryBuildingOccupiedMessage {
+    return message.type === "MILITARY_BUILDING_OCCUPIED"
+}
+
+function isUnderAttackMessage(message: GameMessage): message is UnderAttackMessage {
+    return message.type === "UNDER_ATTACK"
+}
+
+function isGeologistFindMessage(message: GameMessage): message is GeologistFindMessage {
+    return message.type === "GEOLOGIST_FIND"
+}
+
+function isBuildingLostMessage(message: GameMessage): message is BuildingLostMessage {
+    return message.type === "BUILDING_LOST"
+}
+
+function isBuildingCapturedMessage(message: GameMessage): message is BuildingCapturedMessage {
+    return message.type === "BUILDING_CAPTURED"
+}
+
+function isStoreHouseIsReadyMessage(message: GameMessage): message is StoreHouseIsReadyMessage {
+    return message.type === 'STORE_HOUSE_IS_READY'
+}
+
+export interface MilitaryBuildingReadyMessage extends GameMessage {
+    houseId: HouseId
+}
+
+export interface NoMoureResourcesMessage extends GameMessage {
+    houseId: HouseId
+}
+
+export interface MilitaryBuildingOccupiedMessage extends GameMessage {
+    houseId: HouseId
+}
+
+export interface UnderAttackMessage extends GameMessage {
+    houseId: HouseId
+}
+
+export interface BuildingLostMessage extends GameMessage {
+    houseId: HouseId
+}
+
+export interface BuildingCapturedMessage extends GameMessage {
+    houseId: HouseId
+}
+
+export interface GeologistFindMessage extends GameMessage {
+    point: Point
+    material: "IRON" | "WATER" | "COAL" | "STONE" | "GOLD"
+}
+
+export interface StoreHouseIsReadyMessage extends GameMessage {
+    houseId: HouseId
+}
+
 async function getLandStatistics(gameId: GameId): Promise<LandStatistics> {
     const response = await fetch("/settlers/api/games/" + gameId + "/statistics/land", { method: 'get' });
 
@@ -312,7 +405,8 @@ async function addComputerPlayerToGame(gameId: GameId, name: string, color: stri
             body: JSON.stringify(
                 {
                     name: name,
-                    color: color
+                    color: color,
+                    type: 'COMPUTER_PLAYER'
                 }
             )
         }
@@ -360,19 +454,19 @@ async function getMaps(): Promise<MapInformation[]> {
     return await response.json();
 }
 
-async function createGame(game: GameToCreate): Promise<GameInformation> {
+async function createGame(name: string, mapId: MapId | undefined, players: Player[]): Promise<GameInformation> {
     let gameBody: GameToCreate = {}
 
-    if (game.name) {
-        gameBody.name = game.name;
+    if (name) {
+        gameBody.name = name;
     }
 
-    if (game.map) {
-        gameBody.map = game.map;
+    if (mapId) {
+        gameBody.mapId = mapId;
     }
 
-    if (game.players) {
-        gameBody.players = game.players;
+    if (players) {
+        gameBody.players = players;
     }
 
     console.log("Creating game: " + JSON.stringify(gameBody));
@@ -469,9 +563,6 @@ async function attackBuilding(houseId: HouseId, numberOfAttackers: number, gameI
 }
 
 async function getGameInformation(gameId: GameId): Promise<GameInformation> {
-
-    // tickLength: 273
-
     const response = await fetch("/settlers/api/games/" + gameId);
 
     return await response.json();
@@ -781,7 +872,13 @@ async function disablePromotionsForHouse(gameId: GameId, playerId: PlayerId, hou
         return await response.json()
 }
 
-//evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+
+async function getMessagesForPlayer(gameId: GameId, playerId: PlayerId): Promise<GameMessage[]> {
+    const response = await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/gameMessages/')
+
+    return await response.json()
+}
+
 async function evacuateHouseOnPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
     const pointInformation = await getInformationOnPoint(point, gameId, playerId)
 
@@ -847,5 +944,5 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export { enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
+export { isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
 

@@ -1,5 +1,5 @@
 import React, { Component, createRef } from 'react';
-import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel, PlayerInformation } from './api';
+import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel, PlayerInformation, getMaps } from './api';
 import BottomButtons from './bottom_buttons';
 import Button from './button';
 import { Dialog } from './dialog';
@@ -120,6 +120,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
     async startCreatingGame(): Promise<void> {
 
+        /* Ensure that there is a proper title for the game */
         const titleField = this.titleFieldRef.current;
 
         if (!titleField || titleField.value === "") {
@@ -130,28 +131,44 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
         const gameTitle = titleField.value;
 
-        const game: GameInformation = await createGame({
-            name: gameTitle,
-            map: undefined,
-            players: [
+        /* Assign a default map */
+        const maps = await getMaps()
+
+        let defaultMap
+
+        for (const map of maps) {
+            if (map.title === "Green Islands") {
+                defaultMap = map
+            }
+        }
+
+        const defaultMapId = defaultMap ? defaultMap.id : undefined
+
+        /* Create the new game */
+        const game: GameInformation = await createGame(gameTitle, defaultMapId, [
                 {
                     name: this.props.selfPlayer.name,
                     color: "0xAABBCC"
                 }
-            ]
-        }
-        )
+            ])
 
         /* Find the self player id */
         const selfPlayer = game.players[0]
 
+        /* Show the game creation panels */
         this.setState(
             {
                 state: "CREATE_GAME",
                 game: game,
-                selfPlayer: selfPlayer
+                selfPlayer: selfPlayer,
+                map: defaultMap
             }
         );
+
+        /* Enable the "create game" button if there is a map set */
+        if (defaultMap && this.createGameButtonRef && this.createGameButtonRef.current) {
+            this.createGameButtonRef.current.focus()
+        }
     }
 
     render() {
@@ -200,7 +217,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                     <Dialog heading="Create game" noCloseButton={true}>
                         <div className="CreateGameColumns">
                             <div className="PlayersAndOptions">
-                                <ManagePlayers gameId={this.state.game.id} selfPlayer={this.state.selfPlayer} selfPlayerIndex={0} />
+                                <ManagePlayers gameId={this.state.game.id} selfPlayer={this.state.selfPlayer} selfPlayerIndex={0} defaultComputerPlayers={1} />
                                 <GameOptions setAvailableResources={this.setAvailableResources.bind(this)} setOthersCanJoin={this.setOthersCanJoin.bind(this)} />
                             </div>
 

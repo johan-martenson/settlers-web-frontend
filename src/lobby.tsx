@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { addComputerPlayerToGame, GameId, GameInformation, getGameInformation, getPlayers, PlayerId } from './api';
+import { addHumanPlayerToGame, addComputerPlayerToGame, GameId, GameInformation, getGameInformation, getPlayers, PlayerId } from './api';
 import App from './App';
 import Button from './button';
 import { Dialog } from './dialog';
@@ -111,46 +111,48 @@ class Lobby extends Component<LobbyProps, LobbyState> {
         console.log("Joining game " + game.id + " as player " + JSON.stringify(this.props.player));
 
         try {
-            const player = await addComputerPlayerToGame(game.id, this.props.player.name, "#123456");
+            const player = await addHumanPlayerToGame(game.id, this.props.player.name, "#123456");
             console.log("Added player to game " + JSON.stringify(player));
 
             const players = await getPlayers(game.id);
 
             console.log("Players in game are now: " + JSON.stringify(players));
 
-            if (game.status === "NOT_STARTED") {
-                this.setState(
-                    {
-                        gameId: game.id,
-                        state: "WAIT_FOR_GAME",
-                        selfPlayerId: player.id
-                    }
-                );
+            this.setState(
+                {
+                    gameId: game.id,
+                    state: "WAIT_FOR_GAME",
+                    selfPlayerId: player.id
+                }
+            );
 
-                setTimeout(this.checkForGameStart.bind(this), 100);
-            } else {
-                this.setState(
+            setTimeout(this.waitForGameStartThenJoin.bind(this), 100);
+        
+
+/*                this.setState(
                     {
                         gameId: game.id,
                         state: "PLAY_GAME",
                         selfPlayerId: player.id
                     }
-                );
-            }
+                );*/
         } catch (err) {
             console.log(err)
         }
     }
 
-    async checkForGameStart() {
+    async waitForGameStartThenJoin() {
 
         if (this.state.gameId) {
             const game = await getGameInformation(this.state.gameId);
-
+            
             if (game.status === "NOT_STARTED") {
-                setTimeout(this.checkForGameStart.bind(this), 100);
+                setTimeout(this.waitForGameStartThenJoin.bind(this), 100);
             } else {
-                this.setState({ state: "PLAY_GAME" });
+                console.info("Joining game")
+                console.info(window.location)
+
+                window.location.href = "?gameId=" + game.id + "&playerId=" + this.state.selfPlayerId
             }
         }
     }

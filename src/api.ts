@@ -1,4 +1,5 @@
-import { PointMap } from './utils';
+import { PointMap, PointSet } from './util_types';
+import { startMonitoringGame, monitor } from './monitor';
 
 export type GameId = string
 export type PlayerId = string
@@ -6,6 +7,8 @@ export type MapId = string
 export type HouseId = string
 export type FlagId = string
 export type RoadId = string
+export type WorkerId = string
+export type SignId = string
 
 export type PointString = string;
 
@@ -26,12 +29,12 @@ export type SmallBuilding = "ForesterHut" |
     "GoldMine" |
     "IronMine" |
     "CoalMine" |
-    "GraniteMine"
+    "GraniteMine" |
+    "LookoutTower"
 
-export type LargeBuilding = "Headquarter" | "Farm" | "PigFarm" | "DonkeyFarm" | "Fortress"
+export type LargeBuilding = "Headquarter" | "Farm" | "PigFarm" | "DonkeyFarm" | "Fortress" | "Harbor"
 
-export type MediumBuilding = "Sawmill" | "Bakery" | "WatchTower" | "Mill" | "Bakery" | "SlaughterHouse" | "Catapult" | "Mint" | "Brewery" | "Armory" | "IronSmelter"
-
+export type MediumBuilding = "Sawmill" | "Bakery" | "WatchTower" | "Mill" | "Bakery" | "SlaughterHouse" | "Catapult" | "Mint" | "Brewery" | "Armory" | "IronSmelter" | "Metalworks" | "Shipyard" | "Storehouse"
 
 export function isMaterial(material: string): material is Material {
     if (material === "gold" ||
@@ -118,6 +121,7 @@ export interface TerrainInformation {
 }
 
 export interface RoadInformation {
+    readonly id: RoadId
     readonly points: Point[]
 }
 
@@ -152,17 +156,20 @@ export interface MapInformation {
 export interface CropInformation extends Point { }
 
 export interface SignInformation extends Point {
+    id: SignId
     type: "iron"
 }
 
 export interface StoneInformation extends Point { }
 
 export interface WorkerInformation extends Point {
+    id: WorkerId
     inside: boolean
     betweenPoints: boolean
-    previous: Point
-    next: Point
+    previous?: Point
+    next?: Point
     percentageTraveled: number
+    plannedPath?: Point[]
 }
 
 export interface AnimalInformation extends Point {
@@ -205,6 +212,8 @@ interface HouseResourceItem {
     needs?: number
 }
 
+type HouseState = "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED"
+
 export interface HouseInformation extends Point {
     id: HouseId
     playerId: PlayerId
@@ -217,7 +226,7 @@ export interface HouseInformation extends Point {
     resources: HouseResources
     produces?: Material
     promotionsEnabled: boolean
-    state: "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED"
+    state: HouseState
 }
 
 export interface FlagInformation extends Point {
@@ -391,6 +400,25 @@ async function getGameStatistics(gameId: GameId): Promise<GameStatistics> {
 
 async function getGames(): Promise<GameInformation[]> {
     const response = await fetch("/settlers/api/games", { method: 'get' });
+
+    return await response.json();
+}
+
+async function addHumanPlayerToGame(gameId: GameId, name: string, color: string): Promise<PlayerInformation> {
+    const response = await fetch("/settlers/api/games/" + gameId + "/players",
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(
+                {
+                    name: name,
+                    color: color
+                }
+            )
+        }
+    )
 
     return await response.json();
 }
@@ -852,7 +880,7 @@ async function enablePromotionsForHouse(gameId: GameId, playerId: PlayerId, hous
             )
         })
 
-        return await response.json()
+    return await response.json()
 }
 
 async function disablePromotionsForHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<HouseInformation> {
@@ -869,7 +897,7 @@ async function disablePromotionsForHouse(gameId: GameId, playerId: PlayerId, hou
             )
         })
 
-        return await response.json()
+    return await response.json()
 }
 
 
@@ -944,5 +972,37 @@ materialToColor.set("coal", "black");
 materialToColor.set("stone", "gray");
 materialToColor.set("water", "blue");
 
-export { isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
+function getRoads() {
+    return monitor.roads
+}
+
+function getHouses() {
+    return monitor.houses
+}
+
+function getFlags() {
+    return monitor.flags
+}
+
+function getWorkers() {
+    return monitor.workers
+}
+
+function getTrees() {
+    return monitor.trees
+}
+
+function getCrops() {
+    return monitor.crops
+}
+
+function getSigns() {
+    return monitor.signs
+}
+
+function getStones() {
+    return monitor.stones
+}
+
+export { getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
 

@@ -4,31 +4,38 @@ export type Filename = string;
 
 const houseImageMap: Map<AnyBuilding, Filename> = new Map();
 
-houseImageMap.set("Bakery", "bakery-small.jpg");
-houseImageMap.set("ForesterHut", "house.png");
-houseImageMap.set("Woodcutter", "house.png");
-houseImageMap.set("Well", "well-with-tree-small.jpg");
-houseImageMap.set("Quarry", "house.png");
-houseImageMap.set("Barracks", "barracks-small.jpg");
-houseImageMap.set("GuardHouse", "house.png");
-houseImageMap.set("HunterHut", "house.png");
-houseImageMap.set("Fishery", "house.png");
-houseImageMap.set("GoldMine", "house.png");
-houseImageMap.set("IronMine", "house.png");
-houseImageMap.set("CoalMine", "house.png");
-houseImageMap.set("GraniteMine", "house.png");
-houseImageMap.set("Sawmill", "house.png");
-houseImageMap.set("WatchTower", "house.png");
-houseImageMap.set("Mill", "house.png");
-houseImageMap.set("Mint", "house.png");
-houseImageMap.set("SlaughterHouse", "house.png");
-houseImageMap.set("Catapult", "house.png");
-houseImageMap.set("Headquarter", "headquarter-small.jpg");
-houseImageMap.set("Farm", "house.png");
-houseImageMap.set("PigFarm", "house.png");
-houseImageMap.set("DonkeyFarm", "house.png");
-houseImageMap.set("Fortress", "fortress-small.jpg");
-houseImageMap.set("Brewery", "house.png");
-houseImageMap.set("Armory", "house.png");
+houseImageMap.set("Armory","test/armory.png")
+houseImageMap.set("Bakery","test/bakery.png")
+houseImageMap.set("Barracks","test/barracks.png")
+houseImageMap.set("Brewery","test/brewery.png")
+houseImageMap.set("Catapult","test/catapult.png")
+houseImageMap.set("CoalMine","test/coalmine.png")
+houseImageMap.set("DonkeyFarm","test/donkeybreeder.png")
+houseImageMap.set("Farm","test/farm.png")
+houseImageMap.set("Fishery","test/fisher.png")
+houseImageMap.set("ForesterHut","test/forester.png")
+houseImageMap.set("Fortress","test/fortress.png")
+houseImageMap.set("GoldMine","test/goldmine.png")
+houseImageMap.set("GraniteMine","test/granitemine.png")
+houseImageMap.set("GuardHouse","test/guardhouse.png")
+houseImageMap.set("Headquarter","house.png")
+houseImageMap.set("HunterHut","test/hunter.png")
+houseImageMap.set("IronMine","test/ironmine.png")
+houseImageMap.set("Mill","test/mill.png")
+houseImageMap.set("Mint","test/mint.png")
+houseImageMap.set("PigFarm","test/pigfarm.png")
+houseImageMap.set("Quarry","test/stonemason.png")
+houseImageMap.set("Sawmill","test/sawmill.png")
+houseImageMap.set("SlaughterHouse","test/slaughterhouse.png")
+houseImageMap.set("WatchTower","test/watchtower.png")
+houseImageMap.set("Well","test/well.png")
+houseImageMap.set("Woodcutter","test/woodcutter.png")
+houseImageMap.set("Harbor","test/harbor.png")
+houseImageMap.set("IronSmelter","test/ironsmelter.png")
+houseImageMap.set("LookoutTower","test/lookouttower.png")
+houseImageMap.set("Metalworks","test/metalworks.png")
+houseImageMap.set("Shipyard","test/shipyard.png")
+houseImageMap.set("Storehouse","test/storehouse.png")
+
 
 export default houseImageMap;

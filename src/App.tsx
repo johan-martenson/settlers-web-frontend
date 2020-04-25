@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { HouseId, evacuateHouseOnPoint, sendScout, AnimalInformation, AvailableConstruction, BorderInformation, callGeologist, createBuilding, createFlag, createRoad, CropInformation, findPossibleNewRoad, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, RoadId, RoadInformation, setSpeed, SignInformation, SMALL_HOUSES, StoneInformation, TreeInformation, WorkerInformation, getPlayers } from './api';
+import {startMonitoringGame } from './monitor'
 import './App.css';
 import { ConstructionInfo } from './construction_info';
 import EnemyHouseInfo from './enemy_house_info';
@@ -11,7 +12,8 @@ import Guide from './guide';
 import MenuButton from './menu_button';
 import Statistics from './statistics';
 import TypeControl from './type_control';
-import { isRoadAtPoint, PointMap, PointSet, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils';
+import { isRoadAtPoint, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils';
+import { PointMap, PointSet } from './util_types'
 import GameMessagesViewer from './game_messages_viewer';
 
 const MENU_MENU = 0;
@@ -456,10 +458,12 @@ class App extends Component<AppProps, AppState> {
             });
         }
 
-        setTimeout(this.periodicFetch, 100);
+        setTimeout(this.periodicFetch, 1000);
     }
 
     async componentDidMount(): Promise<void> {
+
+        startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
 
         const players = await getPlayers(this.props.gameId)
 
@@ -971,17 +975,8 @@ class App extends Component<AppProps, AppState> {
 
                 <GameCanvas
                     terrain={this.state.terrain}
-                    discoveredPoints={this.state.discoveredPoints}
-                    roads={this.state.roads}
-                    houses={this.state.houses}
-                    trees={this.state.trees}
-                    flags={this.state.flags}
-                    workers={this.state.workers}
-                    stones={this.state.stones}
                     borders={this.state.borders}
-                    signs={this.state.signs}
                     availableConstruction={this.state.availableConstruction}
-                    crops={this.state.crops}
                     animals={this.state.animals}
                     scale={this.state.scale}
                     translateX={this.state.translateX}

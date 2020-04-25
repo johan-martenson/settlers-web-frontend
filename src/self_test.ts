@@ -1,5 +1,7 @@
-import { PointMap, PointSet } from './utils';
+import { PointMap, PointSet } from './util_types';
 import { Point } from './api';
+
+const a = new PointSet();
 
 function do_self_test() {
     testPointSet()
@@ -234,18 +236,36 @@ function testPointMap() {
     }
 
     /* Test iteration through the keys */
-    let seen: Array<Point> = []
+    let seenKeys: Array<Point> = []
     for (const key of pointMap.keys()) {
-        seen.push(key)
+        seenKeys.push(key)
     }
 
-    if (seen.find(p => p.x === point0.x && p.y === point0.y) && seen.find(p => p.x === point1.x && p.y === point1.y)) {
+    if (seenKeys.find(p => p.x === point0.x && p.y === point0.y) && seenKeys.find(p => p.x === point1.x && p.y === point1.y)) {
         console.log("OK")
     } else {
         console.log("NOT OK")
     }
 
-    if (seen.length === 2) {
+    if (seenKeys.length === 2) {
+        console.log("OK")
+    } else {
+        console.log("NOT OK")
+    }
+
+    /* Test iteration through the values */
+    let seenValues: Array<string> = []
+    for (const value of pointMap.values()) {
+        seenValues.push(value)
+    }
+
+    if (seenValues.find(v => v === "my string" ) && seenValues.find(v => v === "another string")) {
+        console.log("OK")
+    } else {
+        console.log("NOT OK")
+    }
+
+    if (seenKeys.length === 2) {
         console.log("OK")
     } else {
         console.log("NOT OK")

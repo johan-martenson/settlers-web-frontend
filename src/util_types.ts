@@ -89,7 +89,7 @@ class PointSet implements IterableIterator<Point> {
 }
 
 class ArrayTIterator<T> implements IterableIterator<T> {
-    
+
     private arrayTIterator: IterableIterator<T>;
 
     constructor(arrayTIterator: IterableIterator<T>) {
@@ -141,7 +141,40 @@ class PointMapIterator implements IterableIterator<Point> {
     }
 }
 
-class PointMap<T> {
+class PointMapEntryIterator<T> implements IterableIterator<[Point, T]> {
+    private entryIterator: IterableIterator<[string, T]>;
+
+    constructor(pointAsStringMap: IterableIterator<[string, T]>) {
+        this.entryIterator = pointAsStringMap
+    }
+
+    [Symbol
+        .
+        iterator](): IterableIterator<[Point, T]> {
+        return this
+    }
+
+    next(inValue?: any): IteratorResult<[Point, T]> {
+        const result = this.entryIterator.next()
+
+        if (result.done) {
+            return {
+                done: true,
+                value: 1
+            }
+        }
+
+        const [pointString, value] = result.value
+
+
+        return {
+            done: result.done,
+            value: [stringToPoint(pointString), value]
+        }
+    }
+}
+
+class PointMap<T> implements Map<Point, T> {
 
     private pointAsStringMap: Map<string, T>
 
@@ -159,20 +192,49 @@ class PointMap<T> {
         }
     }
 
+    clear(): void {
+        this.pointAsStringMap.clear()
+    }
+
+    forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: any): void {
+        //return this.pointAsStringMap.forEach(callbackfn, thisArg) -- need to do own wrapper function that translates the key
+        throw new Error("Method not implemented.");
+    }
+
+    [Symbol.iterator](): IterableIterator<[Point, T]> {
+        return this.entries()
+    }
+
+    entries(): IterableIterator<[Point, T]> {
+        const entryIterator = this.pointAsStringMap.entries()
+        const pointMapEntryIterator = new PointMapEntryIterator<T>(entryIterator)
+
+        return pointMapEntryIterator
+    }
+
+    [Symbol.toStringTag]: string;
+
     get size(): number {
         return this.pointAsStringMap.size
     }
 
-    set(point0: Point, arg1: T): void {
+    set(point0: Point, arg1: T): this {
         this.pointAsStringMap.set(pointToString(point0), arg1)
+
+        return this
     }
 
     get(point0: Point): T | undefined {
         return this.pointAsStringMap.get(pointToString(point0))
     }
 
-    delete(point0: Point): void {
-        this.pointAsStringMap.delete(pointToString(point0))
+    delete(point0: Point): boolean {
+        const key = pointToString(point0)
+        const found = this.pointAsStringMap.has(key)
+
+        this.pointAsStringMap.delete(key)
+
+        return found
     }
 
     has(point1: Point): boolean {
@@ -185,8 +247,8 @@ class PointMap<T> {
     }
 
     values(): IterableIterator<T> {
-        return new ArrayTIterator(this.pointAsStringMap.values())
+        return this.pointAsStringMap.values()
     }
 }
 
-export {PointMap, PointSet } 
+export { PointMap, PointSet } 

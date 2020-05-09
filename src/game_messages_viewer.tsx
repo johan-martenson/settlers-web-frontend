@@ -56,6 +56,10 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
             nextProps.playerId !== this.props.playerId
     }
 
+    onClearAll() {
+        this.setState({ messages: [] })
+    }
+
     render() {
 
         return (
@@ -63,6 +67,8 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
 
                 <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} inverted />
                 <div> <b>Messages</b></div>
+
+                <Button onButtonClicked={this.onClearAll.bind(this)} label="Clear all" />
 
                 {this.state.messages.map(
                     (message, index) => {

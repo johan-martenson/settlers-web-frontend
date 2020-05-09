@@ -32,9 +32,61 @@ export type SmallBuilding = "ForesterHut" |
     "GraniteMine" |
     "LookoutTower"
 
+const SMALL_HOUSES: SmallBuilding[] = [
+    "ForesterHut",
+    "Woodcutter",
+    "Well",
+    "Quarry",
+    "Barracks",
+    "GuardHouse",
+    "HunterHut",
+    "Fishery",
+    "GoldMine",
+    "IronMine",
+    "CoalMine",
+    "GraniteMine",
+    "LookoutTower"
+];
+
+export type MediumBuilding = "Sawmill" |
+    "Bakery" |
+    "WatchTower" |
+    "Mill" |
+    "SlaughterHouse" |
+    "Catapult" |
+    "Mint" |
+    "Brewery" |
+    "Armory" |
+    "IronSmelter" |
+    "Metalworks" |
+    "Shipyard" |
+    "Storehouse"
+
+const MEDIUM_HOUSES: MediumBuilding[] = [
+    "Sawmill",
+    "Bakery",
+    "WatchTower",
+    "Mill",
+    "SlaughterHouse",
+    "Catapult",
+    "Mint",
+    "Brewery",
+    "Armory",
+    "IronSmelter",
+    "Metalworks",
+    "Shipyard",
+    "Storehouse"
+];
+
 export type LargeBuilding = "Headquarter" | "Farm" | "PigFarm" | "DonkeyFarm" | "Fortress" | "Harbor"
 
-export type MediumBuilding = "Sawmill" | "Bakery" | "WatchTower" | "Mill" | "Bakery" | "SlaughterHouse" | "Catapult" | "Mint" | "Brewery" | "Armory" | "IronSmelter" | "Metalworks" | "Shipyard" | "Storehouse"
+const LARGE_HOUSES: LargeBuilding[] = [
+    "Headquarter",
+    "Farm",
+    "PigFarm",
+    "DonkeyFarm",
+    "Fortress"
+];
 
 export function isMaterial(material: string): material is Material {
     if (material === "gold" ||
@@ -949,40 +1001,7 @@ function houseIsReady(house: HouseInformation): boolean {
     return (house.state === "UNOCCUPIED" || house.state === "OCCUPIED")
 }
 
-const SMALL_HOUSES: SmallBuilding[] = [
-    "ForesterHut",
-    "Woodcutter",
-    "Well",
-    "Quarry",
-    "Barracks",
-    "GuardHouse",
-    "HunterHut",
-    "Fishery",
-    "GoldMine",
-    "IronMine",
-    "CoalMine",
-    "GraniteMine",
-];
 
-const MEDIUM_HOUSES: MediumBuilding[] = [
-    "Sawmill",
-    "WatchTower",
-    "Mill",
-    "Bakery",
-    "Mint",
-    "SlaughterHouse",
-    "Catapult",
-    "IronSmelter",
-    "Armory"
-];
-
-const LARGE_HOUSES: LargeBuilding[] = [
-    "Headquarter",
-    "Farm",
-    "PigFarm",
-    "DonkeyFarm",
-    "Fortress"
-];
 
 const materialToColor = new Map<Material, string>();
 

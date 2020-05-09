@@ -1008,7 +1008,7 @@ const materialToColor = new Map<Material, string>();
 materialToColor.set("gold", "yellow");
 materialToColor.set("iron", "red");
 materialToColor.set("coal", "black");
-materialToColor.set("stone", "gray");
+materialToColor.set("stone", "white");
 materialToColor.set("water", "blue");
 
 function getRoads() {

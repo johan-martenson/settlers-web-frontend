@@ -30,7 +30,7 @@ class Guide extends Component<GuideProps, GuideState> {
         const page: PageType = HELP_PAGES[this.state.page];
 
         return (
-            <Dialog className="Guide" onCloseDialog={this.props.onClose}>
+            <Dialog className="Guide" onCloseDialog={this.props.onClose} floating>
 
                 <Page page={page} />
 

@@ -189,7 +189,10 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         )
     }
 
-    const websocketUrl = "ws://localhost:8080/ws/monitor/games/" + gameId + "/players/" + playerId
+    console.info(window.location.host)
+
+    //const websocketUrl = "ws://localhost:8080/ws/monitor/games/" + gameId + "/players/" + playerId
+    const websocketUrl = "ws://" + window.location.host + "/ws/monitor/games/" + gameId + "/players/" + playerId
 
     console.info("Websocket url: " + websocketUrl)
 

@@ -1,33 +1,47 @@
-import { SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation } from './api'
-import { PointSet } from './util_types'
+import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer } from './api'
+import { PointSet, PointMap } from './util_types'
 
 let periodicUpdates: NodeJS.Timeout | null = null
 
+const messageListeners: ((messages: GameMessage[]) => void)[] = []
+
+interface MonitoredBorderForPlayer {
+    color: string
+    points: PointSet
+}
+
 interface Monitor {
     workers: Map<WorkerId, WorkerInformation>
+    animals: AnimalInformation[]
     houses: Map<HouseId, HouseInformation>
     flags: Map<FlagId, FlagInformation>
     roads: Map<RoadId, RoadInformation>
-    border: Set<Point>
+    border: Map<PlayerId, MonitoredBorderForPlayer>
     trees: PointSet
     stones: PointSet
     crops: PointSet
     discoveredPoints: PointSet
     signs: Map<SignId, SignInformation>
-
+    players: Map<PlayerId, PlayerInformation>
+    availableConstruction: PointMap<AvailableConstruction[]>
+    messages: GameMessage[]
 }
 
 const monitor: Monitor = {
     workers: new Map<WorkerId, WorkerInformation>(),
+    animals: [],
     houses: new Map<HouseId, HouseInformation>(),
     flags: new Map<FlagId, FlagInformation>(),
     roads: new Map<RoadId, RoadInformation>(),
-    border: new Set<Point>(),
+    border: new Map<PlayerId, MonitoredBorderForPlayer>(),
     trees: new PointSet(),
     stones: new PointSet(),
     crops: new PointSet(),
     discoveredPoints: new PointSet(),
-    signs: new Map<SignId, SignInformation>()
+    signs: new Map<SignId, SignInformation>(),
+    players: new Map<PlayerId, PlayerInformation>(),
+    availableConstruction: new PointMap<AvailableConstruction[]>(),
+    messages: []
 }
 
 interface WalkerTargetChange {
@@ -35,6 +49,16 @@ interface WalkerTargetChange {
     x: number
     y: number
     path: Point[]
+}
+
+interface BorderChange {
+    playerId: PlayerId
+    newBorder: Point[]
+    removedBorder: Point[]
+}
+
+interface ChangedAvailableConstruction extends Point {
+    available: AvailableConstruction[]
 }
 
 interface ChangesMessage {
@@ -47,8 +71,7 @@ interface ChangesMessage {
     removedFlags?: FlagId[]
     newRoads?: RoadInformation[]
     removedRoads?: RoadId[]
-    newBorder?: Point[]
-    removedBorder?: Point[]
+    changedBorders?: BorderChange[]
     newTrees?: Point[]
     removedTrees?: Point[]
     newStones?: Point[]
@@ -58,6 +81,8 @@ interface ChangesMessage {
     newDiscoveredLand?: Point[]
     newSigns?: SignInformation[]
     removedSigns?: SignId[]
+    changedAvailableConstruction?: ChangedAvailableConstruction[]
+    newMessages?: GameMessage[]
 }
 
 function isGameChangesMessage(message: any): message is ChangesMessage {
@@ -66,25 +91,49 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
             message.newFlags || message.removedFlags ||
             message.newBuildings || message.changedBuildings || message.removedBuildings ||
             message.newRoads || message.removedRoads ||
-            message.newBorder || message.removedBorder ||
+            message.changedBorders ||
             message.newTrees || message.removedTrees ||
             message.newCrops || message.removedCrops ||
             message.newStones || message.removedStones ||
             message.newSigns || message.removedSigns ||
-            message.newDiscoveredLand)) {
-        console.info("Is game change event")
+            message.newDiscoveredLand ||
+            message.changedAvailableConstruction ||
+            message.newMessages)) {
         return true
     }
-
-    console.info("Is not game change event")
 
     return false
 }
 
 async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
+    /* Get the list of players */
+    const players = await getPlayers(gameId)
+
+    for (const player of players) {
+
+        /* Get any messages for the player */
+        const messages = await getMessagesForPlayer(gameId, playerId)
+
+        /* Store the player */
+        monitor.players.set(player.id, player)
+
+        /* Store the messages */
+        if (messages) {
+            monitor.messages = messages
+        } else {
+            monitor.messages = []
+        }
+    }
+
+    /* Get the messages */
+
     /* Get initial game data to then continuously monitor */
     const viewAtStart = await getViewForPlayer(gameId, playerId)
+
+    for (const [point, availableAtPoint] of viewAtStart.availableConstruction) {
+        monitor.availableConstruction.set(point, availableAtPoint)
+    }
 
     for (const sign of viewAtStart.signs) {
         monitor.signs.set(sign.id, sign)
@@ -122,6 +171,24 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         monitor.crops.add(crop)
     }
 
+    for (const borderInformation of viewAtStart.borders) {
+
+        const player = monitor.players.get(borderInformation.playerId)
+
+        if (!player) {
+            console.error("UNKNOWN PLAYER: " + borderInformation.playerId)
+
+            continue
+        }
+
+        monitor.border.set(borderInformation.playerId,
+            {
+                color: player.color,
+                points: new PointSet(borderInformation.points)
+            }
+        )
+    }
+
     const websocketUrl = "ws://localhost:8080/ws/monitor/games/" + gameId + "/players/" + playerId
 
     console.info("Websocket url: " + websocketUrl)
@@ -140,7 +207,15 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
     websocket.onmessage = (message) => {
 
-        const data = JSON.parse(message.data)
+        let data
+
+        try {
+            data = JSON.parse(message.data)
+        } catch (e) {
+            console.error(e)
+            console.error(JSON.stringify(e))
+            console.info(message.data)
+        }
 
         console.info("Message received: " + JSON.stringify(data))
 
@@ -188,12 +263,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             syncRemovedRoads(changesMessage.removedRoads)
         }
 
-        if (changesMessage.newBorder) {
-            syncNewBorder(changesMessage.newBorder)
-        }
-
-        if (changesMessage.removedBorder) {
-            syncRemovedBorder(changesMessage.removedBorder)
+        if (changesMessage.changedBorders) {
+            syncChangedBorders(changesMessage.changedBorders)
         }
 
         if (changesMessage.newTrees) {
@@ -230,6 +301,16 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
         if (changesMessage.removedSigns) {
             syncRemovedSigns(changesMessage.removedSigns)
+        }
+
+        if (changesMessage.changedAvailableConstruction) {
+            syncChangedAvailableConstruction(changesMessage.changedAvailableConstruction)
+        }
+
+        if (changesMessage.newMessages) {
+            syncNewMessages(changesMessage.newMessages)
+
+            notifyMessageListeners(changesMessage.newMessages)
         }
     }
 
@@ -270,7 +351,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
                 worker.betweenPoints = false
 
-            /* Show that the worker is walking between two points */
+                /* Show that the worker is walking between two points */
             } else {
                 worker.betweenPoints = true
             }
@@ -280,6 +361,22 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     }, 200)
 
     console.info(websocket)
+}
+
+function syncNewMessages(newMessages: GameMessage[]) {
+    monitor.messages = monitor.messages.concat(newMessages)
+}
+
+function syncChangedAvailableConstruction(changedAvailableConstruction: ChangedAvailableConstruction[]) {
+    for (const change of changedAvailableConstruction) {
+        const point = { x: change.x, y: change.y }
+
+        if (change.available.length === 0) {
+            monitor.availableConstruction.delete(point)
+        } else {
+            monitor.availableConstruction.set(point, change.available)
+        }
+    }
 }
 
 function syncNewSigns(newSigns: SignInformation[]) {
@@ -336,15 +433,37 @@ function syncRemovedStones(removedStones: Point[]) {
     }
 }
 
-function syncNewBorder(newBorder: Point[]) {
-    for (const point of newBorder) {
-        monitor.border.add(point)
-    }
-}
+function syncChangedBorders(borderChanges: BorderChange[]) {
 
-function syncRemovedBorder(removedBorder: Point[]) {
-    for (const point of removedBorder) {
-        monitor.border.delete(point)
+    for (const borderChange of borderChanges) {
+        const currentBorderForPlayer = monitor.border.get(borderChange.playerId)
+
+        if (currentBorderForPlayer) {
+
+            for (const point of borderChange.newBorder) {
+                currentBorderForPlayer.points.add(point)
+            }
+
+            for (const point of borderChange.removedBorder) {
+                currentBorderForPlayer.points.delete(point)
+            }
+        } else {
+
+            const player = monitor.players.get(borderChange.playerId)
+
+            if (!player) {
+                console.error("UNKNOWN PLAYER: " + JSON.stringify(borderChange))
+
+                continue
+            }
+
+            monitor.border.set(borderChange.playerId,
+                {
+                    color: player.color,
+                    points: new PointSet(borderChange.newBorder)
+                }
+            )
+        }
     }
 }
 
@@ -437,4 +556,19 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
     }
 }
 
-export { startMonitoringGame, monitor }
+function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void) {
+    messageListeners.push(messageListenerFn)
+}
+
+function notifyMessageListeners(messages: GameMessage[]): void {
+    for (const listener of messageListeners) {
+        try {
+            listener(messages)
+        } catch (exception) {
+            console.info("Failed to notify listener about messages")
+            console.error(exception)
+        }
+    }
+}
+
+export { listenToMessages, startMonitoringGame, monitor }

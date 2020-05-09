@@ -235,8 +235,8 @@ export interface FlagInformation extends Point {
 }
 
 export interface BorderInformation {
+    playerId: PlayerId
     points: Point[]
-    color: string
 }
 
 export interface PlayerViewInformation {
@@ -251,7 +251,7 @@ export interface PlayerViewInformation {
     crops: CropInformation[]
     animals: AnimalInformation[]
     discoveredPoints: Point[]
-    availableConstruction: PointMap<AvailableConstruction>
+    availableConstruction: PointMap<AvailableConstruction[]>
 }
 
 export interface PossibleNewRoadInformation {
@@ -316,7 +316,19 @@ export interface LandStatistics {
 * ]
 * */
 export interface GameMessage {
-    type: "MILITARY_BUILDING_READY" | "NO_MORE_RESOURCES" | 'MILITARY_BUILDING_OCCUPIED' | 'UNDER_ATTACK' | 'GEOLOGIST_FIND' | 'BUILDING_LOST' | 'BUILDING_CAPTURED' | 'STORE_HOUSE_IS_READY'
+    type: "MILITARY_BUILDING_READY" | "NO_MORE_RESOURCES" | 'MILITARY_BUILDING_OCCUPIED' | 'UNDER_ATTACK' | 'GEOLOGIST_FIND' | 'BUILDING_LOST' | 'BUILDING_CAPTURED' | 'STORE_HOUSE_IS_READY' | 'TREE_CONSERVATION_PROGRAM_ACTIVATED' | 'TREE_CONSERVATION_PROGRAM_DEACTIVATED' | 'MILITARY_BUILDING_CAUSED_LOST_LAND'
+}
+
+function isMilitaryBuildingCausedLostLandMessage(message: GameMessage): message is MilitaryBuildingCausedLostLandMessage {
+    return message.type === 'MILITARY_BUILDING_CAUSED_LOST_LAND'
+}
+
+function isTreeConservationProgramActivatedMessage(message: GameMessage): message is TreeConservationProgramActivatedMessage {
+    return message.type === 'TREE_CONSERVATION_PROGRAM_ACTIVATED'
+}
+
+function isTreeConservationProgramDeactivatedMessage(message: GameMessage): message is TreeConservationProgramDeactivatedMessage {
+    return message.type === 'TREE_CONSERVATION_PROGRAM_DEACTIVATED'
 }
 
 function isMilitaryBuildingReadyMessage(message: GameMessage): message is MilitaryBuildingReadyMessage {
@@ -349,6 +361,14 @@ function isBuildingCapturedMessage(message: GameMessage): message is BuildingCap
 
 function isStoreHouseIsReadyMessage(message: GameMessage): message is StoreHouseIsReadyMessage {
     return message.type === 'STORE_HOUSE_IS_READY'
+}
+
+export interface TreeConservationProgramActivatedMessage extends GameMessage { }
+
+export interface TreeConservationProgramDeactivatedMessage extends GameMessage { }
+
+export interface MilitaryBuildingCausedLostLandMessage extends GameMessage {
+    houseId: HouseId
 }
 
 export interface MilitaryBuildingReadyMessage extends GameMessage {
@@ -1004,5 +1024,25 @@ function getStones() {
     return monitor.stones
 }
 
-export { getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
+function getFlagAtPoint(point: Point) {
+    for (const [id, flag] of monitor.flags) {
+        if (flag.x === point.x && flag.y === point.y) {
+            return flag
+        }
+    }
+
+    return undefined
+}
+
+function getHouseAtPoint(point: Point) {
+    for (const [id, house] of monitor.houses) {
+        if (house.x === point.x && house.y === point.y) {
+            return house
+        }
+    }
+
+    return undefined
+}
+
+export { isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
 

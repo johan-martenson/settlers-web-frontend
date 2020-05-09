@@ -1,20 +1,20 @@
 import React, { Component } from 'react';
-import { HouseId, evacuateHouseOnPoint, sendScout, AnimalInformation, AvailableConstruction, BorderInformation, callGeologist, createBuilding, createFlag, createRoad, CropInformation, findPossibleNewRoad, FlagInformation, GameId, getInformationOnPoint, getTerrain, getViewForPlayer, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, RoadId, RoadInformation, setSpeed, SignInformation, SMALL_HOUSES, StoneInformation, TreeInformation, WorkerInformation, getPlayers } from './api';
-import {startMonitoringGame } from './monitor'
+import { callGeologist, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES } from './api';
 import './App.css';
 import { ConstructionInfo } from './construction_info';
 import EnemyHouseInfo from './enemy_house_info';
 import FriendlyFlagInfo from './friendly_flag_info';
 import FriendlyHouseInfo from './friendly_house_info';
 import GameMenu from './game_menu';
+import GameMessagesViewer from './game_messages_viewer';
 import { GameCanvas, TerrainAtPoint } from './game_render';
 import Guide from './guide';
 import MenuButton from './menu_button';
+import { monitor, startMonitoringGame } from './monitor';
 import Statistics from './statistics';
 import TypeControl from './type_control';
 import { isRoadAtPoint, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils';
-import { PointMap, PointSet } from './util_types'
-import GameMessagesViewer from './game_messages_viewer';
+import { PointSet } from './util_types';
 
 const MENU_MENU = 0;
 const MENU_FRIENDLY_HOUSE = 1;
@@ -69,19 +69,6 @@ interface AppProps {
 }
 
 interface AppState {
-    houses: HouseInformation[]
-    workers: WorkerInformation[]
-    roads: RoadInformation[]
-    flags: FlagInformation[]
-    trees: TreeInformation[]
-    stones: StoneInformation[]
-    borders: BorderInformation[]
-    signs: SignInformation[]
-    crops: CropInformation[]
-    animals: AnimalInformation[]
-    availableConstruction: PointMap<AvailableConstruction>
-    discoveredPoints: PointSet
-
     newRoad?: Point[]
     possibleRoadConnections?: Point[]
 
@@ -137,7 +124,6 @@ class App extends Component<AppProps, AppState> {
         this.onKeyDown = this.onKeyDown.bind(this);
         this.onKeyPress = this.onKeyPress.bind(this);
 
-        this.periodicFetch = this.periodicFetch.bind(this);
         this.toggleDetails = this.toggleDetails.bind(this);
 
         this.zoomOut = this.zoomOut.bind(this);
@@ -161,18 +147,7 @@ class App extends Component<AppProps, AppState> {
         this.closeActiveMenu = this.closeActiveMenu.bind(this);
 
         this.state = {
-            houses: [],
-            workers: [],
-            roads: [],
-            flags: [],
-            trees: [],
-            stones: [],
-            borders: [],
-            signs: [],
-            availableConstruction: new PointMap(),
             showAvailableConstruction: false,
-            crops: [],
-            animals: [],
             terrain: new Array<TerrainAtPoint>(),
             translateX: 0,
             translateY: 0,
@@ -182,7 +157,6 @@ class App extends Component<AppProps, AppState> {
             gameHeight: 0,
             player: props.selfPlayerId,
             menuVisible: false,
-            discoveredPoints: new PointSet(),
             showTitles: true
         };
 
@@ -258,14 +232,10 @@ class App extends Component<AppProps, AppState> {
     goToHouse(houseId: HouseId) {
         console.info("Go to house " + houseId)
 
-        for (let i = 0; i < this.state.houses.length; i++) {
-            const house = this.state.houses[i]
+        const house = monitor.houses.get(houseId)
 
-            if (house.id === houseId) {
-                this.goToPoint({ x: house.x, y: house.y })
-
-                break
-            }
+        if (house) {
+            this.goToPoint({ x: house.x, y: house.y })
         }
     }
 
@@ -307,8 +277,7 @@ class App extends Component<AppProps, AppState> {
         this.setState({
             translateX: newTranslateX,
             translateY: newTranslateY,
-            player: player.id,
-            discoveredPoints: discoveredPointMap
+            player: player.id
         });
     }
 
@@ -436,31 +405,6 @@ class App extends Component<AppProps, AppState> {
         event.stopPropagation();
     }
 
-    async periodicFetch(): Promise<void> {
-
-        if (this.state.player) {
-
-            const view = await getViewForPlayer(this.props.gameId, this.state.player);
-
-            this.setState({
-                houses: view.houses,
-                workers: view.workers,
-                roads: view.roads,
-                trees: view.trees,
-                flags: view.flags,
-                stones: view.stones,
-                borders: view.borders,
-                signs: view.signs,
-                availableConstruction: view.availableConstruction,
-                crops: view.crops,
-                animals: view.animals,
-                discoveredPoints: new PointSet(view.discoveredPoints)
-            });
-        }
-
-        setTimeout(this.periodicFetch, 1000);
-    }
-
     async componentDidMount(): Promise<void> {
 
         startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
@@ -497,26 +441,11 @@ class App extends Component<AppProps, AppState> {
             const translateY = -globalSyncState.height + (globalSyncState.height / 2) + headquarter.y * scaleY;
 
             this.setState({
-                houses: view.houses,
-                workers: view.workers,
-                roads: view.roads,
-                trees: view.trees,
-                flags: view.flags,
-                stones: view.stones,
-                borders: view.borders,
-                signs: view.signs,
-                availableConstruction: view.availableConstruction,
-                crops: view.crops,
-                animals: view.animals,
                 translateX: translateX,
-                translateY: translateY,
-                discoveredPoints: new PointSet(view.discoveredPoints)
+                translateY: translateY
             });
 
         }
-
-        // Start getting game updates continuously from the server
-        this.periodicFetch();
 
         // Get the terrain once
         if (this.state.terrain.length === 0) {
@@ -588,8 +517,9 @@ class App extends Component<AppProps, AppState> {
             console.log("New possible road is: " + JSON.stringify(possibleNewRoad));
 
             /* Handle the case when a flag is clicked and create a road to it */
-            if (this.state.flags.find((f) => f.x === point.x && f.y === point.y)) {
+            const flag = getFlagAtPoint(point)
 
+            if (flag) {
                 console.info("Placing road directly to flag");
 
                 await createRoad(possibleNewRoad,
@@ -602,7 +532,7 @@ class App extends Component<AppProps, AppState> {
                 });
 
                 /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
-            } else if (isRoadAtPoint(point, this.state.roads)) {
+            } else if (isRoadAtPoint(point, monitor.roads)) {
 
                 console.info('Placing flag for road');
 
@@ -681,13 +611,14 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Ignore double clicks on undiscovered land */
-        if (!this.state.discoveredPoints.has(point)) {
+        if (!monitor.discoveredPoints.has(point)) {
             console.info("Ignoring un-discovered point");
             return;
         }
 
         /* Handle click on house */
-        const house = this.state.houses.find((house) => house.x === point.x && house.y === point.y);
+        const house = getHouseAtPoint(point)
+        //const house = this.state.houses.find((house) => house.x === point.x && house.y === point.y);
 
         if (house) {
             console.info("Clicked house " + JSON.stringify(house));
@@ -714,7 +645,7 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Handle the case where a flag was double clicked */
-        const flag = this.state.flags.find((flag) => flag.x === point.x && flag.y === point.y);
+        const flag = getFlagAtPoint(point)
 
         if (flag) {
 
@@ -975,9 +906,6 @@ class App extends Component<AppProps, AppState> {
 
                 <GameCanvas
                     terrain={this.state.terrain}
-                    borders={this.state.borders}
-                    availableConstruction={this.state.availableConstruction}
-                    animals={this.state.animals}
                     scale={this.state.scale}
                     translateX={this.state.translateX}
                     translateY={this.state.translateY}

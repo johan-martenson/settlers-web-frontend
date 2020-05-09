@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
-import { isMilitaryBuildingReadyMessage, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, GameId, GameMessage, getMessagesForPlayer, HouseId, isGeologistFindMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isUnderAttackMessage, PlayerId, Point } from './api';
+import { GameId, GameMessage, getMessagesForPlayer, HouseId, isBuildingCapturedMessage, isBuildingLostMessage, isGeologistFindMessage, isMilitaryBuildingCausedLostLandMessage, isMilitaryBuildingOccupiedMessage, isMilitaryBuildingReadyMessage, isNoMoreResourcesMessage, isStoreHouseIsReadyMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isUnderAttackMessage, PlayerId, Point } from './api';
 import Button from './button';
 import ExpandCollapseToggle from './expand_collapse_toggle';
 import './game_messages_viewer.css';
+import { listenToMessages } from './monitor';
 
 interface GameMessagesViewerProps {
     gameId: GameId
@@ -30,25 +31,29 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
         }
     }
 
+    newMessages(messages: GameMessage[]) {
+        this.setState({ messages: this.state.messages.concat(messages) })
+    }
+
     async componentDidMount() {
         const messages = await getMessagesForPlayer(this.props.gameId, this.props.playerId)
 
         this.setState({ messages: messages })
 
-        this.periodicUpdates = setInterval(
-            async () => {
-                const messages = await getMessagesForPlayer(this.props.gameId, this.props.playerId)
-                this.setState({ messages: messages })
-
-            },
-            1000
-        )
+        listenToMessages(this.newMessages.bind(this))
     }
 
     componentWillUnmount() {
         if (this.periodicUpdates) {
             clearInterval(this.periodicUpdates)
         }
+    }
+
+    shouldComponentUpdate(nextProps: GameMessagesViewerProps, nextState: GameMessagesViewerState) {
+        return nextState.messages.length !== this.state.messages.length ||
+            nextState.expanded !== this.state.expanded ||
+            nextProps.gameId !== this.props.gameId ||
+            nextProps.playerId !== this.props.playerId
     }
 
     render() {
@@ -119,6 +124,26 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
                                         </div>
                                     }
+
+                                    {isMilitaryBuildingCausedLostLandMessage(message) &&
+                                        <div>
+                                            This building has caused you to lose land
+                                        <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                        </div>
+                                    }
+
+                                    {isTreeConservationProgramActivatedMessage(message) &&
+                                        <div>
+                                            The tree conservation program has been activated. Only Woodcutters, Sawmills, and Forester huts will get planks.
+                                        </div>
+                                    }
+
+                                    {isTreeConservationProgramDeactivatedMessage(message) &&
+                                        <div>
+                                            The tree conservation program has been deactivated.
+                                        </div>
+                                    }
+
                                 </div>
                             );
                         } else {

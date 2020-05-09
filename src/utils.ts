@@ -1,4 +1,4 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, TileInformation } from './api';
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, TileInformation, RoadId } from './api';
 import { TerrainAtPoint } from './game_render';
 
 const vegetationToInt = new Map<TileInformation, number>();
@@ -503,25 +503,21 @@ async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: Player
     }
 }
 
-function isRoadAtPoint(point: Point, roads: RoadInformation[]): boolean {
+function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boolean {
 
-    let roadAtPoint = false;
+    for (const [id, road] of roads) {
+        road.points.forEach(
+            roadPoint => {
 
-    roads.forEach(
-        road => {
-            road.points.forEach(
-                roadPoint => {
+                if (point.x === roadPoint.x && point.y === roadPoint.y) {
 
-                    if (point.x === roadPoint.x && point.y === roadPoint.y) {
-
-                        roadAtPoint = true;
-                    }
+                    return true
                 }
-            )
-        }
-    );
+            }
+        )
+    }
 
-    return roadAtPoint;
+    return false
 }
 
 async function removeHouseOrFlagAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {

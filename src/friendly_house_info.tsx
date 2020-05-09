@@ -31,7 +31,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
     async componentDidMount() {
 
         this.periodicUpdates = setInterval(async () => {
-            const house = await getHouseInformation(this.props.house.id, this.props.playerId, this.props.gameId);
+            const house = await getHouseInformation(this.props.house.id, this.props.gameId, this.props.playerId)
             console.info("UPDATING HOUSE")
             this.setState({ updatedHouse: house })
         }, 1000)

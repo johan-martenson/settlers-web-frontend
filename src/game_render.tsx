@@ -1,10 +1,9 @@
 import React, { Component } from 'react';
-import { AnimalInformation, AvailableConstruction, BorderInformation, CropInformation, FlagInformation, HeightInformation, HouseInformation, materialToColor, Point, RoadInformation, SignInformation, StoneInformation, TreeInformation, WorkerInformation, getRoads, getHouses, getTrees, getCrops, getSigns, getStones, getWorkers, getFlags } from './api';
+import { getCrops, getFlags, getHouses, getRoads, getSigns, getStones, getTrees, getWorkers, HeightInformation, HouseInformation, materialToColor, Point } from './api';
 import houseImageMap, { Filename } from './images';
-import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt } from './utils';
-import { PointMap, PointSet } from './util_types'
 import { monitor } from './monitor';
-import { min } from 'd3';
+import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt } from './utils';
+import { PointMap } from './util_types';
 
 export interface ScreenPoint {
     x: number
@@ -29,22 +28,10 @@ interface GameCanvasProps {
     translateY: number
     screenWidth: number
     screenHeight: number
-    //    roads: RoadInformation[]
-    //    trees: TreeInformation[]
-    //    houses: HouseInformation[]
     selectedPoint?: Point
-    borders: BorderInformation[]
-    //    signs: SignInformation[]
-    animals: AnimalInformation[]
-    //    crops: CropInformation[]
-    //    stones: StoneInformation[]
-    //    workers: WorkerInformation[]
-    //    flags: FlagInformation[]
     possibleRoadConnections?: Point[]
     newRoad?: Point[]
-    //    discoveredPoints: PointSet
     showAvailableConstruction: boolean
-    availableConstruction: PointMap<AvailableConstruction>
     showHouseTitles: boolean
 
     width: number
@@ -213,16 +200,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.props.translateY !== nextProps.translateY ||
             this.props.screenWidth !== nextProps.screenWidth ||
             this.props.screenHeight !== nextProps.screenHeight ||
-            //            this.props.roads !== nextProps.roads ||
-            //            this.props.trees !== nextProps.trees ||
-            //            this.props.houses !== nextProps.houses ||
             this.props.selectedPoint !== nextProps.selectedPoint ||
-            this.props.borders !== nextProps.borders ||
-            //            this.props.signs !== nextProps.signs ||
-            this.props.animals !== nextProps.animals ||
             this.props.possibleRoadConnections !== nextProps.possibleRoadConnections ||
             this.props.newRoad !== nextProps.newRoad ||
-            //            this.changedHouses(this.props.houses, nextProps.houses) ||
             (!this.state.hoverPoint && typeof (nextState.hoverPoint) !== "undefined") ||
             (typeof (this.state.hoverPoint) !== "undefined" &&
                 (this.state.hoverPoint !== nextState.hoverPoint ||
@@ -297,10 +277,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         ];
     }
 
-    componentDidUpdate() {
+    componentDidMount() {
 
         /* Handle update of heights if needed */
         if (!this.state.builtHeightMap && this.props.terrain && this.props.terrain.length > 0) {
+            console.info("Build height map during mount")
             this.buildHeightMap();
             return;
         }
@@ -314,6 +295,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     console.info(err)
                 }
             }, 100)
+        }
+    }
+
+    componentDidUpdate() {
+
+        /* Handle update of heights if needed */
+        if (!this.state.builtHeightMap && this.props.terrain && this.props.terrain.length > 0) {
+            console.info("Build height map during update")
+            this.buildHeightMap();
+            return;
         }
     }
 
@@ -497,33 +488,34 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Draw the borders */
-        for (let border of this.props.borders) {
-            const borderColor = border.color;
+        for (const [playerId, borderForPlayer] of monitor.border) {
+            const borderColor = borderForPlayer.color
 
             if (!borderColor) {
-                continue;
+                continue
             }
 
-            for (let borderPoint of border.points) {
+            for (const borderPoint of borderForPlayer.points) {
 
                 if (!monitor.discoveredPoints.has(borderPoint)) {
-                    continue;
+                    continue
                 }
 
-                const screenPoint = this.gamePointToScreenPoint(borderPoint);
+                const screenPoint = this.gamePointToScreenPoint(borderPoint)
 
                 if (screenPoint.x < 0 || screenPoint.x > width || screenPoint.y < 0 || screenPoint.y > height) {
-                    continue;
+                    continue
                 }
 
-                ctx.save();
+                ctx.save()
 
-                ctx.beginPath();
-                ctx.fillStyle = 'blue';
+                ctx.beginPath()
+                ctx.fillStyle = 'blue'
                 ctx.arc(screenPoint.x, screenPoint.y, 5, 0, 2 * Math.PI)
                 ctx.closePath()
-                ctx.fill();
-                ctx.restore();
+                ctx.fill()
+
+                ctx.restore()
             }
         }
 
@@ -569,15 +561,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw the houses */
         for (const [id, house] of getHouses()) {
 
-            if (!monitor.discoveredPoints.has({ x: house.x, y: house.y })) {
+            if (!monitor.discoveredPoints.has(house)) {
                 continue
             }
 
             const point = this.gamePointToScreenPoint(house);
 
             /* Draw the house next to the point, instead of on top */
-            point.x -= 1.5 * this.props.scale;
-            point.y -= 2 * scaleY
 
             const imageFilename = houseImageMap.get(house.type);
 
@@ -588,10 +578,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (houseImage) {
                     ctx.save();
 
-                    ctx.drawImage(houseImage, point.x, point.y, 3 * this.props.scale, 3 * scaleY);
+                    if (houseImage.width > 300 || houseImage.height > 300) {
+                        point.x -= 1.5 * this.props.scale;
+                        point.y -= 2 * scaleY
 
+                        ctx.drawImage(houseImage, point.x, point.y, 3 * this.props.scale, 3 * scaleY)
+                    } else {
+                        point.x -= houseImage.width * this.props.scale / 40 / 1.4
+                        point.y -= houseImage.height * this.props.scale / 40 / 1.1
+
+                        ctx.drawImage(houseImage, point.x, point.y, houseImage.width * this.props.scale / 40, houseImage.height * this.props.scale / 40)
+                    }
                     ctx.restore();
                 } else {
+                    point.x -= 1.5 * this.props.scale;
+                    point.y -= 2 * scaleY
+
                     ctx.save();
 
                     ctx.fillStyle = 'yellow'
@@ -601,6 +603,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     ctx.restore();
                 }
             } else {
+                point.x -= 1.5 * this.props.scale;
+                point.y -= 2 * scaleY
+
                 ctx.save();
 
                 ctx.fillStyle = 'red'
@@ -670,7 +675,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         for (const [id, sign] of getSigns()) {
 
             if (!monitor.discoveredPoints.has(sign)) {
-                return;
+                continue
             }
 
             const point = this.gamePointToScreenPoint(sign);
@@ -717,11 +722,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         for (const [id, worker] of getWorkers()) {
 
             if (worker.inside) {
-
-                // No rendering
                 continue
 
-            } else if (worker.betweenPoints && worker.previous && worker.next) {
+            }
+            
+            if (worker.betweenPoints && worker.previous && worker.next) {
 
                 if (!monitor.discoveredPoints.has(worker.previous) &&
                     !monitor.discoveredPoints.has(worker.next)) {
@@ -771,56 +776,54 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Draw animals */
-        this.props.animals.map(
-            (animal, index) => {
-                if (animal.betweenPoints) {
+        for (const animal of monitor.animals) {
+            if (animal.betweenPoints) {
 
-                    if (!monitor.discoveredPoints.has(animal.previous) &&
-                        !monitor.discoveredPoints.has(animal.next)) {
-                        return;
-                    }
+                if (!monitor.discoveredPoints.has(animal.previous) &&
+                    !monitor.discoveredPoints.has(animal.next)) {
+                    continue
+                }
 
-                    const point1 = this.gamePointToScreenPoint(animal.previous);
-                    const point2 = this.gamePointToScreenPoint(animal.next);
+                const point1 = this.gamePointToScreenPoint(animal.previous);
+                const point2 = this.gamePointToScreenPoint(animal.next);
 
-                    const point = {
-                        x: point1.x + (point2.x - point1.x) * (animal.percentageTraveled / 100),
-                        y: point1.y + (point2.y - point1.y) * (animal.percentageTraveled / 100)
-                    };
+                const point = {
+                    x: point1.x + (point2.x - point1.x) * (animal.percentageTraveled / 100),
+                    y: point1.y + (point2.y - point1.y) * (animal.percentageTraveled / 100)
+                };
 
-                    point.y -= 15;
+                point.y -= 15;
 
-                    const animalImage = this.state.images.get("rabbit-small-brown.png");
+                const animalImage = this.state.images.get("rabbit-small-brown.png");
 
-                    if (animalImage) {
-                        ctx.save();
+                if (animalImage) {
+                    ctx.save();
 
-                        ctx.drawImage(animalImage, point.x, point.y, 20, 30);
+                    ctx.drawImage(animalImage, point.x, point.y, 20, 30);
 
-                        ctx.restore();
-                    }
-                } else {
+                    ctx.restore();
+                }
+            } else {
 
-                    if (!monitor.discoveredPoints.has(animal)) {
-                        return;
-                    }
+                if (!monitor.discoveredPoints.has(animal)) {
+                    continue
+                }
 
-                    const point = this.gamePointToScreenPoint(animal);
+                const point = this.gamePointToScreenPoint(animal);
 
-                    point.y -= 15;
+                point.y -= 15;
 
-                    const animalImage = this.state.images.get("rabbit-small-brown.png");
+                const animalImage = this.state.images.get("rabbit-small-brown.png");
 
-                    if (animalImage) {
-                        ctx.save();
+                if (animalImage) {
+                    ctx.save();
 
-                        ctx.drawImage(animalImage, point.x, point.y, 20, 30);
+                    ctx.drawImage(animalImage, point.x, point.y, 20, 30);
 
-                        ctx.restore();
-                    }
+                    ctx.restore();
                 }
             }
-        );
+        }
 
         /* Draw flags */
         for (const [id, flag] of getFlags()) {
@@ -849,109 +852,109 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw available construction */
         if (this.props.showAvailableConstruction) {
 
-            for (const gamePoint of this.props.availableConstruction.keys()) {
-                const available = this.props.availableConstruction.get(gamePoint)
+            for (const [gamePoint, available] of monitor.availableConstruction.entries()) {
 
-                if (!available) {
+                if (available.length === 0) {
                     continue
                 }
 
-                if (monitor.discoveredPoints.has(gamePoint)) {
+                if (!monitor.discoveredPoints.has(gamePoint)) {
+                    continue
+                }
 
-                    const point = this.gamePointToScreenPoint(gamePoint);
+                const point = this.gamePointToScreenPoint(gamePoint);
 
-                    if (available.includes("large")) {
-                        ctx.save();
+                if (available.includes("large")) {
+                    ctx.save();
 
-                        const largeHouseAvailableImage = this.state.images.get("large-house-available.png")
+                    const largeHouseAvailableImage = this.state.images.get("large-house-available.png")
 
-                        if (largeHouseAvailableImage) {
-                            ctx.drawImage(largeHouseAvailableImage, point.x, point.y, 20, 20)
-                        } else {
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black';
-
-                            ctx.fillRect(point.x - 7, point.y - 15, 15, 15);
-
-                            ctx.strokeRect(point.x - 7, point.y - 15, 15, 15);
-                        }
-
-                        ctx.restore();
-                    } else if (available.includes("medium")) {
-                        ctx.save();
-
-                        const mediumHouseAvailableImage = this.state.images.get("medium-house-available.png")
-
-                        if (mediumHouseAvailableImage) {
-                            ctx.drawImage(mediumHouseAvailableImage, point.x, point.y, 20, 20)
-                        } else {
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black';
-
-                            ctx.fillRect(point.x - 5, point.y - 10, 10, 10);
-                            ctx.strokeRect(point.x - 5, point.y - 10, 10, 10);
-                        }
-
-                        ctx.restore();
-                    } else if (available.includes("small")) {
-                        ctx.save();
-
-                        const smallHouseAvailableImage = this.state.images.get("small-house-available.png")
-
-                        if (smallHouseAvailableImage) {
-                            ctx.drawImage(smallHouseAvailableImage, point.x, point.y, 20, 20)
-                        } else {
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black'
-
-                            ctx.fillRect(point.x - 3, point.y - 6, 6, 6);
-                            ctx.strokeRect(point.x - 3, point.y - 6, 6, 6);
-
-                        }
-
-                        ctx.restore();
-                    } else if (available.includes("mine")) {
-                        ctx.save();
-
-                        const mineAvailableImage = this.state.images.get("mine-available.png")
-
-                        if (mineAvailableImage) {
-                            ctx.drawImage(mineAvailableImage, point.x, point.y, 20, 20)
-                        } else {
-                            ctx.beginPath();
-                            ctx.fillStyle = 'yellow';
-                            ctx.strokeStyle = 'black'
-
-                            ctx.arc(point.x - 3, point.y - 6, 6, 0, 2 * Math.PI);
-
-                            ctx.closePath()
-
-                            ctx.fill();
-                            ctx.stroke();
-                        }
-                        ctx.restore();
-                    } else if (available.includes("flag")) {
-                        ctx.save();
-
+                    if (largeHouseAvailableImage) {
+                        ctx.drawImage(largeHouseAvailableImage, point.x, point.y, 20, 20)
+                    } else {
                         ctx.fillStyle = 'yellow';
                         ctx.strokeStyle = 'black';
 
+                        ctx.fillRect(point.x - 7, point.y - 15, 15, 15);
+
+                        ctx.strokeRect(point.x - 7, point.y - 15, 15, 15);
+                    }
+
+                    ctx.restore();
+                } else if (available.includes("medium")) {
+                    ctx.save();
+
+                    const mediumHouseAvailableImage = this.state.images.get("medium-house-available.png")
+
+                    if (mediumHouseAvailableImage) {
+                        ctx.drawImage(mediumHouseAvailableImage, point.x, point.y, 20, 20)
+                    } else {
+                        ctx.fillStyle = 'yellow';
+                        ctx.strokeStyle = 'black';
+
+                        ctx.fillRect(point.x - 5, point.y - 10, 10, 10);
+                        ctx.strokeRect(point.x - 5, point.y - 10, 10, 10);
+                    }
+
+                    ctx.restore();
+                } else if (available.includes("small")) {
+                    ctx.save();
+
+                    const smallHouseAvailableImage = this.state.images.get("small-house-available.png")
+
+                    if (smallHouseAvailableImage) {
+                        ctx.drawImage(smallHouseAvailableImage, point.x, point.y, 20, 20)
+                    } else {
+                        ctx.fillStyle = 'yellow';
+                        ctx.strokeStyle = 'black'
+
+                        ctx.fillRect(point.x - 3, point.y - 6, 6, 6);
+                        ctx.strokeRect(point.x - 3, point.y - 6, 6, 6);
+
+                    }
+
+                    ctx.restore();
+                } else if (available.includes("mine")) {
+                    ctx.save();
+
+                    const mineAvailableImage = this.state.images.get("mine-available.png")
+
+                    if (mineAvailableImage) {
+                        ctx.drawImage(mineAvailableImage, point.x, point.y, 20, 20)
+                    } else {
                         ctx.beginPath();
+                        ctx.fillStyle = 'yellow';
+                        ctx.strokeStyle = 'black'
 
-                        ctx.moveTo(point.x - 2, point.y);
-                        ctx.lineTo(point.x - 2, point.y - 10);
-                        ctx.lineTo(point.x + 3, point.y - 10);
-                        ctx.lineTo(point.x + 3, point.y - 5);
-                        ctx.lineTo(point.x, point.y - 5);
-                        ctx.lineTo(point.x, point.y);
+                        ctx.arc(point.x - 3, point.y - 6, 6, 0, 2 * Math.PI);
 
-                        ctx.closePath();
+                        ctx.closePath()
 
                         ctx.fill();
                         ctx.stroke();
-
-                        ctx.restore();
                     }
+                    ctx.restore();
+                } else if (available.includes("flag")) {
+                    ctx.save();
+
+                    ctx.fillStyle = 'yellow';
+                    ctx.strokeStyle = 'black';
+
+                    ctx.beginPath();
+
+                    ctx.moveTo(point.x - 2, point.y);
+                    ctx.lineTo(point.x - 2, point.y - 10);
+                    ctx.lineTo(point.x + 3, point.y - 10);
+                    ctx.lineTo(point.x + 3, point.y - 5);
+                    ctx.lineTo(point.x, point.y - 5);
+                    ctx.lineTo(point.x, point.y);
+
+                    ctx.closePath();
+
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.restore();
                 }
             }
         }
@@ -962,7 +965,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             for (const [id, house] of monitor.houses) {
 
                 if (!monitor.discoveredPoints.has(house)) {
-                    return;
+                    continue
                 }
 
                 const point = this.gamePointToScreenPoint(house);
@@ -1062,28 +1065,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 context: context
             }
         );
-    }
-
-    changedHouses(houses1: HouseInformation[], houses2: HouseInformation[]): boolean {
-
-        if (houses1.length !== houses2.length) {
-            return true;
-        }
-
-        for (let i = 0; i < houses1.length; i++) {
-            const house1 = houses1[i];
-            const house2 = houses2[i];
-
-            if (house1.state !== house2.state) {
-                return true;
-            }
-
-            if (house1.type !== house2.type) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {

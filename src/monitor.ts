@@ -1,9 +1,10 @@
-import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer } from './api'
+import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation } from './api'
 import { PointSet, PointMap } from './util_types'
 
 let periodicUpdates: NodeJS.Timeout | null = null
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
+const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
 
 interface MonitoredBorderForPlayer {
     color: string
@@ -11,6 +12,8 @@ interface MonitoredBorderForPlayer {
 }
 
 interface Monitor {
+    gameId?: GameId
+    playerId?: PlayerId
     workers: Map<WorkerId, WorkerInformation>
     animals: AnimalInformation[]
     houses: Map<HouseId, HouseInformation>
@@ -98,7 +101,8 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
             message.newSigns || message.removedSigns ||
             message.newDiscoveredLand ||
             message.changedAvailableConstruction ||
-            message.newMessages)) {
+            message.newMessages ||
+            message.newStones)) {
         return true
     }
 
@@ -189,11 +193,15 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         )
     }
 
+    /* Remember the game id and player id */
+    monitor.gameId = gameId
+    monitor.playerId = playerId
+
+    /* Subscribe to changes */
     const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
 
     console.info("Websocket url: " + websocketUrl)
 
-    /* Subscribe to changes */
     const websocket = new WebSocket(websocketUrl)
 
     websocket.onopen = () => {
@@ -241,6 +249,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
         if (changesMessage.changedBuildings) {
             syncChangedHouses(changesMessage.changedBuildings)
+
+            notifyHouseListeners(changesMessage.changedBuildings)
         }
 
         if (changesMessage.removedBuildings) {
@@ -560,6 +570,18 @@ function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void) 
     messageListeners.push(messageListenerFn)
 }
 
+function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformation) => void) {
+    let listenersForHouseId = houseListeners.get(houseId)
+
+    if (!listenersForHouseId) {
+        listenersForHouseId = []
+
+        houseListeners.set(houseId, listenersForHouseId)
+    }
+
+    listenersForHouseId.push(houseListenerFn)
+}
+
 function notifyMessageListeners(messages: GameMessage[]): void {
     for (const listener of messageListeners) {
         try {
@@ -571,4 +593,32 @@ function notifyMessageListeners(messages: GameMessage[]): void {
     }
 }
 
-export { listenToMessages, startMonitoringGame, monitor }
+function notifyHouseListeners(houses: HouseInformation[]): void {
+    for (const house of houses) {
+        const listeners = houseListeners.get(house.id)
+
+        if (!listeners) {
+            return
+        }
+
+        for (const listener of listeners) {
+            listener(house)
+        }
+    }
+}
+
+async function forceUpdateOfHouse(houseId: HouseId): Promise<void> {
+    if (monitor.gameId && monitor.playerId) {
+        console.info("Getting updated house")
+
+        const house = await getHouseInformation(houseId, monitor.gameId, monitor.playerId)
+
+        console.info("Syncing updated house")
+
+        syncChangedHouses([house])
+
+        notifyHouseListeners([house])
+    }
+}
+
+export { forceUpdateOfHouse, listenToHouse, listenToMessages, startMonitoringGame, monitor }

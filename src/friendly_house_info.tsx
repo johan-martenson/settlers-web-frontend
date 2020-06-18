@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
-import { disablePromotionsForHouse, enablePromotionsForHouse, HouseResources, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, GameId, HouseInformation, PlayerId, removeHouse, SoldierType, getHouseInformation, isMaterial } from './api';
+import { disablePromotionsForHouse, enablePromotionsForHouse, HouseResources, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, GameId, HouseInformation, PlayerId, removeHouse, SoldierType, getHouseInformation, isMaterial, upgradeMilitaryBuilding } from './api';
 import Button from './button';
 import { Dialog, DialogSection } from './dialog';
 import HeadquarterInfo from './headquarter_info';
 import houseImageMap from './images';
 import ProgressBar from './progress_bar'
 import './friendly_house_info.css'
+import { listenToHouse, forceUpdateOfHouse } from './monitor';
 
 interface FriendlyHouseInfoProps {
     house: HouseInformation
@@ -30,12 +31,24 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
     async componentDidMount() {
 
+        listenToHouse(this.props.house.id, this.onHouseUpdated.bind(this))
+
+        forceUpdateOfHouse(this.props.house.id)
+
         this.periodicUpdates = setInterval(async () => {
-            const house = await getHouseInformation(this.props.house.id, this.props.gameId, this.props.playerId)
-            console.info("UPDATING HOUSE")
-            this.setState({ updatedHouse: house })
+
+            console.info("Forcing update of house")
+
+            forceUpdateOfHouse(this.props.house.id)
+
         }, 1000)
     };
+
+    onHouseUpdated(house: HouseInformation) {
+        console.info("Updated house: " + JSON.stringify(house))
+
+        this.setState({ updatedHouse: house })
+    }
 
     componentWillUnmount() {
         if (this.periodicUpdates) {
@@ -116,6 +129,12 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
                 {houseIsReady(house) && !isMilitaryBuilding(house) &&
                     <>
+                        {house.productivity &&
+                            <>
+                                <div>Productivity: {house.productivity}</div>
+                            </>
+                        }
+
                         {Object.keys(needs).length > 0 &&
                             <>
                                 <div>Needs: </div>
@@ -199,6 +218,12 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                                     }
                                 }
                             />
+                        }
+
+                        {house.type !== "Fortress" &&
+                            <>
+                                <Button onButtonClicked={() => upgradeMilitaryBuilding(this.props.gameId, this.props.playerId, house.id)} label="Upgrade" />
+                            </>
                         }
 
                     </>

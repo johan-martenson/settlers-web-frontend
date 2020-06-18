@@ -236,6 +236,8 @@ class App extends Component<AppProps, AppState> {
 
         if (house) {
             this.goToPoint({ x: house.x, y: house.y })
+
+            this.setState({ selected: { x: house.x, y: house.y } })
         }
     }
 

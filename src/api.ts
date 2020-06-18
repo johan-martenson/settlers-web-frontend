@@ -279,6 +279,8 @@ export interface HouseInformation extends Point {
     produces?: Material
     promotionsEnabled: boolean
     state: HouseState
+    maxAttackers?: number
+    productivity?: number
 }
 
 export interface FlagInformation extends Point {
@@ -814,6 +816,17 @@ async function getHouseInformation(houseId: HouseId, gameId: GameId, playerId: P
 
 }
 
+async function getHouseInformationWithAttackPossibility(houseId: HouseId, gameId: GameId, playerIdForOwner: PlayerId, playerIdForAsker: PlayerId): Promise<HouseInformation> {
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerIdForOwner + "/houses/" + houseId + "?askingPlayerId=" + playerIdForAsker)
+
+    const receivedHouse = await response.json();
+
+    let house = receivedHouse
+
+    return house
+
+}
+
 async function getInformationOnPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<PointInformation> {
     // x, y
     // canBuild: ['small', 'medium', 'large', 'flag', 'mine', 'harbor']
@@ -973,6 +986,21 @@ async function disablePromotionsForHouse(gameId: GameId, playerId: PlayerId, hou
 }
 
 
+
+async function upgradeMilitaryBuilding(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
+    const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses",
+        {
+            method: "PATCH",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+                {
+                    update: true
+                }
+            )
+        }
+    )
+}
+
 async function getMessagesForPlayer(gameId: GameId, playerId: PlayerId): Promise<GameMessage[]> {
     const response = await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/gameMessages/')
 
@@ -1001,7 +1029,9 @@ function houseIsReady(house: HouseInformation): boolean {
     return (house.state === "UNOCCUPIED" || house.state === "OCCUPIED")
 }
 
-
+function houseIsOccupied(house: HouseInformation): boolean {
+    return house.state == "OCCUPIED"
+}
 
 const materialToColor = new Map<Material, string>();
 
@@ -1063,5 +1093,5 @@ function getHouseAtPoint(point: Point) {
     return undefined
 }
 
-export { isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
+export { upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
 

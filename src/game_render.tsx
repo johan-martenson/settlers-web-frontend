@@ -978,6 +978,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (house.state === "UNFINISHED") {
                     houseTitle = "(" + houseTitle + ")";
+                } else if (house.productivity) {
+                    houseTitle = houseTitle + " (" + house.productivity + "%)"
                 }
 
                 ctx.save();

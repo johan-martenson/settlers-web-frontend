@@ -188,7 +188,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         monitor.border.set(borderInformation.playerId,
             {
                 color: player.color,
-                points: new PointSet(borderInformation.points)
+                points: new PointSetFast(borderInformation.points)
             }
         )
     }
@@ -470,7 +470,7 @@ function syncChangedBorders(borderChanges: BorderChange[]) {
             monitor.border.set(borderChange.playerId,
                 {
                     color: player.color,
-                    points: new PointSet(borderChange.newBorder)
+                    points: new PointSetFast(borderChange.newBorder)
                 }
             )
         }

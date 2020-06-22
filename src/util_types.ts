@@ -122,6 +122,7 @@ class PointSetFastIterator implements IterableIterator<Point> {
         }
     }
 }
+
 class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
 
     private pointEntryFastIterator: IterableIterator<[number, T]>

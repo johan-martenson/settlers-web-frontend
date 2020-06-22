@@ -134,15 +134,29 @@ class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
         return this
     }
 
-    next(value?: [Point, T]): IteratorResult<[Point, T]> {
-        throw new Error("Not implemented")
+    next(inValue?: [Point, T]): IteratorResult<[Point, T]> {
+        const result = this.pointEntryFastIterator.next()
+
+        if (result.done) {
+            return {
+                done: true,
+                value: 1
+            }
+        }
+
+        const [pointNumber, value] = result.value
+
+        return {
+            done: result.done,
+            value: [keyToFastPoint(pointNumber), value]
+        }
     }
 }
 
 class PointSetFast implements IterableIterator<Point> {
     private pointSet: Set<number>
 
-    constructor(points?: Point[]) {
+    constructor(points?: Set<Point> | Point[]) {
         this.pointSet = new Set<number>()
 
         if (points) {
@@ -370,7 +384,7 @@ class PointMapFast<T> implements Map<Point, T> {
     [Symbol
         .
         iterator](): IterableIterator<[Point, T]> {
-        throw new Error("Method not implemented.");
+        return this.entries()
     }
     entries(): IterableIterator<[Point, T]> {
         return new PointEntryFastIterator(this.numberToPointMap.entries())
@@ -463,4 +477,4 @@ class PointMap<T> implements Map<Point, T> {
     }
 }
 
-export { PointMap, PointSet, PointSetFast, PointMapFast } 
+export { PointSetFast, PointMapFast } 

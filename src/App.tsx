@@ -14,7 +14,7 @@ import { monitor, startMonitoringGame } from './monitor';
 import Statistics from './statistics';
 import TypeControl from './type_control';
 import { isRoadAtPoint, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils';
-import { PointSet } from './util_types';
+import { PointSetFast } from './util_types';
 
 const MENU_MENU = 0;
 const MENU_FRIENDLY_HOUSE = 1;
@@ -268,7 +268,7 @@ class App extends Component<AppProps, AppState> {
             newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * scaleY - globalSyncState.height;
         }
 
-        const discoveredPointMap = new PointSet()
+        const discoveredPointMap = new PointSetFast()
 
         player.discoveredPoints.forEach(
             (point: Point) => {

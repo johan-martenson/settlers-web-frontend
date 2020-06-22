@@ -3,7 +3,7 @@ import { getCrops, getFlags, getHouses, getRoads, getSigns, getStones, getTrees,
 import houseImageMap, { Filename } from './images';
 import { monitor } from './monitor';
 import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt } from './utils';
-import { PointMap } from './util_types';
+import { PointMapFast } from './util_types';
 
 export interface ScreenPoint {
     x: number
@@ -47,8 +47,8 @@ interface GameCanvasState {
     context?: CanvasRenderingContext2D
     images: Map<Filename, HTMLImageElement>
     builtHeightMap: boolean
-    straightBelowNormals?: PointMap<Vector>
-    downRightNormals?: PointMap<Vector>
+    straightBelowNormals?: PointMapFast<Vector>
+    downRightNormals?: PointMapFast<Vector>
 }
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
@@ -106,8 +106,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         );
 
         /* Calculate and store the normals per triangle */
-        const straightBelowNormals = new PointMap<Vector>()
-        const downRightNormals = new PointMap<Vector>()
+        const straightBelowNormals = new PointMapFast<Vector>()
+        const downRightNormals = new PointMapFast<Vector>()
 
         this.props.terrain.forEach(
             (terrainAtPoint: TerrainAtPoint) => {

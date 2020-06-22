@@ -1,7 +1,5 @@
-import { PointMap, PointSet, PointSetFast, PointMapFast } from './util_types';
+import { PointSetFast, PointMapFast } from './util_types';
 import { Point } from './api';
-
-const a = new PointSet();
 
 function do_self_test() {
     testPointSet()
@@ -149,7 +147,7 @@ function testPointSet() {
     regularPointSet.add(point0)
     regularPointSet.add(point1)
 
-    const pointSetFromRegularSet = new PointSet(regularPointSet)
+    const pointSetFromRegularSet = new PointSetFast(regularPointSet)
 
     /* Verify that the new point set contains both points */
     if (pointSetFromRegularSet.has(point0)) {

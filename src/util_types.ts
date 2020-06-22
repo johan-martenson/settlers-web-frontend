@@ -142,8 +142,14 @@ class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
 class PointSetFast implements IterableIterator<Point> {
     private pointSet: Set<number>
 
-    constructor() {
+    constructor(points?: Point[]) {
         this.pointSet = new Set<number>()
+
+        if (points) {
+            for (const point of points) {
+                this.pointSet.add(pointToFastKey(point))
+            }
+        }
     }
 
     add(point: Point): void {

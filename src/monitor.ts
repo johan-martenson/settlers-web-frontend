@@ -1,5 +1,5 @@
 import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation } from './api'
-import { PointSet, PointMap } from './util_types'
+import { PointMapFast, PointSetFast } from './util_types'
 
 let periodicUpdates: NodeJS.Timeout | null = null
 
@@ -8,7 +8,7 @@ const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new 
 
 interface MonitoredBorderForPlayer {
     color: string
-    points: PointSet
+    points: PointSetFast
 }
 
 interface Monitor {
@@ -20,13 +20,13 @@ interface Monitor {
     flags: Map<FlagId, FlagInformation>
     roads: Map<RoadId, RoadInformation>
     border: Map<PlayerId, MonitoredBorderForPlayer>
-    trees: PointSet
-    stones: PointSet
-    crops: PointSet
-    discoveredPoints: PointSet
+    trees: PointSetFast
+    stones: PointSetFast
+    crops: PointSetFast
+    discoveredPoints: PointSetFast
     signs: Map<SignId, SignInformation>
     players: Map<PlayerId, PlayerInformation>
-    availableConstruction: PointMap<AvailableConstruction[]>
+    availableConstruction: PointMapFast<AvailableConstruction[]>
     messages: GameMessage[]
 }
 
@@ -37,13 +37,13 @@ const monitor: Monitor = {
     flags: new Map<FlagId, FlagInformation>(),
     roads: new Map<RoadId, RoadInformation>(),
     border: new Map<PlayerId, MonitoredBorderForPlayer>(),
-    trees: new PointSet(),
-    stones: new PointSet(),
-    crops: new PointSet(),
-    discoveredPoints: new PointSet(),
+    trees: new PointSetFast(),
+    stones: new PointSetFast(),
+    crops: new PointSetFast(),
+    discoveredPoints: new PointSetFast(),
     signs: new Map<SignId, SignInformation>(),
     players: new Map<PlayerId, PlayerInformation>(),
-    availableConstruction: new PointMap<AvailableConstruction[]>(),
+    availableConstruction: new PointMapFast<AvailableConstruction[]>(),
     messages: []
 }
 

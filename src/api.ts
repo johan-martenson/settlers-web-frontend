@@ -1,4 +1,4 @@
-import { PointMap, PointSet } from './util_types';
+import { PointMapFast, PointSetFast } from './util_types';
 import { startMonitoringGame, monitor } from './monitor';
 
 export type GameId = string
@@ -305,7 +305,7 @@ export interface PlayerViewInformation {
     crops: CropInformation[]
     animals: AnimalInformation[]
     discoveredPoints: Point[]
-    availableConstruction: PointMap<AvailableConstruction[]>
+    availableConstruction: PointMapFast<AvailableConstruction[]>
 }
 
 export interface PossibleNewRoadInformation {
@@ -775,7 +775,7 @@ async function getViewForPlayer(gameId: GameId, playerId: PlayerId): Promise<Pla
     if (response.ok) {
         const view = await response.json();
 
-        view.availableConstruction = new PointMap(view.availableConstruction)
+        view.availableConstruction = new PointMapFast(view.availableConstruction)
 
         return view
     }

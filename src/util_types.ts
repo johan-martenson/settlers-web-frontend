@@ -310,9 +310,21 @@ class PointMapFast<T> implements Map<Point, T> {
 
     private numberToPointMap: Map<number, T>
 
-    constructor() {
+    constructor(pointAsStringDict?: { [pointAsString: string]: T }) {
         this.numberToPointMap = new Map<number, T>()
+
+        if (pointAsStringDict) {
+            for (const pointAsString in pointAsStringDict) {
+                const fields = pointAsString.split(",")
+
+                const point = stringToPoint(pointAsString)
+
+                this.numberToPointMap.set(pointToFastKey(point), pointAsStringDict[pointAsString])
+            }
+
+        }
     }
+
 
     clear(): void {
         this.numberToPointMap.clear()

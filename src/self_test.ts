@@ -1,4 +1,4 @@
-import { PointMap, PointSet } from './util_types';
+import { PointMap, PointSet, PointSetFast, PointMapFast } from './util_types';
 import { Point } from './api';
 
 const a = new PointSet();
@@ -10,7 +10,7 @@ function do_self_test() {
 
 function testPointSet() {
 
-    const pointSet = new PointSet();
+    const pointSet = new PointSetFast();
 
     /* Test that the set is empty initially */
     if (pointSet.size() === 0) {
@@ -170,7 +170,7 @@ function testPointSet() {
 function testPointMap() {
 
     /* Test creating a map from points to strings */
-    const pointMap = new PointMap<string>();
+    const pointMap = new PointMapFast<string>();
 
     /* Test that the map is empty before any items are added */
     if (pointMap.size === 0) {

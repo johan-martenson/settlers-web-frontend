@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { disablePromotionsForHouse, enablePromotionsForHouse, HouseResources, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, GameId, HouseInformation, PlayerId, removeHouse, SoldierType, getHouseInformation, isMaterial, upgradeMilitaryBuilding } from './api';
+import { disablePromotionsForHouse, enablePromotionsForHouse, HouseResources, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, GameId, HouseInformation, PlayerId, removeHouse, SoldierType, getHouseInformation, isMaterial, upgradeMilitaryBuilding, canBeUpgraded, Material } from './api';
 import Button from './button';
 import { Dialog, DialogSection } from './dialog';
 import HeadquarterInfo from './headquarter_info';
@@ -77,17 +77,14 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
             ([material, hasAndNeeds]) => {
 
                 if (!isMaterial(material)) {
-                    console.info("NOT MATERIAL " + material)
-                    return
+                    throw new Error("Not a material: " + material)
                 }
 
                 if (hasAndNeeds.needs || hasAndNeeds.needs === 0) {
                     needs[material] = hasAndNeeds.needs
                 }
 
-                if (hasAndNeeds.has || hasAndNeeds.has === 0) {
-                    has[material] = hasAndNeeds.has
-                }
+                has[material] = hasAndNeeds.has
             }
         )
 
@@ -97,13 +94,10 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
         let coinResources = house.resources.coin
 
         if (coinResources) {
+            hasAmountCoin = coinResources.has
 
-            if (coinResources.has !== undefined && coinResources.has !== null) {
-                hasAmountCoin = coinResources.has
-            }
-
-            if (coinResources.needs !== undefined && coinResources.needs !== null) {
-                needsAmountCoin = coinResources.needs
+            if (coinResources.totalNeeded) {
+                needsAmountCoin = coinResources.totalNeeded
             }
         }
 
@@ -118,9 +112,16 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                         <ProgressBar progress={house.constructionProgress} />
 
                         <div>Needs: </div>
-                        {Object.entries(needs).map(
-                            ([material, needed], index) => {
-                                return <div key={index}>{material}: {needed}</div>
+                        {Object.entries(house.resources).map(
+                            ([material, hasAndNeeds], index) => {
+                                const hasAmount = hasAndNeeds.has
+                                const needsAmount = hasAndNeeds.needs
+
+                                return <div key={index}>
+                                    {material}
+                                    {hasAmount && "Has: " + hasAmount}
+                                    {needsAmount && "Needs: " + needsAmount}
+                                </div>
                             }
                         )}
 
@@ -220,7 +221,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                             />
                         }
 
-                        {house.type !== "Fortress" &&
+                        {canBeUpgraded(house) &&
                             <>
                                 <Button onButtonClicked={() => upgradeMilitaryBuilding(this.props.gameId, this.props.playerId, house.id)} label="Upgrade" />
                             </>

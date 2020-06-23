@@ -1,5 +1,5 @@
-import { PointMapFast, PointSetFast } from './util_types';
-import { startMonitoringGame, monitor } from './monitor';
+import { monitor } from './monitor'
+import { PointMapFast } from './util_types'
 
 export type GameId = string
 export type PlayerId = string
@@ -10,9 +10,9 @@ export type RoadId = string
 export type WorkerId = string
 export type SignId = string
 
-export type PointString = string;
+export type PointString = string
 
-export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine";
+export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
 export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin"
 
@@ -46,7 +46,7 @@ const SMALL_HOUSES: SmallBuilding[] = [
     "CoalMine",
     "GraniteMine",
     "LookoutTower"
-];
+]
 
 export type MediumBuilding = "Sawmill" |
     "Bakery" |
@@ -76,7 +76,7 @@ const MEDIUM_HOUSES: MediumBuilding[] = [
     "Metalworks",
     "Shipyard",
     "Storehouse"
-];
+]
 
 export type LargeBuilding = "Headquarter" | "Farm" | "PigFarm" | "DonkeyFarm" | "Fortress" | "Harbor"
 
@@ -86,7 +86,7 @@ const LARGE_HOUSES: LargeBuilding[] = [
     "PigFarm",
     "DonkeyFarm",
     "Fortress"
-];
+]
 
 export function isMaterial(material: string): material is Material {
     if (material === "gold" ||
@@ -260,8 +260,8 @@ export interface HouseResources {
 }
 
 interface HouseResourceItem {
-    has?: number
-    needs?: number
+    has: number
+    totalNeeded?: number
 }
 
 type HouseState = "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED"
@@ -1097,5 +1097,5 @@ function getHouseAtPoint(point: Point) {
     return undefined
 }
 
-export { canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame };
+export { canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame }
 

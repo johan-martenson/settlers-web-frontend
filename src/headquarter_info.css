@@ -1,8 +1,16 @@
+.InventoryList {
+    display: flex;
+    flex-direction: column;
+}
+
 .InventoryLabelValuePair {
     display: flex;
-    justify-content: space-between;
+    flex-direction: row;
+    justify-content: space-between
 }
 
 .InventoryLabel {}
 
-.InventoryValue {}
+.InventoryValue {
+    text-align: right;
+}

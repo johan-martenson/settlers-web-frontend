@@ -90,10 +90,11 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
             index = index + 1
 
             inventoryItems.push(
-                <span className="InventoryLabelValuePair" key={index} >
+                <div className="InventoryLabelValuePair" key={index} >
                     <div className="InventoryLabel">{material.replace(/_/g, ' ')}</div>
                     <div className="InventoryValue">{amount}</div>
-                </span>
+                    plupp
+                </div>
             )
         }
 

@@ -236,7 +236,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     )
 
     /* Store the discovered tiles */
-    storeDiscoveredTiles()
+    storeDiscoveredTiles(monitor.discoveredPoints)
 
     /* Remember the game id and player id */
     monitor.gameId = gameId
@@ -349,6 +349,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
         if (changesMessage.newDiscoveredLand) {
             syncNewDiscoveredLand(changesMessage.newDiscoveredLand)
+
+            storeDiscoveredTiles(changesMessage.newDiscoveredLand)
         }
 
         if (changesMessage.newSigns) {
@@ -416,20 +418,29 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     console.info(websocket)
 }
 
-function storeDiscoveredTiles() {
-    for (const point of monitor.discoveredPoints) {
+function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
+    for (const point of newlyDiscoveredPoints) {
         const terrainAtPoint = monitor.allTiles.get(point)
 
         if (!terrainAtPoint) {
             continue
         }
 
-        const terrainAtPointDownLeft = monitor.allTiles.get(getPointDownLeft(point))
-        const terrainAtPointDownRight = monitor.allTiles.get(getPointDownRight(point))
-        const terrainAtPointRight = monitor.allTiles.get(getPointRight(point))
+        const pointDownLeft = getPointDownLeft(point)
+        const pointDownRight = getPointDownRight(point)
+        const pointRight = getPointRight(point)
+
+        const isDownLeftDiscovered = monitor.discoveredPoints.has(pointDownLeft)
+        const isDownRightDiscovered = monitor.discoveredPoints.has(pointDownRight)
+        const isRightDiscovered = monitor.discoveredPoints.has(pointRight)
+
+        const terrainAtPointDownLeft = monitor.allTiles.get(pointDownLeft)
+        const terrainAtPointDownRight = monitor.allTiles.get(pointDownRight)
+        const terrainAtPointRight = monitor.allTiles.get(pointRight)
 
         if (terrainAtPoint.straightBelow !== undefined && terrainAtPoint.straightBelow !== null &&
-            terrainAtPointDownLeft && terrainAtPointDownRight) {
+            terrainAtPointDownLeft && terrainAtPointDownRight &&
+            isDownLeftDiscovered && isDownRightDiscovered) {
             monitor.discoveredBelowTiles.add(
                 {
                     vegetation: terrainAtPoint.straightBelow,
@@ -442,7 +453,8 @@ function storeDiscoveredTiles() {
         }
 
         if (terrainAtPoint.belowToTheRight !== undefined && terrainAtPoint.belowToTheRight !== null &&
-            terrainAtPointDownRight && terrainAtPointRight) {
+            terrainAtPointDownRight && terrainAtPointRight &&
+            isDownRightDiscovered && isRightDiscovered) {
             monitor.discoveredDownRightTiles.add(
                 {
                     vegetation: terrainAtPoint.belowToTheRight,

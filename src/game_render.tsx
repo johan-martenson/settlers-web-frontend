@@ -47,8 +47,6 @@ interface GameCanvasState {
     hoverPoint?: Point
     context?: CanvasRenderingContext2D
     images: Map<Filename, HTMLImageElement>
-    builtHeightMap: boolean
-    brightnessMap?: PointMapFast<number>
 }
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
@@ -58,6 +56,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private lightVector: Vector
     private debuggedPoint: Point | undefined
     private previousTimestamp?: number
+    private brightnessMap?: PointMapFast<number>
 
     constructor(props: GameCanvasProps) {
         super(props);
@@ -70,8 +69,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.pointToPoint3D = this.pointToPoint3D.bind(this);
 
         this.state = {
-            images: new Map(),
-            builtHeightMap: false
+            images: new Map()
         };
 
         this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", "flag.png", "large-house-available.png", "medium-house-available.png", "small-house-available.png", "mine-available.png"]);
@@ -159,12 +157,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         )
 
-        this.setState(
-            {
-                builtHeightMap: true,
-                brightnessMap: brightnessMap
-            }
-        )
+        this.brightnessMap = brightnessMap
     }
 
     loadImages(sources: string[]): void {
@@ -232,10 +225,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     componentDidMount() {
 
         /* Handle update of heights if needed */
-        if (!this.state.builtHeightMap && this.props.terrain && this.props.terrain.length > 0) {
+        if (!this.brightnessMap && this.props.terrain && this.props.terrain.length > 0) {
             console.info("Build height map during mount")
             this.buildHeightMap()
-            return
         }
 
         /* Create the rendering thread if it doesn't exist */
@@ -245,10 +237,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     componentDidUpdate() {
 
         /* Handle update of heights if needed */
-        if (!this.state.builtHeightMap && this.props.terrain && this.props.terrain.length > 0) {
+        if (!this.brightnessMap && this.props.terrain && this.props.terrain.length > 0) {
             console.info("Build height map during update")
             this.buildHeightMap()
-            return
         }
     }
 
@@ -298,7 +289,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.debuggedPoint = this.props.selectedPoint;
         }
 
-        if (!this.state.brightnessMap) {
+        if (!this.brightnessMap) {
             requestAnimationFrame(this.renderGame.bind(this))
 
             return
@@ -321,9 +312,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             /* Get intensity for each point */
-            const intensityPoint = this.state.brightnessMap.get(gamePoint)
-            const intensityPointDownRight = this.state.brightnessMap.get(gamePointDownRight)
-            const intensityPointDownLeft =  this.state.brightnessMap.get(gamePointDownLeft)
+            const intensityPoint = this.brightnessMap.get(gamePoint)
+            const intensityPointDownRight = this.brightnessMap.get(gamePointDownRight)
+            const intensityPointDownLeft =  this.brightnessMap.get(gamePointDownLeft)
 
             /* Draw the tile right below */
             const screenPoint = this.gamePointToScreenPoint(gamePoint)
@@ -374,9 +365,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const screenPointDownRight = this.gamePointToScreenPoint(gamePointDownRight)
 
             /* Get the brightness for the game point right here because now we know that the point is discovered */
-            const intensityPoint = this.state.brightnessMap.get(gamePoint)
-            const intensityPointRight = this.state.brightnessMap.get(gamePointRight)
-            const intensityPointDownRight = this.state.brightnessMap.get(gamePointDownRight)
+            const intensityPoint = this.brightnessMap.get(gamePoint)
+            const intensityPointRight = this.brightnessMap.get(gamePointRight)
+            const intensityPointDownRight = this.brightnessMap.get(gamePointDownRight)
 
             const colorDownRight = intToVegetationColor.get(tile.vegetation)
 

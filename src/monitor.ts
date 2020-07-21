@@ -638,7 +638,6 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
                 x: walkerTargetChange.x,
                 y: walkerTargetChange.y,
                 plannedPath: walkerTargetChange.path,
-                inside: false,
                 betweenPoints: false,
                 percentageTraveled: 0
             }

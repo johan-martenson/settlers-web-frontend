@@ -222,9 +222,9 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
 
     let partialIntensity;
 
-    let pointHigh = p1;
-    let pointLow = p1;
-    let pointInBetween = p1;
+    let pointHigh: Point;
+    let pointLow: Point;
+    let pointInBetween: Point;
 
     /* Find the highest point */
     if (intensity1 === intensityMax) {

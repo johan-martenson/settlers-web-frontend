@@ -26,7 +26,7 @@ function testPointSet() {
         console.log("NOT OK")
     }
 
-    /* Test addding a point */
+    /* Test adding a point */
     pointSet.add(point0)
 
     if (pointSet.has(point0)) {

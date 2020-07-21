@@ -47,7 +47,7 @@ class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
                 </RawRow>
 
                 <RawRow>
-                    <div className="ResourceLable">Amount of initial resources</div>
+                    <div className="ResourceLabel">Amount of initial resources</div>
                     <SelectableButtonRow
                         className="ResourceButtons"
                         values={OPTIONS} initialValue="MEDIUM"

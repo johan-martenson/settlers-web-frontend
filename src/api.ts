@@ -87,7 +87,7 @@ const LARGE_HOUSES: LargeBuilding[] = [
 ]
 
 export function isMaterial(material: string): material is Material {
-    if (material === "gold" ||
+    return material === "gold" ||
         material === "iron" ||
         material === "coal" ||
         material === "stone" ||
@@ -125,11 +125,9 @@ export function isMaterial(material: string): material is Material {
         material === "wood" ||
         material === "metalworker" ||
         material === "wheat" ||
-        material === "flour") {
-        return true
-    }
+        material === "flour";
 
-    return false
+
 }
 
 interface Player {
@@ -208,16 +206,17 @@ export interface MapInformation {
 
 export interface CropInformation extends Point { }
 
+export type Minerals = 'iron' | 'gold' | 'coal' | 'stone'
+
 export interface SignInformation extends Point {
     id: SignId
-    type: "iron"
+    type: Minerals
 }
 
 export interface StoneInformation extends Point { }
 
 export interface WorkerInformation extends Point {
     id: WorkerId
-    inside: boolean
     betweenPoints: boolean
     previous?: Point
     next?: Point

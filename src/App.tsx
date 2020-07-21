@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES } from './api'
+import { callGeologist, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, getTerrain, getViewForPlayer, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES } from './api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import EnemyHouseInfo from './enemy_house_info'
@@ -424,10 +424,6 @@ class App extends Component<AppProps, AppState> {
     async componentDidMount(): Promise<void> {
 
         await startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
-
-        const players = await getPlayers(this.props.gameId)
-
-        console.info("Players: " + JSON.stringify(players))
 
         if (this.selfNameRef.current) {
 

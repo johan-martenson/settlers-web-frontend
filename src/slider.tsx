@@ -72,7 +72,7 @@ class Slider extends Component<SliderProps, SliderState> {
                         (event: React.MouseEvent) => {
                             console.info("Decreasing");
 
-                            let newValue = 0;
+                            let newValue: number;
 
                             if (this.state.value - this.state.step < this.props.min) {
                                 newValue = this.props.min;
@@ -178,7 +178,7 @@ class Slider extends Component<SliderProps, SliderState> {
                         () => {
                             console.info("Decreasing");
 
-                            let newValue = 0;
+                            let newValue: number;
 
                             if (this.state.value + this.state.step > this.props.max) {
                                 newValue = this.props.max;

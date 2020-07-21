@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
-import { Material, GameId, getHouseInformation, HouseInformation, PlayerId, isMaterial } from './api';
+import { Material, GameId, HouseInformation, PlayerId, isMaterial } from './api';
 import './headquarter_info.css'
 import Button from './button'
-import { forceUpdateOfHouse, listenToHouse } from './monitor';
 
 interface HeadquarterInfoProps {
     house: HouseInformation
@@ -18,7 +17,7 @@ interface HeadquarterInfoState {
 
 class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoState> {
 
-    private periodicUpdates: NodeJS.Timeout | null = null
+
 
     constructor(props: HeadquarterInfoProps) {
         super(props);

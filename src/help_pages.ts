@@ -14,7 +14,7 @@ const HELP_PAGES: PageType[] = [
         page: 'construction',
         title: 'Getting started with construction',
         pictures: ['ForesterHut', 'Woodcutter', 'Sawmill'],
-        description: ["To build houses for your city, you need planks and stones. Stones are collected by a quarry. A sawmill produces planks from wood. To get started collecting plancks and stones, build a woodcutter hut, a quarry, and a sawmill", "Be careful to not run out of wood! Build a forester hut to get a forester to plant new trees."],
+        description: ["To build houses for your city, you need planks and stones. Stones are collected by a quarry. A sawmill produces planks from wood. To get started collecting planks and stones, build a woodcutter hut, a quarry, and a sawmill", "Be careful to not run out of wood! Build a forester hut to get a forester to plant new trees."],
     },
 
     {
@@ -40,7 +40,7 @@ const HELP_PAGES: PageType[] = [
 
     {
         page: 'military',
-        title: 'Recruting',
+        title: 'Recruiting',
         pictures: ['Brewery', 'Armory'],
         description: ["To recruit new military you need equipment. The armory produces swords and shields but it needs coal and steel to do so. Coal comes from coal mines and steel comes from the Iron Smelter. The Iron Smelter needs iron and coal to melt the iron.", "Equipment is not enough - a recruit also needs to drink beer to become a military. Beer is produced by a brewery. The brewery needs water and wheat to brew beer. Water is produced by a well and wheat is produced by farms.", "To successfully recruit new military, a sword, a shield, and a beer need to be available in the same headquarter or storage."]
     },
@@ -49,14 +49,14 @@ const HELP_PAGES: PageType[] = [
         page: 'ranksAndPromotion',
         title: 'Ranks and promotion',
         pictures: [],
-        description: ["Militaries can have different ranks: private, private first class, sergeant, officer, general. All militaries start out as privates and can then be promoted to higher classes. A higher rank means that the military can survive more fights and cause more damage to opponents. Militaries in a building are promoted when a coin is delivered to the building.", "A mint produces coins and it needs coal and gold."]
+        description: ["Soldiers can have different ranks: private, private first class, sergeant, officer, general. All militaries start out as privates and can then be promoted to higher classes. A higher rank means that the military can survive more fights and cause more damage to opponents. Militaries in a building are promoted when a coin is delivered to the building.", "A mint produces coins and it needs coal and gold."]
     },
 
     {
         page: 'war',
         title: 'Going to war',
         pictures: ['Barracks', 'GuardHouse', 'WatchTower', 'Fortress'],
-        description: ["To win the game only one player can remain. To vanquish the other players you will need to defeat them in war. First you need to find your opponents by expanding your land and assembling resources to prepare for the war. When you have found your opponent and have enough resources you are ready to attack.", "Attack an opponent's military building by selecting it, choosing attack, selecting the number of attackers, and select to start the attack. Militaries in buildings close to the attacked building can join in the attack. To be able to attack with more militaries you can upgrade your military buildings close to the opponent's building so they can host more militaries."]
+        description: ["To win the game only one player can remain. To vanquish the other players you will need to defeat them in war. First you need to find your opponents by expanding your land and assembling resources to prepare for the war. When you have found your opponent and have enough resources you are ready to attack.", "Attack an opponent's military building by selecting it, choosing attack, selecting the number of attackers, and select to start the attack. Soldiers in buildings close to the attacked building can join in the attack. To be able to attack with more soldiers you can upgrade your military buildings close to the opponent's building so they can host more militaries."]
     }
 ]
 

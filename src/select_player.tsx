@@ -46,7 +46,7 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
 
     componentDidMount() {
 
-        if (this.state.players.length === 0 && this.state.gettingPlayers === false) {
+        if (this.state.players.length === 0 && !this.state.gettingPlayers) {
             this.setState({
                 gettingPlayers: true
             });

@@ -205,7 +205,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                                 disabled={!this.state.isNameReady && !this.state.map}
                                 onButtonClicked={
                                     async () => {
-                                        this.startCreatingGame();
+                                        await this.startCreatingGame();
                                     }
                                 }
                             />

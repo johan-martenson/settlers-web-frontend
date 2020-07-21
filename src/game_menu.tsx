@@ -4,6 +4,7 @@ import Guide from './guide';
 import MainMenu from './main_menu';
 import OptionMenu from './options_menu';
 import Statistics from './statistics';
+import { SetTransportPriority } from './transport_priority';
 
 interface GameMenuProps {
     onCloseMenu: (() => void)
@@ -20,7 +21,7 @@ interface GameMenuProps {
     onLeaveGame: (() => void)
 }
 interface GameMenuState {
-    state: "MAIN" | "OPTIONS" | "HELP" | "STATISTICS"
+    state: "MAIN" | "OPTIONS" | "HELP" | "STATISTICS" | "TRANSPORT_PRIORITY"
 }
 
 class GameMenu extends Component<GameMenuProps, GameMenuState> {
@@ -61,6 +62,14 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
         )
     }
 
+    onSetTransportPriority(): void {
+        this.setState(
+            {
+                state: "TRANSPORT_PRIORITY"
+            }
+        )
+    }
+
     render() {
 
         return (
@@ -75,6 +84,7 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                         onPlayerSelected={this.onPlayerSelected.bind(this)}
                         onLeaveGame={this.props.onLeaveGame}
                         onStatistics={this.onStatistics.bind(this)}
+                        onSetTransportPriority={this.onSetTransportPriority.bind(this)}
                     />
                 }
 
@@ -99,6 +109,11 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                         gameId={this.props.gameId}
                     />
                 }
+
+                {this.state.state === "TRANSPORT_PRIORITY" &&
+                    <SetTransportPriority gameId={this.props.gameId} playerId={this.props.currentPlayerId} onClose={() => this.setState({ state: "MAIN" })} />
+                }
+
             </div>
         );
     }

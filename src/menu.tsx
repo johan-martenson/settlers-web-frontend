@@ -29,7 +29,7 @@ class MenuSection extends Component<MenuSectionProps, MenuSectionState> {
     render() {
         let className = "MenuSectionContent";
 
-        if (this.props.selected && (this.props.selected === true)) {
+        if (this.props.selected && this.props.selected) {
             className = className + " Selected";
         }
 

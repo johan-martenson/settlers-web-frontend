@@ -35,8 +35,6 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
             /* Run the command if enter is pressed */
         } else if (event.key === "Enter") {
 
-            console.log("Running command based on current input: " + this.state.input);
-
             /* Find the matching command */
             let commandHit;
 
@@ -48,10 +46,10 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                 }
             }
 
-            console.log("Command hit: " + commandHit);
-
             /* Run the command */
             if (commandHit) {
+
+                console.log("Command: " + commandHit + " (" + this.state.input + ")");
 
                 const fn = this.props.commands.get(commandHit);
 
@@ -65,6 +63,8 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                         input: ""
                     }
                 )
+            } else {
+                console.log("Can't find command matching: " + this.state.input)
             }
 
             /* Remove the last entered character if backspace is pressed */
@@ -78,7 +78,6 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
     }
 
     onKeyPress(event: React.KeyboardEvent<HTMLDivElement>): void {
-        console.log("Key pressed: " + event.key + ", input was: " + this.state.input);
 
         /* Filter enter presses (they are handled by onKeyDown) */
         if (event.key === "Enter") {
@@ -90,9 +89,13 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
             return;
         }
 
+        const input = this.state.input + event.key
+
+        console.log("Input: " + input)
+
         this.setState(
             {
-                input: this.state.input + event.key
+                input: input
             }
         )
     }

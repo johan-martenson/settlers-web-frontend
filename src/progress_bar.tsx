@@ -10,8 +10,6 @@ class ProgressBar extends Component<ProgressBarProps, ProgressBarState>{
 
     render() {
 
-        console.info(this.props.progress)
-
         return (
             <>
                 <div className="progress-bar-container">

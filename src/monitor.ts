@@ -1,14 +1,40 @@
-import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation } from './api'
+import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain } from './api'
 import { PointMapFast, PointSetFast } from './util_types'
+import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight } from './utils'
 
-let periodicUpdates: NodeJS.Timeout | null = null
+let periodicUpdates: NodeJS.Timeout | null
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
 
+type vegetationInt = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+export interface TerrainAtPoint {
+    point: Point
+    straightBelow: vegetationInt
+    belowToTheRight: vegetationInt
+    height: number
+}
+
 interface MonitoredBorderForPlayer {
     color: string
     points: PointSetFast
+}
+
+interface TileBelow {
+    pointAbove: Point
+    heightDownLeft: number
+    heightDownRight: number
+    heightAbove: number
+    vegetation: vegetationInt
+}
+
+interface TileDownRight {
+    pointUpLeft: Point
+    heightUpLeft: number
+    heightDownRight: number
+    heightRight: number
+    vegetation: vegetationInt
 }
 
 interface Monitor {
@@ -28,6 +54,9 @@ interface Monitor {
     players: Map<PlayerId, PlayerInformation>
     availableConstruction: PointMapFast<AvailableConstruction[]>
     messages: GameMessage[]
+    allTiles: PointMapFast<TerrainAtPoint>
+    discoveredBelowTiles: Set<TileBelow>
+    discoveredDownRightTiles: Set<TileDownRight>
 }
 
 const monitor: Monitor = {
@@ -44,7 +73,10 @@ const monitor: Monitor = {
     signs: new Map<SignId, SignInformation>(),
     players: new Map<PlayerId, PlayerInformation>(),
     availableConstruction: new PointMapFast<AvailableConstruction[]>(),
-    messages: []
+    messages: [],
+    allTiles: new PointMapFast<TerrainAtPoint>(),
+    discoveredBelowTiles: new Set<TileBelow>(),
+    discoveredDownRightTiles: new Set<TileDownRight>()
 }
 
 interface WalkerTargetChange {
@@ -101,8 +133,7 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
             message.newSigns || message.removedSigns ||
             message.newDiscoveredLand ||
             message.changedAvailableConstruction ||
-            message.newMessages ||
-            message.newStones)) {
+            message.newMessages)) {
         return true
     }
 
@@ -193,6 +224,20 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         )
     }
 
+    /* Store the full terrain */
+    const terrain = await getTerrain(gameId)
+
+    const terrainPointList = terrainInformationToTerrainAtPointList(terrain)
+
+    terrainPointList.forEach(
+        (terrainAtPoint) => {
+            monitor.allTiles.set(terrainAtPoint.point, terrainAtPoint)
+        }
+    )
+
+    /* Store the discovered tiles */
+    storeDiscoveredTiles()
+
     /* Remember the game id and player id */
     monitor.gameId = gameId
     monitor.playerId = playerId
@@ -225,10 +270,9 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             console.info(message.data)
         }
 
-        console.info("Message received: " + JSON.stringify(data))
-
         if (!isGameChangesMessage(data)) {
             console.error("Is not game change message!")
+            console.error(JSON.stringify(data))
 
             return
         }
@@ -244,7 +288,9 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         }
 
         if (changesMessage.newBuildings) {
+            printTimestamp("About to add new houses")
             syncNewHouses(changesMessage.newBuildings)
+            printTimestamp("Added new houses")
         }
 
         if (changesMessage.changedBuildings) {
@@ -336,7 +382,6 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             worker.percentageTraveled = worker.percentageTraveled + 10
 
             /* Get the next point and the target point */
-            const target = worker.plannedPath[worker.plannedPath.length - 1]
             const next = worker.plannedPath[0]
 
             /* Clear the planned path for workers that have reached the target */
@@ -365,12 +410,50 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             } else {
                 worker.betweenPoints = true
             }
-
-            //console.info("  - Moved: worker " + worker.id + " at " + " " + worker.x + ", " + worker.y + " progress " + worker.percentageTraveled)
         }
     }, 200)
 
     console.info(websocket)
+}
+
+function storeDiscoveredTiles() {
+    for (const point of monitor.discoveredPoints) {
+        const terrainAtPoint = monitor.allTiles.get(point)
+
+        if (!terrainAtPoint) {
+            continue
+        }
+
+        const terrainAtPointDownLeft = monitor.allTiles.get(getPointDownLeft(point))
+        const terrainAtPointDownRight = monitor.allTiles.get(getPointDownRight(point))
+        const terrainAtPointRight = monitor.allTiles.get(getPointRight(point))
+
+        if (terrainAtPoint.straightBelow !== undefined && terrainAtPoint.straightBelow !== null &&
+            terrainAtPointDownLeft && terrainAtPointDownRight) {
+            monitor.discoveredBelowTiles.add(
+                {
+                    vegetation: terrainAtPoint.straightBelow,
+                    pointAbove: point,
+                    heightAbove: terrainAtPoint.height,
+                    heightDownLeft: terrainAtPointDownLeft.height,
+                    heightDownRight: terrainAtPointDownRight.height
+                }
+            )
+        }
+
+        if (terrainAtPoint.belowToTheRight !== undefined && terrainAtPoint.belowToTheRight !== null &&
+            terrainAtPointDownRight && terrainAtPointRight) {
+            monitor.discoveredDownRightTiles.add(
+                {
+                    vegetation: terrainAtPoint.belowToTheRight,
+                    pointUpLeft: point,
+                    heightUpLeft: terrainAtPoint.height,
+                    heightDownRight: terrainAtPointDownRight.height,
+                    heightRight: terrainAtPointRight.height
+                }
+            )
+        }
+    }
 }
 
 function syncNewMessages(newMessages: GameMessage[]) {
@@ -561,8 +644,6 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
 
         worker.x = walkerTargetChange.x
         worker.y = walkerTargetChange.y
-
-        //console.info("  - Event: worker " + worker.id + " at " + " " + worker.x + ", " + worker.y + " progress " + 0)
     }
 }
 
@@ -609,11 +690,7 @@ function notifyHouseListeners(houses: HouseInformation[]): void {
 
 async function forceUpdateOfHouse(houseId: HouseId): Promise<void> {
     if (monitor.gameId && monitor.playerId) {
-        console.info("Getting updated house")
-
         const house = await getHouseInformation(houseId, monitor.gameId, monitor.playerId)
-
-        console.info("Syncing updated house")
 
         syncChangedHouses([house])
 

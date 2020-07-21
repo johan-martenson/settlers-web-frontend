@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './row.css';
 
 interface RowProps {
-    children: (string | JSX.Element | false | string | undefined)[]
+    children: (JSX.Element | false | undefined)[]
     align?: "left" | "right"
     className?: string
 }

@@ -9,11 +9,6 @@
     margin-bottom: 0.5rem;
 }
 
-.MapInformationCard {
-    width: 100%;
-    max-height: 5rem;
-}
-
 .MapList {
     overflow-y: auto;
     display: flex;

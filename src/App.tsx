@@ -1,31 +1,33 @@
-import React, { Component } from 'react';
-import { callGeologist, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES } from './api';
-import './App.css';
-import { ConstructionInfo } from './construction_info';
-import EnemyHouseInfo from './enemy_house_info';
-import FriendlyFlagInfo from './friendly_flag_info';
-import FriendlyHouseInfo from './friendly_house_info';
-import GameMenu from './game_menu';
-import GameMessagesViewer from './game_messages_viewer';
-import { GameCanvas, TerrainAtPoint } from './game_render';
-import Guide from './guide';
-import MenuButton from './menu_button';
-import { monitor, startMonitoringGame } from './monitor';
-import Statistics from './statistics';
-import TypeControl from './type_control';
-import { isRoadAtPoint, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils';
-import { PointSetFast } from './util_types';
+import React, { Component } from 'react'
+import { callGeologist, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES } from './api'
+import './App.css'
+import { ConstructionInfo } from './construction_info'
+import EnemyHouseInfo from './enemy_house_info'
+import FriendlyFlagInfo from './friendly_flag_info'
+import FriendlyHouseInfo from './friendly_house_info'
+import GameMenu from './game_menu'
+import GameMessagesViewer from './game_messages_viewer'
+import { GameCanvas, TerrainAtPoint } from './game_render'
+import Guide from './guide'
+import MenuButton from './menu_button'
+import { monitor, startMonitoringGame } from './monitor'
+import Statistics from './statistics'
+import TypeControl from './type_control'
+import { isRoadAtPoint, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils'
+import { PointSetFast } from './util_types'
+import { SetTransportPriority } from './transport_priority'
+import { getVariableNames, getLatestValueForVariable, getAverageValueForVariable, getHighestValueForVariable } from './stats'
 
-const MENU_MENU = 0;
-const MENU_FRIENDLY_HOUSE = 1;
-const MENU_FRIENDLY_FLAG = 2;
-const MENU_CONSTRUCTION = 3;
-const MENU_GUIDE = 4;
+const MENU_MENU = 0
+const MENU_FRIENDLY_HOUSE = 1
+const MENU_FRIENDLY_FLAG = 2
+const MENU_CONSTRUCTION = 3
+const MENU_GUIDE = 4
 
-const MAX_SCALE = 80;
-const MIN_SCALE = 20;
+const MAX_SCALE = 80
+const MIN_SCALE = 20
 
-const LONGEST_TICK_LENGTH = 500;
+const LONGEST_TICK_LENGTH = 500
 
 let globalSyncState = {
     mouseDown: false,
@@ -41,7 +43,7 @@ let globalSyncState = {
 };
 
 /* Track ongoing touches to make touch control work */
-const ongoingTouches: Map<any, StoredTouch> = new Map();
+const ongoingTouches: Map<any, StoredTouch> = new Map()
 
 interface StoredTouch {
     identifier: any
@@ -98,6 +100,7 @@ interface AppState {
 
     showTitles: boolean
     showAvailableConstruction: boolean
+    showSetTransportPriority: boolean
 
     serverUnreachable?: string
 }
@@ -107,7 +110,7 @@ class App extends Component<AppProps, AppState> {
     private keyHandlers: Map<number, (() => void)> = new Map();
     private selfNameRef = React.createRef<HTMLDivElement>();
     private typeControlRef = React.createRef<TypeControl>();
-    private commands: Map<string, (() => void)>;
+    private readonly commands: Map<string, (() => void)>;
 
     constructor(props: AppProps) {
         super(props);
@@ -157,7 +160,8 @@ class App extends Component<AppProps, AppState> {
             gameHeight: 0,
             player: props.selfPlayerId,
             menuVisible: false,
-            showTitles: true
+            showTitles: true,
+            showSetTransportPriority: false
         };
 
         /* Set up type control commands */
@@ -187,7 +191,7 @@ class App extends Component<AppProps, AppState> {
         );
 
         this.commands.set("Flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) });
-        this.commands.set("Remove (house or flag)", () => { removeHouseOrFlagAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+        this.commands.set("Remove (house, flag, or road)", () => { removeHouseOrFlagAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Statistics", () => this.setState({ showStatistics: true }))
         this.commands.set("Game information",
             () => {
@@ -196,14 +200,24 @@ class App extends Component<AppProps, AppState> {
             }
         )
         this.commands.set("Titles", () => { this.setState({ showTitles: !this.state.showTitles }) })
-        this.commands.set("Geologist", async () => { callGeologist(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
-        this.commands.set("Scout", async () => { sendScout(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+        this.commands.set("Geologist", async () => { await callGeologist(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+        this.commands.set("Scout", async () => { await sendScout(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Evacuate building", () => { evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+        this.commands.set("Transport priority (set)", () => { this.setState({ showSetTransportPriority: true }) })
+        this.commands.set("List statistics", () => {
+            for (const name of getVariableNames()) {
+                console.log("  " + name)
+                console.log("" + getLatestValueForVariable(name) +
+                ", avg: " + getAverageValueForVariable(name) +
+                ", max: " + getHighestValueForVariable(name) +
+                ", min: " + getLatestValueForVariable(name))
+            }
+
+        }
+        )
     }
 
     toggleDetails(): void {
-        const current = this.state.showTitles || this.state.showAvailableConstruction;
-
         // for now - always show titles for now because the houses don't have their own pictures yet. In the end, titles and construction should both be toggled
 
         this.setState(
@@ -409,7 +423,7 @@ class App extends Component<AppProps, AppState> {
 
     async componentDidMount(): Promise<void> {
 
-        startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
+        await startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
 
         const players = await getPlayers(this.props.gameId)
 
@@ -474,7 +488,7 @@ class App extends Component<AppProps, AppState> {
     }
 
     async onPointClicked(point: Point): Promise<void> {
-        console.info("Point clicked");
+        console.info("Clicked point: " + point.x + ", " + point.y);
 
         /* Ignore clicks if the player is an observer */
         if (this.props.observe) {
@@ -488,8 +502,6 @@ class App extends Component<AppProps, AppState> {
 
         /* A road is being built */
         if (this.state.newRoad && this.state.possibleRoadConnections) {
-            console.log("A road is being built, currently: " + JSON.stringify(this.state.newRoad));
-
             const recent = this.state.newRoad[this.state.newRoad.length - 1];
 
             /* Create the possible new road including the addition */
@@ -516,9 +528,9 @@ class App extends Component<AppProps, AppState> {
                 }
             }
 
-            console.log("New possible road is: " + JSON.stringify(possibleNewRoad));
+            console.log("Ongoing road construction: " + JSON.stringify(possibleNewRoad));
 
-            /* Handle the case when a flag is clicked and create a road to it */
+            /* Handle the case when a flag is clicked and create a road to it. Also select the point of the flag */
             const flag = getFlagAtPoint(point)
 
             if (flag) {
@@ -530,7 +542,8 @@ class App extends Component<AppProps, AppState> {
 
                 this.setState({
                     newRoad: undefined,
-                    possibleRoadConnections: []
+                    possibleRoadConnections: [],
+                    selected: point
                 });
 
                 /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
@@ -566,14 +579,6 @@ class App extends Component<AppProps, AppState> {
 
             /* Select the point */
         } else {
-
-            this.state.terrain.forEach(
-                (terrainInfo) => {
-                    if (terrainInfo.point.x === point.x && terrainInfo.point.y === point.y) {
-                        console.log("Height: " + terrainInfo.height);
-                    }
-                })
-
             console.info("Selecting point: " + point.x + ", " + point.y);
 
             this.setState({
@@ -604,7 +609,8 @@ class App extends Component<AppProps, AppState> {
                 this.setState(
                     {
                         newRoad: undefined,
-                        possibleRoadConnections: undefined
+                        possibleRoadConnections: undefined,
+                        selected: point
                     }
                 );
             }
@@ -620,7 +626,6 @@ class App extends Component<AppProps, AppState> {
 
         /* Handle click on house */
         const house = getHouseAtPoint(point)
-        //const house = this.state.houses.find((house) => house.x === point.x && house.y === point.y);
 
         if (house) {
             console.info("Clicked house " + JSON.stringify(house));
@@ -671,9 +676,13 @@ class App extends Component<AppProps, AppState> {
 
         /* Ask the server for what can be done on the spot */
         const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
-        console.info(pointInformation)
 
-        if (pointInformation.is === "road" && pointInformation.roadId) {
+        /* Create a flag if it is the only possible construction */
+        if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
+            await createFlag(pointInformation, this.props.gameId, this.props.selfPlayerId)
+        }
+
+        else if (pointInformation.is === "road" && pointInformation.roadId) {
             this.setState(
                 {
                     menuVisible: false,
@@ -683,11 +692,8 @@ class App extends Component<AppProps, AppState> {
             )
         }
 
-        // x, y
-        // canBuild: ['small', 'medium', 'large', 'flag', 'mine', 'harbor']
-        // isType: ('flag' | 'building' | 'stone' | 'tree')
-        // (building: {type: ..., } | 
-        if (pointInformation.canBuild && pointInformation.canBuild.length !== 0) {
+        /* Open the window to construct houses/flags/roads */
+        else if (pointInformation.canBuild && pointInformation.canBuild.length !== 0) {
             this.setState(
                 {
                     showConstructionInfo: pointInformation,
@@ -695,13 +701,9 @@ class App extends Component<AppProps, AppState> {
                 }
             );
         }
-
-        return;
     }
 
     onKeyDown(event: React.KeyboardEvent): void {
-        console.info("Key down: " + event.key);
-
         if (event.key === "Escape") {
 
             /* Close the active menu (if there is an active menu) */
@@ -741,7 +743,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     onKeyPress(event: React.KeyboardEvent<HTMLDivElement>): void {
-        console.log("Key pressed: " + event.key);
 
         /* Filter out some input that should not result in type control */
         if (event.key === "+" || event.key === "-") {
@@ -756,14 +757,14 @@ class App extends Component<AppProps, AppState> {
     async startNewRoad(point: Point): Promise<void> {
 
         /* Start the list of points in the new road with the clicked point */
-        console.info("Add segment to road (startNewRoad) " + JSON.stringify(point));
+        console.info("Start new road construction at: " + JSON.stringify({ x: point.x, y: point.y }))
 
         /* Get the possible connections from the server and draw them */
         const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
 
         this.setState(
             {
-                newRoad: [point],
+                newRoad: [{ x: point.x, y: point.y }],
                 possibleRoadConnections: pointInformation.possibleRoadConnections
             }
         );
@@ -988,6 +989,13 @@ class App extends Component<AppProps, AppState> {
                 {this.state.showStatistics &&
                     <Statistics onClose={() => this.setState({ showStatistics: false })}
                         gameId={this.props.gameId}
+                    />
+                }
+
+                {this.state.showSetTransportPriority &&
+                    <SetTransportPriority onClose={() => this.setState({ showSetTransportPriority: false })}
+                        gameId={this.props.gameId}
+                        playerId={this.props.selfPlayerId}
                     />
                 }
 

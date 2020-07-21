@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
-import { disablePromotionsForHouse, enablePromotionsForHouse, HouseResources, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, GameId, HouseInformation, PlayerId, removeHouse, SoldierType, getHouseInformation, isMaterial, upgradeMilitaryBuilding, canBeUpgraded, Material } from './api';
+import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, HouseResources, isEvacuated, isMaterial, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding } from './api';
 import Button from './button';
 import { Dialog, DialogSection } from './dialog';
+import './friendly_house_info.css';
 import HeadquarterInfo from './headquarter_info';
 import houseImageMap from './images';
-import ProgressBar from './progress_bar'
-import './friendly_house_info.css'
-import { listenToHouse, forceUpdateOfHouse } from './monitor';
+import { forceUpdateOfHouse, listenToHouse } from './monitor';
+import ProgressBar from './progress_bar';
 
 interface FriendlyHouseInfoProps {
     house: HouseInformation
@@ -33,24 +33,19 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
         listenToHouse(this.props.house.id, this.onHouseUpdated.bind(this))
 
-        forceUpdateOfHouse(this.props.house.id)
+        await forceUpdateOfHouse(this.props.house.id)
 
         this.periodicUpdates = setInterval(async () => {
-
-            console.info("Forcing update of house")
-
-            forceUpdateOfHouse(this.props.house.id)
-
+            await forceUpdateOfHouse(this.props.house.id)
         }, 1000)
-    };
+    }
 
-    onHouseUpdated(house: HouseInformation) {
-        console.info("Updated house: " + JSON.stringify(house))
-
+    onHouseUpdated(house: HouseInformation): void {
         this.setState({ updatedHouse: house })
     }
 
     componentWillUnmount() {
+
         if (this.periodicUpdates) {
             clearInterval(this.periodicUpdates)
         }
@@ -111,16 +106,14 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                         <div>Under construction</div>
                         <ProgressBar progress={house.constructionProgress} />
 
-                        <div>Needs: </div>
+                        <div>Resources</div>
                         {Object.entries(house.resources).map(
                             ([material, hasAndNeeds], index) => {
                                 const hasAmount = hasAndNeeds.has
-                                const needsAmount = hasAndNeeds.needs
+                                const needsAmount = hasAndNeeds.totalNeeded
 
-                                return <div key={index}>
-                                    {material}
-                                    {hasAmount && "Has: " + hasAmount}
-                                    {needsAmount && "Needs: " + needsAmount}
+                                return <div key={index} className="ResourceNeedItem">
+                                    {material}s: {hasAmount} / {needsAmount}
                                 </div>
                             }
                         )}
@@ -130,7 +123,10 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
                 {houseIsReady(house) && !isMilitaryBuilding(house) &&
                     <>
-                        {house.productivity &&
+
+                        {house.state === "UNOCCUPIED" && <div>Unoccupied</div>}
+
+                        {house.productivity !== undefined && house.productivity !== null &&
                             <>
                                 <div>Productivity: {house.productivity}</div>
                             </>
@@ -186,9 +182,9 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                             }
                         )}</div>
 
-                        {(hasAmountCoin !== 0 || needsAmountCoin !== 0) &&
+                        {needsAmountCoin !== 0 &&
                             <div>Gold:
-                                {Array.from({ length: hasAmountCoin }, () => 1).map(
+                                {Array.from({ length: hasAmountCoin || 0 }, () => 1).map(
                                 (value, index) => <span className="coin" key={index} />)
                                 }
                                 {Array.from({ length: needsAmountCoin }, () => 2).map(

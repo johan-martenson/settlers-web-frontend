@@ -1,13 +1,14 @@
-import React, { Component } from 'react';
-import { GameId, getGameInformation, PlayerId, PlayerInformation } from './api';
-import Button from './button';
-import { Dialog, DialogSection } from './dialog';
-import SelectPlayer from './select_player';
+import React, { Component } from 'react'
+import { GameId, getGameInformation, PlayerId, PlayerInformation } from './api'
+import Button from './button'
+import { Dialog, DialogSection } from './dialog'
+import SelectPlayer from './select_player'
 
 interface MainMenuProps {
     gameId: GameId
     currentPlayerId: PlayerId
     onPlayerSelected: ((player: PlayerInformation) => void)
+    onSetTransportPriority: (() => void)
     onStatistics: (() => void)
     onClose: (() => void)
     onChoose: (() => void)
@@ -33,9 +34,9 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
 
     async componentDidMount() {
 
-        const game = await getGameInformation(this.props.gameId);
+        await getGameInformation(this.props.gameId)
 
-        this.setState({ currentSpeed: 50 }); //game.tickLength});
+        this.setState({ currentSpeed: 50 }) //game.tickLength});
     }
 
     onOptions(): void {
@@ -47,7 +48,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
     }
 
     onPlayerSelected(player: PlayerInformation): void {
-        this.props.onPlayerSelected(player);
+        this.props.onPlayerSelected(player)
     }
 
     render() {
@@ -63,7 +64,8 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
                 </DialogSection>
 
                 <DialogSection label="Game Utils">
-                    <Button label="Statistics" onButtonClicked={this.props.onStatistics}/>
+                    <Button label="Statistics" onButtonClicked={this.props.onStatistics} />
+                    <Button label="Set transport priority" onButtonClicked={this.props.onSetTransportPriority} />
                 </DialogSection>
 
                 <DialogSection>

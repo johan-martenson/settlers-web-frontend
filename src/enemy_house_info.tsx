@@ -21,6 +21,12 @@ interface EnemyHouseInfoState {
 
 class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState> {
 
+    constructor(props: EnemyHouseInfoProps) {
+        super(props)
+
+        this.state = {}
+    }
+
     async componentDidMount() {
         const house = await getHouseInformationWithAttackPossibility(this.props.house.id, this.props.gameId, this.props.house.playerId, this.props.playerId)
 
@@ -34,20 +40,20 @@ class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState>
 
         return (
 
-            <Dialog heading={this.props.house.type} floating>
+            <Dialog heading={this.props.house.type} floating onCloseDialog={this.props.closeDialog}>
 
                 {this.props.house.type}
-                <img src={houseImageMap.get(this.props.house.type)} />
+                <img src={houseImageMap.get(this.props.house.type)} alt="Enemy building" />
 
                 {isMilitaryBuilding(this.props.house) && houseIsOccupied(this.props.house) &&
                     <>
                         {this.state.attackPossible &&
                             < Button label="Attack"
                                 onButtonClicked={
-                                    () => {
+                                    async () => {
 
                                         //FIXME: make it possible to choose the number of attackers
-                                        attackBuilding(this.props.house.id, 10, this.props.gameId, this.props.playerId);
+                                        await attackBuilding(this.props.house, 10, this.props.gameId, this.props.playerId);
 
                                         this.props.closeDialog();
                                     }

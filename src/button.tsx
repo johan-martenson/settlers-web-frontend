@@ -19,10 +19,6 @@ interface ButtonState { }
 class Button extends Component<ButtonProps, ButtonState> {
     private selfButtonRef = React.createRef<HTMLDivElement>();
 
-    constructor(props: ButtonProps) {
-        super(props);
-    }
-
     componentDidMount() {
 
         if (this.props.autoFocus && this.selfButtonRef && this.selfButtonRef.current) {
@@ -45,7 +41,7 @@ class Button extends Component<ButtonProps, ButtonState> {
     render() {
         let className = "Button";
 
-        if (this.props.selected && (this.props.selected === true)) {
+        if (this.props.selected && this.props.selected) {
             className = className + " Selected";
         }
 
@@ -79,7 +75,7 @@ class Button extends Component<ButtonProps, ButtonState> {
                 }
 
                 onKeyDown={
-                    (event: React.KeyboardEvent<Element>) => {
+                    (event: React.KeyboardEvent) => {
                         if (event.keyCode === 13) {
                             this.onClicked();
                             event.stopPropagation();

@@ -4,7 +4,7 @@ interface Point {
 }
 
 function pointToString(point: Point): string {
-    return "" + point.x + "," + point.y;
+    return "" + point.x + "," + point.y
 }
 
 function stringToPoint(pointAsString: string): Point {
@@ -192,7 +192,7 @@ class PointSetFast implements IterableIterator<Point> {
     }
 
     next(value?: any): IteratorResult<Point> {
-        throw new Error("Method not implemented.");
+        throw new Error("Method not implemented.")
     }
 }
 
@@ -223,7 +223,7 @@ class PointSet implements IterableIterator<Point> {
     }
 
     entries(): IterableIterator<Point> {
-        return new PointSetIterator(this.pointAsStringSet.entries());
+        return new PointSetIterator(this.pointAsStringSet.entries())
     }
 
     size(): number {
@@ -235,33 +235,7 @@ class PointSet implements IterableIterator<Point> {
     }
 
     next(value?: any): IteratorResult<Point> {
-        const s = new Set()
-        s
-        throw new Error("Method not implemented.");
-    }
-}
-
-class ArrayTIterator<T> implements IterableIterator<T> {
-
-    private arrayTIterator: IterableIterator<T>;
-
-    constructor(arrayTIterator: IterableIterator<T>) {
-        this.arrayTIterator = arrayTIterator
-    }
-
-    [Symbol
-        .
-        iterator](): IterableIterator<T> {
-        return this
-    }
-
-    next(value?: any): IteratorResult<T> {
-        const result = this.arrayTIterator.next()
-
-        return {
-            done: result.done,
-            value: value
-        }
+        throw new Error("Method not implemented.")
     }
 }
 
@@ -295,15 +269,13 @@ class PointMapIterator implements IterableIterator<Point> {
 }
 
 class PointMapEntryIterator<T> implements IterableIterator<[Point, T]> {
-    private entryIterator: IterableIterator<[string, T]>;
+    private entryIterator: IterableIterator<[string, T]>
 
     constructor(pointAsStringMap: IterableIterator<[string, T]>) {
         this.entryIterator = pointAsStringMap
     }
 
-    [Symbol
-        .
-        iterator](): IterableIterator<[Point, T]> {
+    [Symbol.iterator](): IterableIterator<[Point, T]> {
         return this
     }
 
@@ -318,7 +290,6 @@ class PointMapEntryIterator<T> implements IterableIterator<[Point, T]> {
         }
 
         const [pointString, value] = result.value
-
 
         return {
             done: result.done,
@@ -336,8 +307,6 @@ class PointMapFast<T> implements Map<Point, T> {
 
         if (pointAsStringDict) {
             for (const pointAsString in pointAsStringDict) {
-                const fields = pointAsString.split(",")
-
                 const point = stringToPoint(pointAsString)
 
                 this.numberToPointMap.set(pointToFastKey(point), pointAsStringDict[pointAsString])
@@ -345,7 +314,6 @@ class PointMapFast<T> implements Map<Point, T> {
 
         }
     }
-
 
     clear(): void {
         this.numberToPointMap.clear()
@@ -358,8 +326,7 @@ class PointMapFast<T> implements Map<Point, T> {
     forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: any): void {
         this.numberToPointMap.forEach(
             (value, key, map) => {
-                callbackfn(value, keyToFastPoint(key), this),
-                thisArg
+                callbackfn(value, keyToFastPoint(key), this)
             }
         )
     }
@@ -382,9 +349,7 @@ class PointMapFast<T> implements Map<Point, T> {
         return this.numberToPointMap.size
     }
     
-    [Symbol
-        .
-        iterator](): IterableIterator<[Point, T]> {
+    [Symbol.iterator](): IterableIterator<[Point, T]> {
         return this.entries()
     }
     entries(): IterableIterator<[Point, T]> {
@@ -398,7 +363,7 @@ class PointMapFast<T> implements Map<Point, T> {
         return this.numberToPointMap.values()
     }
 
-    [Symbol.toStringTag]: string;
+    [Symbol.toStringTag]: string
 }
 
 class PointMap<T> implements Map<Point, T> {
@@ -424,8 +389,10 @@ class PointMap<T> implements Map<Point, T> {
     }
 
     forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: any): void {
-        //return this.pointAsStringMap.forEach(callbackfn, thisArg) -- need to do own wrapper function that translates the key
-        throw new Error("Method not implemented.");
+
+        this.pointAsStringMap.forEach(
+            (value, key, map) => callbackfn(value, stringToPoint(key), this)
+        )
     }
 
     [Symbol.iterator](): IterableIterator<[Point, T]> {

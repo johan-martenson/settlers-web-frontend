@@ -69,9 +69,6 @@ class GradientTriangle extends Component<GradientTriangleProps, GradientTriangle
             return;
         }
 
-        const width = this.selfRef.current.width;
-        const height = this.selfRef.current.height;
-
         /* Draw a background rectangle */
         ctx.save();
         ctx.fillStyle = 'green'

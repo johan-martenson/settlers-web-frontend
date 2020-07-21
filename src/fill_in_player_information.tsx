@@ -93,7 +93,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                         }
 
                         onKeyDown={
-                            (e: React.KeyboardEvent<Element>) => {
+                            (e: React.KeyboardEvent) => {
                                 if (e.keyCode === 13) {
 
                                     if (this.state.userNameEntered) {

@@ -91,7 +91,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
         const playerToUpdate = this.state.players[index]
 
-        const updatedPlayer = await updatePlayer(this.props.gameId, playerToUpdate.id, name, this.state.players[index].color)
+        await updatePlayer(this.props.gameId, playerToUpdate.id, name, this.state.players[index].color)
 
         const players = await getPlayers(this.props.gameId)
 
@@ -103,7 +103,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
     async removePlayer(player: PlayerInformation): Promise<void> {
 
-        const removedPlayer = await removePlayerFromGame(this.props.gameId, player.id)
+        await removePlayerFromGame(this.props.gameId, player.id)
 
         const players = await getPlayers(this.props.gameId)
 

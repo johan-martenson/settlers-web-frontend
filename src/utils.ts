@@ -1,4 +1,4 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, TileInformation, RoadId } from './api';
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, TileInformation, RoadId, removeRoad } from './api';
 import { TerrainAtPoint } from './game_render';
 
 const vegetationToInt = new Map<TileInformation, number>();
@@ -499,7 +499,7 @@ async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: Player
     }
 
     if (buildingOnPoint) {
-        removeHouse(buildingOnPoint.id, playerId, gameId);
+        await removeHouse(buildingOnPoint.id, playerId, gameId);
     }
 }
 
@@ -520,14 +520,16 @@ function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boole
     return false
 }
 
-async function removeHouseOrFlagAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
+async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
 
     const pointInformation = await getInformationOnPoint(point, gameId, playerId);
 
     if (pointInformation.is === "building" && pointInformation.buildingId) {
-        removeHouse(pointInformation.buildingId, playerId, gameId);
+        await removeHouse(pointInformation.buildingId, playerId, gameId)
     } else if (pointInformation.is === "flag" && pointInformation.flagId) {
-        removeFlag(pointInformation.flagId, gameId, playerId);
+        await removeFlag(pointInformation.flagId, gameId, playerId)
+    } else if (pointInformation.is === "road" && pointInformation.roadId) {
+        await removeRoad(pointInformation.roadId, gameId, playerId)
     }
 }
 
@@ -536,8 +538,6 @@ function same(point1: Point, point2: Point): boolean {
 }
 
 function drawGradientTriangle(ctx: CanvasRenderingContext2D, color: RgbColorArray, point1: Point, point2: Point, point3: Point, intensity1: number, intensity2: number, intensity3: number) {
-
-    ctx.save();
 
     const minIntensityBelow = Math.min(intensity1, intensity2, intensity3);
     const maxIntensityBelow = Math.max(intensity1, intensity2, intensity3);
@@ -554,14 +554,15 @@ function drawGradientTriangle(ctx: CanvasRenderingContext2D, color: RgbColorArra
         color[2] + 40 * maxIntensityBelow
     ];
 
-    if (almostEquals(minIntensityBelow, maxIntensityBelow)) {
+    if (Math.abs(minIntensityBelow - maxIntensityBelow) < 0.05) {
         ctx.fillStyle = arrayToRgbStyle(minColorBelow);
     } else {
 
         const gradientScreenPoints = getGradientLineForTriangle(point1, intensity1, point2, intensity2, point3, intensity3);
 
         const gradient = ctx.createLinearGradient(
-            gradientScreenPoints[0].x, gradientScreenPoints[0].y, gradientScreenPoints[1].x, gradientScreenPoints[1].y
+            Math.round(gradientScreenPoints[0].x), Math.round(gradientScreenPoints[0].y),
+            Math.round(gradientScreenPoints[1].x), Math.round(gradientScreenPoints[1].y)
         );
 
         gradient.addColorStop(0, arrayToRgbStyle(maxColorBelow));
@@ -579,9 +580,15 @@ function drawGradientTriangle(ctx: CanvasRenderingContext2D, color: RgbColorArra
     ctx.closePath();
 
     ctx.fill();
-
-    ctx.restore();
 }
 
-export { drawGradientTriangle, normalize, same, removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor };
+function getTimestamp(): number {
+    const date = new Date()
+    const timestamp = date.getTime()
+
+    return timestamp
+}
+
+
+export { getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint as removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor };
 

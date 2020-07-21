@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { addHumanPlayerToGame, addComputerPlayerToGame, GameId, GameInformation, getGameInformation, getPlayers, PlayerId } from './api';
+import { addHumanPlayerToGame, GameId, GameInformation, getGameInformation, getPlayers, PlayerId } from './api';
 import App from './App';
 import Button from './button';
 import { Dialog } from './dialog';

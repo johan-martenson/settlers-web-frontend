@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import GradientTriangle from './gradient_triangle';
-import RotatingTriangle from './rotating_triangle';
 
 interface GradientTriangleDemoProps { }
 interface GradientTriangleDemoState { }

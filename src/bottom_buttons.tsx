@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './dialog.css';
 
 interface BottomButtonsProps {
-    children: (string | JSX.Element | false | string | undefined)[]
+    children: (JSX.Element | false | string | undefined)[]
 }
 interface BottomButtonsState { }
 

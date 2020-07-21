@@ -10,11 +10,9 @@ export type RoadId = string
 export type WorkerId = string
 export type SignId = string
 
-export type PointString = string
-
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
-export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin"
+export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker"
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
 
@@ -124,7 +122,10 @@ export function isMaterial(material: string): material is Material {
         material === "meat" ||
         material === "farmer" ||
         material === "courier" ||
-        material === "wood") {
+        material === "wood" ||
+        material === "metalworker" ||
+        material === "wheat" ||
+        material === "flour") {
         return true
     }
 
@@ -231,15 +232,21 @@ export interface AnimalInformation extends Point {
     percentageTraveled: number
 }
 
-export type SoldierType = "PRIVATE_RANK"
+export type SoldierType = "PRIVATE_RANK" | "PRIVATE_FIRST_CLASS_RANK" | "SERGEANT" | "OFFICER" | "GENERAL"
 
 function getSoldierDisplayName(soldierType: SoldierType): string {
 
     if (soldierType === "PRIVATE_RANK") {
         return "Private"
+    } else if (soldierType === "PRIVATE_FIRST_CLASS_RANK") {
+        return "Private first class"
+    } else if (soldierType === "SERGEANT") {
+        return "Sergeant"
+    } else if (soldierType === "OFFICER") {
+        return "Officer"
+    } else {
+        return "General"
     }
-
-    return "Unknown"
 }
 
 export interface HouseResources {
@@ -257,6 +264,7 @@ export interface HouseResources {
     bread?: HouseResourceItem
     fish?: HouseResourceItem
     meat?: HouseResourceItem
+    metalworker?: HouseResourceItem
 }
 
 interface HouseResourceItem {
@@ -345,6 +353,8 @@ export interface LandStatistics {
     landStatistics: LandDataPoint[]
 }
 
+export type TransportPriorityInformation = Material[]
+
 /*
 * [
 *     {'type': 'MILITARY_BUILDING_OCCUPIED',
@@ -389,7 +399,7 @@ function isMilitaryBuildingReadyMessage(message: GameMessage): message is Milita
     return message.type === "MILITARY_BUILDING_READY"
 }
 
-function isNoMoreResourcesMessage(message: GameMessage): message is NoMoureResourcesMessage {
+function isNoMoreResourcesMessage(message: GameMessage): message is NoMoreResourcesMessage {
     return message.type === "NO_MORE_RESOURCES"
 }
 
@@ -429,7 +439,7 @@ export interface MilitaryBuildingReadyMessage extends GameMessage {
     houseId: HouseId
 }
 
-export interface NoMoureResourcesMessage extends GameMessage {
+export interface NoMoreResourcesMessage extends GameMessage {
     houseId: HouseId
 }
 
@@ -456,6 +466,13 @@ export interface GeologistFindMessage extends GameMessage {
 
 export interface StoreHouseIsReadyMessage extends GameMessage {
     houseId: HouseId
+}
+
+function printTimestamp(message: string) {
+    const date = new Date()
+    const timestamp = date.getTime()
+
+    console.log(message + ": " + timestamp)
 }
 
 async function getLandStatistics(gameId: GameId): Promise<LandStatistics> {
@@ -648,19 +665,41 @@ async function startGame(gameId: GameId): Promise<GameInformation> {
     return await response.json();
 }
 
-async function attackBuilding(houseId: HouseId, numberOfAttackers: number, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
-    const response = await fetch("/settlers/api/games/" + gameId + "/houses/" + houseId,
+async function attackBuilding(houseInformation: HouseInformation, numberOfAttackers: number, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
+    console.log("Attacking")
+
+    console.log("Request: " + "/settlers/api/games/" + gameId + "/players/" + houseInformation.playerId + "/houses/" + houseInformation.id)
+    console.log("Options: " + JSON.stringify({
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            attacked:
+            {
+                attackingPlayerId: playerId,
+                attackers: numberOfAttackers
+            }
+        }
+        )
+    }))
+
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + houseInformation.playerId + "/houses/" + houseInformation.id,
         {
-            method: 'put',
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
                 attacked:
                 {
-                    by: playerId,
+                    attackingPlayerId: playerId,
                     attackers: numberOfAttackers
                 }
             }
             )
         });
+
     return await response.json();
 }
 
@@ -717,7 +756,8 @@ async function removeRoad(roadId: RoadId, gameId: GameId, playerId: PlayerId): P
 
 async function createBuilding(houseType: AnyBuilding, point: Point, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
 
-    console.info("Creating house " + JSON.stringify(houseType) + " at " + JSON.stringify(point));
+    console.info("Creating house " + JSON.stringify(houseType) + " at " + JSON.stringify(point))
+    printTimestamp("About to send create house call to server")
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses",
         {
@@ -726,8 +766,13 @@ async function createBuilding(houseType: AnyBuilding, point: Point, gameId: Game
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ type: houseType, x: point.x, y: point.y, playerId: playerId })
-        });
-    return await response.json();
+        })
+
+    const houseInformation = await response.json();
+
+    printTimestamp("Call sent to server")
+
+    return houseInformation
 }
 
 async function createRoad(points: Point[], gameId: GameId, playerId: PlayerId): Promise<RoadInformation> {
@@ -747,7 +792,7 @@ async function createRoad(points: Point[], gameId: GameId, playerId: PlayerId): 
 
 async function createFlag(point: Point, gameId: GameId, playerId: PlayerId): Promise<FlagInformation> {
 
-    console.info("Creating flag at " + JSON.stringify(point));
+    console.info("Creating flag at " + JSON.stringify({ x: point.x, y: point.y }))
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/flags",
         {
@@ -756,8 +801,33 @@ async function createFlag(point: Point, gameId: GameId, playerId: PlayerId): Pro
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ x: point.x, y: point.y })
-        });
-    return await response.json();
+        })
+    return await response.json()
+}
+
+async function getTransportPriorityForPlayer(gameId: GameId, playerId: PlayerId): Promise<TransportPriorityInformation> {
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/transportPriority")
+
+    return await response.json()
+}
+
+async function setTransportPriorityForMaterial(gameId: GameId, playerId: PlayerId, material: Material, priority: number): Promise<void> {
+    console.log("Setting new priority for: " + material + " to " + priority)
+
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/transportPriority",
+        {
+            method: "PATCH",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(
+                {
+                    material: material,
+                    priority: priority
+                }
+            )
+        }
+    )
 }
 
 async function getViewForPlayer(gameId: GameId, playerId: PlayerId): Promise<PlayerViewInformation> {
@@ -766,7 +836,7 @@ async function getViewForPlayer(gameId: GameId, playerId: PlayerId): Promise<Pla
       border: [{ color: '#333333', playerId: 2, points: [x: 2, y: 3, ...]}, ...]
       signs: [{type: 'gold', x: 3, y: 5, amount: 'small'}]
       animals: [{x: 4, y: 6}, ...]
-      houses: [{x: 5, y: 3, type: foresterhut, playerId: 3, houseId: 19, state: "unfinished"}]
+      houses: [{x: 5, y: 3, type: foresterHut, playerId: 3, houseId: 19, state: "unfinished"}]
       availableConstruction: {"3,5": ["flag", "small"], "7, 9": ["flag", "mine"]}
      */
 
@@ -985,8 +1055,6 @@ async function disablePromotionsForHouse(gameId: GameId, playerId: PlayerId, hou
     return await response.json()
 }
 
-
-
 async function upgradeMilitaryBuilding(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
     const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses",
         {
@@ -1034,7 +1102,7 @@ function houseIsReady(house: HouseInformation): boolean {
 }
 
 function houseIsOccupied(house: HouseInformation): boolean {
-    return house.state == "OCCUPIED"
+    return house.state === "OCCUPIED"
 }
 
 const materialToColor = new Map<Material, string>();
@@ -1097,5 +1165,5 @@ function getHouseAtPoint(point: Point) {
     return undefined
 }
 
-export { canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame }
+export { printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame }
 

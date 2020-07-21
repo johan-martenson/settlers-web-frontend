@@ -1,7 +1,6 @@
 import * as d3 from 'd3';
 import React, { Component } from 'react';
-import { LandDataPoint, GameId, GameStatistics, getGameStatistics, getLandStatistics, LandStatistics, Measurement } from './api';
-import Button from "./button";
+import { GameId, GameStatistics, getGameStatistics, getLandStatistics, LandDataPoint, LandStatistics, Measurement } from './api';
 import { Dialog } from './dialog';
 import SelectableButtonRow from './selectable_button_row';
 import "./statistics.css";
@@ -160,7 +159,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         const materialChoices = new Map<string, string>()
         if (this.state.productionStatistics) {
-            this.state.productionStatistics.materialStatistics.map(
+            this.state.productionStatistics.materialStatistics.forEach(
                 (materialStatistics, index) => {
                     materialChoices.set("" + index, materialStatistics.material)
                 }

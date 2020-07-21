@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { Material, GameId, getHouseInformation, HouseInformation, PlayerId, isMaterial } from './api';
 import './headquarter_info.css'
+import Button from './button'
+import { forceUpdateOfHouse, listenToHouse } from './monitor';
 
 interface HeadquarterInfoProps {
     house: HouseInformation
@@ -10,10 +12,8 @@ interface HeadquarterInfoProps {
 }
 
 interface HeadquarterInfoState {
-    inventory: Map<string, number>
     page: number
     itemsPerPage: number
-    house: HouseInformation
 }
 
 class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoState> {
@@ -24,33 +24,12 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
         super(props);
 
         this.state = {
-            inventory: new Map(),
             page: 0,
-            itemsPerPage: this.props.itemsPerPage ? this.props.itemsPerPage : 10,
-            house: props.house
+            itemsPerPage: this.props.itemsPerPage ? this.props.itemsPerPage : 10
         };
     }
 
-    async componentDidMount() {
-
-        console.info("House information is " + JSON.stringify(this.state.house));
-
-        this.updateInventory(this.state.house)
-
-        this.periodicUpdates = setInterval(async () => {
-            const house = await getHouseInformation(this.props.house.id, this.props.playerId, this.props.gameId);
-            console.info("UPDATING HOUSE")
-            this.updateInventory(house)
-        }, 1000)
-    };
-
-    componentWillUnmount() {
-        if (this.periodicUpdates) {
-            clearInterval(this.periodicUpdates)
-        }
-    }
-
-    updateInventory(house: HouseInformation): void {
+    calculateInventory(house: HouseInformation): Map<Material, number> {
         const inventory: Map<Material, number> = new Map()
 
         Object.entries(house.resources).forEach(
@@ -69,31 +48,31 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
             }
         )
 
-        this.setState({
-            inventory: inventory
-        });
-
-
+        return inventory
     }
 
     render() {
 
-        if (this.state.inventory) {
-            this.state.inventory.keys()
-        }
-
+        const inventory = this.calculateInventory(this.props.house)
         const inventoryItems = []
 
         let index = 0
-        for (const [material, amount] of this.state.inventory) {
+        for (const [material, amount] of inventory) {
 
             index = index + 1
+
+            if (index < this.state.page * this.state.itemsPerPage) {
+                continue
+            }
+
+            if (index > (this.state.page + 1) * this.state.itemsPerPage) {
+                continue
+            }
 
             inventoryItems.push(
                 <div className="InventoryLabelValuePair" key={index} >
                     <div className="InventoryLabel">{material.replace(/_/g, ' ')}</div>
                     <div className="InventoryValue">{amount}</div>
-                    plupp
                 </div>
             )
         }
@@ -105,34 +84,28 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
                 </div>
 
                 {this.state.page > 0 &&
-                    <div className="Previous Button" onClick={
+                    <Button label="Previous" onButtonClicked={
                         () => {
-                            if (this.state.page > 0) {
-                                this.setState({
-                                    page: this.state.page - 1
-                                });
-                            }
+                            this.setState({
+                                page: this.state.page - 1
+                            });
                         }
                     }
-                    >Prev</div>
+                    />
                 }
 
-                {(this.state.page + 1) * this.state.itemsPerPage < Object.keys(this.state.inventory).length &&
-                    <div className="Next Button" onClick={
+                {(this.state.page + 1) * this.state.itemsPerPage < inventory.size &&
+                    <Button label="Next" onButtonClicked={
                         () => {
-                            if ((this.state.page + 1) * this.state.itemsPerPage <
-                                Object.keys(this.state.inventory).length) {
-                                this.setState({
-                                    page: this.state.page + 1
-                                });
-                            }
+                            this.setState({
+                                page: this.state.page + 1
+                            })
                         }
                     }
-                    >
-                        Next
-                    </div>}
+                    />
+                }
             </div>
-        );
+        )
     }
 }
 

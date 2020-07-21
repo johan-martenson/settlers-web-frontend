@@ -14,7 +14,7 @@ const HELP_PAGES: PageType[] = [
         page: 'construction',
         title: 'Getting started with construction',
         pictures: ['ForesterHut', 'Woodcutter', 'Sawmill'],
-        description: ["To build houses for your city, you need plancks and stones. Stones are collected by a quarry. A sawmill produces plancks from wood. To get started collecting plancks and stones, build a woodcutter hut, a quarry, and a sawmill", "Be careful to not run out of wood! Build a forester hut to get a forester to plant new trees."],
+        description: ["To build houses for your city, you need planks and stones. Stones are collected by a quarry. A sawmill produces planks from wood. To get started collecting plancks and stones, build a woodcutter hut, a quarry, and a sawmill", "Be careful to not run out of wood! Build a forester hut to get a forester to plant new trees."],
     },
 
     {

@@ -29,10 +29,6 @@ div {
     text-transform: capitalize;
 }
 
-.InputTextFieldContainer {
-    text-align: center;
-}
-
 .App {
     background-color: black;
     user-select: none;
@@ -64,7 +60,7 @@ h1 {
 }
 
 .Disabled:hover {
-    background-color: (--button-color) !important;
+    background-color: var(--button-color) !important;
 }
 
 .Previous {
@@ -97,7 +93,7 @@ h1 {
     width: 3rem;
     height: 0.2rem;
     background-color: var(--button-color);
-    margin: 0.4rem 0rem;
+    margin: 0.4rem 0;
 }
 
 .MenuSectionLabel {
@@ -121,37 +117,12 @@ h1 {
     color: whitesmoke;
 }
 
-.GameCanvas {
-    width: 100%;
-    height: 100%;
-}
-
 .MediumIcon {
     width: 100px;
 }
 
 .SmallIcon {
     width: 50px;
-}
-
-.RoadIcon {
-    width: 200px;
-}
-
-.TransientErrorMessage {
-    padding-top: 1em;
-    padding-bottom: 1em;
-    padding-left: 2em;
-    padding-right: 2em;
-    border-top: thick solid var(--high-light-error);
-    margin: 0 auto;
-    position: absolute;
-    width: 30%;
-    bottom: 0%;
-    left: 0;
-    margin-left: -10%;
-    background-color: var(--dialog-background-color);
-    z-index: 500;
 }
 
 .ConstructionItem {
@@ -219,52 +190,4 @@ h1 {
 
 .App {
     text-align: center;
-}
-
-.Guide {
-    padding: 2rem;
-}
-
-.Page {
-    padding: 2rem;
-}
-
-.PageIllustrations {
-    margin: 1rem;
-    text-align: center;
-}
-
-.PageIllustration {
-    float: none;
-    display: inline;
-}
-
-.GuidePrevious {
-    display: inline-block;
-    margin-right: 0.5rem;
-    margin-top: 0;
-    margin-bottom: 0;
-    left: 0;
-}
-
-.GuideNext {
-    display: inline-block;
-    margin-left: 0.5rem;
-    margin-top: 0;
-    margin-bottom: 0;
-    right: 0;
-}
-
-.PageTitle {
-    text-transform: capitalize;
-    font-variant: small-caps;
-}
-
-.PageParagraph {
-    text-align: left;
-}
-
-.PageParagraph::first-letter {
-/*    //    text-transform: uppercase bold;*/
-    font-weight: bold;
 }

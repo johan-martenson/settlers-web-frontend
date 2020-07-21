@@ -1,0 +1,48 @@
+
+.Guide {
+    padding: 2rem;
+}
+
+.Page {
+    padding: 2rem;
+}
+
+.PageIllustrations {
+    margin: 1rem;
+    text-align: center;
+}
+
+.PageIllustration {
+    float: none;
+    display: inline;
+}
+
+.GuidePrevious {
+    display: inline-block;
+    margin-right: 0.5rem;
+    margin-top: 0;
+    margin-bottom: 0;
+    left: 0;
+}
+
+.GuideNext {
+    display: inline-block;
+    margin-left: 0.5rem;
+    margin-top: 0;
+    margin-bottom: 0;
+    right: 0;
+}
+
+.PageTitle {
+    text-transform: capitalize;
+    font-variant: small-caps;
+}
+
+.PageParagraph {
+    text-align: left;
+}
+
+.PageParagraph::first-line {
+    /*    //    text-transform: uppercase bold;*/
+    font-weight: bold;
+}

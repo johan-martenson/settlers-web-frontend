@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import { Material, GameId, HouseInformation, PlayerId, isMaterial } from './api';
+import React, { Component } from 'react'
+import { Material, GameId, HouseInformation, PlayerId, isMaterial } from './api'
 import './headquarter_info.css'
 import Button from './button'
 
@@ -20,12 +20,12 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
 
 
     constructor(props: HeadquarterInfoProps) {
-        super(props);
+        super(props)
 
         this.state = {
             page: 0,
             itemsPerPage: this.props.itemsPerPage ? this.props.itemsPerPage : 10
-        };
+        }
     }
 
     calculateInventory(house: HouseInformation): Map<Material, number> {
@@ -87,7 +87,7 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
                         () => {
                             this.setState({
                                 page: this.state.page - 1
-                            });
+                            })
                         }
                     }
                     />
@@ -108,4 +108,4 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
     }
 }
 
-export default HeadquarterInfo;
+export default HeadquarterInfo

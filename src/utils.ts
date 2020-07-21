@@ -1,52 +1,52 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, TileInformation, RoadId, removeRoad } from './api';
-import { TerrainAtPoint } from './game_render';
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, TileInformation, RoadId, removeRoad } from './api'
+import { TerrainAtPoint } from './game_render'
 
-const vegetationToInt = new Map<TileInformation, number>();
+const vegetationToInt = new Map<TileInformation, number>()
 
-vegetationToInt.set("G", 0);   // Grass
-vegetationToInt.set("M", 1);   // Mountain
-vegetationToInt.set("SW", 2);  // Swamp
-vegetationToInt.set("W", 3);   // Water
-vegetationToInt.set("DW", 4);  // Deep water
-vegetationToInt.set("SN", 5);  // Snow
-vegetationToInt.set("L", 6);   // Lava
-vegetationToInt.set("MM", 7);  // Mountain meadow
-vegetationToInt.set("ST", 8);  // Steppe
-vegetationToInt.set("DE", 9);  // Desert
-vegetationToInt.set("SA", 10); // Savannah
+vegetationToInt.set("G", 0)   // Grass
+vegetationToInt.set("M", 1)   // Mountain
+vegetationToInt.set("SW", 2)  // Swamp
+vegetationToInt.set("W", 3)   // Water
+vegetationToInt.set("DW", 4)  // Deep water
+vegetationToInt.set("SN", 5)  // Snow
+vegetationToInt.set("L", 6)   // Lava
+vegetationToInt.set("MM", 7)  // Mountain meadow
+vegetationToInt.set("ST", 8)  // Steppe
+vegetationToInt.set("DE", 9)  // Desert
+vegetationToInt.set("SA", 10) // Savannah
 
-export type RgbColorArray = [number, number, number];
+export type RgbColorArray = [number, number, number]
 
-const intToVegetationColor = new Map<number, RgbColorArray>();
+const intToVegetationColor = new Map<number, RgbColorArray>()
 
-intToVegetationColor.set(0, [0, 120, 0]);
-intToVegetationColor.set(1, [140, 140, 140]);
-intToVegetationColor.set(2, [140, 140, 20]);
-intToVegetationColor.set(3, [0, 0, 205]);
-intToVegetationColor.set(4, [0, 0, 205]);
-intToVegetationColor.set(5, [220, 220, 220]);
-intToVegetationColor.set(6, [220, 0, 0]);
-intToVegetationColor.set(7, [140, 140, 140]);
-intToVegetationColor.set(8, [230, 110, 0]);
-intToVegetationColor.set(9, [230, 200, 0]);
-intToVegetationColor.set(10, [100, 70, 70]);
+intToVegetationColor.set(0, [0, 120, 0])
+intToVegetationColor.set(1, [140, 140, 140])
+intToVegetationColor.set(2, [140, 140, 20])
+intToVegetationColor.set(3, [0, 0, 205])
+intToVegetationColor.set(4, [0, 0, 205])
+intToVegetationColor.set(5, [220, 220, 220])
+intToVegetationColor.set(6, [220, 0, 0])
+intToVegetationColor.set(7, [140, 140, 140])
+intToVegetationColor.set(8, [230, 110, 0])
+intToVegetationColor.set(9, [230, 200, 0])
+intToVegetationColor.set(10, [100, 70, 70])
 
-const MINIMAL_DIFFERENCE = 0.0000001;
+const MINIMAL_DIFFERENCE = 0.0000001
 
 // FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {
-    return camelCaseStr;
+    return camelCaseStr
 }
 
 function isContext2D(context: RenderingContext): context is CanvasRenderingContext2D {
-    return true;
+    return true
 }
 
 function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInformation): Array<TerrainAtPoint> {
-    let start = 1;
-    let count = 0;
+    let start = 1
+    let count = 0
 
-    const terrain = new Array(((terrainInformation.width * terrainInformation.height) / 2) + 1);
+    const terrain = new Array(((terrainInformation.width * terrainInformation.height) / 2) + 1)
 
     for (let y = 1; y < terrainInformation.height; y++) {
         for (let x = start; x + 1 < terrainInformation.width; x += 2) {
@@ -54,27 +54,27 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
             const point: Point = {
                 x: Number(x),
                 y: Number(y)
-            };
+            }
 
             const tile = {
                 point: point,
                 straightBelow: vegetationToInt.get(terrainInformation.straightBelow[count]),
                 belowToTheRight: vegetationToInt.get(terrainInformation.belowToTheRight[count]),
                 height: terrainInformation.heights[count]
-            };
+            }
 
-            terrain[count] = tile;
-            count++;
+            terrain[count] = tile
+            count++
         }
 
         if (start === 1) {
-            start = 2;
+            start = 2
         } else {
-            start = 1;
+            start = 1
         }
     }
 
-    return terrain;
+    return terrain
 }
 
 export interface Point3D {
@@ -96,7 +96,7 @@ function vectorFromPoints(p1: Point3D, p2: Point3D): Vector {
         x: p1.x - p2.x,
         y: p1.y - p2.y,
         z: p1.z - p2.z
-    };
+    }
 }
 
 function crossProduct(vector1: Vector, vector2: Vector): Vector {
@@ -108,11 +108,11 @@ function crossProduct(vector1: Vector, vector2: Vector): Vector {
 }
 
 function lengthOfVector(vector: Vector): number {
-    return Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+    return Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z)
 }
 
 function normalize(vector: Vector): NormalizedVector {
-    const length = lengthOfVector(vector);
+    const length = lengthOfVector(vector)
 
     return {
         x: vector.x / length,
@@ -123,18 +123,18 @@ function normalize(vector: Vector): NormalizedVector {
 
 function getNormalForTriangle(p1: Point3D, p2: Point3D, p3: Point3D): NormalizedVector {
 
-    const vector1 = vectorFromPoints(p1, p2);
-    const vector2 = vectorFromPoints(p1, p3);
+    const vector1 = vectorFromPoints(p1, p2)
+    const vector2 = vectorFromPoints(p1, p3)
 
-    const normal = crossProduct(vector1, vector2);
+    const normal = crossProduct(vector1, vector2)
 
-    const normalized = normalize(normal);
+    const normalized = normalize(normal)
 
-    return normalized;
+    return normalized
 }
 
 function getDotProduct(v1: Vector, v2: Vector): number {
-    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
 
 export interface Line {
@@ -143,8 +143,8 @@ export interface Line {
 }
 
 function getLineBetweenPoints(p1: Point, p2: Point): Line {
-    const k = (p1.y - p2.y) / (p1.x - p2.x);
-    const m = p1.y - (k * p1.x);
+    const k = (p1.y - p2.y) / (p1.x - p2.x)
+    const m = p1.y - (k * p1.x)
 
     return {
         k: k,
@@ -153,8 +153,8 @@ function getLineBetweenPoints(p1: Point, p2: Point): Line {
 }
 
 function getOrthogonalLine(line: Line, point: Point): Line {
-    const k = -1 / line.k;
-    const m = point.y - k * point.x;
+    const k = -1 / line.k
+    const m = point.y - k * point.x
 
     return {
         k: k,
@@ -163,8 +163,8 @@ function getOrthogonalLine(line: Line, point: Point): Line {
 }
 
 function getIntersection(line1: Line, line2: Line): Point {
-    const x = (line2.m - line1.m) / (line1.k - line2.k);
-    const y = line1.k * x + line1.m;
+    const x = (line2.m - line1.m) / (line1.k - line2.k)
+    const y = line1.k * x + line1.m
 
     return {
         x: x,
@@ -173,8 +173,8 @@ function getIntersection(line1: Line, line2: Line): Point {
 }
 
 function almostEquals(a: number, b: number): boolean {
-    const difference = a - b;
-    return difference < MINIMAL_DIFFERENCE && difference > -MINIMAL_DIFFERENCE;
+    const difference = a - b
+    return difference < MINIMAL_DIFFERENCE && difference > -MINIMAL_DIFFERENCE
 }
 
 /**
@@ -216,43 +216,43 @@ function almostEquals(a: number, b: number): boolean {
  */
 function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, intensity2: number, p3: Point, intensity3: number): Point[] {
 
-    const intensityMax = Math.max(intensity1, intensity2, intensity3);
-    const intensityMin = Math.min(intensity1, intensity2, intensity3);
-    const intensityFullRange = intensityMax - intensityMin;
+    const intensityMax = Math.max(intensity1, intensity2, intensity3)
+    const intensityMin = Math.min(intensity1, intensity2, intensity3)
+    const intensityFullRange = intensityMax - intensityMin
 
-    let partialIntensity;
+    let partialIntensity
 
-    let pointHigh: Point;
-    let pointLow: Point;
-    let pointInBetween: Point;
+    let pointHigh: Point
+    let pointLow: Point
+    let pointInBetween: Point
 
     /* Find the highest point */
     if (intensity1 === intensityMax) {
-        pointHigh = p1;
+        pointHigh = p1
     } else if (intensity2 === intensityMax) {
-        pointHigh = p2;
+        pointHigh = p2
     } else {
-        pointHigh = p3;
+        pointHigh = p3
     }
 
     /* Find the lowest point */
     if (intensity1 === intensityMin) {
-        pointLow = p1;
+        pointLow = p1
     } else if (intensity2 === intensityMin) {
-        pointLow = p2;
+        pointLow = p2
     } else {
-        pointLow = p3;
+        pointLow = p3
     }
 
     /* Find the mid point */
     if (p1 !== pointHigh && p1 !== pointLow) {
-        pointInBetween = p1;
-        partialIntensity = intensity1;
+        pointInBetween = p1
+        partialIntensity = intensity1
     } else if (p2 !== pointHigh && p2 !== pointLow) {
-        pointInBetween = p2;
+        pointInBetween = p2
         partialIntensity = intensity2
     } else {
-        pointInBetween = p3;
+        pointInBetween = p3
         partialIntensity = intensity3
     }
 
@@ -296,9 +296,9 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
                     y: pointLow.y
                 },
                 pointLow
-            ];
+            ]
 
-            return result;
+            return result
         }
 
         /* Handle the special case where pointHigh and pointMedium are on the same horizontal line */
@@ -310,31 +310,31 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
                     y: pointHigh.y
                 },
                 pointLow
-            ];
+            ]
 
-            return result;
+            return result
         }
 
         /* Get the line that goes through the maximum and in-between points */
-        const lineMaximum = getLineBetweenPoints(pointHigh, pointInBetween);
+        const lineMaximum = getLineBetweenPoints(pointHigh, pointInBetween)
 
         /* Get the line that is orthogonal to the maximum line and crosses the minimum point */
-        const lineOrthogonal = getOrthogonalLine(lineMaximum, pointLow);
+        const lineOrthogonal = getOrthogonalLine(lineMaximum, pointLow)
 
         /* Find intersection between the maximum line and its orthogonal line that crosses through the minimum point */
-        const pointIntersect = getIntersection(lineMaximum, lineOrthogonal);
+        const pointIntersect = getIntersection(lineMaximum, lineOrthogonal)
 
-        const result = [pointIntersect, pointLow];
+        const result = [pointIntersect, pointLow]
 
-        return result;
+        return result
     } else {
 
         /* Handle the cases where the maximum and in-between intensities are not equal */
-        const intensityPartialRange = intensityMax - partialIntensity;
+        const intensityPartialRange = intensityMax - partialIntensity
 
         /* Get the point where a line that cuts through the in-between point reaches the minimum intensity */
-        const dx = pointInBetween.x - pointHigh.x;
-        const dy = pointInBetween.y - pointHigh.y;
+        const dx = pointInBetween.x - pointHigh.x
+        const dy = pointInBetween.y - pointHigh.y
 
         const pointSecondMinimum = {
             x: (intensityFullRange * dx) / intensityPartialRange + pointHigh.x,
@@ -349,9 +349,9 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
                     x: pointHigh.x,
                     y: pointInBetween.y
                 }
-            ];
+            ]
 
-            return result;
+            return result
         }
 
         /* Handle the case where the line is parallel with the y axis */
@@ -366,17 +366,17 @@ function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, in
         }
 
         /* Get the line that cuts through p4 and the minimum point */
-        const lineMinimum = getLineBetweenPoints(pointSecondMinimum, pointLow);
+        const lineMinimum = getLineBetweenPoints(pointSecondMinimum, pointLow)
 
         /* Get the line that is orthogonal to the minimum line and cuts through the maximum point */
-        const lineOrthogonal = getOrthogonalLine(lineMinimum, pointHigh);
+        const lineOrthogonal = getOrthogonalLine(lineMinimum, pointHigh)
 
         /* Get point where the minimum line and its orthogonal line through the maximum point intersect */
-        const pointIntersect = getIntersection(lineMinimum, lineOrthogonal);
+        const pointIntersect = getIntersection(lineMinimum, lineOrthogonal)
 
-        const result = [pointHigh, pointIntersect];
+        const result = [pointHigh, pointIntersect]
 
-        return result;
+        return result
     }
 }
 
@@ -386,7 +386,7 @@ function sumVectors(v1: Vector | undefined, v2: Vector | undefined): Vector {
     let vector2: Vector
 
     if (v1) {
-        vector1 = v1;
+        vector1 = v1
     } else {
         vector1 = {
             x: 0,
@@ -456,7 +456,7 @@ function getPointLeft(point: Point): Point {
 
 function getBrightnessForNormals(normals: (Vector | undefined)[], lightVector: Vector): number {
 
-    let vectors: Vector[] = [];
+    let vectors: Vector[] = []
 
     for (let normal of normals) {
         if (normal) {
@@ -464,15 +464,15 @@ function getBrightnessForNormals(normals: (Vector | undefined)[], lightVector: V
         }
     }
 
-    const combinedVector = vectors.reduce(sumVectors);
+    const combinedVector = vectors.reduce(sumVectors)
 
-    const normalized = normalize(combinedVector);
+    const normalized = normalize(combinedVector)
 
-    return -getDotProduct(normalized, lightVector);
+    return -getDotProduct(normalized, lightVector)
 }
 
 function arrayToRgbStyle(rgb: number[]): string {
-    return 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')';
+    return 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')'
 }
 
 function getPointAtLineGivenX(line: Line, x: number): Point {
@@ -485,21 +485,21 @@ function getPointAtLineGivenX(line: Line, x: number): Point {
 async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
 
     /* Get the player's houses */
-    const buildings = await getHousesForPlayer(playerId, gameId);
+    const buildings = await getHousesForPlayer(playerId, gameId)
 
     /* Find the one on the point */
-    let buildingOnPoint;
+    let buildingOnPoint
 
     for (const building of buildings) {
         if (building.x === point.x && building.y === point.y) {
-            buildingOnPoint = building;
+            buildingOnPoint = building
 
-            break;
+            break
         }
     }
 
     if (buildingOnPoint) {
-        await removeHouse(buildingOnPoint.id, playerId, gameId);
+        await removeHouse(buildingOnPoint.id, playerId, gameId)
     }
 }
 
@@ -522,7 +522,7 @@ function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boole
 
 async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
 
-    const pointInformation = await getInformationOnPoint(point, gameId, playerId);
+    const pointInformation = await getInformationOnPoint(point, gameId, playerId)
 
     if (pointInformation.is === "building" && pointInformation.buildingId) {
         await removeHouse(pointInformation.buildingId, playerId, gameId)
@@ -534,52 +534,52 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, play
 }
 
 function same(point1: Point, point2: Point): boolean {
-    return point1.x === point2.x && point1.y === point2.y;
+    return point1.x === point2.x && point1.y === point2.y
 }
 
 function drawGradientTriangle(ctx: CanvasRenderingContext2D, color: RgbColorArray, point1: Point, point2: Point, point3: Point, intensity1: number, intensity2: number, intensity3: number) {
 
-    const minIntensityBelow = Math.min(intensity1, intensity2, intensity3);
-    const maxIntensityBelow = Math.max(intensity1, intensity2, intensity3);
+    const minIntensityBelow = Math.min(intensity1, intensity2, intensity3)
+    const maxIntensityBelow = Math.max(intensity1, intensity2, intensity3)
 
     const minColorBelow: RgbColorArray = [
         color[0] + 40 * minIntensityBelow,
         color[1] + 40 * minIntensityBelow,
         color[2] + 40 * minIntensityBelow
-    ];
+    ]
 
     const maxColorBelow: RgbColorArray = [
         color[0] + 40 * maxIntensityBelow,
         color[1] + 40 * maxIntensityBelow,
         color[2] + 40 * maxIntensityBelow
-    ];
+    ]
 
     if (Math.abs(minIntensityBelow - maxIntensityBelow) < 0.05) {
-        ctx.fillStyle = arrayToRgbStyle(minColorBelow);
+        ctx.fillStyle = arrayToRgbStyle(minColorBelow)
     } else {
 
-        const gradientScreenPoints = getGradientLineForTriangle(point1, intensity1, point2, intensity2, point3, intensity3);
+        const gradientScreenPoints = getGradientLineForTriangle(point1, intensity1, point2, intensity2, point3, intensity3)
 
         const gradient = ctx.createLinearGradient(
             Math.round(gradientScreenPoints[0].x), Math.round(gradientScreenPoints[0].y),
             Math.round(gradientScreenPoints[1].x), Math.round(gradientScreenPoints[1].y)
-        );
+        )
 
-        gradient.addColorStop(0, arrayToRgbStyle(maxColorBelow));
-        gradient.addColorStop(1, arrayToRgbStyle(minColorBelow));
+        gradient.addColorStop(0, arrayToRgbStyle(maxColorBelow))
+        gradient.addColorStop(1, arrayToRgbStyle(minColorBelow))
 
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = gradient
     }
 
     ctx.beginPath()
 
-    ctx.moveTo(point1.x, point1.y);
-    ctx.lineTo(point2.x, point2.y);
-    ctx.lineTo(point3.x, point3.y);
+    ctx.moveTo(point1.x, point1.y)
+    ctx.lineTo(point2.x, point2.y)
+    ctx.lineTo(point3.x, point3.y)
 
-    ctx.closePath();
+    ctx.closePath()
 
-    ctx.fill();
+    ctx.fill()
 }
 
 function getTimestamp(): number {
@@ -590,5 +590,5 @@ function getTimestamp(): number {
 }
 
 
-export { getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint as removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor };
+export { getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint as removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor }
 

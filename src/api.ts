@@ -125,7 +125,7 @@ export function isMaterial(material: string): material is Material {
         material === "wood" ||
         material === "metalworker" ||
         material === "wheat" ||
-        material === "flour";
+        material === "flour"
 
 
 }
@@ -161,7 +161,7 @@ export interface TreeInformation extends Point { }
 
 export type TileInformation = "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE" | "SA"
 
-export type HeightInformation = number;
+export type HeightInformation = number
 
 export interface TerrainInformation {
     width: number
@@ -475,23 +475,23 @@ function printTimestamp(message: string) {
 }
 
 async function getLandStatistics(gameId: GameId): Promise<LandStatistics> {
-    const response = await fetch("/settlers/api/games/" + gameId + "/statistics/land", { method: 'get' });
+    const response = await fetch("/settlers/api/games/" + gameId + "/statistics/land", { method: 'get' })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function getGameStatistics(gameId: GameId): Promise<GameStatistics> {
-    const response = await fetch("/settlers/api/games/" + gameId + "/statistics/production", { method: 'get' });
+    const response = await fetch("/settlers/api/games/" + gameId + "/statistics/production", { method: 'get' })
 
-    const data = await response.json();
+    const data = await response.json()
 
     return data
 }
 
 async function getGames(): Promise<GameInformation[]> {
-    const response = await fetch("/settlers/api/games", { method: 'get' });
+    const response = await fetch("/settlers/api/games", { method: 'get' })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function addHumanPlayerToGame(gameId: GameId, name: string, color: string): Promise<PlayerInformation> {
@@ -510,7 +510,7 @@ async function addHumanPlayerToGame(gameId: GameId, name: string, color: string)
         }
     )
 
-    return await response.json();
+    return await response.json()
 }
 
 async function addComputerPlayerToGame(gameId: GameId, name: string, color: string): Promise<PlayerInformation> {
@@ -530,7 +530,7 @@ async function addComputerPlayerToGame(gameId: GameId, name: string, color: stri
         }
     )
 
-    return await response.json();
+    return await response.json()
 }
 
 async function updatePlayer(gameId: GameId, playerId: PlayerId, name: string, color: string): Promise<PlayerInformation> {
@@ -567,27 +567,27 @@ async function removePlayerFromGame(gameId: GameId, playerId: PlayerId): Promise
 
 async function getMaps(): Promise<MapInformation[]> {
     const response = await fetch("/settlers/api/maps",
-        { method: 'get' });
+        { method: 'get' })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function createGame(name: string, mapId: MapId | undefined, players: Player[]): Promise<GameInformation> {
     let gameBody: GameToCreate = {}
 
     if (name) {
-        gameBody.name = name;
+        gameBody.name = name
     }
 
     if (mapId) {
-        gameBody.mapId = mapId;
+        gameBody.mapId = mapId
     }
 
     if (players) {
-        gameBody.players = players;
+        gameBody.players = players
     }
 
-    console.log("Creating game: " + JSON.stringify(gameBody));
+    console.log("Creating game: " + JSON.stringify(gameBody))
 
     const response = await fetch("/settlers/api/games",
         {
@@ -596,22 +596,22 @@ async function createGame(name: string, mapId: MapId | undefined, players: Playe
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(gameBody)
-        });
+        })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function deleteGame(gameId: GameId): Promise<void> {
-    console.log("Deleting game: " + gameId);
+    console.log("Deleting game: " + gameId)
 
     const response = await fetch("/settlers/api/games/" + gameId,
-        { method: 'DELETE' });
+        { method: 'DELETE' })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function setMapForGame(mapId: MapId, gameId: GameId): Promise<void> {
-    console.log("Setting map to " + mapId + " for game " + gameId);
+    console.log("Setting map to " + mapId + " for game " + gameId)
 
     const response = await fetch("/settlers/api/games/" + gameId,
         {
@@ -622,13 +622,13 @@ async function setMapForGame(mapId: MapId, gameId: GameId): Promise<void> {
             body: JSON.stringify({
                 mapId: mapId
             })
-        });
+        })
 
-    return;
+    return
 }
 
 async function setResourceLevelForGame(level: ResourceLevel, gameId: GameId): Promise<GameInformation> {
-    console.log("Setting resource level for game");
+    console.log("Setting resource level for game")
 
     const response = await fetch("/settlers/api/games/" + gameId,
         {
@@ -644,11 +644,11 @@ async function setResourceLevelForGame(level: ResourceLevel, gameId: GameId): Pr
         }
     )
 
-    return await response.json();
+    return await response.json()
 }
 
 async function startGame(gameId: GameId): Promise<GameInformation> {
-    console.log("Starting game: " + gameId);
+    console.log("Starting game: " + gameId)
 
     const response = await fetch("/settlers/api/games/" + gameId,
         {
@@ -659,9 +659,9 @@ async function startGame(gameId: GameId): Promise<GameInformation> {
             body: JSON.stringify({
                 status: 'STARTED'
             })
-        });
+        })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function attackBuilding(houseInformation: HouseInformation, numberOfAttackers: number, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
@@ -697,20 +697,20 @@ async function attackBuilding(houseInformation: HouseInformation, numberOfAttack
                 }
             }
             )
-        });
+        })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function getGameInformation(gameId: GameId): Promise<GameInformation> {
-    const response = await fetch("/settlers/api/games/" + gameId);
+    const response = await fetch("/settlers/api/games/" + gameId)
 
-    return await response.json();
+    return await response.json()
 }
 
 async function setSpeed(tickLength: number, gameId: GameId): Promise<void> {
 
-    console.info("Updating speed " + tickLength);
+    console.info("Updating speed " + tickLength)
 
     const response = await fetch("/settlers/api/games/" + gameId,
         {
@@ -718,31 +718,31 @@ async function setSpeed(tickLength: number, gameId: GameId): Promise<void> {
             body: JSON.stringify({
                 tickLength: tickLength
             })
-        });
+        })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function removeHouse(houseId: HouseId, playerId: PlayerId, gameId: GameId): Promise<void> {
 
-    console.info("Removing house " + houseId);
+    console.info("Removing house " + houseId)
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses/" + houseId, { method: 'delete' });
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses/" + houseId, { method: 'delete' })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function removeFlag(flagId: FlagId, gameId: GameId, playerId: PlayerId): Promise<void> {
 
-    console.info("Removing flag " + flagId);
+    console.info("Removing flag " + flagId)
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/flags/" + flagId,
         {
             method: 'delete'
         }
-    );
+    )
 
-    return await response.json();
+    return await response.json()
 }
 
 async function removeRoad(roadId: RoadId, gameId: GameId, playerId: PlayerId): Promise<void> {
@@ -767,7 +767,7 @@ async function createBuilding(houseType: AnyBuilding, point: Point, gameId: Game
             body: JSON.stringify({ type: houseType, x: point.x, y: point.y, playerId: playerId })
         })
 
-    const houseInformation = await response.json();
+    const houseInformation = await response.json()
 
     printTimestamp("Call sent to server")
 
@@ -776,7 +776,7 @@ async function createBuilding(houseType: AnyBuilding, point: Point, gameId: Game
 
 async function createRoad(points: Point[], gameId: GameId, playerId: PlayerId): Promise<RoadInformation> {
 
-    console.info("Creating road " + JSON.stringify(points));
+    console.info("Creating road " + JSON.stringify(points))
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/roads",
         {
@@ -785,8 +785,8 @@ async function createRoad(points: Point[], gameId: GameId, playerId: PlayerId): 
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ points: points, playerId: playerId })
-        });
-    return await response.json();
+        })
+    return await response.json()
 }
 
 async function createFlag(point: Point, gameId: GameId, playerId: PlayerId): Promise<FlagInformation> {
@@ -839,34 +839,34 @@ async function getViewForPlayer(gameId: GameId, playerId: PlayerId): Promise<Pla
       availableConstruction: {"3,5": ["flag", "small"], "7, 9": ["flag", "mine"]}
      */
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/view");
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/view")
 
     if (response.ok) {
-        const view = await response.json();
+        const view = await response.json()
 
         view.availableConstruction = new PointMapFast(view.availableConstruction)
 
         return view
     }
 
-    throw new Error("Invalid request");
+    throw new Error("Invalid request")
 }
 
 async function getPlayers(gameId: GameId): Promise<PlayerInformation[]> {
 
-    console.info("Get players");
+    console.info("Get players")
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/players");
+    const response = await fetch("/settlers/api/games/" + gameId + "/players")
 
-    const result = await response.json();
+    const result = await response.json()
 
-    return result;
+    return result
 }
 
 async function getHousesForPlayer(playerId: PlayerId, gameId: GameId): Promise<HouseInformation[]> {
-    const response = await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/houses');
+    const response = await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/houses')
 
-    return await response.json();
+    return await response.json()
 }
 
 async function getHouseInformation(houseId: HouseId, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
@@ -876,8 +876,8 @@ async function getHouseInformation(houseId: HouseId, gameId: GameId, playerId: P
     // type: 'headquarter'
     // maxAttackers: 23
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses/" + houseId);
-    const receivedHouse = await response.json();
+    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses/" + houseId)
+    const receivedHouse = await response.json()
 
     let house = receivedHouse
 
@@ -888,7 +888,7 @@ async function getHouseInformation(houseId: HouseId, gameId: GameId, playerId: P
 async function getHouseInformationWithAttackPossibility(houseId: HouseId, gameId: GameId, playerIdForOwner: PlayerId, playerIdForAsker: PlayerId): Promise<HouseInformation> {
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerIdForOwner + "/houses/" + houseId + "?askingPlayerId=" + playerIdForAsker)
 
-    const receivedHouse = await response.json();
+    const receivedHouse = await response.json()
 
     let house = receivedHouse
 
@@ -905,10 +905,10 @@ async function getInformationOnPoint(point: Point, gameId: GameId, playerId: Pla
     // buildingId?
     // flagId?
 
-    console.info("Get information on point");
+    console.info("Get information on point")
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/map/points?x=" + point.x + "&y=" + point.y + "&playerId=" + playerId);
-    return await response.json();
+    const response = await fetch("/settlers/api/games/" + gameId + "/map/points?x=" + point.x + "&y=" + point.y + "&playerId=" + playerId)
+    return await response.json()
 }
 
 async function callGeologist(point: Point, gameId: GameId, playerId: PlayerId) {
@@ -923,19 +923,19 @@ async function callGeologist(point: Point, gameId: GameId, playerId: PlayerId) {
                 { geologistNeeded: true }
             )
         }
-    );
+    )
 
-    return await response.json();
+    return await response.json()
 }
 
 async function getTerrainForMap(mapId: MapId): Promise<TerrainInformation> {
     const response = await fetch('/settlers/api/maps/' + mapId + "/terrain")
-    return await response.json();
+    return await response.json()
 }
 
 async function getTerrain(gameId: GameId): Promise<TerrainInformation> {
-    const response = await fetch('/settlers/api/games/' + gameId + '/map/terrain');
-    return await response.json();
+    const response = await fetch('/settlers/api/games/' + gameId + '/map/terrain')
+    return await response.json()
 }
 
 async function sendScout(point: Point, gameId: GameId, playerId: PlayerId) {
@@ -948,9 +948,9 @@ async function sendScout(point: Point, gameId: GameId, playerId: PlayerId) {
             body: JSON.stringify(
                 { scoutNeeded: true }
             )
-        });
+        })
 
-    return await response.json();
+    return await response.json()
 }
 
 async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[], gameId: GameId, playerId: PlayerId): Promise<PossibleNewRoadInformation | undefined> {
@@ -968,19 +968,19 @@ async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[], gameI
                 }
             )
         }
-    );
+    )
 
-    const body = await response.json();
+    const body = await response.json()
 
     if (body.roadIsPossible) {
         const possibleNewRoad: PossibleNewRoadInformation = {
             possibleNewRoad: body.possibleRoad,
             closesRoad: body.closesRoad
-        };
+        }
 
-        return possibleNewRoad;
+        return possibleNewRoad
     } else {
-        return undefined;
+        return undefined
     }
 
 }
@@ -1104,13 +1104,13 @@ function houseIsOccupied(house: HouseInformation): boolean {
     return house.state === "OCCUPIED"
 }
 
-const materialToColor = new Map<Material, string>();
+const materialToColor = new Map<Material, string>()
 
-materialToColor.set("gold", "yellow");
-materialToColor.set("iron", "red");
-materialToColor.set("coal", "black");
-materialToColor.set("stone", "white");
-materialToColor.set("water", "blue");
+materialToColor.set("gold", "yellow")
+materialToColor.set("iron", "red")
+materialToColor.set("coal", "black")
+materialToColor.set("stone", "white")
+materialToColor.set("water", "blue")
 
 function getRoads() {
     return monitor.roads

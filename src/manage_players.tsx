@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
-import Button from './button';
-import { Player } from './player';
-import './select_player.css';
-import { GameId, addComputerPlayerToGame, PlayerInformation, getPlayers, updatePlayer, removePlayerFromGame, PlayerType } from './api';
+import React, { Component } from 'react'
+import Button from './button'
+import { Player } from './player'
+import './select_player.css'
+import { GameId, addComputerPlayerToGame, PlayerInformation, getPlayers, updatePlayer, removePlayerFromGame, PlayerType } from './api'
 
 export interface PlayerCandidateType {
     name: string
@@ -37,11 +37,11 @@ interface ManagePlayersState {
 class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
     constructor(props: ManagePlayersProps) {
-        super(props);
+        super(props)
 
         const players = [this.props.selfPlayer]
 
-        this.state = { players: players };
+        this.state = { players: players }
     }
 
     async componentDidMount() {
@@ -72,7 +72,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
             name: "An AI player",
             type: "COMPUTER",
             color: "#777777"
-        };
+        }
 
         const addedPlayer = await addComputerPlayerToGame(this.props.gameId, aiPlayer.name, aiPlayer.color)
 
@@ -80,7 +80,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
             {
                 players: this.state.players.concat([addedPlayer])
             }
-        );
+        )
 
         if (this.props.onPlayerAdded) {
             this.props.onPlayerAdded(addedPlayer)
@@ -95,10 +95,10 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
         const players = await getPlayers(this.props.gameId)
 
-        this.setState({ players: players });
+        this.setState({ players: players })
 
         console.log("Name changed to " + name)
-        console.log(index);
+        console.log(index)
     }
 
     async removePlayer(player: PlayerInformation): Promise<void> {
@@ -111,7 +111,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
             {
                 players: players
             }
-        );
+        )
 
         if (this.props.onPlayerRemoved) {
             this.props.onPlayerRemoved(player)
@@ -132,7 +132,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
                                     <Player key={index} isSelf={true}
                                         onNameChanged={
                                             (name: string) => {
-                                                this.onNameChanged(name, index);
+                                                this.onNameChanged(name, index)
                                             }
                                         }
                                         player={player} />
@@ -142,20 +142,20 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
                                     <Player key={index} player={player}
                                         onNameChanged={
                                             (name: string) => {
-                                                this.onNameChanged(name, index);
+                                                this.onNameChanged(name, index)
                                             }
                                         }
-                                        onPlayerRemoved={() => { this.removePlayer(player); }} />
+                                        onPlayerRemoved={() => { this.removePlayer(player) }} />
                                 }
                             </div>
-                        );
+                        )
                     }
                 )
                 }
                 <Button label="Add AI player" onButtonClicked={this.addAiPlayer.bind(this)} />
             </div>
-        );
+        )
     }
 }
 
-export default ManagePlayers;
+export default ManagePlayers

@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import { callGeologist, FlagInformation, GameId, PlayerId, removeFlag, sendScout } from './api';
-import Button from './button';
-import { Dialog, DialogSection } from './dialog';
+import React, { Component } from 'react'
+import { callGeologist, FlagInformation, GameId, PlayerId, removeFlag, sendScout } from './api'
+import Button from './button'
+import { Dialog, DialogSection } from './dialog'
 
 interface FriendlyFlagInfoProps {
     closeDialog: (() => void)
@@ -26,10 +26,10 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                         imageLabel="Flag"
                         onButtonClicked={
                             async () => {
-                                console.log("Removing flag");
-                                await removeFlag(this.props.flag.id, this.props.gameId, this.props.playerId);
+                                console.log("Removing flag")
+                                await removeFlag(this.props.flag.id, this.props.gameId, this.props.playerId)
 
-                                this.props.closeDialog();
+                                this.props.closeDialog()
                             }
                         }
                     />
@@ -40,11 +40,11 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                         imageLabel="Road"
                         onButtonClicked={
                             async () => {
-                                console.info("Starting to build road");
+                                console.info("Starting to build road")
 
-                                await this.props.startNewRoad(this.props.flag);
+                                await this.props.startNewRoad(this.props.flag)
 
-                                this.props.closeDialog();
+                                this.props.closeDialog()
                             }
                         }
                     />
@@ -55,11 +55,11 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                         imageLabel="Geologist"
                         onButtonClicked={
                             async () => {
-                                console.info("Calling for geologist");
+                                console.info("Calling for geologist")
 
-                                await callGeologist(this.props.flag, this.props.gameId, this.props.playerId);
+                                await callGeologist(this.props.flag, this.props.gameId, this.props.playerId)
 
-                                this.props.closeDialog();
+                                this.props.closeDialog()
                             }
                         }
                     />
@@ -70,11 +70,11 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                         imageLabel="Scout"
                         onButtonClicked={
                             async () => {
-                                console.info("Sending scout");
+                                console.info("Sending scout")
 
-                                await sendScout(this.props.flag, this.props.gameId, this.props.playerId);
+                                await sendScout(this.props.flag, this.props.gameId, this.props.playerId)
 
-                                this.props.closeDialog();
+                                this.props.closeDialog()
                             }
                         }
                     />
@@ -82,8 +82,8 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                 </DialogSection>
 
             </Dialog>
-        );
+        )
     }
 }
 
-export default FriendlyFlagInfo;
+export default FriendlyFlagInfo

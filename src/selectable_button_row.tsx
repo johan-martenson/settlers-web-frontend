@@ -1,6 +1,6 @@
-import React, { Component } from 'react';
-import Button from './button';
-import './selectable_button_row.css';
+import React, { Component } from 'react'
+import Button from './button'
+import './selectable_button_row.css'
 
 interface SelectableButtonRowProps {
     values: Map<string, string>
@@ -16,12 +16,12 @@ interface SelectableButtonRowState {
 class SelectableButtonRow extends Component<SelectableButtonRowProps, SelectableButtonRowState> {
 
     constructor(props: SelectableButtonRowProps) {
-        super(props);
+        super(props)
 
         if (this.props.initialValue) {
-            this.state = { selected: this.props.initialValue };
+            this.state = { selected: this.props.initialValue }
         } else {
-            this.state = {};
+            this.state = {}
         }
     }
 
@@ -30,14 +30,14 @@ class SelectableButtonRow extends Component<SelectableButtonRowProps, Selectable
         let className = "SelectableButtonRowContainer"
 
         if (this.props.className) {
-            className = " " + this.props.className;
+            className = " " + this.props.className
         }
 
         return (
             <div className={className}>
                 {Array.from(this.props.values.keys()).map(
                     (key: string, index) => {
-                        const value = this.props.values.get(key);
+                        const value = this.props.values.get(key)
 
                         if (this.state.selected && key === this.state.selected) {
                             return (
@@ -46,31 +46,31 @@ class SelectableButtonRow extends Component<SelectableButtonRowProps, Selectable
                                     selected={true}
                                     onButtonClicked={
                                         () => {
-                                            this.setState({ selected: key });
-                                            this.props.onSelected(key);
+                                            this.setState({ selected: key })
+                                            this.props.onSelected(key)
                                         }
                                     }
                                 />
-                            );
+                            )
                         } else {
                             return (
                                 <Button label={value}
                                     key={index}
                                     onButtonClicked={
                                         () => {
-                                            this.setState({ selected: key });
-                                            this.props.onSelected(key);
+                                            this.setState({ selected: key })
+                                            this.props.onSelected(key)
                                         }
                                     }
                                 />
-                            );
+                            )
                         }
                     }
                 )
                 }
             </div>
-        );
+        )
     }
 }
 
-export default SelectableButtonRow;
+export default SelectableButtonRow

@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import TypeControl from './type_control';
+import React, { Component } from 'react'
+import TypeControl from './type_control'
 
 interface TypeControlDemoProps {
     commands: Map<string, (() => void)>
@@ -8,24 +8,24 @@ interface TypeControlDemoProps {
 interface TypeControlDemoState { }
 
 class TypeControlDemo extends Component<TypeControlDemoProps, TypeControlDemoState> {
-    typeControlRef = React.createRef<TypeControl>();
+    typeControlRef = React.createRef<TypeControl>()
 
     constructor(props: TypeControlDemoProps) {
-        super(props);
+        super(props)
     }
 
     onKeyPress(event: React.KeyboardEvent<HTMLDivElement>) {
-        console.log("ON KEY PRESS");
-        console.log(event.key);
+        console.log("ON KEY PRESS")
+        console.log(event.key)
 
         if (this.typeControlRef && this.typeControlRef.current) {
-            this.typeControlRef.current.onKeyPress(event);
+            this.typeControlRef.current.onKeyPress(event)
         }
     }
 
     onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
         if (this.typeControlRef && this.typeControlRef.current) {
-            this.typeControlRef.current.onKeyDown(event);
+            this.typeControlRef.current.onKeyDown(event)
         }
     }
 
@@ -35,8 +35,8 @@ class TypeControlDemo extends Component<TypeControlDemoProps, TypeControlDemoSta
                 Some filler stuff
                 <TypeControl commands={this.props.commands} ref={this.typeControlRef}/>
             </div>
-        );
+        )
     }
 }
 
-export default TypeControlDemo;
+export default TypeControlDemo

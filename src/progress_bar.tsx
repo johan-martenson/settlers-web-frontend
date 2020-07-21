@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component } from 'react'
 import './progress_bar.css'
 
 interface ProgressBarProps {

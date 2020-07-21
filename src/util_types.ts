@@ -406,7 +406,7 @@ class PointMap<T> implements Map<Point, T> {
         return pointMapEntryIterator
     }
 
-    [Symbol.toStringTag]: string;
+    [Symbol.toStringTag]: string
 
     get size(): number {
         return this.pointAsStringMap.size

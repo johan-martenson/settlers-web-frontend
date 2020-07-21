@@ -24,19 +24,19 @@ interface MainMenuState {
 class MainMenu extends Component<MainMenuProps, MainMenuState> {
 
     constructor(props: MainMenuProps) {
-        super(props);
+        super(props)
 
         this.state = {
             currentSpeed: 4,
             state: "MAIN"
-        };
+        }
     }
 
     async componentDidMount() {
 
         await getGameInformation(this.props.gameId)
 
-        this.setState({ currentSpeed: 50 }) //game.tickLength});
+        this.setState({ currentSpeed: 50 }) //game.tickLength})
     }
 
     onOptions(): void {
@@ -44,7 +44,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
             {
                 state: "OPTIONS"
             }
-        );
+        )
     }
 
     onPlayerSelected(player: PlayerInformation): void {
@@ -75,8 +75,8 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
                 </DialogSection>
 
             </Dialog>
-        );
+        )
     }
 }
 
-export default MainMenu;
+export default MainMenu

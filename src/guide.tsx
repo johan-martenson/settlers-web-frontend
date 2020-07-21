@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
-import { AnyBuilding } from './api';
-import Button from './button';
-import { Dialog } from './dialog';
-import { HELP_PAGES, PageType } from './help_pages';
-import houseImageMap from './images';
+import React, { Component } from 'react'
+import { AnyBuilding } from './api'
+import Button from './button'
+import { Dialog } from './dialog'
+import { HELP_PAGES, PageType } from './help_pages'
+import houseImageMap from './images'
 import './guide.css'
 
 interface GuideProps {
@@ -14,21 +14,21 @@ interface GuideState {
 }
 
 function isBuildingString(imageString: AnyBuilding | string): imageString is AnyBuilding {
-    return imageString.indexOf('.') > -1;
+    return imageString.indexOf('.') > -1
 }
 
 class Guide extends Component<GuideProps, GuideState> {
 
     constructor(props: GuideProps) {
-        super(props);
+        super(props)
 
-        this.state = { page: 0 };
+        this.state = { page: 0 }
     }
 
     render() {
-        console.log("Rendering guide");
+        console.log("Rendering guide")
 
-        const page: PageType = HELP_PAGES[this.state.page];
+        const page: PageType = HELP_PAGES[this.state.page]
 
         return (
             <Dialog className="Guide" onCloseDialog={this.props.onClose} floating>
@@ -40,7 +40,7 @@ class Guide extends Component<GuideProps, GuideState> {
                         <Button label="Previous" className="GuidePrevious"
                             onButtonClicked={
                                 () => {
-                                    this.setState({ page: this.state.page - 1 });
+                                    this.setState({ page: this.state.page - 1 })
                                 }
                             }
                         />
@@ -50,7 +50,7 @@ class Guide extends Component<GuideProps, GuideState> {
                         <Button label="Next" className="GuideNext"
                             onButtonClicked={
                                 () => {
-                                    this.setState({ page: this.state.page + 1 });
+                                    this.setState({ page: this.state.page + 1 })
                                 }
                             }
                         />
@@ -58,7 +58,7 @@ class Guide extends Component<GuideProps, GuideState> {
                 </div>
 
             </Dialog>
-        );
+        )
     }
 }
 
@@ -90,7 +90,7 @@ class Page extends Component<PageProps, PageState> {
                                     }
 
                                 </div>
-                            );
+                            )
                         }
                     )
                     }
@@ -102,14 +102,14 @@ class Page extends Component<PageProps, PageState> {
                         (text, index) => {
                             return (
                                 <p key={index} className="PageParagraph">{text}</p>
-                            );
+                            )
                         }
                     )
                     }
                 </div>
             </div>
-        );
-    };
+        )
+    }
 }
 
-export default Guide;
+export default Guide

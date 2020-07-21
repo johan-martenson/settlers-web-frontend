@@ -40,7 +40,7 @@ let globalSyncState = {
     translateYAtMouseDown: 0,
     width: 0,
     height: 0
-};
+}
 
 /* Track ongoing touches to make touch control work */
 const ongoingTouches: Map<any, StoredTouch> = new Map()
@@ -88,7 +88,7 @@ interface AppState {
 
     player: PlayerId
 
-    activeMenu?: 0 | 1 | 2 | 3 | 4;
+    activeMenu?: 0 | 1 | 2 | 3 | 4
 
     showFriendlyHouseInfo?: ShowFriendlyHouseInfo
     showFriendlyFlagInfo?: ShowFriendlyFlagInfo
@@ -107,30 +107,30 @@ interface AppState {
 
 class App extends Component<AppProps, AppState> {
 
-    private keyHandlers: Map<number, (() => void)> = new Map();
-    private selfNameRef = React.createRef<HTMLDivElement>();
-    private typeControlRef = React.createRef<TypeControl>();
-    private readonly commands: Map<string, (() => void)>;
+    private keyHandlers: Map<number, (() => void)> = new Map()
+    private selfNameRef = React.createRef<HTMLDivElement>()
+    private typeControlRef = React.createRef<TypeControl>()
+    private readonly commands: Map<string, (() => void)>
 
     constructor(props: AppProps) {
-        super(props);
+        super(props)
 
-        this.onMouseDown = this.onMouseDown.bind(this);
-        this.onMouseMove = this.onMouseMove.bind(this);
-        this.onMouseUp = this.onMouseUp.bind(this);
+        this.onMouseDown = this.onMouseDown.bind(this)
+        this.onMouseMove = this.onMouseMove.bind(this)
+        this.onMouseUp = this.onMouseUp.bind(this)
 
-        this.onTouchStart = this.onTouchStart.bind(this);
-        this.onTouchEnd = this.onTouchEnd.bind(this);
-        this.onTouchMove = this.onTouchMove.bind(this);
-        this.onTouchCancel = this.onTouchCancel.bind(this);
+        this.onTouchStart = this.onTouchStart.bind(this)
+        this.onTouchEnd = this.onTouchEnd.bind(this)
+        this.onTouchMove = this.onTouchMove.bind(this)
+        this.onTouchCancel = this.onTouchCancel.bind(this)
 
-        this.onKeyDown = this.onKeyDown.bind(this);
-        this.onKeyPress = this.onKeyPress.bind(this);
+        this.onKeyDown = this.onKeyDown.bind(this)
+        this.onKeyPress = this.onKeyPress.bind(this)
 
-        this.toggleDetails = this.toggleDetails.bind(this);
+        this.toggleDetails = this.toggleDetails.bind(this)
 
-        this.zoomOut = this.zoomOut.bind(this);
-        this.zoomIn = this.zoomIn.bind(this);
+        this.zoomOut = this.zoomOut.bind(this)
+        this.zoomIn = this.zoomIn.bind(this)
 
         this.keyHandlers.set(27, this.closeActiveMenu) // ESC
         this.keyHandlers.set(32, this.toggleDetails)   // SPACE
@@ -142,12 +142,12 @@ class App extends Component<AppProps, AppState> {
         this.keyHandlers.set(189, this.zoomOut)        // -
         this.keyHandlers.set(77, this.showMenu)         // M
 
-        this.moveGameRight = this.moveGameRight.bind(this);
-        this.moveGameLeft = this.moveGameLeft.bind(this);
-        this.moveGameUp = this.moveGameUp.bind(this);
-        this.moveGameDown = this.moveGameDown.bind(this);
+        this.moveGameRight = this.moveGameRight.bind(this)
+        this.moveGameLeft = this.moveGameLeft.bind(this)
+        this.moveGameUp = this.moveGameUp.bind(this)
+        this.moveGameDown = this.moveGameDown.bind(this)
 
-        this.closeActiveMenu = this.closeActiveMenu.bind(this);
+        this.closeActiveMenu = this.closeActiveMenu.bind(this)
 
         this.state = {
             showAvailableConstruction: false,
@@ -162,21 +162,21 @@ class App extends Component<AppProps, AppState> {
             menuVisible: false,
             showTitles: true,
             showSetTransportPriority: false
-        };
+        }
 
         /* Set up type control commands */
-        this.commands = new Map();
+        this.commands = new Map()
 
-        SMALL_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
-        MEDIUM_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
-        LARGE_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }));
+        SMALL_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }))
+        MEDIUM_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }))
+        LARGE_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }))
 
         this.commands.set("Road",
             async () => {
-                console.log("Building road");
+                console.log("Building road")
 
                 /* Get the possible connections from the server and draw them */
-                const pointInformation = await getInformationOnPoint(this.state.selected, this.props.gameId, this.state.player);
+                const pointInformation = await getInformationOnPoint(this.state.selected, this.props.gameId, this.state.player)
 
                 if (pointInformation.is && pointInformation.is === "flag") {
 
@@ -185,12 +185,12 @@ class App extends Component<AppProps, AppState> {
                             newRoad: [this.state.selected],
                             possibleRoadConnections: pointInformation.possibleRoadConnections
                         }
-                    );
+                    )
                 }
             }
-        );
+        )
 
-        this.commands.set("Flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) });
+        this.commands.set("Flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Remove (house, flag, or road)", () => { removeHouseOrFlagAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Statistics", () => this.setState({ showStatistics: true }))
         this.commands.set("Game information",
@@ -225,7 +225,7 @@ class App extends Component<AppProps, AppState> {
                 showTitles: true,
                 showAvailableConstruction: !this.state.showAvailableConstruction
             }
-        );
+        )
     }
 
     closeActiveMenu(): void {
@@ -240,7 +240,7 @@ class App extends Component<AppProps, AppState> {
                 showFriendlyHouseInfo: undefined,
                 menuVisible: false
             }
-        );
+        )
     }
 
     goToHouse(houseId: HouseId) {
@@ -260,33 +260,33 @@ class App extends Component<AppProps, AppState> {
 
         const scaleY = this.state.scale * 0.5
 
-        const newTranslateX = (globalSyncState.width / 2) - point.x * this.state.scale;
-        const newTranslateY = (globalSyncState.height / 2) + point.y * scaleY - globalSyncState.height;
+        const newTranslateX = (globalSyncState.width / 2) - point.x * this.state.scale
+        const newTranslateY = (globalSyncState.height / 2) + point.y * scaleY - globalSyncState.height
 
         this.setState({
             translateX: newTranslateX,
             translateY: newTranslateY
-        });
+        })
     }
 
     onPlayerSelected(player: PlayerInformation): void {
-        console.info("Selected player " + JSON.stringify(player));
+        console.info("Selected player " + JSON.stringify(player))
 
         const scaleY = this.state.scale * 0.5
 
-        let newTranslateX = this.state.translateX;
-        let newTranslateY = this.state.translateY;
+        let newTranslateX = this.state.translateX
+        let newTranslateY = this.state.translateY
 
         if (player.centerPoint) {
-            newTranslateX = (globalSyncState.width / 2) - player.centerPoint.x * this.state.scale;
-            newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * scaleY - globalSyncState.height;
+            newTranslateX = (globalSyncState.width / 2) - player.centerPoint.x * this.state.scale
+            newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * scaleY - globalSyncState.height
         }
 
         const discoveredPointMap = new PointSetFast()
 
         player.discoveredPoints.forEach(
             (point: Point) => {
-                discoveredPointMap.add(point);
+                discoveredPointMap.add(point)
             }
         )
 
@@ -294,22 +294,22 @@ class App extends Component<AppProps, AppState> {
             translateX: newTranslateX,
             translateY: newTranslateY,
             player: player.id
-        });
+        })
     }
 
     closeFriendlyHouseInfo(): void {
-        console.info("Closing friendly house info");
+        console.info("Closing friendly house info")
         this.setState(
             {
                 showFriendlyHouseInfo: undefined
             }
-        );
+        )
     }
 
     showMenu(): void {
 
         /* Close active dialogs first */
-        this.closeActiveMenu();
+        this.closeActiveMenu()
 
         /* Open the menu */
         this.setState(
@@ -317,7 +317,7 @@ class App extends Component<AppProps, AppState> {
                 menuVisible: true,
                 activeMenu: MENU_MENU
             }
-        );
+        )
     }
 
     showHelp(): void {
@@ -326,99 +326,99 @@ class App extends Component<AppProps, AppState> {
                 activeMenu: MENU_GUIDE,
                 showHelp: true
             }
-        );
+        )
     }
 
     moveGameUp(): void {
         this.setState({
             translateY: this.state.translateY + 10
-        });
+        })
     }
 
     moveGameDown(): void {
         this.setState({
             translateY: this.state.translateY - 10
-        });
+        })
     }
 
     moveGameRight(): void {
         this.setState({
             translateX: this.state.translateX - 10
-        });
+        })
     }
 
     moveGameLeft(): void {
         this.setState({
             translateX: this.state.translateX + 10
-        });
+        })
     }
 
     zoomIn(): void {
-        this.zoom(this.state.scale + 1);
+        this.zoom(this.state.scale + 1)
     }
 
     /* Should move to the game canvas so the app doesn't have to know about this */
     zoom(scale: number): void {
 
         /* Center after zooming */
-        scale = Math.min(scale, MAX_SCALE);
-        scale = Math.max(scale, MIN_SCALE);
+        scale = Math.min(scale, MAX_SCALE)
+        scale = Math.max(scale, MIN_SCALE)
 
         const scaleY = this.state.scale * 0.5
 
-        const newTranslateX = globalSyncState.width / 2 - (((globalSyncState.width / 2) - this.state.translateX) / this.state.scale) * scale;
-        const newTranslateY = -globalSyncState.height + (globalSyncState.height - (globalSyncState.height / 2) + this.state.translateY) / scaleY * scaleY + (globalSyncState.height / 2);
+        const newTranslateX = globalSyncState.width / 2 - (((globalSyncState.width / 2) - this.state.translateX) / this.state.scale) * scale
+        const newTranslateY = -globalSyncState.height + (globalSyncState.height - (globalSyncState.height / 2) + this.state.translateY) / scaleY * scaleY + (globalSyncState.height / 2)
 
         this.setState({
             translateX: newTranslateX,
             translateY: newTranslateY,
             scale: scale
-        });
+        })
     }
 
     onSpeedSliderChange(value: number): void {
-        setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.gameId);
+        setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.gameId)
     }
 
     zoomOut(): void {
-        this.zoom(this.state.scale - 1);
+        this.zoom(this.state.scale - 1)
     }
 
     onMouseDown(event: React.MouseEvent): void {
-        globalSyncState.mouseDown = true;
-        globalSyncState.mouseDownX = event.pageX;
-        globalSyncState.mouseDownY = event.pageY;
-        globalSyncState.mouseMoving = false;
+        globalSyncState.mouseDown = true
+        globalSyncState.mouseDownX = event.pageX
+        globalSyncState.mouseDownY = event.pageY
+        globalSyncState.mouseMoving = false
 
-        globalSyncState.translateXAtMouseDown = this.state.translateX;
-        globalSyncState.translateYAtMouseDown = this.state.translateY;
+        globalSyncState.translateXAtMouseDown = this.state.translateX
+        globalSyncState.translateYAtMouseDown = this.state.translateY
 
-        event.stopPropagation();
+        event.stopPropagation()
     }
 
     onMouseMove(event: React.MouseEvent): void {
         if (globalSyncState.mouseDown) {
-            const deltaX = (event.pageX - globalSyncState.mouseDownX);
-            const deltaY = (event.pageY - globalSyncState.mouseDownY);
+            const deltaX = (event.pageX - globalSyncState.mouseDownX)
+            const deltaY = (event.pageY - globalSyncState.mouseDownY)
 
             /* Detect move to separate move from click */
             if (deltaX * deltaX + deltaY * deltaY > 25) {
-                globalSyncState.mouseMoving = true;
+                globalSyncState.mouseMoving = true
             }
 
             this.setState({
                 translateX: globalSyncState.translateXAtMouseDown + deltaX,
                 translateY: globalSyncState.translateYAtMouseDown + deltaY
-            });
+            })
         }
 
-        event.stopPropagation();
+        event.stopPropagation()
     }
 
     onMouseUp(event: React.MouseEvent): void {
-        globalSyncState.mouseDown = false;
+        globalSyncState.mouseDown = false
 
-        event.stopPropagation();
+        event.stopPropagation()
     }
 
     async componentDidMount(): Promise<void> {
@@ -428,179 +428,179 @@ class App extends Component<AppProps, AppState> {
         if (this.selfNameRef.current) {
 
             // Store the width and height of the canvas when it's been rendered
-            globalSyncState.width = this.selfNameRef.current.clientWidth;
-            globalSyncState.height = this.selfNameRef.current.clientHeight;
+            globalSyncState.width = this.selfNameRef.current.clientWidth
+            globalSyncState.height = this.selfNameRef.current.clientHeight
 
-            console.info("Screen width: " + globalSyncState.width + ", height: " + globalSyncState.height);
+            console.info("Screen width: " + globalSyncState.width + ", height: " + globalSyncState.height)
 
             /* Request focus if the game is not blocked */
             if (!this.state.menuVisible) {
-                console.info("Putting focus on main game screen");
-                this.selfNameRef.current.focus();
+                console.info("Putting focus on main game screen")
+                this.selfNameRef.current.focus()
             }
         }
 
         /* Fetch the view for the first time and center on the player's headquarter */
-        const view = await getViewForPlayer(this.props.gameId, this.props.selfPlayerId);
+        const view = await getViewForPlayer(this.props.gameId, this.props.selfPlayerId)
 
         // Center the view on the headquarter on the first update
-        const headquarter = view.houses.find(h => h.type === "Headquarter");
+        const headquarter = view.houses.find(h => h.type === "Headquarter")
 
         if (headquarter) {
             const scaleY = this.state.scale * 0.5
 
-            const translateX = (globalSyncState.width / 2) - headquarter.x * this.state.scale;
-            const translateY = -globalSyncState.height + (globalSyncState.height / 2) + headquarter.y * scaleY;
+            const translateX = (globalSyncState.width / 2) - headquarter.x * this.state.scale
+            const translateY = -globalSyncState.height + (globalSyncState.height / 2) + headquarter.y * scaleY
 
             this.setState({
                 translateX: translateX,
                 translateY: translateY
-            });
+            })
 
         }
 
         // Get the terrain once
         if (this.state.terrain.length === 0) {
-            const terrain = await getTerrain(this.props.gameId);
+            const terrain = await getTerrain(this.props.gameId)
 
-            const terrainList = terrainInformationToTerrainAtPointList(terrain);
+            const terrainList = terrainInformationToTerrainAtPointList(terrain)
 
             this.setState({
                 terrain: terrainList,
                 gameWidth: terrain.width,
                 gameHeight: terrain.height,
-            });
+            })
         }
 
         /* Listen for changes in the window size */
         window.addEventListener("resize",
             () => {
                 if (this.selfNameRef.current) {
-                    globalSyncState.width = this.selfNameRef.current.clientWidth;
-                    globalSyncState.height = this.selfNameRef.current.clientHeight;
+                    globalSyncState.width = this.selfNameRef.current.clientWidth
+                    globalSyncState.height = this.selfNameRef.current.clientHeight
                 }
             }
-        );
+        )
     }
 
     async onPointClicked(point: Point): Promise<void> {
-        console.info("Clicked point: " + point.x + ", " + point.y);
+        console.info("Clicked point: " + point.x + ", " + point.y)
 
         /* Ignore clicks if the player is an observer */
         if (this.props.observe) {
-            return;
+            return
         }
 
         /* Filter clicks that are really the end of moving the mouse */
         if (globalSyncState.mouseMoving) {
-            return;
+            return
         }
 
         /* A road is being built */
         if (this.state.newRoad && this.state.possibleRoadConnections) {
-            const recent = this.state.newRoad[this.state.newRoad.length - 1];
+            const recent = this.state.newRoad[this.state.newRoad.length - 1]
 
             /* Create the possible new road including the addition */
             let possibleNewRoad = this.state.newRoad
 
             /* Handle the case where one of the directly adjacent possible new road connections is selected */
             if (this.state.possibleRoadConnections.find(e => e.x === point.x && e.y === point.y)) {
-                possibleNewRoad.push(point);
+                possibleNewRoad.push(point)
 
                 /* Handle the case where a point further away was clicked */
             } else {
 
                 /* Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road */
-                const possibleNewRoadSegment = await findPossibleNewRoad(recent, point, this.state.newRoad, this.props.gameId, this.props.selfPlayerId);
+                const possibleNewRoadSegment = await findPossibleNewRoad(recent, point, this.state.newRoad, this.props.gameId, this.props.selfPlayerId)
 
                 if (possibleNewRoadSegment) {
-                    possibleNewRoad.push(...possibleNewRoadSegment.possibleNewRoad.slice(1));
+                    possibleNewRoad.push(...possibleNewRoadSegment.possibleNewRoad.slice(1))
                 } else {
 
                     /* Ignore the click if no possible road is available */
-                    console.log("Not possible to include in road. Ignoring.");
+                    console.log("Not possible to include in road. Ignoring.")
 
-                    return;
+                    return
                 }
             }
 
-            console.log("Ongoing road construction: " + JSON.stringify(possibleNewRoad));
+            console.log("Ongoing road construction: " + JSON.stringify(possibleNewRoad))
 
             /* Handle the case when a flag is clicked and create a road to it. Also select the point of the flag */
             const flag = getFlagAtPoint(point)
 
             if (flag) {
-                console.info("Placing road directly to flag");
+                console.info("Placing road directly to flag")
 
                 await createRoad(possibleNewRoad,
                     this.props.gameId,
-                    this.state.player);
+                    this.state.player)
 
                 this.setState({
                     newRoad: undefined,
                     possibleRoadConnections: [],
                     selected: point
-                });
+                })
 
                 /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
             } else if (isRoadAtPoint(point, monitor.roads)) {
 
-                console.info('Placing flag for road');
+                console.info('Placing flag for road')
 
-                await createFlag(point, this.props.gameId, this.props.selfPlayerId);
+                await createFlag(point, this.props.gameId, this.props.selfPlayerId)
 
-                console.log("Creating road to flag");
+                console.log("Creating road to flag")
 
-                await createRoad(possibleNewRoad, this.props.gameId, this.props.selfPlayerId);
+                await createRoad(possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
 
                 this.setState({
                     newRoad: undefined,
                     possibleRoadConnections: []
-                });
+                })
 
                 /* Add the new possible road points to the ongoing road and don't create the road*/
             } else if (recent.x !== point.x || recent.y !== point.y) {
-                console.info("Continuing road building with extended road segment");
+                console.info("Continuing road building with extended road segment")
 
                 /* Get the available connections from the added point */
-                const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
+                const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player)
 
-                console.log("Possible new road direct adjacent road connections: " + JSON.stringify(pointInformation.possibleRoadConnections));
+                console.log("Possible new road direct adjacent road connections: " + JSON.stringify(pointInformation.possibleRoadConnections))
 
                 this.setState({
                     newRoad: possibleNewRoad,
                     possibleRoadConnections: pointInformation.possibleRoadConnections
-                });
+                })
             }
 
             /* Select the point */
         } else {
-            console.info("Selecting point: " + point.x + ", " + point.y);
+            console.info("Selecting point: " + point.x + ", " + point.y)
 
             this.setState({
                 selected: point
-            });
+            })
         }
     }
 
     async onDoubleClick(point: Point): Promise<void> {
-        console.info("Double click on " + point.x + ", " + point.y);
+        console.info("Double click on " + point.x + ", " + point.y)
 
         /* Ignore double clicks if the player is an observer */
         if (this.props.observe) {
-            return;
+            return
         }
 
         /* First, handle double clicks differently if a new road is being created */
         if (this.state.newRoad) {
 
-            const flag = await createFlag(point, this.props.gameId, this.state.player);
+            const flag = await createFlag(point, this.props.gameId, this.state.player)
 
-            console.info("Created flag");
+            console.info("Created flag")
 
             if (this.state.newRoad) {
-                const road = await createRoad(this.state.newRoad, this.props.gameId, this.state.player);
-                console.info("Created road");
+                const road = await createRoad(this.state.newRoad, this.props.gameId, this.state.player)
+                console.info("Created road")
 
                 this.setState(
                     {
@@ -608,43 +608,43 @@ class App extends Component<AppProps, AppState> {
                         possibleRoadConnections: undefined,
                         selected: point
                     }
-                );
+                )
             }
 
-            return;
+            return
         }
 
         /* Ignore double clicks on undiscovered land */
         if (!monitor.discoveredPoints.has(point)) {
-            console.info("Ignoring un-discovered point");
-            return;
+            console.info("Ignoring un-discovered point")
+            return
         }
 
         /* Handle click on house */
         const house = getHouseAtPoint(point)
 
         if (house) {
-            console.info("Clicked house " + JSON.stringify(house));
+            console.info("Clicked house " + JSON.stringify(house))
 
             /* Show friendly house info for own house */
             if (house.playerId === this.state.player) {
-                console.info("Friendly house");
+                console.info("Friendly house")
 
                 this.setState({
                     menuVisible: false,
                     showFriendlyHouseInfo: { house: house },
                     activeMenu: MENU_FRIENDLY_HOUSE
-                });
+                })
             } else {
 
                 /* Show minimal house info for enemy's house */
                 this.setState({
                     menuVisible: false,
                     showEnemyHouseInfo: { house: house }
-                });
+                })
             }
 
-            return;
+            return
         }
 
         /* Handle the case where a flag was double clicked */
@@ -652,11 +652,11 @@ class App extends Component<AppProps, AppState> {
 
         if (flag) {
 
-            console.info("Clicked flag");
+            console.info("Clicked flag")
 
             /* Show friendly flag dialog */
             if (flag.playerId === this.state.player) {
-                console.info("Friendly flag");
+                console.info("Friendly flag")
 
                 this.setState(
                     {
@@ -664,14 +664,14 @@ class App extends Component<AppProps, AppState> {
                         showFriendlyFlagInfo: { flag: flag },
                         activeMenu: MENU_FRIENDLY_FLAG
                     }
-                );
+                )
             }
 
-            return;
+            return
         }
 
         /* Ask the server for what can be done on the spot */
-        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
+        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player)
 
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
@@ -695,7 +695,7 @@ class App extends Component<AppProps, AppState> {
                     showConstructionInfo: pointInformation,
                     activeMenu: MENU_CONSTRUCTION
                 }
-            );
+            )
         }
     }
 
@@ -704,36 +704,36 @@ class App extends Component<AppProps, AppState> {
 
             /* Close the active menu (if there is an active menu) */
             if (this.state.activeMenu) {
-                this.closeActiveMenu();
+                this.closeActiveMenu()
 
                 /* Stop building a new road */
             } else if (this.state.newRoad) {
-                this.setState({ newRoad: undefined, possibleRoadConnections: [] });
+                this.setState({ newRoad: undefined, possibleRoadConnections: [] })
 
                 /* Otherwise, send the escape to the type controller */
             } else if (this.typeControlRef && this.typeControlRef.current) {
-                this.typeControlRef.current.onKeyDown(event);
+                this.typeControlRef.current.onKeyDown(event)
             }
 
         } else if (event.key === " ") {
-            this.toggleDetails();
+            this.toggleDetails()
         } else if (event.key === "Up") {
-            this.moveGameUp();
+            this.moveGameUp()
         } else if (event.key === "Right") {
-            this.moveGameRight();
+            this.moveGameRight()
         } else if (event.key === "Down") {
-            this.moveGameDown();
+            this.moveGameDown()
         } else if (event.key === "Left") {
-            this.moveGameLeft();
+            this.moveGameLeft()
         } else if (event.key === "+") {
-            this.zoomIn();
+            this.zoomIn()
         } else if (event.key === "-") {
-            this.zoomOut();
+            this.zoomOut()
         } else if (event.key === "M") {
-            this.showMenu();
+            this.showMenu()
         } else {
             if (this.typeControlRef && this.typeControlRef.current) {
-                this.typeControlRef.current.onKeyDown(event);
+                this.typeControlRef.current.onKeyDown(event)
             }
         }
     }
@@ -742,11 +742,11 @@ class App extends Component<AppProps, AppState> {
 
         /* Filter out some input that should not result in type control */
         if (event.key === "+" || event.key === "-") {
-            return;
+            return
         }
 
         if (this.typeControlRef && this.typeControlRef.current) {
-            this.typeControlRef.current.onKeyPress(event);
+            this.typeControlRef.current.onKeyPress(event)
         }
     }
 
@@ -756,132 +756,132 @@ class App extends Component<AppProps, AppState> {
         console.info("Start new road construction at: " + JSON.stringify({ x: point.x, y: point.y }))
 
         /* Get the possible connections from the server and draw them */
-        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player);
+        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player)
 
         this.setState(
             {
                 newRoad: [{ x: point.x, y: point.y }],
                 possibleRoadConnections: pointInformation.possibleRoadConnections
             }
-        );
+        )
     }
 
     setShowTitles(showTitles: boolean): void {
-        this.setState({ showTitles: showTitles });
+        this.setState({ showTitles: showTitles })
     }
 
     copyTouch(touch: React.Touch): StoredTouch {
-        return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY };
+        return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY }
     }
 
     onTouchStart(event: React.TouchEvent): void {
 
-        event.preventDefault();
+        event.preventDefault()
 
-        console.log("touchstart.");
+        console.log("touchstart.")
 
-        const touches = event.changedTouches;
+        const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
 
-            console.log("touchstart:" + i + "...");
+            console.log("touchstart:" + i + "...")
 
-            ongoingTouches.set(touches[i].identifier, this.copyTouch(touches[i]));
+            ongoingTouches.set(touches[i].identifier, this.copyTouch(touches[i]))
 
-            console.log("touchstart:" + i + ".");
+            console.log("touchstart:" + i + ".")
         }
 
         /* Only move map with one movement */
         if (!globalSyncState.touchMoveOngoing) {
-            const touch = touches[0];
+            const touch = touches[0]
 
-            globalSyncState.touchIdentifier = touch.identifier;
+            globalSyncState.touchIdentifier = touch.identifier
 
-            globalSyncState.mouseDownX = touch.pageX;
-            globalSyncState.mouseDownY = touch.pageY;
-            globalSyncState.mouseMoving = false;
-            globalSyncState.touchMoveOngoing = true;
+            globalSyncState.mouseDownX = touch.pageX
+            globalSyncState.mouseDownY = touch.pageY
+            globalSyncState.mouseMoving = false
+            globalSyncState.touchMoveOngoing = true
 
-            globalSyncState.translateXAtMouseDown = this.state.translateX;
-            globalSyncState.translateYAtMouseDown = this.state.translateY;
+            globalSyncState.translateXAtMouseDown = this.state.translateX
+            globalSyncState.translateYAtMouseDown = this.state.translateY
         }
     }
 
     onTouchMove(event: React.TouchEvent): void {
 
-        event.preventDefault();
+        event.preventDefault()
 
-        const touches = event.changedTouches;
+        const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
-            const touch = ongoingTouches.get(touches[i].identifier);
+            const touch = ongoingTouches.get(touches[i].identifier)
 
             if (!touch || !touch.identifier) {
-                continue;
+                continue
             }
 
             if (globalSyncState.touchMoveOngoing && touch.identifier === globalSyncState.touchIdentifier) {
-                const deltaX = (touch.pageX - globalSyncState.mouseDownX);
-                const deltaY = (touch.pageY - globalSyncState.mouseDownY);
+                const deltaX = (touch.pageX - globalSyncState.mouseDownX)
+                const deltaY = (touch.pageY - globalSyncState.mouseDownY)
 
                 /* Detect move to separate move from click */
                 if (deltaX * deltaX + deltaY * deltaY > 25) {
-                    globalSyncState.mouseMoving = true;
+                    globalSyncState.mouseMoving = true
                 }
 
                 this.setState({
                     translateX: globalSyncState.translateXAtMouseDown + deltaX,
                     translateY: globalSyncState.translateYAtMouseDown + deltaY
-                });
+                })
             }
 
             /* Store ongoing touches just because ... */
             if (touch) {
-                console.log("continuing touch " + touch);
+                console.log("continuing touch " + touch)
 
-                console.log("ctx.moveTo(" + touch.pageX + ", " + touch.pageY + ");");
+                console.log("ctx.moveTo(" + touch.pageX + ", " + touch.pageY + ")")
 
-                console.log("ctx.lineTo(" + touches[i].pageX + ", " + touches[i].pageY + ");");
+                console.log("ctx.lineTo(" + touches[i].pageX + ", " + touches[i].pageY + ")")
 
-                ongoingTouches.set(touch.identifier, touches[i]);
-                console.log(".");
+                ongoingTouches.set(touch.identifier, touches[i])
+                console.log(".")
             } else {
-                console.log("can't figure out which touch to continue");
+                console.log("can't figure out which touch to continue")
             }
         }
     }
 
     onTouchCancel(event: React.TouchEvent): void {
-        event.preventDefault();
+        event.preventDefault()
 
-        console.log("touchcancel.");
+        console.log("touchcancel.")
 
         /* Stop moving */
-        globalSyncState.touchMoveOngoing = false;
+        globalSyncState.touchMoveOngoing = false
 
-        const touches = event.changedTouches;
+        const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
-            ongoingTouches.delete(touches[i].identifier);
+            ongoingTouches.delete(touches[i].identifier)
         }
     }
 
     onTouchEnd(event: React.TouchEvent): void {
 
-        event.preventDefault();
+        event.preventDefault()
 
         /* Stop moving */
-        globalSyncState.touchMoveOngoing = false;
+        globalSyncState.touchMoveOngoing = false
 
-        const touches = event.changedTouches;
+        const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
-            const touch = ongoingTouches.get(touches[i].identifier);
+            const touch = ongoingTouches.get(touches[i].identifier)
 
             if (touch) {
-                ongoingTouches.delete(touches[i].identifier);
+                ongoingTouches.delete(touches[i].identifier)
             } else {
-                console.log("can't figure out which touch to end");
+                console.log("can't figure out which touch to end")
             }
         }
     }
@@ -1003,8 +1003,8 @@ class App extends Component<AppProps, AppState> {
                     onGoToPoint={this.goToPoint.bind(this)}
                 />
             </div>
-        );
+        )
     }
 }
 
-export default App;
+export default App

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component } from 'react'
 
 interface MenuButtonProps {
     onMenuButtonClicked: (() => void)
@@ -12,14 +12,14 @@ class MenuButton extends Component<MenuButtonProps, MenuButtonState> {
             <div className="MenuButton"
                 onClick={
                     (event) => {
-                        this.props.onMenuButtonClicked();
-                        event.stopPropagation();
+                        this.props.onMenuButtonClicked()
+                        event.stopPropagation()
                     }
                 }
                 onTouchStart={
                     (event) => {
-                        this.props.onMenuButtonClicked();
-                        event.stopPropagation();
+                        this.props.onMenuButtonClicked()
+                        event.stopPropagation()
                     }
                 }
             >
@@ -27,8 +27,8 @@ class MenuButton extends Component<MenuButtonProps, MenuButtonState> {
                 <div className="MenuButtonBar" />
                 <div className="MenuButtonBar" />
             </div>
-        );
+        )
     }
 }
 
-export default MenuButton;
+export default MenuButton

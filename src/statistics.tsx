@@ -1,9 +1,9 @@
-import * as d3 from 'd3';
-import React, { Component } from 'react';
-import { GameId, GameStatistics, getGameStatistics, getLandStatistics, LandDataPoint, LandStatistics, Measurement } from './api';
-import { Dialog } from './dialog';
-import SelectableButtonRow from './selectable_button_row';
-import "./statistics.css";
+import * as d3 from 'd3'
+import React, { Component } from 'react'
+import { GameId, GameStatistics, getGameStatistics, getLandStatistics, LandDataPoint, LandStatistics, Measurement } from './api'
+import { Dialog } from './dialog'
+import SelectableButtonRow from './selectable_button_row'
+import "./statistics.css"
 
 interface StatisticsProps {
     onClose: (() => void)
@@ -46,7 +46,7 @@ function maxValue(data: Measurement[]) {
 
 class Statistics extends Component<StatisticsProps, StatisticsState> {
 
-    private statisticsContainerRef = React.createRef<SVGSVGElement>();
+    private statisticsContainerRef = React.createRef<SVGSVGElement>()
 
     constructor(props: StatisticsProps) {
         super(props)
@@ -290,12 +290,12 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 d3.line<LandDataPoint>()
                     .x(
                         (d, i, arr) => {
-                            return xScale(d.time);
+                            return xScale(d.time)
                         }
                     )
                     .y(
                         (d) => {
-                            return yScale(d.values[i]);
+                            return yScale(d.values[i])
                         }
                     )
             )
@@ -455,12 +455,12 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 d3.line<Measurement>()
                     .x(
                         (d, i, arr) => {
-                            return xScale(d.time);
+                            return xScale(d.time)
                         }
                     )
                     .y(
                         (d) => {
-                            return yScale(d.values[i]);
+                            return yScale(d.values[i])
                         }
                     )
             )
@@ -561,4 +561,4 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
     }
 }
 
-export default Statistics;
+export default Statistics

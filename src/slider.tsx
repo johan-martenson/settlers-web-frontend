@@ -1,10 +1,10 @@
-import React, { Component } from 'react';
-import { MenuSection } from './menu';
+import React, { Component } from 'react'
+import { MenuSection } from './menu'
 
 let immediateState = {
     dragging: false,
     clickOffset: 0
-};
+}
 
 interface SliderProps {
     max: number
@@ -24,66 +24,66 @@ interface SliderState {
 
 class Slider extends Component<SliderProps, SliderState> {
 
-    private scaleRef = React.createRef<HTMLDivElement>();
-    private indicatorRef = React.createRef<HTMLDivElement>();
+    private scaleRef = React.createRef<HTMLDivElement>()
+    private indicatorRef = React.createRef<HTMLDivElement>()
 
     constructor(props: SliderProps) {
-        super(props);
+        super(props)
 
         this.state = ({
             step: this.props.step ? this.props.step : 1,
             value: this.props.initialValue,
             scaleLength: 0
-        });
+        })
     }
 
     componentDidMount() {
 
-        const scale = this.scaleRef.current;
+        const scale = this.scaleRef.current
 
         if (!scale) {
-            console.log("ERROR: doesn't have the scale ref");
+            console.log("ERROR: doesn't have the scale ref")
 
-            return;
+            return
         }
 
         this.setState({
             scaleLength: scale.clientWidth
-        });
+        })
 
-        const indicator = this.indicatorRef.current;
+        const indicator = this.indicatorRef.current
 
         if (!indicator) {
-            console.log("ERROR: doesn't have the indicator ref");
+            console.log("ERROR: doesn't have the indicator ref")
 
-            return;
+            return
         }
 
-        indicator.focus();
+        indicator.focus()
     }
 
     render() {
-        const percentage = (this.state.value - this.props.min) / (this.props.max - this.props.min);
+        const percentage = (this.state.value - this.props.min) / (this.props.max - this.props.min)
 
         return (
             <MenuSection className="Slider">
                 <div className="SliderLessLabel Button"
                     onClick={
                         (event: React.MouseEvent) => {
-                            console.info("Decreasing");
+                            console.info("Decreasing")
 
-                            let newValue: number;
+                            let newValue: number
 
                             if (this.state.value - this.state.step < this.props.min) {
-                                newValue = this.props.min;
+                                newValue = this.props.min
                             } else {
-                                newValue = this.state.value - this.state.step;
+                                newValue = this.state.value - this.state.step
                             }
 
-                            this.setState({ value: newValue });
-                            this.props.onValue(newValue);
+                            this.setState({ value: newValue })
+                            this.props.onValue(newValue)
 
-                            event.stopPropagation();
+                            event.stopPropagation()
                         }
                     } >
                     {this.props.less}
@@ -92,24 +92,24 @@ class Slider extends Component<SliderProps, SliderState> {
                     onMouseDown={
                         (event: React.MouseEvent) => {
 
-                            const indicator = this.indicatorRef.current;
+                            const indicator = this.indicatorRef.current
 
                             if (!indicator) {
-                                console.log("ERROR: doesn't have indicator ref");
+                                console.log("ERROR: doesn't have indicator ref")
 
-                                return;
+                                return
                             }
 
                             if (event.target === indicator) {
 
                                 /* Convert to game coordinates */
-                                const dim = event.currentTarget.getBoundingClientRect();
-                                const relativeX = event.clientX - dim.left;
+                                const dim = event.currentTarget.getBoundingClientRect()
+                                const relativeX = event.clientX - dim.left
 
-                                event.stopPropagation();
+                                event.stopPropagation()
 
-                                immediateState.dragging = true;
-                                immediateState.clickOffset = relativeX - indicator.offsetLeft;
+                                immediateState.dragging = true
+                                immediateState.clickOffset = relativeX - indicator.offsetLeft
                             }
                         }
                     }
@@ -118,28 +118,28 @@ class Slider extends Component<SliderProps, SliderState> {
                         (event: React.MouseEvent) => {
                             if (immediateState.dragging) {
 
-                                const scale = this.scaleRef.current;
+                                const scale = this.scaleRef.current
 
                                 if (!scale) {
-                                    console.log("ERROR: doesn't have scale ref");
+                                    console.log("ERROR: doesn't have scale ref")
 
-                                    return;
+                                    return
                                 }
 
                                 /* Convert to game coordinates */
-                                const dim = event.currentTarget.getBoundingClientRect();
-                                const relativeX = event.clientX - dim.left - immediateState.clickOffset;
+                                const dim = event.currentTarget.getBoundingClientRect()
+                                const relativeX = event.clientX - dim.left - immediateState.clickOffset
 
-                                const newPercentage = relativeX / scale.clientWidth;
-                                const newValue = (this.props.max - this.props.min) * newPercentage + this.props.min;
+                                const newPercentage = relativeX / scale.clientWidth
+                                const newValue = (this.props.max - this.props.min) * newPercentage + this.props.min
 
                                 if (newValue >= this.props.min && newValue <= this.props.max) {
-                                    this.setState({ value: newValue });
+                                    this.setState({ value: newValue })
 
-                                    this.props.onValue(newValue);
+                                    this.props.onValue(newValue)
                                 }
 
-                                event.stopPropagation();
+                                event.stopPropagation()
                             }
                         }
                     }
@@ -148,9 +148,9 @@ class Slider extends Component<SliderProps, SliderState> {
                         (event: React.MouseEvent) => {
 
                             if (immediateState.dragging) {
-                                immediateState.dragging = false;
+                                immediateState.dragging = false
 
-                                event.stopPropagation();
+                                event.stopPropagation()
                             }
                         }
                     }
@@ -158,9 +158,9 @@ class Slider extends Component<SliderProps, SliderState> {
                     onMouseOut={
                         (event: React.MouseEvent) => {
                             if (immediateState.dragging) {
-                                immediateState.dragging = false;
+                                immediateState.dragging = false
 
-                                event.stopPropagation();
+                                event.stopPropagation()
                             }
                         }
                     }
@@ -176,26 +176,26 @@ class Slider extends Component<SliderProps, SliderState> {
                 <div className="SliderMoreLabel Button"
                     onClick={
                         () => {
-                            console.info("Decreasing");
+                            console.info("Decreasing")
 
-                            let newValue: number;
+                            let newValue: number
 
                             if (this.state.value + this.state.step > this.props.max) {
-                                newValue = this.props.max;
+                                newValue = this.props.max
                             } else {
-                                newValue = this.state.value + this.state.step;
+                                newValue = this.state.value + this.state.step
                             }
 
-                            this.setState({ value: newValue });
-                            this.props.onValue(newValue);
+                            this.setState({ value: newValue })
+                            this.props.onValue(newValue)
                         }
                     }
                 >
                     {this.props.more}
                 </div>
             </MenuSection>
-        );
+        )
     }
 }
 
-export default Slider;
+export default Slider

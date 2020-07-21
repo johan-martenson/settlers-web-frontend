@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import './on_off_slider.css';
+import React, { Component } from 'react'
+import './on_off_slider.css'
 
 interface OnOffSliderProps {
     initialValue: boolean
@@ -14,23 +14,23 @@ interface OnOffSliderState {
 class OnOffSlider extends Component<OnOffSliderProps, OnOffSliderState> {
 
     constructor(props: OnOffSliderProps) {
-        super(props);
+        super(props)
 
         this.state = { value: props.initialValue }
     }
 
     render() {
-        let markerClassName = "OnOffMarker";
-        let className = "OnOffContainer Row";
+        let markerClassName = "OnOffMarker"
+        let className = "OnOffContainer Row"
 
         if (this.state.value) {
-            markerClassName = markerClassName + " On";
+            markerClassName = markerClassName + " On"
         } else {
-            markerClassName = markerClassName + " Off";
+            markerClassName = markerClassName + " Off"
         }
 
         if (this.props.className) {
-            className = className + " " + this.props.className;
+            className = className + " " + this.props.className
         }
 
         return (
@@ -38,15 +38,15 @@ class OnOffSlider extends Component<OnOffSliderProps, OnOffSliderState> {
                 <div className={markerClassName}
                     onClick={
                         () => {
-                            this.props.onValueChange(!this.state.value);
+                            this.props.onValueChange(!this.state.value)
 
-                            this.setState({ value: !this.state.value });
+                            this.setState({ value: !this.state.value })
                         }
                     }
                 />
             </div>
-        );
+        )
     }
 }
 
-export default OnOffSlider;
+export default OnOffSlider

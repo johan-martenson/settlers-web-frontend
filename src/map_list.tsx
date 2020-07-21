@@ -1,37 +1,37 @@
-import React, { Component } from 'react';
-import { getMaps, MapInformation } from './api';
-import MapInformationCard from './map_information_card';
-import './map_list.css';
+import React, { Component } from 'react'
+import { getMaps, MapInformation } from './api'
+import MapInformationCard from './map_information_card'
+import './map_list.css'
 
 interface MapListProps {
     onMapSelected: ((map: MapInformation) => void)
 }
 
 interface MapListState {
-    maps: MapInformation[];
+    maps: MapInformation[]
 }
 
 class MapList extends Component<MapListProps, MapListState> {
 
     constructor(props: MapListProps) {
-        super(props);
+        super(props)
 
-        this.state = { maps: [] };
+        this.state = { maps: [] }
     }
 
     async componentDidMount() {
 
-        const maps = await getMaps();
+        const maps = await getMaps()
 
         this.setState(
             {
                 maps: maps,
             }
-        );
+        )
     }
 
     onMapSelected(map: MapInformation): void {
-        this.props.onMapSelected(map);
+        this.props.onMapSelected(map)
     }
 
     render() {
@@ -44,14 +44,14 @@ class MapList extends Component<MapListProps, MapListState> {
                             <div key={index} className="MapListItem">
                                 <MapInformationCard map={map} onMapSelected={this.onMapSelected.bind(this)} />
                             </div>
-                        );
+                        )
                     }
                 )
                 }
             </div>
-        );
+        )
     }
 }
 
-export { MapList };
+export { MapList }
 

@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import './dialog.css';
+import React, { Component } from 'react'
+import './dialog.css'
 
 interface BottomButtonsProps {
     children: (JSX.Element | false | string | undefined)[]
@@ -12,8 +12,8 @@ class BottomButtons extends Component<BottomButtonsProps, BottomButtonsState> {
             <div className="BottomButtons">
                 {this.props.children}
             </div>
-        );
+        )
     }
 }
 
-export default BottomButtons;
+export default BottomButtons

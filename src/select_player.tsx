@@ -1,47 +1,47 @@
-import React, { Component } from 'react';
-import { getPlayers, PlayerId, PlayerInformation } from './api';
-import Button from './button';
+import React, { Component } from 'react'
+import { getPlayers, PlayerId, PlayerInformation } from './api'
+import Button from './button'
 
 interface SelectPlayerState {
-    players: PlayerInformation[];
-    gettingPlayers: boolean;
+    players: PlayerInformation[]
+    gettingPlayers: boolean
 }
 
 interface SelectPlayerProps {
-    currentPlayer: PlayerId;
-    onPlayerSelected: ((player: PlayerInformation) => void);
-    gameId: string;
+    currentPlayer: PlayerId
+    onPlayerSelected: ((player: PlayerInformation) => void)
+    gameId: string
 }
 
 class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
 
     constructor(props: SelectPlayerProps) {
-        super(props);
+        super(props)
 
         this.state = {
             players: [],
             gettingPlayers: false
-        };
+        }
     }
 
     shouldComponentUpdate(nextProps: SelectPlayerProps, nextState: SelectPlayerState) {
         if (nextState.players === this.state.players &&
             nextState.gettingPlayers === this.state.gettingPlayers &&
             nextProps.currentPlayer === this.props.currentPlayer) {
-            return false;
+            return false
         }
 
-        return true;
+        return true
     }
 
     async updatePlayers(): Promise<void> {
 
-        const players = await getPlayers(this.props.gameId);
+        const players = await getPlayers(this.props.gameId)
 
         this.setState({
             players: players,
             gettingPlayers: false
-        });
+        })
     }
 
     componentDidMount() {
@@ -49,10 +49,10 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
         if (this.state.players.length === 0 && !this.state.gettingPlayers) {
             this.setState({
                 gettingPlayers: true
-            });
+            })
 
-            console.info("Getting list of players from server");
-            this.updatePlayers();
+            console.info("Getting list of players from server")
+            this.updatePlayers()
         }
     }
 
@@ -70,7 +70,7 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
                                     selected={true}
                                     onButtonClicked={() => { this.props.onPlayerSelected(player) }}
                                 />
-                            );
+                            )
                         } else {
                             return (
                                 <Button label={player.name}
@@ -78,14 +78,14 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
                                     id={player.id}
                                     onButtonClicked={() => { this.props.onPlayerSelected(player) }}
                                 />
-                            );
+                            )
                         }
                     }
                 )
                 }
             </div>
-        );
+        )
     }
 }
 
-export default SelectPlayer;
+export default SelectPlayer

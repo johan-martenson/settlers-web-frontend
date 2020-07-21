@@ -1,9 +1,9 @@
-import React, { Component, createRef } from 'react';
-import Button from './button';
-import Card from './card';
-import ExpandCollapseToggle from './expand_collapse_toggle';
-import './player.css';
-import { PlayerInformation } from './api';
+import React, { Component, createRef } from 'react'
+import Button from './button'
+import Card from './card'
+import ExpandCollapseToggle from './expand_collapse_toggle'
+import './player.css'
+import { PlayerInformation } from './api'
 
 interface PlayerState {
     type: string
@@ -14,23 +14,23 @@ interface PlayerState {
 }
 
 interface PlayerProps {
-    isSelf?: boolean;
-    player: PlayerInformation;
+    isSelf?: boolean
+    player: PlayerInformation
     onPlayerRemoved?: (() => void)
     onNameChanged?: ((name: string) => void)
 }
 
 class Player extends Component<PlayerProps, PlayerState> {
 
-    private nameFieldRef = createRef<HTMLInputElement>();
+    private nameFieldRef = createRef<HTMLInputElement>()
 
     constructor(props: PlayerProps) {
-        super(props);
+        super(props)
 
-        let isSelf = false;
+        let isSelf = false
 
         if (props.isSelf) {
-            isSelf = true;
+            isSelf = true
         }
 
         this.state = {
@@ -39,27 +39,27 @@ class Player extends Component<PlayerProps, PlayerState> {
             isSelf: isSelf,
             nameField: null,
             expanded: false
-        };
+        }
     }
 
     changeName(): void {
 
-        console.log("CHANGING NAME");
+        console.log("CHANGING NAME")
 
         if (!this.props.onNameChanged) {
-            console.log("No callback setup");
-            return;
+            console.log("No callback setup")
+            return
         }
 
-        const nameField = this.nameFieldRef.current;
+        const nameField = this.nameFieldRef.current
 
         if (!nameField || nameField.value === "") {
             console.log("No value to read")
-            return;
+            return
         }
 
         console.log("Calling callback")
-        this.props.onNameChanged(nameField.value);
+        this.props.onNameChanged(nameField.value)
     }
 
     render() {
@@ -85,9 +85,9 @@ class Player extends Component<PlayerProps, PlayerState> {
 
                 </Card>
             </div>
-        );
+        )
     }
 }
 
-export { Player };
+export { Player }
 

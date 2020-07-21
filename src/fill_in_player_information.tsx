@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import Button from './button';
-import { Dialog } from './dialog';
-import { do_self_test } from './self_test';
+import React, { Component } from 'react'
+import Button from './button'
+import { Dialog } from './dialog'
+import { do_self_test } from './self_test'
 
 export interface EnteredPlayerInformation {
     name: string
@@ -17,12 +17,12 @@ interface FillInPlayerInformationState {
 
 class FillInPlayerInformation extends Component<FillInPlayerInformationProps, FillInPlayerInformationState> {
 
-    private nameFieldRef = React.createRef<HTMLInputElement>();
+    private nameFieldRef = React.createRef<HTMLInputElement>()
 
     constructor(props: FillInPlayerInformationProps) {
-        super(props);
+        super(props)
 
-        this.state = { userNameEntered: false };
+        this.state = { userNameEntered: false }
 
         console.log("Running self test")
 
@@ -40,7 +40,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                 {
                     name: this.nameFieldRef.current.value
                 }
-            );
+            )
         }
     }
 
@@ -61,7 +61,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
 
         /* Set focus on the name field */
         if (this.nameFieldRef && this.nameFieldRef.current) {
-            this.nameFieldRef.current.focus();
+            this.nameFieldRef.current.focus()
         }
     }
 
@@ -72,11 +72,11 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
             this.nameFieldRef.current.value !== "") {
 
             if (!this.state.userNameEntered) {
-                this.setState({ userNameEntered: true });
+                this.setState({ userNameEntered: true })
             }
         } else {
             if (this.state.userNameEntered) {
-                this.setState({ userNameEntered: false });
+                this.setState({ userNameEntered: false })
             }
         }
     }
@@ -88,7 +88,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                     <input type="text" placeholder="Name" ref={this.nameFieldRef}
                         onChange={
                             (e: React.FormEvent<HTMLInputElement>) => {
-                                this.onInformationEntered();
+                                this.onInformationEntered()
                             }
                         }
 
@@ -97,7 +97,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                                 if (e.keyCode === 13) {
 
                                     if (this.state.userNameEntered) {
-                                        this.onPlayerInformationDone();
+                                        this.onPlayerInformationDone()
                                     }
                                 }
                             }
@@ -110,9 +110,9 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                     disabled={!this.state.userNameEntered}
                 />
             </Dialog>
-        );
+        )
     }
 }
 
-export { FillInPlayerInformation };
+export { FillInPlayerInformation }
 

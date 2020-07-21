@@ -60,4 +60,4 @@ const HELP_PAGES: PageType[] = [
     }
 ]
 
-export { HELP_PAGES };
+export { HELP_PAGES }

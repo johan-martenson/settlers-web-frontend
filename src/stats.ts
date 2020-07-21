@@ -33,28 +33,28 @@ function reportValueForVariable(name: string, value: number): void {
         return
     }
 
-    variable.latestValue = value;
+    variable.latestValue = value
 
     if (variable.numberOfMeasurements === 0) {
-        variable.average = value;
-        variable.isLatestValueHighest = true;
-        variable.isLatestValueLowest = true;
+        variable.average = value
+        variable.isLatestValueHighest = true
+        variable.isLatestValueLowest = true
     } else {
-        variable.average = (variable.average * variable.numberOfMeasurements + value) / (variable.numberOfMeasurements + 1);
+        variable.average = (variable.average * variable.numberOfMeasurements + value) / (variable.numberOfMeasurements + 1)
     }
 
-    variable.isLatestValueHighest = value > variable.currentHighestValue;
-    variable.isLatestValueLowest = value < variable.currentLowestValue;
+    variable.isLatestValueHighest = value > variable.currentHighestValue
+    variable.isLatestValueLowest = value < variable.currentLowestValue
 
     if (variable.isLatestValueHighest) {
-        variable.currentHighestValue = value;
+        variable.currentHighestValue = value
     }
 
     if (variable.isLatestValueLowest) {
-        variable.currentLowestValue = value;
+        variable.currentLowestValue = value
     }
 
-    variable.numberOfMeasurements = variable.numberOfMeasurements + 1;
+    variable.numberOfMeasurements = variable.numberOfMeasurements + 1
 }
 
 function getAverageValueForVariable(name: string): number {

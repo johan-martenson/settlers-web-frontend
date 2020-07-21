@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
-import { getCrops, getFlags, getHouses, getRoads, getTrees, getWorkers, materialToColor, Point } from './api';
-import houseImageMap, { Filename } from './images';
-import { monitor } from './monitor';
-import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt, getTimestamp } from './utils';
-import { PointMapFast } from './util_types';
-import { Duration, AggregatedDuration } from './duration';
-import { isLatestValueHighestForVariable, getLatestValueForVariable, getVariableNames, getAverageValueForVariable, getHighestValueForVariable, addVariableIfAbsent } from './stats';
+import React, { Component } from 'react'
+import { getCrops, getFlags, getHouses, getRoads, getTrees, getWorkers, materialToColor, Point } from './api'
+import houseImageMap, { Filename } from './images'
+import { monitor } from './monitor'
+import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt, getTimestamp } from './utils'
+import { PointMapFast } from './util_types'
+import { Duration, AggregatedDuration } from './duration'
+import { isLatestValueHighestForVariable, getLatestValueForVariable, getVariableNames, getAverageValueForVariable, getHighestValueForVariable, addVariableIfAbsent } from './stats'
 import './game_render.css'
 
 export interface ScreenPoint {
@@ -51,7 +51,7 @@ interface GameCanvasState {
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
-    private selfRef = React.createRef<HTMLCanvasElement>();
+    private selfRef = React.createRef<HTMLCanvasElement>()
     private terrain: PointMapFast<TerrainAtPoint>
     private lightVector: Vector
     private debuggedPoint: Point | undefined
@@ -59,29 +59,29 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private brightnessMap?: PointMapFast<number>
 
     constructor(props: GameCanvasProps) {
-        super(props);
+        super(props)
 
-        this.gamePointToScreenPoint = this.gamePointToScreenPoint.bind(this);
-        this.screenPointToGamePoint = this.screenPointToGamePoint.bind(this);
-        this.onClick = this.onClick.bind(this);
-        this.onDoubleClick = this.onDoubleClick.bind(this);
-        this.getHeightForPoint = this.getHeightForPoint.bind(this);
-        this.pointToPoint3D = this.pointToPoint3D.bind(this);
+        this.gamePointToScreenPoint = this.gamePointToScreenPoint.bind(this)
+        this.screenPointToGamePoint = this.screenPointToGamePoint.bind(this)
+        this.onClick = this.onClick.bind(this)
+        this.onDoubleClick = this.onDoubleClick.bind(this)
+        this.getHeightForPoint = this.getHeightForPoint.bind(this)
+        this.pointToPoint3D = this.pointToPoint3D.bind(this)
 
         this.state = {
             images: new Map()
-        };
+        }
 
-        this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", "flag.png", "large-house-available.png", "medium-house-available.png", "small-house-available.png", "mine-available.png"]);
+        this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", "flag.png", "large-house-available.png", "medium-house-available.png", "small-house-available.png", "mine-available.png"])
 
-        this.loadImages(Array.from(new Set(houseImageMap.values())));
+        this.loadImages(Array.from(new Set(houseImageMap.values())))
 
         /* Create the height array */
         this.terrain = new PointMapFast<TerrainAtPoint>()
 
         /* Assign heights */
         if (this.props.terrain && this.props.terrain.length > 0) {
-            this.buildHeightMap();
+            this.buildHeightMap()
         }
 
         /* Define the light vector */
@@ -108,17 +108,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.props.terrain.forEach(
             (terrainAtPoint: TerrainAtPoint) => {
 
-                const point = terrainAtPoint.point;
+                const point = terrainAtPoint.point
 
-                const point3d = { x: terrainAtPoint.point.x, y: terrainAtPoint.point.y, z: terrainAtPoint.height };
+                const point3d = { x: terrainAtPoint.point.x, y: terrainAtPoint.point.y, z: terrainAtPoint.height }
 
-                const pointDownLeft = getPointDownLeft(point);
-                const pointDownRight = getPointDownRight(point);
-                const pointRight = getPointRight(point);
+                const pointDownLeft = getPointDownLeft(point)
+                const pointDownRight = getPointDownRight(point)
+                const pointRight = getPointRight(point)
 
-                const downLeftHeight = this.getHeightForPoint(pointDownLeft);
-                const downRightHeight = this.getHeightForPoint(pointDownRight);
-                const rightHeight = this.getHeightForPoint(pointRight);
+                const downLeftHeight = this.getHeightForPoint(pointDownLeft)
+                const downRightHeight = this.getHeightForPoint(pointDownRight)
+                const rightHeight = this.getHeightForPoint(pointRight)
 
                 if (downLeftHeight !== undefined && downRightHeight !== undefined) {
                     const pointDownLeft3d = { x: pointDownLeft.x, y: pointDownLeft.y, z: downLeftHeight }
@@ -162,22 +162,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     loadImages(sources: string[]): void {
         for (let source of sources) {
-            console.log("Loading " + source);
+            console.log("Loading " + source)
 
-            const image = new Image();
+            const image = new Image()
 
             image.addEventListener("load",
                 () => {
-                    console.log("Loaded " + source);
+                    console.log("Loaded " + source)
                     this.setState(
                         {
                             images: new Map(this.state.images).set(source, image)
                         }
                     )
                 }
-            );
+            )
 
-            image.src = source;
+            image.src = source
         }
     }
 
@@ -195,7 +195,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             (typeof (this.state.hoverPoint) !== "undefined" &&
                 (this.state.hoverPoint !== nextState.hoverPoint ||
                     this.state.hoverPoint.x !== nextState.hoverPoint.x ||
-                    this.state.hoverPoint.y !== nextState.hoverPoint.y));
+                    this.state.hoverPoint.y !== nextState.hoverPoint.y))
     }
 
     getHeightForPoint(point: Point): number | undefined {
@@ -212,14 +212,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const height = this.getHeightForPoint(point)
 
         if (height === undefined) {
-            return undefined;
+            return undefined
         }
 
         return {
             x: point.x,
             y: point.y,
             z: height
-        };
+        }
     }
 
     componentDidMount() {
@@ -285,8 +285,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const minYInGame = downRight.y
 
         if (this.props.selectedPoint && (!this.debuggedPoint || (this.debuggedPoint && !same(this.props.selectedPoint, this.debuggedPoint)))) {
-            oncePerNewSelectionPoint = true;
-            this.debuggedPoint = this.props.selectedPoint;
+            oncePerNewSelectionPoint = true
+            this.debuggedPoint = this.props.selectedPoint
         }
 
         if (!this.brightnessMap) {
@@ -402,8 +402,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         ctx.fillStyle = 'yellow'
 
         for (const [id, road] of getRoads()) {
-            const screenPoints = road.points.map(this.gamePointToScreenPoint);
-            let previousScreenPoint = null;
+            const screenPoints = road.points.map(this.gamePointToScreenPoint)
+            let previousScreenPoint = null
 
             for (let screenPoint of screenPoints) {
 
@@ -411,22 +411,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if ((previousScreenPoint.x < 0 && screenPoint.x < 0) || (previousScreenPoint.x > width && screenPoint.x > width) ||
                         (previousScreenPoint.y < 0 && screenPoint.y < 0) || (previousScreenPoint.y > height && screenPoint.y > height)) {
-                        previousScreenPoint = screenPoint;
+                        previousScreenPoint = screenPoint
 
-                        continue;
+                        continue
                     }
 
-                    ctx.beginPath();
+                    ctx.beginPath()
 
-                    ctx.moveTo(screenPoint.x, screenPoint.y);
-                    ctx.lineTo(previousScreenPoint.x, previousScreenPoint.y);
+                    ctx.moveTo(screenPoint.x, screenPoint.y)
+                    ctx.lineTo(previousScreenPoint.x, previousScreenPoint.y)
 
-                    ctx.closePath();
+                    ctx.closePath()
 
-                    ctx.stroke();
+                    ctx.stroke()
                 }
 
-                previousScreenPoint = screenPoint;
+                previousScreenPoint = screenPoint
             }
         }
 
@@ -460,29 +460,29 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw the ongoing new road if it exists */
         if (this.props.newRoad) {
 
-            let previous = null;
+            let previous = null
 
-            ctx.fillStyle = 'yellow';
-            ctx.strokeStyle = 'yellow';
+            ctx.fillStyle = 'yellow'
+            ctx.strokeStyle = 'yellow'
 
             for (let point of this.props.newRoad) {
 
                 if (previous) {
 
-                    const screenPointPrevious = this.gamePointToScreenPoint(previous);
-                    const screenPointCurrent = this.gamePointToScreenPoint(point);
+                    const screenPointPrevious = this.gamePointToScreenPoint(previous)
+                    const screenPointCurrent = this.gamePointToScreenPoint(point)
 
-                    ctx.beginPath();
+                    ctx.beginPath()
 
-                    ctx.moveTo(screenPointCurrent.x, screenPointCurrent.y);
-                    ctx.lineTo(screenPointPrevious.x, screenPointPrevious.y);
+                    ctx.moveTo(screenPointCurrent.x, screenPointCurrent.y)
+                    ctx.lineTo(screenPointPrevious.x, screenPointPrevious.y)
 
-                    ctx.closePath();
+                    ctx.closePath()
 
                     ctx.stroke()
                 }
 
-                previous = point;
+                previous = point
             }
         }
 
@@ -496,19 +496,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            const screenPoint = this.gamePointToScreenPoint(house);
+            const screenPoint = this.gamePointToScreenPoint(house)
 
             /* Draw the house next to the point, instead of on top */
-            const imageFilename = houseImageMap.get(house.type);
+            const imageFilename = houseImageMap.get(house.type)
 
             if (imageFilename) {
 
-                const houseImage = this.state.images.get(imageFilename);
+                const houseImage = this.state.images.get(imageFilename)
 
                 if (houseImage) {
 
                     if (houseImage.width > 300 || houseImage.height > 300) {
-                        screenPoint.x -= 1.5 * this.props.scale;
+                        screenPoint.x -= 1.5 * this.props.scale
                         screenPoint.y -= 2 * scaleY
 
                         ctx.drawImage(houseImage, screenPoint.x, screenPoint.y, 3 * this.props.scale, 3 * scaleY)
@@ -519,20 +519,20 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         ctx.drawImage(houseImage, screenPoint.x, screenPoint.y, houseImage.width * this.props.scale / 40, houseImage.height * this.props.scale / 40)
                     }
                 } else {
-                    screenPoint.x -= 1.5 * this.props.scale;
+                    screenPoint.x -= 1.5 * this.props.scale
                     screenPoint.y -= 2 * scaleY
 
                     ctx.fillStyle = 'yellow'
 
-                    ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50);
+                    ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50)
                 }
             } else {
-                screenPoint.x -= 1.5 * this.props.scale;
+                screenPoint.x -= 1.5 * this.props.scale
                 screenPoint.y -= 2 * scaleY
 
                 ctx.fillStyle = 'red'
 
-                ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50);
+                ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50)
             }
         }
 
@@ -557,16 +557,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            const screenPoint = this.gamePointToScreenPoint(tree);
+            const screenPoint = this.gamePointToScreenPoint(tree)
 
             /* Draw the house next to the point, instead of on top */
-            screenPoint.x -= 0.5 * this.props.scale;
+            screenPoint.x -= 0.5 * this.props.scale
             screenPoint.y -= 2.5 * scaleY
 
-            const treeImage = this.state.images.get("tree.png");
+            const treeImage = this.state.images.get("tree.png")
 
             if (treeImage) {
-                ctx.drawImage(treeImage, screenPoint.x, screenPoint.y, this.props.scale, 3 * scaleY);
+                ctx.drawImage(treeImage, screenPoint.x, screenPoint.y, this.props.scale, 3 * scaleY)
             }
         }
 
@@ -574,7 +574,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the crops */
-        ctx.fillStyle = 'orange';
+        ctx.fillStyle = 'orange'
 
         for (const crop of getCrops()) {
 
@@ -582,14 +582,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            const screenPoint = this.gamePointToScreenPoint(crop);
+            const screenPoint = this.gamePointToScreenPoint(crop)
 
             ctx.beginPath()
 
-            ctx.ellipse(screenPoint.x, screenPoint.y, this.props.scale, 0.5 * scaleY, 0, 0, 2 * Math.PI);
+            ctx.ellipse(screenPoint.x, screenPoint.y, this.props.scale, 0.5 * scaleY, 0, 0, 2 * Math.PI)
             ctx.closePath()
 
-            ctx.fill();
+            ctx.fill()
         }
 
         duration.after("draw crops")
@@ -602,17 +602,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            const screenPoint = this.gamePointToScreenPoint(sign);
+            const screenPoint = this.gamePointToScreenPoint(sign)
 
-            const fillColor = materialToColor.get(sign.type);
+            const fillColor = materialToColor.get(sign.type)
 
             if (fillColor) {
-                ctx.fillStyle = fillColor;
+                ctx.fillStyle = fillColor
             } else {
                 ctx.fillStyle = "brown"
             }
 
-            ctx.fillRect(screenPoint.x - 5, screenPoint.y - 5, 10, 10);
+            ctx.fillRect(screenPoint.x - 5, screenPoint.y - 5, 10, 10)
         }
 
         duration.after("draw signs")
@@ -625,16 +625,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            const screenPoint = this.gamePointToScreenPoint(stone);
+            const screenPoint = this.gamePointToScreenPoint(stone)
 
             /* Draw the stone next to the point, instead of on top */
             screenPoint.x -= (2 * this.props.scale) / 2
             screenPoint.y -= 3 * scaleY / 2
 
-            const stoneImage = this.state.images.get("stone.png");
+            const stoneImage = this.state.images.get("stone.png")
 
             if (stoneImage) {
-                ctx.drawImage(stoneImage, screenPoint.x, screenPoint.y, 2 * this.props.scale, 3 * scaleY);
+                ctx.drawImage(stoneImage, screenPoint.x, screenPoint.y, 2 * this.props.scale, 3 * scaleY)
             }
         }
 
@@ -642,7 +642,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw workers */
-        const workerImage = this.state.images.get("worker.png");
+        const workerImage = this.state.images.get("worker.png")
 
         for (const [id, worker] of getWorkers()) {
 
@@ -656,15 +656,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                const screenPoint1 = this.gamePointToScreenPoint(worker.previous);
-                const screenPoint2 = this.gamePointToScreenPoint(worker.next);
+                const screenPoint1 = this.gamePointToScreenPoint(worker.previous)
+                const screenPoint2 = this.gamePointToScreenPoint(worker.next)
 
                 const point = {
                     x: screenPoint1.x + (screenPoint2.x - screenPoint1.x) * (worker.percentageTraveled / 100),
                     y: screenPoint1.y + (screenPoint2.y - screenPoint1.y) * (worker.percentageTraveled / 100)
-                };
+                }
 
-                point.y -= scaleY;
+                point.y -= scaleY
 
                 if (workerImage) {
                     ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
@@ -675,9 +675,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                const screenPoint = this.gamePointToScreenPoint(worker);
+                const screenPoint = this.gamePointToScreenPoint(worker)
 
-                screenPoint.y -= scaleY;
+                screenPoint.y -= scaleY
 
                 if (workerImage) {
                     ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
@@ -689,7 +689,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw animals */
-        const animalImage = this.state.images.get("rabbit-small-brown.png");
+        const animalImage = this.state.images.get("rabbit-small-brown.png")
 
         for (const animal of monitor.animals) {
             if (animal.betweenPoints) {
@@ -702,18 +702,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                const screenPoint1 = this.gamePointToScreenPoint(animal.previous);
-                const screenPoint2 = this.gamePointToScreenPoint(animal.next);
+                const screenPoint1 = this.gamePointToScreenPoint(animal.previous)
+                const screenPoint2 = this.gamePointToScreenPoint(animal.next)
 
                 const point = {
                     x: screenPoint1.x + (screenPoint2.x - screenPoint1.x) * (animal.percentageTraveled / 100),
                     y: screenPoint1.y + (screenPoint2.y - screenPoint1.y) * (animal.percentageTraveled / 100)
-                };
+                }
 
-                point.y -= 15;
+                point.y -= 15
 
                 if (animalImage) {
-                    ctx.drawImage(animalImage, point.x, point.y, 20, 30);
+                    ctx.drawImage(animalImage, point.x, point.y, 20, 30)
                 }
             } else {
 
@@ -721,12 +721,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                const screenPoint = this.gamePointToScreenPoint(animal);
+                const screenPoint = this.gamePointToScreenPoint(animal)
 
-                screenPoint.y -= 15;
+                screenPoint.y -= 15
 
                 if (animalImage) {
-                    ctx.drawImage(animalImage, screenPoint.x, screenPoint.y, 20, 30);
+                    ctx.drawImage(animalImage, screenPoint.x, screenPoint.y, 20, 30)
                 }
             }
         }
@@ -735,7 +735,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw flags */
-        const flagImage = this.state.images.get("flag.png");
+        const flagImage = this.state.images.get("flag.png")
 
         for (const [id, flag] of getFlags()) {
 
@@ -743,14 +743,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            const screenPoint = this.gamePointToScreenPoint(flag);
+            const screenPoint = this.gamePointToScreenPoint(flag)
 
             /* Draw the flag slightly above the point */
             screenPoint.y -= 25
             screenPoint.x = screenPoint.x - 3
 
             if (flagImage) {
-                ctx.drawImage(flagImage, screenPoint.x, screenPoint.y, 10, 30);
+                ctx.drawImage(flagImage, screenPoint.x, screenPoint.y, 10, 30)
             }
         }
 
@@ -775,7 +775,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                const screenPoint = this.gamePointToScreenPoint(gamePoint);
+                const screenPoint = this.gamePointToScreenPoint(gamePoint)
 
                 if (available.includes("large")) {
 
@@ -785,12 +785,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         ctx.drawImage(largeHouseAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 20, 20)
                     } else {
-                        ctx.fillStyle = 'yellow';
-                        ctx.strokeStyle = 'black';
+                        ctx.fillStyle = 'yellow'
+                        ctx.strokeStyle = 'black'
 
-                        ctx.fillRect(screenPoint.x - 7, screenPoint.y - 15, 15, 15);
+                        ctx.fillRect(screenPoint.x - 7, screenPoint.y - 15, 15, 15)
 
-                        ctx.strokeRect(screenPoint.x - 7, screenPoint.y - 15, 15, 15);
+                        ctx.strokeRect(screenPoint.x - 7, screenPoint.y - 15, 15, 15)
                     }
                 } else if (available.includes("medium")) {
 
@@ -800,11 +800,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         ctx.drawImage(mediumHouseAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 20, 20)
                     } else {
-                        ctx.fillStyle = 'yellow';
-                        ctx.strokeStyle = 'black';
+                        ctx.fillStyle = 'yellow'
+                        ctx.strokeStyle = 'black'
 
-                        ctx.fillRect(screenPoint.x - 5, screenPoint.y - 10, 10, 10);
-                        ctx.strokeRect(screenPoint.x - 5, screenPoint.y - 10, 10, 10);
+                        ctx.fillRect(screenPoint.x - 5, screenPoint.y - 10, 10, 10)
+                        ctx.strokeRect(screenPoint.x - 5, screenPoint.y - 10, 10, 10)
                     }
                 } else if (available.includes("small")) {
 
@@ -814,11 +814,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         ctx.drawImage(smallHouseAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 20, 20)
                     } else {
-                        ctx.fillStyle = 'yellow';
+                        ctx.fillStyle = 'yellow'
                         ctx.strokeStyle = 'black'
 
-                        ctx.fillRect(screenPoint.x - 3, screenPoint.y - 6, 6, 6);
-                        ctx.strokeRect(screenPoint.x - 3, screenPoint.y - 6, 6, 6);
+                        ctx.fillRect(screenPoint.x - 3, screenPoint.y - 6, 6, 6)
+                        ctx.strokeRect(screenPoint.x - 3, screenPoint.y - 6, 6, 6)
 
                     }
                 } else if (available.includes("mine")) {
@@ -829,34 +829,34 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         ctx.drawImage(mineAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 20, 20)
                     } else {
-                        ctx.fillStyle = 'yellow';
+                        ctx.fillStyle = 'yellow'
                         ctx.strokeStyle = 'black'
 
-                        ctx.beginPath();
-                        ctx.arc(screenPoint.x - 3, screenPoint.y - 6, 6, 0, 2 * Math.PI);
+                        ctx.beginPath()
+                        ctx.arc(screenPoint.x - 3, screenPoint.y - 6, 6, 0, 2 * Math.PI)
                         ctx.closePath()
 
-                        ctx.fill();
-                        ctx.stroke();
+                        ctx.fill()
+                        ctx.stroke()
                     }
 
                 } else if (available.includes("flag")) {
-                    ctx.fillStyle = 'yellow';
-                    ctx.strokeStyle = 'black';
+                    ctx.fillStyle = 'yellow'
+                    ctx.strokeStyle = 'black'
 
-                    ctx.beginPath();
+                    ctx.beginPath()
 
-                    ctx.moveTo(screenPoint.x - 2, screenPoint.y);
-                    ctx.lineTo(screenPoint.x - 2, screenPoint.y - 10);
-                    ctx.lineTo(screenPoint.x + 3, screenPoint.y - 10);
-                    ctx.lineTo(screenPoint.x + 3, screenPoint.y - 5);
-                    ctx.lineTo(screenPoint.x, screenPoint.y - 5);
-                    ctx.lineTo(screenPoint.x, screenPoint.y);
+                    ctx.moveTo(screenPoint.x - 2, screenPoint.y)
+                    ctx.lineTo(screenPoint.x - 2, screenPoint.y - 10)
+                    ctx.lineTo(screenPoint.x + 3, screenPoint.y - 10)
+                    ctx.lineTo(screenPoint.x + 3, screenPoint.y - 5)
+                    ctx.lineTo(screenPoint.x, screenPoint.y - 5)
+                    ctx.lineTo(screenPoint.x, screenPoint.y)
 
-                    ctx.closePath();
+                    ctx.closePath()
 
-                    ctx.fill();
-                    ctx.stroke();
+                    ctx.fill()
+                    ctx.stroke()
                 }
             }
         }
@@ -868,7 +868,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.props.showHouseTitles) {
 
             ctx.font = "20px sans-serif"
-            ctx.fillStyle = 'yellow';
+            ctx.fillStyle = 'yellow'
 
             for (const [id, house] of monitor.houses) {
 
@@ -876,21 +876,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                const screenPoint = this.gamePointToScreenPoint(house);
+                const screenPoint = this.gamePointToScreenPoint(house)
 
                 /* Draw the house next to the point, instead of on top */
-                screenPoint.x -= 1.5 * this.props.scale; // 30
-                screenPoint.y -= 2 * scaleY; // 15
+                screenPoint.x -= 1.5 * this.props.scale // 30
+                screenPoint.y -= 2 * scaleY // 15
 
-                let houseTitle = camelCaseToWords(house.type);
+                let houseTitle = camelCaseToWords(house.type)
 
                 if (house.state === "UNFINISHED") {
-                    houseTitle = "(" + houseTitle + ")";
+                    houseTitle = "(" + houseTitle + ")"
                 } else if (house.productivity) {
                     houseTitle = houseTitle + " (" + house.productivity + "%)"
                 }
 
-                ctx.fillText(houseTitle, screenPoint.x, screenPoint.y - 5);
+                ctx.fillText(houseTitle, screenPoint.x, screenPoint.y - 5)
             }
         }
 
@@ -902,19 +902,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.props.possibleRoadConnections.forEach(
                 (point, index) => {
 
-                    const screenPoint = this.gamePointToScreenPoint(point);
+                    const screenPoint = this.gamePointToScreenPoint(point)
 
-                    ctx.fillStyle = 'orange';
-                    ctx.strokeStyle = 'black';
+                    ctx.fillStyle = 'orange'
+                    ctx.strokeStyle = 'black'
 
-                    ctx.beginPath();
-                    ctx.arc(screenPoint.x, screenPoint.y, 6, 0, 2 * Math.PI);
+                    ctx.beginPath()
+                    ctx.arc(screenPoint.x, screenPoint.y, 6, 0, 2 * Math.PI)
                     ctx.closePath()
 
-                    ctx.fill();
-                    ctx.stroke();
+                    ctx.fill()
+                    ctx.stroke()
                 }
-            );
+            )
         }
 
         duration.after("draw possible road connections")
@@ -922,17 +922,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw the selected point */
         if (this.props.selectedPoint) {
-            const screenPoint = this.gamePointToScreenPoint(this.props.selectedPoint);
+            const screenPoint = this.gamePointToScreenPoint(this.props.selectedPoint)
 
-            ctx.fillStyle = 'yellow';
-            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'yellow'
+            ctx.strokeStyle = 'black'
 
-            ctx.beginPath();
-            ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI);
+            ctx.beginPath()
+            ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI)
             ctx.closePath()
 
-            ctx.fill();
-            ctx.stroke();
+            ctx.fill()
+            ctx.stroke()
         }
 
         duration.after("draw selected point")
@@ -940,17 +940,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw the hover point */
         if (this.state.hoverPoint) {
-            const screenPoint = this.gamePointToScreenPoint(this.state.hoverPoint);
+            const screenPoint = this.gamePointToScreenPoint(this.state.hoverPoint)
 
-            ctx.fillStyle = 'yellow';
-            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'yellow'
+            ctx.strokeStyle = 'black'
 
-            ctx.beginPath();
-            ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI);
+            ctx.beginPath()
+            ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI)
             ctx.closePath()
 
-            ctx.fill();
-            ctx.stroke();
+            ctx.fill()
+            ctx.stroke()
         }
 
         duration.after("draw hover point")
@@ -960,12 +960,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* List counters if the rendering time exceeded the previous maximum */
         if (isLatestValueHighestForVariable("GameRender::renderGame.total")) {
             for (const name of getVariableNames()) {
-                console.log();
-                console.log("  " + name + ":");
-                console.log("   -- Latest: " + getLatestValueForVariable(name));
-                console.log("   -- Average: " + getAverageValueForVariable(name));
-                console.log("   -- Highest: " + getHighestValueForVariable(name));
-                console.log("   -- Lowest: " + getLatestValueForVariable(name));
+                console.log()
+                console.log("  " + name + ":")
+                console.log("   -- Latest: " + getLatestValueForVariable(name))
+                console.log("   -- Average: " + getAverageValueForVariable(name))
+                console.log("   -- Highest: " + getHighestValueForVariable(name))
+                console.log("   -- Lowest: " + getLatestValueForVariable(name))
             }
         }
 
@@ -981,7 +981,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx.closePath()
 
             ctx.fillStyle = 'black'
-            ctx.fillText("" + fps, width - 100, 20);
+            ctx.fillText("" + fps, width - 100, 20)
 
             ctx.fillText("" + getAverageValueForVariable("GameRender::renderGame.total"), width - 100, 40)
         }
@@ -996,26 +996,26 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             {
                 context: context
             }
-        );
+        )
     }
 
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {
         return {
             x: gamePoint.x * this.props.scale + this.props.translateX,
             y: this.props.screenHeight - gamePoint.y * this.props.scale * 0.5 + this.props.translateY
-        };
+        }
     }
 
     screenPointToGamePoint(screenPoint: ScreenPoint): Point {
 
-        const gameX = (screenPoint.x - this.props.translateX) / this.props.scale;
-        const gameY = (this.props.screenHeight - screenPoint.y + this.props.translateY) / (this.props.scale * 0.5);
+        const gameX = (screenPoint.x - this.props.translateX) / this.props.scale
+        const gameY = (this.props.screenHeight - screenPoint.y + this.props.translateY) / (this.props.scale * 0.5)
 
-        let roundedGameX = Math.round(gameX);
-        let roundedGameY = Math.round(gameY);
+        let roundedGameX = Math.round(gameX)
+        let roundedGameY = Math.round(gameY)
 
-        const faultX = gameX - roundedGameX;
-        const faultY = gameY - roundedGameY;
+        const faultX = gameX - roundedGameX
+        const faultY = gameY - roundedGameY
 
         /* Call the handler directly if both points are odd or even */
         if ((roundedGameX + roundedGameY) % 2 !== 0) {
@@ -1024,81 +1024,81 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (Math.abs(faultX) > Math.abs(faultY)) {
 
                 if (faultX > 0) {
-                    roundedGameX++;
+                    roundedGameX++
                 } else {
-                    roundedGameX--;
+                    roundedGameX--
                 }
             } else if (Math.abs(faultX) < Math.abs(faultY)) {
                 if (faultY > 0) {
-                    roundedGameY++;
+                    roundedGameY++
                 } else {
-                    roundedGameY--;
+                    roundedGameY--
                 }
             } else {
-                roundedGameX++;
+                roundedGameX++
             }
         }
 
-        return { x: roundedGameX, y: roundedGameY };
+        return { x: roundedGameX, y: roundedGameY }
     }
 
     async onClick(event: React.MouseEvent): Promise<void> {
 
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
-            console.log("ERROR: Received invalid click event");
+            console.log("ERROR: Received invalid click event")
 
-            return;
+            return
         }
 
         /* Convert to game coordinates */
         if (this.selfRef.current) {
-            const rect = event.currentTarget.getBoundingClientRect();
-            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width);
-            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height);
+            const rect = event.currentTarget.getBoundingClientRect()
+            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width)
+            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height)
 
-            const gamePoint = this.screenPointToGamePoint({ x: x, y: y });
+            const gamePoint = this.screenPointToGamePoint({ x: x, y: y })
 
-            this.props.onPointClicked(gamePoint);
+            this.props.onPointClicked(gamePoint)
         }
 
-        event.stopPropagation();
+        event.stopPropagation()
     }
 
     onDoubleClick(event: React.MouseEvent): void {
 
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
-            console.log("ERROR: Received invalid double click event");
+            console.log("ERROR: Received invalid double click event")
 
-            return;
+            return
         }
 
         /* Convert to game coordinates */
         if (this.selfRef.current) {
-            const rect = event.currentTarget.getBoundingClientRect();
-            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width);
-            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height);
+            const rect = event.currentTarget.getBoundingClientRect()
+            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width)
+            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height)
 
-            const screenPoint = this.screenPointToGamePoint({ x: x, y: y });
+            const screenPoint = this.screenPointToGamePoint({ x: x, y: y })
 
-            this.props.onDoubleClick(screenPoint);
+            this.props.onDoubleClick(screenPoint)
         }
 
-        event.stopPropagation();
+        event.stopPropagation()
     }
 
     render() {
 
-        let width = this.props.width;
-        let height = this.props.height;
+        let width = this.props.width
+        let height = this.props.height
 
         if (width === 0 || height === 0) {
-            width = 800;
-            height = 800;
+            width = 800
+            height = 800
         }
 
         if (this.selfRef.current) {
-            width = this.selfRef.current.width;
-            height = this.selfRef.current.height;
+            width = this.selfRef.current.width
+            height = this.selfRef.current.height
         }
 
         return (
@@ -1115,11 +1115,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         /* Convert to game coordinates */
                         if (this.selfRef.current) {
-                            const rect = event.currentTarget.getBoundingClientRect();
-                            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width);
-                            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height);
+                            const rect = event.currentTarget.getBoundingClientRect()
+                            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width)
+                            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height)
 
-                            const hoverPoint = this.screenPointToGamePoint({ x: x, y: y });
+                            const hoverPoint = this.screenPointToGamePoint({ x: x, y: y })
 
                             if (!this.state.hoverPoint ||
                                 this.state.hoverPoint.x !== hoverPoint.x ||
@@ -1129,7 +1129,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                                     {
                                         hoverPoint: hoverPoint
                                     }
-                                );
+                                )
                             }
                         }
 
@@ -1137,9 +1137,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 }
             />
-        );
+        )
     }
 }
 
-export { houseImageMap, GameCanvas, intToVegetationColor, vegetationToInt };
+export { houseImageMap, GameCanvas, intToVegetationColor, vegetationToInt }
 

@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
-import { attackBuilding, GameId, getHouseInformationWithAttackPossibility, HouseInformation, houseIsOccupied, isMilitaryBuilding, PlayerId } from './api';
-import Button from './button';
-import { Dialog } from './dialog';
-import houseImageMap from './images';
+import React, { Component } from 'react'
+import { attackBuilding, GameId, getHouseInformationWithAttackPossibility, HouseInformation, houseIsOccupied, isMilitaryBuilding, PlayerId } from './api'
+import Button from './button'
+import { Dialog } from './dialog'
+import houseImageMap from './images'
 
 interface EnemyHouseInfoProps {
     house: HouseInformation
@@ -53,9 +53,9 @@ class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState>
                                     async () => {
 
                                         //FIXME: make it possible to choose the number of attackers
-                                        await attackBuilding(this.props.house, 10, this.props.gameId, this.props.playerId);
+                                        await attackBuilding(this.props.house, 10, this.props.gameId, this.props.playerId)
 
-                                        this.props.closeDialog();
+                                        this.props.closeDialog()
                                     }
                                 }
                             />
@@ -68,8 +68,8 @@ class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState>
                 }
 
             </Dialog>
-        );
+        )
     }
 }
 
-export default EnemyHouseInfo;
+export default EnemyHouseInfo

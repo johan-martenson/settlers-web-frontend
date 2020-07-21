@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import { MapInformation } from './api';
-import { MapList } from './map_list';
-import './map_selection.css';
+import React, { Component } from 'react'
+import { MapInformation } from './api'
+import { MapList } from './map_list'
+import './map_selection.css'
 
 interface MapSelectionProps {
     onMapSelected: ((map: MapInformation) => void)
@@ -15,16 +15,16 @@ interface MapSelectionState {
 class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
 
     constructor(props: MapSelectionProps) {
-        super(props);
+        super(props)
 
         this.state = {}
     }
 
     render() {
 
-        let className = this.props.className ? this.props.className : "";
+        let className = this.props.className ? this.props.className : ""
 
-        className = className + " MapSelection";
+        className = className + " MapSelection"
 
         return (
             <div className={className}>
@@ -32,14 +32,14 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
                 <MapList
                     onMapSelected={
                         (map) => {
-                            this.setState({ map: map });
-                            this.props.onMapSelected(map);
+                            this.setState({ map: map })
+                            this.props.onMapSelected(map)
                         }
                     }
                 />
             </div>
-        );
+        )
     }
 }
 
-export default MapSelection;
+export default MapSelection

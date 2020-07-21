@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import GradientTriangle from './gradient_triangle';
+import React, { Component } from 'react'
+import GradientTriangle from './gradient_triangle'
 
 interface GradientTriangleDemoProps { }
 interface GradientTriangleDemoState { }
@@ -73,8 +73,8 @@ class GradientTriangleDemo extends Component<GradientTriangleDemoProps, Gradient
                 <GradientTriangle intensity1={0.2} intensity2={1} intensity3={0} />
                 <br />
             </div>
-        );
+        )
     }
 }
 
-export default GradientTriangleDemo;
+export default GradientTriangleDemo

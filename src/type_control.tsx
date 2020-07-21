@@ -1,6 +1,6 @@
-import React, { Component } from 'react';
-import './type_control.css';
-import ExpandCollapseToggle from './expand_collapse_toggle';
+import React, { Component } from 'react'
+import './type_control.css'
+import ExpandCollapseToggle from './expand_collapse_toggle'
 
 interface TypeControlProps {
     commands: Map<string, (() => void)>
@@ -14,7 +14,7 @@ interface TypeControlState {
 class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
     constructor(props: TypeControlProps) {
-        super(props);
+        super(props)
 
         this.state = {
             input: "",
@@ -36,25 +36,25 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
         } else if (event.key === "Enter") {
 
             /* Find the matching command */
-            let commandHit;
+            let commandHit
 
             for (const command of Array.from(this.props.commands.keys())) {
                 if (command.toLowerCase().startsWith(this.state.input.toLowerCase())) {
-                    commandHit = command;
+                    commandHit = command
 
-                    break;
+                    break
                 }
             }
 
             /* Run the command */
             if (commandHit) {
 
-                console.log("Command: " + commandHit + " (" + this.state.input + ")");
+                console.log("Command: " + commandHit + " (" + this.state.input + ")")
 
-                const fn = this.props.commands.get(commandHit);
+                const fn = this.props.commands.get(commandHit)
 
                 if (fn) {
-                    fn();
+                    fn()
                 }
 
                 /* Clear the input */
@@ -81,12 +81,12 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
         /* Filter enter presses (they are handled by onKeyDown) */
         if (event.key === "Enter") {
-            return;
+            return
         }
 
         /* Filter initial space */
         if (this.state.input === "" && event.key === " ") {
-            return;
+            return
         }
 
         const input = this.state.input + event.key
@@ -102,16 +102,16 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
     render() {
 
-        let hasMatch = false;
-        const inputToMatch = this.state.input.toLowerCase();
+        let hasMatch = false
+        const inputToMatch = this.state.input.toLowerCase()
 
         if (this.state.input.length > 0) {
             this.props.commands.forEach((fn, command) => {
 
                 if (command.toLowerCase().startsWith(inputToMatch)) {
-                    hasMatch = true;
+                    hasMatch = true
                 }
-            });
+            })
         }
 
         let className = "Input"
@@ -136,15 +136,15 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                                     <span className="MatchingPart">{option.substring(0, this.state.input.length)}</span>
                                     <span className="RemainingPart">{option.substring(this.state.input.length, option.length)}</span>
                                 </div>
-                            );
+                            )
                         } else {
 
                             if (this.state.expanded) {
                                 return (
                                     <div key={index} className="Alternative">{option}</div>
-                                );
+                                )
                             } else {
-                                return null;
+                                return null
                             }
                         }
                     }
@@ -152,8 +152,8 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                 }
 
             </div>
-        );
+        )
     }
 }
 
-export default TypeControl;
+export default TypeControl

@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import { GameInformation, getGames } from './api';
-import Button from './button';
-import './game_list.css';
+import React, { Component } from 'react'
+import { GameInformation, getGames } from './api'
+import Button from './button'
+import './game_list.css'
 
 interface GameListProps {
     hideStarted: boolean
@@ -16,20 +16,20 @@ interface GameListState {
 class GameList extends Component<GameListProps, GameListState> {
 
     constructor(props: GameListProps) {
-        super(props);
+        super(props)
 
-        this.state = {};
+        this.state = {}
     }
 
     async componentDidMount() {
 
-        const games = await getGames();
+        const games = await getGames()
 
         this.setState(
             {
                 games: games,
             }
-        );
+        )
     }
 
     render() {
@@ -42,7 +42,7 @@ class GameList extends Component<GameListProps, GameListState> {
                         if (this.props.hideStarted &&
                             this.props.hideStarted &&
                             game.status === "STARTED") {
-                            return null;
+                            return null
                         }
 
                         /* Add the game to the list */
@@ -53,7 +53,7 @@ class GameList extends Component<GameListProps, GameListState> {
                                     <Button label="View" className="Choice"
                                         onButtonClicked={
                                             () => {
-                                                console.log("Clicked view game " + index);
+                                                console.log("Clicked view game " + index)
                                             }
                                         }
                                     />
@@ -61,20 +61,20 @@ class GameList extends Component<GameListProps, GameListState> {
                                     <Button label="Observe" onButtonClicked={() => this.props.onObserveGame(game)} />
                                     <Button label="Join" className="Choice" onButtonClicked={() => this.props.onJoinGame(game)} />
                                 </div>
-                            </div>);
+                            </div>)
                     }
                 )
                 }
 
                 {!this.state.games &&
-                    function () { return (<div>Loading...</div>); }()
+                    function () { return (<div>Loading...</div>) }()
                 }
 
             </div>
-        );
+        )
     }
 }
 
 
 
-export default GameList;
+export default GameList

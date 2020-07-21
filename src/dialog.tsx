@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import Button from './button';
-import './dialog.css';
-import MenuSectionLabel from './menu_section_label';
+import React, { Component } from 'react'
+import Button from './button'
+import './dialog.css'
+import MenuSectionLabel from './menu_section_label'
 
 interface DialogProps {
     closeLabel?: string
@@ -22,16 +22,16 @@ class Dialog extends Component<DialogProps, DialogState> {
         let className = "Dialog"
 
         if (this.props.floating) {
-            className = className + " FloatingWindow";
+            className = className + " FloatingWindow"
         } else {
-            className = className + " NonfloatingWindow";
+            className = className + " NonfloatingWindow"
         }
 
         if (this.props.className) {
-            className = className + " " + this.props.className;
+            className = className + " " + this.props.className
         }
 
-        const closeLabel = this.props.closeLabel ? this.props.closeLabel : "Close";
+        const closeLabel = this.props.closeLabel ? this.props.closeLabel : "Close"
 
         return (
             <div className={className} id={this.props.id}>
@@ -53,7 +53,7 @@ class Dialog extends Component<DialogProps, DialogState> {
                     />
                 }
             </div>
-        );
+        )
     }
 }
 
@@ -70,9 +70,9 @@ class DialogSection extends Component<DialogSectionProps, DialogSectionState> {
                 {this.props.label && <MenuSectionLabel label={this.props.label} />}
                 {this.props.children}
             </div>
-        );
+        )
     }
 }
 
-export { Dialog, DialogSection };
+export { Dialog, DialogSection }
 

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component } from 'react'
 
 interface MenuSectionLabelProps {
     label: string
@@ -10,8 +10,8 @@ class MenuSectionLabel extends Component<MenuSectionLabelProps, MenuSectionLabel
     render() {
         return (
             <div className="MenuSectionLabel">{this.props.label}</div>
-        );
+        )
     }
 }
 
-export default MenuSectionLabel;
+export default MenuSectionLabel

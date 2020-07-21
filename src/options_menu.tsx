@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import { Dialog, DialogSection } from './dialog';
-import OnOffSlider from './on_off_slider';
-import Slider from './slider';
+import React, { Component } from 'react'
+import { Dialog, DialogSection } from './dialog'
+import OnOffSlider from './on_off_slider'
+import Slider from './slider'
 
 interface OptionMenuProps {
     onClose: (() => void)
@@ -19,15 +19,15 @@ interface OptionMenuState {
 class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
 
     constructor(props: OptionMenuProps) {
-        super(props);
+        super(props)
 
         this.state = {
             currentSpeed: 4
-        };
+        }
     }
 
     onClose(): void {
-        this.props.onClose();
+        this.props.onClose()
     }
 
     adjustSpeed(speed: number): void {
@@ -66,8 +66,8 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
                     />
                 </DialogSection>
             </Dialog>
-        );
+        )
     }
 }
 
-export default OptionMenu;
+export default OptionMenu

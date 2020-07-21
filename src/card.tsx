@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import './card.css';
+import React, { Component } from 'react'
+import './card.css'
 
 interface CardProps {
     className?: string
@@ -11,18 +11,18 @@ class Card extends Component<CardProps, CardState> {
 
     render() {
 
-        let className = "Card";
+        let className = "Card"
 
         if (this.props.className) {
-            className = className + " " + this.props.className;
+            className = className + " " + this.props.className
         }
 
         return (
             <div className={className}>
                 {this.props.children}
             </div>
-        );
+        )
     }
 }
 
-export default Card;
+export default Card

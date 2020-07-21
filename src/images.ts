@@ -1,8 +1,8 @@
-import { AnyBuilding } from './api';
+import { AnyBuilding } from './api'
 
-export type Filename = string;
+export type Filename = string
 
-const houseImageMap: Map<AnyBuilding, Filename> = new Map();
+const houseImageMap: Map<AnyBuilding, Filename> = new Map()
 
 houseImageMap.set("Armory","test/armory.png")
 houseImageMap.set("Bakery","test/bakery.png")
@@ -38,4 +38,4 @@ houseImageMap.set("Shipyard","test/shipyard.png")
 houseImageMap.set("Storehouse","test/storehouse.png")
 
 
-export default houseImageMap;
+export default houseImageMap

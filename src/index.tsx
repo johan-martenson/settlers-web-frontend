@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
-import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information';
-import './index.css';
-import { Lobby } from './lobby';
+import React, { Component } from 'react'
+import ReactDOM from 'react-dom'
+import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information'
+import './index.css'
+import { Lobby } from './lobby'
 import { GameId, PlayerId, getPlayers } from './api'
 import App from './App'
 
@@ -18,16 +18,16 @@ interface GameInitState {
 class GameInit extends Component<GameInitProps, GameInitState> {
 
     constructor(props: GameInitProps) {
-        super(props);
+        super(props)
 
         this.state = {
             state: "ENTER_PLAYER_INFORMATION"
-        };
+        }
     }
 
     async componentDidMount() {
 
-        const urlParams = new URLSearchParams(window.location.search);
+        const urlParams = new URLSearchParams(window.location.search)
         const gameId = urlParams.get("gameId")
         const playerId = urlParams.get("playerId")
 
@@ -50,14 +50,14 @@ class GameInit extends Component<GameInitProps, GameInitState> {
 
     onPlayerInformationDone(player: EnteredPlayerInformation): void {
 
-        console.log("Player entering lobby: " + JSON.stringify(player));
+        console.log("Player entering lobby: " + JSON.stringify(player))
 
         this.setState(
             {
                 player: player,
                 state: "LOBBY"
             }
-        );
+        )
     }
 
     render() {
@@ -81,11 +81,11 @@ class GameInit extends Component<GameInitProps, GameInitState> {
                     />
                 }
             </div>
-        );
+        )
     }
 }
 
 ReactDOM.render(
     <GameInit />,
     document.getElementById('root')
-);
+)

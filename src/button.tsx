@@ -1,6 +1,6 @@
-import React, { Component } from 'react';
-import './App.css';
-import './button.css';
+import React, { Component } from 'react'
+import './App.css'
+import './button.css'
 
 interface ButtonProps {
     selected?: boolean
@@ -17,43 +17,43 @@ interface ButtonProps {
 interface ButtonState { }
 
 class Button extends Component<ButtonProps, ButtonState> {
-    private selfButtonRef = React.createRef<HTMLDivElement>();
+    private selfButtonRef = React.createRef<HTMLDivElement>()
 
     componentDidMount() {
 
         if (this.props.autoFocus && this.selfButtonRef && this.selfButtonRef.current) {
-            this.selfButtonRef.current.focus();
+            this.selfButtonRef.current.focus()
         }
     }
 
     focus(): void {
         if (this.selfButtonRef && this.selfButtonRef.current) {
-            this.selfButtonRef.current.focus();
+            this.selfButtonRef.current.focus()
         }
     }
 
     onClicked(): void {
         if (!this.props.disabled) {
-            this.props.onButtonClicked();
+            this.props.onButtonClicked()
         }
     }
 
     render() {
-        let className = "Button";
+        let className = "Button"
 
         if (this.props.selected && this.props.selected) {
-            className = className + " Selected";
+            className = className + " Selected"
         }
 
         if (this.props.className) {
-            className = className + " " + this.props.className;
+            className = className + " " + this.props.className
         }
 
         if (this.props.disabled) {
             className = className + " Disabled"
         }
 
-        const heading = this.props.label ? this.props.label : "";
+        const heading = this.props.label ? this.props.label : ""
 
         return (
             <div className={className}
@@ -62,23 +62,23 @@ class Button extends Component<ButtonProps, ButtonState> {
 
                 onClick={
                     (event: React.SyntheticEvent) => {
-                        this.onClicked();
-                        event.stopPropagation();
+                        this.onClicked()
+                        event.stopPropagation()
                     }
                 }
 
                 onTouchStart={
                     (event: React.SyntheticEvent) => {
-                        this.onClicked();
-                        event.stopPropagation();
+                        this.onClicked()
+                        event.stopPropagation()
                     }
                 }
 
                 onKeyDown={
                     (event: React.KeyboardEvent) => {
                         if (event.keyCode === 13) {
-                            this.onClicked();
-                            event.stopPropagation();
+                            this.onClicked()
+                            event.stopPropagation()
                         }
                     }
                 }
@@ -92,8 +92,8 @@ class Button extends Component<ButtonProps, ButtonState> {
 
                 <div>{this.props.children ? this.props.children : heading}</div>
             </div>
-        );
+        )
     }
 }
 
-export default Button;
+export default Button

@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import './row.css';
+import React, { Component } from 'react'
+import './row.css'
 
 interface RowProps {
     children: (JSX.Element | false | undefined)[]
@@ -12,31 +12,31 @@ class Row extends Component<RowProps, RowState> {
 
     render() {
 
-        let childClassName = "RowItemLeft";
-        let className = "Row";
+        let childClassName = "RowItemLeft"
+        let className = "Row"
 
         if (this.props.className) {
-            className = className + " " + this.props.className;
+            className = className + " " + this.props.className
         }
 
         if (this.props.align && this.props.align === "right") {
-            childClassName = "RowItemRight";
+            childClassName = "RowItemRight"
         }
 
         const children = React.Children.map(this.props.children,
             child => {
                 return (
                     <div className={childClassName}>{child}</div>
-                );
+                )
             }
-        );
+        )
 
         return (
             <div className={className}>
                 {children}
             </div>
-        );
+        )
     }
 }
 
-export default Row;
+export default Row

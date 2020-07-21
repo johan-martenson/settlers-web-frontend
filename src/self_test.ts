@@ -1,5 +1,5 @@
-import { PointSetFast, PointMapFast } from './util_types';
-import { Point } from './api';
+import { PointSetFast, PointMapFast } from './util_types'
+import { Point } from './api'
 
 function do_self_test() {
     testPointSet()
@@ -8,7 +8,7 @@ function do_self_test() {
 
 function testPointSet() {
 
-    const pointSet = new PointSetFast();
+    const pointSet = new PointSetFast()
 
     /* Test that the set is empty initially */
     if (pointSet.size() === 0) {
@@ -21,7 +21,7 @@ function testPointSet() {
     const point0 = { x: 2, y: 3 }
 
     if (!pointSet.has(point0)) {
-        console.log("OK");
+        console.log("OK")
     } else {
         console.log("NOT OK")
     }
@@ -63,7 +63,7 @@ function testPointSet() {
     const point1 = { x: 3, y: 3 }
 
     if (!pointSet.has(point1)) {
-        console.log("OK");
+        console.log("OK")
     } else {
         console.log("NOT OK")
     }
@@ -112,7 +112,7 @@ function testPointSet() {
     pointSet.delete(point0)
 
     if (!pointSet.has(point0)) {
-        console.log("OK");
+        console.log("OK")
     } else {
         console.log("NOT OK")
     }
@@ -129,7 +129,7 @@ function testPointSet() {
     pointSet.delete(point1Synonym)
 
     if (!pointSet.has(point1)) {
-        console.log("OK");
+        console.log("OK")
     } else {
         console.log("NOT OK")
     }
@@ -151,13 +151,13 @@ function testPointSet() {
 
     /* Verify that the new point set contains both points */
     if (pointSetFromRegularSet.has(point0)) {
-        console.log("OK");
+        console.log("OK")
     } else {
         console.log("NOT OK")
     }
 
     if (pointSetFromRegularSet.has(point1)) {
-        console.log("OK");
+        console.log("OK")
     } else {
         console.log("NOT OK")
     }
@@ -168,7 +168,7 @@ function testPointSet() {
 function testPointMap() {
 
     /* Test creating a map from points to strings */
-    const pointMap = new PointMapFast<string>();
+    const pointMap = new PointMapFast<string>()
 
     /* Test that the map is empty before any items are added */
     if (pointMap.size === 0) {
@@ -315,4 +315,4 @@ function testPointMap() {
     }
 }
 
-export { do_self_test };
+export { do_self_test }

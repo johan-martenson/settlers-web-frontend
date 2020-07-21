@@ -1,12 +1,12 @@
-import React, { Component } from 'react';
-import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, HouseResources, isEvacuated, isMaterial, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding } from './api';
-import Button from './button';
-import { Dialog, DialogSection } from './dialog';
-import './friendly_house_info.css';
-import HeadquarterInfo from './headquarter_info';
-import houseImageMap from './images';
-import { forceUpdateOfHouse, listenToHouse } from './monitor';
-import ProgressBar from './progress_bar';
+import React, { Component } from 'react'
+import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, HouseResources, isEvacuated, isMaterial, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding } from './api'
+import Button from './button'
+import { Dialog, DialogSection } from './dialog'
+import './friendly_house_info.css'
+import HeadquarterInfo from './headquarter_info'
+import houseImageMap from './images'
+import { forceUpdateOfHouse, listenToHouse } from './monitor'
+import ProgressBar from './progress_bar'
 
 interface FriendlyHouseInfoProps {
     house: HouseInformation
@@ -273,17 +273,17 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                     <Button label="Destroy"
                         onButtonClicked={
                             async () => {
-                                await removeHouse(house.id, this.props.playerId, this.props.gameId);
+                                await removeHouse(house.id, this.props.playerId, this.props.gameId)
 
-                                this.props.closeDialog();
+                                this.props.closeDialog()
                             }
                         }
                     />
                 }
 
             </Dialog>
-        );
+        )
     }
 }
 
-export default FriendlyHouseInfo;
+export default FriendlyHouseInfo

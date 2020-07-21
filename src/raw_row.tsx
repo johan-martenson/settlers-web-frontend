@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import './row.css';
+import React, { Component } from 'react'
+import './row.css'
 
 interface RawRowProps {
     className?: string
@@ -11,18 +11,18 @@ class RawRow extends Component<RawRowProps, RawRowState> {
 
     render() {
 
-        let className = "Row";
+        let className = "Row"
 
         if (this.props.className) {
-            className = `${className} ${this.props.className}`;
+            className = `${className} ${this.props.className}`
         }
 
         return (
             <div className={className}>
                 {this.props.children}
             </div>
-        );
+        )
     }
 }
 
-export default RawRow;
+export default RawRow

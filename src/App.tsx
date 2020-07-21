@@ -16,7 +16,7 @@ import TypeControl from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils'
 import { PointSetFast } from './util_types'
 import { SetTransportPriority } from './transport_priority'
-import { getVariableNames, getLatestValueForVariable, getAverageValueForVariable, getHighestValueForVariable } from './stats'
+import { getVariableNames, getLatestValueForVariable, getAverageValueForVariable, getHighestValueForVariable, printVariables } from './stats'
 
 const MENU_MENU = 0
 const MENU_FRIENDLY_HOUSE = 1
@@ -204,17 +204,7 @@ class App extends Component<AppProps, AppState> {
         this.commands.set("Scout", async () => { await sendScout(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Evacuate building", () => { evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Transport priority (set)", () => { this.setState({ showSetTransportPriority: true }) })
-        this.commands.set("List statistics", () => {
-            for (const name of getVariableNames()) {
-                console.log("  " + name)
-                console.log("" + getLatestValueForVariable(name) +
-                ", avg: " + getAverageValueForVariable(name) +
-                ", max: " + getHighestValueForVariable(name) +
-                ", min: " + getLatestValueForVariable(name))
-            }
-
-        }
-        )
+        this.commands.set("List statistics", () => { printVariables() })
     }
 
     toggleDetails(): void {

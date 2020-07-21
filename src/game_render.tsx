@@ -5,7 +5,7 @@ import { monitor } from './monitor'
 import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt, getTimestamp } from './utils'
 import { PointMapFast } from './util_types'
 import { Duration, AggregatedDuration } from './duration'
-import { isLatestValueHighestForVariable, getLatestValueForVariable, getVariableNames, getAverageValueForVariable, getHighestValueForVariable, addVariableIfAbsent } from './stats'
+import { isLatestValueHighestForVariable, getLatestValueForVariable, getVariableNames, getAverageValueForVariable, getHighestValueForVariable, addVariableIfAbsent, printVariables } from './stats'
 import './game_render.css'
 
 export interface ScreenPoint {
@@ -959,14 +959,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* List counters if the rendering time exceeded the previous maximum */
         if (isLatestValueHighestForVariable("GameRender::renderGame.total")) {
-            for (const name of getVariableNames()) {
-                console.log()
-                console.log("  " + name + ":")
-                console.log("   -- Latest: " + getLatestValueForVariable(name))
-                console.log("   -- Average: " + getAverageValueForVariable(name))
-                console.log("   -- Highest: " + getHighestValueForVariable(name))
-                console.log("   -- Lowest: " + getLatestValueForVariable(name))
-            }
+            printVariables()
         }
 
         /* Draw the FPS counter */

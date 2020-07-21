@@ -258,117 +258,97 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     websocket.onclose = (e) => { console.info("Websocket closed: " + JSON.stringify(e)) }
     websocket.onerror = (e) => { console.info("Websocket error: " + JSON.stringify(e)) }
 
-    websocket.onmessage = (message) => {
+    websocket.onmessage = (messageFromServer) => {
 
-        let data
+        let message
 
         try {
-            data = JSON.parse(message.data)
+            message = JSON.parse(messageFromServer.data)
         } catch (e) {
             console.error(e)
             console.error(JSON.stringify(e))
-            console.info(message.data)
+            console.info(messageFromServer.data)
         }
 
-        if (!isGameChangesMessage(data)) {
+        if (!isGameChangesMessage(message)) {
             console.error("Is not game change message!")
-            console.error(JSON.stringify(data))
+            console.error(JSON.stringify(message))
 
             return
         }
 
-        const changesMessage: ChangesMessage = data
-
-        if (changesMessage.workersWithNewTargets) {
-            syncWorkersWithNewTargets(changesMessage.workersWithNewTargets)
+        if (message.workersWithNewTargets) {
+            syncWorkersWithNewTargets(message.workersWithNewTargets)
         }
 
-        if (changesMessage.removedWorkers) {
-            syncRemovedWorkers(changesMessage.removedWorkers)
-        }
+        message.removedWorkers?.forEach(
+            (id) => monitor.workers.delete(id)
+        )
 
-        if (changesMessage.newBuildings) {
+        if (message.newBuildings) {
             printTimestamp("About to add new houses")
-            syncNewHouses(changesMessage.newBuildings)
+
+            for (const newHouse of message.newBuildings) {
+                monitor.houses.set(newHouse.id, newHouse)
+            }
+
             printTimestamp("Added new houses")
         }
 
-        if (changesMessage.changedBuildings) {
-            syncChangedHouses(changesMessage.changedBuildings)
+        if (message.changedBuildings) {
+            syncChangedHouses(message.changedBuildings)
 
-            notifyHouseListeners(changesMessage.changedBuildings)
+            notifyHouseListeners(message.changedBuildings)
         }
 
-        if (changesMessage.removedBuildings) {
-            syncRemovedHouses(changesMessage.removedBuildings)
+        message.removedBuildings?.forEach((id) => monitor.houses.delete(id))
+
+        message.newFlags?.forEach((flag) => monitor.flags.set(flag.id, flag))
+        message.removedFlags?.forEach((id) => monitor.flags.delete(id))
+
+        message.newRoads?.forEach((road) => monitor.roads.set(road.id, road))
+        message.removedRoads?.forEach((id) => monitor.roads.delete(id))
+
+        message.newTrees?.forEach((tree) => monitor.trees.add(tree))
+        message.removedTrees?.forEach((tree) => monitor.trees.delete(tree))
+
+        message.newStones?.forEach((stone) => monitor.stones.add(stone))
+        message.removedStones?.forEach((stone) => monitor.stones.delete(stone))
+
+        if (message.changedBorders) {
+            syncChangedBorders(message.changedBorders)
         }
 
-        if (changesMessage.newFlags) {
-            syncNewFlags(changesMessage.newFlags)
+        message.newCrops?.forEach((crop) => monitor.crops.add(crop))
+        message.removedCrops?.forEach((crop) => monitor.crops.delete(crop))
+
+        message.newSigns?.forEach((sign) => monitor.signs.set(sign.id, sign))
+        message.removedSigns?.forEach((id) => monitor.signs.delete(id))
+
+        if (message.newDiscoveredLand) {
+            for (const point of message.newDiscoveredLand) {
+                monitor.discoveredPoints.add(point)
+            }
+
+            storeDiscoveredTiles(message.newDiscoveredLand)
         }
 
-        if (changesMessage.removedFlags) {
-            syncRemovedFlags(changesMessage.removedFlags)
+        if (message.changedAvailableConstruction) {
+            for (const change of message.changedAvailableConstruction) {
+                const point = { x: change.x, y: change.y }
+
+                if (change.available.length === 0) {
+                    monitor.availableConstruction.delete(point)
+                } else {
+                    monitor.availableConstruction.set(point, change.available)
+                }
+            }
         }
 
-        if (changesMessage.newRoads) {
-            syncNewRoads(changesMessage.newRoads)
-        }
+        if (message.newMessages) {
+            monitor.messages = monitor.messages.concat(message.newMessages)
 
-        if (changesMessage.removedRoads) {
-            syncRemovedRoads(changesMessage.removedRoads)
-        }
-
-        if (changesMessage.changedBorders) {
-            syncChangedBorders(changesMessage.changedBorders)
-        }
-
-        if (changesMessage.newTrees) {
-            syncNewTrees(changesMessage.newTrees)
-        }
-
-        if (changesMessage.removedTrees) {
-            syncRemovedTrees(changesMessage.removedTrees)
-        }
-
-        if (changesMessage.newStones) {
-            syncNewStones(changesMessage.newStones)
-        }
-
-        if (changesMessage.removedStones) {
-            syncRemovedStones(changesMessage.removedStones)
-        }
-
-        if (changesMessage.newCrops) {
-            syncNewCrops(changesMessage.newCrops)
-        }
-
-        if (changesMessage.removedCrops) {
-            syncRemovedCrops(changesMessage.removedCrops)
-        }
-
-        if (changesMessage.newDiscoveredLand) {
-            syncNewDiscoveredLand(changesMessage.newDiscoveredLand)
-
-            storeDiscoveredTiles(changesMessage.newDiscoveredLand)
-        }
-
-        if (changesMessage.newSigns) {
-            syncNewSigns(changesMessage.newSigns)
-        }
-
-        if (changesMessage.removedSigns) {
-            syncRemovedSigns(changesMessage.removedSigns)
-        }
-
-        if (changesMessage.changedAvailableConstruction) {
-            syncChangedAvailableConstruction(changesMessage.changedAvailableConstruction)
-        }
-
-        if (changesMessage.newMessages) {
-            syncNewMessages(changesMessage.newMessages)
-
-            notifyMessageListeners(changesMessage.newMessages)
+            notifyMessageListeners(message.newMessages)
         }
     }
 
@@ -468,76 +448,6 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
     }
 }
 
-function syncNewMessages(newMessages: GameMessage[]) {
-    monitor.messages = monitor.messages.concat(newMessages)
-}
-
-function syncChangedAvailableConstruction(changedAvailableConstruction: ChangedAvailableConstruction[]) {
-    for (const change of changedAvailableConstruction) {
-        const point = { x: change.x, y: change.y }
-
-        if (change.available.length === 0) {
-            monitor.availableConstruction.delete(point)
-        } else {
-            monitor.availableConstruction.set(point, change.available)
-        }
-    }
-}
-
-function syncNewSigns(newSigns: SignInformation[]) {
-    for (const newSign of newSigns) {
-        monitor.signs.set(newSign.id, newSign)
-    }
-}
-
-function syncRemovedSigns(removedSignIds: SignId[]) {
-    for (const removedSignId of removedSignIds) {
-        monitor.signs.delete(removedSignId)
-    }
-}
-
-function syncNewDiscoveredLand(newDiscoveredLand: Point[]) {
-    for (const point of newDiscoveredLand) {
-        monitor.discoveredPoints.add(point)
-    }
-}
-
-function syncNewCrops(newCrops: Point[]) {
-    for (const newCrop of newCrops) {
-        monitor.crops.add(newCrop)
-    }
-}
-
-function syncRemovedCrops(removedCrops: Point[]) {
-    for (const removedCrop of removedCrops) {
-        monitor.crops.delete(removedCrop)
-    }
-}
-
-function syncNewTrees(newTrees: Point[]) {
-    for (const tree of newTrees) {
-        monitor.trees.add(tree)
-    }
-}
-
-function syncRemovedTrees(removedTrees: Point[]) {
-    for (const tree of removedTrees) {
-        monitor.trees.delete(tree)
-    }
-}
-
-function syncNewStones(newStones: Point[]) {
-    for (const newStone of newStones) {
-        monitor.stones.add(newStone)
-    }
-}
-
-function syncRemovedStones(removedStones: Point[]) {
-    for (const removedStone of removedStones) {
-        monitor.stones.delete(removedStone)
-    }
-}
-
 function syncChangedBorders(borderChanges: BorderChange[]) {
 
     for (const borderChange of borderChanges) {
@@ -572,53 +482,12 @@ function syncChangedBorders(borderChanges: BorderChange[]) {
     }
 }
 
-function syncNewRoads(newRoads: RoadInformation[]) {
-    for (const newRoad of newRoads) {
-        monitor.roads.set(newRoad.id, newRoad)
-    }
-}
-
-function syncRemovedRoads(removedRoads: RoadId[]) {
-    for (const removedRoadId of removedRoads) {
-        monitor.roads.delete(removedRoadId)
-    }
-}
-
-function syncNewFlags(newFlags: FlagInformation[]) {
-    for (const newFlag of newFlags) {
-        monitor.flags.set(newFlag.id, newFlag)
-    }
-}
-
-function syncRemovedFlags(removedFlagIds: FlagId[]) {
-    for (const removedFlagId of removedFlagIds) {
-        monitor.flags.delete(removedFlagId)
-    }
-}
-
-function syncNewHouses(newHouses: HouseInformation[]) {
-    for (const newHouse of newHouses) {
-        monitor.houses.set(newHouse.id, newHouse)
-    }
-}
-
 function syncChangedHouses(changedHouses: HouseInformation[]) {
     for (const changedHouse of changedHouses) {
         monitor.houses.set(changedHouse.id, changedHouse)
     }
 }
 
-function syncRemovedHouses(removedHouses: HouseId[]) {
-    for (const removedHouseId of removedHouses) {
-        monitor.houses.delete(removedHouseId)
-    }
-}
-
-function syncRemovedWorkers(removedWorkerIds: WorkerId[]) {
-    for (const removedWorkerId of removedWorkerIds) {
-        monitor.workers.delete(removedWorkerId)
-    }
-}
 
 function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
 
@@ -642,7 +511,7 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
                 percentageTraveled: 0
             }
 
-            monitor.workers.set(walkerTargetChange.id, worker)
+            monitor.workers.set(worker.id, worker)
         }
 
         worker.plannedPath = walkerTargetChange.path

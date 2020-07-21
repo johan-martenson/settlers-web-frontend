@@ -121,4 +121,15 @@ function getVariableNames(): IterableIterator<string> {
     return variables.keys()
 }
 
-export { getHighestValueForVariable, getVariableNames, isLatestValueLowestForVariable, isLatestValueHighestForVariable, getLatestValueForVariable, getAverageValueForVariable, reportValueForVariable, addVariableIfAbsent }
+function printVariables(): void {
+    for (const name of getVariableNames()) {
+        console.log()
+        console.log("  " + name + ":")
+        console.log("   -- Latest: " + getLatestValueForVariable(name))
+        console.log("   -- Average: " + getAverageValueForVariable(name))
+        console.log("   -- Highest: " + getHighestValueForVariable(name))
+        console.log("   -- Lowest: " + getLatestValueForVariable(name))
+    }
+}
+
+export { printVariables, getHighestValueForVariable, getVariableNames, isLatestValueLowestForVariable, isLatestValueHighestForVariable, getLatestValueForVariable, getAverageValueForVariable, reportValueForVariable, addVariableIfAbsent }

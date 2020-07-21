@@ -23,7 +23,7 @@
     "@storybook/addon-actions": "^5.3.19",
     "@storybook/addon-links": "^4.1.18",
     "@storybook/react": "^4.1.18",
-    "babel-loader": "^8.0.5",
+    "babel-loader": "^8.1.0",
     "react-scripts": "^3.4.1"
   },
   "scripts": {

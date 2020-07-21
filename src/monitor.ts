@@ -281,22 +281,20 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             syncWorkersWithNewTargets(message.workersWithNewTargets)
         }
 
-        message.removedWorkers?.forEach(
-            (id) => monitor.workers.delete(id)
-        )
+        message.removedWorkers?.forEach((id) => monitor.workers.delete(id))
 
         if (message.newBuildings) {
             printTimestamp("About to add new houses")
+        }
 
-            for (const newHouse of message.newBuildings) {
-                monitor.houses.set(newHouse.id, newHouse)
-            }
+        message.newBuildings?.forEach((house) => monitor.houses.set(house.id, house))
 
+        if (message.newBuildings) {
             printTimestamp("Added new houses")
         }
 
         if (message.changedBuildings) {
-            syncChangedHouses(message.changedBuildings)
+            message.changedBuildings.forEach((house) => monitor.houses.set(house.id, house))
 
             notifyHouseListeners(message.changedBuildings)
         }
@@ -326,9 +324,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         message.removedSigns?.forEach((id) => monitor.signs.delete(id))
 
         if (message.newDiscoveredLand) {
-            for (const point of message.newDiscoveredLand) {
-                monitor.discoveredPoints.add(point)
-            }
+            message.newDiscoveredLand.forEach((point) => monitor.discoveredPoints.add(point))
 
             storeDiscoveredTiles(message.newDiscoveredLand)
         }
@@ -482,13 +478,6 @@ function syncChangedBorders(borderChanges: BorderChange[]) {
     }
 }
 
-function syncChangedHouses(changedHouses: HouseInformation[]) {
-    for (const changedHouse of changedHouses) {
-        monitor.houses.set(changedHouse.id, changedHouse)
-    }
-}
-
-
 function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
 
     for (const walkerTargetChange of targetChanges) {
@@ -572,7 +561,7 @@ async function forceUpdateOfHouse(houseId: HouseId): Promise<void> {
     if (monitor.gameId && monitor.playerId) {
         const house = await getHouseInformation(houseId, monitor.gameId, monitor.playerId)
 
-        syncChangedHouses([house])
+        monitor.houses.set(house.id, house)
 
         notifyHouseListeners([house])
     }

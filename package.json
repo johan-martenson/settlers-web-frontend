@@ -10,7 +10,7 @@
     "@types/react-dom": "^16.9.8",
     "@types/storybook__addon-actions": "^5.2.1",
     "@types/storybook__addon-links": "^5.2.1",
-    "@types/storybook__react": "^4.0.2",
+    "@types/storybook__react": "^5.2.1",
     "ajv": "^6.12.3",
     "d3": "^5.15.0",
     "getstorybook": "^1.7.0",

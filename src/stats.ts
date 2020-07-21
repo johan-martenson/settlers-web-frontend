@@ -35,7 +35,7 @@ function reportValueForVariable(name: string, value: number): void {
 
     variable.latestValue = value;
 
-    if (variable.numberOfMeasurements == 0) {
+    if (variable.numberOfMeasurements === 0) {
         variable.average = value;
         variable.isLatestValueHighest = true;
         variable.isLatestValueLowest = true;

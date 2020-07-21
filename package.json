@@ -22,7 +22,7 @@
     "@babel/core": "^7.4.5",
     "@storybook/addon-actions": "^5.3.19",
     "@storybook/addon-links": "^5.3.19",
-    "@storybook/react": "^4.1.18",
+    "@storybook/react": "^5.3.19",
     "babel-loader": "^8.1.0",
     "react-scripts": "^3.4.1"
   },

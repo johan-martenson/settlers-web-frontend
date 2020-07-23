@@ -12,11 +12,11 @@ import Guide from './guide'
 import MenuButton from './menu_button'
 import { monitor, startMonitoringGame } from './monitor'
 import Statistics from './statistics'
+import { printVariables } from './stats'
+import { SetTransportPriority } from './transport_priority'
 import TypeControl from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils'
 import { PointSetFast } from './util_types'
-import { SetTransportPriority } from './transport_priority'
-import { getVariableNames, getLatestValueForVariable, getAverageValueForVariable, getHighestValueForVariable, printVariables } from './stats'
 
 const MENU_MENU = 0
 const MENU_FRIENDLY_HOUSE = 1
@@ -118,6 +118,7 @@ class App extends Component<AppProps, AppState> {
         this.onMouseDown = this.onMouseDown.bind(this)
         this.onMouseMove = this.onMouseMove.bind(this)
         this.onMouseUp = this.onMouseUp.bind(this)
+        this.onMouseLeave = this.onMouseLeave.bind(this)
 
         this.onTouchStart = this.onTouchStart.bind(this)
         this.onTouchEnd = this.onTouchEnd.bind(this)
@@ -409,6 +410,10 @@ class App extends Component<AppProps, AppState> {
         globalSyncState.mouseDown = false
 
         event.stopPropagation()
+    }
+
+    onMouseLeave(event: React.MouseEvent): void {
+        globalSyncState.mouseDown = false
     }
 
     async componentDidMount(): Promise<void> {
@@ -885,6 +890,7 @@ class App extends Component<AppProps, AppState> {
                 onMouseDown={this.onMouseDown}
                 onMouseMove={this.onMouseMove}
                 onMouseUp={this.onMouseUp}
+                onMouseLeave={this.onMouseLeave}
                 onKeyDown={this.onKeyDown}
                 onKeyPress={this.onKeyPress}
                 onTouchStart={this.onTouchStart}

@@ -1,6 +1,6 @@
 import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain } from './api'
 import { PointMapFast, PointSetFast } from './util_types'
-import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight } from './utils'
+import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight, getPointUpRight, getPointLeft } from './utils'
 
 let periodicUpdates: NodeJS.Timeout | null
 
@@ -294,6 +294,18 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         }
 
         if (message.changedBuildings) {
+            let houseIdsToRemove = []
+
+            for (const house of message.changedBuildings) {
+                for (const [id, oldHouse] of monitor.houses.entries()) {
+                    if (house.x === oldHouse.x && house.y === oldHouse.y) {
+                        houseIdsToRemove.push(oldHouse.id)
+                    }
+                }
+            }
+
+            houseIdsToRemove.forEach((id) => monitor.houses.delete(id))
+
             message.changedBuildings.forEach((house) => monitor.houses.set(house.id, house))
 
             notifyHouseListeners(message.changedBuildings)
@@ -323,9 +335,9 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         message.newSigns?.forEach((sign) => monitor.signs.set(sign.id, sign))
         message.removedSigns?.forEach((id) => monitor.signs.delete(id))
 
-        if (message.newDiscoveredLand) {
-            message.newDiscoveredLand.forEach((point) => monitor.discoveredPoints.add(point))
+        message.newDiscoveredLand?.forEach((point) => monitor.discoveredPoints.add(point))
 
+        if (message.newDiscoveredLand) {
             storeDiscoveredTiles(message.newDiscoveredLand)
         }
 
@@ -402,17 +414,47 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
             continue
         }
 
+        const pointLeft = getPointLeft(point)
+        const pointUpRight = getPointUpRight(point)
         const pointDownLeft = getPointDownLeft(point)
         const pointDownRight = getPointDownRight(point)
         const pointRight = getPointRight(point)
 
+        const isLeftDiscovered = monitor.discoveredPoints.has(pointLeft)
         const isDownLeftDiscovered = monitor.discoveredPoints.has(pointDownLeft)
         const isDownRightDiscovered = monitor.discoveredPoints.has(pointDownRight)
         const isRightDiscovered = monitor.discoveredPoints.has(pointRight)
+        const isUpRightDiscovered = monitor.discoveredPoints.has(pointUpRight)
 
+        const terrainAtPointLeft = monitor.allTiles.get(pointLeft)
         const terrainAtPointDownLeft = monitor.allTiles.get(pointDownLeft)
         const terrainAtPointDownRight = monitor.allTiles.get(pointDownRight)
         const terrainAtPointRight = monitor.allTiles.get(pointRight)
+        const terrainAtPointUpRight = monitor.allTiles.get(pointUpRight)
+
+        if (terrainAtPointLeft && terrainAtPointDownLeft && terrainAtPointLeft.straightBelow && isLeftDiscovered && isDownLeftDiscovered) {
+            monitor.discoveredDownRightTiles.add(
+                {
+                    vegetation: terrainAtPointLeft.belowToTheRight,
+                    pointUpLeft: pointLeft,
+                    heightUpLeft: terrainAtPointLeft.height,
+                    heightRight: terrainAtPoint.height,
+                    heightDownRight: terrainAtPointDownLeft.height
+                }
+            )
+        }
+
+        if (terrainAtPointUpRight && terrainAtPointRight && terrainAtPointUpRight.straightBelow && isUpRightDiscovered && isRightDiscovered) {
+            monitor.discoveredBelowTiles.add(
+                {
+                    vegetation: terrainAtPointUpRight.straightBelow,
+                    pointAbove: pointUpRight,
+                    heightAbove: terrainAtPointUpRight.height,
+                    heightDownLeft: terrainAtPoint.height,
+                    heightDownRight: terrainAtPointRight.height
+                }
+            )
+        }
 
         if (terrainAtPoint.straightBelow !== undefined && terrainAtPoint.straightBelow !== null &&
             terrainAtPointDownLeft && terrainAtPointDownRight &&
@@ -451,13 +493,9 @@ function syncChangedBorders(borderChanges: BorderChange[]) {
 
         if (currentBorderForPlayer) {
 
-            for (const point of borderChange.newBorder) {
-                currentBorderForPlayer.points.add(point)
-            }
+            borderChange.newBorder.forEach((point) => currentBorderForPlayer.points.add(point))
+            borderChange.removedBorder.forEach(point => currentBorderForPlayer.points.delete(point))
 
-            for (const point of borderChange.removedBorder) {
-                currentBorderForPlayer.points.delete(point)
-            }
         } else {
 
             const player = monitor.players.get(borderChange.playerId)

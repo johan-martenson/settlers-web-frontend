@@ -669,7 +669,7 @@ async function attackBuilding(houseInformation: HouseInformation, numberOfAttack
 
     console.log("Request: " + "/settlers/api/games/" + gameId + "/players/" + houseInformation.playerId + "/houses/" + houseInformation.id)
     console.log("Options: " + JSON.stringify({
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
             'Content-Type': 'application/json'
         },
@@ -685,7 +685,7 @@ async function attackBuilding(houseInformation: HouseInformation, numberOfAttack
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + houseInformation.playerId + "/houses/" + houseInformation.id,
         {
-            method: 'PUT',
+            method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -992,7 +992,7 @@ function isEvacuated(house: HouseInformation): boolean {
 async function cancelEvacuationForHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
     const response = await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/houses/' + houseId,
         {
-            method: 'PUT',
+            method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -1008,7 +1008,7 @@ async function cancelEvacuationForHouse(gameId: GameId, playerId: PlayerId, hous
 async function evacuateHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
     const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
         {
-            method: 'PUT',
+            method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -1023,7 +1023,7 @@ async function evacuateHouse(gameId: GameId, playerId: PlayerId, houseId: HouseI
 async function enablePromotionsForHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<HouseInformation> {
     const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
         {
-            method: 'PUT',
+            method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -1040,7 +1040,7 @@ async function enablePromotionsForHouse(gameId: GameId, playerId: PlayerId, hous
 async function disablePromotionsForHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<HouseInformation> {
     const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
         {
-            method: 'PUT',
+            method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -1055,13 +1055,13 @@ async function disablePromotionsForHouse(gameId: GameId, playerId: PlayerId, hou
 }
 
 async function upgradeMilitaryBuilding(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
-    const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses",
+    const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
         {
             method: "PATCH",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(
                 {
-                    update: true
+                    upgrade: true
                 }
             )
         }

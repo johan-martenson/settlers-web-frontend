@@ -15,7 +15,6 @@ export interface ScreenPoint {
 
 interface GameCanvasProps {
     scale: number
-    terrain: Array<TerrainAtPoint>
     translateX: number
     translateY: number
     screenWidth: number
@@ -43,7 +42,6 @@ interface GameCanvasState {
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     private selfRef = React.createRef<HTMLCanvasElement>()
-    private terrain: PointMapFast<TerrainAtPoint>
     private lightVector: Vector
     private debuggedPoint: Point | undefined
     private previousTimestamp?: number
@@ -54,6 +52,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private lastScreenWidth: number
     private lastTranslateX: number
     private lastTranslateY: number
+    private terrainNeedsUpdate: boolean
 
     constructor(props: GameCanvasProps) {
         super(props)
@@ -73,14 +72,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.loadImages(Array.from(new Set(houseImageMap.values())))
 
-        /* Create the height array */
-        this.terrain = new PointMapFast<TerrainAtPoint>()
-
-        /* Assign heights */
-        if (this.props.terrain && this.props.terrain.length > 0) {
-            this.buildHeightMap()
-        }
-
         /* Define the light vector */
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
 
@@ -91,28 +82,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.lastScreenWidth = 0
         this.lastTranslateX = 0
         this.lastTranslateY = 0
+
+        this.terrainNeedsUpdate = true
     }
 
     buildHeightMap(): void {
-
-        /* Create the array to hold the terrain information */
-        this.props.terrain.forEach(
-            (terrainAtPoint: TerrainAtPoint) => {
-                const point = terrainAtPoint.point
-
-                this.terrain.set(point, terrainAtPoint)
-            }
-        )
 
         /* Calculate and store the normals per triangle */
         const straightBelowNormals = new PointMapFast<Vector>()
         const downRightNormals = new PointMapFast<Vector>()
 
-        this.props.terrain.forEach(
-            (terrainAtPoint: TerrainAtPoint) => {
-
-                const point = terrainAtPoint.point
-
+        monitor.allTiles.forEach(
+            (terrainAtPoint, point) => {
                 const point3d = { x: terrainAtPoint.point.x, y: terrainAtPoint.point.y, z: terrainAtPoint.height }
 
                 const pointDownLeft = getPointDownLeft(point)
@@ -142,9 +123,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Calculate the brightness in each point */
         const brightnessMap = new PointMapFast<number>()
 
-        this.props.terrain.forEach(
-            (terrainAtPoint) => {
-                const gamePoint = terrainAtPoint.point
+        monitor.allTiles.forEach(
+            (terrainAtPoint, point) => {
+                const gamePoint = point
                 const normals = [
                     straightBelowNormals.get(getPointUpLeft(gamePoint)),
                     downRightNormals.get(getPointUpLeft(gamePoint)),
@@ -186,7 +167,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState) {
         return this.props.scale !== nextProps.scale ||
-            this.props.terrain !== nextProps.terrain ||
             this.props.translateX !== nextProps.translateX ||
             this.props.translateY !== nextProps.translateY ||
             this.props.screenWidth !== nextProps.screenWidth ||
@@ -202,7 +182,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     getHeightForPoint(point: Point): number | undefined {
-        const terrainAtPoint = this.terrain.get(point)
+        const terrainAtPoint = monitor.allTiles.get(point)
 
         if (!terrainAtPoint) {
             return undefined
@@ -228,7 +208,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     componentDidMount() {
 
         /* Handle update of heights if needed */
-        if (!this.brightnessMap && this.props.terrain && this.props.terrain.length > 0) {
+        if (!this.brightnessMap && monitor.allTiles && monitor.allTiles.size > 0) {
             console.info("Build height map during mount")
             this.buildHeightMap()
         }
@@ -237,16 +217,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.renderGame()
     }
 
-    componentDidUpdate() {
+    renderGame(): void {
 
-        /* Handle update of heights if needed */
-        if (!this.brightnessMap && this.props.terrain && this.props.terrain.length > 0) {
+        if (!this.brightnessMap && monitor.allTiles && monitor.allTiles.size > 0) {
             console.info("Build height map during update")
             this.buildHeightMap()
-        }
-    }
 
-    renderGame(): void {
+            this.terrainNeedsUpdate = true
+        }
 
         const duration = new Duration("GameRender::renderGame")
 
@@ -280,11 +258,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.selfRef.current.width !== this.props.width || this.selfRef.current.height !== this.props.height) {
             this.selfRef.current.width = this.props.width
             this.selfRef.current.height = this.props.height
+
+            this.terrainNeedsUpdate = true
         }
 
         if (this.terrainCanvasRef.current.width !== this.props.width || this.terrainCanvasRef.current.height !== this.props.height) {
             this.terrainCanvasRef.current.width = this.props.width
             this.terrainCanvasRef.current.height = this.props.height
+
+            this.terrainNeedsUpdate = true
         }
 
         let ctx: CanvasRenderingContext2D
@@ -309,7 +291,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.debuggedPoint = this.props.selectedPoint
         }
 
-        if (!this.brightnessMap) {
+        if (!this.brightnessMap || this.brightnessMap.size === 0) {
             requestAnimationFrame(this.renderGame.bind(this))
 
             return
@@ -318,20 +300,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("init")
 
         /* Draw the tiles */
-        if (this.lastScale !== this.props.scale ||
+        this.terrainNeedsUpdate = this.terrainNeedsUpdate ||
+            this.lastScale !== this.props.scale ||
             this.lastScreenHeight !== this.props.screenHeight ||
             this.lastScreenWidth !== this.props.screenWidth ||
             this.lastTranslateX !== this.props.translateX ||
-            this.lastTranslateY !== this.props.translateY) {
+            this.lastTranslateY !== this.props.translateY;
+
+        if (this.terrainNeedsUpdate) {
             const tileDuration = new AggregatedDuration("Tile drawing")
 
             /* Draw on the terrain canvas */
             ctx = terrainCtx
 
             /* Make it black before drawing the ground */
-            ctx.fillStyle = 'black'
-            ctx.fillRect(0, 0, width, height)
-
+            ctx.clearRect(0, 0, width, height)
 
             for (const tile of monitor.discoveredBelowTiles) {
 
@@ -432,6 +415,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.lastScreenWidth = this.props.screenWidth
             this.lastTranslateX = this.props.translateX
             this.lastTranslateY = this.props.translateY
+
+            this.terrainNeedsUpdate = false
         }
 
 

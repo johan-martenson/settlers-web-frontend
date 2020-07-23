@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, getTerrain, getViewForPlayer, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, TerrainAtPoint } from './api'
+import { callGeologist, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES } from './api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import EnemyHouseInfo from './enemy_house_info'
@@ -10,12 +10,12 @@ import GameMessagesViewer from './game_messages_viewer'
 import { GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
-import { monitor, startMonitoringGame } from './monitor'
+import { getHeadquarterForPlayer, monitor, startMonitoringGame } from './monitor'
 import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import TypeControl from './type_control'
-import { isRoadAtPoint, removeHouseOrFlagAtPoint, terrainInformationToTerrainAtPointList } from './utils'
+import { isRoadAtPoint, removeHouseOrFlagAtPoint } from './utils'
 import { PointSetFast } from './util_types'
 
 const MENU_MENU = 0
@@ -78,8 +78,6 @@ interface AppState {
 
     scale: number
 
-    terrain: Array<TerrainAtPoint>
-
     translateX: number
     translateY: number
 
@@ -111,9 +109,14 @@ class App extends Component<AppProps, AppState> {
     private selfNameRef = React.createRef<HTMLDivElement>()
     private typeControlRef = React.createRef<TypeControl>()
     private readonly commands: Map<string, (() => void)>
+    monitoringPromise: Promise<void>
 
     constructor(props: AppProps) {
         super(props)
+
+
+        this.monitoringPromise = startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
+
 
         this.onMouseDown = this.onMouseDown.bind(this)
         this.onMouseMove = this.onMouseMove.bind(this)
@@ -152,7 +155,6 @@ class App extends Component<AppProps, AppState> {
 
         this.state = {
             showAvailableConstruction: false,
-            terrain: new Array<TerrainAtPoint>(),
             translateX: 0,
             translateY: 0,
             selected: { x: 0, y: 0 },
@@ -418,7 +420,7 @@ class App extends Component<AppProps, AppState> {
 
     async componentDidMount(): Promise<void> {
 
-        await startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
+        await this.monitoringPromise
 
         if (this.selfNameRef.current) {
 
@@ -435,36 +437,11 @@ class App extends Component<AppProps, AppState> {
             }
         }
 
-        /* Fetch the view for the first time and center on the player's headquarter */
-        const view = await getViewForPlayer(this.props.gameId, this.props.selfPlayerId)
-
-        // Center the view on the headquarter on the first update
-        const headquarter = view.houses.find(h => h.type === "Headquarter")
+        /* Center the view on the headquarter on the first update */
+        const headquarter = getHeadquarterForPlayer(this.props.selfPlayerId)
 
         if (headquarter) {
-            const scaleY = this.state.scale * 0.5
-
-            const translateX = (globalSyncState.width / 2) - headquarter.x * this.state.scale
-            const translateY = -globalSyncState.height + (globalSyncState.height / 2) + headquarter.y * scaleY
-
-            this.setState({
-                translateX: translateX,
-                translateY: translateY
-            })
-
-        }
-
-        // Get the terrain once
-        if (this.state.terrain.length === 0) {
-            const terrain = await getTerrain(this.props.gameId)
-
-            const terrainList = terrainInformationToTerrainAtPointList(terrain)
-
-            this.setState({
-                terrain: terrainList,
-                gameWidth: terrain.width,
-                gameHeight: terrain.height,
-            })
+            this.goToHouse(headquarter.id)
         }
 
         /* Listen for changes in the window size */
@@ -900,7 +877,6 @@ class App extends Component<AppProps, AppState> {
                 tabIndex={1}>
 
                 <GameCanvas
-                    terrain={this.state.terrain}
                     scale={this.state.scale}
                     translateX={this.state.translateX}
                     translateY={this.state.translateY}

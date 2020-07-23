@@ -570,4 +570,18 @@ async function forceUpdateOfHouse(houseId: HouseId): Promise<void> {
     }
 }
 
-export { forceUpdateOfHouse, listenToHouse, listenToMessages, startMonitoringGame, monitor }
+function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefined {
+    let headquarter
+
+    monitor.houses.forEach(
+        (house, houseId) => {
+            if (house.type === 'Headquarter' && house.playerId === playerId) {
+                headquarter = house
+            }
+        }
+    )
+
+    return headquarter
+}
+
+export { getHeadquarterForPlayer, forceUpdateOfHouse, listenToHouse, listenToMessages, startMonitoringGame, monitor }

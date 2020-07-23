@@ -48,6 +48,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private debuggedPoint: Point | undefined
     private previousTimestamp?: number
     private brightnessMap?: PointMapFast<number>
+    private terrainCanvasRef = React.createRef<HTMLCanvasElement>()
+    private lastScale: number
+    private lastScreenHeight: number
+    private lastScreenWidth: number
+    private lastTranslateX: number
+    private lastTranslateY: number
 
     constructor(props: GameCanvasProps) {
         super(props)
@@ -79,6 +85,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
 
         addVariableIfAbsent("fps")
+
+        this.lastScale = 0
+        this.lastScreenHeight = 0
+        this.lastScreenWidth = 0
+        this.lastTranslateX = 0
+        this.lastTranslateY = 0
     }
 
     buildHeightMap(): void {
@@ -238,32 +250,49 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         const duration = new Duration("GameRender::renderGame")
 
-        /* Draw */
-        if (!this.selfRef.current) {
-            console.log("ERROR: no self ref")
+        /* Ensure that the references to the canvases are set */
+        if (!this.selfRef.current || !this.terrainCanvasRef.current) {
+            console.error("The canvas references are not set properly")
+
             return
         }
 
+        /* Get the rendering contexts for the canvases */
+        const terrainCtx = this.terrainCanvasRef?.current?.getContext("2d", { alpha: false })
+        const overlayCtx = this.selfRef.current.getContext("2d")
+
+        /* Ensure that both rendering contexts are valid */
+        if (!overlayCtx || !isContext2D(overlayCtx) || !terrainCtx || !isContext2D(terrainCtx)) {
+            console.error("ERROR: No or invalid context")
+
+            return
+        }
+
+        /*
+          Make sure the width and height of the canvases match with the window
+
+          Note: this will clear the screen - only set if needed
+
+        */
         const width = this.selfRef.current.width
         const height = this.selfRef.current.height
 
-        const ctx = this.selfRef.current.getContext("2d", { alpha: false })
-
-        if (!ctx || !isContext2D(ctx)) {
-            console.log("ERROR: No or invalid context")
-            console.log(ctx)
-            return
+        if (this.selfRef.current.width !== this.props.width || this.selfRef.current.height !== this.props.height) {
+            this.selfRef.current.width = this.props.width
+            this.selfRef.current.height = this.props.height
         }
 
-        /* Clear the screen */
-        ctx.fillStyle = 'black'
+        if (this.terrainCanvasRef.current.width !== this.props.width || this.terrainCanvasRef.current.height !== this.props.height) {
+            this.terrainCanvasRef.current.width = this.props.width
+            this.terrainCanvasRef.current.height = this.props.height
+        }
 
-        ctx.fillRect(0, 0, width, height)
+        let ctx: CanvasRenderingContext2D
+
+        /* Clear the overlay - make it fully transparent */
+        overlayCtx.clearRect(0, 0, width, height)
 
         const scaleY = this.props.scale * 0.5
-
-        this.selfRef.current.width = this.props.width
-        this.selfRef.current.height = this.props.height
 
         let oncePerNewSelectionPoint = false
 
@@ -289,105 +318,126 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("init")
 
         /* Draw the tiles */
-        const tileDuration = new AggregatedDuration("Tile drawing")
+        if (this.lastScale !== this.props.scale ||
+            this.lastScreenHeight !== this.props.screenHeight ||
+            this.lastScreenWidth !== this.props.screenWidth ||
+            this.lastTranslateX !== this.props.translateX ||
+            this.lastTranslateY !== this.props.translateY) {
+            const tileDuration = new AggregatedDuration("Tile drawing")
 
-        for (const tile of monitor.discoveredBelowTiles) {
+            /* Draw on the terrain canvas */
+            ctx = terrainCtx
 
-            const gamePoint = tile.pointAbove
-            const gamePointDownLeft = getPointDownLeft(gamePoint)
-            const gamePointDownRight = getPointDownRight(gamePoint)
+            /* Make it black before drawing the ground */
+            ctx.fillStyle = 'black'
+            ctx.fillRect(0, 0, width, height)
 
-            /* Filter tiles that are not on the screen */
-            if (gamePointDownRight.x < minXInGame || gamePointDownLeft.x > maxXInGame || gamePointDownLeft.y < minYInGame || gamePoint.y > maxYInGame) {
-                continue
+
+            for (const tile of monitor.discoveredBelowTiles) {
+
+                const gamePoint = tile.pointAbove
+                const gamePointDownLeft = getPointDownLeft(gamePoint)
+                const gamePointDownRight = getPointDownRight(gamePoint)
+
+                /* Filter tiles that are not on the screen */
+                if (gamePointDownRight.x < minXInGame || gamePointDownLeft.x > maxXInGame || gamePointDownLeft.y < minYInGame || gamePoint.y > maxYInGame) {
+                    continue
+                }
+
+                /* Get intensity for each point */
+                const intensityPoint = this.brightnessMap.get(gamePoint)
+                const intensityPointDownRight = this.brightnessMap.get(gamePointDownRight)
+                const intensityPointDownLeft = this.brightnessMap.get(gamePointDownLeft)
+
+                /* Draw the tile right below */
+                const screenPoint = this.gamePointToScreenPoint(gamePoint)
+                const screenPointDownLeft = this.gamePointToScreenPoint(gamePointDownLeft)
+                const screenPointDownRight = this.gamePointToScreenPoint(gamePointDownRight)
+
+                /* Get the brightness for the game point down left here because now we know that it is discovered */
+                const colorBelow = intToVegetationColor.get(tile.vegetation)
+
+                tileDuration.after("Tiles below: fetch intensity and calculate coordinates")
+
+                /* Skip this draw if there is no defined color. This is an error */
+                if (!colorBelow || intensityPoint === undefined || intensityPointDownLeft === undefined || intensityPointDownRight === undefined) {
+                    console.log("NO COLOR FOR VEGETATION BELOW")
+                    console.log(tile.vegetation)
+
+                    continue
+                }
+
+                drawGradientTriangle(ctx,
+                    colorBelow,
+                    { x: Math.round(screenPoint.x), y: Math.round(screenPoint.y - 1) },
+                    { x: Math.round(screenPointDownLeft.x - 1), y: Math.round(screenPointDownLeft.y) },
+                    { x: Math.round(screenPointDownRight.x + 1), y: Math.round(screenPointDownRight.y) },
+                    intensityPoint,
+                    intensityPointDownLeft,
+                    intensityPointDownRight)
+
+                tileDuration.after("Draw gradient triangle above")
             }
 
-            /* Get intensity for each point */
-            const intensityPoint = this.brightnessMap.get(gamePoint)
-            const intensityPointDownRight = this.brightnessMap.get(gamePointDownRight)
-            const intensityPointDownLeft =  this.brightnessMap.get(gamePointDownLeft)
+            duration.after("Draw tiles below")
 
-            /* Draw the tile right below */
-            const screenPoint = this.gamePointToScreenPoint(gamePoint)
-            const screenPointDownLeft = this.gamePointToScreenPoint(gamePointDownLeft)
-            const screenPointDownRight = this.gamePointToScreenPoint(gamePointDownRight)
+            for (const tile of monitor.discoveredDownRightTiles) {
 
-            /* Get the brightness for the game point down left here because now we know that it is discovered */
-            const colorBelow = intToVegetationColor.get(tile.vegetation)
+                const gamePoint = tile.pointLeft
+                const gamePointDownRight = getPointDownRight(gamePoint)
+                const gamePointRight = getPointRight(gamePoint)
 
-            tileDuration.after("Tiles below: fetch intensity and calculate coordinates")
+                /* Filter tiles that are not on the screen */
+                if (gamePointRight.x < minXInGame || gamePoint.x > maxXInGame || gamePointDownRight.y < minYInGame || gamePoint.y > maxYInGame) {
+                    continue
+                }
 
-            /* Skip this draw if there is no defined color. This is an error */
-            if (!colorBelow || intensityPoint === undefined || intensityPointDownLeft === undefined || intensityPointDownRight === undefined) {
-                console.log("NO COLOR FOR VEGETATION BELOW")
-                console.log(tile.vegetation)
+                /* Draw the tile down right */
+                const screenPoint = this.gamePointToScreenPoint(gamePoint)
+                const screenPointRight = this.gamePointToScreenPoint(gamePointRight)
+                const screenPointDownRight = this.gamePointToScreenPoint(gamePointDownRight)
 
-                continue
+                /* Get the brightness for the game point right here because now we know that the point is discovered */
+                const intensityPoint = this.brightnessMap.get(gamePoint)
+                const intensityPointRight = this.brightnessMap.get(gamePointRight)
+                const intensityPointDownRight = this.brightnessMap.get(gamePointDownRight)
+
+                const colorDownRight = intToVegetationColor.get(tile.vegetation)
+
+                tileDuration.after("Tiles above: fetch intensity and calculate coordinates")
+
+                /* Skip this draw if there is no defined color. This is an error */
+                if (!colorDownRight || intensityPoint === undefined || intensityPointDownRight === undefined || intensityPointRight === undefined) {
+                    console.log("NO COLOR FOR VEGETATION DOWN RIGHT")
+                    console.log(tile.vegetation)
+
+                    continue
+                }
+
+                drawGradientTriangle(ctx,
+                    colorDownRight,
+                    { x: Math.round(screenPoint.x - 1), y: Math.round(screenPoint.y - 1) },
+                    { x: Math.round(screenPointDownRight.x), y: Math.round(screenPointDownRight.y + 1) },
+                    { x: Math.round(screenPointRight.x + 1), y: Math.round(screenPointRight.y - 1) },
+                    intensityPoint,
+                    intensityPointDownRight,
+                    intensityPointRight)
+
+                tileDuration.after("Draw gradient triangle below")
+                tileDuration.reportStats()
             }
 
-            drawGradientTriangle(ctx,
-                colorBelow,
-                { x: Math.round(screenPoint.x), y: Math.round(screenPoint.y - 1) },
-                { x: Math.round(screenPointDownLeft.x - 1), y: Math.round(screenPointDownLeft.y) },
-                { x: Math.round(screenPointDownRight.x + 1), y: Math.round(screenPointDownRight.y) },
-                intensityPoint,
-                intensityPointDownLeft,
-                intensityPointDownRight)
-
-            tileDuration.after("Draw gradient triangle above")
+            this.lastScale = this.props.scale
+            this.lastScreenHeight = this.props.screenHeight
+            this.lastScreenWidth = this.props.screenWidth
+            this.lastTranslateX = this.props.translateX
+            this.lastTranslateY = this.props.translateY
         }
 
-        duration.after("Draw tiles below")
-
-        for (const tile of monitor.discoveredDownRightTiles) {
-
-            const gamePoint = tile.pointLeft
-            const gamePointDownRight = getPointDownRight(gamePoint)
-            const gamePointRight = getPointRight(gamePoint)
-
-            /* Filter tiles that are not on the screen */
-            if (gamePointRight.x < minXInGame || gamePoint.x > maxXInGame || gamePointDownRight.y < minYInGame || gamePoint.y > maxYInGame) {
-                continue
-            }
-
-            /* Draw the tile down right */
-            const screenPoint = this.gamePointToScreenPoint(gamePoint)
-            const screenPointRight = this.gamePointToScreenPoint(gamePointRight)
-            const screenPointDownRight = this.gamePointToScreenPoint(gamePointDownRight)
-
-            /* Get the brightness for the game point right here because now we know that the point is discovered */
-            const intensityPoint = this.brightnessMap.get(gamePoint)
-            const intensityPointRight = this.brightnessMap.get(gamePointRight)
-            const intensityPointDownRight = this.brightnessMap.get(gamePointDownRight)
-
-            const colorDownRight = intToVegetationColor.get(tile.vegetation)
-
-            tileDuration.after("Tiles above: fetch intensity and calculate coordinates")
-
-            /* Skip this draw if there is no defined color. This is an error */
-            if (!colorDownRight || intensityPoint === undefined || intensityPointDownRight === undefined || intensityPointRight === undefined) {
-                console.log("NO COLOR FOR VEGETATION DOWN RIGHT")
-                console.log(tile.vegetation)
-
-                continue
-            }
-
-            drawGradientTriangle(ctx,
-                colorDownRight,
-                { x: Math.round(screenPoint.x - 1), y: Math.round(screenPoint.y - 1) },
-                { x: Math.round(screenPointDownRight.x), y: Math.round(screenPointDownRight.y + 1) },
-                { x: Math.round(screenPointRight.x + 1), y: Math.round(screenPointRight.y - 1) },
-                intensityPoint,
-                intensityPointDownRight,
-                intensityPointRight)
-
-            tileDuration.after("Draw gradient triangle below")
-        }
-
-        tileDuration.reportStats()
 
         duration.after("draw tiles down-right")
 
+        ctx = overlayCtx
 
         /* Draw the roads */
         ctx.fillStyle = 'yellow'
@@ -1086,41 +1136,51 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         return (
-            <canvas
-                width={width}
-                height={height}
-                className="GameCanvas"
-                onKeyDown={this.props.onKeyDown}
-                onClick={this.onClick}
-                onDoubleClick={this.onDoubleClick}
-                ref={this.selfRef}
-                onMouseMove={
-                    (event: React.MouseEvent) => {
+            <>
+                <canvas
+                    width={width}
+                    height={height}
+                    className="GameCanvas"
+                    onKeyDown={this.props.onKeyDown}
+                    onClick={this.onClick}
+                    onDoubleClick={this.onDoubleClick}
+                    ref={this.selfRef}
+                    onMouseMove={
+                        (event: React.MouseEvent) => {
 
-                        /* Convert to game coordinates */
-                        if (this.selfRef.current) {
-                            const rect = event.currentTarget.getBoundingClientRect()
-                            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width)
-                            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height)
+                            /* Convert to game coordinates */
+                            if (this.selfRef.current) {
+                                const rect = event.currentTarget.getBoundingClientRect()
+                                const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width)
+                                const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height)
 
-                            const hoverPoint = this.screenPointToGamePoint({ x: x, y: y })
+                                const hoverPoint = this.screenPointToGamePoint({ x: x, y: y })
 
-                            if (!this.state.hoverPoint ||
-                                this.state.hoverPoint.x !== hoverPoint.x ||
-                                this.state.hoverPoint.y !== hoverPoint.y) {
+                                if (!this.state.hoverPoint ||
+                                    this.state.hoverPoint.x !== hoverPoint.x ||
+                                    this.state.hoverPoint.y !== hoverPoint.y) {
 
-                                this.setState(
-                                    {
-                                        hoverPoint: hoverPoint
-                                    }
-                                )
+                                    this.setState(
+                                        {
+                                            hoverPoint: hoverPoint
+                                        }
+                                    )
+                                }
                             }
-                        }
 
-                        /* Allow the event to propagate to make scrolling work */
+                            /* Allow the event to propagate to make scrolling work */
+                        }
                     }
-                }
-            />
+                />
+
+                <canvas
+                    width={width}
+                    height={height}
+                    ref={this.terrainCanvasRef}
+                    className="TerrainCanvas"
+                />
+
+            </>
         )
     }
 }

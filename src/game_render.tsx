@@ -1093,14 +1093,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     render() {
 
-        let width = this.props.width
-        let height = this.props.height
-
-        if (this.overlayCanvasRef.current) {
-            width = this.overlayCanvasRef.current.width
-            height = this.overlayCanvasRef.current.height
-        }
-
         return (
             <>
                 <canvas
@@ -1137,10 +1129,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 />
 
-                <canvas
-                    ref={this.terrainCanvasRef}
-                    className="TerrainCanvas"
-                />
+                <canvas ref={this.terrainCanvasRef} className="TerrainCanvas" />
 
             </>
         )

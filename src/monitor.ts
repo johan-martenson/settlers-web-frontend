@@ -1,11 +1,9 @@
-import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint } from './api'
+import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers } from './api'
 import { PointMapFast, PointSetFast } from './util_types'
 import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight, getPointUpRight, getPointLeft } from './utils'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
-
-type vegetationInt = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 interface MonitoredBorderForPlayer {
     color: string
@@ -17,15 +15,15 @@ interface TileBelow {
     heightDownLeft: number
     heightDownRight: number
     heightAbove: number
-    vegetation: vegetationInt
+    vegetation: VegetationIntegers
 }
 
 interface TileDownRight {
     pointLeft: Point
     heightLeft: number
-    heightDownRight: number
+    heightDown: number
     heightRight: number
-    vegetation: vegetationInt
+    vegetation: VegetationIntegers
 }
 
 interface Monitor {
@@ -155,49 +153,29 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     /* Get the messages */
 
     /* Get initial game data to then continuously monitor */
-    const viewAtStart = await getViewForPlayer(gameId, playerId)
+    const view = await getViewForPlayer(gameId, playerId)
 
-    for (const [point, availableAtPoint] of viewAtStart.availableConstruction) {
-        monitor.availableConstruction.set(point, availableAtPoint)
-    }
+    view.availableConstruction.forEach((availableAtPoint, point) => monitor.availableConstruction.set(point, availableAtPoint))
 
-    for (const sign of viewAtStart.signs) {
-        monitor.signs.set(sign.id, sign)
-    }
+    view.signs.forEach(sign => monitor.signs.set(sign.id, sign))
 
-    for (const stone of viewAtStart.stones) {
-        monitor.stones.add(stone)
-    }
+    view.stones.forEach(stone => monitor.stones.add(stone))
 
-    for (const point of viewAtStart.discoveredPoints) {
-        monitor.discoveredPoints.add(point)
-    }
+    view.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
 
-    for (const worker of viewAtStart.workers) {
-        monitor.workers.set(worker.id, worker)
-    }
+    view.workers.forEach(worker => monitor.workers.set(worker.id, worker))
 
-    for (const house of viewAtStart.houses) {
-        monitor.houses.set(house.id, house)
-    }
+    view.houses.forEach(house => monitor.houses.set(house.id, house))
 
-    for (const flag of viewAtStart.flags) {
-        monitor.flags.set(flag.id, flag)
-    }
+    view.flags.forEach(flag => monitor.flags.set(flag.id, flag))
 
-    for (const road of viewAtStart.roads) {
-        monitor.roads.set(road.id, road)
-    }
+    view.roads.forEach(road => monitor.roads.set(road.id, road))
 
-    for (const tree of viewAtStart.trees) {
-        monitor.trees.add(tree)
-    }
+    view.trees.forEach(tree => monitor.trees.add(tree))
 
-    for (const crop of viewAtStart.crops) {
-        monitor.crops.add(crop)
-    }
+    view.crops.forEach(crop => monitor.crops.add(crop))
 
-    for (const borderInformation of viewAtStart.borders) {
+    for (const borderInformation of view.borders) {
 
         const player = monitor.players.get(borderInformation.playerId)
 
@@ -220,11 +198,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
     const terrainPointList = terrainInformationToTerrainAtPointList(terrain)
 
-    terrainPointList.forEach(
-        (terrainAtPoint) => {
-            monitor.allTiles.set(terrainAtPoint.point, terrainAtPoint)
-        }
-    )
+    terrainPointList.forEach(terrainAtPoint => { monitor.allTiles.set(terrainAtPoint.point, terrainAtPoint) })
 
     /* Store the discovered tiles */
     storeDiscoveredTiles(monitor.discoveredPoints)
@@ -430,7 +404,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
                     pointLeft: pointLeft,
                     heightLeft: terrainAtPointLeft.height,
                     heightRight: terrainAtPoint.height,
-                    heightDownRight: terrainAtPointDownLeft.height
+                    heightDown: terrainAtPointDownLeft.height
                 }
             )
         }
@@ -469,7 +443,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
                     vegetation: terrainAtPoint.downRight,
                     pointLeft: point,
                     heightLeft: terrainAtPoint.height,
-                    heightDownRight: terrainAtPointDownRight.height,
+                    heightDown: terrainAtPointDownRight.height,
                     heightRight: terrainAtPointRight.height
                 }
             )

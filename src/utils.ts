@@ -1,7 +1,6 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, TileInformation, RoadId, removeRoad } from './api'
-import { TerrainAtPoint } from './game_render'
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint } from './api'
 
-const vegetationToInt = new Map<TileInformation, number>()
+const vegetationToInt = new Map<Vegetation, number>()
 
 vegetationToInt.set("G", 0)   // Grass
 vegetationToInt.set("M", 1)   // Mountain
@@ -58,8 +57,8 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
 
             const tile = {
                 point: point,
-                straightBelow: vegetationToInt.get(terrainInformation.straightBelow[count]),
-                belowToTheRight: vegetationToInt.get(terrainInformation.belowToTheRight[count]),
+                below: vegetationToInt.get(terrainInformation.straightBelow[count]),
+                downRight: vegetationToInt.get(terrainInformation.belowToTheRight[count]),
                 height: terrainInformation.heights[count]
             }
 

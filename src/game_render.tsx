@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { getCrops, getFlags, getHouses, getRoads, getTrees, getWorkers, materialToColor, Point } from './api'
+import { getCrops, getFlags, getHouses, getRoads, getTrees, getWorkers, materialToColor, Point, TerrainAtPoint } from './api'
 import houseImageMap, { Filename } from './images'
 import { monitor } from './monitor'
 import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt, getTimestamp } from './utils'
@@ -11,15 +11,6 @@ import './game_render.css'
 export interface ScreenPoint {
     x: number
     y: number
-}
-
-type vegetationInt = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-
-export interface TerrainAtPoint {
-    point: Point
-    straightBelow: vegetationInt
-    belowToTheRight: vegetationInt
-    height: number
 }
 
 interface GameCanvasProps {
@@ -350,7 +341,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         for (const tile of monitor.discoveredDownRightTiles) {
 
-            const gamePoint = tile.pointUpLeft
+            const gamePoint = tile.pointLeft
             const gamePointDownRight = getPointDownRight(gamePoint)
             const gamePointRight = getPointRight(gamePoint)
 

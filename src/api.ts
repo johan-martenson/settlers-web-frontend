@@ -159,15 +159,24 @@ export interface PointInformation {
 
 export interface TreeInformation extends Point { }
 
-export type TileInformation = "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE" | "SA"
+export type Vegetation = "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE" | "SA"
 
 export type HeightInformation = number
+
+export type VegetationIntegers = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+export interface TerrainAtPoint {
+    point: Point
+    below: VegetationIntegers
+    downRight: VegetationIntegers
+    height: number
+}
 
 export interface TerrainInformation {
     width: number
     height: number
-    straightBelow: TileInformation[]
-    belowToTheRight: TileInformation[]
+    straightBelow: Vegetation[]
+    belowToTheRight: Vegetation[]
     heights: HeightInformation[]
 }
 

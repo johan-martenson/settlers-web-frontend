@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
-import { getTerrainForMap, MapInformation, MapId } from './api'
+import { getTerrainForMap, MapInformation, MapId, TerrainAtPoint } from './api'
 import Button from './button'
 import Card from './card'
 import ExpandCollapseToggle from './expand_collapse_toggle'
-import { intToVegetationColor, TerrainAtPoint } from './game_render'
+import { intToVegetationColor } from './game_render'
 import './map_information_card.css'
 import RawRow from './raw_row'
 import { terrainInformationToTerrainAtPointList, isContext2D, vegetationToInt, arrayToRgbStyle } from './utils'
@@ -127,17 +127,17 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
 
             if (point.x % 4 === 0 && point.y % 4 === 0) {
 
-                const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.straightBelow)
-                const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.belowToTheRight)
+                const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
+                const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
 
-                if (colorStraightBelow && pointTerrainInformation.straightBelow !== waterIntValue) {
+                if (colorStraightBelow && pointTerrainInformation.below !== waterIntValue) {
                     ctx.beginPath()
                     ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
                     ctx.rect(point.x, point.y, 4, 4)
                     ctx.fill()
                 }
 
-                if (colorBelowToTheRight && pointTerrainInformation.belowToTheRight !== waterIntValue) {
+                if (colorBelowToTheRight && pointTerrainInformation.downRight !== waterIntValue) {
                     ctx.beginPath()
                     ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
                     ctx.rect(point.x + 4, point.y, 4, 4)
@@ -163,8 +163,8 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
 
         terrain.forEach(pointTerrainInformation => {
 
-            const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.straightBelow)
-            const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.belowToTheRight)
+            const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
+            const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
             const point = pointTerrainInformation.point
 
             if (colorStraightBelow) {

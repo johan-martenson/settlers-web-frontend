@@ -35,8 +35,6 @@ interface GameCanvasProps {
 
 interface GameCanvasState {
     hoverPoint?: Point
-    context?: CanvasRenderingContext2D
-    images: Map<Filename, HTMLImageElement>
 }
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
@@ -53,6 +51,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private lastTranslateX: number
     private lastTranslateY: number
     private terrainNeedsUpdate: boolean
+    private images: Map<Filename, HTMLImageElement>
 
     constructor(props: GameCanvasProps) {
         super(props)
@@ -64,13 +63,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.getHeightForPoint = this.getHeightForPoint.bind(this)
         this.pointToPoint3D = this.pointToPoint3D.bind(this)
 
-        this.state = {
-            images: new Map()
-        }
+        this.images = new Map()
 
         this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", "flag.png", "large-house-available.png", "medium-house-available.png", "small-house-available.png", "mine-available.png"])
-
-        this.loadImages(Array.from(new Set(houseImageMap.values())))
+        this.loadImages(houseImageMap.values())
 
         /* Define the light vector */
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
@@ -84,6 +80,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.lastTranslateY = 0
 
         this.terrainNeedsUpdate = true
+
+        this.state = {}
     }
 
     buildHeightMap(): void {
@@ -144,7 +142,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.brightnessMap = brightnessMap
     }
 
-    loadImages(sources: string[]): void {
+    loadImages(sources: string[] | IterableIterator<string>): void {
         for (let source of sources) {
             console.log("Loading " + source)
 
@@ -153,11 +151,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             image.addEventListener("load",
                 () => {
                     console.log("Loaded " + source)
-                    this.setState(
-                        {
-                            images: new Map(this.state.images).set(source, image)
-                        }
-                    )
+                    this.images.set(source, image)
                 }
             )
 
@@ -529,7 +523,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             if (imageFilename) {
 
-                const houseImage = this.state.images.get(imageFilename)
+                const houseImage = this.images.get(imageFilename)
 
                 if (houseImage) {
 
@@ -589,7 +583,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             screenPoint.x -= 0.5 * this.props.scale
             screenPoint.y -= 2.5 * scaleY
 
-            const treeImage = this.state.images.get("tree.png")
+            const treeImage = this.images.get("tree.png")
 
             if (treeImage) {
                 ctx.drawImage(treeImage, screenPoint.x, screenPoint.y, this.props.scale, 3 * scaleY)
@@ -657,7 +651,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             screenPoint.x -= (2 * this.props.scale) / 2
             screenPoint.y -= 3 * scaleY / 2
 
-            const stoneImage = this.state.images.get("stone.png")
+            const stoneImage = this.images.get("stone.png")
 
             if (stoneImage) {
                 ctx.drawImage(stoneImage, screenPoint.x, screenPoint.y, 2 * this.props.scale, 3 * scaleY)
@@ -668,7 +662,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw workers */
-        const workerImage = this.state.images.get("worker.png")
+        const workerImage = this.images.get("worker.png")
 
         for (const [id, worker] of getWorkers()) {
 
@@ -715,7 +709,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw animals */
-        const animalImage = this.state.images.get("rabbit-small-brown.png")
+        const animalImage = this.images.get("rabbit-small-brown.png")
 
         for (const animal of monitor.animals) {
             if (animal.betweenPoints) {
@@ -761,7 +755,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw flags */
-        const flagImage = this.state.images.get("flag.png")
+        const flagImage = this.images.get("flag.png")
 
         for (const [id, flag] of getFlags()) {
 
@@ -784,10 +778,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw available construction */
-        const largeHouseAvailableImage = this.state.images.get("large-house-available.png")
-        const mediumHouseAvailableImage = this.state.images.get("medium-house-available.png")
-        const smallHouseAvailableImage = this.state.images.get("small-house-available.png")
-        const mineAvailableImage = this.state.images.get("mine-available.png")
+        const largeHouseAvailableImage = this.images.get("large-house-available.png")
+        const mediumHouseAvailableImage = this.images.get("medium-house-available.png")
+        const smallHouseAvailableImage = this.images.get("small-house-available.png")
+        const mineAvailableImage = this.images.get("mine-available.png")
 
         if (this.props.showAvailableConstruction) {
 
@@ -1008,14 +1002,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.previousTimestamp = timestamp
 
         requestAnimationFrame(this.renderGame.bind(this))
-    }
-
-    saveContext(context: CanvasRenderingContext2D): void {
-        this.setState(
-            {
-                context: context
-            }
-        )
     }
 
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {

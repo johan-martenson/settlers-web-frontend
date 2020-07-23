@@ -39,7 +39,7 @@ interface GameCanvasState {
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
-    private selfRef = React.createRef<HTMLCanvasElement>()
+    private overlayCanvasRef = React.createRef<HTMLCanvasElement>()
     private lightVector: Vector
     private debuggedPoint: Point | undefined
     private previousTimestamp?: number
@@ -168,11 +168,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.props.selectedPoint !== nextProps.selectedPoint ||
             this.props.possibleRoadConnections !== nextProps.possibleRoadConnections ||
             this.props.newRoad !== nextProps.newRoad ||
-            (!this.state.hoverPoint && typeof (nextState.hoverPoint) !== "undefined") ||
-            (typeof (this.state.hoverPoint) !== "undefined" &&
+            (!this.state.hoverPoint && nextState.hoverPoint !== undefined) ||
+            (this.state.hoverPoint !== undefined &&
                 (this.state.hoverPoint !== nextState.hoverPoint ||
-                    this.state.hoverPoint.x !== nextState.hoverPoint.x ||
-                    this.state.hoverPoint.y !== nextState.hoverPoint.y))
+                 this.state.hoverPoint.x !== nextState.hoverPoint.x ||
+                 this.state.hoverPoint.y !== nextState.hoverPoint.y))
     }
 
     getHeightForPoint(point: Point): number | undefined {
@@ -223,7 +223,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const duration = new Duration("GameRender::renderGame")
 
         /* Ensure that the references to the canvases are set */
-        if (!this.selfRef.current || !this.terrainCanvasRef.current) {
+        if (!this.overlayCanvasRef.current || !this.terrainCanvasRef.current) {
             console.error("The canvas references are not set properly")
 
             return
@@ -231,11 +231,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Get the rendering contexts for the canvases */
         const terrainCtx = this.terrainCanvasRef?.current?.getContext("2d", { alpha: false })
-        const overlayCtx = this.selfRef.current.getContext("2d")
+        const overlayCtx = this.overlayCanvasRef.current.getContext("2d")
 
         /* Ensure that both rendering contexts are valid */
         if (!overlayCtx || !isContext2D(overlayCtx) || !terrainCtx || !isContext2D(terrainCtx)) {
-            console.error("ERROR: No or invalid context")
+            console.error("No or invalid context")
 
             return
         }
@@ -246,12 +246,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
           Note: this will clear the screen - only set if needed
 
         */
-        const width = this.selfRef.current.width
-        const height = this.selfRef.current.height
+        const width = this.overlayCanvasRef.current.width
+        const height = this.overlayCanvasRef.current.height
 
-        if (this.selfRef.current.width !== this.props.width || this.selfRef.current.height !== this.props.height) {
-            this.selfRef.current.width = this.props.width
-            this.selfRef.current.height = this.props.height
+        if (this.overlayCanvasRef.current.width !== this.props.width || this.overlayCanvasRef.current.height !== this.props.height) {
+            this.overlayCanvasRef.current.width = this.props.width
+            this.overlayCanvasRef.current.height = this.props.height
 
             this.terrainNeedsUpdate = true
         }
@@ -1050,16 +1050,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     async onClick(event: React.MouseEvent): Promise<void> {
 
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
-            console.log("ERROR: Received invalid click event")
+            console.error("Received invalid click event")
 
             return
         }
 
         /* Convert to game coordinates */
-        if (this.selfRef.current) {
+        if (this.overlayCanvasRef.current) {
             const rect = event.currentTarget.getBoundingClientRect()
-            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width)
-            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height)
+            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
+            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
             const gamePoint = this.screenPointToGamePoint({ x: x, y: y })
 
@@ -1072,16 +1072,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     onDoubleClick(event: React.MouseEvent): void {
 
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
-            console.log("ERROR: Received invalid double click event")
+            console.error("Received invalid double click event")
 
             return
         }
 
         /* Convert to game coordinates */
-        if (this.selfRef.current) {
+        if (this.overlayCanvasRef.current) {
             const rect = event.currentTarget.getBoundingClientRect()
-            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width)
-            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height)
+            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
+            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
             const screenPoint = this.screenPointToGamePoint({ x: x, y: y })
 
@@ -1096,34 +1096,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         let width = this.props.width
         let height = this.props.height
 
-        if (width === 0 || height === 0) {
-            width = 800
-            height = 800
-        }
-
-        if (this.selfRef.current) {
-            width = this.selfRef.current.width
-            height = this.selfRef.current.height
+        if (this.overlayCanvasRef.current) {
+            width = this.overlayCanvasRef.current.width
+            height = this.overlayCanvasRef.current.height
         }
 
         return (
             <>
                 <canvas
-                    width={width}
-                    height={height}
                     className="GameCanvas"
                     onKeyDown={this.props.onKeyDown}
                     onClick={this.onClick}
                     onDoubleClick={this.onDoubleClick}
-                    ref={this.selfRef}
+                    ref={this.overlayCanvasRef}
                     onMouseMove={
                         (event: React.MouseEvent) => {
 
                             /* Convert to game coordinates */
-                            if (this.selfRef.current) {
+                            if (this.overlayCanvasRef.current) {
                                 const rect = event.currentTarget.getBoundingClientRect()
-                                const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.selfRef.current.width)
-                                const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.selfRef.current.height)
+                                const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
+                                const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
                                 const hoverPoint = this.screenPointToGamePoint({ x: x, y: y })
 
@@ -1145,8 +1138,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 />
 
                 <canvas
-                    width={width}
-                    height={height}
                     ref={this.terrainCanvasRef}
                     className="TerrainCanvas"
                 />

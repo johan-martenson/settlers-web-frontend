@@ -4,6 +4,7 @@ import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownR
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
+const discoveredPointListeners: (() => void)[] = []
 
 interface MonitoredBorderForPlayer {
     color: string
@@ -304,6 +305,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
         if (message.newDiscoveredLand) {
             storeDiscoveredTiles(message.newDiscoveredLand)
+
+            notifyDiscoveredLandListeners()
         }
 
         if (message.changedAvailableConstruction) {
@@ -519,6 +522,12 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
     }
 }
 
+function notifyDiscoveredLandListeners(): void {
+    for (const listener of discoveredPointListeners) {
+        listener()
+    }
+}
+
 function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void) {
     messageListeners.push(messageListenerFn)
 }
@@ -533,6 +542,10 @@ function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformati
     }
 
     listenersForHouseId.push(houseListenerFn)
+}
+
+function listenToDiscoveredPoints(listenerFn: (() => void)): void {
+    discoveredPointListeners.push(listenerFn)
 }
 
 function notifyMessageListeners(messages: GameMessage[]): void {
@@ -584,4 +597,4 @@ function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefin
     return headquarter
 }
 
-export { getHeadquarterForPlayer, forceUpdateOfHouse, listenToHouse, listenToMessages, startMonitoringGame, monitor }
+export { listenToDiscoveredPoints, getHeadquarterForPlayer, forceUpdateOfHouse, listenToHouse, listenToMessages, startMonitoringGame, monitor }

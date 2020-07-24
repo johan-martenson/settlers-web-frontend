@@ -1,12 +1,12 @@
 import React, { Component } from 'react'
-import { getCrops, getFlags, getHouses, getRoads, getTrees, getWorkers, materialToColor, Point, TerrainAtPoint } from './api'
-import houseImageMap, { Filename } from './images'
-import { monitor } from './monitor'
-import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt, getTimestamp } from './utils'
-import { PointMapFast } from './util_types'
-import { Duration, AggregatedDuration } from './duration'
-import { isLatestValueHighestForVariable, getLatestValueForVariable, getVariableNames, getAverageValueForVariable, getHighestValueForVariable, addVariableIfAbsent, printVariables } from './stats'
+import { getCrops, getFlags, getHouses, getRoads, getTrees, getWorkers, materialToColor, Point } from './api'
+import { AggregatedDuration, Duration } from './duration'
 import './game_render.css'
+import houseImageMap, { Filename } from './images'
+import { monitor, listenToDiscoveredPoints } from './monitor'
+import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
+import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt } from './utils'
+import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
     x: number
@@ -82,6 +82,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.terrainNeedsUpdate = true
 
         this.state = {}
+
+        listenToDiscoveredPoints(() => { this.terrainNeedsUpdate = true })
+    }
+
+    componentDidUpdate(prevProps: GameCanvasProps): void {
+        if (prevProps.screenWidth !== this.props.screenWidth || prevProps.screenHeight !== this.props.screenHeight) {
+            this.terrainNeedsUpdate = true
+        }
     }
 
     buildHeightMap(): void {
@@ -122,7 +130,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const brightnessMap = new PointMapFast<number>()
 
         monitor.allTiles.forEach(
-            (terrainAtPoint, point) => {
+            (_terrainAtPoint, point) => {
                 const gamePoint = point
                 const normals = [
                     straightBelowNormals.get(getPointUpLeft(gamePoint)),
@@ -920,7 +928,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw possible road connections */
         if (this.props.possibleRoadConnections) {
             this.props.possibleRoadConnections.forEach(
-                (point, index) => {
+                (point, _index) => {
 
                     const screenPoint = this.gamePointToScreenPoint(point)
 

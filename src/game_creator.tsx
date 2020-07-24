@@ -214,7 +214,8 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                 }
 
                 {this.state.state === "CREATE_GAME" && this.state.game && this.state.selfPlayer &&
-                    <Dialog heading="Create game" noCloseButton={true}>
+                    <div>
+                        <h1>Create Game</h1>
                         <div className="CreateGameColumns">
                             <div className="PlayersAndOptions">
                                 <ManagePlayers gameId={this.state.game.id} selfPlayer={this.state.selfPlayer} selfPlayerIndex={0} defaultComputerPlayers={1} />
@@ -235,7 +236,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                             <Button label="Delete game" onButtonClicked={this.onDeleteGame.bind(this)} />
                             <Button label="Start game" onButtonClicked={this.onStartGame.bind(this)} disabled={!this.state.map} ref={this.createGameButtonRef} />
                         </BottomButtons>
-                    </Dialog>
+                    </div>
                 }
 
             </>

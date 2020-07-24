@@ -1,3 +1,7 @@
+.GameCreationScreen {
+    background-color: white;
+}
+
 .SetGameNameLabel {
     display: flex;
     flex-direction: row;

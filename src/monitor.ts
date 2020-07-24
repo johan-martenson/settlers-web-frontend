@@ -337,7 +337,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
                 continue
             }
 
-            worker.percentageTraveled = worker.percentageTraveled + 10
+            worker.percentageTraveled = worker.percentageTraveled + 5
 
             /* Get the next point and the target point */
             const next = worker.plannedPath[0]
@@ -369,7 +369,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
                 worker.betweenPoints = true
             }
         }
-    }, 200)
+    }, 100)
 
     console.info(websocket)
 }

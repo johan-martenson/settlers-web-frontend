@@ -214,7 +214,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                 }
 
                 {this.state.state === "CREATE_GAME" && this.state.game && this.state.selfPlayer &&
-                    <div>
+                    <div className="GameCreationScreen">
                         <h1>Create Game</h1>
                         <div className="CreateGameColumns">
                             <div className="PlayersAndOptions">

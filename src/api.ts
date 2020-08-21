@@ -12,7 +12,27 @@ export type SignId = string
 
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
-export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker"
+
+export type TransportCategories = 'food' | 'weapons' | 'tools' | 'iron' | 'iron_bar' | 'coal' | 'gold' | 'plank' | 'wood' | 'stone' | 'coin' | 'wheat' | 'water' | 'pig' | 'flour'
+
+export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker" | Tool
+
+export type Tool = 'axe' | 'shovel' | 'pick_axe' | 'fishing_rod' | 'bow' | 'saw' | 'cleaver' | 'rolling_pin' | 'crucible' | 'tongs' | 'scythe'
+export const TOOLS: Set<Tool> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
+
+function isTool(material: Material): material is Tool {
+    return  material === 'axe' ||
+            material === 'shovel' ||
+            material === 'pick_axe' ||
+            material === 'fishing_rod' ||
+            material === 'bow' ||
+            material === 'saw' ||
+            material === 'cleaver' ||
+            material === 'rolling_pin' ||
+            material === 'crucible' ||
+            material === 'tongs' ||
+            material == 'scythe'
+}
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
 
@@ -273,6 +293,17 @@ export interface HouseResources {
     fish?: HouseResourceItem
     meat?: HouseResourceItem
     metalworker?: HouseResourceItem
+    axe?: HouseResourceItem
+    shovel?: HouseResourceItem
+    pick_axe?: HouseResourceItem
+    fishing_rod?: HouseResourceItem
+    bow?: HouseResourceItem
+    saw?: HouseResourceItem
+    cleaver?: HouseResourceItem
+    rolling_pin?: HouseResourceItem
+    crucible?: HouseResourceItem
+    tongs?: HouseResourceItem
+    scythe?: HouseResourceItem
 }
 
 interface HouseResourceItem {
@@ -1173,5 +1204,5 @@ function getHouseAtPoint(point: Point) {
     return undefined
 }
 
-export { printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame }
+export { isTool, printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, getRoads, getHouses, getFlags, getWorkers, getTrees, getCrops, getSigns, getStones, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame }
 

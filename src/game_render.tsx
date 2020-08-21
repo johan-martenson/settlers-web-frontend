@@ -325,7 +325,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const gamePointDownRight = getPointDownRight(gamePoint)
 
                 /* Filter tiles that are not on the screen */
-                if (gamePointDownRight.x < minXInGame || gamePointDownLeft.x > maxXInGame || gamePointDownLeft.y < minYInGame || gamePoint.y > maxYInGame) {
+                if (gamePointDownRight.x < minXInGame || gamePointDownLeft.x > maxXInGame || gamePoint.y < minYInGame || gamePointDownLeft.y > maxYInGame) {
                     continue
                 }
 
@@ -373,7 +373,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const gamePointRight = getPointRight(gamePoint)
 
                 /* Filter tiles that are not on the screen */
-                if (gamePointRight.x < minXInGame || gamePoint.x > maxXInGame || gamePointDownRight.y < minYInGame || gamePoint.y > maxYInGame) {
+                if (gamePointRight.x < minXInGame || gamePoint.x > maxXInGame || gamePoint.y < minYInGame || gamePointDownRight.y > maxYInGame) {
                     continue
                 }
 
@@ -614,7 +614,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             ctx.beginPath()
 
-            ctx.ellipse(screenPoint.x, screenPoint.y, this.props.scale, 0.5 * scaleY, 0, 0, 2 * Math.PI)
+            ctx.ellipse(screenPoint.x, screenPoint.y, 0.8 * this.props.scale, 0.4 * scaleY, 0, 0, 2 * Math.PI)
             ctx.closePath()
 
             ctx.fill()
@@ -914,7 +914,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (house.state === "UNFINISHED") {
                     houseTitle = "(" + houseTitle + ")"
-                } else if (house.productivity) {
+                } else if (house.productivity !== undefined) {
                     houseTitle = houseTitle + " (" + house.productivity + "%)"
                 }
 

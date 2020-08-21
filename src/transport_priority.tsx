@@ -47,35 +47,12 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
                     <div>
                         {this.state.priority && this.state.priority.map(
                             (material, index) => {
-                                if (isTool(material)) {
-                                    if (!toolsDrawn) {
-                                        toolsDrawn = true
-
-                                        return (<div key={index} onClick={() => this.onSelect(material)}>Tools{this.state?.selected === material && " (selected)"}</div>)
-                                    }
-
-                                    return null
-                                }
-
                                 if (this.state.selected && this.state.selected === material) {
-                                    return (<div key={index}
-                                        className="SelectedMaterial"
-                                        onClick={() => this.onSelect(material)}
-                                    >
-                                        {material} (selected)
-                                    </div>)
+                                    return <Button key={index} onButtonClicked={() => this.onSelect(material)} selected label={material} />
                                 }
 
-                                return (
-                                    <div key={index}
-                                        className="Material"
-                                        onClick={() => this.onSelect(material)}
-                                    >
-                                        {material}
-                                    </div>
-                                )
+                                return <Button key={index} onButtonClicked={() => this.onSelect(material)} label={material} />
                             }
-
 
                         )
                         }

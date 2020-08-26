@@ -24,7 +24,7 @@
     "@storybook/addon-links": "^6.0.16",
     "@storybook/react": "^6.0.18",
     "babel-loader": "^8.1.0",
-    "react-scripts": "^3.4.2"
+    "react-scripts": "^3.4.3"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -181,7 +181,19 @@ class App extends Component<AppProps, AppState> {
                 /* Get the possible connections from the server and draw them */
                 const pointInformation = await getInformationOnPoint(this.state.selected, this.props.gameId, this.state.player)
 
-                if (pointInformation.is && pointInformation.is === "flag") {
+                /* If a house is selected, start the road from the flag */
+                if (pointInformation.is && pointInformation.is === "building") {
+                    let point = this.state.selected
+
+                    point = { x: point.x + 1, y: point.y - 1 }
+
+                    this.setState(
+                        {
+                            newRoad: [point],
+                            possibleRoadConnections: pointInformation.possibleRoadConnections
+                        }
+                    )
+                } else if (pointInformation.is && pointInformation.is === "flag") {
 
                     this.setState(
                         {

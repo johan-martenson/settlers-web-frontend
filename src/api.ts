@@ -31,7 +31,7 @@ function isTool(material: Material): material is Tool {
             material === 'rolling_pin' ||
             material === 'crucible' ||
             material === 'tongs' ||
-            material == 'scythe'
+            material === 'scythe'
 }
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding

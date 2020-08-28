@@ -101,77 +101,65 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
                 <img src={houseImageMap.get(this.props.house.type)} className="MediumIcon" alt="House" />
 
-                {house.state === "UNFINISHED" && house.constructionProgress !== null && house.constructionProgress !== undefined &&
-                    <>
-                        <div>Under construction</div>
-                        <ProgressBar progress={house.constructionProgress} />
-
-                        <div>Resources</div>
-                        {Object.entries(house.resources).map(
-                            ([material, hasAndNeeds], index) => {
-                                const hasAmount = hasAndNeeds.has
-                                const needsAmount = hasAndNeeds.totalNeeded
-
-                                return <div key={index} className="ResourceNeedItem">
-                                    {material}s: {hasAmount} / {needsAmount}
-                                </div>
-                            }
-                        )}
-
-                    </>
-                }
-
-                {houseIsReady(house) && !isMilitaryBuilding(house) &&
-                    <>
-
-                        {house.state === "UNOCCUPIED" && <div>Unoccupied</div>}
-
-                        {house.productivity !== undefined && house.productivity !== null &&
-                            <>
-                                <div>Productivity: {house.productivity}</div>
-                            </>
-                        }
-
-                        {Object.keys(needs).length > 0 &&
-                            <>
-                                <div>Needs: </div>
-                                {Object.entries(needs).map(
-                                    ([material, needed], index) => {
-                                        return <div key={index}>{material}: {needed}</div>
-                                    }
-                                )}
-                            </>
-                        }
-
-                        {Object.keys(has).length > 0 &&
-                            <>
-                                <div>Has: </div>
-                                {Object.entries(has).map(
-                                    ([material, hasNow], index) => {
-                                        return <div key={index}>{material}: {hasNow}</div>
-                                    }
-                                )}
-                            </>
-                        }
-
-                        {house.produces &&
-                            <div>Produces: {house.produces}</div>
-                        }
-
-                        <Button label="Pause production" onButtonClicked={() => { }} />
-
-                    </>
-                }
-
                 {(house.type === "Headquarter") &&
                     <DialogSection label="Inventory">
-                        <HeadquarterInfo house={house} gameId={this.props.gameId} playerId={this.props.playerId} />
+                        <HeadquarterInfo house={house} gameId={this.props.gameId} playerId={this.props.playerId} itemsPerPage={20} />
                     </DialogSection>
                 }
 
-                {isMilitaryBuilding(house) && houseIsReady(house) &&
-                    <>
+                <div className="HouseInformation">
 
+                    {house.state === "UNFINISHED" && house.constructionProgress !== null && house.constructionProgress !== undefined &&
+                        <>
+                            <div>Under construction</div>
+                            <ProgressBar progress={house.constructionProgress} />
+
+                            <div>Resources</div>
+                            {Object.entries(house.resources).map(
+                                ([material, hasAndNeeds], index) => {
+                                    const hasAmount = hasAndNeeds.has
+                                    const needsAmount = hasAndNeeds.totalNeeded
+
+                                    return <div key={index} className="ResourceNeedItem">
+                                        {material}s: {hasAmount} / {needsAmount}
+                                    </div>
+                                }
+                            )}
+
+                        </>
+                    }
+
+                    {houseIsReady(house) && !isMilitaryBuilding(house) && house.state === "UNOCCUPIED" && <div>Unoccupied</div>}
+
+                    {houseIsReady(house) && !isMilitaryBuilding(house) && house.productivity !== undefined && house.productivity !== null &&
+                        <div>Productivity: {house.productivity}</div>
+                    }
+
+                    {houseIsReady(house) && !isMilitaryBuilding(house) && Object.keys(needs).length > 0 &&
+                        <>
+                            <div>Needs: </div>
+                            {Object.entries(needs).map(
+                                ([material, needed], index) => {
+                                    return <div key={index}>{material}: {needed}</div>
+                                }
+                            )}
+                        </>
+                    }
+
+                    {houseIsReady(house) && !isMilitaryBuilding(house) && Object.keys(has).length > 0 &&
+                        <>
+                            <div>Has: </div>
+                            {Object.entries(has).map(
+                                ([material, hasNow], index) => {
+                                    return <div key={index}>{material}: {hasNow}</div>
+                                }
+                            )}
+                        </>
+                    }
+
+                    {house.produces && <div>Produces: {house.produces}</div>}
+
+                    {isMilitaryBuilding(house) && houseIsReady(house) &&
                         <div>Soldiers: {soldiers.map(
                             (soldier, index) => {
                                 if (soldier) {
@@ -180,108 +168,107 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                                     return <div key={index}>Empty</div>
                                 }
                             }
-                        )}</div>
+                        )}
+                        </div>
+                    }
 
-                        {needsAmountCoin !== 0 &&
-                            <div>Gold:
+                    {isMilitaryBuilding(house) && houseIsReady(house) && needsAmountCoin !== 0 &&
+                        <div>Gold:
                                 {Array.from({ length: hasAmountCoin || 0 }, () => 1).map(
-                                (value, index) => <span className="coin" key={index} />)
+                            (value, index) => <span className="coin" key={index} />)
+                            }
+                            {Array.from({ length: needsAmountCoin }, () => 2).map(
+                                (value, index) => <span className="coin-missing" key={index} />)
+                            }
+                        </div>
+                    }
+
+                    {canBeEvacuated(house) && isEvacuated(house) && <div>Evacuated</div>}
+
+                </div>
+
+                <div className="HouseActions">
+
+                    {houseIsReady(house) && !isMilitaryBuilding(house) && house.produces &&
+                        <Button label="Pause production" onButtonClicked={() => { }} />
+                    }
+
+                    {houseIsReady(house) && !isMilitaryBuilding(house) && !house.produces &&
+                        <Button label="Resume production" onButtonClicked={() => { }} />
+                    }
+
+                    {isMilitaryBuilding(house) && houseIsReady(house) && house.promotionsEnabled &&
+                        <Button label="Disable promotions"
+                            onButtonClicked={
+                                async () => {
+                                    const updatedHouseInformation = await disablePromotionsForHouse(this.props.gameId, this.props.playerId, house.id)
+
+                                    this.setState({ updatedHouse: updatedHouseInformation })
                                 }
-                                {Array.from({ length: needsAmountCoin }, () => 2).map(
-                                    (value, index) => <span className="coin-missing" key={index} />)
+                            }
+                        />
+                    }
+
+                    {isMilitaryBuilding(house) && houseIsReady(house) && !house.promotionsEnabled &&
+                        <Button label="Enable promotions"
+                            onButtonClicked={
+                                async () => {
+                                    const updatedHouseInformation = await enablePromotionsForHouse(this.props.gameId, this.props.playerId, house.id)
+
+                                    this.setState({ updatedHouse: updatedHouseInformation })
                                 }
-                            </div>
+                            }
+                        />
+                    }
+
+                    {canBeEvacuated(house) && isEvacuated(house) &&
+                        <Button label="Cancel evacuation" onButtonClicked={
+                            async () => {
+                                console.info("Canceling evacuation")
+                                await cancelEvacuationForHouse(this.props.gameId, this.props.playerId, house.id)
+                                console.info("Canceled evacuation")
+                                const updatedHouseInformation = await getHouseInformation(house.id, this.props.gameId, this.props.playerId)
+                                console.info("Disabled EVACUATED")
+                                console.info(updatedHouseInformation)
+                                this.setState({ updatedHouse: updatedHouseInformation })
+                            }
                         }
+                        />
+                    }
 
-                        {house.promotionsEnabled &&
-                            <Button label="Disable promotions"
-                                onButtonClicked={
-                                    async () => {
-                                        const updatedHouseInformation = await disablePromotionsForHouse(this.props.gameId, this.props.playerId, house.id)
+                    {canBeEvacuated(house) && !isEvacuated(house) &&
+                        <Button label="Evacuate" onButtonClicked={
+                            async () => {
+                                await evacuateHouse(this.props.gameId, this.props.playerId, house.id)
 
-                                        this.setState({ updatedHouse: updatedHouseInformation })
-                                    }
-                                }
-                            />
+                                const updatedHouseInformation = await getHouseInformation(house.id, this.props.gameId, this.props.playerId)
+                                console.info("EVACUATED")
+                                console.info(updatedHouseInformation)
+
+                                this.setState({ updatedHouse: updatedHouseInformation })
+                            }
                         }
+                        />
+                    }
 
-                        {!house.promotionsEnabled &&
-                            <Button label="Enable promotions"
-                                onButtonClicked={
-                                    async () => {
-                                        const updatedHouseInformation = await enablePromotionsForHouse(this.props.gameId, this.props.playerId, house.id)
+                    {canBeUpgraded(house) &&
+                        <Button onButtonClicked={() => upgradeMilitaryBuilding(this.props.gameId, this.props.playerId, house.id)} label="Upgrade" />
+                    }
 
-                                        this.setState({ updatedHouse: updatedHouseInformation })
-                                    }
-                                }
-                            />
-                        }
-
-                        {canBeUpgraded(house) &&
-                            <>
-                                <Button onButtonClicked={() => upgradeMilitaryBuilding(this.props.gameId, this.props.playerId, house.id)} label="Upgrade" />
-                            </>
-                        }
-
-                    </>
-                }
-
-                {canBeEvacuated(house) &&
-                    <>
-                        {isEvacuated(house) &&
-                            <>
-                                <div>Evacuated</div>
-
-                                <Button label="Cancel evacuation"
-                                    onButtonClicked={
-                                        async () => {
-                                            console.info("Canceling evacuation")
-                                            await cancelEvacuationForHouse(this.props.gameId, this.props.playerId, house.id)
-                                            console.info("Canceled evacuation")
-                                            const updatedHouseInformation = await getHouseInformation(house.id, this.props.gameId, this.props.playerId)
-                                            console.info("Disabled EVACUATED")
-                                            console.info(updatedHouseInformation)
-                                            this.setState({ updatedHouse: updatedHouseInformation })
-                                        }
-                                    }
-                                />
-                            </>
-                        }
-
-                        {!isEvacuated(house) &&
-
-                            <>
-                                <Button label="Evacuate"
-                                    onButtonClicked={
-                                        async () => {
-                                            await evacuateHouse(this.props.gameId, this.props.playerId, house.id)
-
-                                            const updatedHouseInformation = await getHouseInformation(house.id, this.props.gameId, this.props.playerId)
-                                            console.info("EVACUATED")
-                                            console.info(updatedHouseInformation)
-
-                                            this.setState({ updatedHouse: updatedHouseInformation })
-                                        }
-                                    }
-                                />
-                            </>
-                        }
-                    </>
-                }
-
-                {(house.type !== "Headquarter") &&
-                    <Button label="Destroy"
-                        onButtonClicked={
+                    {(house.type !== "Headquarter") &&
+                        <Button label="Destroy" onButtonClicked={
                             async () => {
                                 await removeHouse(house.id, this.props.playerId, this.props.gameId)
 
                                 this.props.closeDialog()
                             }
                         }
-                    />
-                }
+                        />
+                    }
 
-            </Dialog>
+                </div>
+
+            </Dialog >
         )
     }
 }

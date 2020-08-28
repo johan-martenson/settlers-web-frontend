@@ -17,8 +17,6 @@ interface HeadquarterInfoState {
 
 class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoState> {
 
-
-
     constructor(props: HeadquarterInfoProps) {
         super(props)
 

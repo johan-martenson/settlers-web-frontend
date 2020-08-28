@@ -21,3 +21,13 @@
   .ResourceNeedItem::first-letter {
     text-transform: uppercase;
   }
+
+  .HouseActions {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .HouseInformation {
+    display: flex;
+    flex-direction: column;
+  }

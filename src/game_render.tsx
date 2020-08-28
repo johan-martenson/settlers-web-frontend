@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { getCrops, getFlags, getHouses, getRoads, getTrees, getWorkers, materialToColor, Point } from './api'
+import { materialToColor, Point } from './api'
 import { AggregatedDuration, Duration } from './duration'
 import './game_render.css'
 import houseImageMap, { Filename } from './images'
@@ -429,7 +429,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw the roads */
         ctx.fillStyle = 'yellow'
 
-        for (const [id, road] of getRoads()) {
+        for (const [id, road] of monitor.roads) {
             const screenPoints = road.points.map(this.gamePointToScreenPoint)
             let previousScreenPoint = null
 
@@ -518,7 +518,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the houses */
-        for (const [id, house] of getHouses()) {
+        for (const [id, house] of monitor.houses) {
 
             if (house.x < minXInGame || house.x > maxXInGame || house.y < minYInGame || house.y > maxYInGame) {
                 continue
@@ -568,7 +568,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the trees */
-        for (const tree of getTrees()) {
+        for (const tree of monitor.trees) {
 
             if (tree.x < minXInGame || tree.x > maxXInGame || tree.y < minYInGame || tree.y > maxYInGame) {
                 continue
@@ -604,7 +604,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw the crops */
         ctx.fillStyle = 'orange'
 
-        for (const crop of getCrops()) {
+        for (const crop of monitor.crops) {
 
             if (crop.x < minXInGame || crop.x > maxXInGame || crop.y < minYInGame || crop.y > maxYInGame) {
                 continue
@@ -672,7 +672,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw workers */
         const workerImage = this.images.get("worker.png")
 
-        for (const [id, worker] of getWorkers()) {
+        for (const [id, worker] of monitor.workers) {
 
             if (worker.betweenPoints && worker.previous && worker.next) {
 
@@ -765,7 +765,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw flags */
         const flagImage = this.images.get("flag.png")
 
-        for (const [id, flag] of getFlags()) {
+        for (const [id, flag] of monitor.flags) {
 
             if (flag.x < minXInGame || flag.x > maxXInGame || flag.y < minYInGame || flag.y > maxYInGame) {
                 continue

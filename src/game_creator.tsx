@@ -139,7 +139,13 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         for (const map of maps) {
             if (map.title === "Green Islands") {
                 defaultMap = map
+
+                break
             }
+        }
+
+        if (defaultMap === undefined && maps.length > 0) {
+            defaultMap = maps[0]
         }
 
         const defaultMapId = defaultMap ? defaultMap.id : undefined

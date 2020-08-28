@@ -77,91 +77,91 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                             (message, index) => {
 
                                 return (
-                                    <>
+                                    <div className="GameMessage" key={index}>
                                         {isMilitaryBuildingOccupiedMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 Military building occupied
-                                            <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
-                                            </div>
+                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                            </>
                                         }
 
                                         {
                                             isNoMoreResourcesMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 No more resources
-                                            <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
-                                            </div>
+                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                            </>
                                         }
 
                                         {
                                             isMilitaryBuildingReadyMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 Military building is ready
-                                            <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
-                                            </div>
+                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                            </>
                                         }
 
                                         {
                                             isUnderAttackMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 We're under attack!
-                                            <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
-                                            </div>
+                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                            </>
                                         }
                                         {
                                             isGeologistFindMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 Geologist has found {message.material.toLowerCase()}!
-                                            <Button label="Go to point" onButtonClicked={() => { this.props.onGoToPoint(message.point) }} />
-                                            </div>
+                                                <Button label="Go to point" onButtonClicked={() => { this.props.onGoToPoint(message.point) }} />
+                                            </>
                                         }
 
                                         {
                                             isBuildingLostMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 Building lost to enemy
-                                            <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
-                                            </div>
+                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                            </>
                                         }
 
                                         {
                                             isBuildingCapturedMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 Building captured
-                                            <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
-                                            </div>
+                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                            </>
                                         }
 
                                         {
                                             isStoreHouseIsReadyMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 A store house is ready
-                                            <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
-                                            </div>
+                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                            </>
                                         }
 
                                         {
                                             isMilitaryBuildingCausedLostLandMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 This building has caused you to lose land
-                                        <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
-                                            </div>
+                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                            </>
                                         }
 
                                         {
                                             isTreeConservationProgramActivatedMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 The tree conservation program has been activated. Only Woodcutters, Sawmills, and Forester huts will get planks.
-                                        </div>
+                                            </>
                                         }
 
                                         {
                                             isTreeConservationProgramDeactivatedMessage(message) &&
-                                            <div className="GameMessage">
+                                            <>
                                                 The tree conservation program has been deactivated.
-                                        </div>
+                                            </>
                                         }
-                                    </>
+                                    </div>
                                 );
                             }
                         )

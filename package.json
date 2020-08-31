@@ -12,7 +12,7 @@
     "@types/storybook__addon-links": "^5.2.1",
     "@types/storybook__react": "^5.2.1",
     "ajv": "^6.12.4",
-    "d3": "^6.0.0",
+    "d3": "^5.15.0",
     "getstorybook": "^1.7.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",

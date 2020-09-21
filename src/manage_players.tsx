@@ -24,7 +24,6 @@ const PLAYER_COLORS = [
 
 interface ManagePlayersProps {
     selfPlayer: PlayerInformation
-    selfPlayerIndex: number
     gameId: GameId
     defaultComputerPlayers: number
     onPlayerAdded?: ((player: PlayerInformation) => void)
@@ -128,7 +127,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
                         return (
                             <div key={index}>
 
-                                {index === this.props.selfPlayerIndex &&
+                                {player.id === this.props.selfPlayer.id &&
                                     <Player key={index} isSelf={true}
                                         onNameChanged={
                                             (name: string) => {
@@ -138,7 +137,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
                                         player={player} />
                                 }
 
-                                {index !== this.props.selfPlayerIndex &&
+                                {player.id !== this.props.selfPlayer.id &&
                                     <Player key={index} player={player}
                                         onNameChanged={
                                             (name: string) => {

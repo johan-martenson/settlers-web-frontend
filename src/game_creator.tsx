@@ -224,7 +224,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                         <h1>Create Game</h1>
                         <div className="CreateGameColumns">
                             <div className="PlayersAndOptions">
-                                <ManagePlayers gameId={this.state.game.id} selfPlayer={this.state.selfPlayer} selfPlayerIndex={0} defaultComputerPlayers={1} />
+                                <ManagePlayers gameId={this.state.game.id} selfPlayer={this.state.selfPlayer} defaultComputerPlayers={1} />
                                 <GameOptions setAvailableResources={this.setAvailableResources.bind(this)} setOthersCanJoin={this.setOthersCanJoin.bind(this)} />
                             </div>
 

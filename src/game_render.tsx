@@ -316,7 +316,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx = terrainCtx
 
             /* Make it black before drawing the ground */
-            ctx.clearRect(0, 0, width, height)
+            //ctx.clearRect(0, 0, width, height)
+            ctx.fillStyle = 'black'
+            ctx.fillRect(0, 0, width, height)
 
             for (const tile of monitor.discoveredBelowTiles) {
 
@@ -674,6 +676,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         for (const [id, worker] of monitor.workers) {
 
+            let materialColor = 'black'
+
+            if (worker.cargo) {
+                const color = materialToColor.get(worker.cargo)
+
+                if (color) {
+                    materialColor = color
+                }
+            }
+
             if (worker.betweenPoints && worker.previous && worker.next) {
 
                 if (worker.previous.x < minXInGame || worker.previous.x > maxXInGame || worker.previous.y < minYInGame || worker.previous.y > maxYInGame) {
@@ -697,6 +709,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (workerImage) {
                     ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
+
+                if (worker.cargo) {
+                    ctx.fillStyle = materialColor
+
+                    ctx.fillRect(point.x + 0.15 * this.props.scale, point.y + 0.5 * scaleY, 0.2 * this.props.scale, 0.3 * scaleY)
+                }
+
             } else {
 
                 if (worker.x < minXInGame || worker.x > maxXInGame || worker.y < minYInGame || worker.y > maxYInGame) {
@@ -709,6 +728,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (workerImage) {
                     ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                }
+
+                if (worker.cargo) {
+                    ctx.fillStyle = materialColor
+
+                    ctx.fillRect(screenPoint.x + 0.15 * this.props.scale, screenPoint.y + 0.5 * scaleY, 0.2 * this.props.scale, 0.3 * scaleY)
                 }
             }
         }
@@ -779,6 +804,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             if (flagImage) {
                 ctx.drawImage(flagImage, screenPoint.x, screenPoint.y, 10, 30)
+            }
+
+            if (flag.stackedCargo) {
+                ctx.fillStyle = 'orange'
+                ctx.fillText("" + flag.stackedCargo.length, screenPoint.x + 10, screenPoint.y + 1.3 * scaleY)
             }
         }
 

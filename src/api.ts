@@ -15,7 +15,7 @@ export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
 
 export type TransportCategories = 'food' | 'weapons' | 'tools' | 'iron' | 'iron_bar' | 'coal' | 'gold' | 'plank' | 'wood' | 'stone' | 'coin' | 'wheat' | 'water' | 'pig' | 'flour'
 
-export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker" | Tool
+export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker" | "wheat" | Tool
 
 export type Tool = 'axe' | 'shovel' | 'pick_axe' | 'fishing_rod' | 'bow' | 'saw' | 'cleaver' | 'rolling_pin' | 'crucible' | 'tongs' | 'scythe'
 export const TOOLS: Set<Tool> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
@@ -146,8 +146,6 @@ export function isMaterial(material: string): material is Material {
         material === "metalworker" ||
         material === "wheat" ||
         material === "flour"
-
-
 }
 
 interface Player {
@@ -251,6 +249,7 @@ export interface WorkerInformation extends Point {
     next?: Point
     percentageTraveled: number
     plannedPath?: Point[]
+    cargo?: Material
 }
 
 export interface AnimalInformation extends Point {
@@ -304,6 +303,7 @@ export interface HouseResources {
     crucible?: HouseResourceItem
     tongs?: HouseResourceItem
     scythe?: HouseResourceItem
+    wheat?: HouseResourceItem
 }
 
 interface HouseResourceItem {
@@ -325,6 +325,7 @@ export interface HouseInformation extends Point {
     resources: HouseResources
     produces?: Material
     promotionsEnabled: boolean
+    productionEnabled: boolean
     state: HouseState
     maxAttackers?: number
     productivity?: number
@@ -333,6 +334,7 @@ export interface HouseInformation extends Point {
 export interface FlagInformation extends Point {
     id: FlagId
     playerId: PlayerId
+    stackedCargo?: Material[]
 }
 
 export interface BorderInformation {
@@ -1182,6 +1184,12 @@ materialToColor.set("gold", "yellow")
 materialToColor.set("iron", "red")
 materialToColor.set("coal", "black")
 materialToColor.set("stone", "white")
+materialToColor.set("water", "blue")
+materialToColor.set("wood", "DarkGoldenRod")
+materialToColor.set("plank", "BurlyWood")
+materialToColor.set("coin", "yellow")
+materialToColor.set("meat", "red")
+materialToColor.set("wheat", "orange")
 materialToColor.set("water", "blue")
 
 function getFlagAtPoint(point: Point) {

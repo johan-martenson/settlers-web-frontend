@@ -1,0 +1,10 @@
+.FlagInformation {
+    display: flex;
+    flex-direction: column;
+}
+
+.ButtonRow {
+    display: flex;
+    flex-direction: row;
+}
+

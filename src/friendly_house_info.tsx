@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, HouseResources, isEvacuated, isMaterial, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding } from './api'
+import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, HouseResources, isEvacuated, isMaterial, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse } from './api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_house_info.css'
@@ -189,12 +189,20 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
                 <div className="HouseActions">
 
-                    {houseIsReady(house) && !isMilitaryBuilding(house) && house.produces &&
-                        <Button label="Pause production" onButtonClicked={() => { }} />
+                    {houseIsReady(house) && !isMilitaryBuilding(house) && house.produces && house.productionEnabled &&
+                        <Button label="Pause production" onButtonClicked={
+                            async () => {
+                                await pauseProductionForHouse(this.props.gameId, this.props.playerId, house.id)
+                            }
+                        } />
                     }
 
-                    {houseIsReady(house) && !isMilitaryBuilding(house) && !house.produces &&
-                        <Button label="Resume production" onButtonClicked={() => { }} />
+                    {houseIsReady(house) && !isMilitaryBuilding(house) && house.produces && !house.productionEnabled &&
+                        <Button label="Resume production" onButtonClicked={
+                            async () => {
+                                await resumeProductionForHouse(this.props.gameId, this.props.playerId, house.id)
+                            }
+                        } />
                     }
 
                     {isMilitaryBuilding(house) && houseIsReady(house) && house.promotionsEnabled &&

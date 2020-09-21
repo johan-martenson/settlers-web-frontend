@@ -32,8 +32,13 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                 }
             )
 
-            /* Run the command if enter is pressed */
+        /* Run the command if enter is pressed */
         } else if (event.key === "Enter") {
+
+            /* Do nothing if there is nothing typed */
+            if (!this.state.input || this.state.input === "") {
+                return
+            }
 
             /* Find the matching command */
             let commandHit

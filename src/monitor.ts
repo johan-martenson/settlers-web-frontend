@@ -1,4 +1,4 @@
-import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers } from './api'
+import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material } from './api'
 import { PointMapFast, PointSetFast } from './util_types'
 import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight, getPointUpRight, getPointLeft, getPointUpLeft } from './utils'
 
@@ -74,6 +74,7 @@ interface WalkerTargetChange {
     x: number
     y: number
     path: Point[]
+    cargo?: Material
 }
 
 interface BorderChange {
@@ -93,6 +94,7 @@ interface ChangesMessage {
     changedBuildings?: HouseInformation[]
     removedBuildings?: HouseId[]
     newFlags?: FlagInformation[]
+    changedFlags?: FlagInformation[]
     removedFlags?: FlagId[]
     newRoads?: RoadInformation[]
     removedRoads?: RoadId[]
@@ -113,7 +115,7 @@ interface ChangesMessage {
 function isGameChangesMessage(message: any): message is ChangesMessage {
     if (message.time &&
         (message.workersWithNewTargets || message.removedWorkers ||
-            message.newFlags || message.removedFlags ||
+            message.newFlags || message.changedFlags || message.removedFlags ||
             message.newBuildings || message.changedBuildings || message.removedBuildings ||
             message.newRoads || message.removedRoads ||
             message.changedBorders ||
@@ -280,6 +282,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         message.removedBuildings?.forEach((id) => monitor.houses.delete(id))
 
         message.newFlags?.forEach((flag) => monitor.flags.set(flag.id, flag))
+        message.changedFlags?.forEach((flag) => monitor.flags.set(flag.id, flag))
         message.removedFlags?.forEach((id) => monitor.flags.delete(id))
 
         message.newRoads?.forEach((road) => monitor.roads.set(road.id, road))
@@ -519,12 +522,6 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
 
     for (const walkerTargetChange of targetChanges) {
 
-        if (!walkerTargetChange.path || walkerTargetChange.path.length === 0) {
-            console.error("Walker without path! " + JSON.stringify(walkerTargetChange))
-
-            continue
-        }
-
         let worker = monitor.workers.get(walkerTargetChange.id)
 
         if (!worker) {
@@ -540,13 +537,19 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
             monitor.workers.set(worker.id, worker)
         }
 
-        worker.plannedPath = walkerTargetChange.path
+        if (!walkerTargetChange.path || walkerTargetChange.path.length === 0) {
+            worker.plannedPath = undefined
+        } else {
+            worker.plannedPath = walkerTargetChange.path
 
-        worker.previous = { x: walkerTargetChange.x, y: walkerTargetChange.y }
+            worker.previous = { x: walkerTargetChange.x, y: walkerTargetChange.y }
 
-        worker.next = { x: walkerTargetChange.path[0].x, y: walkerTargetChange.path[0].y }
-        worker.percentageTraveled = 0
-        worker.betweenPoints = false
+            worker.next = { x: walkerTargetChange.path[0].x, y: walkerTargetChange.path[0].y }
+            worker.percentageTraveled = 0
+            worker.betweenPoints = false
+        }
+
+        worker.cargo = walkerTargetChange.cargo
 
         worker.x = walkerTargetChange.x
         worker.y = walkerTargetChange.y

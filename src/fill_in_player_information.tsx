@@ -1,3 +1,4 @@
+import { PointMapFast, PointSetFast } from './util_types'
 import React, { Component } from 'react'
 import Button from './button'
 import { Dialog } from './dialog'
@@ -27,6 +28,8 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         console.log("Running self test")
 
         do_self_test()
+
+        console.log("After self tests")
     }
 
     onPlayerInformationDone(): void {

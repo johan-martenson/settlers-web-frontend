@@ -2,33 +2,59 @@ import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, rem
 
 const vegetationToInt = new Map<Vegetation, number>()
 
-vegetationToInt.set("G", 0)   // Grass
-vegetationToInt.set("M", 1)   // Mountain
-vegetationToInt.set("SW", 2)  // Swamp
-vegetationToInt.set("W", 3)   // Water
-vegetationToInt.set("DW", 4)  // Deep water
-vegetationToInt.set("SN", 5)  // Snow
-vegetationToInt.set("L", 6)   // Lava
-vegetationToInt.set("MM", 7)  // Mountain meadow
-vegetationToInt.set("ST", 8)  // Steppe
-vegetationToInt.set("DE", 9)  // Desert
-vegetationToInt.set("SA", 10) // Savannah
+vegetationToInt.set("SA", 0)    // Savannah
+vegetationToInt.set("MO1", 1)   // Mountain 1
+vegetationToInt.set("SN", 2)    // Snow
+vegetationToInt.set("SW", 3)    // Swamp
+vegetationToInt.set("D1", 4)    // Desert 1
+vegetationToInt.set("W1", 5)    // Water (ships can pass)
+vegetationToInt.set("B", 6)     // Buildable water
+vegetationToInt.set("D2", 7)    // Desert 2
+vegetationToInt.set("ME1", 8)   // Meadow 1
+vegetationToInt.set("ME2", 9)   // Meadow 2
+vegetationToInt.set("ME3", 10)  // Meadow 3
+vegetationToInt.set("MO2", 11)  // Mountain 2
+vegetationToInt.set("MO3", 12)  // Mountain 3
+vegetationToInt.set("MO4", 13)  // Mountain 4
+vegetationToInt.set("ST", 14)   // Steppe
+vegetationToInt.set("FM", 15)   // Flower meadow
+vegetationToInt.set("L1", 16)   // Lava 1
+vegetationToInt.set("MA", 17)   // Magenta
+vegetationToInt.set("MM", 18)   // Mountain meadow
+vegetationToInt.set("W2", 19)   // Water 2
+vegetationToInt.set("L2", 20)   // Lava 2
+vegetationToInt.set("L3", 21)   // Lava 3
+vegetationToInt.set("L4", 22)   // Lava 4
+vegetationToInt.set("BM", 23)   // Buildable mountain
 
 export type RgbColorArray = [number, number, number]
 
 const intToVegetationColor = new Map<number, RgbColorArray>()
 
-intToVegetationColor.set(0, [0, 120, 0])
-intToVegetationColor.set(1, [140, 140, 140])
-intToVegetationColor.set(2, [140, 140, 20])
-intToVegetationColor.set(3, [0, 0, 205])
-intToVegetationColor.set(4, [0, 0, 205])
-intToVegetationColor.set(5, [220, 220, 220])
-intToVegetationColor.set(6, [220, 0, 0])
-intToVegetationColor.set(7, [140, 140, 140])
-intToVegetationColor.set(8, [230, 110, 0])
-intToVegetationColor.set(9, [230, 200, 0])
-intToVegetationColor.set(10, [100, 70, 70])
+intToVegetationColor.set(0, [0, 120, 0])       // Savannah
+intToVegetationColor.set(1, [140, 140, 140])   // Mountain 1
+intToVegetationColor.set(2, [220, 220, 220])   // Snow
+intToVegetationColor.set(3, [0, 110, 0])       // Swamp
+intToVegetationColor.set(4, [110, 0, 110])     // Desert 1
+intToVegetationColor.set(5, [0, 0, 220])       // Water
+intToVegetationColor.set(6, [0, 0, 220])       // Buildable water
+intToVegetationColor.set(7, [110, 0, 110])     // Desert 2
+intToVegetationColor.set(8, [0, 110, 0])       // Meadow 1
+intToVegetationColor.set(9, [0, 110, 0])       // Meadow 2
+intToVegetationColor.set(10, [0, 110, 0])      // Meadow 3
+intToVegetationColor.set(11, [140, 140, 140])  // Mountain 2
+intToVegetationColor.set(12, [140, 140, 140])  // Mountain 3
+intToVegetationColor.set(13, [140, 140, 140])  // Mountain 4
+intToVegetationColor.set(14, [110, 0, 110])    // Steppe
+intToVegetationColor.set(15, [0, 110, 0])      // Flower meadow
+intToVegetationColor.set(16, [220, 0, 0])      // Lava 1
+intToVegetationColor.set(17, [140, 140, 140])  // Magenta
+intToVegetationColor.set(18, [230, 110, 0])    // Mountain meadow
+intToVegetationColor.set(19, [0, 0, 220])      // Water 2
+intToVegetationColor.set(20, [220, 0, 0])      // Lava 2
+intToVegetationColor.set(21, [220, 0, 0])      // Lava 3
+intToVegetationColor.set(22, [220, 0, 0])      // Lava 4
+intToVegetationColor.set(23, [140, 140, 140])  // Buildable mountain
 
 const MINIMAL_DIFFERENCE = 0.0000001
 
@@ -536,6 +562,70 @@ function same(point1: Point, point2: Point): boolean {
     return point1.x === point2.x && point1.y === point2.y
 }
 
+function drawGradientTriangleWithImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement, point1: Point, point2: Point, point3: Point, intensity1: number, intensity2: number, intensity3: number) {
+
+    const minIntensityBelow = Math.min(intensity1, intensity2, intensity3)
+    const maxIntensityBelow = Math.max(intensity1, intensity2, intensity3)
+
+    const colorValue = 0
+    const maxAlpha = 1 - (maxIntensityBelow + 1) / 2
+    const minAlpha = 1 - (minIntensityBelow + 1) / 2
+
+    const rgbString = colorValue + ', ' + colorValue + ", " + colorValue
+
+    if (Math.abs(minIntensityBelow - maxIntensityBelow) < 0.05) {
+        ctx.fillStyle = 'rgba(' + rgbString + ', ' + maxAlpha + ')'
+    } else {
+
+        const gradientScreenPoints = getGradientLineForTriangle(point1, intensity1, point2, intensity2, point3, intensity3)
+
+        const gradient = ctx.createLinearGradient(
+            Math.round(gradientScreenPoints[0].x), Math.round(gradientScreenPoints[0].y),
+            Math.round(gradientScreenPoints[1].x), Math.round(gradientScreenPoints[1].y)
+        )
+
+
+        gradient.addColorStop(0, 'rgba(' + rgbString + ', ' + maxAlpha + ')') // 1 - no transparency, 0 - full transparency
+        gradient.addColorStop(1, 'rgba(' + rgbString + ', ' + minAlpha + ')')
+
+        ctx.fillStyle = gradient
+    }
+
+    const oldFillstyle = ctx.fillStyle
+
+    /* Draw the image */
+    const pattern = ctx.createPattern(image, 'repeat')
+
+    if (!pattern) {
+        return
+    }
+
+    ctx.fillStyle = pattern
+
+    ctx.beginPath()
+
+    ctx.moveTo(point1.x, point1.y)
+    ctx.lineTo(point2.x, point2.y)
+    ctx.lineTo(point3.x, point3.y)
+
+    ctx.closePath()
+
+    ctx.fill()
+
+    /* Draw shading on top */
+    ctx.fillStyle = oldFillstyle
+
+    ctx.beginPath()
+
+    ctx.moveTo(point1.x, point1.y)
+    ctx.lineTo(point2.x, point2.y)
+    ctx.lineTo(point3.x, point3.y)
+
+    ctx.closePath()
+
+    ctx.fill()
+}
+
 function drawGradientTriangle(ctx: CanvasRenderingContext2D, color: RgbColorArray, point1: Point, point2: Point, point3: Point, intensity1: number, intensity2: number, intensity3: number) {
 
     const minIntensityBelow = Math.min(intensity1, intensity2, intensity3)
@@ -589,5 +679,5 @@ function getTimestamp(): number {
 }
 
 
-export { getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint as removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor }
+export { drawGradientTriangleWithImage, getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint as removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor }
 

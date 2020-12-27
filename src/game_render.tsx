@@ -1,11 +1,11 @@
 import React, { Component } from 'react'
-import { materialToColor, Point } from './api'
+import { materialToColor, Point, signToColor } from './api'
 import { AggregatedDuration, Duration } from './duration'
 import './game_render.css'
 import houseImageMap, { Filename } from './images'
-import { monitor, listenToDiscoveredPoints } from './monitor'
+import { listenToDiscoveredPoints, monitor } from './monitor'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { camelCaseToWords, drawGradientTriangle, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt } from './utils'
+import { camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -13,7 +13,10 @@ export interface ScreenPoint {
     y: number
 }
 
+export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD'
+
 interface GameCanvasProps {
+    cursorState: CursorState
     scale: number
     translateX: number
     translateY: number
@@ -36,6 +39,54 @@ interface GameCanvasProps {
 interface GameCanvasState {
     hoverPoint?: Point
 }
+
+const AVAILABLE_SMALL_BUILDING_FILE = "assets/ui-elements/available-small-building.png"
+const AVAILABLE_MEDIUM_BUILDING_FILE = "assets/ui-elements/available-medium-building.png"
+const AVAILABLE_LARGE_BUILDING_FILE = "assets/ui-elements/available-large-building.png"
+const AVAILABLE_FLAG_FILE = "assets/ui-elements/available-flag.png"
+const AVAILABLE_MINE_FILE = "assets/ui-elements/available-mine.png"
+
+const SIGN_IRON_SMALL = "assets/signs/iron-sign-small.png"
+const SIGN_IRON_MEDIUM = "assets/signs/iron-sign-medium.png"
+const SIGN_IRON_LARGE = "assets/signs/iron-sign-large.png"
+
+const SIGN_COAL_SMALL = "assets/signs/coal-sign-small.png"
+const SIGN_COAL_MEDIUM = "assets/signs/coal-sign-medium.png"
+const SIGN_COAL_LARGE = "assets/signs/coal-sign-large.png"
+
+const SIGN_GRANITE_SMALL = "assets/signs/granite-sign-small.png"
+const SIGN_GRANITE_MEDIUM = "assets/signs/granite-sign-medium.png"
+const SIGN_GRANITE_LARGE = "assets/signs/granite-sign-large.png"
+
+const SIGN_GOLD_SMALL = "assets/signs/gold-sign-small.png"
+const SIGN_GOLD_MEDIUM = "assets/signs/gold-sign-medium.png"
+const SIGN_GOLD_LARGE = "assets/signs/gold-sign-large.png"
+
+const SIGN_WATER = "assets/signs/water-sign-large.png"
+const SIGN_NOTHING = "assets/signs/nothing-sign.png"
+
+const FLAG_FILE = "assets/roman-buildings/flag.png"
+
+const SELECTED_POINT = "assets/ui-elements/selected-point.png"
+
+const SAVANNAH_IMAGE_FILE = "assets/nature/terrain/greenland/savannah.png"
+const MOUNTAIN_1_IMAGE_FILE = "assets/nature/terrain/greenland/mountain1.png"
+const SNOW_IMAGE_FILE = "assets/nature/terrain/greenland/snow.png"
+const SWAMP_IMAGE_FILE = "assets/nature/terrain/greenland/swamp.png"
+const DESERT_IMAGE_FILE = "assets/nature/terrain/greenland/desert.png"
+const WATER_IMAGE_FILE = "assets/nature/terrain/greenland/water.png"
+const MEADOW_1_IMAGE_FILE = "assets/nature/terrain/greenland/meadow1.png"
+const MEADOW_2_IMAGE_FILE = "assets/nature/terrain/greenland/meadow2.png"
+const MEADOW_3_IMAGE_FILE = "assets/nature/terrain/greenland/meadow3.png"
+const MOUNTAIN_2_IMAGE_FILE = "assets/nature/terrain/greenland/mountain2.png"
+const MOUNTAIN_3_IMAGE_FILE = "assets/nature/terrain/greenland/mountain3.png"
+const MOUNTAIN_4_IMAGE_FILE = "assets/nature/terrain/greenland/mountain4.png"
+const MOUNTAIN_TERRAIN = "assets/nature/terrain/greenland/mountain1.png"
+const STEPPE_IMAGE_FILE = "assets/nature/terrain/greenland/steppe.png"
+const FLOWER_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/flower-meadow.png"
+const LAVA_IMAGE_FILE = "assets/nature/terrain/greenland/lava.png"
+const MAGENTA_IMAGE_FILE = "assets/nature/terrain/greenland/magenta.png"
+const MOUNTAIN_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/mountain-meadow.png"
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
@@ -65,7 +116,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.images = new Map()
 
-        this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", "flag.png", "large-house-available.png", "medium-house-available.png", "small-house-available.png", "mine-available.png"])
+        this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", FLAG_FILE,
+            AVAILABLE_LARGE_BUILDING_FILE, AVAILABLE_MEDIUM_BUILDING_FILE, AVAILABLE_SMALL_BUILDING_FILE, AVAILABLE_MINE_FILE, AVAILABLE_FLAG_FILE,
+            SIGN_IRON_SMALL, SIGN_IRON_MEDIUM, SIGN_IRON_LARGE,
+            SIGN_COAL_SMALL, SIGN_COAL_MEDIUM, SIGN_COAL_LARGE,
+            SIGN_GRANITE_SMALL, SIGN_GRANITE_MEDIUM, SIGN_GRANITE_LARGE,
+            SIGN_GOLD_SMALL, SIGN_GOLD_MEDIUM, SIGN_GOLD_LARGE,
+            SIGN_WATER, SIGN_NOTHING,
+            SELECTED_POINT,
+            SAVANNAH_IMAGE_FILE, MOUNTAIN_1_IMAGE_FILE, SNOW_IMAGE_FILE, SWAMP_IMAGE_FILE,
+            DESERT_IMAGE_FILE, WATER_IMAGE_FILE, MEADOW_1_IMAGE_FILE, MEADOW_2_IMAGE_FILE,
+            MEADOW_3_IMAGE_FILE, MOUNTAIN_2_IMAGE_FILE, MOUNTAIN_3_IMAGE_FILE,
+            MOUNTAIN_4_IMAGE_FILE, MOUNTAIN_TERRAIN, STEPPE_IMAGE_FILE,
+            FLOWER_MEADOW_IMAGE_FILE, LAVA_IMAGE_FILE, MAGENTA_IMAGE_FILE,
+            MOUNTAIN_MEADOW_IMAGE_FILE])
+
         this.loadImages(houseImageMap.values())
 
         /* Define the light vector */
@@ -89,6 +154,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     componentDidUpdate(prevProps: GameCanvasProps): void {
         if (prevProps.screenWidth !== this.props.screenWidth || prevProps.screenHeight !== this.props.screenHeight) {
             this.terrainNeedsUpdate = true
+        }
+
+        if (prevProps.cursorState !== this.props.cursorState && this?.terrainCanvasRef?.current) {
+
+            if (this.props.cursorState === 'DRAGGING') {
+                this.terrainCanvasRef.current.style.cursor = "url(assets/ui-elements/dragging.png), pointer"
+            } else if (this.props.cursorState === 'BUILDING_ROAD') {
+                this.terrainCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
+            } else  {
+                this.terrainCanvasRef.current.style.cursor = "pointer"
+            }
         }
     }
 
@@ -316,9 +392,28 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx = terrainCtx
 
             /* Make it black before drawing the ground */
-            //ctx.clearRect(0, 0, width, height)
+            //ctx.clearRect(0, 0, width, height) -- buggy in Firefox (?)
             ctx.fillStyle = 'black'
             ctx.fillRect(0, 0, width, height)
+
+            /* Collect terrain textures to use */
+            const savannahImage = this.images.get(SAVANNAH_IMAGE_FILE)
+            const mountainImage1 = this.images.get(MOUNTAIN_1_IMAGE_FILE)
+            const snowImage = this.images.get(SNOW_IMAGE_FILE)
+            const swampImage = this.images.get(SWAMP_IMAGE_FILE)
+            const desertImage = this.images.get(DESERT_IMAGE_FILE)
+            const waterImage = this.images.get(WATER_IMAGE_FILE)
+            const meadowImage1 = this.images.get(MEADOW_1_IMAGE_FILE)
+            const meadowImage2 = this.images.get(MEADOW_2_IMAGE_FILE)
+            const meadowImage3 = this.images.get(MEADOW_3_IMAGE_FILE)
+            const mountainImage2 = this.images.get(MOUNTAIN_2_IMAGE_FILE)
+            const mountainImage3 = this.images.get(MOUNTAIN_3_IMAGE_FILE)
+            const mountainImage4 = this.images.get(MOUNTAIN_4_IMAGE_FILE)
+            const steppeImage = this.images.get(STEPPE_IMAGE_FILE)
+            const flowerMeadowImage = this.images.get(FLOWER_MEADOW_IMAGE_FILE)
+            const lavaImage = this.images.get(LAVA_IMAGE_FILE)
+            const magentaImage = this.images.get(MAGENTA_IMAGE_FILE)
+            const mountainMeadowImage = this.images.get(MOUNTAIN_MEADOW_IMAGE_FILE)
 
             for (const tile of monitor.discoveredBelowTiles) {
 
@@ -354,14 +449,67 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                drawGradientTriangle(ctx,
-                    colorBelow,
-                    { x: Math.round(screenPoint.x), y: Math.round(screenPoint.y - 1) },
-                    { x: Math.round(screenPointDownLeft.x - 1), y: Math.round(screenPointDownLeft.y) },
-                    { x: Math.round(screenPointDownRight.x + 1), y: Math.round(screenPointDownRight.y) },
-                    intensityPoint,
-                    intensityPointDownLeft,
-                    intensityPointDownRight)
+                let terrainImage
+
+                if (tile.vegetation === 0) {
+                    terrainImage = savannahImage
+                } else if (tile.vegetation === 1) {
+                    terrainImage = mountainImage1
+                } else if (tile.vegetation === 2) {
+                    terrainImage = snowImage
+                } else if (tile.vegetation === 3) {
+                    terrainImage = swampImage
+                } else if (tile.vegetation === 4) {
+                    terrainImage = desertImage
+                } else if (tile.vegetation === 5 || tile.vegetation === 6 || tile.vegetation === 19) {
+                    terrainImage = waterImage
+                } else if (tile.vegetation === 7) {
+                    terrainImage = desertImage
+                } else if (tile.vegetation === 8) {
+                    terrainImage = meadowImage1
+                } else if (tile.vegetation === 9) {
+                    terrainImage = meadowImage2
+                } else if (tile.vegetation === 10) {
+                    terrainImage = meadowImage3
+                } else if (tile.vegetation === 11) {
+                    terrainImage = mountainImage2
+                } else if (tile.vegetation === 12) {
+                    terrainImage = mountainImage3
+                } else if (tile.vegetation === 13) {
+                    terrainImage = mountainImage4
+                } else if (tile.vegetation === 14) {
+                    terrainImage = steppeImage
+                } else if (tile.vegetation === 15) {
+                    terrainImage = flowerMeadowImage
+                } else if (tile.vegetation === 16 || tile.vegetation === 20 || tile.vegetation === 21 || tile.vegetation === 22) {
+                    terrainImage = lavaImage
+                } else if (tile.vegetation === 17) {
+                    terrainImage = magentaImage
+                } else if (tile.vegetation === 18) {
+                    terrainImage = mountainMeadowImage
+                } else if (tile.vegetation === 23) {
+                    terrainImage = mountainImage1
+                }
+
+                if (terrainImage) {
+                    drawGradientTriangleWithImage(ctx,
+                        terrainImage,
+                        { x: Math.round(screenPoint.x), y: Math.round(screenPoint.y - 1) },
+                        { x: Math.round(screenPointDownLeft.x - 1), y: Math.round(screenPointDownLeft.y) },
+                        { x: Math.round(screenPointDownRight.x + 1), y: Math.round(screenPointDownRight.y) },
+                        intensityPoint,
+                        intensityPointDownLeft,
+                        intensityPointDownRight)
+                } else {
+                    drawGradientTriangle(ctx,
+                        colorBelow,
+                        { x: Math.round(screenPoint.x), y: Math.round(screenPoint.y - 1) },
+                        { x: Math.round(screenPointDownLeft.x - 1), y: Math.round(screenPointDownLeft.y) },
+                        { x: Math.round(screenPointDownRight.x + 1), y: Math.round(screenPointDownRight.y) },
+                        intensityPoint,
+                        intensityPointDownLeft,
+                        intensityPointDownRight)
+                }
 
                 tileDuration.after("Draw gradient triangle above")
             }
@@ -401,14 +549,68 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                drawGradientTriangle(ctx,
-                    colorDownRight,
-                    { x: Math.round(screenPoint.x - 1), y: Math.round(screenPoint.y - 1) },
-                    { x: Math.round(screenPointDownRight.x), y: Math.round(screenPointDownRight.y + 1) },
-                    { x: Math.round(screenPointRight.x + 1), y: Math.round(screenPointRight.y - 1) },
-                    intensityPoint,
-                    intensityPointDownRight,
-                    intensityPointRight)
+                let terrainImage
+
+                if (tile.vegetation === 0) {
+                    terrainImage = savannahImage
+                } else if (tile.vegetation === 1) {
+                    terrainImage = mountainImage1
+                } else if (tile.vegetation === 2) {
+                    terrainImage = snowImage
+                } else if (tile.vegetation === 3) {
+                    terrainImage = swampImage
+                } else if (tile.vegetation === 4) {
+                    terrainImage = desertImage
+                } else if (tile.vegetation === 5 || tile.vegetation === 6 || tile.vegetation === 19) {
+                    terrainImage = waterImage
+                } else if (tile.vegetation === 7) {
+                    terrainImage = desertImage
+                } else if (tile.vegetation === 8) {
+                    terrainImage = meadowImage1
+                } else if (tile.vegetation === 9) {
+                    terrainImage = meadowImage2
+                } else if (tile.vegetation === 10) {
+                    terrainImage = meadowImage3
+                } else if (tile.vegetation === 11) {
+                    terrainImage = mountainImage2
+                } else if (tile.vegetation === 12) {
+                    terrainImage = mountainImage3
+                } else if (tile.vegetation === 13) {
+                    terrainImage = mountainImage4
+                } else if (tile.vegetation === 14) {
+                    terrainImage = steppeImage
+                } else if (tile.vegetation === 15) {
+                    terrainImage = flowerMeadowImage
+                } else if (tile.vegetation === 16 || tile.vegetation === 20 || tile.vegetation === 21 || tile.vegetation === 22) {
+                    terrainImage = lavaImage
+                } else if (tile.vegetation === 17) {
+                    terrainImage = magentaImage
+                } else if (tile.vegetation === 18) {
+                    terrainImage = mountainMeadowImage
+                } else if (tile.vegetation === 23) {
+                    terrainImage = mountainImage1
+                }
+
+                if (terrainImage) {
+
+                    drawGradientTriangleWithImage(ctx,
+                        terrainImage,
+                        { x: Math.round(screenPoint.x - 1), y: Math.round(screenPoint.y - 1) },
+                        { x: Math.round(screenPointDownRight.x), y: Math.round(screenPointDownRight.y + 1) },
+                        { x: Math.round(screenPointRight.x + 1), y: Math.round(screenPointRight.y - 1) },
+                        intensityPoint,
+                        intensityPointDownRight,
+                        intensityPointRight)
+                } else {
+                    drawGradientTriangle(ctx,
+                        colorDownRight,
+                        { x: Math.round(screenPoint.x - 1), y: Math.round(screenPoint.y - 1) },
+                        { x: Math.round(screenPointDownRight.x), y: Math.round(screenPointDownRight.y + 1) },
+                        { x: Math.round(screenPointRight.x + 1), y: Math.round(screenPointRight.y - 1) },
+                        intensityPoint,
+                        intensityPointDownRight,
+                        intensityPointRight)
+                }
 
                 tileDuration.after("Draw gradient triangle below")
                 tileDuration.reportStats()
@@ -468,6 +670,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         for (const [playerId, borderForPlayer] of monitor.border) {
             const borderColor = borderForPlayer.color
+
+            ctx.fillStyle = borderForPlayer.color
 
             for (const borderPoint of borderForPlayer.points) {
 
@@ -589,7 +793,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const screenPoint = this.gamePointToScreenPoint(tree)
 
-            /* Draw the house next to the point, instead of on top */
+            /* Draw the tree next to the point, instead of on top */
             screenPoint.x -= 0.5 * this.props.scale
             screenPoint.y -= 2.5 * scaleY
 
@@ -601,6 +805,31 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         duration.after("draw trees")
+
+        /* Draw dead trees */
+        for (const deadTree of monitor.deadTrees) {
+
+            if (deadTree.x < minXInGame || deadTree.x > maxXInGame || deadTree.y < minYInGame || deadTree.y > maxYInGame) {
+                continue
+            }
+
+            if (
+                !monitor.discoveredPoints.has({ x: deadTree.x - 1, y: deadTree.y - 1 }) ||
+                !monitor.discoveredPoints.has({ x: deadTree.x - 1, y: deadTree.y + 1 }) ||
+                !monitor.discoveredPoints.has({ x: deadTree.x + 1, y: deadTree.y - 1 }) ||
+                !monitor.discoveredPoints.has({ x: deadTree.x + 1, y: deadTree.y + 1 }) ||
+                !monitor.discoveredPoints.has({ x: deadTree.x - 2, y: deadTree.y }) ||
+                !monitor.discoveredPoints.has({ x: deadTree.x + 2, y: deadTree.y })
+            ) {
+                continue
+            }
+
+            const screenPoint = this.gamePointToScreenPoint(deadTree)
+
+            ctx.fillStyle = 'yellow'
+            ctx.fillRect(screenPoint.x, screenPoint.y, 10, 10)
+
+        }
 
 
         /* Draw the crops */
@@ -634,19 +863,59 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const screenPoint = this.gamePointToScreenPoint(sign)
 
-            const fillColor = materialToColor.get(sign.type)
+            let signImage
 
-            if (fillColor) {
-                ctx.fillStyle = fillColor
-            } else {
-                ctx.fillStyle = "brown"
+            if (!sign.type) {
+                signImage = this.images.get(SIGN_NOTHING)
+            } else if (sign.type === "coal" && sign.amount == "LARGE") {
+                signImage = this.images.get(SIGN_COAL_LARGE)
+            } else if (sign.type === "coal" && sign.amount == "MEDIUM") {
+                signImage = this.images.get(SIGN_COAL_MEDIUM)
+            } else if (sign.type === "coal" && sign.amount == "SMALL") {
+                signImage = this.images.get(SIGN_COAL_SMALL)
+            } else if (sign.type === "iron" && sign.amount == "LARGE") {
+                signImage = this.images.get(SIGN_IRON_LARGE)
+            } else if (sign.type === "iron" && sign.amount == "MEDIUM") {
+                signImage = this.images.get(SIGN_IRON_MEDIUM)
+            } else if (sign.type === "iron" && sign.amount == "SMALL") {
+                signImage = this.images.get(SIGN_IRON_SMALL)
+            } else if (sign.type === "stone" && sign.amount == "LARGE") {
+                signImage = this.images.get(SIGN_GRANITE_LARGE)
+            } else if (sign.type === "stone" && sign.amount == "MEDIUM") {
+                signImage = this.images.get(SIGN_GRANITE_MEDIUM)
+            } else if (sign.type === "stone" && sign.amount == "SMALL") {
+                signImage = this.images.get(SIGN_GRANITE_SMALL)
+            } else if (sign.type === "gold" && sign.amount == "LARGE") {
+                signImage = this.images.get(SIGN_GOLD_LARGE)
+            } else if (sign.type === "gold" && sign.amount == "MEDIUM") {
+                signImage = this.images.get(SIGN_GOLD_MEDIUM)
+            } else if (sign.type === "gold" && sign.amount == "SMALL") {
+                signImage = this.images.get(SIGN_GOLD_SMALL)
+            } else if (sign.type === "water") {
+                signImage = this.images.get(SIGN_WATER)
             }
 
-            ctx.fillRect(screenPoint.x - 5, screenPoint.y - 5, 10, 10)
+            if (signImage) {
+                ctx.drawImage(signImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 0.5 * scaleY)
+            } else {
+
+                let fillColor = "brown"
+
+                if (sign.type) {
+                    const colorLookup = signToColor.get(sign.type)
+
+                    if (colorLookup) {
+                        fillColor = colorLookup
+                    }
+                }
+
+                ctx.fillStyle = fillColor
+
+                ctx.fillRect(screenPoint.x - 5, screenPoint.y - 5, 10, 10)
+            }
         }
 
         duration.after("draw signs")
-
 
         /* Draw the stones */
         for (const stone of monitor.stones) {
@@ -788,7 +1057,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw flags */
-        const flagImage = this.images.get("flag.png")
+        const flagImage = this.images.get(FLAG_FILE)
 
         for (const [id, flag] of monitor.flags) {
 
@@ -799,8 +1068,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const screenPoint = this.gamePointToScreenPoint(flag)
 
             /* Draw the flag slightly above the point */
-            screenPoint.y -= 25
-            screenPoint.x = screenPoint.x - 3
+            screenPoint.y -= 29
+            screenPoint.x = screenPoint.x - 2
 
             if (flagImage) {
                 ctx.drawImage(flagImage, screenPoint.x, screenPoint.y, 10, 30)
@@ -816,10 +1085,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw available construction */
-        const largeHouseAvailableImage = this.images.get("large-house-available.png")
-        const mediumHouseAvailableImage = this.images.get("medium-house-available.png")
-        const smallHouseAvailableImage = this.images.get("small-house-available.png")
-        const mineAvailableImage = this.images.get("mine-available.png")
+        const largeHouseAvailableImage = this.images.get(AVAILABLE_LARGE_BUILDING_FILE)
+        const mediumHouseAvailableImage = this.images.get(AVAILABLE_MEDIUM_BUILDING_FILE)
+        const smallHouseAvailableImage = this.images.get(AVAILABLE_SMALL_BUILDING_FILE)
+        const flagAvailableImage = this.images.get(AVAILABLE_FLAG_FILE)
+        const mineAvailableImage = this.images.get(AVAILABLE_MINE_FILE)
 
         if (this.props.showAvailableConstruction) {
 
@@ -899,22 +1169,30 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
 
                 } else if (available.includes("flag")) {
-                    ctx.fillStyle = 'yellow'
-                    ctx.strokeStyle = 'black'
 
-                    ctx.beginPath()
+                    if (flagAvailableImage) {
+                        const offsetX = 4
+                        const offsetY = 15
 
-                    ctx.moveTo(screenPoint.x - 2, screenPoint.y)
-                    ctx.lineTo(screenPoint.x - 2, screenPoint.y - 10)
-                    ctx.lineTo(screenPoint.x + 3, screenPoint.y - 10)
-                    ctx.lineTo(screenPoint.x + 3, screenPoint.y - 5)
-                    ctx.lineTo(screenPoint.x, screenPoint.y - 5)
-                    ctx.lineTo(screenPoint.x, screenPoint.y)
+                        ctx.drawImage(flagAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 15, 15)
+                    } else {
+                        ctx.fillStyle = 'yellow'
+                        ctx.strokeStyle = 'black'
 
-                    ctx.closePath()
+                        ctx.beginPath()
 
-                    ctx.fill()
-                    ctx.stroke()
+                        ctx.moveTo(screenPoint.x - 2, screenPoint.y)
+                        ctx.lineTo(screenPoint.x - 2, screenPoint.y - 10)
+                        ctx.lineTo(screenPoint.x + 3, screenPoint.y - 10)
+                        ctx.lineTo(screenPoint.x + 3, screenPoint.y - 5)
+                        ctx.lineTo(screenPoint.x, screenPoint.y - 5)
+                        ctx.lineTo(screenPoint.x, screenPoint.y)
+
+                        ctx.closePath()
+
+                        ctx.fill()
+                        ctx.stroke()
+                    }
                 }
             }
         }
@@ -980,17 +1258,26 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw the selected point */
         if (this.props.selectedPoint) {
+            const selectedImage = this.images.get(SELECTED_POINT)
             const screenPoint = this.gamePointToScreenPoint(this.props.selectedPoint)
 
-            ctx.fillStyle = 'yellow'
-            ctx.strokeStyle = 'black'
+            if (selectedImage) {
+                const offsetX = Math.floor(selectedImage.width / 2)
+                const offsetY = Math.floor(selectedImage.height / 2)
 
-            ctx.beginPath()
-            ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI)
-            ctx.closePath()
+                ctx.drawImage(selectedImage, screenPoint.x - offsetX, screenPoint.y - offsetY)
+            } else {
 
-            ctx.fill()
-            ctx.stroke()
+                ctx.fillStyle = 'yellow'
+                ctx.strokeStyle = 'black'
+
+                ctx.beginPath()
+                ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI)
+                ctx.closePath()
+
+                ctx.fill()
+                ctx.stroke()
+            }
         }
 
         duration.after("draw selected point")

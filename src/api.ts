@@ -177,11 +177,11 @@ export interface PointInformation {
 
 export interface TreeInformation extends Point { }
 
-export type Vegetation = "G" | "M" | "SW" | "W" | "DW" | "SN" | "L" | "MM" | "ST" | "DE" | "SA"
+export type Vegetation = "SA" | "MO1" | "SN" | "SW" | "D1" | "W1" | "B" | "D2" | "ME1" | "ME2" | "ME3" | "MO2" | "MO3" | "MO4" | "ST" | "FM" | "L1" | "MA" | "MM" | "W2" | "L2" | "L3" | "L4" | "BM"
 
 export type HeightInformation = number
 
-export type VegetationIntegers = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+export type VegetationIntegers = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23
 
 export interface TerrainAtPoint {
     point: Point
@@ -233,11 +233,14 @@ export interface MapInformation {
 
 export interface CropInformation extends Point { }
 
-export type Minerals = 'iron' | 'gold' | 'coal' | 'stone'
+export type SignTypes = 'iron' | 'gold' | 'coal' | 'stone' | 'water'
+
+export type Size = 'SMALL' | 'MEDIUM' | 'LARGE'
 
 export interface SignInformation extends Point {
     id: SignId
-    type: Minerals
+    type?: SignTypes
+    amount: Size
 }
 
 export interface StoneInformation extends Point { }
@@ -259,7 +262,7 @@ export interface AnimalInformation extends Point {
     percentageTraveled: number
 }
 
-export type SoldierType = "PRIVATE_RANK" | "PRIVATE_FIRST_CLASS_RANK" | "SERGEANT" | "OFFICER" | "GENERAL"
+export type SoldierType = "PRIVATE_RANK" | "PRIVATE_FIRST_CLASS_RANK" | "SERGEANT_RANK" | "OFFICER_RANK" | "GENERAL_RANK"
 
 function getSoldierDisplayName(soldierType: SoldierType): string {
 
@@ -267,9 +270,9 @@ function getSoldierDisplayName(soldierType: SoldierType): string {
         return "Private"
     } else if (soldierType === "PRIVATE_FIRST_CLASS_RANK") {
         return "Private first class"
-    } else if (soldierType === "SERGEANT") {
+    } else if (soldierType === "SERGEANT_RANK") {
         return "Sergeant"
-    } else if (soldierType === "OFFICER") {
+    } else if (soldierType === "OFFICER_RANK") {
         return "Officer"
     } else {
         return "General"
@@ -329,6 +332,7 @@ export interface HouseInformation extends Point {
     state: HouseState
     maxAttackers?: number
     productivity?: number
+    upgrading?: boolean
 }
 
 export interface FlagInformation extends Point {
@@ -355,6 +359,7 @@ export interface PlayerViewInformation {
     animals: AnimalInformation[]
     discoveredPoints: Point[]
     availableConstruction: PointMapFast<AvailableConstruction[]>
+    deadTrees: Point[]
 }
 
 export interface PossibleNewRoadInformation {
@@ -709,7 +714,7 @@ async function startGame(gameId: GameId): Promise<GameInformation> {
 async function attackBuilding(houseInformation: HouseInformation, numberOfAttackers: number, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
     console.log("Attacking")
 
-    console.log("Request: " + "/settlers/api/games/" + gameId + "/players/" + houseInformation.playerId + "/houses/" + houseInformation.id)
+    console.log("Request: /settlers/api/games/" + gameId + "/players/" + houseInformation.playerId + "/houses/" + houseInformation.id)
     console.log("Options: " + JSON.stringify({
         method: 'PATCH',
         headers: {
@@ -1192,6 +1197,14 @@ materialToColor.set("meat", "red")
 materialToColor.set("wheat", "orange")
 materialToColor.set("water", "blue")
 
+const signToColor = new Map<SignTypes, string>()
+
+signToColor.set("iron", "red")
+signToColor.set("coal", "black")
+signToColor.set("gold", "yellow")
+signToColor.set("stone", "white")
+signToColor.set("water", "blue")
+
 function getFlagAtPoint(point: Point) {
     for (const [id, flag] of monitor.flags) {
         if (flag.x === point.x && flag.y === point.y) {
@@ -1212,5 +1225,5 @@ function getHouseAtPoint(point: Point) {
     return undefined
 }
 
-export { pauseProductionForHouse, resumeProductionForHouse, isTool, printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame }
+export { signToColor, pauseProductionForHouse, resumeProductionForHouse, isTool, printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame }
 

@@ -47,6 +47,7 @@ interface Monitor {
     allTiles: PointMapFast<TerrainAtPoint>
     discoveredBelowTiles: Set<TileBelow>
     discoveredDownRightTiles: Set<TileDownRight>
+    deadTrees: PointSetFast
 }
 
 const monitor: Monitor = {
@@ -66,7 +67,8 @@ const monitor: Monitor = {
     messages: [],
     allTiles: new PointMapFast<TerrainAtPoint>(),
     discoveredBelowTiles: new Set<TileBelow>(),
-    discoveredDownRightTiles: new Set<TileDownRight>()
+    discoveredDownRightTiles: new Set<TileDownRight>(),
+    deadTrees: new PointSetFast()
 }
 
 interface WalkerTargetChange {
@@ -177,6 +179,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     view.trees.forEach(tree => monitor.trees.add(tree))
 
     view.crops.forEach(crop => monitor.crops.add(crop))
+
+    view.deadTrees.forEach(deadTree => monitor.deadTrees.add(deadTree))
 
     for (const borderInformation of view.borders) {
 

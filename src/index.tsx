@@ -58,6 +58,8 @@ class GameInit extends Component<GameInitProps, GameInitState> {
                 state: "LOBBY"
             }
         )
+
+        console.log("Now in lobby")
     }
 
     render() {

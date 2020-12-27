@@ -904,6 +904,7 @@ class App extends Component<AppProps, AppState> {
                     showAvailableConstruction={this.state.showAvailableConstruction}
                     width={globalSyncState.width}
                     height={globalSyncState.height}
+                    cursorState={'NOTHING'}
                 />
 
                 <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />

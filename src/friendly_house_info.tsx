@@ -259,7 +259,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                         />
                     }
 
-                    {canBeUpgraded(house) &&
+                    {canBeUpgraded(house) && !house.upgrading &&
                         <Button onButtonClicked={() => upgradeMilitaryBuilding(this.props.gameId, this.props.playerId, house.id)} label="Upgrade" />
                     }
 

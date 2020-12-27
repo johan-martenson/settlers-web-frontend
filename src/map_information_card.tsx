@@ -105,10 +105,12 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
 
     private renderMap(ctx: CanvasRenderingContext2D, terrain: TerrainAtPoint[]) {
 
-        const waterIntValue = vegetationToInt.get("W")
+        const waterIntValue0 = vegetationToInt.get("W1")
+        const waterIntValue1 = vegetationToInt.get("W2")
+        const waterIntValue2 = vegetationToInt.get("B")
 
-        if (waterIntValue) {
-            const waterColor = intToVegetationColor.get(waterIntValue)
+        if (waterIntValue0 !== undefined && waterIntValue1 !== undefined && waterIntValue2 !== undefined) {
+            const waterColor = intToVegetationColor.get(waterIntValue0)
 
             if (waterColor) {
                 ctx.fillStyle = arrayToRgbStyle(waterColor)
@@ -130,14 +132,20 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
                 const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
                 const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
 
-                if (colorStraightBelow && pointTerrainInformation.below !== waterIntValue) {
+                if (colorStraightBelow &&
+                    pointTerrainInformation.below !== waterIntValue0 &&
+                    pointTerrainInformation.below !== waterIntValue1 &&
+                    pointTerrainInformation.below !== waterIntValue2) {
                     ctx.beginPath()
                     ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
                     ctx.rect(point.x, point.y, 4, 4)
                     ctx.fill()
                 }
 
-                if (colorBelowToTheRight && pointTerrainInformation.downRight !== waterIntValue) {
+                if (colorBelowToTheRight &&
+                    pointTerrainInformation.downRight !== waterIntValue0 &&
+                    pointTerrainInformation.downRight !== waterIntValue1 &&
+                    pointTerrainInformation.downRight !== waterIntValue2) {
                     ctx.beginPath()
                     ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
                     ctx.rect(point.x + 4, point.y, 4, 4)

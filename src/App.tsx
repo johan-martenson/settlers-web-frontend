@@ -183,14 +183,16 @@ class App extends Component<AppProps, AppState> {
 
                 /* If a house is selected, start the road from the flag */
                 if (pointInformation.is && pointInformation.is === "building") {
-                    let point = this.state.selected
+                    let pointDownRight = this.state.selected
 
-                    point = { x: point.x + 1, y: point.y - 1 }
+                    pointDownRight = { x: pointDownRight.x + 1, y: pointDownRight.y - 1 }
+
+                    const pointDownRightInformation = await getInformationOnPoint(pointDownRight, this.props.gameId, this.state.player)
 
                     this.setState(
                         {
-                            newRoad: [point],
-                            possibleRoadConnections: pointInformation.possibleRoadConnections
+                            newRoad: [pointDownRight],
+                            possibleRoadConnections: pointDownRightInformation.possibleRoadConnections
                         }
                     )
                 } else if (pointInformation.is && pointInformation.is === "flag") {

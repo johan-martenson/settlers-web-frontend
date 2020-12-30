@@ -104,6 +104,39 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private terrainNeedsUpdate: boolean
     private images: Map<Filename, HTMLImageElement>
 
+    private nothingSignImage: HTMLImageElement | undefined
+    private waterSignImage: HTMLImageElement | undefined
+    private coalSignLargeImage: HTMLImageElement | undefined
+    private coalSignMediumImage: HTMLImageElement | undefined
+    private coalSignalSmallImage: HTMLImageElement | undefined
+    private ironSignLargeImage: HTMLImageElement | undefined
+    private ironSignMediumImage: HTMLImageElement | undefined
+    private ironSignalSmallImage: HTMLImageElement | undefined
+    private goldSignLargeImage: HTMLImageElement | undefined
+    private goldSignMediumImage: HTMLImageElement | undefined
+    private goldSignalSmallImage: HTMLImageElement | undefined
+    private graniteSignLargeImage: HTMLImageElement | undefined
+    private graniteSignMediumImage: HTMLImageElement | undefined
+    private graniteSignalSmallImage: HTMLImageElement | undefined
+
+    private savannahImage: HTMLImageElement | undefined
+    private mountainImage1: HTMLImageElement | undefined
+    private snowImage: HTMLImageElement | undefined
+    private swampImage: HTMLImageElement | undefined
+    private desertImage: HTMLImageElement | undefined
+    private waterImage: HTMLImageElement | undefined
+    private meadowImage1: HTMLImageElement | undefined
+    private meadowImage2: HTMLImageElement | undefined
+    private meadowImage3: HTMLImageElement | undefined
+    private mountainImage2: HTMLImageElement | undefined
+    private mountainImage3: HTMLImageElement | undefined
+    private mountainImage4: HTMLImageElement | undefined
+    private steppeImage: HTMLImageElement | undefined
+    private flowerMeadowImage: HTMLImageElement | undefined
+    private lavaImage: HTMLImageElement | undefined
+    private magentaImage: HTMLImageElement | undefined
+    private mountainMeadowImage: HTMLImageElement | undefined
+
     constructor(props: GameCanvasProps) {
         super(props)
 
@@ -397,23 +430,73 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx.fillRect(0, 0, width, height)
 
             /* Collect terrain textures to use */
-            const savannahImage = this.images.get(SAVANNAH_IMAGE_FILE)
-            const mountainImage1 = this.images.get(MOUNTAIN_1_IMAGE_FILE)
-            const snowImage = this.images.get(SNOW_IMAGE_FILE)
-            const swampImage = this.images.get(SWAMP_IMAGE_FILE)
-            const desertImage = this.images.get(DESERT_IMAGE_FILE)
-            const waterImage = this.images.get(WATER_IMAGE_FILE)
-            const meadowImage1 = this.images.get(MEADOW_1_IMAGE_FILE)
-            const meadowImage2 = this.images.get(MEADOW_2_IMAGE_FILE)
-            const meadowImage3 = this.images.get(MEADOW_3_IMAGE_FILE)
-            const mountainImage2 = this.images.get(MOUNTAIN_2_IMAGE_FILE)
-            const mountainImage3 = this.images.get(MOUNTAIN_3_IMAGE_FILE)
-            const mountainImage4 = this.images.get(MOUNTAIN_4_IMAGE_FILE)
-            const steppeImage = this.images.get(STEPPE_IMAGE_FILE)
-            const flowerMeadowImage = this.images.get(FLOWER_MEADOW_IMAGE_FILE)
-            const lavaImage = this.images.get(LAVA_IMAGE_FILE)
-            const magentaImage = this.images.get(MAGENTA_IMAGE_FILE)
-            const mountainMeadowImage = this.images.get(MOUNTAIN_MEADOW_IMAGE_FILE)
+            if (this.savannahImage === undefined) {
+                this.savannahImage = this.images.get(SAVANNAH_IMAGE_FILE)
+            }
+
+            if (this.mountainImage1 === undefined) {
+                this.mountainImage1 = this.images.get(MOUNTAIN_1_IMAGE_FILE)
+            }
+
+            if (this.snowImage === undefined) {
+                this.snowImage = this.images.get(SNOW_IMAGE_FILE)
+            }
+
+            if (this.swampImage === undefined) {
+                this.swampImage = this.images.get(SWAMP_IMAGE_FILE)
+            }
+
+            if (this.desertImage === undefined) {
+                this.desertImage = this.images.get(DESERT_IMAGE_FILE)
+            }
+
+            if (this.waterImage === undefined) {
+                this.waterImage = this.images.get(WATER_IMAGE_FILE)
+            }
+
+            if (this.meadowImage1 === undefined) {
+                this.meadowImage1 = this.images.get(MEADOW_1_IMAGE_FILE)
+            }
+
+            if (this.meadowImage2 === undefined) {
+                this.meadowImage2 = this.images.get(MEADOW_2_IMAGE_FILE)
+            }
+
+            if (this.meadowImage3 === undefined) {
+                this.meadowImage3 = this.images.get(MEADOW_3_IMAGE_FILE)
+            }
+
+            if (this.mountainImage2 === undefined) {
+                this.mountainImage2 = this.images.get(MOUNTAIN_2_IMAGE_FILE)
+            }
+
+            if (this.mountainImage3 === undefined) {
+                this.mountainImage3 = this.images.get(MOUNTAIN_3_IMAGE_FILE)
+            }
+
+            if (this.mountainImage4 === undefined) {
+                this.mountainImage4 = this.images.get(MOUNTAIN_4_IMAGE_FILE)
+            }
+
+            if (this.steppeImage === undefined) {
+                this.steppeImage = this.images.get(STEPPE_IMAGE_FILE)
+            }
+
+            if (this.flowerMeadowImage === undefined) {
+                this.flowerMeadowImage = this.images.get(FLOWER_MEADOW_IMAGE_FILE)
+            }
+
+            if (this.lavaImage === undefined) {
+                this.lavaImage = this.images.get(LAVA_IMAGE_FILE)
+            }
+
+            if (this.magentaImage === undefined) {
+                this.magentaImage = this.images.get(MAGENTA_IMAGE_FILE)
+            }
+
+            if (this.mountainMeadowImage === undefined) {
+                this.mountainMeadowImage = this.images.get(MOUNTAIN_MEADOW_IMAGE_FILE)
+            }
 
             for (const tile of monitor.discoveredBelowTiles) {
 
@@ -452,43 +535,43 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 let terrainImage
 
                 if (tile.vegetation === 0) {
-                    terrainImage = savannahImage
+                    terrainImage = this.savannahImage
                 } else if (tile.vegetation === 1) {
-                    terrainImage = mountainImage1
+                    terrainImage = this.mountainImage1
                 } else if (tile.vegetation === 2) {
-                    terrainImage = snowImage
+                    terrainImage = this.snowImage
                 } else if (tile.vegetation === 3) {
-                    terrainImage = swampImage
+                    terrainImage = this.swampImage
                 } else if (tile.vegetation === 4) {
-                    terrainImage = desertImage
+                    terrainImage = this.desertImage
                 } else if (tile.vegetation === 5 || tile.vegetation === 6 || tile.vegetation === 19) {
-                    terrainImage = waterImage
+                    terrainImage = this.waterImage
                 } else if (tile.vegetation === 7) {
-                    terrainImage = desertImage
+                    terrainImage = this.desertImage
                 } else if (tile.vegetation === 8) {
-                    terrainImage = meadowImage1
+                    terrainImage = this.meadowImage1
                 } else if (tile.vegetation === 9) {
-                    terrainImage = meadowImage2
+                    terrainImage = this.meadowImage2
                 } else if (tile.vegetation === 10) {
-                    terrainImage = meadowImage3
+                    terrainImage = this.meadowImage3
                 } else if (tile.vegetation === 11) {
-                    terrainImage = mountainImage2
+                    terrainImage = this.mountainImage2
                 } else if (tile.vegetation === 12) {
-                    terrainImage = mountainImage3
+                    terrainImage = this.mountainImage3
                 } else if (tile.vegetation === 13) {
-                    terrainImage = mountainImage4
+                    terrainImage = this.mountainImage4
                 } else if (tile.vegetation === 14) {
-                    terrainImage = steppeImage
+                    terrainImage = this.steppeImage
                 } else if (tile.vegetation === 15) {
-                    terrainImage = flowerMeadowImage
+                    terrainImage = this.flowerMeadowImage
                 } else if (tile.vegetation === 16 || tile.vegetation === 20 || tile.vegetation === 21 || tile.vegetation === 22) {
-                    terrainImage = lavaImage
+                    terrainImage = this.lavaImage
                 } else if (tile.vegetation === 17) {
-                    terrainImage = magentaImage
+                    terrainImage = this.magentaImage
                 } else if (tile.vegetation === 18) {
-                    terrainImage = mountainMeadowImage
+                    terrainImage = this.mountainMeadowImage
                 } else if (tile.vegetation === 23) {
-                    terrainImage = mountainImage1
+                    terrainImage = this.mountainImage1
                 }
 
                 if (terrainImage) {
@@ -552,43 +635,43 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 let terrainImage
 
                 if (tile.vegetation === 0) {
-                    terrainImage = savannahImage
+                    terrainImage = this.savannahImage
                 } else if (tile.vegetation === 1) {
-                    terrainImage = mountainImage1
+                    terrainImage = this.mountainImage1
                 } else if (tile.vegetation === 2) {
-                    terrainImage = snowImage
+                    terrainImage = this.snowImage
                 } else if (tile.vegetation === 3) {
-                    terrainImage = swampImage
+                    terrainImage = this.swampImage
                 } else if (tile.vegetation === 4) {
-                    terrainImage = desertImage
+                    terrainImage = this.desertImage
                 } else if (tile.vegetation === 5 || tile.vegetation === 6 || tile.vegetation === 19) {
-                    terrainImage = waterImage
+                    terrainImage = this.waterImage
                 } else if (tile.vegetation === 7) {
-                    terrainImage = desertImage
+                    terrainImage = this.desertImage
                 } else if (tile.vegetation === 8) {
-                    terrainImage = meadowImage1
+                    terrainImage = this.meadowImage1
                 } else if (tile.vegetation === 9) {
-                    terrainImage = meadowImage2
+                    terrainImage = this.meadowImage2
                 } else if (tile.vegetation === 10) {
-                    terrainImage = meadowImage3
+                    terrainImage = this.meadowImage3
                 } else if (tile.vegetation === 11) {
-                    terrainImage = mountainImage2
+                    terrainImage = this.mountainImage2
                 } else if (tile.vegetation === 12) {
-                    terrainImage = mountainImage3
+                    terrainImage = this.mountainImage3
                 } else if (tile.vegetation === 13) {
-                    terrainImage = mountainImage4
+                    terrainImage = this.mountainImage4
                 } else if (tile.vegetation === 14) {
-                    terrainImage = steppeImage
+                    terrainImage = this.steppeImage
                 } else if (tile.vegetation === 15) {
-                    terrainImage = flowerMeadowImage
+                    terrainImage = this.flowerMeadowImage
                 } else if (tile.vegetation === 16 || tile.vegetation === 20 || tile.vegetation === 21 || tile.vegetation === 22) {
-                    terrainImage = lavaImage
+                    terrainImage = this.lavaImage
                 } else if (tile.vegetation === 17) {
-                    terrainImage = magentaImage
+                    terrainImage = this.magentaImage
                 } else if (tile.vegetation === 18) {
-                    terrainImage = mountainMeadowImage
+                    terrainImage = this.mountainMeadowImage
                 } else if (tile.vegetation === 23) {
-                    terrainImage = mountainImage1
+                    terrainImage = this.mountainImage1
                 }
 
                 if (terrainImage) {
@@ -855,6 +938,52 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the signs */
+        if (monitor.signs.size > 0) {
+
+            if (this.nothingSignImage === undefined) {
+                this.nothingSignImage = this.images.get(SIGN_NOTHING)
+            }
+            if (this.waterSignImage === undefined) {
+                this.waterSignImage = this.images.get(SIGN_WATER)
+            }
+            if (this.coalSignLargeImage === undefined) {
+                this.coalSignLargeImage = this.images.get(SIGN_COAL_LARGE)
+            }
+            if (this.coalSignMediumImage === undefined) {
+                this.coalSignMediumImage = this.images.get(SIGN_COAL_MEDIUM)
+            }
+            if (this.coalSignalSmallImage === undefined) {
+                this.coalSignalSmallImage = this.images.get(SIGN_COAL_SMALL)
+            }
+            if (this.ironSignLargeImage === undefined) {
+                this.ironSignLargeImage = this.images.get(SIGN_IRON_LARGE)
+            }
+            if (this.ironSignMediumImage === undefined) {
+                this.ironSignMediumImage = this.images.get(SIGN_IRON_MEDIUM)
+            }
+            if (this.ironSignalSmallImage === undefined) {
+                this.ironSignalSmallImage = this.images.get(SIGN_IRON_SMALL)
+            }
+            if (this.goldSignLargeImage === undefined) {
+                this.goldSignLargeImage = this.images.get(SIGN_GOLD_LARGE)
+            }
+            if (this.goldSignMediumImage === undefined) {
+                this.goldSignMediumImage = this.images.get(SIGN_GOLD_MEDIUM)
+            }
+            if (this.goldSignalSmallImage === undefined) {
+                this.goldSignalSmallImage = this.images.get(SIGN_GOLD_SMALL)
+            }
+            if (this.graniteSignLargeImage === undefined) {
+                this.graniteSignLargeImage = this.images.get(SIGN_GRANITE_LARGE)
+            }
+            if (this.graniteSignMediumImage === undefined) {
+                this.graniteSignMediumImage = this.images.get(SIGN_GRANITE_MEDIUM)
+            }
+            if (this.graniteSignalSmallImage === undefined) {
+                this.graniteSignalSmallImage = this.images.get(SIGN_GRANITE_SMALL)
+            }
+        }
+
         for (const [id, sign] of monitor.signs) {
 
             if (sign.x < minXInGame || sign.x > maxXInGame || sign.y < minYInGame || sign.y > maxYInGame) {
@@ -866,33 +995,33 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             let signImage
 
             if (!sign.type) {
-                signImage = this.images.get(SIGN_NOTHING)
+                signImage = this.nothingSignImage
             } else if (sign.type === "coal" && sign.amount == "LARGE") {
-                signImage = this.images.get(SIGN_COAL_LARGE)
+                signImage = this.coalSignLargeImage
             } else if (sign.type === "coal" && sign.amount == "MEDIUM") {
-                signImage = this.images.get(SIGN_COAL_MEDIUM)
+                signImage = this.coalSignMediumImage
             } else if (sign.type === "coal" && sign.amount == "SMALL") {
-                signImage = this.images.get(SIGN_COAL_SMALL)
+                signImage = this.coalSignalSmallImage
             } else if (sign.type === "iron" && sign.amount == "LARGE") {
-                signImage = this.images.get(SIGN_IRON_LARGE)
+                signImage = this.ironSignLargeImage
             } else if (sign.type === "iron" && sign.amount == "MEDIUM") {
-                signImage = this.images.get(SIGN_IRON_MEDIUM)
+                signImage = this.ironSignMediumImage
             } else if (sign.type === "iron" && sign.amount == "SMALL") {
-                signImage = this.images.get(SIGN_IRON_SMALL)
+                signImage = this.ironSignalSmallImage
             } else if (sign.type === "stone" && sign.amount == "LARGE") {
-                signImage = this.images.get(SIGN_GRANITE_LARGE)
+                signImage = this.graniteSignLargeImage
             } else if (sign.type === "stone" && sign.amount == "MEDIUM") {
-                signImage = this.images.get(SIGN_GRANITE_MEDIUM)
+                signImage = this.graniteSignMediumImage
             } else if (sign.type === "stone" && sign.amount == "SMALL") {
-                signImage = this.images.get(SIGN_GRANITE_SMALL)
+                signImage = this.graniteSignalSmallImage
             } else if (sign.type === "gold" && sign.amount == "LARGE") {
-                signImage = this.images.get(SIGN_GOLD_LARGE)
+                signImage = this.goldSignLargeImage
             } else if (sign.type === "gold" && sign.amount == "MEDIUM") {
-                signImage = this.images.get(SIGN_GOLD_MEDIUM)
+                signImage = this.goldSignMediumImage
             } else if (sign.type === "gold" && sign.amount == "SMALL") {
-                signImage = this.images.get(SIGN_GOLD_SMALL)
+                signImage = this.goldSignalSmallImage
             } else if (sign.type === "water") {
-                signImage = this.images.get(SIGN_WATER)
+                signImage = this.waterSignImage
             }
 
             if (signImage) {

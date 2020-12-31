@@ -48,6 +48,7 @@ interface Monitor {
     discoveredBelowTiles: Set<TileBelow>
     discoveredDownRightTiles: Set<TileDownRight>
     deadTrees: PointSetFast
+    visibleTrees: PointSetFast
 }
 
 const monitor: Monitor = {
@@ -68,7 +69,8 @@ const monitor: Monitor = {
     allTiles: new PointMapFast<TerrainAtPoint>(),
     discoveredBelowTiles: new Set<TileBelow>(),
     discoveredDownRightTiles: new Set<TileDownRight>(),
-    deadTrees: new PointSetFast()
+    deadTrees: new PointSetFast(),
+    visibleTrees: new PointSetFast()
 }
 
 interface WalkerTargetChange {
@@ -200,6 +202,9 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         )
     }
 
+    /* Populate visible trees */
+    populateVisibleTrees(monitor.trees)
+
     /* Store the full terrain */
     const terrain = await getTerrain(gameId)
 
@@ -292,8 +297,22 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         message.newRoads?.forEach((road) => monitor.roads.set(road.id, road))
         message.removedRoads?.forEach((id) => monitor.roads.delete(id))
 
-        message.newTrees?.forEach((tree) => monitor.trees.add(tree))
-        message.removedTrees?.forEach((tree) => monitor.trees.delete(tree))
+        message.newTrees?.forEach((tree) => {
+            monitor.trees.add(tree)
+            
+            if (monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) &&
+                monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) &&
+                monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) &&
+                monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) &&
+                monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) &&
+                monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })) {
+                monitor.visibleTrees.add(tree)
+            }
+        })
+        message.removedTrees?.forEach((tree) => {
+            monitor.trees.delete(tree)
+            monitor.visibleTrees.delete(tree)
+        })
 
         message.newStones?.forEach((stone) => monitor.stones.add(stone))
         message.removedStones?.forEach((stone) => monitor.stones.delete(stone))
@@ -311,6 +330,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         message.newDiscoveredLand?.forEach((point) => monitor.discoveredPoints.add(point))
 
         if (message.newDiscoveredLand) {
+            populateVisibleTrees(monitor.trees)
+
             storeDiscoveredTiles(message.newDiscoveredLand)
 
             notifyDiscoveredLandListeners()
@@ -379,6 +400,24 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     }, 100)
 
     console.info(websocket)
+}
+
+function populateVisibleTrees(trees: PointSetFast) {
+    for (const tree of monitor.trees) {
+
+        if (
+            !monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) ||
+            !monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) ||
+            !monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) ||
+            !monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) ||
+            !monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) ||
+            !monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })
+        ) {
+            continue
+        }
+
+        monitor.visibleTrees.add(tree)
+    }
 }
 
 function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {

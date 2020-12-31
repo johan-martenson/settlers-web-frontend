@@ -88,6 +88,17 @@ const LAVA_IMAGE_FILE = "assets/nature/terrain/greenland/lava.png"
 const MAGENTA_IMAGE_FILE = "assets/nature/terrain/greenland/magenta.png"
 const MOUNTAIN_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/mountain-meadow.png"
 
+let terrainCtx: CanvasRenderingContext2D | null = null
+let overlayCtx: CanvasRenderingContext2D | null = null
+
+let selectedImage: HTMLImageElement | undefined
+
+let largeHouseAvailableImage: HTMLImageElement | undefined
+let mediumHouseAvailableImage: HTMLImageElement | undefined
+let smallHouseAvailableImage: HTMLImageElement | undefined
+let flagAvailableImage: HTMLImageElement | undefined
+let mineAvailableImage: HTMLImageElement | undefined
+
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     private overlayCanvasRef = React.createRef<HTMLCanvasElement>()
@@ -347,11 +358,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Get the rendering contexts for the canvases */
-        const terrainCtx = this.terrainCanvasRef?.current?.getContext("2d", { alpha: false })
-        const overlayCtx = this.overlayCanvasRef.current.getContext("2d")
+        if (terrainCtx === null) {
+            terrainCtx = this.terrainCanvasRef?.current?.getContext("2d", { alpha: false })
+        }
+
+        if (overlayCtx === null) {
+            overlayCtx = this.overlayCanvasRef.current.getContext("2d")
+        }
 
         /* Ensure that both rendering contexts are valid */
-        if (!overlayCtx || !isContext2D(overlayCtx) || !terrainCtx || !isContext2D(terrainCtx)) {
+        if (!overlayCtx /*|| !isContext2D(overlayCtx)*/ || !terrainCtx /*|| !isContext2D(terrainCtx)*/) {
             console.error("No or invalid context")
 
             return
@@ -708,7 +724,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.terrainNeedsUpdate = false
         }
 
-
         duration.after("draw tiles down-right")
 
         ctx = overlayCtx
@@ -833,7 +848,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         screenPoint.x -= houseImage.width * this.props.scale / 40 / 1.4
                         screenPoint.y -= houseImage.height * this.props.scale / 40 / 1.1
 
-                        ctx.drawImage(houseImage, screenPoint.x, screenPoint.y, houseImage.width * this.props.scale / 40, houseImage.height * this.props.scale / 40)
+                        ctx.drawImage(houseImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(houseImage.width * this.props.scale / 40), Math.floor(houseImage.height * this.props.scale / 40))
                     }
                 } else {
                     screenPoint.x -= 1.5 * this.props.scale
@@ -857,20 +872,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the trees */
-        for (const tree of monitor.trees) {
+        for (const tree of monitor.visibleTrees) {
 
             if (tree.x < minXInGame || tree.x > maxXInGame || tree.y < minYInGame || tree.y > maxYInGame) {
-                continue
-            }
-
-            if (
-                !monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) ||
-                !monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) ||
-                !monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) ||
-                !monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) ||
-                !monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) ||
-                !monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })
-            ) {
                 continue
             }
 
@@ -883,7 +887,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const treeImage = this.images.get("tree.png")
 
             if (treeImage) {
-                ctx.drawImage(treeImage, screenPoint.x, screenPoint.y, this.props.scale, 3 * scaleY)
+                ctx.drawImage(treeImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(this.props.scale), Math.floor(3 * scaleY))
             }
         }
 
@@ -1041,6 +1045,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 ctx.fillStyle = fillColor
 
                 ctx.fillRect(screenPoint.x - 5, screenPoint.y - 5, 10, 10)
+
+                console.log(sign)
             }
         }
 
@@ -1062,7 +1068,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const stoneImage = this.images.get("stone.png")
 
             if (stoneImage) {
-                ctx.drawImage(stoneImage, screenPoint.x, screenPoint.y, 2 * this.props.scale, 3 * scaleY)
+                ctx.drawImage(stoneImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(2 * this.props.scale), Math.floor(3 * scaleY))
             }
         }
 
@@ -1214,13 +1220,29 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw available construction */
-        const largeHouseAvailableImage = this.images.get(AVAILABLE_LARGE_BUILDING_FILE)
-        const mediumHouseAvailableImage = this.images.get(AVAILABLE_MEDIUM_BUILDING_FILE)
-        const smallHouseAvailableImage = this.images.get(AVAILABLE_SMALL_BUILDING_FILE)
-        const flagAvailableImage = this.images.get(AVAILABLE_FLAG_FILE)
-        const mineAvailableImage = this.images.get(AVAILABLE_MINE_FILE)
 
         if (this.props.showAvailableConstruction) {
+
+            if (largeHouseAvailableImage === undefined) {
+                largeHouseAvailableImage = this.images.get(AVAILABLE_LARGE_BUILDING_FILE)
+            }
+    
+            if (mediumHouseAvailableImage === undefined) {
+                mediumHouseAvailableImage = this.images.get(AVAILABLE_MEDIUM_BUILDING_FILE)
+            }
+
+            if (smallHouseAvailableImage === undefined) {
+                smallHouseAvailableImage = this.images.get(AVAILABLE_SMALL_BUILDING_FILE)
+            }
+
+            if (flagAvailableImage === undefined) {
+                flagAvailableImage = this.images.get(AVAILABLE_FLAG_FILE)
+            }
+
+            if (mineAvailableImage === undefined) {
+                mineAvailableImage = this.images.get(AVAILABLE_MINE_FILE)
+            }
+    
 
             for (const [gamePoint, available] of monitor.availableConstruction.entries()) {
 
@@ -1240,7 +1262,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         const offsetX = 0.2 * this.props.scale
                         const offsetY = 0.4 * scaleY
 
-                        ctx.drawImage(largeHouseAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 20, 20)
+                        ctx.drawImage(largeHouseAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 20, 20)
                     } else {
                         ctx.fillStyle = 'yellow'
                         ctx.strokeStyle = 'black'
@@ -1255,7 +1277,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         const offsetX = 0.2 * this.props.scale
                         const offsetY = 0.4 * scaleY
 
-                        ctx.drawImage(mediumHouseAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 20, 20)
+                        ctx.drawImage(mediumHouseAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 20, 20)
                     } else {
                         ctx.fillStyle = 'yellow'
                         ctx.strokeStyle = 'black'
@@ -1269,7 +1291,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         const offsetX = 0.2 * this.props.scale
                         const offsetY = 0.4 * scaleY
 
-                        ctx.drawImage(smallHouseAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 20, 20)
+                        ctx.drawImage(smallHouseAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 20, 20)
                     } else {
                         ctx.fillStyle = 'yellow'
                         ctx.strokeStyle = 'black'
@@ -1284,7 +1306,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         const offsetX = 0.2 * this.props.scale
                         const offsetY = 0.4 * scaleY
 
-                        ctx.drawImage(mineAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 20, 20)
+                        ctx.drawImage(mineAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 20, 20)
                     } else {
                         ctx.fillStyle = 'yellow'
                         ctx.strokeStyle = 'black'
@@ -1303,7 +1325,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         const offsetX = 4
                         const offsetY = 15
 
-                        ctx.drawImage(flagAvailableImage, screenPoint.x - offsetX, screenPoint.y - offsetY, 15, 15)
+                        ctx.drawImage(flagAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 15, 15)
                     } else {
                         ctx.fillStyle = 'yellow'
                         ctx.strokeStyle = 'black'
@@ -1386,15 +1408,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the selected point */
+        if (selectedImage === undefined) {
+            selectedImage = this.images.get(SELECTED_POINT)
+        }
+
         if (this.props.selectedPoint) {
-            const selectedImage = this.images.get(SELECTED_POINT)
             const screenPoint = this.gamePointToScreenPoint(this.props.selectedPoint)
 
             if (selectedImage) {
-                const offsetX = Math.floor(selectedImage.width / 2)
-                const offsetY = Math.floor(selectedImage.height / 2)
+                const offsetX = selectedImage.width / 2
+                const offsetY = selectedImage.height / 2
 
-                ctx.drawImage(selectedImage, screenPoint.x - offsetX, screenPoint.y - offsetY)
+                ctx.drawImage(selectedImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY))
             } else {
 
                 ctx.fillStyle = 'yellow'

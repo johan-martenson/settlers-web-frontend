@@ -1000,29 +1000,29 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             if (!sign.type) {
                 signImage = this.nothingSignImage
-            } else if (sign.type === "coal" && sign.amount == "LARGE") {
+            } else if (sign.type === "coal" && sign.amount === "LARGE") {
                 signImage = this.coalSignLargeImage
-            } else if (sign.type === "coal" && sign.amount == "MEDIUM") {
+            } else if (sign.type === "coal" && sign.amount === "MEDIUM") {
                 signImage = this.coalSignMediumImage
-            } else if (sign.type === "coal" && sign.amount == "SMALL") {
+            } else if (sign.type === "coal" && sign.amount === "SMALL") {
                 signImage = this.coalSignalSmallImage
-            } else if (sign.type === "iron" && sign.amount == "LARGE") {
+            } else if (sign.type === "iron" && sign.amount === "LARGE") {
                 signImage = this.ironSignLargeImage
-            } else if (sign.type === "iron" && sign.amount == "MEDIUM") {
+            } else if (sign.type === "iron" && sign.amount === "MEDIUM") {
                 signImage = this.ironSignMediumImage
-            } else if (sign.type === "iron" && sign.amount == "SMALL") {
+            } else if (sign.type === "iron" && sign.amount === "SMALL") {
                 signImage = this.ironSignalSmallImage
-            } else if (sign.type === "stone" && sign.amount == "LARGE") {
+            } else if (sign.type === "stone" && sign.amount === "LARGE") {
                 signImage = this.graniteSignLargeImage
-            } else if (sign.type === "stone" && sign.amount == "MEDIUM") {
+            } else if (sign.type === "stone" && sign.amount === "MEDIUM") {
                 signImage = this.graniteSignMediumImage
-            } else if (sign.type === "stone" && sign.amount == "SMALL") {
+            } else if (sign.type === "stone" && sign.amount === "SMALL") {
                 signImage = this.graniteSignalSmallImage
-            } else if (sign.type === "gold" && sign.amount == "LARGE") {
+            } else if (sign.type === "gold" && sign.amount === "LARGE") {
                 signImage = this.goldSignLargeImage
-            } else if (sign.type === "gold" && sign.amount == "MEDIUM") {
+            } else if (sign.type === "gold" && sign.amount === "MEDIUM") {
                 signImage = this.goldSignMediumImage
-            } else if (sign.type === "gold" && sign.amount == "SMALL") {
+            } else if (sign.type === "gold" && sign.amount === "SMALL") {
                 signImage = this.goldSignalSmallImage
             } else if (sign.type === "water") {
                 signImage = this.waterSignImage

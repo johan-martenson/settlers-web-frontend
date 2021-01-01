@@ -290,12 +290,24 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 d3.line<LandDataPoint>()
                     .x(
                         (d, i, arr) => {
-                            return xScale(d.time)
+                            const xScaled = xScale(d.time)
+
+                            if (xScaled !== undefined) {
+                                return xScaled
+                            }
+
+                            return 0
                         }
                     )
                     .y(
                         (d) => {
-                            return yScale(d.values[i])
+                            const yScaled = yScale(d.values[i])
+
+                            if (yScaled !== undefined) {
+                                return yScaled
+                            }
+
+                            return 0
                         }
                     )
             )
@@ -362,9 +374,23 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .enter().append("circle") // Uses the enter().append() method
                 .attr("fill", colors[i])
                 .attr("class", "dot") // Assign a class for styling
-                .attr("cx", function (data, index) { return xScale(data.time) })
+                .attr("cx", function (data, index) {
+                    const xScaled = xScale(data.time)
+
+                    if (xScaled !== undefined) {
+                        return xScaled
+                    }
+
+                    return 0
+                })
                 .attr("cy", function (data) {
-                    return yScale(data.values[i])
+                    const yScaled = yScale(data.values[i])
+
+                    if (yScaled !== undefined) {
+                        return yScaled
+                    }
+
+                    return 0
                 })
                 .attr("r", 5)
                 .on("mouseover",
@@ -376,11 +402,22 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                             .attr("fill", "orange")
                             .attr("r", 10)
 
+                        let xScaled = xScale(d.time)
+                        let yScaled = yScale(d.values[i])
+
+                        if (xScaled === undefined) {
+                            xScaled = 0
+                        }
+
+                        if (yScaled === undefined) {
+                            yScaled = 0
+                        }
+
                         statisticsSvg
                             .append("text")
                             .attr("id", "textlabel" + i + "-" + measurementIndex)
-                            .attr("x", xScale(d.time) + 20)
-                            .attr("y", yScale(d.values[i]) + 20)
+                            .attr("x", + xScaled + 20)
+                            .attr("y", + yScaled + 20)
                             .text(d.values[i])
                     })
                 .on("mouseout",
@@ -455,12 +492,24 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 d3.line<Measurement>()
                     .x(
                         (d, i, arr) => {
-                            return xScale(d.time)
+                            const xScaled = xScale(d.time)
+
+                            if (xScaled === undefined) {
+                                return 0
+                            }
+
+                            return xScaled
                         }
                     )
                     .y(
                         (d) => {
-                            return yScale(d.values[i])
+                            const yScaled = yScale(d.values[i])
+
+                            if (yScaled === undefined) {
+                                return 0
+                            }
+
+                            return yScaled
                         }
                     )
             )
@@ -527,9 +576,23 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .enter().append("circle") // Uses the enter().append() method
                 .attr("fill", colors[i])
                 .attr("class", "dot") // Assign a class for styling
-                .attr("cx", function (data, index) { return xScale(data.time) })
+                .attr("cx", function (data, index) {
+                     const xScaled = xScale(data.time)
+
+                     if (xScaled === undefined) {
+                         return 0
+                     }
+
+                     return xScaled
+                    })
                 .attr("cy", function (data) {
-                    return yScale(data.values[i])
+                    const yScaled =  yScale(data.values[i])
+
+                    if (yScaled === undefined) {
+                        return 0
+                    }
+
+                    return yScaled
                 })
                 .attr("r", 5)
                 .on("mouseover",
@@ -541,11 +604,22 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                             .attr("fill", "orange")
                             .attr("r", 10)
 
+                        let xScaled = xScale(d.time)
+                        let yScaled = yScale(d.values[i])
+
+                        if (xScaled === undefined) {
+                            xScaled = 0
+                        }
+
+                        if (yScaled === undefined) {
+                            yScaled = 0
+                        }
+
                         statisticsSvg
                             .append("text")
                             .attr("id", "textlabel" + i + "-" + measurementIndex)
-                            .attr("x", xScale(d.time) + 20)
-                            .attr("y", yScale(d.values[i]) + 20)
+                            .attr("x", xScaled + 20)
+                            .attr("y", yScaled + 20)
                             .text(d.values[i])
                     })
                 .on("mouseout",

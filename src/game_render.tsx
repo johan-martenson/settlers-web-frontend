@@ -5,7 +5,7 @@ import './game_render.css'
 import { houseImageMap, houseUnderConstructionImageMap, Filename } from './images'
 import { listenToDiscoveredPoints, monitor } from './monitor'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt } from './utils'
+import { AnimationUtil, camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, loadImage, normalize, Point3D, same, Vector, vegetationToInt } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -90,95 +90,15 @@ const MOUNTAIN_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/mountain-mea
 
 const DEAD_TREE_IMAGE_FILE = "assets/nature/dead-tree.png"
 
-const TREE_TYPE_1_ANIMATION = [
-    "assets/nature/tree-type-1-animation-0.png",
-    "assets/nature/tree-type-1-animation-1.png",
-    "assets/nature/tree-type-1-animation-2.png",
-    "assets/nature/tree-type-1-animation-3.png",
-    "assets/nature/tree-type-1-animation-4.png",
-    "assets/nature/tree-type-1-animation-5.png",
-    "assets/nature/tree-type-1-animation-6.png",
-    "assets/nature/tree-type-1-animation-7.png"]
-
-const TREE_TYPE_2_ANIMATION = [
-    "assets/nature/tree-type-2-animation-0.png",
-    "assets/nature/tree-type-2-animation-1.png",
-    "assets/nature/tree-type-2-animation-2.png",
-    "assets/nature/tree-type-2-animation-3.png",
-    "assets/nature/tree-type-2-animation-4.png",
-    "assets/nature/tree-type-2-animation-5.png",
-    "assets/nature/tree-type-2-animation-6.png",
-    "assets/nature/tree-type-2-animation-7.png"]
-
-const TREE_TYPE_3_ANIMATION = [
-    "assets/nature/tree-type-3-animation-0.png",
-    "assets/nature/tree-type-3-animation-1.png",
-    "assets/nature/tree-type-3-animation-2.png",
-    "assets/nature/tree-type-3-animation-3.png",
-    "assets/nature/tree-type-3-animation-4.png",
-    "assets/nature/tree-type-3-animation-5.png",
-    "assets/nature/tree-type-3-animation-6.png",
-    "assets/nature/tree-type-3-animation-7.png"]
-
-const TREE_TYPE_4_ANIMATION = [
-    "assets/nature/tree-type-4-animation-0.png",
-    "assets/nature/tree-type-4-animation-1.png",
-    "assets/nature/tree-type-4-animation-2.png",
-    "assets/nature/tree-type-4-animation-3.png",
-    "assets/nature/tree-type-4-animation-4.png",
-    "assets/nature/tree-type-4-animation-5.png",
-    "assets/nature/tree-type-4-animation-6.png",
-    "assets/nature/tree-type-4-animation-7.png"]
-
-const TREE_TYPE_5_ANIMATION = [
-    "assets/nature/tree-type-5-animation-0.png",
-    "assets/nature/tree-type-5-animation-1.png",
-    "assets/nature/tree-type-5-animation-2.png",
-    "assets/nature/tree-type-5-animation-3.png",
-    "assets/nature/tree-type-5-animation-4.png",
-    "assets/nature/tree-type-5-animation-5.png",
-    "assets/nature/tree-type-5-animation-6.png",
-    "assets/nature/tree-type-5-animation-7.png"]
-
-const TREE_TYPE_6_ANIMATION = [
-    "assets/nature/tree-type-6-animation-0.png",
-    "assets/nature/tree-type-6-animation-1.png",
-    "assets/nature/tree-type-6-animation-2.png",
-    "assets/nature/tree-type-6-animation-3.png",
-    "assets/nature/tree-type-6-animation-4.png",
-    "assets/nature/tree-type-6-animation-5.png",
-    "assets/nature/tree-type-6-animation-6.png",
-    "assets/nature/tree-type-6-animation-7.png"]
-
-const TREE_TYPE_7_ANIMATION = [
-    "assets/nature/tree-type-7-animation-0.png",
-    "assets/nature/tree-type-7-animation-1.png",
-    "assets/nature/tree-type-7-animation-2.png",
-    "assets/nature/tree-type-7-animation-3.png",
-    "assets/nature/tree-type-7-animation-4.png",
-    "assets/nature/tree-type-7-animation-5.png",
-    "assets/nature/tree-type-7-animation-6.png",
-    "assets/nature/tree-type-7-animation-7.png"]
-
-const TREE_TYPE_8_ANIMATION = [
-    "assets/nature/tree-type-8-animation-0.png",
-    "assets/nature/tree-type-8-animation-1.png",
-    "assets/nature/tree-type-8-animation-2.png",
-    "assets/nature/tree-type-8-animation-3.png",
-    "assets/nature/tree-type-8-animation-4.png",
-    "assets/nature/tree-type-8-animation-5.png",
-    "assets/nature/tree-type-8-animation-6.png",
-    "assets/nature/tree-type-8-animation-7.png"]
-
-const TREE_TYPE_9_ANIMATION = [
-    "assets/nature/tree-type-9-animation-0.png",
-    "assets/nature/tree-type-9-animation-1.png",
-    "assets/nature/tree-type-9-animation-2.png",
-    "assets/nature/tree-type-9-animation-3.png",
-    "assets/nature/tree-type-9-animation-4.png",
-    "assets/nature/tree-type-9-animation-5.png",
-    "assets/nature/tree-type-9-animation-6.png",
-    "assets/nature/tree-type-9-animation-7.png"]
+const treeType1Animation = new AnimationUtil("assets/nature/tree-type-1-animation-", ".png", 8, 20)
+const treeType2Animation = new AnimationUtil("assets/nature/tree-type-2-animation-", ".png", 8, 20)
+const treeType3Animation = new AnimationUtil("assets/nature/tree-type-3-animation-", ".png", 8, 20)
+const treeType4Animation = new AnimationUtil("assets/nature/tree-type-4-animation-", ".png", 8, 20)
+const treeType5Animation = new AnimationUtil("assets/nature/tree-type-5-animation-", ".png", 8, 20)
+const treeType6Animation = new AnimationUtil("assets/nature/tree-type-6-animation-", ".png", 8, 20)
+const treeType7Animation = new AnimationUtil("assets/nature/tree-type-7-animation-", ".png", 8, 20)
+const treeType8Animation = new AnimationUtil("assets/nature/tree-type-8-animation-", ".png", 8, 20)
+const treeType9Animation = new AnimationUtil("assets/nature/tree-type-9-animation-", ".png", 8, 20)
 
 let terrainCtx: CanvasRenderingContext2D | null = null
 let overlayCtx: CanvasRenderingContext2D | null = null
@@ -192,16 +112,6 @@ let flagAvailableImage: HTMLImageElement | undefined
 let mineAvailableImage: HTMLImageElement | undefined
 
 let deadTreeImage: HTMLImageElement | undefined
-
-let treeType1AnimationImages: HTMLImageElement[] | undefined
-let treeType2AnimationImages: HTMLImageElement[] | undefined
-let treeType3AnimationImages: HTMLImageElement[] | undefined
-let treeType4AnimationImages: HTMLImageElement[] | undefined
-let treeType5AnimationImages: HTMLImageElement[] | undefined
-let treeType6AnimationImages: HTMLImageElement[] | undefined
-let treeType7AnimationImages: HTMLImageElement[] | undefined
-let treeType8AnimationImages: HTMLImageElement[] | undefined
-let treeType9AnimationImages: HTMLImageElement[] | undefined
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
@@ -284,16 +194,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.loadImages(houseImageMap.values())
         this.loadImages(houseUnderConstructionImageMap.values())
-
-        this.loadImages(TREE_TYPE_1_ANIMATION)
-        this.loadImages(TREE_TYPE_2_ANIMATION)
-        this.loadImages(TREE_TYPE_3_ANIMATION)
-        this.loadImages(TREE_TYPE_4_ANIMATION)
-        this.loadImages(TREE_TYPE_5_ANIMATION)
-        this.loadImages(TREE_TYPE_6_ANIMATION)
-        this.loadImages(TREE_TYPE_7_ANIMATION)
-        this.loadImages(TREE_TYPE_8_ANIMATION)
-        this.loadImages(TREE_TYPE_9_ANIMATION)
 
         /* Define the light vector */
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
@@ -390,18 +290,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     loadImages(sources: string[] | IterableIterator<string>): void {
         for (let source of sources) {
-            console.log("Loading " + source)
 
-            const image = new Image()
-
-            image.addEventListener("load",
-                () => {
-                    console.log("Loaded " + source)
+            loadImage(source,
+                (image, filename) => {
                     this.images.set(source, image)
                 }
             )
-
-            image.src = source
         }
     }
 
@@ -445,7 +339,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    componentDidMount() {
+    async componentDidMount() {
+
+        /* Load animations */
+        treeType1Animation.load()
+        treeType2Animation.load()
+        treeType3Animation.load()
+        treeType4Animation.load()
+        treeType5Animation.load()
+        treeType6Animation.load()
+        treeType7Animation.load()
+        treeType8Animation.load()
+        treeType9Animation.load()
 
         /* Handle update of heights if needed */
         if (!this.brightnessMap && monitor.allTiles && monitor.allTiles.size > 0) {
@@ -995,187 +900,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw houses")
 
         /* Draw the trees */
-        if (monitor.visibleTrees.size > 0) {
-            if (treeType1AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_1_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType1AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType1AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-
-            if (treeType2AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_2_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType2AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType2AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-
-            if (treeType3AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_3_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType3AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType3AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-            if (treeType4AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_4_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType4AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType4AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-
-            if (treeType5AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_5_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType5AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType5AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-
-            if (treeType6AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_6_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType6AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType6AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-
-            if (treeType7AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_7_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType7AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType7AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-
-            if (treeType8AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_8_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType8AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType8AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-
-            if (treeType9AnimationImages === undefined) {
-
-                const tempTreeImages: (HTMLImageElement | undefined)[] = []
-
-                for (const imageFile of TREE_TYPE_9_ANIMATION) {
-                    tempTreeImages.push(this.images.get(imageFile))
-                }
-
-                tempTreeImages.indexOf(undefined)
-                if (tempTreeImages.indexOf(undefined) === -1) {
-                    treeType9AnimationImages = []
-
-                    for (const image of tempTreeImages) {
-                        if (image !== undefined) {
-                            treeType9AnimationImages.push(image)
-                        }
-                    }
-                }
-            }
-        }
-
         let treeIndex = 0
         for (const [treeId, tree] of monitor.visibleTrees) {
 
@@ -1190,25 +914,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             screenPoint.y -= 2.5 * scaleY
 
             let treeImage
-            if (tree.type === "BIRCH" && treeType1AnimationImages !== undefined) {
-                treeImage = treeType1AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType1AnimationImages.length]
-            } else if (tree.type === "CHERRY" && treeType2AnimationImages !== undefined) {
-                treeImage = treeType2AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType2AnimationImages.length]
-            } else if (tree.type === "CYPRESS" && treeType3AnimationImages !== undefined) {
-                treeImage = treeType3AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType3AnimationImages.length]
-            } else if (tree.type === "FIR" && treeType4AnimationImages !== undefined) {
-                treeImage = treeType4AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType4AnimationImages.length]
-            } else if (tree.type === "OAK" && treeType5AnimationImages !== undefined) {
-                treeImage = treeType5AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType5AnimationImages.length]
-            } else if (tree.type === "PALM_1" && treeType6AnimationImages !== undefined) {
-                treeImage = treeType6AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType6AnimationImages.length]
-            } else if (tree.type === "PALM_2" && treeType7AnimationImages !== undefined) {
-                treeImage = treeType7AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType7AnimationImages.length]
-            } else if (tree.type === "PINE" && treeType8AnimationImages !== undefined) {
-                treeImage = treeType8AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType8AnimationImages.length]
-            } else if (tree.type === "PINE_APPLE" && treeType9AnimationImages !== undefined) {
-                treeImage = treeType9AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType9AnimationImages.length]
-            } else {
+            if (tree.type === "BIRCH") {
+                treeImage = treeType1Animation.getAnimationElement(this.animationIndex, treeIndex)
+            } else if (tree.type === "CHERRY") {
+                treeImage = treeType2Animation.getAnimationElement(this.animationIndex, treeIndex)
+            } else if (tree.type === "CYPRESS") {
+                treeImage = treeType3Animation.getAnimationElement(this.animationIndex, treeIndex)
+            } else if (tree.type === "FIR") {
+                treeImage = treeType4Animation.getAnimationElement(this.animationIndex, treeIndex)
+            } else if (tree.type === "OAK") {
+                treeImage = treeType5Animation.getAnimationElement(this.animationIndex, treeIndex)
+            } else if (tree.type === "PALM_1") {
+                treeImage = treeType6Animation.getAnimationElement(this.animationIndex, treeIndex)
+            } else if (tree.type === "PALM_2") {
+                treeImage = treeType7Animation.getAnimationElement(this.animationIndex, treeIndex)
+            } else if (tree.type === "PINE") {
+                treeImage = treeType8Animation.getAnimationElement(this.animationIndex, treeIndex)
+            } else if (tree.type === "PINE_APPLE") {
+                treeImage = treeType9Animation.getAnimationElement(this.animationIndex, treeIndex)
+            }
+
+            if (treeImage === undefined) {
                 treeImage = this.images.get("tree.png")
             }
 

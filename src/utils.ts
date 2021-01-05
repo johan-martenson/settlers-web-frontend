@@ -678,6 +678,71 @@ function getTimestamp(): number {
     return timestamp
 }
 
+function loadImage(source: string, onLoad: ((image: HTMLImageElement, source: string) => void)): void {
+    console.log("Loading " + source)
 
-export { drawGradientTriangleWithImage, getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint as removeHouseOrFlagAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor }
+    const image = new Image()
+
+    image.addEventListener("load",
+        () => {
+            console.log("Loaded " + source)
+            onLoad(image, source)
+        }
+    )
+
+    image.src = source
+}
+
+function loadImages(sources: string[] | IterableIterator<string>, onLoad: ((image: HTMLImageElement, source: string) => void)): void {
+    for (let source of sources) {
+        console.log("Loading " + source)
+
+        const image = new Image()
+
+        image.addEventListener("load",
+            () => {
+                console.log("Loaded " + source)
+                onLoad(image, source)
+            }
+        )
+
+        image.src = source
+    }
+}
+
+class AnimationUtil {
+    length: number
+    postfix: string
+    prefix: string
+    frames: (HTMLImageElement | undefined)[]
+    speedAdjust: number
+
+    constructor(prefix: string, postfix: string, length: number, speedAdjust: number) {
+        this.prefix = prefix
+        this.postfix = postfix
+        this.length = length
+        this.speedAdjust = speedAdjust
+
+        this.frames = []
+    }
+
+    async load() {
+        for (let i = 0; i < this.length; i++) {
+            this.frames.push(undefined)
+
+            const filename = this.prefix + i + this.postfix
+
+            loadImage(filename, (image, filename) => this.frames[i] = image)
+        }
+    }
+
+    getAnimationElement(animationCounter: number, offset: number): HTMLImageElement | undefined {
+        const treeImage = this.frames[(Math.floor(animationCounter / this.speedAdjust) + offset) % this.frames.length]
+
+        return treeImage
+    }
+}
+
+export { AnimationUtil, loadImage, loadImages, drawGradientTriangleWithImage, getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor }
+
 

@@ -15,7 +15,7 @@ import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import TypeControl from './type_control'
-import { isRoadAtPoint, removeHouseOrFlagAtPoint } from './utils'
+import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPoint } from './utils'
 import { PointSetFast } from './util_types'
 
 const MENU_MENU = 0
@@ -208,7 +208,7 @@ class App extends Component<AppProps, AppState> {
         )
 
         this.commands.set("Flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
-        this.commands.set("Remove (house, flag, or road)", () => { removeHouseOrFlagAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+        this.commands.set("Remove (house, flag, or road)", () => { removeHouseOrFlagOrRoadAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Statistics", () => this.setState({ showStatistics: true }))
         this.commands.set("Game information",
             () => {

@@ -1,4 +1,4 @@
-import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material } from './api'
+import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material, TreeInformation, TreeId } from './api'
 import { PointMapFast, PointSetFast } from './util_types'
 import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight, getPointUpRight, getPointLeft, getPointUpLeft } from './utils'
 
@@ -36,7 +36,7 @@ interface Monitor {
     flags: Map<FlagId, FlagInformation>
     roads: Map<RoadId, RoadInformation>
     border: Map<PlayerId, MonitoredBorderForPlayer>
-    trees: PointSetFast
+    trees: Map<TreeId, TreeInformation>
     stones: PointSetFast
     crops: PointSetFast
     discoveredPoints: PointSetFast
@@ -48,7 +48,7 @@ interface Monitor {
     discoveredBelowTiles: Set<TileBelow>
     discoveredDownRightTiles: Set<TileDownRight>
     deadTrees: PointSetFast
-    visibleTrees: PointSetFast
+    visibleTrees: Map<TreeId, TreeInformation>
 }
 
 const monitor: Monitor = {
@@ -58,7 +58,7 @@ const monitor: Monitor = {
     flags: new Map<FlagId, FlagInformation>(),
     roads: new Map<RoadId, RoadInformation>(),
     border: new Map<PlayerId, MonitoredBorderForPlayer>(),
-    trees: new PointSetFast(),
+    trees: new Map<TreeId, TreeInformation>(),
     stones: new PointSetFast(),
     crops: new PointSetFast(),
     discoveredPoints: new PointSetFast(),
@@ -70,7 +70,7 @@ const monitor: Monitor = {
     discoveredBelowTiles: new Set<TileBelow>(),
     discoveredDownRightTiles: new Set<TileDownRight>(),
     deadTrees: new PointSetFast(),
-    visibleTrees: new PointSetFast()
+    visibleTrees: new Map<TreeId, TreeInformation>()
 }
 
 interface WalkerTargetChange {
@@ -103,8 +103,8 @@ interface ChangesMessage {
     newRoads?: RoadInformation[]
     removedRoads?: RoadId[]
     changedBorders?: BorderChange[]
-    newTrees?: Point[]
-    removedTrees?: Point[]
+    newTrees?: TreeInformation[]
+    removedTrees?: TreeId[]
     newStones?: Point[]
     removedStones?: Point[]
     newCrops?: Point[]
@@ -114,6 +114,8 @@ interface ChangesMessage {
     removedSigns?: SignId[]
     changedAvailableConstruction?: ChangedAvailableConstruction[]
     newMessages?: GameMessage[]
+    discoveredDeadTrees?: Point[]
+    removedDeadTrees?: Point[]
 }
 
 function isGameChangesMessage(message: any): message is ChangesMessage {
@@ -129,7 +131,9 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
             message.newSigns || message.removedSigns ||
             message.newDiscoveredLand ||
             message.changedAvailableConstruction ||
-            message.newMessages)) {
+            message.newMessages ||
+            message.discoveredDeadTrees ||
+            message.removedDeadTrees)) {
         return true
     }
 
@@ -178,7 +182,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
     view.roads.forEach(road => monitor.roads.set(road.id, road))
 
-    view.trees.forEach(tree => monitor.trees.add(tree))
+    view.trees.forEach(tree => monitor.trees.set(tree.id, tree))
 
     view.crops.forEach(crop => monitor.crops.add(crop))
 
@@ -297,22 +301,25 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         message.newRoads?.forEach((road) => monitor.roads.set(road.id, road))
         message.removedRoads?.forEach((id) => monitor.roads.delete(id))
 
-        message.newTrees?.forEach((tree) => {
-            monitor.trees.add(tree)
-            
+        message.newTrees?.forEach(tree => {
+            monitor.trees.set(tree.id, tree)
+
             if (monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) &&
                 monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) &&
                 monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) &&
                 monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) &&
                 monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) &&
                 monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })) {
-                monitor.visibleTrees.add(tree)
+                monitor.visibleTrees.set(tree.id, tree)
             }
         })
-        message.removedTrees?.forEach((tree) => {
-            monitor.trees.delete(tree)
-            monitor.visibleTrees.delete(tree)
+        message.removedTrees?.forEach(treeId => {
+            monitor.trees.delete(treeId)
+            monitor.visibleTrees.delete(treeId)
         })
+
+        message.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
+        message.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
 
         message.newStones?.forEach((stone) => monitor.stones.add(stone))
         message.removedStones?.forEach((stone) => monitor.stones.delete(stone))
@@ -402,8 +409,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     console.info(websocket)
 }
 
-function populateVisibleTrees(trees: PointSetFast) {
-    for (const tree of monitor.trees) {
+function populateVisibleTrees(trees: Map<TreeId, TreeInformation>) {
+    for (const [id, tree] of monitor.trees) {
 
         if (
             !monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) ||
@@ -416,7 +423,7 @@ function populateVisibleTrees(trees: PointSetFast) {
             continue
         }
 
-        monitor.visibleTrees.add(tree)
+        monitor.visibleTrees.set(id, tree)
     }
 }
 

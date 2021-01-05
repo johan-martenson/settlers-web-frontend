@@ -3,7 +3,7 @@ import { AnyBuilding } from './api'
 import Button from './button'
 import { Dialog } from './dialog'
 import { HELP_PAGES, PageType } from './help_pages'
-import houseImageMap from './images'
+import { houseImageMap } from './images'
 import './guide.css'
 
 interface GuideProps {

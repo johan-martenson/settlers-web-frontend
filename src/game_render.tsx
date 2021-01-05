@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { materialToColor, Point, signToColor } from './api'
 import { AggregatedDuration, Duration } from './duration'
 import './game_render.css'
-import houseImageMap, { Filename } from './images'
+import { houseImageMap, houseUnderConstructionImageMap, Filename } from './images'
 import { listenToDiscoveredPoints, monitor } from './monitor'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
 import { camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, normalize, Point3D, same, Vector, vegetationToInt } from './utils'
@@ -88,6 +88,98 @@ const LAVA_IMAGE_FILE = "assets/nature/terrain/greenland/lava.png"
 const MAGENTA_IMAGE_FILE = "assets/nature/terrain/greenland/magenta.png"
 const MOUNTAIN_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/mountain-meadow.png"
 
+const DEAD_TREE_IMAGE_FILE = "assets/nature/dead-tree.png"
+
+const TREE_TYPE_1_ANIMATION = [
+    "assets/nature/tree-type-1-animation-0.png",
+    "assets/nature/tree-type-1-animation-1.png",
+    "assets/nature/tree-type-1-animation-2.png",
+    "assets/nature/tree-type-1-animation-3.png",
+    "assets/nature/tree-type-1-animation-4.png",
+    "assets/nature/tree-type-1-animation-5.png",
+    "assets/nature/tree-type-1-animation-6.png",
+    "assets/nature/tree-type-1-animation-7.png"]
+
+const TREE_TYPE_2_ANIMATION = [
+    "assets/nature/tree-type-2-animation-0.png",
+    "assets/nature/tree-type-2-animation-1.png",
+    "assets/nature/tree-type-2-animation-2.png",
+    "assets/nature/tree-type-2-animation-3.png",
+    "assets/nature/tree-type-2-animation-4.png",
+    "assets/nature/tree-type-2-animation-5.png",
+    "assets/nature/tree-type-2-animation-6.png",
+    "assets/nature/tree-type-2-animation-7.png"]
+
+const TREE_TYPE_3_ANIMATION = [
+    "assets/nature/tree-type-3-animation-0.png",
+    "assets/nature/tree-type-3-animation-1.png",
+    "assets/nature/tree-type-3-animation-2.png",
+    "assets/nature/tree-type-3-animation-3.png",
+    "assets/nature/tree-type-3-animation-4.png",
+    "assets/nature/tree-type-3-animation-5.png",
+    "assets/nature/tree-type-3-animation-6.png",
+    "assets/nature/tree-type-3-animation-7.png"]
+
+const TREE_TYPE_4_ANIMATION = [
+    "assets/nature/tree-type-4-animation-0.png",
+    "assets/nature/tree-type-4-animation-1.png",
+    "assets/nature/tree-type-4-animation-2.png",
+    "assets/nature/tree-type-4-animation-3.png",
+    "assets/nature/tree-type-4-animation-4.png",
+    "assets/nature/tree-type-4-animation-5.png",
+    "assets/nature/tree-type-4-animation-6.png",
+    "assets/nature/tree-type-4-animation-7.png"]
+
+const TREE_TYPE_5_ANIMATION = [
+    "assets/nature/tree-type-5-animation-0.png",
+    "assets/nature/tree-type-5-animation-1.png",
+    "assets/nature/tree-type-5-animation-2.png",
+    "assets/nature/tree-type-5-animation-3.png",
+    "assets/nature/tree-type-5-animation-4.png",
+    "assets/nature/tree-type-5-animation-5.png",
+    "assets/nature/tree-type-5-animation-6.png",
+    "assets/nature/tree-type-5-animation-7.png"]
+
+const TREE_TYPE_6_ANIMATION = [
+    "assets/nature/tree-type-6-animation-0.png",
+    "assets/nature/tree-type-6-animation-1.png",
+    "assets/nature/tree-type-6-animation-2.png",
+    "assets/nature/tree-type-6-animation-3.png",
+    "assets/nature/tree-type-6-animation-4.png",
+    "assets/nature/tree-type-6-animation-5.png",
+    "assets/nature/tree-type-6-animation-6.png",
+    "assets/nature/tree-type-6-animation-7.png"]
+
+const TREE_TYPE_7_ANIMATION = [
+    "assets/nature/tree-type-7-animation-0.png",
+    "assets/nature/tree-type-7-animation-1.png",
+    "assets/nature/tree-type-7-animation-2.png",
+    "assets/nature/tree-type-7-animation-3.png",
+    "assets/nature/tree-type-7-animation-4.png",
+    "assets/nature/tree-type-7-animation-5.png",
+    "assets/nature/tree-type-7-animation-6.png",
+    "assets/nature/tree-type-7-animation-7.png"]
+
+const TREE_TYPE_8_ANIMATION = [
+    "assets/nature/tree-type-8-animation-0.png",
+    "assets/nature/tree-type-8-animation-1.png",
+    "assets/nature/tree-type-8-animation-2.png",
+    "assets/nature/tree-type-8-animation-3.png",
+    "assets/nature/tree-type-8-animation-4.png",
+    "assets/nature/tree-type-8-animation-5.png",
+    "assets/nature/tree-type-8-animation-6.png",
+    "assets/nature/tree-type-8-animation-7.png"]
+
+const TREE_TYPE_9_ANIMATION = [
+    "assets/nature/tree-type-9-animation-0.png",
+    "assets/nature/tree-type-9-animation-1.png",
+    "assets/nature/tree-type-9-animation-2.png",
+    "assets/nature/tree-type-9-animation-3.png",
+    "assets/nature/tree-type-9-animation-4.png",
+    "assets/nature/tree-type-9-animation-5.png",
+    "assets/nature/tree-type-9-animation-6.png",
+    "assets/nature/tree-type-9-animation-7.png"]
+
 let terrainCtx: CanvasRenderingContext2D | null = null
 let overlayCtx: CanvasRenderingContext2D | null = null
 
@@ -98,6 +190,18 @@ let mediumHouseAvailableImage: HTMLImageElement | undefined
 let smallHouseAvailableImage: HTMLImageElement | undefined
 let flagAvailableImage: HTMLImageElement | undefined
 let mineAvailableImage: HTMLImageElement | undefined
+
+let deadTreeImage: HTMLImageElement | undefined
+
+let treeType1AnimationImages: HTMLImageElement[] | undefined
+let treeType2AnimationImages: HTMLImageElement[] | undefined
+let treeType3AnimationImages: HTMLImageElement[] | undefined
+let treeType4AnimationImages: HTMLImageElement[] | undefined
+let treeType5AnimationImages: HTMLImageElement[] | undefined
+let treeType6AnimationImages: HTMLImageElement[] | undefined
+let treeType7AnimationImages: HTMLImageElement[] | undefined
+let treeType8AnimationImages: HTMLImageElement[] | undefined
+let treeType9AnimationImages: HTMLImageElement[] | undefined
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
@@ -147,6 +251,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private lavaImage: HTMLImageElement | undefined
     private magentaImage: HTMLImageElement | undefined
     private mountainMeadowImage: HTMLImageElement | undefined
+    private animationIndex: number = 0
 
     constructor(props: GameCanvasProps) {
         super(props)
@@ -173,9 +278,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             MEADOW_3_IMAGE_FILE, MOUNTAIN_2_IMAGE_FILE, MOUNTAIN_3_IMAGE_FILE,
             MOUNTAIN_4_IMAGE_FILE, MOUNTAIN_TERRAIN, STEPPE_IMAGE_FILE,
             FLOWER_MEADOW_IMAGE_FILE, LAVA_IMAGE_FILE, MAGENTA_IMAGE_FILE,
-            MOUNTAIN_MEADOW_IMAGE_FILE])
+            MOUNTAIN_MEADOW_IMAGE_FILE,
+            DEAD_TREE_IMAGE_FILE
+        ])
 
         this.loadImages(houseImageMap.values())
+        this.loadImages(houseUnderConstructionImageMap.values())
+
+        this.loadImages(TREE_TYPE_1_ANIMATION)
+        this.loadImages(TREE_TYPE_2_ANIMATION)
+        this.loadImages(TREE_TYPE_3_ANIMATION)
+        this.loadImages(TREE_TYPE_4_ANIMATION)
+        this.loadImages(TREE_TYPE_5_ANIMATION)
+        this.loadImages(TREE_TYPE_6_ANIMATION)
+        this.loadImages(TREE_TYPE_7_ANIMATION)
+        this.loadImages(TREE_TYPE_8_ANIMATION)
+        this.loadImages(TREE_TYPE_9_ANIMATION)
 
         /* Define the light vector */
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
@@ -831,7 +949,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const screenPoint = this.gamePointToScreenPoint(house)
 
             /* Draw the house next to the point, instead of on top */
-            const imageFilename = houseImageMap.get(house.type)
+            let imageFilename
+
+            if (house.state === "UNFINISHED") {
+                imageFilename = houseUnderConstructionImageMap.get(house.type)
+            } else {
+                imageFilename = houseImageMap.get(house.type)
+            }
 
             if (imageFilename) {
 
@@ -870,9 +994,190 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("draw houses")
 
-
         /* Draw the trees */
-        for (const tree of monitor.visibleTrees) {
+        if (monitor.visibleTrees.size > 0) {
+            if (treeType1AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_1_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType1AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType1AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+
+            if (treeType2AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_2_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType2AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType2AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+
+            if (treeType3AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_3_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType3AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType3AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+            if (treeType4AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_4_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType4AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType4AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+
+            if (treeType5AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_5_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType5AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType5AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+
+            if (treeType6AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_6_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType6AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType6AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+
+            if (treeType7AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_7_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType7AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType7AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+
+            if (treeType8AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_8_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType8AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType8AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+
+            if (treeType9AnimationImages === undefined) {
+
+                const tempTreeImages: (HTMLImageElement | undefined)[] = []
+
+                for (const imageFile of TREE_TYPE_9_ANIMATION) {
+                    tempTreeImages.push(this.images.get(imageFile))
+                }
+
+                tempTreeImages.indexOf(undefined)
+                if (tempTreeImages.indexOf(undefined) === -1) {
+                    treeType9AnimationImages = []
+
+                    for (const image of tempTreeImages) {
+                        if (image !== undefined) {
+                            treeType9AnimationImages.push(image)
+                        }
+                    }
+                }
+            }
+        }
+
+        let treeIndex = 0
+        for (const [treeId, tree] of monitor.visibleTrees) {
 
             if (tree.x < minXInGame || tree.x > maxXInGame || tree.y < minYInGame || tree.y > maxYInGame) {
                 continue
@@ -884,16 +1189,45 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             screenPoint.x -= 0.5 * this.props.scale
             screenPoint.y -= 2.5 * scaleY
 
-            const treeImage = this.images.get("tree.png")
+            let treeImage
+            if (tree.type === "BIRCH" && treeType1AnimationImages !== undefined) {
+                treeImage = treeType1AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType1AnimationImages.length]
+            } else if (tree.type === "CHERRY" && treeType2AnimationImages !== undefined) {
+                treeImage = treeType2AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType2AnimationImages.length]
+            } else if (tree.type === "CYPRESS" && treeType3AnimationImages !== undefined) {
+                treeImage = treeType3AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType3AnimationImages.length]
+            } else if (tree.type === "FIR" && treeType4AnimationImages !== undefined) {
+                treeImage = treeType4AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType4AnimationImages.length]
+            } else if (tree.type === "OAK" && treeType5AnimationImages !== undefined) {
+                treeImage = treeType5AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType5AnimationImages.length]
+            } else if (tree.type === "PALM_1" && treeType6AnimationImages !== undefined) {
+                treeImage = treeType6AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType6AnimationImages.length]
+            } else if (tree.type === "PALM_2" && treeType7AnimationImages !== undefined) {
+                treeImage = treeType7AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType7AnimationImages.length]
+            } else if (tree.type === "PINE" && treeType8AnimationImages !== undefined) {
+                treeImage = treeType8AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType8AnimationImages.length]
+            } else if (tree.type === "PINE_APPLE" && treeType9AnimationImages !== undefined) {
+                treeImage = treeType9AnimationImages[(Math.floor(this.animationIndex / 20) + treeIndex) % treeType9AnimationImages.length]
+            } else {
+                treeImage = this.images.get("tree.png")
+            }
 
             if (treeImage) {
                 ctx.drawImage(treeImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(this.props.scale), Math.floor(3 * scaleY))
             }
+
+            treeIndex = treeIndex + 1
         }
 
         duration.after("draw trees")
 
         /* Draw dead trees */
+        if (monitor.deadTrees.size() > 0) {
+            if (deadTreeImage === undefined) {
+                deadTreeImage = this.images.get(DEAD_TREE_IMAGE_FILE)
+            }
+        }
+
         for (const deadTree of monitor.deadTrees) {
 
             if (deadTree.x < minXInGame || deadTree.x > maxXInGame || deadTree.y < minYInGame || deadTree.y > maxYInGame) {
@@ -913,9 +1247,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const screenPoint = this.gamePointToScreenPoint(deadTree)
 
-            ctx.fillStyle = 'yellow'
-            ctx.fillRect(screenPoint.x, screenPoint.y, 10, 10)
+            /* Draw the tree next to the point, instead of on top */
+            screenPoint.x -= 0.5 * this.props.scale
+            screenPoint.y -= 2 * scaleY
 
+            if (deadTreeImage) {
+                ctx.drawImage(deadTreeImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(this.props.scale), Math.floor(2 * scaleY))
+            } else {
+                ctx.fillStyle = 'yellow'
+                ctx.fillRect(screenPoint.x, screenPoint.y, 10, 10)
+            }
         }
 
 
@@ -1211,8 +1552,52 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             if (flag.stackedCargo) {
-                ctx.fillStyle = 'orange'
-                ctx.fillText("" + flag.stackedCargo.length, screenPoint.x + 10, screenPoint.y + 1.3 * scaleY)
+
+                for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
+
+                    const cargo = flag.stackedCargo[i]
+                    const color = materialToColor.get(cargo)
+
+                    if (color === undefined) {
+                        continue
+                    }
+
+                    ctx.fillStyle = color
+
+                    ctx.fillRect(screenPoint.x - 15, screenPoint.y - 10 * i + 35, 10, 7)
+                }
+
+                if (flag.stackedCargo.length > 3) {
+                    for (let i = 3; i < Math.min(flag.stackedCargo.length, 6); i++) {
+
+                        const cargo = flag.stackedCargo[i]
+                        const color = materialToColor.get(cargo)
+
+                        if (color === undefined) {
+                            continue
+                        }
+
+                        ctx.fillStyle = color
+
+                        ctx.fillRect(screenPoint.x + 4, screenPoint.y - 10 * (i - 4) + 45, 10, 7)
+                    }
+                }
+
+                if (flag.stackedCargo.length > 6) {
+                    for (let i = 6; i < flag.stackedCargo.length; i++) {
+
+                        const cargo = flag.stackedCargo[i]
+                        const color = materialToColor.get(cargo)
+
+                        if (color === undefined) {
+                            continue
+                        }
+
+                        ctx.fillStyle = color
+
+                        ctx.fillRect(screenPoint.x + 17, screenPoint.y - 10 * (i - 4) + 35, 10, 7)
+                    }
+                }
             }
         }
 
@@ -1479,6 +1864,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         this.previousTimestamp = timestamp
+
+        if (this.animationIndex === 1000) {
+            this.animationIndex = 0
+        } else {
+            this.animationIndex = this.animationIndex + 1
+        }
 
         requestAnimationFrame(this.renderGame.bind(this))
     }

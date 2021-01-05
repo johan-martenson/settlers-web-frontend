@@ -9,6 +9,7 @@ export type FlagId = string
 export type RoadId = string
 export type WorkerId = string
 export type SignId = string
+export type TreeId = string
 
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
@@ -175,7 +176,13 @@ export interface PointInformation {
     readonly roadId?: RoadId
 }
 
-export interface TreeInformation extends Point { }
+export type TreeType = "PINE" | "BIRCH"  | "OAK" | "PALM_1" | "PALM_2" | "PINE_APPLE" | "CYPRESS" | "CHERRY" | "FIR"
+
+
+export interface TreeInformation extends Point {
+    id: TreeId
+    type: TreeType
+}
 
 export type Vegetation = "SA" | "MO1" | "SN" | "SW" | "D1" | "W1" | "B" | "D2" | "ME1" | "ME2" | "ME3" | "MO2" | "MO3" | "MO4" | "ST" | "FM" | "L1" | "MA" | "MM" | "W2" | "L2" | "L3" | "L4" | "BM"
 

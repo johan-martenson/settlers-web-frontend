@@ -4,7 +4,7 @@ import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_house_info.css'
 import HeadquarterInfo from './headquarter_info'
-import houseImageMap from './images'
+import { houseImageMap } from './images'
 import { forceUpdateOfHouse, listenToHouse } from './monitor'
 import ProgressBar from './progress_bar'
 

@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { attackBuilding, GameId, getHouseInformationWithAttackPossibility, HouseInformation, houseIsOccupied, isMilitaryBuilding, PlayerId } from './api'
 import Button from './button'
 import { Dialog } from './dialog'
-import houseImageMap from './images'
+import { houseImageMap } from './images'
 
 interface EnemyHouseInfoProps {
     house: HouseInformation

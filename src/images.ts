@@ -5,6 +5,7 @@ export type Filename = string
 const prefix = "assets/roman-buildings/"
 
 const houseImageMap: Map<AnyBuilding, Filename> = new Map()
+const houseUnderConstructionImageMap: Map<AnyBuilding, Filename> = new Map()
 
 houseImageMap.set("Armory", prefix + "armory.png")
 houseImageMap.set("Bakery", prefix + "bakery.png")
@@ -39,5 +40,37 @@ houseImageMap.set("Metalworks", prefix + "metalworks.png")
 houseImageMap.set("Shipyard", prefix + "shipyard.png")
 houseImageMap.set("Storehouse", prefix + "storehouse.png")
 
+houseUnderConstructionImageMap.set("Armory", prefix + "armory-under-construction.png")
+houseUnderConstructionImageMap.set("Bakery", prefix + "bakery-under-construction.png")
+houseUnderConstructionImageMap.set("Barracks", prefix + "barracks-under-construction.png")
+houseUnderConstructionImageMap.set("Brewery", prefix + "brewery-under-construction.png")
+houseUnderConstructionImageMap.set("Catapult", prefix + "catapult-under-construction.png")
+houseUnderConstructionImageMap.set("CoalMine", prefix + "coal-mine-under-construction.png")
+houseUnderConstructionImageMap.set("DonkeyFarm", prefix + "donkey-breeder-under-construction.png")
+houseUnderConstructionImageMap.set("Farm", prefix + "farm-under-construction.png")
+houseUnderConstructionImageMap.set("Fishery", prefix + "fishery-under-construction.png")
+houseUnderConstructionImageMap.set("ForesterHut", prefix + "forester-hut-under-construction.png")
+houseUnderConstructionImageMap.set("Fortress", prefix + "fortress-under-construction.png")
+houseUnderConstructionImageMap.set("GoldMine", prefix + "gold-mine-under-construction.png")
+houseUnderConstructionImageMap.set("GraniteMine", prefix + "granite-mine-under-construction.png")
+houseUnderConstructionImageMap.set("GuardHouse", prefix + "guardhouse-under-construction.png")
+houseUnderConstructionImageMap.set("HunterHut", prefix + "hunter-hut-under-construction.png")
+houseUnderConstructionImageMap.set("IronMine", prefix + "iron-mine-under-construction.png")
+houseUnderConstructionImageMap.set("IronSmelter", prefix + "iron-smelter-under-construction.png")
+houseUnderConstructionImageMap.set("Mill", prefix + "mill-no-fan-under-construction.png")
+houseUnderConstructionImageMap.set("Mint", prefix + "mint-under-construction.png")
+houseUnderConstructionImageMap.set("PigFarm", prefix + "pig-farm-under-construction.png")
+houseUnderConstructionImageMap.set("Quarry", prefix + "quarry-under-construction.png")
+houseUnderConstructionImageMap.set("Sawmill", prefix + "sawmill-under-construction.png")
+houseUnderConstructionImageMap.set("SlaughterHouse", prefix + "slaughter-house-under-construction.png")
+houseUnderConstructionImageMap.set("WatchTower", prefix + "watchtower-under-construction.png")
+houseUnderConstructionImageMap.set("Well", prefix + "well-under-construction.png")
+houseUnderConstructionImageMap.set("Woodcutter", prefix + "woodcutter-under-construction.png")
+houseUnderConstructionImageMap.set("Harbor", prefix + "harbor-under-construction.png")
+houseUnderConstructionImageMap.set("LookoutTower", prefix + "lookout-tower-under-construction.png")
+houseUnderConstructionImageMap.set("Metalworks", prefix + "metalworks-under-construction.png")
+houseUnderConstructionImageMap.set("Shipyard", prefix + "shipyard-under-construction.png")
+houseUnderConstructionImageMap.set("Storehouse", prefix + "storehouse-under-construction.png")
 
-export default houseImageMap
+
+export { houseImageMap, houseUnderConstructionImageMap }

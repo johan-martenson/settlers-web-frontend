@@ -100,6 +100,13 @@ const treeType7Animation = new AnimationUtil("assets/nature/tree-type-7-animatio
 const treeType8Animation = new AnimationUtil("assets/nature/tree-type-8-animation-", ".png", 8, 20)
 const treeType9Animation = new AnimationUtil("assets/nature/tree-type-9-animation-", ".png", 8, 20)
 
+const woodcutterWalkingEastAnimation = new AnimationUtil("assets/romans-workers/woodcutter-east-", ".png", 8, 10)
+const woodcutterWalkingSouthEastAnimation = new AnimationUtil("assets/romans-workers/woodcutter-south_east-", ".png", 8, 10)
+const woodcutterWalkingSouthWestAnimation = new AnimationUtil("assets/romans-workers/woodcutter-south_west-", ".png", 8, 10)
+const woodcutterWalkingWestAnimation = new AnimationUtil("assets/romans-workers/woodcutter-west-", ".png", 8, 10)
+const woodcutterWalkingNorthWestAnimation = new AnimationUtil("assets/romans-workers/woodcutter-north_west-", ".png", 8, 10)
+const woodcutterWalkingNorthEastAnimation = new AnimationUtil("assets/romans-workers/woodcutter-north_east-", ".png", 8, 10)
+
 let terrainCtx: CanvasRenderingContext2D | null = null
 let overlayCtx: CanvasRenderingContext2D | null = null
 
@@ -351,6 +358,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         treeType7Animation.load()
         treeType8Animation.load()
         treeType9Animation.load()
+
+        woodcutterWalkingEastAnimation.load()
+        woodcutterWalkingSouthEastAnimation.load()
+        woodcutterWalkingSouthWestAnimation.load()
+        woodcutterWalkingWestAnimation.load()
+        woodcutterWalkingNorthWestAnimation.load()
+        woodcutterWalkingNorthEastAnimation.load()
 
         /* Handle update of heights if needed */
         if (!this.brightnessMap && monitor.allTiles && monitor.allTiles.size > 0) {
@@ -1143,7 +1157,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw workers */
-        const workerImage = this.images.get("worker.png")
+        let workerImage = this.images.get("worker.png")
 
         for (const [id, worker] of monitor.workers) {
 
@@ -1177,8 +1191,31 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 point.y -= scaleY
 
-                if (workerImage) {
-                    ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                const fallbackWorkerImage = workerImage
+
+                if (worker.type === 'WoodcutterWorker') {
+                    if (worker.next.x == worker.previous.x + 2) { // EAST
+                        workerImage = woodcutterWalkingEastAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
+                    } else if (worker.next.x == worker.previous.x + 1 && worker.next.y == worker.previous.y - 1) { // SOUTH EAST
+                        workerImage = woodcutterWalkingSouthEastAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
+                    } else if (worker.next.x == worker.previous.x - 1 && worker.next.y == worker.previous.y - 1) { // SOUTH WEST
+                        workerImage = woodcutterWalkingSouthWestAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
+                    } else if (worker.next.x == worker.previous.x - 2) { // WEST
+                        workerImage = woodcutterWalkingWestAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
+                    } else if (worker.next.x == worker.previous.x - 1 && worker.next.y == worker.previous.y + 1) { // NORTH WEST
+                        workerImage = woodcutterWalkingNorthWestAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
+                    } else if (worker.next.x == worker.previous.x + 1 && worker.next.y == worker.previous.y + 1) { // NORTH EAST
+                        workerImage = woodcutterWalkingNorthEastAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
+                    }
+
+                    if (workerImage) {
+                        ctx.drawImage(workerImage, point.x, point.y)
+                    }
+                } else {
+
+                    if (workerImage) {
+                        ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                    }
                 }
 
                 if (worker.cargo) {

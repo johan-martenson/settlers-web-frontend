@@ -1,4 +1,4 @@
-import { AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material, TreeInformation, TreeId } from './api'
+import { WorkerType, AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material, TreeInformation, TreeId } from './api'
 import { PointMapFast, PointSetFast } from './util_types'
 import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight, getPointUpRight, getPointLeft, getPointUpLeft } from './utils'
 
@@ -79,6 +79,7 @@ interface WalkerTargetChange {
     y: number
     path: Point[]
     cargo?: Material
+    type: WorkerType
 }
 
 interface BorderChange {
@@ -574,14 +575,15 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
 
         let worker = monitor.workers.get(walkerTargetChange.id)
 
-        if (!worker) {
+        if (worker === undefined) {
             worker = {
                 id: walkerTargetChange.id,
                 x: walkerTargetChange.x,
                 y: walkerTargetChange.y,
                 plannedPath: walkerTargetChange.path,
                 betweenPoints: false,
-                percentageTraveled: 0
+                percentageTraveled: 0,
+                type: walkerTargetChange.type
             }
 
             monitor.workers.set(worker.id, worker)

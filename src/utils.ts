@@ -1,4 +1,5 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint } from './api'
+import { Dir } from 'fs'
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -710,6 +711,44 @@ function loadImages(sources: string[] | IterableIterator<string>, onLoad: ((imag
     }
 }
 
+export type Direction = "EAST" | "SOUTH_EAST" | "SOUTH_WEST" | "WEST" | "NORTH_WEST" | "NORTH_EAST"
+
+class WorkerAnimation {
+    animations: Map<Direction, AnimationUtil>
+
+    constructor(prefix: string, postfix: string, length: number, speedAdjust: number) {
+        this.animations = new Map<Direction, AnimationUtil>()
+
+        this.animations.set("EAST",       new AnimationUtil(prefix + "east-", postfix, length, speedAdjust))
+        this.animations.set("SOUTH_EAST", new AnimationUtil(prefix + "south-east-", postfix, length, speedAdjust))
+        this.animations.set("SOUTH_WEST", new AnimationUtil(prefix + "south-west-", postfix, length, speedAdjust))
+        this.animations.set("WEST",       new AnimationUtil(prefix + "west-", postfix, length, speedAdjust))
+        this.animations.set("NORTH_WEST", new AnimationUtil(prefix + "north-west-", postfix, length, speedAdjust))
+        this.animations.set("NORTH_EAST", new AnimationUtil(prefix + "north-east-", postfix, length, speedAdjust))
+    }
+
+    load() {
+        this.animations.get("EAST")?.load()
+        this.animations.get("SOUTH_EAST")?.load()
+        this.animations.get("SOUTH_WEST")?.load()
+        this.animations.get("WEST")?.load()
+        this.animations.get("NORTH_WEST")?.load()
+        this.animations.get("NORTH_EAST")?.load()
+    }
+
+    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): HTMLImageElement | undefined {
+        const animation = this.animations.get(direction)
+
+        if (animation === undefined) {
+            return undefined
+        }
+
+        const frame = animation.getAnimationElement(animationIndex, percentageTraveled)
+
+        return frame
+    }
+}
+
 class AnimationUtil {
     length: number
     postfix: string
@@ -743,6 +782,23 @@ class AnimationUtil {
     }
 }
 
-export { AnimationUtil, loadImage, loadImages, drawGradientTriangleWithImage, getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor }
+function getDirectionForWalkingWorker(next: Point, previous: Point): Direction {
+
+    if (next.x === previous.x + 1 && next.y === previous.y - 1) {
+        return "SOUTH_EAST"
+    } else if (next.x === previous.x - 1 && next.y === previous.y - 1) { // SOUTH WEST
+        return "SOUTH_WEST"
+    } else if (next.x === previous.x - 2) { // WEST
+        return "WEST"
+    } else if (next.x === previous.x - 1 && next.y === previous.y + 1) { // NORTH WEST
+        return "NORTH_WEST"
+    } else if (next.x === previous.x + 1 && next.y === previous.y + 1) { // NORTH EAST
+        return "NORTH_EAST"
+    }
+
+    return "EAST"
+}
+
+export { getDirectionForWalkingWorker, WorkerAnimation, AnimationUtil, loadImage, loadImages, drawGradientTriangleWithImage, getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor }
 
 

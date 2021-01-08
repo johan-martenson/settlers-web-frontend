@@ -1,11 +1,11 @@
 import React, { Component } from 'react'
-import { materialToColor, Point, signToColor } from './api'
+import {  materialToColor, Point, signToColor } from './api'
 import { AggregatedDuration, Duration } from './duration'
 import './game_render.css'
 import { houseImageMap, houseUnderConstructionImageMap, Filename } from './images'
 import { listenToDiscoveredPoints, monitor } from './monitor'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimationUtil, camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, loadImage, normalize, Point3D, same, Vector, vegetationToInt } from './utils'
+import { Direction, AnimationUtil, camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, loadImage, normalize, Point3D, same, Vector, vegetationToInt, WorkerAnimation, getDirectionForWalkingWorker } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -100,12 +100,12 @@ const treeType7Animation = new AnimationUtil("assets/nature/tree-type-7-animatio
 const treeType8Animation = new AnimationUtil("assets/nature/tree-type-8-animation-", ".png", 8, 20)
 const treeType9Animation = new AnimationUtil("assets/nature/tree-type-9-animation-", ".png", 8, 20)
 
-const woodcutterWalkingEastAnimation = new AnimationUtil("assets/romans-workers/woodcutter-east-", ".png", 8, 10)
-const woodcutterWalkingSouthEastAnimation = new AnimationUtil("assets/romans-workers/woodcutter-south_east-", ".png", 8, 10)
-const woodcutterWalkingSouthWestAnimation = new AnimationUtil("assets/romans-workers/woodcutter-south_west-", ".png", 8, 10)
-const woodcutterWalkingWestAnimation = new AnimationUtil("assets/romans-workers/woodcutter-west-", ".png", 8, 10)
-const woodcutterWalkingNorthWestAnimation = new AnimationUtil("assets/romans-workers/woodcutter-north_west-", ".png", 8, 10)
-const woodcutterWalkingNorthEastAnimation = new AnimationUtil("assets/romans-workers/woodcutter-north_east-", ".png", 8, 10)
+const woodcutterAnimations = new WorkerAnimation("assets/romans-workers/woodcutter-", ".png", 8, 10)
+const foresterAnimations = new WorkerAnimation("assets/romans-workers/forester-", ".png", 8, 10)
+
+const romanNormalFlagAnimation = new AnimationUtil("assets/romans-flags/normal-", ".png", 8, 10)
+const romanMainFlagAnimation = new AnimationUtil("assets/romans-flags/main-", ".png", 8, 10)
+const romanMarineFlagAnimation = new AnimationUtil("assets/romans-flags/marine-", ".png", 8, 10)
 
 let terrainCtx: CanvasRenderingContext2D | null = null
 let overlayCtx: CanvasRenderingContext2D | null = null
@@ -359,12 +359,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         treeType8Animation.load()
         treeType9Animation.load()
 
-        woodcutterWalkingEastAnimation.load()
-        woodcutterWalkingSouthEastAnimation.load()
-        woodcutterWalkingSouthWestAnimation.load()
-        woodcutterWalkingWestAnimation.load()
-        woodcutterWalkingNorthWestAnimation.load()
-        woodcutterWalkingNorthEastAnimation.load()
+        romanNormalFlagAnimation.load()
+        romanMainFlagAnimation.load()
+        romanMarineFlagAnimation.load()
+
+        woodcutterAnimations.load()
+        foresterAnimations.load()
 
         /* Handle update of heights if needed */
         if (!this.brightnessMap && monitor.allTiles && monitor.allTiles.size > 0) {
@@ -1193,20 +1193,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const fallbackWorkerImage = workerImage
 
+                const direction = getDirectionForWalkingWorker(worker.next, worker.previous)
+
                 if (worker.type === 'WoodcutterWorker') {
-                    if (worker.next.x == worker.previous.x + 2) { // EAST
-                        workerImage = woodcutterWalkingEastAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
-                    } else if (worker.next.x == worker.previous.x + 1 && worker.next.y == worker.previous.y - 1) { // SOUTH EAST
-                        workerImage = woodcutterWalkingSouthEastAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
-                    } else if (worker.next.x == worker.previous.x - 1 && worker.next.y == worker.previous.y - 1) { // SOUTH WEST
-                        workerImage = woodcutterWalkingSouthWestAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
-                    } else if (worker.next.x == worker.previous.x - 2) { // WEST
-                        workerImage = woodcutterWalkingWestAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
-                    } else if (worker.next.x == worker.previous.x - 1 && worker.next.y == worker.previous.y + 1) { // NORTH WEST
-                        workerImage = woodcutterWalkingNorthWestAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
-                    } else if (worker.next.x == worker.previous.x + 1 && worker.next.y == worker.previous.y + 1) { // NORTH EAST
-                        workerImage = woodcutterWalkingNorthEastAnimation.getAnimationElement(this.animationIndex, worker.percentageTraveled)
+                    workerImage = woodcutterAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (workerImage) {
+                        ctx.drawImage(workerImage, point.x, point.y)
                     }
+                } else if (worker.type === 'Forester') {
+                    workerImage = foresterAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
                     if (workerImage) {
                         ctx.drawImage(workerImage, point.x, point.y)
@@ -1296,8 +1292,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw flags */
-        const flagImage = this.images.get(FLAG_FILE)
+        let flagImage = this.images.get(FLAG_FILE)
 
+        let flagCount = 0
         for (const [id, flag] of monitor.flags) {
 
             if (flag.x < minXInGame || flag.x > maxXInGame || flag.y < minYInGame || flag.y > maxYInGame) {
@@ -1309,6 +1306,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             /* Draw the flag slightly above the point */
             screenPoint.y -= 29
             screenPoint.x = screenPoint.x - 2
+
+            const fallback = flagImage
+
+            flagImage = romanNormalFlagAnimation.getAnimationElement(this.animationIndex, flagCount)
+
+            if (flagImage === undefined) {
+                flagImage = fallback
+            }
 
             if (flagImage) {
                 ctx.drawImage(flagImage, screenPoint.x, screenPoint.y, 10, 30)

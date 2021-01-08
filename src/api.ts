@@ -252,7 +252,7 @@ export interface SignInformation extends Point {
 
 export interface StoneInformation extends Point { }
 
-export type WorkerType = "Armorer" | "Baker" | "Brewer" | "Butcher" | "Courier" | "DonkeyBreeder" | "Donkey" | "Farmer" | "Fisherman" | "Forester" | "Geologist" | "Hunter" | "IronFounder" | "IronSmelter" | "Metalworker" | "Miller" | "Miner" | "Minter" | "PigBreeder" | "SawmillWorker" | "Scout" | "Stonemason" | "StorageWorker" | "WellWorker" | "WoodcutterWorker"
+export type WorkerType = "Armorer" | "Baker" | "Brewer" | "Butcher" | "Courier" | "DonkeyBreeder" | "Donkey" | "Farmer" | "Fisherman" | "Forester" | "Geologist" | "Hunter" | "IronFounder" | "IronSmelter" | "Metalworker" | "Miller" | "Miner" | "Minter" | "PigBreeder" | "SawmillWorker" | "Scout" | "Stonemason" | "StorageWorker" | "WellWorker" | "WoodcutterWorker" | "Private" | 'Private_first_class' | 'Sergeant' | 'Officer' | 'General'
 
 export interface WorkerInformation extends Point {
     id: WorkerId

@@ -102,6 +102,12 @@ const treeType9Animation = new AnimationUtil("assets/nature/tree-type-9-animatio
 
 const woodcutterAnimations = new WorkerAnimation("assets/romans-workers/woodcutter-", ".png", 8, 10)
 const foresterAnimations = new WorkerAnimation("assets/romans-workers/forester-", ".png", 8, 10)
+const sawmillWorkerAnimations = new WorkerAnimation("assets/romans-workers/carpenter-", ".png", 8, 10)
+const privateWorkerAnimations = new WorkerAnimation("assets/romans-workers/private-", ".png", 8, 10)
+const privateFirstClassWorkerAnimations = new WorkerAnimation("assets/romans-workers/private_first_class-", ".png", 8, 10)
+const sergeantWorkerAnimations = new WorkerAnimation("assets/romans-workers/sergeant-", ".png", 8, 10)
+const officerWorkerAnimations = new WorkerAnimation("assets/romans-workers/officer-", ".png", 8, 10)
+const generalWorkerAnimations = new WorkerAnimation("assets/romans-workers/general-", ".png", 8, 10)
 
 const romanNormalFlagAnimation = new AnimationUtil("assets/romans-flags/normal-", ".png", 8, 10)
 const romanMainFlagAnimation = new AnimationUtil("assets/romans-flags/main-", ".png", 8, 10)
@@ -363,8 +369,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         romanMainFlagAnimation.load()
         romanMarineFlagAnimation.load()
 
+        sawmillWorkerAnimations.load()
         woodcutterAnimations.load()
         foresterAnimations.load()
+
+        privateWorkerAnimations.load()
+        privateFirstClassWorkerAnimations.load()
+        sergeantWorkerAnimations.load()
+        officerWorkerAnimations.load()
+        generalWorkerAnimations.load()
 
         /* Handle update of heights if needed */
         if (!this.brightnessMap && monitor.allTiles && monitor.allTiles.size > 0) {
@@ -1196,19 +1209,54 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const direction = getDirectionForWalkingWorker(worker.next, worker.previous)
 
                 if (worker.type === 'WoodcutterWorker') {
-                    workerImage = woodcutterAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                    const animationFrame = woodcutterAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
-                    if (workerImage) {
-                        ctx.drawImage(workerImage, point.x, point.y)
+                    if (animationFrame) {
+                        ctx.drawImage(animationFrame, point.x, point.y)
                     }
                 } else if (worker.type === 'Forester') {
-                    workerImage = foresterAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                    const animationFrame = foresterAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
-                    if (workerImage) {
-                        ctx.drawImage(workerImage, point.x, point.y)
+                    if (animationFrame) {
+                        ctx.drawImage(animationFrame, point.x, point.y)
+                    }
+                } else if (worker.type === 'SawmillWorker') {
+                    const animationFrame = sawmillWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (animationFrame) {
+                        ctx.drawImage(animationFrame, point.x, point.y)
+                    }
+                } else if (worker.type === 'Private') {
+                    const animationFrame = privateWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (animationFrame) {
+                        ctx.drawImage(animationFrame, point.x, point.y)
+                    }
+                } else if (worker.type === "Private_first_class") {
+                    const animationFrame = privateFirstClassWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (animationFrame) {
+                        ctx.drawImage(animationFrame, point.x, point.y)
+                    }
+                } else if (worker.type === 'Sergeant') {
+                    const animationFrame = sergeantWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (animationFrame) {
+                        ctx.drawImage(animationFrame, point.x, point.y)
+                    }
+                } else if (worker.type === 'Officer') {
+                    const animationFrame = officerWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (animationFrame) {
+                        ctx.drawImage(animationFrame, point.x, point.y)
+                    }
+                } else if (worker.type === 'General') {
+                    const animationFrame = generalWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (animationFrame) {
+                        ctx.drawImage(animationFrame, point.x, point.y)
                     }
                 } else {
-
                     if (workerImage) {
                         ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
                     }

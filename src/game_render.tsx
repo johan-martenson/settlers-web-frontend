@@ -1,11 +1,11 @@
 import React, { Component } from 'react'
-import {  materialToColor, Point, signToColor } from './api'
+import { WorkerType, materialToColor, Point, signToColor } from './api'
 import { AggregatedDuration, Duration } from './duration'
 import './game_render.css'
 import { houseImageMap, houseUnderConstructionImageMap, Filename } from './images'
 import { listenToDiscoveredPoints, monitor } from './monitor'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { Direction, AnimationUtil, camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, loadImage, normalize, Point3D, same, Vector, vegetationToInt, WorkerAnimation, getDirectionForWalkingWorker } from './utils'
+import { AnimationUtil, camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, loadImage, normalize, Point3D, same, Vector, vegetationToInt, WorkerAnimation, getDirectionForWalkingWorker } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -100,14 +100,39 @@ const treeType7Animation = new AnimationUtil("assets/nature/tree-type-7-animatio
 const treeType8Animation = new AnimationUtil("assets/nature/tree-type-8-animation-", ".png", 8, 20)
 const treeType9Animation = new AnimationUtil("assets/nature/tree-type-9-animation-", ".png", 8, 20)
 
-const woodcutterAnimations = new WorkerAnimation("assets/romans-workers/woodcutter-", ".png", 8, 10)
-const foresterAnimations = new WorkerAnimation("assets/romans-workers/forester-", ".png", 8, 10)
-const sawmillWorkerAnimations = new WorkerAnimation("assets/romans-workers/carpenter-", ".png", 8, 10)
-const privateWorkerAnimations = new WorkerAnimation("assets/romans-workers/private-", ".png", 8, 10)
-const privateFirstClassWorkerAnimations = new WorkerAnimation("assets/romans-workers/private_first_class-", ".png", 8, 10)
-const sergeantWorkerAnimations = new WorkerAnimation("assets/romans-workers/sergeant-", ".png", 8, 10)
-const officerWorkerAnimations = new WorkerAnimation("assets/romans-workers/officer-", ".png", 8, 10)
-const generalWorkerAnimations = new WorkerAnimation("assets/romans-workers/general-", ".png", 8, 10)
+const romanWorkers = new Map<WorkerType, WorkerAnimation>()
+
+romanWorkers.set("Farmer", new WorkerAnimation("assets/romans-workers/farmer-", ".png", 8, 10))
+romanWorkers.set("Fisherman", new WorkerAnimation("assets/romans-workers/fisher-", ".png", 8, 10))
+romanWorkers.set("Courier", new WorkerAnimation("assets/romans-workers/helper-", ".png", 8, 10))
+romanWorkers.set("Hunter", new WorkerAnimation("assets/romans-workers/hunter-", ".png", 8, 10))
+romanWorkers.set("IronFounder", new WorkerAnimation("assets/romans-workers/iron_founder-", ".png", 8, 10))
+romanWorkers.set("Metalworker", new WorkerAnimation("assets/romans-workers/metalworker-", ".png", 8, 10))
+romanWorkers.set("Miller", new WorkerAnimation("assets/romans-workers/miller-", ".png", 8, 10))
+romanWorkers.set("Miner", new WorkerAnimation("assets/romans-workers/miner-", ".png", 8, 10))
+romanWorkers.set("Minter", new WorkerAnimation("assets/romans-workers/minter-", ".png", 8, 10))
+//romanWorkers.set("Donkey", new WorkerAnimation("assets/romans-workers/pack_donkey-", ".png", 8, 10))
+romanWorkers.set("PigBreeder", new WorkerAnimation("assets/romans-workers/pig_breeder-", ".png", 8, 10))
+//romanWorkers.set("Planer", new WorkerAnimation("assets/romans-workers/planer-", ".png", 8, 10))
+romanWorkers.set("Scout", new WorkerAnimation("assets/romans-workers/scout-", ".png", 8, 10))
+//romanWorkers.set("ShipWright", new WorkerAnimation("assets/romans-workers/ship_wright-", ".png", 8, 10))
+romanWorkers.set("DonkeyBreeder", new WorkerAnimation("assets/romans-workers/donkey_breeder-", ".png", 8, 10))
+romanWorkers.set("Butcher", new WorkerAnimation("assets/romans-workers/butcher-", ".png", 8, 10))
+//romanWorkers.set("Builder", new WorkerAnimation("assets/romans-workers/builder-", ".png", 8, 10))
+romanWorkers.set("Brewer", new WorkerAnimation("assets/romans-workers/brewer-", ".png", 8, 10))
+romanWorkers.set("Baker", new WorkerAnimation("assets/romans-workers/baker-", ".png", 8, 10))
+romanWorkers.set("Armorer", new WorkerAnimation("assets/romans-workers/armorer-", ".png", 8, 10))
+romanWorkers.set("WoodcutterWorker", new WorkerAnimation("assets/romans-workers/woodcutter-", ".png", 8, 10))
+romanWorkers.set("Forester", new WorkerAnimation("assets/romans-workers/forester-", ".png", 8, 10))
+romanWorkers.set("SawmillWorker", new WorkerAnimation("assets/romans-workers/carpenter-", ".png", 8, 10))
+romanWorkers.set("Stonemason", new WorkerAnimation("assets/romans-workers/stonemason-", ".png", 8, 10))
+romanWorkers.set("Scout", new WorkerAnimation("assets/romans-workers/scout-", ".png", 8, 10))
+romanWorkers.set("Private", new WorkerAnimation("assets/romans-workers/private-", ".png", 8, 10))
+romanWorkers.set("Private_first_class", new WorkerAnimation("assets/romans-workers/private_first_class-", ".png", 8, 10))
+romanWorkers.set("Sergeant", new WorkerAnimation("assets/romans-workers/sergeant-", ".png", 8, 10))
+romanWorkers.set("Officer", new WorkerAnimation("assets/romans-workers/officer-", ".png", 8, 10))
+romanWorkers.set("General", new WorkerAnimation("assets/romans-workers/general-", ".png", 8, 10))
+romanWorkers.set("Geologist", new WorkerAnimation("assets/romans-workers/geologist-", ".png", 8, 10))
 
 const romanNormalFlagAnimation = new AnimationUtil("assets/romans-flags/normal-", ".png", 8, 10)
 const romanMainFlagAnimation = new AnimationUtil("assets/romans-flags/main-", ".png", 8, 10)
@@ -369,15 +394,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         romanMainFlagAnimation.load()
         romanMarineFlagAnimation.load()
 
-        sawmillWorkerAnimations.load()
-        woodcutterAnimations.load()
-        foresterAnimations.load()
-
-        privateWorkerAnimations.load()
-        privateFirstClassWorkerAnimations.load()
-        sergeantWorkerAnimations.load()
-        officerWorkerAnimations.load()
-        generalWorkerAnimations.load()
+        romanWorkers.forEach((animation, workerType) => {
+            animation.load()
+        })
 
         /* Handle update of heights if needed */
         if (!this.brightnessMap && monitor.allTiles && monitor.allTiles.size > 0) {
@@ -1208,58 +1227,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const direction = getDirectionForWalkingWorker(worker.next, worker.previous)
 
-                if (worker.type === 'WoodcutterWorker') {
-                    const animationFrame = woodcutterAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                const animationImage = romanWorkers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
-                    if (animationFrame) {
-                        ctx.drawImage(animationFrame, point.x, point.y)
-                    }
-                } else if (worker.type === 'Forester') {
-                    const animationFrame = foresterAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
-
-                    if (animationFrame) {
-                        ctx.drawImage(animationFrame, point.x, point.y)
-                    }
-                } else if (worker.type === 'SawmillWorker') {
-                    const animationFrame = sawmillWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
-
-                    if (animationFrame) {
-                        ctx.drawImage(animationFrame, point.x, point.y)
-                    }
-                } else if (worker.type === 'Private') {
-                    const animationFrame = privateWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
-
-                    if (animationFrame) {
-                        ctx.drawImage(animationFrame, point.x, point.y)
-                    }
-                } else if (worker.type === "Private_first_class") {
-                    const animationFrame = privateFirstClassWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
-
-                    if (animationFrame) {
-                        ctx.drawImage(animationFrame, point.x, point.y)
-                    }
-                } else if (worker.type === 'Sergeant') {
-                    const animationFrame = sergeantWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
-
-                    if (animationFrame) {
-                        ctx.drawImage(animationFrame, point.x, point.y)
-                    }
-                } else if (worker.type === 'Officer') {
-                    const animationFrame = officerWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
-
-                    if (animationFrame) {
-                        ctx.drawImage(animationFrame, point.x, point.y)
-                    }
-                } else if (worker.type === 'General') {
-                    const animationFrame = generalWorkerAnimations.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
-
-                    if (animationFrame) {
-                        ctx.drawImage(animationFrame, point.x, point.y)
-                    }
-                } else {
-                    if (workerImage) {
-                        ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
-                    }
+                if (animationImage) {
+                    ctx.drawImage(animationImage, point.x, point.y)
+                } else if (workerImage) {
+                    ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
 
                 if (worker.cargo) {
@@ -1278,8 +1251,20 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 screenPoint.y -= scaleY
 
-                if (workerImage) {
-                    ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                if (worker.previous) {
+                    const direction = getDirectionForWalkingWorker(worker, worker.previous)
+
+                    const animationImage = romanWorkers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
+
+                    if (animationImage) {
+                        ctx.drawImage(animationImage, screenPoint.x, screenPoint.y)
+                    } else if (workerImage) {
+                        ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                    }
+                } else {
+                    if (workerImage) {
+                        ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                    }
                 }
 
                 if (worker.cargo) {

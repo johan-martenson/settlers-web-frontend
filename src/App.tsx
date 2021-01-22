@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES } from './api'
+import { callGeologist, canBeUpgraded, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import EnemyHouseInfo from './enemy_house_info'
@@ -222,6 +222,13 @@ class App extends Component<AppProps, AppState> {
         this.commands.set("Evacuate building", () => { evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Transport priority (set)", () => { this.setState({ showSetTransportPriority: true }) })
         this.commands.set("List statistics", () => { printVariables() })
+        this.commands.set("Upgrade", async () => {
+            const houseInformation = await getHouseAtPoint(this.state.selected)
+
+            if (houseInformation && canBeUpgraded(houseInformation)) {
+                upgradeMilitaryBuilding(this.props.gameId, this.props.selfPlayerId, houseInformation.id)
+            }
+        })
     }
 
     toggleDetails(): void {

@@ -1,11 +1,11 @@
 import React, { Component } from 'react'
-import { WorkerType, materialToColor, Point, signToColor } from './api'
+import { WorkerType, materialToColor, Point, signToColor, WildAnimalType, Size } from './api'
 import { AggregatedDuration, Duration } from './duration'
 import './game_render.css'
 import { houseImageMap, houseUnderConstructionImageMap, Filename } from './images'
 import { listenToDiscoveredPoints, monitor } from './monitor'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimationUtil, camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, loadImage, normalize, Point3D, same, Vector, vegetationToInt, WorkerAnimation, getDirectionForWalkingWorker } from './utils'
+import { AnimationUtil, camelCaseToWords, drawGradientTriangle, drawGradientTriangleWithImage, getBrightnessForNormals, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, isContext2D, loadImage, normalize, Point3D, same, Vector, vegetationToInt, WorkerAnimation, getDirectionForWalkingWorker, getHouseSize } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -88,6 +88,8 @@ const LAVA_IMAGE_FILE = "assets/nature/terrain/greenland/lava.png"
 const MAGENTA_IMAGE_FILE = "assets/nature/terrain/greenland/magenta.png"
 const MOUNTAIN_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/mountain-meadow.png"
 
+const PLANNED_HOUSE_IMAGE_FILE = "assets/roman-buildings/construction-started-sign.png"
+
 const DEAD_TREE_IMAGE_FILE = "assets/nature/dead-tree.png"
 
 const treeType1Animation = new AnimationUtil("assets/nature/tree-type-1-animation-", ".png", 8, 20)
@@ -100,11 +102,29 @@ const treeType7Animation = new AnimationUtil("assets/nature/tree-type-7-animatio
 const treeType8Animation = new AnimationUtil("assets/nature/tree-type-8-animation-", ".png", 8, 20)
 const treeType9Animation = new AnimationUtil("assets/nature/tree-type-9-animation-", ".png", 8, 20)
 
+const fire = new Map<Size, AnimationUtil>()
+
+fire.set('SMALL', new AnimationUtil("assets/nature/small-fire-", ".png", 8, 10))
+fire.set('MEDIUM', new AnimationUtil("assets/nature/medium-fire-", ".png", 8, 10))
+fire.set('LARGE', new AnimationUtil("assets/nature/large-fire-", ".png", 8, 10))
+
+const animals = new Map<WildAnimalType, WorkerAnimation>()
+
+animals.set("DEER", new WorkerAnimation("assets/nature/animals/deer-", ".png", 8, 10))
+animals.set("DEER_2", new WorkerAnimation("assets/nature/animals/deer-2-", ".png", 8, 10))
+animals.set("DUCK", new WorkerAnimation("assets/nature/animals/duck-", ".png", 1, 10))
+animals.set("DUCK_2", new WorkerAnimation("assets/nature/animals/duck-", ".png", 1, 10))
+animals.set("FOX", new WorkerAnimation("assets/nature/animals/fox-", ".png", 8, 10))
+animals.set("RABBIT", new WorkerAnimation("assets/nature/animals/rabbit-", ".png", 8, 10))
+animals.set("SHEEP", new WorkerAnimation("assets/nature/animals/sheep-", ".png", 2, 10))
+animals.set("STAG", new WorkerAnimation("assets/nature/animals/stag-", ".png", 8, 10))
+
 const romanWorkers = new Map<WorkerType, WorkerAnimation>()
 
 romanWorkers.set("Farmer", new WorkerAnimation("assets/romans-workers/farmer-", ".png", 8, 10))
 romanWorkers.set("Fisherman", new WorkerAnimation("assets/romans-workers/fisher-", ".png", 8, 10))
 romanWorkers.set("Courier", new WorkerAnimation("assets/romans-workers/helper-", ".png", 8, 10))
+romanWorkers.set("StorageWorker", new WorkerAnimation("assets/romans-workers/helper-", ".png", 8, 10))
 romanWorkers.set("Hunter", new WorkerAnimation("assets/romans-workers/hunter-", ".png", 8, 10))
 romanWorkers.set("IronFounder", new WorkerAnimation("assets/romans-workers/iron_founder-", ".png", 8, 10))
 romanWorkers.set("Metalworker", new WorkerAnimation("assets/romans-workers/metalworker-", ".png", 8, 10))
@@ -118,7 +138,7 @@ romanWorkers.set("Scout", new WorkerAnimation("assets/romans-workers/scout-", ".
 //romanWorkers.set("ShipWright", new WorkerAnimation("assets/romans-workers/ship_wright-", ".png", 8, 10))
 romanWorkers.set("DonkeyBreeder", new WorkerAnimation("assets/romans-workers/donkey_breeder-", ".png", 8, 10))
 romanWorkers.set("Butcher", new WorkerAnimation("assets/romans-workers/butcher-", ".png", 8, 10))
-//romanWorkers.set("Builder", new WorkerAnimation("assets/romans-workers/builder-", ".png", 8, 10))
+romanWorkers.set("Builder", new WorkerAnimation("assets/romans-workers/builder-", ".png", 8, 10))
 romanWorkers.set("Brewer", new WorkerAnimation("assets/romans-workers/brewer-", ".png", 8, 10))
 romanWorkers.set("Baker", new WorkerAnimation("assets/romans-workers/baker-", ".png", 8, 10))
 romanWorkers.set("Armorer", new WorkerAnimation("assets/romans-workers/armorer-", ".png", 8, 10))
@@ -148,6 +168,8 @@ let mediumHouseAvailableImage: HTMLImageElement | undefined
 let smallHouseAvailableImage: HTMLImageElement | undefined
 let flagAvailableImage: HTMLImageElement | undefined
 let mineAvailableImage: HTMLImageElement | undefined
+
+let plannedHouseImage: HTMLImageElement | undefined
 
 let deadTreeImage: HTMLImageElement | undefined
 
@@ -227,6 +249,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             MOUNTAIN_4_IMAGE_FILE, MOUNTAIN_TERRAIN, STEPPE_IMAGE_FILE,
             FLOWER_MEADOW_IMAGE_FILE, LAVA_IMAGE_FILE, MAGENTA_IMAGE_FILE,
             MOUNTAIN_MEADOW_IMAGE_FILE,
+            PLANNED_HOUSE_IMAGE_FILE,
             DEAD_TREE_IMAGE_FILE
         ])
 
@@ -394,9 +417,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         romanMainFlagAnimation.load()
         romanMarineFlagAnimation.load()
 
-        romanWorkers.forEach((animation, workerType) => {
-            animation.load()
-        })
+        romanWorkers.forEach((animation, workerType) => animation.load())
+
+        animals.forEach((animation, animalType) => animation.load())
+
+        fire.forEach((animation, fireSize) => animation.load())
 
         /* Handle update of heights if needed */
         if (!this.brightnessMap && monitor.allTiles && monitor.allTiles.size > 0) {
@@ -891,7 +916,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the houses */
+        if (plannedHouseImage === undefined) {
+            plannedHouseImage = this.images.get(PLANNED_HOUSE_IMAGE_FILE)
+        }
+
+        let houseIndex = -1
         for (const [id, house] of monitor.houses) {
+
+            houseIndex = houseIndex + 1
 
             if (house.x < minXInGame || house.x > maxXInGame || house.y < minYInGame || house.y > maxYInGame) {
                 continue
@@ -902,44 +934,61 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             /* Draw the house next to the point, instead of on top */
             let imageFilename
 
-            if (house.state === "UNFINISHED") {
-                imageFilename = houseUnderConstructionImageMap.get(house.type)
+            if (house.state === 'PLANNED') {
+                if (plannedHouseImage) {
+                    ctx.drawImage(plannedHouseImage, screenPoint.x, screenPoint.y)
+                }
+
+            } else if (house.state === 'BURNING') {
+                const size = getHouseSize(house)
+
+                const fireImage = fire.get(size)?.getAnimationElement(this.animationIndex, houseIndex)
+
+                if (fireImage) {
+                    ctx.drawImage(fireImage, screenPoint.x, screenPoint.y)
+                }
+
             } else {
-                imageFilename = houseImageMap.get(house.type)
-            }
 
-            if (imageFilename) {
+                if (house.state === "UNFINISHED") {
+                    imageFilename = houseUnderConstructionImageMap.get(house.type)
+                } else {
+                    imageFilename = houseImageMap.get(house.type)
+                }
 
-                const houseImage = this.images.get(imageFilename)
+                if (imageFilename) {
 
-                if (houseImage) {
+                    const houseImage = this.images.get(imageFilename)
 
-                    if (houseImage.width > 300 || houseImage.height > 300) {
+                    if (houseImage) {
+
+                        if (houseImage.width > 300 || houseImage.height > 300) {
+                            screenPoint.x -= 1.5 * this.props.scale
+                            screenPoint.y -= 2 * scaleY
+
+                            ctx.drawImage(houseImage, screenPoint.x, screenPoint.y, 3 * this.props.scale, 3 * scaleY)
+                        } else {
+                            screenPoint.x -= houseImage.width * this.props.scale / 40 / 1.4
+                            screenPoint.y -= houseImage.height * this.props.scale / 40 / 1.1
+
+                            ctx.drawImage(houseImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(houseImage.width * this.props.scale / 40), Math.floor(houseImage.height * this.props.scale / 40))
+                        }
+                    } else {
                         screenPoint.x -= 1.5 * this.props.scale
                         screenPoint.y -= 2 * scaleY
 
-                        ctx.drawImage(houseImage, screenPoint.x, screenPoint.y, 3 * this.props.scale, 3 * scaleY)
-                    } else {
-                        screenPoint.x -= houseImage.width * this.props.scale / 40 / 1.4
-                        screenPoint.y -= houseImage.height * this.props.scale / 40 / 1.1
+                        ctx.fillStyle = 'yellow'
 
-                        ctx.drawImage(houseImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(houseImage.width * this.props.scale / 40), Math.floor(houseImage.height * this.props.scale / 40))
+                        ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50)
                     }
                 } else {
                     screenPoint.x -= 1.5 * this.props.scale
                     screenPoint.y -= 2 * scaleY
 
-                    ctx.fillStyle = 'yellow'
+                    ctx.fillStyle = 'red'
 
                     ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50)
                 }
-            } else {
-                screenPoint.x -= 1.5 * this.props.scale
-                screenPoint.y -= 2 * scaleY
-
-                ctx.fillStyle = 'red'
-
-                ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50)
             }
         }
 
@@ -1187,6 +1236,96 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("draw stones")
 
+        /* Draw wild animals */
+        let fallbackWorkerImage = this.images.get("worker.png")
+        for (const [id, animal] of monitor.wildAnimals) {
+            if (animal.betweenPoints && animal.previous && animal.next) {
+
+                if (animal.previous.x < minXInGame || animal.previous.x > maxXInGame || animal.previous.y < minYInGame || animal.previous.y > maxYInGame) {
+                    continue
+                }
+
+                if (animal.next.x < minXInGame || animal.next.x > maxXInGame || animal.next.y < minYInGame || animal.next.y > maxYInGame) {
+                    continue
+                }
+
+                const screenPoint1 = this.gamePointToScreenPoint(animal.previous)
+                const screenPoint2 = this.gamePointToScreenPoint(animal.next)
+
+                const point = {
+                    x: screenPoint1.x + (screenPoint2.x - screenPoint1.x) * (animal.percentageTraveled / 100),
+                    y: screenPoint1.y + (screenPoint2.y - screenPoint1.y) * (animal.percentageTraveled / 100)
+                }
+
+                point.y -= scaleY
+
+                const direction = getDirectionForWalkingWorker(animal.next, animal.previous)
+
+                const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
+
+                if (this.animationIndex % 100 === 0) {
+                    console.log("moving")
+                    console.log(direction)
+                    console.log(animal)
+                    console.log(animationImage)
+                }
+
+                if (animationImage) {
+                    ctx.drawImage(animationImage, point.x, point.y)
+                } else if (fallbackWorkerImage) {
+                    ctx.drawImage(fallbackWorkerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                }
+
+            } else {
+
+                if (animal.x < minXInGame || animal.x > maxXInGame || animal.y < minYInGame || animal.y > maxYInGame) {
+                    continue
+                }
+
+                const screenPoint = this.gamePointToScreenPoint(animal)
+
+                screenPoint.y -= scaleY
+
+                if (animal.previous) {
+                    const direction = getDirectionForWalkingWorker(animal, animal.previous)
+
+                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, 0, animal.percentageTraveled)
+
+                    if (animationImage) {
+                        ctx.drawImage(animationImage, screenPoint.x, screenPoint.y)
+                    } else if (fallbackWorkerImage) {
+                        ctx.drawImage(fallbackWorkerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                    }
+
+                    if (this.animationIndex % 100 === 0) {
+                        console.log("not moving. previous exists")
+                        console.log(direction)
+                        console.log(animal)
+                        console.log(animationImage)
+                    }
+
+                } else {
+                    const direction = 'EAST'
+
+                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, 0, animal.percentageTraveled)
+
+                    if (this.animationIndex % 100 === 0) {
+                        console.log("not moving. no previous")
+                        console.log(direction)
+                        console.log(animal)
+                        console.log(animationImage)
+                    }
+
+                    if (animationImage) {
+                        ctx.drawImage(animationImage, screenPoint.x, screenPoint.y)
+                    } else if (fallbackWorkerImage) {
+                        ctx.drawImage(fallbackWorkerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
+                    }
+                }
+            }
+        }
+
+        duration.after("draw wild animals")
 
         /* Draw workers */
         let workerImage = this.images.get("worker.png")
@@ -1222,8 +1361,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 point.y -= scaleY
-
-                const fallbackWorkerImage = workerImage
 
                 const direction = getDirectionForWalkingWorker(worker.next, worker.previous)
 
@@ -1276,53 +1413,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         duration.after("draw workers")
-
-
-        /* Draw animals */
-        const animalImage = this.images.get("rabbit-small-brown.png")
-
-        for (const animal of monitor.animals) {
-            if (animal.betweenPoints) {
-
-                if (animal.previous.x < minXInGame || animal.previous.x > maxXInGame || animal.previous.y < minYInGame || animal.previous.y > maxYInGame) {
-                    continue
-                }
-
-                if (animal.next.x < minXInGame || animal.next.x > maxXInGame || animal.next.y < minYInGame || animal.next.y > maxYInGame) {
-                    continue
-                }
-
-                const screenPoint1 = this.gamePointToScreenPoint(animal.previous)
-                const screenPoint2 = this.gamePointToScreenPoint(animal.next)
-
-                const point = {
-                    x: screenPoint1.x + (screenPoint2.x - screenPoint1.x) * (animal.percentageTraveled / 100),
-                    y: screenPoint1.y + (screenPoint2.y - screenPoint1.y) * (animal.percentageTraveled / 100)
-                }
-
-                point.y -= 15
-
-                if (animalImage) {
-                    ctx.drawImage(animalImage, point.x, point.y, 20, 30)
-                }
-            } else {
-
-                if (animal.x < minXInGame || animal.x > maxXInGame || animal.y < minYInGame || animal.y > maxYInGame) {
-                    continue
-                }
-
-                const screenPoint = this.gamePointToScreenPoint(animal)
-
-                screenPoint.y -= 15
-
-                if (animalImage) {
-                    ctx.drawImage(animalImage, screenPoint.x, screenPoint.y, 20, 30)
-                }
-            }
-        }
-
-        duration.after("draw wild animals")
-
 
         /* Draw flags */
         let flagImage = this.images.get(FLAG_FILE)

@@ -10,6 +10,7 @@ export type RoadId = string
 export type WorkerId = string
 export type SignId = string
 export type TreeId = string
+export type WildAnimalId = string
 
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
@@ -106,6 +107,27 @@ const LARGE_HOUSES: LargeBuilding[] = [
     "DonkeyFarm",
     "Fortress"
 ]
+
+export type WildAnimalType = "RABBIT" | "FOX" | "STAG" | "DEER" | "DUCK" | "SHEEP" | "DEER_2" | "DUCK_2" | "PACK_DONKEY"
+const WILD_ANIMAL_TYPES = ["RABBIT", "FOX", "STAG", "DEER", "DUCK", "SHEEP", "DEER_2", "DUCK_2", "PACK_DONKEY"]
+
+export interface WildAnimalInformation extends Point {
+    id: WildAnimalId
+    type: WildAnimalType
+    betweenPoints: boolean
+    previous?: Point
+    next?: Point
+    percentageTraveled: number
+    path?: Point[]
+}
+
+export function isWildAnimal(animal: any): animal is WildAnimalInformation {
+    if (animal.type !== undefined && WILD_ANIMAL_TYPES.findIndex(animal.type) !== -1) {
+        return true
+    }
+
+    return false
+}
 
 export function isMaterial(material: string): material is Material {
     return material === "gold" ||
@@ -252,7 +274,7 @@ export interface SignInformation extends Point {
 
 export interface StoneInformation extends Point { }
 
-export type WorkerType = "Armorer" | "Baker" | "Brewer" | "Butcher" | "Courier" | "DonkeyBreeder" | "Donkey" | "Farmer" | "Fisherman" | "Forester" | "Geologist" | "Hunter" | "IronFounder" | "IronSmelter" | "Metalworker" | "Miller" | "Miner" | "Minter" | "PigBreeder" | "SawmillWorker" | "Scout" | "Stonemason" | "StorageWorker" | "WellWorker" | "WoodcutterWorker" | "Private" | 'Private_first_class' | 'Sergeant' | 'Officer' | 'General'
+export type WorkerType = "Armorer" | "Baker" | "Brewer" | "Butcher" | "Courier" | "DonkeyBreeder" | "Donkey" | "Farmer" | "Fisherman" | "Forester" | "Geologist" | "Hunter" | "IronFounder" | "IronSmelter" | "Metalworker" | "Miller" | "Miner" | "Minter" | "PigBreeder" | "SawmillWorker" | "Scout" | "Stonemason" | "StorageWorker" | "WellWorker" | "WoodcutterWorker" | "Private" | 'Private_first_class' | 'Sergeant' | 'Officer' | 'General' | 'Builder'
 
 export interface WorkerInformation extends Point {
     id: WorkerId
@@ -263,13 +285,6 @@ export interface WorkerInformation extends Point {
     percentageTraveled: number
     plannedPath?: Point[]
     cargo?: Material
-}
-
-export interface AnimalInformation extends Point {
-    betweenPoints: boolean
-    previous: Point
-    next: Point
-    percentageTraveled: number
 }
 
 export type SoldierType = "PRIVATE_RANK" | "PRIVATE_FIRST_CLASS_RANK" | "SERGEANT_RANK" | "OFFICER_RANK" | "GENERAL_RANK"
@@ -324,7 +339,7 @@ interface HouseResourceItem {
     totalNeeded?: number
 }
 
-type HouseState = "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED"
+type HouseState = "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED" | "PLANNED"
 
 export interface HouseInformation extends Point {
     id: HouseId
@@ -366,7 +381,7 @@ export interface PlayerViewInformation {
     stones: StoneInformation[]
     signs: SignInformation[]
     crops: CropInformation[]
-    animals: AnimalInformation[]
+    wildAnimals: WildAnimalInformation[]
     discoveredPoints: Point[]
     availableConstruction: PointMapFast<AvailableConstruction[]>
     deadTrees: Point[]

@@ -1,4 +1,4 @@
-import { WorkerType, AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, AnimalInformation, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material, TreeInformation, TreeId } from './api'
+import { WorkerType, AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material, TreeInformation, TreeId, WildAnimalId, WildAnimalInformation } from './api'
 import { PointMapFast, PointSetFast } from './util_types'
 import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight, getPointUpRight, getPointLeft, getPointUpLeft } from './utils'
 
@@ -31,7 +31,6 @@ interface Monitor {
     gameId?: GameId
     playerId?: PlayerId
     workers: Map<WorkerId, WorkerInformation>
-    animals: AnimalInformation[]
     houses: Map<HouseId, HouseInformation>
     flags: Map<FlagId, FlagInformation>
     roads: Map<RoadId, RoadInformation>
@@ -49,11 +48,11 @@ interface Monitor {
     discoveredDownRightTiles: Set<TileDownRight>
     deadTrees: PointSetFast
     visibleTrees: Map<TreeId, TreeInformation>
+    wildAnimals: Map<WildAnimalId, WildAnimalInformation>
 }
 
 const monitor: Monitor = {
     workers: new Map<WorkerId, WorkerInformation>(),
-    animals: [],
     houses: new Map<HouseId, HouseInformation>(),
     flags: new Map<FlagId, FlagInformation>(),
     roads: new Map<RoadId, RoadInformation>(),
@@ -70,7 +69,8 @@ const monitor: Monitor = {
     discoveredBelowTiles: new Set<TileBelow>(),
     discoveredDownRightTiles: new Set<TileDownRight>(),
     deadTrees: new PointSetFast(),
-    visibleTrees: new Map<TreeId, TreeInformation>()
+    visibleTrees: new Map<TreeId, TreeInformation>(),
+    wildAnimals: new Map<WildAnimalId, WildAnimalInformation>()
 }
 
 interface WalkerTargetChange {
@@ -94,6 +94,7 @@ interface ChangedAvailableConstruction extends Point {
 
 interface ChangesMessage {
     workersWithNewTargets?: WalkerTargetChange[]
+    wildAnimalsWithNewTargets?: WildAnimalInformation[]
     removedWorkers?: WorkerId[]
     newBuildings?: HouseInformation[]
     changedBuildings?: HouseInformation[]
@@ -117,6 +118,7 @@ interface ChangesMessage {
     newMessages?: GameMessage[]
     discoveredDeadTrees?: Point[]
     removedDeadTrees?: Point[]
+    removedWildAnimals?: WildAnimalId[]
 }
 
 function isGameChangesMessage(message: any): message is ChangesMessage {
@@ -134,7 +136,8 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
             message.changedAvailableConstruction ||
             message.newMessages ||
             message.discoveredDeadTrees ||
-            message.removedDeadTrees)) {
+            message.removedDeadTrees ||
+            message.wildAnimalsWithNewTargets || message.removedWildAnimals)) {
         return true
     }
 
@@ -176,6 +179,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     view.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
 
     view.workers.forEach(worker => monitor.workers.set(worker.id, worker))
+
+    view.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
 
     view.houses.forEach(house => monitor.houses.set(house.id, house))
 
@@ -263,7 +268,13 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             syncWorkersWithNewTargets(message.workersWithNewTargets)
         }
 
-        message.removedWorkers?.forEach((id) => monitor.workers.delete(id))
+        if (message.wildAnimalsWithNewTargets) {
+            syncNewOrUpdatedWildAnimals(message.wildAnimalsWithNewTargets)
+        }
+
+        message.removedWorkers?.forEach(id => monitor.workers.delete(id))
+
+        message.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
 
         if (message.newBuildings) {
             printTimestamp("About to add new houses")
@@ -403,6 +414,46 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
                 /* Show that the worker is walking between two points */
             } else {
                 worker.betweenPoints = true
+            }
+        }
+
+        for (const [id, wildAnimal] of monitor.wildAnimals) {
+
+            /* Filter workers without any planned path */
+            if (!wildAnimal.path || wildAnimal.path.length === 0) {
+                continue
+            }
+
+            wildAnimal.percentageTraveled = wildAnimal.percentageTraveled + 5
+
+            /* Get the next point */
+            const next = wildAnimal.path[0]
+
+            /* Clear the planned path for workers that have reached the target */
+            if (wildAnimal.percentageTraveled === 100) {
+
+                if (wildAnimal.next) {
+                    wildAnimal.previous = { x: wildAnimal.next.x, y: wildAnimal.next.y }
+                }
+
+                wildAnimal.x = next.x
+                wildAnimal.y = next.y
+
+                wildAnimal.percentageTraveled = 0
+
+                wildAnimal.path.shift()
+
+                if (wildAnimal.path.length > 0) {
+                    wildAnimal.next = { x: wildAnimal.path[0].x, y: wildAnimal.path[0].y }
+                } else {
+                    wildAnimal.path = undefined
+                }
+
+                wildAnimal.betweenPoints = false
+
+                /* Show that the worker is walking between two points */
+            } else {
+                wildAnimal.betweenPoints = true
             }
         }
     }, 100)
@@ -569,7 +620,43 @@ function syncChangedBorders(borderChanges: BorderChange[]) {
     }
 }
 
-function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]) {
+function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void {
+    for (const wildAnimalInformation of wildAnimals) {
+
+        let wildAnimal = monitor.wildAnimals.get(wildAnimalInformation.id)
+
+        if (wildAnimal === undefined) {
+            wildAnimal = {
+                id: wildAnimalInformation.id,
+                x: wildAnimalInformation.x,
+                y: wildAnimalInformation.y,
+                path: wildAnimalInformation.path,
+                betweenPoints: false,
+                percentageTraveled: 0,
+                type: wildAnimalInformation.type
+            }
+
+            monitor.wildAnimals.set(wildAnimal.id, wildAnimal)
+        }
+
+        if (!wildAnimalInformation.path || wildAnimalInformation.path.length === 0) {
+            wildAnimal.path = undefined
+        } else {
+            wildAnimal.path = wildAnimalInformation.path
+
+            wildAnimal.previous = { x: wildAnimalInformation.x, y: wildAnimalInformation.y }
+
+            wildAnimal.next = { x: wildAnimalInformation.path[0].x, y: wildAnimalInformation.path[0].y }
+            wildAnimal.percentageTraveled = 0
+            wildAnimal.betweenPoints = false
+        }
+
+        wildAnimal.x = wildAnimalInformation.x
+        wildAnimal.y = wildAnimalInformation.y
+    }
+}
+
+function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
 
     for (const walkerTargetChange of targetChanges) {
 

@@ -1,4 +1,3 @@
-import { Dir } from 'fs'
 import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -679,14 +678,23 @@ function getTimestamp(): number {
     return timestamp
 }
 
+function loadImageNg(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        let image = new Image()
+        image.onload = () => resolve(image)
+        image.onerror = reject
+        image.src = src
+    })
+}
+
 function loadImage(source: string, onLoad: ((image: HTMLImageElement, source: string) => void)): void {
-    console.log("Loading " + source)
+    //console.log("Loading " + source)
 
     const image = new Image()
 
     image.addEventListener("load",
         () => {
-            console.log("Loaded " + source)
+            //console.log("Loaded " + source)
             onLoad(image, source)
         }
     )
@@ -719,10 +727,10 @@ class WorkerAnimation {
     constructor(prefix: string, postfix: string, length: number, speedAdjust: number) {
         this.animations = new Map<Direction, AnimationUtil>()
 
-        this.animations.set("EAST",       new AnimationUtil(prefix + "east-", postfix, length, speedAdjust))
+        this.animations.set("EAST", new AnimationUtil(prefix + "east-", postfix, length, speedAdjust))
         this.animations.set("SOUTH_EAST", new AnimationUtil(prefix + "south-east-", postfix, length, speedAdjust))
         this.animations.set("SOUTH_WEST", new AnimationUtil(prefix + "south-west-", postfix, length, speedAdjust))
-        this.animations.set("WEST",       new AnimationUtil(prefix + "west-", postfix, length, speedAdjust))
+        this.animations.set("WEST", new AnimationUtil(prefix + "west-", postfix, length, speedAdjust))
         this.animations.set("NORTH_WEST", new AnimationUtil(prefix + "north-west-", postfix, length, speedAdjust))
         this.animations.set("NORTH_EAST", new AnimationUtil(prefix + "north-east-", postfix, length, speedAdjust))
     }
@@ -809,6 +817,10 @@ function getHouseSize(house: HouseInformation): Size {
     return 'LARGE'
 }
 
-export { getHouseSize, getDirectionForWalkingWorker, WorkerAnimation, AnimationUtil, loadImage, loadImages, drawGradientTriangleWithImage, getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor }
+export {
+    getHouseSize, getDirectionForWalkingWorker, WorkerAnimation, AnimationUtil, loadImage, loadImages, drawGradientTriangleWithImage, getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor,
+    sumVectors,
+    loadImageNg
+}
 
 

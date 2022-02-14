@@ -120,6 +120,7 @@ class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
 }
 
 class PointSetFast implements IterableIterator<Point> {
+
     private pointSet: Set<number>
 
     constructor(points?: Set<Point> | Point[]) {
@@ -158,6 +159,10 @@ class PointSetFast implements IterableIterator<Point> {
 
     next(value?: any): IteratorResult<Point> {
         throw new Error("Method not implemented.")
+    }
+
+    forEach(arg0: (element: any) => void) {
+        this.pointSet.forEach((value, index) => arg0(value))
     }
 }
 

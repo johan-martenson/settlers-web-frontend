@@ -4,14 +4,14 @@ import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownR
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
-const discoveredPointListeners: (() => void)[] = []
+const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
 
 interface MonitoredBorderForPlayer {
     color: string
     points: PointSetFast
 }
 
-interface TileBelow {
+export interface TileBelow {
     pointAbove: Point
     heightDownLeft: number
     heightDownRight: number
@@ -19,7 +19,7 @@ interface TileBelow {
     vegetation: VegetationIntegers
 }
 
-interface TileDownRight {
+export interface TileDownRight {
     pointLeft: Point
     heightLeft: number
     heightDown: number
@@ -225,6 +225,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     /* Store the discovered tiles */
     storeDiscoveredTiles(monitor.discoveredPoints)
 
+    notifyDiscoveredLandListeners(monitor.discoveredPoints)
+
     /* Remember the game id and player id */
     monitor.gameId = gameId
     monitor.playerId = playerId
@@ -353,7 +355,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
             storeDiscoveredTiles(message.newDiscoveredLand)
 
-            notifyDiscoveredLandListeners()
+            notifyDiscoveredLandListeners(new PointSetFast(message.newDiscoveredLand))
         }
 
         if (message.changedAvailableConstruction) {
@@ -695,9 +697,9 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     }
 }
 
-function notifyDiscoveredLandListeners(): void {
+function notifyDiscoveredLandListeners(discoveredPoints: PointSetFast): void {
     for (const listener of discoveredPointListeners) {
-        listener()
+        listener(discoveredPoints)
     }
 }
 
@@ -717,7 +719,7 @@ function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformati
     listenersForHouseId.push(houseListenerFn)
 }
 
-function listenToDiscoveredPoints(listenerFn: (() => void)): void {
+function listenToDiscoveredPoints(listenerFn: ((discoveredPoints: PointSetFast) => void)): void {
     discoveredPointListeners.push(listenerFn)
 }
 

@@ -225,7 +225,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     /* Store the discovered tiles */
     storeDiscoveredTiles(monitor.discoveredPoints)
 
-    notifyDiscoveredLandListeners(monitor.discoveredPoints)
+    notifyDiscoveredPointsListeners(monitor.discoveredPoints)
 
     /* Remember the game id and player id */
     monitor.gameId = gameId
@@ -355,7 +355,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
             storeDiscoveredTiles(message.newDiscoveredLand)
 
-            notifyDiscoveredLandListeners(new PointSetFast(message.newDiscoveredLand))
+            notifyDiscoveredPointsListeners(new PointSetFast(message.newDiscoveredLand))
         }
 
         if (message.changedAvailableConstruction) {
@@ -485,7 +485,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
     for (const point of newlyDiscoveredPoints) {
         const terrainAtPoint = monitor.allTiles.get(point)
 
-        if (!terrainAtPoint) {
+        if (terrainAtPoint === undefined) {
             continue
         }
 
@@ -697,7 +697,7 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     }
 }
 
-function notifyDiscoveredLandListeners(discoveredPoints: PointSetFast): void {
+function notifyDiscoveredPointsListeners(discoveredPoints: PointSetFast): void {
     for (const listener of discoveredPointListeners) {
         listener(discoveredPoints)
     }

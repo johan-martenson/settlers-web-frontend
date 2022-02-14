@@ -202,209 +202,6 @@ function almostEquals(a: number, b: number): boolean {
     return difference < MINIMAL_DIFFERENCE && difference > -MINIMAL_DIFFERENCE
 }
 
-/**
- * Creates a gradient line for drawing a single-color shaded triangle given the brightness of the three points for use with the Canvas 2D rendering API.
- * 
- * @remarks
- * This function does not handle the case where the three intensities are all the same.
- * 
- * The Canvas 2D rendering API can be used to draw linear gradients defined by two or more points:
- * 
- * |||||  ||||  |||  ||  |  
- * |||||  ||||  |||  ||  |  
- * P(start)--------------P(end)
- * |||||  ||||  |||  ||  | 
- * |||||  ||||  |||  ||  |  
- * 
- * The function finds two points P(start) and P(end) that defines a gradient so that the max point is parallel with the P(start), the min point is 
- * parallel with the P(end), and the P(in-between) has the right intensity:
- * 
- * |||||  ||||  |||  ||  |  
- * P(max) ------------ P(min)  
- * | \ |  ||||  |||  /   |  
- * ||| \  ||||  || / ||  |  
- * ||||| \ |||   /   ||  |  
- * |||||   \ | / ||  ||  |  
- * |||||  || P(in-between)
- * |||||  ||||  |||  ||  |  
- * 
- * 
- * It does this by drawing the line from the max point to and through the in-between point it has to go to get the minimum intensity. Then it finds
- *  an orthogonal line against it that cuts through the starting point.
- * 
- * @param p1 - The first point
- * @param intensity1 - The intensity of the first point
- * @param p2 - The second point
- * @param intensity2 - The intensity of the second point
- * @param p3 - The third point
- * @param intensity3 - The intensity of the third point
- */
-function getGradientLineForTriangle(p1: Point, intensity1: number, p2: Point, intensity2: number, p3: Point, intensity3: number): Point[] {
-
-    const intensityMax = Math.max(intensity1, intensity2, intensity3)
-    const intensityMin = Math.min(intensity1, intensity2, intensity3)
-    const intensityFullRange = intensityMax - intensityMin
-
-    let partialIntensity
-
-    let pointHigh: Point
-    let pointLow: Point
-    let pointInBetween: Point
-
-    /* Find the highest point */
-    if (intensity1 === intensityMax) {
-        pointHigh = p1
-    } else if (intensity2 === intensityMax) {
-        pointHigh = p2
-    } else {
-        pointHigh = p3
-    }
-
-    /* Find the lowest point */
-    if (intensity1 === intensityMin) {
-        pointLow = p1
-    } else if (intensity2 === intensityMin) {
-        pointLow = p2
-    } else {
-        pointLow = p3
-    }
-
-    /* Find the mid point */
-    if (p1 !== pointHigh && p1 !== pointLow) {
-        pointInBetween = p1
-        partialIntensity = intensity1
-    } else if (p2 !== pointHigh && p2 !== pointLow) {
-        pointInBetween = p2
-        partialIntensity = intensity2
-    } else {
-        pointInBetween = p3
-        partialIntensity = intensity3
-    }
-
-    /**
-     * Handle the special case where partial and full intensity are the same -- p4 and pointHigh are on the same line 
-     * 
-     * E.g.:
-     * 
-     * |||||  ||||  |||  ||  |  
-     * P(max) -- P(min)  ||  |
-     * | |||   / |  |||  ||  |  
-     * | ||| / |||  |||  ||  |  
-     * | | /  ||||  |||  ||  |  
-     * | / |  ||||  |||  ||  |  
-     * P(in-between) ||  ||  |
-     * |||||  ||||  |||  ||  |  
-     *
-     * or
-     * 
-     * P(max) ||||  |||  ||  |  
-     * | \ |  ||||  |||  ||  |  
-     * | | \  ||||  |||  ||  |  
-     * | ||| \ |||  |||  ||  |  
-     * | |||   \ |  |||  ||  |  
-     * | |||  || P(min)  ||  |
-     * | |||   / |  |||  ||  |  
-     * | ||| / |||  |||  ||  |  
-     * | | /  ||||  |||  ||  |  
-     * | / |  ||||  |||  ||  |  
-     * P(in-between) ||  ||  |
-     * |||||  ||||  |||  ||  |  
-     * 
-     */
-    if (almostEquals(intensityMax, partialIntensity)) {
-
-        /* Handle the special case where pointHigh and pointMedium are on the same vertical line */
-        if (almostEquals(pointHigh.x, pointInBetween.x)) {
-            const result = [
-                {
-                    x: pointHigh.x,
-                    y: pointLow.y
-                },
-                pointLow
-            ]
-
-            return result
-        }
-
-        /* Handle the special case where pointHigh and pointMedium are on the same horizontal line */
-        if (almostEquals(pointHigh.y, pointInBetween.y)) {
-
-            const result = [
-                {
-                    x: pointLow.x,
-                    y: pointHigh.y
-                },
-                pointLow
-            ]
-
-            return result
-        }
-
-        /* Get the line that goes through the maximum and in-between points */
-        const lineMaximum = getLineBetweenPoints(pointHigh, pointInBetween)
-
-        /* Get the line that is orthogonal to the maximum line and crosses the minimum point */
-        const lineOrthogonal = getOrthogonalLine(lineMaximum, pointLow)
-
-        /* Find intersection between the maximum line and its orthogonal line that crosses through the minimum point */
-        const pointIntersect = getIntersection(lineMaximum, lineOrthogonal)
-
-        const result = [pointIntersect, pointLow]
-
-        return result
-    } else {
-
-        /* Handle the cases where the maximum and in-between intensities are not equal */
-        const intensityPartialRange = intensityMax - partialIntensity
-
-        /* Get the point where a line that cuts through the in-between point reaches the minimum intensity */
-        const dx = pointInBetween.x - pointHigh.x
-        const dy = pointInBetween.y - pointHigh.y
-
-        const pointSecondMinimum = {
-            x: (intensityFullRange * dx) / intensityPartialRange + pointHigh.x,
-            y: (intensityFullRange * dy) / intensityPartialRange + pointHigh.y
-        }
-
-        /* Handle the case where the line is parallel with the X axis */
-        if (almostEquals(pointSecondMinimum.y, pointLow.y)) {
-            const result = [
-                pointHigh,
-                {
-                    x: pointHigh.x,
-                    y: pointInBetween.y
-                }
-            ]
-
-            return result
-        }
-
-        /* Handle the case where the line is parallel with the y axis */
-        if (almostEquals(pointSecondMinimum.x, pointLow.x)) {
-            return [
-                pointHigh,
-                {
-                    x: pointSecondMinimum.x,
-                    y: pointHigh.y
-                }
-            ]
-        }
-
-        /* Get the line that cuts through p4 and the minimum point */
-        const lineMinimum = getLineBetweenPoints(pointSecondMinimum, pointLow)
-
-        /* Get the line that is orthogonal to the minimum line and cuts through the maximum point */
-        const lineOrthogonal = getOrthogonalLine(lineMinimum, pointHigh)
-
-        /* Get point where the minimum line and its orthogonal line through the maximum point intersect */
-        const pointIntersect = getIntersection(lineMinimum, lineOrthogonal)
-
-        const result = [pointHigh, pointIntersect]
-
-        return result
-    }
-}
-
 function sumVectors(v1: Vector | undefined, v2: Vector | undefined): Vector {
 
     let vector1: Vector
@@ -479,32 +276,8 @@ function getPointLeft(point: Point): Point {
     }
 }
 
-function getBrightnessForNormals(normals: (Vector | undefined)[], lightVector: Vector): number {
-
-    let vectors: Vector[] = []
-
-    for (let normal of normals) {
-        if (normal) {
-            vectors.push(normal)
-        }
-    }
-
-    const combinedVector = vectors.reduce(sumVectors)
-
-    const normalized = normalize(combinedVector)
-
-    return -getDotProduct(normalized, lightVector)
-}
-
 function arrayToRgbStyle(rgb: number[]): string {
     return 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')'
-}
-
-function getPointAtLineGivenX(line: Line, x: number): Point {
-    return {
-        x: x,
-        y: x * line.k + line.m
-    }
 }
 
 async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
@@ -560,115 +333,6 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, play
 
 function same(point1: Point, point2: Point): boolean {
     return point1.x === point2.x && point1.y === point2.y
-}
-
-function drawGradientTriangleWithImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement, point1: Point, point2: Point, point3: Point, intensity1: number, intensity2: number, intensity3: number) {
-
-    const minIntensityBelow = Math.min(intensity1, intensity2, intensity3)
-    const maxIntensityBelow = Math.max(intensity1, intensity2, intensity3)
-
-    const colorValue = 0
-    const maxAlpha = 1 - (maxIntensityBelow + 1) / 2
-    const minAlpha = 1 - (minIntensityBelow + 1) / 2
-
-    const rgbString = colorValue + ', ' + colorValue + ", " + colorValue
-
-    if (Math.abs(minIntensityBelow - maxIntensityBelow) < 0.05) {
-        ctx.fillStyle = 'rgba(' + rgbString + ', ' + maxAlpha + ')'
-    } else {
-
-        const gradientScreenPoints = getGradientLineForTriangle(point1, intensity1, point2, intensity2, point3, intensity3)
-
-        const gradient = ctx.createLinearGradient(
-            Math.round(gradientScreenPoints[0].x), Math.round(gradientScreenPoints[0].y),
-            Math.round(gradientScreenPoints[1].x), Math.round(gradientScreenPoints[1].y)
-        )
-
-
-        gradient.addColorStop(0, 'rgba(' + rgbString + ', ' + maxAlpha + ')') // 1 - no transparency, 0 - full transparency
-        gradient.addColorStop(1, 'rgba(' + rgbString + ', ' + minAlpha + ')')
-
-        ctx.fillStyle = gradient
-    }
-
-    const oldFillstyle = ctx.fillStyle
-
-    /* Draw the image */
-    const pattern = ctx.createPattern(image, 'repeat')
-
-    if (!pattern) {
-        return
-    }
-
-    ctx.fillStyle = pattern
-
-    ctx.beginPath()
-
-    ctx.moveTo(point1.x, point1.y)
-    ctx.lineTo(point2.x, point2.y)
-    ctx.lineTo(point3.x, point3.y)
-
-    ctx.closePath()
-
-    ctx.fill()
-
-    /* Draw shading on top */
-    ctx.fillStyle = oldFillstyle
-
-    ctx.beginPath()
-
-    ctx.moveTo(point1.x, point1.y)
-    ctx.lineTo(point2.x, point2.y)
-    ctx.lineTo(point3.x, point3.y)
-
-    ctx.closePath()
-
-    ctx.fill()
-}
-
-function drawGradientTriangle(ctx: CanvasRenderingContext2D, color: RgbColorArray, point1: Point, point2: Point, point3: Point, intensity1: number, intensity2: number, intensity3: number) {
-
-    const minIntensityBelow = Math.min(intensity1, intensity2, intensity3)
-    const maxIntensityBelow = Math.max(intensity1, intensity2, intensity3)
-
-    const minColorBelow: RgbColorArray = [
-        color[0] + 40 * minIntensityBelow,
-        color[1] + 40 * minIntensityBelow,
-        color[2] + 40 * minIntensityBelow
-    ]
-
-    const maxColorBelow: RgbColorArray = [
-        color[0] + 40 * maxIntensityBelow,
-        color[1] + 40 * maxIntensityBelow,
-        color[2] + 40 * maxIntensityBelow
-    ]
-
-    if (Math.abs(minIntensityBelow - maxIntensityBelow) < 0.05) {
-        ctx.fillStyle = arrayToRgbStyle(minColorBelow)
-    } else {
-
-        const gradientScreenPoints = getGradientLineForTriangle(point1, intensity1, point2, intensity2, point3, intensity3)
-
-        const gradient = ctx.createLinearGradient(
-            Math.round(gradientScreenPoints[0].x), Math.round(gradientScreenPoints[0].y),
-            Math.round(gradientScreenPoints[1].x), Math.round(gradientScreenPoints[1].y)
-        )
-
-        gradient.addColorStop(0, arrayToRgbStyle(maxColorBelow))
-        gradient.addColorStop(1, arrayToRgbStyle(minColorBelow))
-
-        ctx.fillStyle = gradient
-    }
-
-    ctx.beginPath()
-
-    ctx.moveTo(point1.x, point1.y)
-    ctx.lineTo(point2.x, point2.y)
-    ctx.lineTo(point3.x, point3.y)
-
-    ctx.closePath()
-
-    ctx.fill()
 }
 
 function getTimestamp(): number {
@@ -818,7 +482,34 @@ function getHouseSize(house: HouseInformation): Size {
 }
 
 export {
-    getHouseSize, getDirectionForWalkingWorker, WorkerAnimation, AnimationUtil, loadImage, loadImages, drawGradientTriangleWithImage, getTimestamp, drawGradientTriangle, normalize, same, removeHouseOrFlagOrRoadAtPoint, isRoadAtPoint, almostEquals, removeHouseAtPoint, isContext2D, terrainInformationToTerrainAtPointList, arrayToRgbStyle, getGradientLineForTriangle, getBrightnessForNormals, getPointLeft, getPointRight, getPointDownLeft, getPointDownRight, getPointUpLeft, getPointUpRight, getLineBetweenPoints, getDotProduct, getNormalForTriangle, camelCaseToWords, vegetationToInt, intToVegetationColor,
+    getHouseSize,
+    getDirectionForWalkingWorker,
+    WorkerAnimation,
+    AnimationUtil,
+    loadImage,
+    loadImages,
+    getTimestamp,
+    normalize,
+    same,
+    removeHouseOrFlagOrRoadAtPoint,
+    isRoadAtPoint,
+    almostEquals,
+    removeHouseAtPoint,
+    isContext2D,
+    terrainInformationToTerrainAtPointList,
+    arrayToRgbStyle,
+    getPointLeft,
+    getPointRight,
+    getPointDownLeft,
+    getPointDownRight,
+    getPointUpLeft,
+    getPointUpRight,
+    getLineBetweenPoints,
+    getDotProduct,
+    getNormalForTriangle,
+    camelCaseToWords,
+    vegetationToInt,
+    intToVegetationColor,
     sumVectors,
     loadImageNg
 }

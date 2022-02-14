@@ -52,7 +52,7 @@ interface GameCanvasProps {
 interface GameCanvasState {
     hoverPoint?: Point
 }
-let printRarely = 500
+
 let allCoordinates: number[] = []
 let allNormals: number[] = []
 let allTextureMapping: number[] = []
@@ -356,8 +356,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         listenToDiscoveredPoints((points) => {
             console.log("Received more points")
 
-            console.log({ a: this.gl, b: this.prog, c: this.coordinatesBuffer, d: this.normalsBuffer, e: this.textureMappingBuffer })
-
             if (this.gl && this.prog && this.coordinatesBuffer && this.normalsBuffer && this.textureMappingBuffer) {
                 this.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
@@ -369,7 +367,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     this.gl.enableVertexAttribArray(coordAttributeLocation)
                 }
 
-                if (this.normalsBuffer) {
+                if (this.normalsBuffer !== undefined) {
                     const normalAttributeLocation = this.gl.getAttribLocation(this.prog, "a_normal")
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.normalsBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), this.gl.STATIC_DRAW);
@@ -377,7 +375,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     this.gl.enableVertexAttribArray(normalAttributeLocation)
                 }
 
-                if (this.textureMappingBuffer) {
+                if (this.textureMappingBuffer !== undefined) {
                     const textureMappingAttributeLocation = this.gl.getAttribLocation(this.prog, "a_texture_mapping")
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureMappingBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
@@ -389,17 +387,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Put together the render information from the discovered tiles */
         this.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-
-        console.log(monitor.discoveredBelowTiles.size)
-
-        console.log(
-            {
-                a: this.mapRenderInformation.coordinates.length,
-                b: this.mapRenderInformation.normals.length,
-                c: this.mapRenderInformation.textureMapping.length,
-                d: this.mapRenderInformation.terrainTypes
-            }
-        )
 
 
         /*  Initialize webgl2 */
@@ -477,18 +464,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         "assets/nature/terrain/greenland/swamp.png",
                         "assets/nature/terrain/greenland/desert.png",
                         "assets/nature/terrain/greenland/water.png",
+                        "assets/nature/terrain/greenland/water.png",
+                        "assets/nature/terrain/greenland/desert.png",
                         "assets/nature/terrain/greenland/meadow1.png",
                         "assets/nature/terrain/greenland/meadow2.png",
                         "assets/nature/terrain/greenland/meadow3.png",
                         "assets/nature/terrain/greenland/mountain2.png",
                         "assets/nature/terrain/greenland/mountain3.png",
                         "assets/nature/terrain/greenland/mountain4.png",
-                        "assets/nature/terrain/greenland/mountain1.png",
                         "assets/nature/terrain/greenland/steppe.png",
                         "assets/nature/terrain/greenland/flower-meadow.png",
                         "assets/nature/terrain/greenland/lava.png",
                         "assets/nature/terrain/greenland/magenta.png",
-                        "assets/nature/terrain/greenland/mountain-meadow.png"
+                        "assets/nature/terrain/greenland/mountain-meadow.png",
+                        "assets/nature/terrain/greenland/lava.png",
+                        "assets/nature/terrain/greenland/lava.png",
+                        "assets/nature/terrain/greenland/lava.png",
+                        "assets/nature/terrain/greenland/mountain.png",
                     ]
 
                     let terrainImages = []
@@ -524,7 +516,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     // Bind the textures to slots 0, 1, 2, etc.
                     terrainImages.forEach((image, index) => {
                         if (image) {
-                            const texture = makeTextureFromImage(gl, prog, image)
+                            const texture = makeTextureFromImage(gl, image)
 
                             gl.activeTexture(gl.TEXTURE0 + index)
                             gl.bindTexture(gl.TEXTURE_2D, texture)
@@ -638,29 +630,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             // Set the current values for the scale, offset and the sampler
             gl.uniform2f(uScale, this.props.scale, this.props.scale)
             gl.uniform2fv(uOffset, [this.props.translateX, this.props.translateY])
-
-            if (printRarely === 500 && this.props.selectedPoint) {
-                printRarely = 0
-
-                const px = this.props.selectedPoint.x
-                const py = this.props.selectedPoint.y
-
-                console.log([px, py])
-                console.log(this.gamePointToScreenPoint({x: px, y: py}))
-                console.log({
-                    scale: this.props.scale,
-                    translateX: this.props.translateX,
-                    translateY: this.props.translateY,
-                    width,
-                    height
-                })
-                console.log({
-                    x: (((px * this.props.scale + this.props.translateX) / width) * 2.0) - 1.0,
-                    y: (((py * this.props.scale * 0.5 - this.props.translateY) / height) * 2.0) - 1.0
-                })
-            } else {
-                printRarely = printRarely + 1
-            }
 
             // Fill the screen with black color
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
@@ -1899,26 +1868,31 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
 
         terrainCount.set(terrainBelow, terrainCountBelow + 1)
 
-        // Add the triangles to the triangle buffers
-        if (normal !== undefined && normalDownLeft !== undefined && normalDownRight !== undefined) {
-            let coordinatesForTerrain = terrainCoordinatesLists.get(terrainBelow)
-            let normalsForTerrain = terrainNormalsLists.get(terrainBelow)
+        // Add the coordinates for each triangle to the coordinates buffer
+        let coordinatesForTerrain = terrainCoordinatesLists.get(terrainBelow)
 
-            if (coordinatesForTerrain === undefined) {
-                coordinatesForTerrain = []
-            }
+
+        if (coordinatesForTerrain === undefined) {
+            coordinatesForTerrain = []
+        }
+
+        Array.prototype.push.apply(
+            coordinatesForTerrain,
+            [
+                point.x, point.y,
+                pointDownLeft.x, pointDownLeft.y,
+                pointDownRight.x, pointDownRight.y,
+            ])
+
+        terrainCoordinatesLists.set(terrainBelow, coordinatesForTerrain)
+
+        // Add the normal for each triangle to the normals buffer
+        if (normal !== undefined && normalDownLeft !== undefined && normalDownRight !== undefined) {
+            let normalsForTerrain = terrainNormalsLists.get(terrainBelow)
 
             if (normalsForTerrain === undefined) {
                 normalsForTerrain = []
             }
-
-            Array.prototype.push.apply(
-                coordinatesForTerrain,
-                [
-                    point.x, point.y,
-                    pointDownLeft.x, pointDownLeft.y,
-                    pointDownRight.x, pointDownRight.y,
-                ])
 
             Array.prototype.push.apply(
                 normalsForTerrain,
@@ -1928,27 +1902,13 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
                     normalDownRight.x, normalDownRight.y, normalDownRight.z
                 ])
 
-            terrainCoordinatesLists.set(terrainBelow, coordinatesForTerrain)
             terrainNormalsLists.set(terrainBelow, normalsForTerrain)
         } else {
-            let coordinatesForTerrain = terrainCoordinatesLists.get(terrainBelow)
             let normalsForTerrain = terrainNormalsLists.get(terrainBelow)
-
-            if (coordinatesForTerrain === undefined) {
-                coordinatesForTerrain = []
-            }
 
             if (normalsForTerrain === undefined) {
                 normalsForTerrain = []
             }
-
-            Array.prototype.push.apply(
-                coordinatesForTerrain,
-                [
-                    point.x, point.y,
-                    pointDownLeft.x, pointDownLeft.y,
-                    pointDownRight.x, pointDownRight.y,
-                ])
 
             Array.prototype.push.apply(
                 normalsForTerrain,
@@ -1958,7 +1918,6 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
                     0, 0, 1,
                 ])
 
-            terrainCoordinatesLists.set(terrainBelow, coordinatesForTerrain)
             terrainNormalsLists.set(terrainBelow, normalsForTerrain)
         }
 
@@ -1982,9 +1941,9 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
     })
 
 
-    tilesDownRight.forEach(terrainAtPoint => {
+    tilesDownRight.forEach(tile => {
 
-        const point = terrainAtPoint.pointLeft
+        const point = tile.pointLeft
         const pointDownRight = getPointDownRight(point)
         const pointRight = getPointRight(point)
 
@@ -1992,7 +1951,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         const normalDownRight = normalMap.get(pointDownRight)
         const normalRight = normalMap.get(pointRight)
 
-        const terrainDownRight = terrainAtPoint.vegetation
+        const terrainDownRight = tile.vegetation
 
         if (VEGETATION_INTEGERS.indexOf(terrainDownRight) === -1) {
             console.log("UNKNOWN TERRAIN: " + terrainDownRight)
@@ -2007,27 +1966,31 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
 
         terrainCount.set(terrainDownRight, terrainCountDownRight + 1)
 
-        // Add the triangles to the triangle buffers
-        if (normal !== undefined && normalDownRight !== undefined && normalRight !== undefined) {
-            let coordinatesForTerrain = terrainCoordinatesLists.get(terrainDownRight)
-            let normalsForTerrain = terrainNormalsLists.get(terrainDownRight)
+        // Add the coordinates for each triangle to the coordinates buffer
+        let coordinatesForTerrain = terrainCoordinatesLists.get(terrainDownRight)
 
-            if (coordinatesForTerrain === undefined) {
-                coordinatesForTerrain = []
-            }
+        if (coordinatesForTerrain === undefined) {
+            coordinatesForTerrain = []
+        }
+
+        Array.prototype.push.apply(
+            coordinatesForTerrain,
+            [
+                point.x, point.y,
+                pointDownRight.x, pointDownRight.y,
+                pointRight.x, pointRight.y,
+            ]
+        )
+
+        terrainCoordinatesLists.set(terrainDownRight, coordinatesForTerrain)
+
+        // Add the normals for each triangle to the normals buffer
+        if (normal !== undefined && normalDownRight !== undefined && normalRight !== undefined) {
+            let normalsForTerrain = terrainNormalsLists.get(terrainDownRight)
 
             if (normalsForTerrain === undefined) {
                 normalsForTerrain = []
             }
-
-            Array.prototype.push.apply(
-                coordinatesForTerrain,
-                [
-                    point.x, point.y,
-                    pointDownRight.x, pointDownRight.y,
-                    pointRight.x, pointRight.y,
-                ]
-            )
 
             Array.prototype.push.apply(
                 normalsForTerrain,
@@ -2038,28 +2001,13 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
                 ]
             )
 
-            terrainCoordinatesLists.set(terrainDownRight, coordinatesForTerrain)
             terrainNormalsLists.set(terrainDownRight, normalsForTerrain)
         } else {
-            let coordinatesForTerrain = terrainCoordinatesLists.get(terrainDownRight)
             let normalsForTerrain = terrainNormalsLists.get(terrainDownRight)
-
-            if (coordinatesForTerrain === undefined) {
-                coordinatesForTerrain = []
-            }
 
             if (normalsForTerrain === undefined) {
                 normalsForTerrain = []
             }
-
-            Array.prototype.push.apply(
-                coordinatesForTerrain,
-                [
-                    point.x, point.y,
-                    pointDownRight.x, pointDownRight.y,
-                    pointRight.x, pointRight.y,
-                ]
-            )
 
             Array.prototype.push.apply(
                 normalsForTerrain,
@@ -2070,7 +2018,6 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
                 ]
             )
 
-            terrainCoordinatesLists.set(terrainDownRight, coordinatesForTerrain)
             terrainNormalsLists.set(terrainDownRight, normalsForTerrain)
         }
 
@@ -2095,12 +2042,12 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
 
     // Create the combined coordinate and normal buffers
     VEGETATION_INTEGERS.forEach(vegetationInteger => {
-        const trianglesForVegetation = terrainCoordinatesLists.get(vegetationInteger)
+        const coordinatesForVegetation = terrainCoordinatesLists.get(vegetationInteger)
         const normalsForVegetation = terrainNormalsLists.get(vegetationInteger)
         const textureMappingForVegetation = terrainTextureMappingLists.get(vegetationInteger)
 
-        if (trianglesForVegetation !== undefined && normalsForVegetation !== undefined && textureMappingForVegetation !== undefined) {
-            trianglesForVegetation.forEach(value => allCoordinates.push(value))
+        if (coordinatesForVegetation !== undefined && normalsForVegetation !== undefined && textureMappingForVegetation !== undefined) {
+            coordinatesForVegetation.forEach(value => allCoordinates.push(value))
             normalsForVegetation.forEach(value => allNormals.push(value))
             textureMappingForVegetation.forEach(value => allTextureMapping.push(value))
         }
@@ -2133,12 +2080,11 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         textureMapping: allTextureMapping,
         terrainTypes: terrainRenderInformation
     }
-
 }
 
 export { houseImageMap, GameCanvas, intToVegetationColor, vegetationToInt }
 
-function makeTextureFromImage(gl: WebGLRenderingContext, prog: WebGLProgram, image: HTMLImageElement): WebGLTexture | null {
+function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement): WebGLTexture | null {
 
     // Creating 1x1 blue tuxture
     const texture = gl.createTexture();

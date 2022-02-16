@@ -123,12 +123,13 @@ function getVariableNames(): IterableIterator<string> {
 
 function printVariables(): void {
     for (const name of getVariableNames()) {
-        console.log()
-        console.log("  " + name + ":")
-        console.log("   -- Latest: " + getLatestValueForVariable(name))
-        console.log("   -- Average: " + getAverageValueForVariable(name))
-        console.log("   -- Highest: " + getHighestValueForVariable(name))
-        console.log("   -- Lowest: " + getLatestValueForVariable(name))
+        console.log({
+            name,
+            latest: getLatestValueForVariable(name),
+            average: getAverageValueForVariable(name),
+            highest: getHighestValueForVariable(name),
+            lowest: getLatestValueForVariable(name)
+        })
     }
 }
 

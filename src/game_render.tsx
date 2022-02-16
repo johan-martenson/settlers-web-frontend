@@ -7,7 +7,7 @@ import { listenToDiscoveredPoints, monitor, TileBelow, TileDownRight } from './m
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
 import { AnimationUtil, camelCaseToWords, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation } from './utils'
-import { PointMapFast, PointSetFast } from './util_types'
+import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
     x: number
@@ -57,6 +57,8 @@ let allCoordinates: number[] = []
 let allNormals: number[] = []
 let allTextureMapping: number[] = []
 
+let vegetationToTextureMap: Map<VegetationIntegers, number> = new Map()
+
 const AVAILABLE_SMALL_BUILDING_FILE = "assets/ui-elements/available-small-building.png"
 const AVAILABLE_MEDIUM_BUILDING_FILE = "assets/ui-elements/available-medium-building.png"
 const AVAILABLE_LARGE_BUILDING_FILE = "assets/ui-elements/available-large-building.png"
@@ -104,6 +106,7 @@ const FLOWER_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/flower-meadow.
 const LAVA_IMAGE_FILE = "assets/nature/terrain/greenland/lava.png"
 const MAGENTA_IMAGE_FILE = "assets/nature/terrain/greenland/magenta.png"
 const MOUNTAIN_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/mountain-meadow.png"
+const MOUNTAIN_IMAGE_FILE = "assets/nature/terrain/greenland/mountain.png"
 
 const PLANNED_HOUSE_IMAGE_FILE = "assets/roman-buildings/construction-started-sign.png"
 
@@ -230,7 +233,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.onDoubleClick = this.onDoubleClick.bind(this)
         this.getHeightForPoint = this.getHeightForPoint.bind(this)
         this.pointToPoint3D = this.pointToPoint3D.bind(this)
-        this.updateRenderInformationWithPoints = this.updateRenderInformationWithPoints.bind(this)
 
         this.images = new Map()
 
@@ -426,11 +428,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 // Link the program and pass it to GPU
-                const prog = gl.createProgram();
+                const prog = gl.createProgram()
 
                 if (prog && vertSh && fragSh) {
-                    gl.attachShader(prog, vertSh);
-                    gl.attachShader(prog, fragSh);
+                    gl.attachShader(prog, vertSh)
+                    gl.attachShader(prog, fragSh)
                     gl.linkProgram(prog)
                     gl.useProgram(prog)
                     gl.viewport(0, 0, canvas.width, canvas.height)
@@ -457,71 +459,124 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
                     gl.enableVertexAttribArray(textureMappingAttributeLocation)
 
-                    const terrainImageFilenames = [
-                        "assets/nature/terrain/greenland/savannah.png",
-                        "assets/nature/terrain/greenland/mountain1.png",
-                        "assets/nature/terrain/greenland/snow.png",
-                        "assets/nature/terrain/greenland/swamp.png",
-                        "assets/nature/terrain/greenland/desert.png",
-                        "assets/nature/terrain/greenland/water.png",
-                        "assets/nature/terrain/greenland/water.png",
-                        "assets/nature/terrain/greenland/desert.png",
-                        "assets/nature/terrain/greenland/meadow1.png",
-                        "assets/nature/terrain/greenland/meadow2.png",
-                        "assets/nature/terrain/greenland/meadow3.png",
-                        "assets/nature/terrain/greenland/mountain2.png",
-                        "assets/nature/terrain/greenland/mountain3.png",
-                        "assets/nature/terrain/greenland/mountain4.png",
-                        "assets/nature/terrain/greenland/steppe.png",
-                        "assets/nature/terrain/greenland/flower-meadow.png",
-                        "assets/nature/terrain/greenland/lava.png",
-                        "assets/nature/terrain/greenland/magenta.png",
-                        "assets/nature/terrain/greenland/mountain-meadow.png",
-                        "assets/nature/terrain/greenland/lava.png",
-                        "assets/nature/terrain/greenland/lava.png",
-                        "assets/nature/terrain/greenland/lava.png",
-                        "assets/nature/terrain/greenland/mountain.png",
-                    ]
+                    // Load terrain images
+                    const imageSavannah = await loadImageNg(SAVANNAH_IMAGE_FILE)
+                    const imageMountain1 = await loadImageNg(MOUNTAIN_1_IMAGE_FILE)
+                    const imageSnow = await loadImageNg(SNOW_IMAGE_FILE)
+                    const imageSwamp = await loadImageNg(SWAMP_IMAGE_FILE)
+                    const imageDesert1 = await loadImageNg(DESERT_IMAGE_FILE)
+                    const imageWater = await loadImageNg(WATER_IMAGE_FILE)
+                    const imageMeadow1 = await loadImageNg(MEADOW_1_IMAGE_FILE)
+                    const imageMeadow2 = await loadImageNg(MEADOW_2_IMAGE_FILE)
+                    const imageMeadow3 = await loadImageNg(MEADOW_3_IMAGE_FILE)
+                    const imageMountain2 = await loadImageNg(MOUNTAIN_2_IMAGE_FILE)
+                    const imageMountain3 = await loadImageNg(MOUNTAIN_3_IMAGE_FILE)
+                    const imageMountain4 = await loadImageNg(MOUNTAIN_4_IMAGE_FILE)
+                    const imageSteppe = await loadImageNg(STEPPE_IMAGE_FILE)
+                    const imageFlowerMeadow = await loadImageNg(FLOWER_MEADOW_IMAGE_FILE)
+                    const imageLava = await loadImageNg(LAVA_IMAGE_FILE)
+                    const imageMagenta = await loadImageNg(MAGENTA_IMAGE_FILE)
+                    const imageMountainMeadow = await loadImageNg(MOUNTAIN_MEADOW_IMAGE_FILE)
+                    const imageBuildableMountain = await loadImageNg(MOUNTAIN_IMAGE_FILE)
 
-                    let terrainImages = []
-                    for (let i = 0; i < terrainImageFilenames.length; i++) {
-                        terrainImages.push(await loadImageNg(terrainImageFilenames[i]))
-
-                        console.log("Loaded " + terrainImageFilenames[i])
-                    }
-
-                    // Wait for all the images to load
-                    for (let i = 0; i < 20; i++) {
-                        let allLoaded = true
-
-                        for (let image of terrainImages) {
-                            if (!image?.complete) {
-                                allLoaded = false
-
-                                console.log({ title: "Not all images loaded", image })
-
-                                break
-                            }
-                        }
-
-                        if (allLoaded) {
-                            break
-                        }
-
-                        console.log("Not all images are loaded. Attempting to sleep 2s")
-
-                        await new Promise(r => setTimeout(r, 2000));
-                    }
+                    // Create terrain textures
+                    const textureSavannah = makeTextureFromImage(gl, imageSavannah)
+                    const textureMountain1 = makeTextureFromImage(gl, imageMountain1)
+                    const textureSnow = makeTextureFromImage(gl, imageSnow)
+                    const textureSwamp = makeTextureFromImage(gl, imageSwamp)
+                    const textureDesert1 = makeTextureFromImage(gl, imageDesert1)
+                    const textureWater = makeTextureFromImage(gl, imageWater)
+                    const textureMeadow1 = makeTextureFromImage(gl, imageMeadow1)
+                    const textureMeadow2 = makeTextureFromImage(gl, imageMeadow2)
+                    const textureMeadow3 = makeTextureFromImage(gl, imageMeadow3)
+                    const textureMountain2 = makeTextureFromImage(gl, imageMountain2)
+                    const textureMountain3 = makeTextureFromImage(gl, imageMountain3)
+                    const textureMountain4 = makeTextureFromImage(gl, imageMountain4)
+                    const textureSteppe = makeTextureFromImage(gl, imageSteppe)
+                    const textureFlowerMeadow = makeTextureFromImage(gl, imageFlowerMeadow)
+                    const textureLava = makeTextureFromImage(gl, imageLava)
+                    const textureMagenta = makeTextureFromImage(gl, imageMagenta)
+                    const textureMountainMeadow = makeTextureFromImage(gl, imageMountainMeadow)
+                    const textureBuildableMountain = makeTextureFromImage(gl, imageBuildableMountain)
 
                     // Bind the textures to slots 0, 1, 2, etc.
-                    terrainImages.forEach((image, index) => {
-                        if (image) {
-                            const texture = makeTextureFromImage(gl, image)
+                    gl.activeTexture(gl.TEXTURE0)
+                    gl.bindTexture(gl.TEXTURE_2D, textureSavannah)
+                    vegetationToTextureMap.set(0, 0)
 
-                            gl.activeTexture(gl.TEXTURE0 + index)
-                            gl.bindTexture(gl.TEXTURE_2D, texture)
-                        }
-                    })
+                    gl.activeTexture(gl.TEXTURE1)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMountain1)
+                    vegetationToTextureMap.set(1, 1)
+
+                    gl.activeTexture(gl.TEXTURE2)
+                    gl.bindTexture(gl.TEXTURE_2D, textureSnow)
+                    vegetationToTextureMap.set(2, 2)
+
+                    gl.activeTexture(gl.TEXTURE3)
+                    gl.bindTexture(gl.TEXTURE_2D, textureSwamp)
+                    vegetationToTextureMap.set(3, 3)
+
+                    gl.activeTexture(gl.TEXTURE4)
+                    gl.bindTexture(gl.TEXTURE_2D, textureDesert1)
+                    vegetationToTextureMap.set(4, 4)
+                    vegetationToTextureMap.set(7, 4)
+
+                    gl.activeTexture(gl.TEXTURE5)
+                    gl.bindTexture(gl.TEXTURE_2D, textureWater)
+                    vegetationToTextureMap.set(5, 5)
+                    vegetationToTextureMap.set(6, 5)
+                    vegetationToTextureMap.set(19, 5)
+
+                    gl.activeTexture(gl.TEXTURE6)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMeadow1)
+                    vegetationToTextureMap.set(8, 6)
+
+                    gl.activeTexture(gl.TEXTURE7)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMeadow2)
+                    vegetationToTextureMap.set(9, 7)
+
+                    gl.activeTexture(gl.TEXTURE8)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMeadow3)
+                    vegetationToTextureMap.set(10, 8)
+
+                    gl.activeTexture(gl.TEXTURE9)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMountain2)
+                    vegetationToTextureMap.set(11, 9)
+
+                    gl.activeTexture(gl.TEXTURE10)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMountain3)
+                    vegetationToTextureMap.set(12, 10)
+
+                    gl.activeTexture(gl.TEXTURE11)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMountain4)
+                    vegetationToTextureMap.set(13, 11)
+
+                    gl.activeTexture(gl.TEXTURE12)
+                    gl.bindTexture(gl.TEXTURE_2D, textureSteppe)
+                    vegetationToTextureMap.set(14, 12)
+
+                    gl.activeTexture(gl.TEXTURE13)
+                    gl.bindTexture(gl.TEXTURE_2D, textureFlowerMeadow)
+                    vegetationToTextureMap.set(15, 13)
+
+                    gl.activeTexture(gl.TEXTURE14)
+                    gl.bindTexture(gl.TEXTURE_2D, textureLava)
+                    vegetationToTextureMap.set(16, 14)
+                    vegetationToTextureMap.set(20, 14)
+                    vegetationToTextureMap.set(21, 14)
+                    vegetationToTextureMap.set(22, 14)
+
+                    gl.activeTexture(gl.TEXTURE15)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMagenta)
+                    vegetationToTextureMap.set(17, 15)
+
+                    gl.activeTexture(gl.TEXTURE16)
+                    gl.bindTexture(gl.TEXTURE_2D, textureMountainMeadow)
+                    vegetationToTextureMap.set(18, 16)
+
+                    gl.activeTexture(gl.TEXTURE17)
+                    gl.bindTexture(gl.TEXTURE_2D, textureBuildableMountain)
+                    vegetationToTextureMap.set(23, 17)
 
                     this.gl = gl
                     this.prog = prog
@@ -602,6 +657,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
 
+        if (oncePerNewSelectionPoint && this.props.selectedPoint !== undefined) {
+            console.log({
+                title: "Information about selection point",
+                point: this.props.selectedPoint,
+                vegetationBelow: monitor.allTiles.get(this.props.selectedPoint)?.below,
+                vegetationDownRight: monitor.allTiles.get(this.props.selectedPoint)?.downRight
+            })
+        }
+
         duration.after("init")
 
         /* Draw the tiles */
@@ -636,19 +700,28 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.clear(gl.COLOR_BUFFER_BIT)
 
             // Draw each terrain
-            for (let i = 0; i < VEGETATION_INTEGERS.length; i++) {
+            VEGETATION_INTEGERS.forEach((vegetation, index) => {
 
-                const terrainRenderInformation = this.mapRenderInformation.terrainTypes[i]
+                if (this.mapRenderInformation) {
 
-                if (terrainRenderInformation.numberTriangles > 0) {
-                    gl.uniform1i(uSampler, i)
+                    const terrainRenderInformation = this.mapRenderInformation.terrainTypes[index]
 
-                    const { offsetInTriangles, numberTriangles } = terrainRenderInformation
+                    if (terrainRenderInformation.numberTriangles > 0) {
 
-                    // mode, offset (nr vertices), count (nr vertices)
-                    gl.drawArrays(gl.TRIANGLES, offsetInTriangles * 3, numberTriangles * 3)
+                        let textureUnit = vegetationToTextureMap.get(vegetation)
+
+                        if (textureUnit !== undefined) {
+
+                            gl.uniform1i(uSampler, textureUnit)
+
+                            const { offsetInTriangles, numberTriangles } = terrainRenderInformation
+
+                            // mode, offset (nr vertices), count (nr vertices)
+                            gl.drawArrays(gl.TRIANGLES, offsetInTriangles * 3, numberTriangles * 3)
+                        }
+                    }
                 }
-            }
+            })
         }
 
         duration.after("draw tiles down-right")
@@ -1734,36 +1807,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             </>
         )
     }
-
-    updateRenderInformationWithPoints(points: PointSetFast) {
-        if (this.gl && this.prog && this.coordinatesBuffer && this.normalsBuffer && this.textureMappingBuffer) {
-            this.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-
-            if (this.coordinatesBuffer !== undefined) {
-                const coordAttributeLocation = this.gl.getAttribLocation(this.prog, "a_coords")
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.coordinatesBuffer)
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), this.gl.STATIC_DRAW);
-                this.gl.vertexAttribPointer(coordAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(coordAttributeLocation)
-            }
-
-            if (this.normalsBuffer) {
-                const normalAttributeLocation = this.gl.getAttribLocation(this.prog, "a_normal")
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.normalsBuffer)
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), this.gl.STATIC_DRAW);
-                this.gl.vertexAttribPointer(normalAttributeLocation, 3, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(normalAttributeLocation)
-            }
-
-            if (this.textureMappingBuffer) {
-                const textureMappingAttributeLocation = this.gl.getAttribLocation(this.prog, "a_texture_mapping")
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureMappingBuffer)
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
-                this.gl.vertexAttribPointer(textureMappingAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(textureMappingAttributeLocation)
-            }
-        }
-    }
 }
 
 function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>): MapRenderInformation {
@@ -1843,9 +1886,9 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
     let terrainNormalsLists: Map<VegetationIntegers, number[]> = new Map()
     let terrainTextureMappingLists: Map<VegetationIntegers, number[]> = new Map()
 
-    tilesBelow.forEach(terrainAtPoint => {
+    tilesBelow.forEach(tileBelow => {
 
-        const point = terrainAtPoint.pointAbove
+        const point = tileBelow.pointAbove
         const pointDownLeft = getPointDownLeft(point)
         const pointDownRight = getPointDownRight(point)
 
@@ -1853,7 +1896,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         const normalDownLeft = normalMap.get(pointDownLeft)
         const normalDownRight = normalMap.get(pointDownRight)
 
-        const terrainBelow = terrainAtPoint.vegetation
+        const terrainBelow = tileBelow.vegetation
 
         if (VEGETATION_INTEGERS.indexOf(terrainBelow) === -1) {
             console.log("UNKNOWN TERRAIN: " + terrainBelow)
@@ -2040,7 +2083,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         terrainTextureMappingLists.set(terrainDownRight, textureMappingDownRight)
     })
 
-    // Create the combined coordinate and normal buffers
+    // Create the combined coordinate, normal, and texture mapping buffers
     VEGETATION_INTEGERS.forEach(vegetationInteger => {
         const coordinatesForVegetation = terrainCoordinatesLists.get(vegetationInteger)
         const normalsForVegetation = terrainNormalsLists.get(vegetationInteger)

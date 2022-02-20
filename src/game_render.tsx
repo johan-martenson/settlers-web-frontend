@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
-import { materialToColor, Point, signToColor, Size, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { materialToColor, Point, RoadInformation, signToColor, Size, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { Filename, houseImageMap, houseUnderConstructionImageMap } from './images'
-import { listenToDiscoveredPoints, monitor, TileBelow, TileDownRight } from './monitor'
+import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
 import { AnimationUtil, camelCaseToWords, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation } from './utils'
@@ -87,6 +87,8 @@ const SIGN_NOTHING = "assets/signs/nothing-sign.png"
 const FLAG_FILE = "assets/roman-buildings/flag.png"
 
 const SELECTED_POINT = "assets/ui-elements/selected-point.png"
+
+const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
 
 const SAVANNAH_IMAGE_FILE = "assets/nature/terrain/greenland/savannah.png"
 const MOUNTAIN_1_IMAGE_FILE = "assets/nature/terrain/greenland/mountain1.png"
@@ -192,6 +194,12 @@ let plannedHouseImage: HTMLImageElement | undefined
 
 let deadTreeImage: HTMLImageElement | undefined
 
+interface RenderInformation {
+    coordinates: number[]
+    normals: number[]
+    textureMapping: number[]
+}
+
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     private overlayCanvasRef = React.createRef<HTMLCanvasElement>()
@@ -220,9 +228,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private mapRenderInformation?: MapRenderInformation
     private gl?: WebGL2RenderingContext
     private prog?: WebGLProgram
-    private coordinatesBuffer?: WebGLBuffer | null
-    private normalsBuffer?: WebGLBuffer | null
-    private textureMappingBuffer?: WebGLBuffer | null
+
+    private terrainCoordinatesBuffer?: WebGLBuffer | null
+    private terrainNormalsBuffer?: WebGLBuffer | null
+    private terrainTextureMappingBuffer?: WebGLBuffer | null
+
+    private roadCoordinatesBuffer?: WebGLBuffer | null
+    private roadNormalsBuffer?: WebGLBuffer | null
+    private roadTextureMappingBuffer?: WebGLBuffer | null
+    private roadRenderInformation?: RenderInformation
+    private normals: PointMapFast<Vector>
 
     constructor(props: GameCanvasProps) {
         super(props)
@@ -235,6 +250,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.pointToPoint3D = this.pointToPoint3D.bind(this)
 
         this.images = new Map()
+        this.normals = new PointMapFast()
 
         this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", FLAG_FILE,
             AVAILABLE_LARGE_BUILDING_FILE, AVAILABLE_MEDIUM_BUILDING_FILE, AVAILABLE_SMALL_BUILDING_FILE, AVAILABLE_MINE_FILE, AVAILABLE_FLAG_FILE,
@@ -358,32 +374,54 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         listenToDiscoveredPoints((points) => {
             console.log("Received more points")
 
-            if (this.gl && this.prog && this.coordinatesBuffer && this.normalsBuffer && this.textureMappingBuffer) {
-                this.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+            // Update the calculated normals
+            this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
-                if (this.coordinatesBuffer !== undefined) {
+            // Update the map rendering buffers
+            if (this.gl && this.prog) {
+                if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
+                    this.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+
                     const coordAttributeLocation = this.gl.getAttribLocation(this.prog, "a_coords")
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.coordinatesBuffer)
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), this.gl.STATIC_DRAW);
                     this.gl.vertexAttribPointer(coordAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
                     this.gl.enableVertexAttribArray(coordAttributeLocation)
-                }
 
-                if (this.normalsBuffer !== undefined) {
                     const normalAttributeLocation = this.gl.getAttribLocation(this.prog, "a_normal")
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.normalsBuffer)
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), this.gl.STATIC_DRAW);
                     this.gl.vertexAttribPointer(normalAttributeLocation, 3, this.gl.FLOAT, false, 0, 0)
                     this.gl.enableVertexAttribArray(normalAttributeLocation)
-                }
 
-                if (this.textureMappingBuffer !== undefined) {
                     const textureMappingAttributeLocation = this.gl.getAttribLocation(this.prog, "a_texture_mapping")
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureMappingBuffer)
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
                     this.gl.vertexAttribPointer(textureMappingAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
                     this.gl.enableVertexAttribArray(textureMappingAttributeLocation)
                 }
+            }
+        })
+
+        /* Subscribe for added and removed roads */
+        listenToRoads(roads => {
+            console.log("Received changed roads")
+
+            if (this.gl !== undefined && this.prog !== undefined &&
+                this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
+
+                console.log("Creating render information for the roads")
+
+                this.roadRenderInformation = this.prepareToRenderRoads(roads)
+
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.coordinates), this.gl.STATIC_DRAW)
+
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadNormalsBuffer)
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.normals), this.gl.STATIC_DRAW)
+
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.textureMapping), this.gl.STATIC_DRAW)
             }
         })
 
@@ -399,7 +437,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             canvas.width = document.documentElement.scrollWidth
             canvas.height = document.documentElement.scrollHeight
 
-            const gl = canvas.getContext("webgl2")
+            const gl = canvas.getContext("webgl2", { alpha: false })
 
             if (gl) {
 
@@ -438,26 +476,38 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.viewport(0, 0, canvas.width, canvas.height)
 
                     // Set up the buffer attributes
-                    this.coordinatesBuffer = gl.createBuffer()
+                    this.terrainCoordinatesBuffer = gl.createBuffer()
                     const coordAttributeLocation = gl.getAttribLocation(prog, "a_coords")
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.coordinatesBuffer)
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), gl.STATIC_DRAW);
                     gl.vertexAttribPointer(coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
                     gl.enableVertexAttribArray(coordAttributeLocation)
 
-                    this.normalsBuffer = gl.createBuffer()
+                    this.terrainNormalsBuffer = gl.createBuffer()
                     const normalAttributeLocation = gl.getAttribLocation(prog, "a_normal")
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.normalsBuffer)
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), gl.STATIC_DRAW);
                     gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
                     gl.enableVertexAttribArray(normalAttributeLocation)
 
-                    this.textureMappingBuffer = gl.createBuffer()
+                    this.terrainTextureMappingBuffer = gl.createBuffer()
                     const textureMappingAttributeLocation = gl.getAttribLocation(prog, "a_texture_mapping")
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.textureMappingBuffer)
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), gl.STATIC_DRAW)
                     gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
                     gl.enableVertexAttribArray(textureMappingAttributeLocation)
+
+                    this.roadCoordinatesBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
+
+                    this.roadNormalsBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.roadNormalsBuffer)
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
+
+                    this.roadTextureMappingBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
 
                     // Load terrain images
                     const imageSavannah = await loadImageNg(SAVANNAH_IMAGE_FILE)
@@ -479,6 +529,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const imageMountainMeadow = await loadImageNg(MOUNTAIN_MEADOW_IMAGE_FILE)
                     const imageBuildableMountain = await loadImageNg(MOUNTAIN_IMAGE_FILE)
 
+                    // Load the image atlas for terrain and roads
+                    const imageAtlasTerrainAndRoads = await loadImageNg(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
+
                     // Create terrain textures
                     const textureSavannah = makeTextureFromImage(gl, imageSavannah)
                     const textureMountain1 = makeTextureFromImage(gl, imageMountain1)
@@ -499,7 +552,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const textureMountainMeadow = makeTextureFromImage(gl, imageMountainMeadow)
                     const textureBuildableMountain = makeTextureFromImage(gl, imageBuildableMountain)
 
-                    // Bind the textures to slots 0, 1, 2, etc.
+                    // Create the road texture
+                    const textureTerrainAndRoadAtlas = makeTextureFromImage(gl, imageAtlasTerrainAndRoads)
+
+                    // Bind the terrain textures to slots 0, 1, 2, etc.
                     gl.activeTexture(gl.TEXTURE0)
                     gl.bindTexture(gl.TEXTURE_2D, textureSavannah)
                     vegetationToTextureMap.set(0, 0)
@@ -577,6 +633,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.activeTexture(gl.TEXTURE17)
                     gl.bindTexture(gl.TEXTURE_2D, textureBuildableMountain)
                     vegetationToTextureMap.set(23, 17)
+
+                    // Bind the road texture
+                    gl.activeTexture(gl.TEXTURE18)
+                    gl.bindTexture(gl.TEXTURE_2D, textureTerrainAndRoadAtlas)
 
                     this.gl = gl
                     this.prog = prog
@@ -668,11 +728,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("init")
 
-        /* Draw the tiles */
+        /* Do the accelerated drawing -- of the terrain and roads */
         if (this.gl && this.prog && this.mapRenderInformation) {
 
             const gl = this.gl
             const prog = this.prog
+
+            gl.enable(gl.BLEND)
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
             // Get handles
             const uLightVector = gl.getUniformLocation(prog, "u_light_vector")
@@ -700,67 +763,72 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.clear(gl.COLOR_BUFFER_BIT)
 
             // Draw each terrain
-            VEGETATION_INTEGERS.forEach((vegetation, index) => {
+            const coordAttributeLocation = gl.getAttribLocation(prog, "a_coords")
+            const normalAttributeLocation = gl.getAttribLocation(prog, "a_normal")
+            const textureMappingAttributeLocation = gl.getAttribLocation(prog, "a_texture_mapping")
 
-                if (this.mapRenderInformation) {
+            if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
+                gl.vertexAttribPointer(coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(coordAttributeLocation)
 
-                    const terrainRenderInformation = this.mapRenderInformation.terrainTypes[index]
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
+                gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(normalAttributeLocation)
 
-                    if (terrainRenderInformation.numberTriangles > 0) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
+                gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(textureMappingAttributeLocation)
 
-                        let textureUnit = vegetationToTextureMap.get(vegetation)
+                VEGETATION_INTEGERS.forEach((vegetation, index) => {
 
-                        if (textureUnit !== undefined) {
+                    if (this.mapRenderInformation) {
 
-                            gl.uniform1i(uSampler, textureUnit)
+                        const terrainRenderInformation = this.mapRenderInformation.terrainTypes[index]
 
-                            const { offsetInTriangles, numberTriangles } = terrainRenderInformation
+                        if (terrainRenderInformation.numberTriangles > 0) {
 
-                            // mode, offset (nr vertices), count (nr vertices)
-                            gl.drawArrays(gl.TRIANGLES, offsetInTriangles * 3, numberTriangles * 3)
+                            let textureUnit = vegetationToTextureMap.get(vegetation)
+
+                            if (textureUnit !== undefined) {
+
+                                gl.uniform1i(uSampler, textureUnit)
+
+                                const { offsetInTriangles, numberTriangles } = terrainRenderInformation
+
+                                // mode, offset (nr vertices), count (nr vertices)
+                                gl.drawArrays(gl.TRIANGLES, offsetInTriangles * 3, numberTriangles * 3)
+                            }
                         }
                     }
-                }
-            })
+                })
+            }
+
+            // Draw the roads
+            if (this.roadRenderInformation !== undefined &&
+                this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
+                gl.vertexAttribPointer(coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(coordAttributeLocation)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.roadNormalsBuffer)
+                gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(normalAttributeLocation)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
+                gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(textureMappingAttributeLocation)
+
+                gl.uniform1i(uSampler, 18)
+
+                gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 2)
+            }
         }
 
         duration.after("draw tiles down-right")
 
+
         ctx = overlayCtx
-
-        /* Draw the roads */
-        ctx.fillStyle = 'yellow'
-
-        for (const [id, road] of monitor.roads) {
-            const screenPoints = road.points.map(this.gamePointToScreenPoint)
-            let previousScreenPoint = null
-
-            for (let screenPoint of screenPoints) {
-
-                if (previousScreenPoint) {
-
-                    if ((previousScreenPoint.x < 0 && screenPoint.x < 0) || (previousScreenPoint.x > width && screenPoint.x > width) ||
-                        (previousScreenPoint.y < 0 && screenPoint.y < 0) || (previousScreenPoint.y > height && screenPoint.y > height)) {
-                        previousScreenPoint = screenPoint
-
-                        continue
-                    }
-
-                    ctx.beginPath()
-
-                    ctx.moveTo(screenPoint.x, screenPoint.y)
-                    ctx.lineTo(previousScreenPoint.x, previousScreenPoint.y)
-
-                    ctx.closePath()
-
-                    ctx.stroke()
-                }
-
-                previousScreenPoint = screenPoint
-            }
-        }
-
-        duration.after("draw roads")
 
 
         /* Draw the borders */
@@ -1807,6 +1875,268 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             </>
         )
     }
+
+    calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDownRight: Iterable<TileDownRight>): void {
+
+        // Calculate the normals for each triangle
+        const straightBelowNormals = new PointMapFast<Vector>()
+        const downRightNormals = new PointMapFast<Vector>()
+
+        for (const terrainAtPoint of tilesBelow) {
+
+            const point = terrainAtPoint.pointAbove
+            const height = terrainAtPoint.heightAbove
+
+            const point3d = { x: point.x, y: point.y, z: height }
+
+            const pointDownLeft = getPointDownLeft(point)
+            const pointDownRight = getPointDownRight(point)
+
+            const pointDownLeft3d = { x: pointDownLeft.x, y: pointDownLeft.y, z: terrainAtPoint.heightDownLeft }
+            const pointDownRight3d = { x: pointDownRight.x, y: pointDownRight.y, z: terrainAtPoint.heightDownRight }
+
+            straightBelowNormals.set(point, getNormalForTriangle(point3d, pointDownLeft3d, pointDownRight3d))
+        }
+
+        for (const terrainAtPoint of tilesDownRight) {
+
+            const point = terrainAtPoint.pointLeft
+            const height = terrainAtPoint.heightLeft
+
+            const point3d = { x: point.x, y: point.y, z: height }
+
+            const pointDownRight = getPointDownRight(point)
+            const pointRight = getPointRight(point)
+
+            const pointDownRight3d = { x: pointDownRight.x, y: pointDownRight.y, z: terrainAtPoint.heightDown }
+            const pointRight3d = { x: pointRight.x, y: pointRight.y, z: terrainAtPoint.heightRight }
+
+            downRightNormals.set(point, getNormalForTriangle(point3d, pointDownRight3d, pointRight3d))
+        }
+
+        // Calculate the normal for each point
+        for (let point of monitor.discoveredPoints) {
+            const normals = [
+                straightBelowNormals.get(getPointUpLeft(point)),
+                downRightNormals.get(getPointUpLeft(point)),
+                straightBelowNormals.get(getPointUpRight(point)),
+                downRightNormals.get(point),
+                straightBelowNormals.get(point),
+                downRightNormals.get(getPointLeft(point))
+            ]
+
+            // Calculate the combined normal as the average of the normal for the surrounding triangles
+            let vectors: Vector[] = []
+
+            for (let normal of normals) {
+                if (normal) {
+                    vectors.push(normal)
+                }
+            }
+
+            const combinedVector = vectors.reduce(sumVectors)
+
+            const normalized = normalize(combinedVector)
+
+            this.normals.set(point, normalized)
+        }
+    }
+
+    prepareToRenderRoads(roads: Iterable<RoadInformation>): RenderInformation {
+
+        // Create the render information for the roads
+        let coordinatesList: number[] = []
+        let normalsList: number[] = []
+        let textureMappinglist: number[] = []
+
+        for (const road of roads) {
+
+            console.log(road)
+
+            // Iterate through each segment of the road
+            let previous: Point | undefined = undefined
+
+            for (const point of road.points) {
+
+                if (previous === undefined) {
+                    previous = point
+
+                    continue
+                }
+
+                const normalPrevious = this.normals?.get(previous)
+                const normalPoint = this.normals?.get(point)
+
+                if (normalPrevious === undefined || normalPoint === undefined) {
+                    continue
+                }
+
+                // Handle horizontal roads
+                if (previous.y === point.y) {
+
+                    Array.prototype.push.apply(
+                        coordinatesList,
+                        [
+                            previous.x, previous.y, previous.x, previous.y + 0.4, point.x, point.y,
+                            previous.x, previous.y + 0.4, point.x, point.y, point.x, point.y + 0.4
+                        ]
+                    )
+
+                    Array.prototype.push.apply(normalsList,
+                        [
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z
+                        ])
+
+                    Array.prototype.push.apply(
+                        textureMappinglist,
+                        [
+                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                        ]
+                    )
+
+                    // Handle road up-right
+                } else if (previous.x < point.x && previous.y < point.y) {
+
+                    console.log("Road up-right")
+
+                    Array.prototype.push.apply(
+                        coordinatesList,
+                        [
+                            previous.x + 0.2, previous.y, previous.x - 0.2, previous.y + 0.4, point.x, point.y,
+                            previous.x - 0.2, previous.y + 0.4, point.x, point.y, point.x - 0.2, point.y + 0.4
+                        ]
+                    )
+
+                    Array.prototype.push.apply(normalsList,
+                        [
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z
+                        ])
+
+                    Array.prototype.push.apply(
+                        textureMappinglist,
+                        [
+                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                        ]
+                    )
+
+                    // Handle road down-right
+                } else if (previous.x < point.x && previous.y > point.y) {
+
+                    console.log("Road down-right")
+
+                    Array.prototype.push.apply(
+                        coordinatesList,
+                        [
+                            previous.x - 0.2, previous.y, previous.x + 0.2, previous.y + 0.4, point.x, point.y,
+                            previous.x + 0.2, previous.y + 0.4, point.x, point.y, point.x + 0.2, point.y + 0.4
+                        ]
+                    )
+
+                    Array.prototype.push.apply(normalsList,
+                        [
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z
+                        ])
+
+                    Array.prototype.push.apply(
+                        textureMappinglist,
+                        [
+                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                        ]
+                    )
+
+                    // Handle road up-left
+                } else if (previous.x > point.x && previous.y < point.y) {
+
+                    console.log("Road down-right")
+
+                    Array.prototype.push.apply(
+                        coordinatesList,
+                        [
+                            previous.x - 0.2, previous.y, previous.x + 0.2, previous.y + 0.4, point.x, point.y,
+                            previous.x + 0.2, previous.y + 0.4, point.x, point.y, point.x + 0.2, point.y + 0.4
+                        ]
+                    )
+
+                    Array.prototype.push.apply(normalsList,
+                        [
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z
+                        ])
+
+                    Array.prototype.push.apply(
+                        textureMappinglist,
+                        [
+                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                        ]
+                    )
+
+                // Handle road down-left
+                } else if (previous.x > point.x && previous.y > point.y) {
+
+                    console.log("Road up-right")
+
+                    Array.prototype.push.apply(
+                        coordinatesList,
+                        [
+                            previous.x + 0.2, previous.y, previous.x - 0.2, previous.y + 0.4, point.x, point.y,
+                            previous.x - 0.2, previous.y + 0.4, point.x, point.y, point.x - 0.2, point.y + 0.4
+                        ]
+                    )
+
+                    Array.prototype.push.apply(normalsList,
+                        [
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z,
+                            normalPoint.x, normalPoint.y, normalPoint.z
+                        ])
+
+                    Array.prototype.push.apply(
+                        textureMappinglist,
+                        [
+                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                        ]
+                    )
+                }
+
+                previous = point
+            }
+        }
+
+
+        return {
+            coordinates: coordinatesList,
+            normals: normalsList,
+            textureMapping: textureMappinglist
+        }
+    }
+
 }
 
 function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>): MapRenderInformation {
@@ -2129,25 +2459,17 @@ export { houseImageMap, GameCanvas, intToVegetationColor, vegetationToInt }
 
 function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement): WebGLTexture | null {
 
-    // Creating 1x1 blue tuxture
     const texture = gl.createTexture();
     const level = 0;
     const internalFormat = gl.RGBA;
-    const width = 1;
-    const height = 1;
-    const border = 0;
     const srcFormat = gl.RGBA;
     const srcType = gl.UNSIGNED_BYTE;
-    const pixel = new Uint8Array([0, 0, 255, 255]);  // opaque blue (RGBA)
 
-    // bindTexture works similar to bindBuffer
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, srcFormat, srcType, pixel);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)
 
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image);
-
-    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.generateMipmap(gl.TEXTURE_2D)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)

@@ -5,6 +5,7 @@ import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownR
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
 const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
+const roadListeners: ((roads: Iterable<RoadInformation>) => void)[] = []
 
 interface MonitoredBorderForPlayer {
     color: string
@@ -226,6 +227,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     storeDiscoveredTiles(monitor.discoveredPoints)
 
     notifyDiscoveredPointsListeners(monitor.discoveredPoints)
+    notifyRoadListeners(view.roads)
 
     /* Remember the game id and player id */
     monitor.gameId = gameId
@@ -264,6 +266,16 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             console.error(JSON.stringify(message))
 
             return
+        }
+
+        message.newDiscoveredLand?.forEach((point) => monitor.discoveredPoints.add(point))
+
+        if (message.newDiscoveredLand) {
+            populateVisibleTrees(monitor.trees)
+
+            storeDiscoveredTiles(message.newDiscoveredLand)
+
+            notifyDiscoveredPointsListeners(new PointSetFast(message.newDiscoveredLand))
         }
 
         if (message.workersWithNewTargets) {
@@ -314,6 +326,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
         message.newRoads?.forEach((road) => monitor.roads.set(road.id, road))
         message.removedRoads?.forEach((id) => monitor.roads.delete(id))
+        notifyRoadListeners(monitor.roads.values())
 
         message.newTrees?.forEach(tree => {
             monitor.trees.set(tree.id, tree)
@@ -347,16 +360,6 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
         message.newSigns?.forEach((sign) => monitor.signs.set(sign.id, sign))
         message.removedSigns?.forEach((id) => monitor.signs.delete(id))
-
-        message.newDiscoveredLand?.forEach((point) => monitor.discoveredPoints.add(point))
-
-        if (message.newDiscoveredLand) {
-            populateVisibleTrees(monitor.trees)
-
-            storeDiscoveredTiles(message.newDiscoveredLand)
-
-            notifyDiscoveredPointsListeners(new PointSetFast(message.newDiscoveredLand))
-        }
 
         if (message.changedAvailableConstruction) {
             for (const change of message.changedAvailableConstruction) {
@@ -703,6 +706,12 @@ function notifyDiscoveredPointsListeners(discoveredPoints: PointSetFast): void {
     }
 }
 
+function notifyRoadListeners(roads: Iterable<RoadInformation>): void {
+    for (const listener of roadListeners) {
+        listener(roads)
+    }
+}
+
 function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void) {
     messageListeners.push(messageListenerFn)
 }
@@ -721,6 +730,10 @@ function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformati
 
 function listenToDiscoveredPoints(listenerFn: ((discoveredPoints: PointSetFast) => void)): void {
     discoveredPointListeners.push(listenerFn)
+}
+
+function listenToRoads(listenerFn: ((roads: Iterable<RoadInformation>) => void)): void {
+    roadListeners.push(listenerFn)
 }
 
 function notifyMessageListeners(messages: GameMessage[]): void {
@@ -772,4 +785,13 @@ function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefin
     return headquarter
 }
 
-export { listenToDiscoveredPoints, getHeadquarterForPlayer, forceUpdateOfHouse, listenToHouse, listenToMessages, startMonitoringGame, monitor }
+export {
+    listenToDiscoveredPoints,
+    getHeadquarterForPlayer,
+    forceUpdateOfHouse,
+    listenToHouse,
+    listenToMessages,
+    listenToRoads,
+    startMonitoringGame,
+    monitor
+}

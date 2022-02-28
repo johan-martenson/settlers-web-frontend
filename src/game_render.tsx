@@ -20,12 +20,6 @@ interface MapRenderInformation {
     coordinates: number[] //x, y
     normals: number[] //x, y, z
     textureMapping: number[]
-    terrainTypes: TerrainRenderInformation[]
-}
-
-interface TerrainRenderInformation {
-    numberTriangles: number
-    offsetInTriangles: number
 }
 
 interface GameCanvasProps {
@@ -151,7 +145,7 @@ const FLOWER_MEADOW_DOWN_RIGHT_TEXTURE_MAPPING = [3, 0, 3.5, 1, 4, 0].map(v => v
 const LAVA_1_BELOW_TEXTURE_MAPPING = [192, 132, 219, 104, 247, 132]
 const LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING = [192, 133, 220, 160, 246, 132]
 const MAGENTA_BELOW_TEXTURE_MAPPING = [2, 4, 2.5, 3, 3, 4].map(v => v * 48 / 256)
-const MAGENTA_DOWN_RIGHT_TEXTURE_MAPPING = [2, 3, 2.5, 4, 3, 3].map(v => v * 48 / 256) 
+const MAGENTA_DOWN_RIGHT_TEXTURE_MAPPING = [2, 3, 2.5, 4, 3, 3].map(v => v * 48 / 256)
 const MOUNTAIN_MEADOW_BELOW_TEXTURE_MAPPING = [1, 4, 1.5, 3, 2, 4].map(v => v * 48 / 256)
 const MOUNTAIN_MEADOW_DOWN_RIGHT_TEXTURE_MAPPING = [1, 3, 1.5, 4, 2, 3].map(v => v * 48 / 256)
 const WATER_2_BELOW_TEXTURE_MAPPING = WATER_1_BELOW_TEXTURE_MAPPING
@@ -436,32 +430,34 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (this.gl && this.prog) {
                 if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
 
-                    console.log({ title: "Before", info: this.mapRenderInformation?.terrainTypes })
+                    console.log({ title: "Before", numbercoordinates: this.mapRenderInformation?.coordinates })
 
-                    this.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                    const mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
-                    console.log({ title: "After", info: this.mapRenderInformation?.terrainTypes })
+                    this.mapRenderInformation = mapRenderInformation
+
+                    console.log({ title: "After", numbercoordinates: this.mapRenderInformation?.coordinates })
 
                     //const coordAttributeLocation = this.gl.getAttribLocation(this.prog, "a_coords")
-                    this.terrainCoordinatesBuffer = this.gl.createBuffer()
+                    //this.terrainCoordinatesBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), this.gl.STATIC_DRAW);
+                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.coordinates), this.gl.STATIC_DRAW);
                     //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.coordinates))
                     //                    this.gl.vertexAttribPointer(coordAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
                     //                    this.gl.enableVertexAttribArray(coordAttributeLocation)
 
                     //const normalAttributeLocation = this.gl.getAttribLocation(this.prog, "a_normal")
-                    this.terrainNormalsBuffer = this.gl.createBuffer()
+                    //this.terrainNormalsBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), this.gl.STATIC_DRAW);
+                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.normals), this.gl.STATIC_DRAW);
                     //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.normals))
                     //                    this.gl.vertexAttribPointer(normalAttributeLocation, 3, this.gl.FLOAT, false, 0, 0)
                     //                    this.gl.enableVertexAttribArray(normalAttributeLocation)
 
                     //const textureMappingAttributeLocation = this.gl.getAttribLocation(this.prog, "a_texture_mapping")
-                    this.terrainTextureMappingBuffer = this.gl.createBuffer()
+                    //this.terrainTextureMappingBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
+                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
                     //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.textureMapping))
                     //                    this.gl.vertexAttribPointer(textureMappingAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
                     //                    this.gl.enableVertexAttribArray(textureMappingAttributeLocation)
@@ -581,7 +577,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     //    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.textureMapping))
                     //}
 
-                    gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                    gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0) // Ties texture attribute location to the texture buffer
                     gl.enableVertexAttribArray(textureMappingAttributeLocation)
 
                     this.roadCoordinatesBuffer = gl.createBuffer()
@@ -871,27 +867,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (this.mapRenderInformation) {
 
-                        const terrainRenderInformation = this.mapRenderInformation.terrainTypes[index]
 
-                        if (terrainRenderInformation.numberTriangles > 0) {
 
-                            let textureUnit = vegetationToTextureMap.get(vegetation)
-
-                            // Use the image atlas for the savannah, mountain 1
-                            if (vegetation === 0 || vegetation === 1) {
-                                textureUnit = 18
-                            }
-
-                            if (textureUnit !== undefined) {
-
-                                gl.uniform1i(uSampler, textureUnit)
-
-                                const { offsetInTriangles, numberTriangles } = terrainRenderInformation
+                                gl.uniform1i(uSampler, 18)
 
                                 // mode, offset (nr vertices), count (nr vertices)
-                                gl.drawArrays(gl.TRIANGLES, offsetInTriangles * 3, numberTriangles * 3)
-                            }
-                        }
+                                gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 2)
+                        //}
                     }
                 })
             }
@@ -2177,7 +2159,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         ]
                     )
 
-                // Handle road down-left
+                    // Handle road down-left
                 } else if (previous.x > point.x && previous.y > point.y) {
 
                     Array.prototype.push.apply(
@@ -2403,6 +2385,111 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
                 textureMappingBelow,
                 SNOW_BELOW_TEXTURE_MAPPING
             )
+        } else if (terrainBelow === 3) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                SWAMP_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 4) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                DESERT_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 5) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                WATER_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 6) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                BUILDABLE_WATER_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 7) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                DESERT_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 8) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MEADOW_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 9) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MEADOW_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 10) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MEADOW_3_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 11) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MOUNTAIN_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 12) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MOUNTAIN_3_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 13) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MOUNTAIN_4_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 14) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                STEPPE_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 15) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                FLOWER_MEADOW_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 16) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                LAVA_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 17) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MAGENTA_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 18) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MOUNTAIN_MEADOW_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 19) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                WATER_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 20) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                LAVA_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 21) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                LAVA_3_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 22) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                LAVA_4_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 23) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                BUILDABLE_MOUNTAIN_BELOW_TEXTURE_MAPPING
+            )
         } else {
             Array.prototype.push.apply(
                 textureMappingBelow,
@@ -2521,6 +2608,111 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
                 textureMappingDownRight,
                 SNOW_DOWN_RIGHT_TEXTURE_MAPPING
             )
+        } else if (terrainDownRight === 3) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                SWAMP_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 4) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                DESERT_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 5) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                WATER_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 6) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                BUILDABLE_WATER_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 7) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                DESERT_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 8) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MEADOW_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 9) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MEADOW_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 10) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MEADOW_3_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 11) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MOUNTAIN_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 12) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MOUNTAIN_3_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 13) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MOUNTAIN_4_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 14) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                STEPPE_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 15) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                FLOWER_MEADOW_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 16) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                LAVA_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 17) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MAGENTA_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 18) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MOUNTAIN_MEADOW_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 19) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                WATER_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 20) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                LAVA_2_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 21) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                LAVA_3_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 22) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                LAVA_4_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 23) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                BUILDABLE_MOUNTAIN_BELOW_TEXTURE_MAPPING
+            )
         } else {
             Array.prototype.push.apply(
                 textureMappingDownRight,
@@ -2544,32 +2736,10 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         }
     })
 
-    // Calculate the offset for the data for each terrain
-    let currentNumberTriangles = 0
-    let terrainRenderInformation: TerrainRenderInformation[] = []
-
-    VEGETATION_INTEGERS.forEach(vegetationInteger => {
-        let numberTriangles = terrainCount.get(vegetationInteger)
-
-        if (numberTriangles === undefined) {
-            numberTriangles = 0
-        }
-
-        terrainRenderInformation.push(
-            {
-                numberTriangles,
-                offsetInTriangles: currentNumberTriangles
-            }
-        )
-
-        currentNumberTriangles = currentNumberTriangles + numberTriangles
-    })
-
     return {
         coordinates: allCoordinates,
         normals: allNormals,
         textureMapping: allTextureMapping,
-        terrainTypes: terrainRenderInformation
     }
 }
 

@@ -1,6 +1,8 @@
 import { WorkerType, AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material, TreeInformation, TreeId, WildAnimalId, WildAnimalInformation } from './api'
 import { PointMapFast, PointSetFast } from './util_types'
 import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight, getPointUpRight, getPointLeft, getPointUpLeft } from './utils'
+import { Player } from './player'
+import { publicEncrypt } from 'crypto'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
@@ -47,6 +49,8 @@ interface Monitor {
     allTiles: PointMapFast<TerrainAtPoint>
     discoveredBelowTiles: Set<TileBelow>
     discoveredDownRightTiles: Set<TileDownRight>
+    pointsWithBelowTileDiscovered: PointSetFast
+    pointsWithDownRightTileDiscovered: PointSetFast
     deadTrees: PointSetFast
     visibleTrees: Map<TreeId, TreeInformation>
     wildAnimals: Map<WildAnimalId, WildAnimalInformation>
@@ -69,6 +73,8 @@ const monitor: Monitor = {
     allTiles: new PointMapFast<TerrainAtPoint>(),
     discoveredBelowTiles: new Set<TileBelow>(),
     discoveredDownRightTiles: new Set<TileDownRight>(),
+    pointsWithBelowTileDiscovered: new PointSetFast(),
+    pointsWithDownRightTileDiscovered: new PointSetFast(),
     deadTrees: new PointSetFast(),
     visibleTrees: new Map<TreeId, TreeInformation>(),
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>()
@@ -226,12 +232,13 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     /* Store the discovered tiles */
     storeDiscoveredTiles(monitor.discoveredPoints)
 
-    notifyDiscoveredPointsListeners(monitor.discoveredPoints)
-    notifyRoadListeners(view.roads)
-
     /* Remember the game id and player id */
     monitor.gameId = gameId
     monitor.playerId = playerId
+
+    /* Finally notify the listeners, after all data has been stored */
+    notifyDiscoveredPointsListeners(monitor.discoveredPoints)
+    notifyRoadListeners(view.roads)
 
     /* Subscribe to changes */
     const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
@@ -274,8 +281,6 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             populateVisibleTrees(monitor.trees)
 
             storeDiscoveredTiles(message.newDiscoveredLand)
-
-            notifyDiscoveredPointsListeners(new PointSetFast(message.newDiscoveredLand))
         }
 
         if (message.workersWithNewTargets) {
@@ -314,8 +319,6 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             houseIdsToRemove.forEach((id) => monitor.houses.delete(id))
 
             message.changedBuildings.forEach((house) => monitor.houses.set(house.id, house))
-
-            notifyHouseListeners(message.changedBuildings)
         }
 
         message.removedBuildings?.forEach((id) => monitor.houses.delete(id))
@@ -326,7 +329,6 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
         message.newRoads?.forEach((road) => monitor.roads.set(road.id, road))
         message.removedRoads?.forEach((id) => monitor.roads.delete(id))
-        notifyRoadListeners(monitor.roads.values())
 
         message.newTrees?.forEach(tree => {
             monitor.trees.set(tree.id, tree)
@@ -373,10 +375,23 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             }
         }
 
+        /* Finally, notify listeners when all data is updated */
+        if (message.newDiscoveredLand) {
+            notifyDiscoveredPointsListeners(new PointSetFast(message.newDiscoveredLand))
+        }
+
         if (message.newMessages) {
             monitor.messages = monitor.messages.concat(message.newMessages)
 
             notifyMessageListeners(message.newMessages)
+        }
+
+        if (message.newRoads !== undefined || message.removedRoads !== undefined) {
+            notifyRoadListeners(monitor.roads.values())
+        }
+
+        if (message.changedBuildings) {
+            notifyHouseListeners(message.changedBuildings)
         }
     }
 
@@ -515,7 +530,8 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
         const terrainAtPointUpLeft = monitor.allTiles.get(pointUpLeft)
 
         /* Tile down left */
-        if (terrainAtPointLeft && terrainAtPointDownLeft && isLeftDiscovered && isDownLeftDiscovered) {
+        if (terrainAtPointLeft && terrainAtPointDownLeft && isLeftDiscovered && isDownLeftDiscovered &&
+            !monitor.pointsWithDownRightTileDiscovered.has(pointLeft)) {
             monitor.discoveredDownRightTiles.add(
                 {
                     vegetation: terrainAtPointLeft.downRight,
@@ -525,10 +541,13 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
                     heightDown: terrainAtPointDownLeft.height
                 }
             )
+
+            monitor.pointsWithDownRightTileDiscovered.add(pointLeft)
         }
 
         /* Tile up right */
-        if (terrainAtPointUpRight && terrainAtPointRight && isUpRightDiscovered && isRightDiscovered) {
+        if (terrainAtPointUpRight && terrainAtPointRight && isUpRightDiscovered && isRightDiscovered &&
+            !monitor.pointsWithBelowTileDiscovered.has(pointUpRight)) {
             monitor.discoveredBelowTiles.add(
                 {
                     vegetation: terrainAtPointUpRight.below,
@@ -538,10 +557,13 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
                     heightDownRight: terrainAtPointRight.height
                 }
             )
+
+            monitor.pointsWithBelowTileDiscovered.add(pointUpRight)
         }
 
         /* Tile below */
-        if (terrainAtPointDownLeft && terrainAtPointDownRight && isDownLeftDiscovered && isDownRightDiscovered) {
+        if (terrainAtPointDownLeft && terrainAtPointDownRight && isDownLeftDiscovered && isDownRightDiscovered &&
+            !monitor.pointsWithBelowTileDiscovered.has(point)) {
             monitor.discoveredBelowTiles.add(
                 {
                     vegetation: terrainAtPoint.below,
@@ -551,10 +573,14 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
                     heightDownRight: terrainAtPointDownRight.height
                 }
             )
+
+            monitor.pointsWithBelowTileDiscovered.add(point)
         }
 
         /* Tile down right */
-        if (terrainAtPointDownRight && terrainAtPointRight && isDownRightDiscovered && isRightDiscovered) {
+        if (terrainAtPointDownRight && terrainAtPointRight && isDownRightDiscovered && isRightDiscovered &&
+            !monitor.pointsWithDownRightTileDiscovered.has(point)) {
+
             monitor.discoveredDownRightTiles.add(
                 {
                     vegetation: terrainAtPoint.downRight,
@@ -564,10 +590,13 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
                     heightRight: terrainAtPointRight.height
                 }
             )
+
+            monitor.pointsWithDownRightTileDiscovered.add(point)
         }
 
         /* Tile up left */
-        if (isUpLeftDiscovered && isPointLeftDiscovered && terrainAtPointUpLeft && terrainAtPointLeft) {
+        if (isUpLeftDiscovered && isPointLeftDiscovered && terrainAtPointUpLeft && terrainAtPointLeft &&
+            !monitor.pointsWithBelowTileDiscovered.has(pointUpLeft)) {
             monitor.discoveredBelowTiles.add(
                 {
                     vegetation: terrainAtPointUpLeft.below,
@@ -577,10 +606,13 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
                     heightDownRight: terrainAtPoint.height
                 }
             )
+
+            monitor.pointsWithBelowTileDiscovered.add(pointUpLeft)
         }
 
         /* Tile above */
-        if (isUpLeftDiscovered && isUpRightDiscovered && terrainAtPointUpLeft && terrainAtPointUpRight) {
+        if (isUpLeftDiscovered && isUpRightDiscovered && terrainAtPointUpLeft && terrainAtPointUpRight &&
+            !monitor.pointsWithDownRightTileDiscovered.has(pointUpLeft)) {
             monitor.discoveredDownRightTiles.add(
                 {
                     vegetation: terrainAtPointUpLeft.downRight,
@@ -591,6 +623,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
                 }
             )
 
+            monitor.pointsWithDownRightTileDiscovered.add(pointUpLeft)
         }
     }
 }

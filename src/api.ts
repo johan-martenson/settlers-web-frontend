@@ -168,7 +168,8 @@ export function isMaterial(material: string): material is Material {
         material === "wood" ||
         material === "metalworker" ||
         material === "wheat" ||
-        material === "flour"
+        material === "flour" ||
+        material === "builder"
 }
 
 interface Player {

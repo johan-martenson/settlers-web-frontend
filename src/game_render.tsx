@@ -110,6 +110,61 @@ const MAGENTA_IMAGE_FILE = "assets/nature/terrain/greenland/magenta.png"
 const MOUNTAIN_MEADOW_IMAGE_FILE = "assets/nature/terrain/greenland/mountain-meadow.png"
 const MOUNTAIN_IMAGE_FILE = "assets/nature/terrain/greenland/mountain.png"
 
+//const SAVANNAH_BELOW_TEXTURE_MAPPING = [0, 0.4375, 0.09375, 0.625, 0.1875, 0.4375]
+const SAVANNAH_BELOW_TEXTURE_MAPPING = [0, 3, 0.5, 2, 1, 3].map(v => v * 48 / 256)
+//const SAVANNAH_DOWN_RIGHT_TEXTURE_MAPPING = [0, 0.625, 0.09375, 0.4375, 0.1875, 0.625]
+const SAVANNAH_DOWN_RIGHT_TEXTURE_MAPPING = [0, 2, 0.5, 3, 1, 2].map(v => v * 48 / 256)
+//const MOUNTAIN_1_BELOW_TEXTURE_MAPPING = [48 / 256, (256 - 48) / 256, 72 / 256, 0, 96 / 256, (256 - 48) / 256]
+//const MOUNTAIN_1_DOWN_RIGHT_TEXTURE_MAPPING = [48 / 256, 1 / 256, 72 / 256, (256 - 48), 96 / 256, 0]
+const MOUNTAIN_1_BELOW_TEXTURE_MAPPING = [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256)
+const MOUNTAIN_1_DOWN_RIGHT_TEXTURE_MAPPING = [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256)
+//const SNOW_BELOW_TEXTURE_MAPPING = [0, (256 - 48) / 256, 24 / 256, 0, 48 / 256, (256 - 48) / 256]
+//const SNOW_DOWN_RIGHT_TEXTURE_MAPPING = [0 / 256, 0 / 256, 24 / 256, (256 - 48), 48 / 256, 0]
+const SNOW_BELOW_TEXTURE_MAPPING = [0, 1, 0.5, 0, 1, 1].map(v => v * 48 / 256)
+const SNOW_DOWN_RIGHT_TEXTURE_MAPPING = [0, 0, 0.5, 1, 1, 0].map(v => v * 48 / 256)
+const SWAMP_BELOW_TEXTURE_MAPPING = [2, 1, 2.5, 0, 3, 1].map(v => v * 48 / 256)
+const SWAMP_DOWN_RIGHT_TEXTURE_MAPPING = [2, 0, 2.5, 1, 3, 0].map(v => v * 48 / 256)
+const DESERT_1_BELOW_TEXTURE_MAPPING = [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256)
+const DESERT_1_DOWN_RIGHT_TEXTURE_MAPPING = [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256)
+const WATER_1_BELOW_TEXTURE_MAPPING = [192, 76, 220, 49, 247, 76].map(v => v / 256)
+const WATER_1_DOWN_RIGHT_TEXTURE_MAPPING = [193, 77, 220, 104, 247, 77].map(v => v / 256)
+const BUILDABLE_WATER_BELOW_TEXTURE_MAPPING = WATER_1_BELOW_TEXTURE_MAPPING
+const BUILDABLE_WATER_DOWN_RIGHT_TEXTURE_MAPPING = WATER_1_DOWN_RIGHT_TEXTURE_MAPPING
+const DESERT_2_BELOW_TEXTURE_MAPPING = DESERT_1_BELOW_TEXTURE_MAPPING
+const DESERT_DOWN_RIGHT_TEXTURE_MAPPING = DESERT_1_DOWN_RIGHT_TEXTURE_MAPPING
+const MEADOW_1_BELOW_TEXTURE_MAPPING = [1, 3, 1.5, 2, 2, 3].map(v => v * 48 / 256)
+const MEADOW_1_DOWN_RIGHT_TEXTURE_MAPPING = [1, 2, 1.5, 3, 2, 2].map(v => v * 48 / 256)
+const MEADOW_2_BELOW_TEXTURE_MAPPING = [2, 3, 2.5, 2, 3, 3].map(v => v * 48 / 256)
+const MEADOW_2_DOWN_RIGHT_TEXTURE_MAPPING = [2, 2, 2.5, 3, 3, 2].map(v => v * 48 / 256)
+const MEADOW_3_BELOW_TEXTURE_MAPPING = [3, 3, 3.5, 2, 4, 3].map(v => v * 48 / 256)
+const MEADOW_3_DOWN_RIGHT_TEXTURE_MAPPING = [3, 2, 3.5, 3, 4, 2].map(v => v * 48 / 256)
+const MOUNTAIN_2_BELOW_TEXTURE_MAPPING = [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256)
+const MOUNTAIN_2_DOWN_RIGHT_TEXTURE_MAPPING = [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256)
+const MOUNTAIN_3_BELOW_TEXTURE_MAPPING = [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256)
+const MOUNTAIN_3_DOWN_RIGHT_TEXTURE_MAPPING = [2, 1, 2.5, 3, 2, 1].map(v => v * 48 / 256)
+const MOUNTAIN_4_BELOW_TEXTURE_MAPPING = [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256)
+const MOUNTAIN_4_DOWN_RIGHT_TEXTURE_MAPPING = [3, 1, 3.5, 4, 2, 1].map(v => v * 48 / 256)
+const STEPPE_BELOW_TEXTURE_MAPPING = [0, 4, 0.5, 3, 1, 4].map(v => v * 48 / 256)
+const STEPPE_DOWN_RIGHT_TEXTURE_MAPPING = [0, 3, 0.5, 4, 1, 3].map(v => v * 48 / 256)
+const FLOWER_MEADOW_BELOW_TEXTURE_MAPPING = [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256)
+const FLOWER_MEADOW_DOWN_RIGHT_TEXTURE_MAPPING = [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256)
+const LAVA_1_BELOW_TEXTURE_MAPPING = [192, 132, 219, 104, 247, 132]
+const LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING = [192, 133, 220, 160, 246, 132]
+const MAGENTA_BELOW_TEXTURE_MAPPING = [2, 4, 2.5, 3, 3, 4].map(v => v * 48 / 256)
+const MAGENTA_DOWN_RIGHT_TEXTURE_MAPPING = [2, 3, 2.5, 4, 3, 3].map(v => v * 48 / 256) 
+const MOUNTAIN_MEADOW_BELOW_TEXTURE_MAPPING = [1, 4, 1.5, 3, 2, 4].map(v => v * 48 / 256)
+const MOUNTAIN_MEADOW_DOWN_RIGHT_TEXTURE_MAPPING = [1, 3, 1.5, 4, 2, 3].map(v => v * 48 / 256)
+const WATER_2_BELOW_TEXTURE_MAPPING = WATER_1_BELOW_TEXTURE_MAPPING
+const WATER_2_DOWN_RIGHT_TEXTURE_MAPPING = WATER_1_DOWN_RIGHT_TEXTURE_MAPPING
+const LAVA_2_BELOW_TEXTURE_MAPPING = LAVA_1_BELOW_TEXTURE_MAPPING
+const LAVA_2_DOWN_RIGHT_TEXTURE_MAPPING = LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING
+const LAVA_3_BELOW_TEXTURE_MAPPING = LAVA_1_BELOW_TEXTURE_MAPPING
+const LAVA_3_DOWN_RIGHT_TEXTURE_MAPPING = LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING
+const LAVA_4_BELOW_TEXTURE_MAPPING = LAVA_1_BELOW_TEXTURE_MAPPING
+const LAVA_4_DOWN_RIGHT_TEXTURE_MAPPING = LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING
+const BUILDABLE_MOUNTAIN_BELOW_TEXTURE_MAPPING = [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256)
+const BUILDABLE_MOUNTAIN_DOWN_RIGHT_TEXTURE_MAPPING = [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256)
+
 const PLANNED_HOUSE_IMAGE_FILE = "assets/roman-buildings/construction-started-sign.png"
 
 const DEAD_TREE_IMAGE_FILE = "assets/nature/dead-tree.png"
@@ -380,25 +435,36 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             // Update the map rendering buffers
             if (this.gl && this.prog) {
                 if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
+
+                    console.log({ title: "Before", info: this.mapRenderInformation?.terrainTypes })
+
                     this.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
-                    const coordAttributeLocation = this.gl.getAttribLocation(this.prog, "a_coords")
+                    console.log({ title: "After", info: this.mapRenderInformation?.terrainTypes })
+
+                    //const coordAttributeLocation = this.gl.getAttribLocation(this.prog, "a_coords")
+                    this.terrainCoordinatesBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), this.gl.STATIC_DRAW);
-                    this.gl.vertexAttribPointer(coordAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
-                    this.gl.enableVertexAttribArray(coordAttributeLocation)
+                    //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.coordinates))
+                    //                    this.gl.vertexAttribPointer(coordAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
+                    //                    this.gl.enableVertexAttribArray(coordAttributeLocation)
 
-                    const normalAttributeLocation = this.gl.getAttribLocation(this.prog, "a_normal")
+                    //const normalAttributeLocation = this.gl.getAttribLocation(this.prog, "a_normal")
+                    this.terrainNormalsBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), this.gl.STATIC_DRAW);
-                    this.gl.vertexAttribPointer(normalAttributeLocation, 3, this.gl.FLOAT, false, 0, 0)
-                    this.gl.enableVertexAttribArray(normalAttributeLocation)
+                    //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.normals))
+                    //                    this.gl.vertexAttribPointer(normalAttributeLocation, 3, this.gl.FLOAT, false, 0, 0)
+                    //                    this.gl.enableVertexAttribArray(normalAttributeLocation)
 
-                    const textureMappingAttributeLocation = this.gl.getAttribLocation(this.prog, "a_texture_mapping")
+                    //const textureMappingAttributeLocation = this.gl.getAttribLocation(this.prog, "a_texture_mapping")
+                    this.terrainTextureMappingBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
-                    this.gl.vertexAttribPointer(textureMappingAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
-                    this.gl.enableVertexAttribArray(textureMappingAttributeLocation)
+                    //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.textureMapping))
+                    //                    this.gl.vertexAttribPointer(textureMappingAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
+                    //                    this.gl.enableVertexAttribArray(textureMappingAttributeLocation)
                 }
             }
         })
@@ -475,25 +541,46 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.useProgram(prog)
                     gl.viewport(0, 0, canvas.width, canvas.height)
 
+                    const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
+
+                    console.log({ maxNumberTriangles })
+
                     // Set up the buffer attributes
                     this.terrainCoordinatesBuffer = gl.createBuffer()
                     const coordAttributeLocation = gl.getAttribLocation(prog, "a_coords")
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), gl.STATIC_DRAW);
+                    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), gl.STATIC_DRAW)
+
+                    //if (this.mapRenderInformation.coordinates && this.mapRenderInformation.coordinates.length > 0) {
+                    //    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.coordinates), gl.STATIC_DRAW)
+                    //}
+
                     gl.vertexAttribPointer(coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
                     gl.enableVertexAttribArray(coordAttributeLocation)
 
                     this.terrainNormalsBuffer = gl.createBuffer()
                     const normalAttributeLocation = gl.getAttribLocation(prog, "a_normal")
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), gl.STATIC_DRAW);
+                    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 3, gl.STATIC_DRAW)
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), gl.STATIC_DRAW)
+
+                    //if (this.mapRenderInformation && this.mapRenderInformation.normals.length > 0) {
+                    //    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.normals))
+                    //}
                     gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
                     gl.enableVertexAttribArray(normalAttributeLocation)
 
                     this.terrainTextureMappingBuffer = gl.createBuffer()
                     const textureMappingAttributeLocation = gl.getAttribLocation(prog, "a_texture_mapping")
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
+                    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), gl.STATIC_DRAW)
+
+                    //if (this.mapRenderInformation && this.mapRenderInformation.textureMapping.length > 0) {
+                    //    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.textureMapping))
+                    //}
+
                     gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
                     gl.enableVertexAttribArray(textureMappingAttributeLocation)
 
@@ -789,6 +876,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         if (terrainRenderInformation.numberTriangles > 0) {
 
                             let textureUnit = vegetationToTextureMap.get(vegetation)
+
+                            // Use the image atlas for the savannah, mountain 1
+                            if (vegetation === 0 || vegetation === 1) {
+                                textureUnit = 18
+                            }
 
                             if (textureUnit !== undefined) {
 
@@ -1951,8 +2043,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         for (const road of roads) {
 
-            console.log(road)
-
             // Iterate through each segment of the road
             let previous: Point | undefined = undefined
 
@@ -2003,8 +2093,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     // Handle road up-right
                 } else if (previous.x < point.x && previous.y < point.y) {
 
-                    console.log("Road up-right")
-
                     Array.prototype.push.apply(
                         coordinatesList,
                         [
@@ -2033,8 +2121,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road down-right
                 } else if (previous.x < point.x && previous.y > point.y) {
-
-                    console.log("Road down-right")
 
                     Array.prototype.push.apply(
                         coordinatesList,
@@ -2065,8 +2151,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     // Handle road up-left
                 } else if (previous.x > point.x && previous.y < point.y) {
 
-                    console.log("Road down-right")
-
                     Array.prototype.push.apply(
                         coordinatesList,
                         [
@@ -2095,8 +2179,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 // Handle road down-left
                 } else if (previous.x > point.x && previous.y > point.y) {
-
-                    console.log("Road up-right")
 
                     Array.prototype.push.apply(
                         coordinatesList,
@@ -2305,10 +2387,28 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
             textureMappingBelow = []
         }
 
-        Array.prototype.push.apply(
-            textureMappingBelow,
-            [0, 0, 0.5, 1.0, 1.0, 0]
-        )
+        // Use image atlas for savannah, moutain 1, snow
+        if (terrainBelow === 0) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                SAVANNAH_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 1) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                MOUNTAIN_1_BELOW_TEXTURE_MAPPING
+            )
+        } else if (terrainBelow === 2) {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                SNOW_BELOW_TEXTURE_MAPPING
+            )
+        } else {
+            Array.prototype.push.apply(
+                textureMappingBelow,
+                [0, 0, 0.5, 1.0, 1.0, 0]
+            )
+        }
 
         terrainTextureMappingLists.set(terrainBelow, textureMappingBelow)
     })
@@ -2405,10 +2505,28 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
             textureMappingDownRight = []
         }
 
-        Array.prototype.push.apply(
-            textureMappingDownRight,
-            [0, 1.0, 0.5, 0, 1.0, 1.0]
-        )
+        // Use image atlas for savannah, mountain 1, snow
+        if (terrainDownRight === 0) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                SAVANNAH_DOWN_RIGHT_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 1) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                MOUNTAIN_1_DOWN_RIGHT_TEXTURE_MAPPING
+            )
+        } else if (terrainDownRight === 2) {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                SNOW_DOWN_RIGHT_TEXTURE_MAPPING
+            )
+        } else {
+            Array.prototype.push.apply(
+                textureMappingDownRight,
+                [0, 1.0, 0.5, 0, 1.0, 1.0]
+            )
+        }
 
         terrainTextureMappingLists.set(terrainDownRight, textureMappingDownRight)
     })
@@ -2465,6 +2583,7 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     const srcFormat = gl.RGBA;
     const srcType = gl.UNSIGNED_BYTE;
 
+    //gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)

@@ -1763,114 +1763,45 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>): MapRenderInformation {
 
-        // Calculate the normals for each triangle
-        const straightBelowNormals = new PointMapFast<Vector>()
-        const downRightNormals = new PointMapFast<Vector>()
-
-        tilesBelow.forEach(
-            (terrainAtPoint) => {
-
-                const point = terrainAtPoint.pointAbove
-                const height = terrainAtPoint.heightAbove
-
-                const point3d = { x: point.x, y: point.y, z: height }
-
-                const pointDownLeft = getPointDownLeft(point)
-                const pointDownRight = getPointDownRight(point)
-
-                const pointDownLeft3d = { x: pointDownLeft.x, y: pointDownLeft.y, z: terrainAtPoint.heightDownLeft }
-                const pointDownRight3d = { x: pointDownRight.x, y: pointDownRight.y, z: terrainAtPoint.heightDownRight }
-
-                straightBelowNormals.set(point, getNormalForTriangle(point3d, pointDownLeft3d, pointDownRight3d))
-            }
-        )
-
-        tilesDownRight.forEach(
-            (terrainAtPoint) => {
-    
-                const point = terrainAtPoint.pointLeft
-                const height = terrainAtPoint.heightLeft
-    
-                const point3d = { x: point.x, y: point.y, z: height }
-    
-                const pointDownRight = getPointDownRight(point)
-                const pointRight = getPointRight(point)
-    
-                const pointDownRight3d = { x: pointDownRight.x, y: pointDownRight.y, z: terrainAtPoint.heightDown }
-                const pointRight3d = { x: pointRight.x, y: pointRight.y, z: terrainAtPoint.heightRight }
-    
-                downRightNormals.set(point, getNormalForTriangle(point3d, pointDownRight3d, pointRight3d))
-            }
-        )
-    
-        // Calculate the normal for each point
-        const normalMap = new PointMapFast<Vector>()
-    
-        for (let point of monitor.discoveredPoints) {
-            const normals = [
-                straightBelowNormals.get(getPointUpLeft(point)),
-                downRightNormals.get(getPointUpLeft(point)),
-                straightBelowNormals.get(getPointUpRight(point)),
-                downRightNormals.get(point),
-                straightBelowNormals.get(point),
-                downRightNormals.get(getPointLeft(point))
-            ]
-    
-            // Calculate the combined normal as the average of the normal for the surrounding triangles
-            let vectors: Vector[] = []
-    
-            for (let normal of normals) {
-                if (normal) {
-                    vectors.push(normal)
-                }
-            }
-    
-            const combinedVector = vectors.reduce(sumVectors)
-    
-            const normalized = normalize(combinedVector)
-    
-            normalMap.set(point, normalized)
-        }
-    
         // Count number of triangles per type of terrain and create a list of triangle information for each terrain
         let terrainCount: Map<VegetationIntegers, number> = new Map()
         let terrainCoordinatesLists: Map<VegetationIntegers, number[]> = new Map()
         let terrainNormalsLists: Map<VegetationIntegers, number[]> = new Map()
         let terrainTextureMappingLists: Map<VegetationIntegers, number[]> = new Map()
-    
+
         tilesBelow.forEach(tileBelow => {
-    
+
             const point = tileBelow.pointAbove
             const pointDownLeft = getPointDownLeft(point)
             const pointDownRight = getPointDownRight(point)
-    
-            const normal = this.normals.get(point) // normalMap.get(point)
-            const normalDownLeft = this.normals.get(pointDownLeft) // normalMap.get(pointDownLeft)
-            const normalDownRight = this.normals.get(pointDownRight) // normalMap.get(pointDownRight)
-    
+
+            const normal = this.normals.get(point)
+            const normalDownLeft = this.normals.get(pointDownLeft)
+            const normalDownRight = this.normals.get(pointDownRight)
+
             const terrainBelow = tileBelow.vegetation
-    
+
             if (VEGETATION_INTEGERS.indexOf(terrainBelow) === -1) {
                 console.log("UNKNOWN TERRAIN: " + terrainBelow)
             }
-    
+
             // Count the amount of terrain - directly below
             let terrainCountBelow = terrainCount.get(terrainBelow)
-    
+
             if (terrainCountBelow === undefined) {
                 terrainCountBelow = 0
             }
-    
+
             terrainCount.set(terrainBelow, terrainCountBelow + 1)
-    
+
             // Add the coordinates for each triangle to the coordinates buffer
             let coordinatesForTerrain = terrainCoordinatesLists.get(terrainBelow)
-    
-    
+
+
             if (coordinatesForTerrain === undefined) {
                 coordinatesForTerrain = []
             }
-    
+
             Array.prototype.push.apply(
                 coordinatesForTerrain,
                 [
@@ -1878,17 +1809,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     pointDownLeft.x, pointDownLeft.y,
                     pointDownRight.x, pointDownRight.y,
                 ])
-    
+
             terrainCoordinatesLists.set(terrainBelow, coordinatesForTerrain)
-    
+
             // Add the normal for each triangle to the normals buffer
             if (normal !== undefined && normalDownLeft !== undefined && normalDownRight !== undefined) {
                 let normalsForTerrain = terrainNormalsLists.get(terrainBelow)
-    
+
                 if (normalsForTerrain === undefined) {
                     normalsForTerrain = []
                 }
-    
+
                 Array.prototype.push.apply(
                     normalsForTerrain,
                     [
@@ -1896,15 +1827,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         normalDownLeft.x, normalDownLeft.y, normalDownLeft.z,
                         normalDownRight.x, normalDownRight.y, normalDownRight.z
                     ])
-    
+
                 terrainNormalsLists.set(terrainBelow, normalsForTerrain)
             } else {
                 let normalsForTerrain = terrainNormalsLists.get(terrainBelow)
-    
+
                 if (normalsForTerrain === undefined) {
                     normalsForTerrain = []
                 }
-    
+
                 Array.prototype.push.apply(
                     normalsForTerrain,
                     [
@@ -1912,21 +1843,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         0, 0, 1,
                         0, 0, 1,
                     ])
-    
+
                 terrainNormalsLists.set(terrainBelow, normalsForTerrain)
             }
-    
+
             // Add the texture mapping for the triangles
             //    --  Texture coordinates go from 0, 0 to 1, 1.
             //    --  To map to pixel coordinates:
             //            texcoordX = pixelCoordX / (width  - 1)
             //            texcoordY = pixelCoordY / (height - 1)
             let textureMappingBelow = terrainTextureMappingLists.get(terrainBelow)
-    
+
             if (textureMappingBelow === undefined) {
                 textureMappingBelow = []
             }
-    
+
             // Use image atlas for savannah, moutain 1, snow
             if (terrainBelow === 0) {
                 Array.prototype.push.apply(
@@ -2065,9 +1996,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const pointDownRight = getPointDownRight(point)
             const pointRight = getPointRight(point)
 
-            const normal = this.normals.get(point) // normalMap.get(point)
-            const normalDownRight = this.normals.get(pointDownRight) // normalMap.get(pointDownRight)
-            const normalRight = this.normals.get(pointRight) // normalMap.get(pointRight)
+            const normal = this.normals.get(point)
+            const normalDownRight = this.normals.get(pointDownRight)
+            const normalRight = this.normals.get(pointRight)
 
             const terrainDownRight = tile.vegetation
 

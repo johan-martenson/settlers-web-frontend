@@ -287,6 +287,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private roadTextureMappingBuffer?: WebGLBuffer | null
     private roadRenderInformation?: RenderInformation
     private normals: PointMapFast<Vector>
+    private uLightVector?: WebGLUniformLocation | null
+    private uScale?: WebGLUniformLocation | null
+    private uOffset?: WebGLUniformLocation | null
+    private uSampler?: WebGLUniformLocation | null
+    private uScreenWidth?: WebGLUniformLocation | null
+    private uScreenHeight?: WebGLUniformLocation | null
+    private coordAttributeLocation?: number
+    private normalAttributeLocation?: number
+    private textureMappingAttributeLocation?: number
 
     constructor(props: GameCanvasProps) {
         super(props)
@@ -430,37 +439,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (this.gl && this.prog) {
                 if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
 
-                    console.log({ title: "Before", numbercoordinates: this.mapRenderInformation?.coordinates })
-
                     const mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
                     this.mapRenderInformation = mapRenderInformation
 
-                    console.log({ title: "After", numbercoordinates: this.mapRenderInformation?.coordinates })
-
-                    //const coordAttributeLocation = this.gl.getAttribLocation(this.prog, "a_coords")
-                    //this.terrainCoordinatesBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.coordinates), this.gl.STATIC_DRAW);
-                    //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.coordinates))
-                    //                    this.gl.vertexAttribPointer(coordAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
-                    //                    this.gl.enableVertexAttribArray(coordAttributeLocation)
 
-                    //const normalAttributeLocation = this.gl.getAttribLocation(this.prog, "a_normal")
-                    //this.terrainNormalsBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.normals), this.gl.STATIC_DRAW);
-                    //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.normals))
-                    //                    this.gl.vertexAttribPointer(normalAttributeLocation, 3, this.gl.FLOAT, false, 0, 0)
-                    //                    this.gl.enableVertexAttribArray(normalAttributeLocation)
 
-                    //const textureMappingAttributeLocation = this.gl.getAttribLocation(this.prog, "a_texture_mapping")
-                    //this.terrainTextureMappingBuffer = this.gl.createBuffer()
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
-                    //this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.textureMapping))
-                    //                    this.gl.vertexAttribPointer(textureMappingAttributeLocation, 2, this.gl.FLOAT, false, 0, 0)
-                    //                    this.gl.enableVertexAttribArray(textureMappingAttributeLocation)
                 }
             }
         })
@@ -539,46 +529,32 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 
-                    console.log({ maxNumberTriangles })
+                    // Get handles
+                    this.uLightVector = gl.getUniformLocation(prog, "u_light_vector")
+                    this.uScale = gl.getUniformLocation(prog, "u_scale")
+                    this.uOffset = gl.getUniformLocation(prog, "u_offset")
+                    this.uSampler = gl.getUniformLocation(prog, 'u_sampler')
+                    this.uScreenWidth = gl.getUniformLocation(prog, "u_screen_width")
+                    this.uScreenHeight = gl.getUniformLocation(prog, "u_screen_height")
+                    this.coordAttributeLocation = gl.getAttribLocation(prog, "a_coords")
+                    this.normalAttributeLocation = gl.getAttribLocation(prog, "a_normal")
+                    this.textureMappingAttributeLocation = gl.getAttribLocation(prog, "a_texture_mapping")
 
                     // Set up the buffer attributes
                     this.terrainCoordinatesBuffer = gl.createBuffer()
-                    const coordAttributeLocation = gl.getAttribLocation(prog, "a_coords")
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
                     gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), gl.STATIC_DRAW)
 
-                    //if (this.mapRenderInformation.coordinates && this.mapRenderInformation.coordinates.length > 0) {
-                    //    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.coordinates), gl.STATIC_DRAW)
-                    //}
-
-                    gl.vertexAttribPointer(coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                    gl.enableVertexAttribArray(coordAttributeLocation)
-
                     this.terrainNormalsBuffer = gl.createBuffer()
-                    const normalAttributeLocation = gl.getAttribLocation(prog, "a_normal")
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
                     gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 3, gl.STATIC_DRAW)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), gl.STATIC_DRAW)
 
-                    //if (this.mapRenderInformation && this.mapRenderInformation.normals.length > 0) {
-                    //    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.normals))
-                    //}
-                    gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                    gl.enableVertexAttribArray(normalAttributeLocation)
-
                     this.terrainTextureMappingBuffer = gl.createBuffer()
-                    const textureMappingAttributeLocation = gl.getAttribLocation(prog, "a_texture_mapping")
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
                     gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), gl.STATIC_DRAW)
-
-                    //if (this.mapRenderInformation && this.mapRenderInformation.textureMapping.length > 0) {
-                    //    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(this.mapRenderInformation.textureMapping))
-                    //}
-
-                    gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0) // Ties texture attribute location to the texture buffer
-                    gl.enableVertexAttribArray(textureMappingAttributeLocation)
 
                     this.roadCoordinatesBuffer = gl.createBuffer()
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
@@ -592,133 +568,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
 
-                    // Load terrain images
-                    const imageSavannah = await loadImageNg(SAVANNAH_IMAGE_FILE)
-                    const imageMountain1 = await loadImageNg(MOUNTAIN_1_IMAGE_FILE)
-                    const imageSnow = await loadImageNg(SNOW_IMAGE_FILE)
-                    const imageSwamp = await loadImageNg(SWAMP_IMAGE_FILE)
-                    const imageDesert1 = await loadImageNg(DESERT_IMAGE_FILE)
-                    const imageWater = await loadImageNg(WATER_IMAGE_FILE)
-                    const imageMeadow1 = await loadImageNg(MEADOW_1_IMAGE_FILE)
-                    const imageMeadow2 = await loadImageNg(MEADOW_2_IMAGE_FILE)
-                    const imageMeadow3 = await loadImageNg(MEADOW_3_IMAGE_FILE)
-                    const imageMountain2 = await loadImageNg(MOUNTAIN_2_IMAGE_FILE)
-                    const imageMountain3 = await loadImageNg(MOUNTAIN_3_IMAGE_FILE)
-                    const imageMountain4 = await loadImageNg(MOUNTAIN_4_IMAGE_FILE)
-                    const imageSteppe = await loadImageNg(STEPPE_IMAGE_FILE)
-                    const imageFlowerMeadow = await loadImageNg(FLOWER_MEADOW_IMAGE_FILE)
-                    const imageLava = await loadImageNg(LAVA_IMAGE_FILE)
-                    const imageMagenta = await loadImageNg(MAGENTA_IMAGE_FILE)
-                    const imageMountainMeadow = await loadImageNg(MOUNTAIN_MEADOW_IMAGE_FILE)
-                    const imageBuildableMountain = await loadImageNg(MOUNTAIN_IMAGE_FILE)
-
                     // Load the image atlas for terrain and roads
                     const imageAtlasTerrainAndRoads = await loadImageNg(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
-
-                    // Create terrain textures
-                    const textureSavannah = makeTextureFromImage(gl, imageSavannah)
-                    const textureMountain1 = makeTextureFromImage(gl, imageMountain1)
-                    const textureSnow = makeTextureFromImage(gl, imageSnow)
-                    const textureSwamp = makeTextureFromImage(gl, imageSwamp)
-                    const textureDesert1 = makeTextureFromImage(gl, imageDesert1)
-                    const textureWater = makeTextureFromImage(gl, imageWater)
-                    const textureMeadow1 = makeTextureFromImage(gl, imageMeadow1)
-                    const textureMeadow2 = makeTextureFromImage(gl, imageMeadow2)
-                    const textureMeadow3 = makeTextureFromImage(gl, imageMeadow3)
-                    const textureMountain2 = makeTextureFromImage(gl, imageMountain2)
-                    const textureMountain3 = makeTextureFromImage(gl, imageMountain3)
-                    const textureMountain4 = makeTextureFromImage(gl, imageMountain4)
-                    const textureSteppe = makeTextureFromImage(gl, imageSteppe)
-                    const textureFlowerMeadow = makeTextureFromImage(gl, imageFlowerMeadow)
-                    const textureLava = makeTextureFromImage(gl, imageLava)
-                    const textureMagenta = makeTextureFromImage(gl, imageMagenta)
-                    const textureMountainMeadow = makeTextureFromImage(gl, imageMountainMeadow)
-                    const textureBuildableMountain = makeTextureFromImage(gl, imageBuildableMountain)
 
                     // Create the road texture
                     const textureTerrainAndRoadAtlas = makeTextureFromImage(gl, imageAtlasTerrainAndRoads)
 
-                    // Bind the terrain textures to slots 0, 1, 2, etc.
+                    // Bind the terrain and road image atlas texture
                     gl.activeTexture(gl.TEXTURE0)
-                    gl.bindTexture(gl.TEXTURE_2D, textureSavannah)
-                    vegetationToTextureMap.set(0, 0)
-
-                    gl.activeTexture(gl.TEXTURE1)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMountain1)
-                    vegetationToTextureMap.set(1, 1)
-
-                    gl.activeTexture(gl.TEXTURE2)
-                    gl.bindTexture(gl.TEXTURE_2D, textureSnow)
-                    vegetationToTextureMap.set(2, 2)
-
-                    gl.activeTexture(gl.TEXTURE3)
-                    gl.bindTexture(gl.TEXTURE_2D, textureSwamp)
-                    vegetationToTextureMap.set(3, 3)
-
-                    gl.activeTexture(gl.TEXTURE4)
-                    gl.bindTexture(gl.TEXTURE_2D, textureDesert1)
-                    vegetationToTextureMap.set(4, 4)
-                    vegetationToTextureMap.set(7, 4)
-
-                    gl.activeTexture(gl.TEXTURE5)
-                    gl.bindTexture(gl.TEXTURE_2D, textureWater)
-                    vegetationToTextureMap.set(5, 5)
-                    vegetationToTextureMap.set(6, 5)
-                    vegetationToTextureMap.set(19, 5)
-
-                    gl.activeTexture(gl.TEXTURE6)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMeadow1)
-                    vegetationToTextureMap.set(8, 6)
-
-                    gl.activeTexture(gl.TEXTURE7)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMeadow2)
-                    vegetationToTextureMap.set(9, 7)
-
-                    gl.activeTexture(gl.TEXTURE8)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMeadow3)
-                    vegetationToTextureMap.set(10, 8)
-
-                    gl.activeTexture(gl.TEXTURE9)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMountain2)
-                    vegetationToTextureMap.set(11, 9)
-
-                    gl.activeTexture(gl.TEXTURE10)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMountain3)
-                    vegetationToTextureMap.set(12, 10)
-
-                    gl.activeTexture(gl.TEXTURE11)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMountain4)
-                    vegetationToTextureMap.set(13, 11)
-
-                    gl.activeTexture(gl.TEXTURE12)
-                    gl.bindTexture(gl.TEXTURE_2D, textureSteppe)
-                    vegetationToTextureMap.set(14, 12)
-
-                    gl.activeTexture(gl.TEXTURE13)
-                    gl.bindTexture(gl.TEXTURE_2D, textureFlowerMeadow)
-                    vegetationToTextureMap.set(15, 13)
-
-                    gl.activeTexture(gl.TEXTURE14)
-                    gl.bindTexture(gl.TEXTURE_2D, textureLava)
-                    vegetationToTextureMap.set(16, 14)
-                    vegetationToTextureMap.set(20, 14)
-                    vegetationToTextureMap.set(21, 14)
-                    vegetationToTextureMap.set(22, 14)
-
-                    gl.activeTexture(gl.TEXTURE15)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMagenta)
-                    vegetationToTextureMap.set(17, 15)
-
-                    gl.activeTexture(gl.TEXTURE16)
-                    gl.bindTexture(gl.TEXTURE_2D, textureMountainMeadow)
-                    vegetationToTextureMap.set(18, 16)
-
-                    gl.activeTexture(gl.TEXTURE17)
-                    gl.bindTexture(gl.TEXTURE_2D, textureBuildableMountain)
-                    vegetationToTextureMap.set(23, 17)
-
-                    // Bind the road texture
-                    gl.activeTexture(gl.TEXTURE18)
                     gl.bindTexture(gl.TEXTURE_2D, textureTerrainAndRoadAtlas)
 
                     this.gl = gl
@@ -811,95 +668,84 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("init")
 
-        /* Do the accelerated drawing -- of the terrain and roads */
-        if (this.gl && this.prog && this.mapRenderInformation) {
+        /* Do the accelerated drawing of terrain and roads */
+        if (this.gl && this.prog && this.mapRenderInformation &&
+            this.uScreenWidth !== undefined &&
+            this.uScreenHeight !== undefined &&
+            this.uLightVector !== undefined &&
+            this.uScale !== undefined &&
+            this.uOffset !== undefined &&
+            this.coordAttributeLocation !== undefined &&
+            this.normalAttributeLocation !== undefined &&
+            this.textureMappingAttributeLocation !== undefined &&
+            this.uSampler !== undefined) {
 
             const gl = this.gl
-            const prog = this.prog
 
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-            // Get handles
-            const uLightVector = gl.getUniformLocation(prog, "u_light_vector")
-            const uScale = gl.getUniformLocation(prog, "u_scale")
-            const uOffset = gl.getUniformLocation(prog, "u_offset")
-            const uSampler = gl.getUniformLocation(prog, 'u_sampler')
-            const uScreenWidth = gl.getUniformLocation(prog, "u_screen_width")
-            const uScreenHeight = gl.getUniformLocation(prog, "u_screen_height")
-
             // Set screen width and height
-            gl.uniform1f(uScreenWidth, width)
-            gl.uniform1f(uScreenHeight, height)
+            gl.uniform1f(this.uScreenWidth, width)
+            gl.uniform1f(this.uScreenHeight, height)
 
             // Set the light vector
             //const lightVector = [Math.sin(angle), Math.cos(angle), -1]
             const lightVector = [-1, 1, -1]
-            gl.uniform3fv(uLightVector, lightVector)
+            gl.uniform3fv(this.uLightVector, lightVector)
 
             // Set the current values for the scale, offset and the sampler
-            gl.uniform2f(uScale, this.props.scale, this.props.scale)
-            gl.uniform2fv(uOffset, [this.props.translateX, this.props.translateY])
+            gl.uniform2f(this.uScale, this.props.scale, this.props.scale)
+            gl.uniform2fv(this.uOffset, [this.props.translateX, this.props.translateY])
 
             // Fill the screen with black color
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
             gl.clear(gl.COLOR_BUFFER_BIT)
 
             // Draw each terrain
-            const coordAttributeLocation = gl.getAttribLocation(prog, "a_coords")
-            const normalAttributeLocation = gl.getAttribLocation(prog, "a_normal")
-            const textureMappingAttributeLocation = gl.getAttribLocation(prog, "a_texture_mapping")
-
             if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
-                gl.vertexAttribPointer(coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(coordAttributeLocation)
+                gl.vertexAttribPointer(this.coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(this.coordAttributeLocation)
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
-                gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(normalAttributeLocation)
+                gl.vertexAttribPointer(this.normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(this.normalAttributeLocation)
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
-                gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(textureMappingAttributeLocation)
+                gl.vertexAttribPointer(this.textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(this.textureMappingAttributeLocation)
 
-                VEGETATION_INTEGERS.forEach((vegetation, index) => {
+                if (this.mapRenderInformation) {
+                    gl.uniform1i(this.uSampler, 0)
 
-                    if (this.mapRenderInformation) {
-
-
-
-                                gl.uniform1i(uSampler, 18)
-
-                                // mode, offset (nr vertices), count (nr vertices)
-                                gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 2)
-                        //}
-                    }
-                })
+                    // mode, offset (nr vertices), count (nr vertices)
+                    gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 2)
+                }
             }
 
             // Draw the roads
             if (this.roadRenderInformation !== undefined &&
                 this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
-                gl.vertexAttribPointer(coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(coordAttributeLocation)
+                gl.vertexAttribPointer(this.coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(this.coordAttributeLocation)
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.roadNormalsBuffer)
-                gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(normalAttributeLocation)
+                gl.vertexAttribPointer(this.normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(this.normalAttributeLocation)
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
-                gl.vertexAttribPointer(textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(textureMappingAttributeLocation)
+                gl.vertexAttribPointer(this.textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(this.textureMappingAttributeLocation)
 
-                gl.uniform1i(uSampler, 18)
+                gl.uniform1i(this.uSampler, 0)
 
                 gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 2)
             }
         }
 
-        duration.after("draw tiles down-right")
+        duration.after("draw terrain and roads")
 
 
         ctx = overlayCtx

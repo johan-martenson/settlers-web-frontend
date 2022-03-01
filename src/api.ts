@@ -928,9 +928,6 @@ async function getViewForPlayer(gameId: GameId, playerId: PlayerId): Promise<Pla
 }
 
 async function getPlayers(gameId: GameId): Promise<PlayerInformation[]> {
-
-    console.info("Get players")
-
     const response = await fetch("/settlers/api/games/" + gameId + "/players")
 
     const result = await response.json()

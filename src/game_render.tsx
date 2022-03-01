@@ -94,11 +94,11 @@ vegetationToTextureMapping.set(6, { below: [194, 76, 219, 50, 245, 76].map(v => 
 vegetationToTextureMapping.set(7, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Desert 2
 vegetationToTextureMapping.set(8, { below: [1, 3, 1.5, 2, 2, 3].map(v => v * 48 / 256), downRight: [1, 2, 1.5, 3, 2, 2].map(v => v * 48 / 256) }) // Meadow 1
 vegetationToTextureMapping.set(9, { below: [2, 3, 2.5, 2, 3, 3].map(v => v * 48 / 256), downRight: [2, 2, 2.5, 3, 3, 2].map(v => v * 48 / 256) }) // Meadow 2
-vegetationToTextureMapping.set(10, { below: [3, 3, 3.5, 2, 4, 3].map(v => v * 48 / 256), downRight: [3, 2, 3.5, 3, 4, 2].map(v => v * 48 / 256) }) // Meadow 3
+vegetationToTextureMapping.set(10, { below: [146, 142, 146, 98, 190, 98].map(v => v / 256), downRight: [146, 142, 190, 142, 190, 98].map(v => v / 256) }) // Meadow 3
 vegetationToTextureMapping.set(11, { below: [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256), downRight: [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256) }) // Mountain 2
 vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256), downRight: [2, 1, 2.5, 3, 2, 1].map(v => v * 48 / 256) }) // Mountain 3
 vegetationToTextureMapping.set(13, { below: [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256), downRight: [3, 1, 3.5, 4, 2, 1].map(v => v * 48 / 256) }) // Mountain 4
-vegetationToTextureMapping.set(14, { below: [0, 4, 0.5, 3, 1, 4].map(v => v * 48 / 256), downRight: [0, 3, 0.5, 4, 1, 3].map(v => v * 48 / 256) }) // Steppe
+vegetationToTextureMapping.set(14, { below: [2, 190, 2, 146, 45, 146].map(v => v / 256), downRight: [2, 190, 45, 146, 45, 190].map(v => v / 256) }) // Steppe
 vegetationToTextureMapping.set(15, { below: [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256), downRight: [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256) }) // Flower meadow
 vegetationToTextureMapping.set(16, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 1
 vegetationToTextureMapping.set(17, { below: [2, 4, 2.5, 3, 3, 4].map(v => v * 48 / 256), downRight: [2, 3, 2.5, 4, 3, 3].map(v => v * 48 / 256) }) // Magenta
@@ -443,8 +443,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (fragSh) {
                     gl.shaderSource(fragSh, shaded_repeated_fragment_shader)
                     gl.compileShader(fragSh)
-
-                    console.log(fragSh)
                 } else {
                     console.log("Failed to get fragment shader")
                 }

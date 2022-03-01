@@ -6,7 +6,7 @@ import { Filename, houseImageMap, houseUnderConstructionImageMap } from './image
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimationUtil, camelCaseToWords, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation } from './utils'
+import { AnimationUtil, camelCaseToWords, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -78,54 +78,36 @@ const SELECTED_POINT = "assets/ui-elements/selected-point.png"
 
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
 
-const SAVANNAH_BELOW_TEXTURE_MAPPING = [0, 3, 0.5, 2, 1, 3].map(v => v * 48 / 256)
-const SAVANNAH_DOWN_RIGHT_TEXTURE_MAPPING = [0, 2, 0.5, 3, 1, 2].map(v => v * 48 / 256)
-const MOUNTAIN_1_BELOW_TEXTURE_MAPPING = [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256)
-const MOUNTAIN_1_DOWN_RIGHT_TEXTURE_MAPPING = [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256)
-const SNOW_BELOW_TEXTURE_MAPPING = [0, 1, 0.5, 0, 1, 1].map(v => v * 48 / 256)
-const SNOW_DOWN_RIGHT_TEXTURE_MAPPING = [0, 0, 0.5, 1, 1, 0].map(v => v * 48 / 256)
-const SWAMP_BELOW_TEXTURE_MAPPING = [2, 1, 2.5, 0, 3, 1].map(v => v * 48 / 256)
-const SWAMP_DOWN_RIGHT_TEXTURE_MAPPING = [2, 0, 2.5, 1, 3, 0].map(v => v * 48 / 256)
-const DESERT_1_BELOW_TEXTURE_MAPPING = [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256)
-const DESERT_1_DOWN_RIGHT_TEXTURE_MAPPING = [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256)
-const WATER_1_BELOW_TEXTURE_MAPPING = [194, 76, 219, 50, 245, 76].map(v => v / 256)
-const WATER_1_DOWN_RIGHT_TEXTURE_MAPPING = [194, 77, 219, 101, 245, 77].map(v => v / 256)
-const BUILDABLE_WATER_BELOW_TEXTURE_MAPPING = WATER_1_BELOW_TEXTURE_MAPPING
-const BUILDABLE_WATER_DOWN_RIGHT_TEXTURE_MAPPING = WATER_1_DOWN_RIGHT_TEXTURE_MAPPING
-const DESERT_2_BELOW_TEXTURE_MAPPING = DESERT_1_BELOW_TEXTURE_MAPPING
-const DESERT_2_DOWN_RIGHT_TEXTURE_MAPPING = DESERT_1_DOWN_RIGHT_TEXTURE_MAPPING
-const MEADOW_1_BELOW_TEXTURE_MAPPING = [1, 3, 1.5, 2, 2, 3].map(v => v * 48 / 256)
-const MEADOW_1_DOWN_RIGHT_TEXTURE_MAPPING = [1, 2, 1.5, 3, 2, 2].map(v => v * 48 / 256)
-const MEADOW_2_BELOW_TEXTURE_MAPPING = [2, 3, 2.5, 2, 3, 3].map(v => v * 48 / 256)
-const MEADOW_2_DOWN_RIGHT_TEXTURE_MAPPING = [2, 2, 2.5, 3, 3, 2].map(v => v * 48 / 256)
-const MEADOW_3_BELOW_TEXTURE_MAPPING = [3, 3, 3.5, 2, 4, 3].map(v => v * 48 / 256)
-const MEADOW_3_DOWN_RIGHT_TEXTURE_MAPPING = [3, 2, 3.5, 3, 4, 2].map(v => v * 48 / 256)
-const MOUNTAIN_2_BELOW_TEXTURE_MAPPING = [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256)
-const MOUNTAIN_2_DOWN_RIGHT_TEXTURE_MAPPING = [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256)
-const MOUNTAIN_3_BELOW_TEXTURE_MAPPING = [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256)
-const MOUNTAIN_3_DOWN_RIGHT_TEXTURE_MAPPING = [2, 1, 2.5, 3, 2, 1].map(v => v * 48 / 256)
-const MOUNTAIN_4_BELOW_TEXTURE_MAPPING = [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256)
-const MOUNTAIN_4_DOWN_RIGHT_TEXTURE_MAPPING = [3, 1, 3.5, 4, 2, 1].map(v => v * 48 / 256)
-const STEPPE_BELOW_TEXTURE_MAPPING = [0, 4, 0.5, 3, 1, 4].map(v => v * 48 / 256)
-const STEPPE_DOWN_RIGHT_TEXTURE_MAPPING = [0, 3, 0.5, 4, 1, 3].map(v => v * 48 / 256)
-const FLOWER_MEADOW_BELOW_TEXTURE_MAPPING = [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256)
-const FLOWER_MEADOW_DOWN_RIGHT_TEXTURE_MAPPING = [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256)
-const LAVA_1_BELOW_TEXTURE_MAPPING = [192, 132, 219, 104, 247, 132]
-const LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING = [192, 133, 220, 160, 246, 132]
-const MAGENTA_BELOW_TEXTURE_MAPPING = [2, 4, 2.5, 3, 3, 4].map(v => v * 48 / 256)
-const MAGENTA_DOWN_RIGHT_TEXTURE_MAPPING = [2, 3, 2.5, 4, 3, 3].map(v => v * 48 / 256)
-const MOUNTAIN_MEADOW_BELOW_TEXTURE_MAPPING = [1, 4, 1.5, 3, 2, 4].map(v => v * 48 / 256)
-const MOUNTAIN_MEADOW_DOWN_RIGHT_TEXTURE_MAPPING = [1, 3, 1.5, 4, 2, 3].map(v => v * 48 / 256)
-const WATER_2_BELOW_TEXTURE_MAPPING = WATER_1_BELOW_TEXTURE_MAPPING
-const WATER_2_DOWN_RIGHT_TEXTURE_MAPPING = WATER_1_DOWN_RIGHT_TEXTURE_MAPPING
-const LAVA_2_BELOW_TEXTURE_MAPPING = LAVA_1_BELOW_TEXTURE_MAPPING
-const LAVA_2_DOWN_RIGHT_TEXTURE_MAPPING = LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING
-const LAVA_3_BELOW_TEXTURE_MAPPING = LAVA_1_BELOW_TEXTURE_MAPPING
-const LAVA_3_DOWN_RIGHT_TEXTURE_MAPPING = LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING
-const LAVA_4_BELOW_TEXTURE_MAPPING = LAVA_1_BELOW_TEXTURE_MAPPING
-const LAVA_4_DOWN_RIGHT_TEXTURE_MAPPING = LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING
-const BUILDABLE_MOUNTAIN_BELOW_TEXTURE_MAPPING = [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256)
-const BUILDABLE_MOUNTAIN_DOWN_RIGHT_TEXTURE_MAPPING = [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256)
+interface BelowAndDownRight {
+    below: number[]
+    downRight: number[]
+}
+const vegetationToTextureMapping: Map<VegetationIntegers, BelowAndDownRight> = new Map()
+
+vegetationToTextureMapping.set(0, { below: [0, 3, 0.5, 2, 1, 3].map(v => v * 48 / 256), downRight: [0, 2, 0.5, 3, 1, 2].map(v => v * 48 / 256) }) // Savannah
+vegetationToTextureMapping.set(1, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Mountain 1
+vegetationToTextureMapping.set(2, { below: [0, 1, 0.5, 0, 1, 1].map(v => v * 48 / 256), downRight: [0, 0, 0.5, 1, 1, 0].map(v => v * 48 / 256) }) // Snow
+vegetationToTextureMapping.set(3, { below: [2, 1, 2.5, 0, 3, 1].map(v => v * 48 / 256), downRight: [2, 0, 2.5, 1, 3, 0].map(v => v * 48 / 256) }) // Swamp
+vegetationToTextureMapping.set(4, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Desert 1
+vegetationToTextureMapping.set(5, { below: [194, 76, 219, 50, 245, 76].map(v => v / 256), downRight: [194, 77, 219, 101, 245, 77].map(v => v / 256) }) // Water 1
+vegetationToTextureMapping.set(6, { below: [194, 76, 219, 50, 245, 76].map(v => v / 256), downRight: [194, 77, 219, 101, 245, 77].map(v => v / 256) }) // Buildable water
+vegetationToTextureMapping.set(7, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Desert 2
+vegetationToTextureMapping.set(8, { below: [1, 3, 1.5, 2, 2, 3].map(v => v * 48 / 256), downRight: [1, 2, 1.5, 3, 2, 2].map(v => v * 48 / 256) }) // Meadow 1
+vegetationToTextureMapping.set(9, { below: [2, 3, 2.5, 2, 3, 3].map(v => v * 48 / 256), downRight: [2, 2, 2.5, 3, 3, 2].map(v => v * 48 / 256) }) // Meadow 2
+vegetationToTextureMapping.set(10, { below: [3, 3, 3.5, 2, 4, 3].map(v => v * 48 / 256), downRight: [3, 2, 3.5, 3, 4, 2].map(v => v * 48 / 256) }) // Meadow 3
+vegetationToTextureMapping.set(11, { below: [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256), downRight: [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256) }) // Mountain 2
+vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256), downRight: [2, 1, 2.5, 3, 2, 1].map(v => v * 48 / 256) }) // Mountain 3
+vegetationToTextureMapping.set(13, { below: [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256), downRight: [3, 1, 3.5, 4, 2, 1].map(v => v * 48 / 256) }) // Mountain 4
+vegetationToTextureMapping.set(14, { below: [0, 4, 0.5, 3, 1, 4].map(v => v * 48 / 256), downRight: [0, 3, 0.5, 4, 1, 3].map(v => v * 48 / 256) }) // Steppe
+vegetationToTextureMapping.set(15, { below: [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256), downRight: [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256) }) // Flower meadow
+vegetationToTextureMapping.set(16, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 1
+vegetationToTextureMapping.set(17, { below: [2, 4, 2.5, 3, 3, 4].map(v => v * 48 / 256), downRight: [2, 3, 2.5, 4, 3, 3].map(v => v * 48 / 256) }) // Magenta
+vegetationToTextureMapping.set(18, { below: [1, 4, 1.5, 3, 2, 4].map(v => v * 48 / 256), downRight: [1, 3, 1.5, 4, 2, 3].map(v => v * 48 / 256) }) // Mountain meadow
+vegetationToTextureMapping.set(19, { below: [194, 76, 219, 50, 245, 76].map(v => v / 256), downRight: [194, 77, 219, 101, 245, 77].map(v => v / 256) }) // Water 2
+vegetationToTextureMapping.set(20, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 2
+vegetationToTextureMapping.set(21, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 3
+vegetationToTextureMapping.set(22, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 4
+vegetationToTextureMapping.set(23, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Buildable mountain
 
 const PLANNED_HOUSE_IMAGE_FILE = "assets/roman-buildings/construction-started-sign.png"
 
@@ -326,19 +308,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState) {
-        return this.props.scale !== nextProps.scale ||
-            this.props.translateX !== nextProps.translateX ||
-            this.props.translateY !== nextProps.translateY ||
-            this.props.screenWidth !== nextProps.screenWidth ||
-            this.props.screenHeight !== nextProps.screenHeight ||
-            this.props.selectedPoint !== nextProps.selectedPoint ||
-            this.props.possibleRoadConnections !== nextProps.possibleRoadConnections ||
-            this.props.newRoad !== nextProps.newRoad ||
-            (!this.state.hoverPoint && nextState.hoverPoint !== undefined) ||
-            (this.state.hoverPoint !== undefined &&
-                (this.state.hoverPoint !== nextState.hoverPoint ||
-                    this.state.hoverPoint.x !== nextState.hoverPoint.x ||
-                    this.state.hoverPoint.y !== nextState.hoverPoint.y))
+        return this.props.onKeyDown !== nextProps.onKeyDown
     }
 
     getHeightForPoint(point: Point): number | undefined {
@@ -531,7 +501,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
 
                     // Load the image atlas for terrain and roads
-                    const imageAtlasTerrainAndRoads = await loadImageNg(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
+                    const imageAtlasTerrainAndRoads = await loadImageAsync(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
 
                     // Create the road texture
                     const textureTerrainAndRoadAtlas = makeTextureFromImage(gl, imageAtlasTerrainAndRoads)
@@ -1734,9 +1704,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                                 const hoverPoint = this.screenPointToGamePoint({ x: x, y: y })
 
-                                if (!this.state.hoverPoint ||
-                                    this.state.hoverPoint.x !== hoverPoint.x ||
-                                    this.state.hoverPoint.y !== hoverPoint.y) {
+                                if (!this.state.hoverPoint || this.state.hoverPoint.x !== hoverPoint.x || this.state.hoverPoint.y !== hoverPoint.y) {
 
                                     this.setState(
                                         {
@@ -1799,6 +1767,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         normalDownRight.x, normalDownRight.y, normalDownRight.z
                     ])
             } else {
+
+                // Place dummy normals
                 Array.prototype.push.apply(
                     normals,
                     [
@@ -1813,131 +1783,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             //    --  To map to pixel coordinates:
             //            texcoordX = pixelCoordX / (width  - 1)
             //            texcoordY = pixelCoordY / (height - 1)
-            if (terrainBelow === 0) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    SAVANNAH_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 1) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_1_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 2) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    SNOW_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 3) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    SWAMP_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 4) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    DESERT_1_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 5) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    WATER_1_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 6) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    BUILDABLE_WATER_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 7) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    DESERT_2_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 8) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MEADOW_1_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 9) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MEADOW_2_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 10) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MEADOW_3_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 11) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_2_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 12) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_3_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 13) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_4_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 14) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    STEPPE_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 15) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    FLOWER_MEADOW_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 16) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    LAVA_1_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 17) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MAGENTA_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 18) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_MEADOW_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 19) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    WATER_2_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 20) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    LAVA_2_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 21) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    LAVA_3_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 22) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    LAVA_4_BELOW_TEXTURE_MAPPING
-                )
-            } else if (terrainBelow === 23) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    BUILDABLE_MOUNTAIN_BELOW_TEXTURE_MAPPING
-                )
+            const textureMappingToAdd = vegetationToTextureMapping.get(terrainBelow)?.below
+
+            if (textureMappingToAdd !== undefined) {
+                Array.prototype.push.apply(textureMapping, textureMappingToAdd)
             } else {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    [0, 0, 0.5, 1.0, 1.0, 0]
-                )
+                console.error("No matching texture mapping for " + terrainBelow)
+
+                Array.prototype.push.apply(textureMapping, [0, 0, 0.5, 1, 1, 0]) // Place dummy texture mapping
             }
         })
 
@@ -1979,6 +1832,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     ]
                 )
             } else {
+
+                // Place dummy normals
                 Array.prototype.push.apply(
                     normals,
                     [
@@ -1994,131 +1849,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             //    --  To map to pixel coordinates:
             //            texcoordX = pixelCoordX / (width  - 1)
             //            texcoordY = pixelCoordY / (height - 1)
-            if (terrainDownRight === 0) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    SAVANNAH_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 1) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_1_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 2) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    SNOW_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 3) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    SWAMP_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 4) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    DESERT_1_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 5) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    WATER_1_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 6) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    BUILDABLE_WATER_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 7) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    DESERT_2_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 8) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MEADOW_1_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 9) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MEADOW_2_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 10) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MEADOW_3_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 11) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_2_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 12) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_3_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 13) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_4_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 14) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    STEPPE_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 15) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    FLOWER_MEADOW_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 16) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    LAVA_1_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 17) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MAGENTA_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 18) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    MOUNTAIN_MEADOW_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 19) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    WATER_2_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 20) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    LAVA_2_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 21) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    LAVA_3_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 22) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    LAVA_4_DOWN_RIGHT_TEXTURE_MAPPING
-                )
-            } else if (terrainDownRight === 23) {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    BUILDABLE_MOUNTAIN_DOWN_RIGHT_TEXTURE_MAPPING
-                )
+            const textureMappingToAdd = vegetationToTextureMapping.get(terrainDownRight)?.downRight
+
+            if (textureMappingToAdd !== undefined) {
+                Array.prototype.push.apply(textureMapping, textureMappingToAdd)
             } else {
-                Array.prototype.push.apply(
-                    textureMapping,
-                    [0, 1.0, 0.5, 0, 1.0, 1.0]
-                )
+                console.error("No matching texture mapping for " + terrainDownRight)
+
+                Array.prototype.push.apply(textureMapping, [0, 1, 0.5, 0, 1, 1]) // Place dummy texture mapping
             }
         })
 
@@ -2280,7 +2018,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         ]
                     )
 
-                // Handle road down-right
+                    // Handle road down-right
                 } else if (previous.x < point.x && previous.y > point.y) {
 
                     Array.prototype.push.apply(
@@ -2309,7 +2047,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         ]
                     )
 
-                // Handle road up-left
+                    // Handle road up-left
                 } else if (previous.x > point.x && previous.y < point.y) {
 
                     Array.prototype.push.apply(

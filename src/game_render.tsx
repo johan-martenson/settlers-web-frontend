@@ -260,7 +260,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.images = new Map()
         this.normals = new PointMapFast()
 
-        this.loadImages(["tree.png", "stone.png", "worker.png", "rabbit-small-brown.png", FLAG_FILE,
+        this.loadImages(["tree.png", "stone.png", "worker.png", FLAG_FILE,
             AVAILABLE_LARGE_BUILDING_FILE, AVAILABLE_MEDIUM_BUILDING_FILE, AVAILABLE_SMALL_BUILDING_FILE, AVAILABLE_MINE_FILE, AVAILABLE_FLAG_FILE,
             SIGN_IRON_SMALL, SIGN_IRON_MEDIUM, SIGN_IRON_LARGE,
             SIGN_COAL_SMALL, SIGN_COAL_MEDIUM, SIGN_COAL_LARGE,
@@ -443,6 +443,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (fragSh) {
                     gl.shaderSource(fragSh, shaded_repeated_fragment_shader)
                     gl.compileShader(fragSh)
+
+                    console.log(gl.getShaderInfoLog(fragSh))
                 } else {
                     console.log("Failed to get fragment shader")
                 }
@@ -523,8 +525,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Create the rendering thread if it doesn't exist */
-
-        console.log("Ask to render game")
         this.renderGame()
     }
 

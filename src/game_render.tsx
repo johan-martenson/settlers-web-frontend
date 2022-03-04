@@ -754,7 +754,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             houseIndex = houseIndex + 1
 
-            if (house.x < minXInGame || house.x > maxXInGame || house.y < minYInGame || house.y > maxYInGame) {
+            if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                 continue
             }
 
@@ -1470,7 +1470,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             for (const [id, house] of monitor.houses) {
 
-                if (house.x < minXInGame || house.x > maxXInGame || house.y < minYInGame || house.y > maxYInGame) {
+                if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                     continue
                 }
 

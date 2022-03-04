@@ -270,7 +270,7 @@ class App extends Component<AppProps, AppState> {
     }
 
     goToPoint(point: Point) {
-        console.info("Go to point" + JSON.stringify(point))
+        console.info("Go to point: " + JSON.stringify(point))
 
         const scaleY = this.state.scale * 0.5
 

@@ -337,8 +337,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     async componentDidMount() {
 
-        console.log("Component did mount!")
-
         /* Load animations */
         treeType1Animation.load()
         treeType2Animation.load()
@@ -362,7 +360,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {
-            console.log("Received more points")
 
             // Update the calculated normals
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
@@ -389,12 +386,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Subscribe for added and removed roads */
         listenToRoads(roads => {
-            console.log("Received changed roads")
 
             if (this.gl !== undefined && this.prog !== undefined &&
                 this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
-
-                console.log("Creating render information for the roads")
 
                 this.roadRenderInformation = this.prepareToRenderRoads(roads)
 
@@ -432,7 +426,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.shaderSource(vertSh, vert)
                     gl.compileShader(vertSh)
 
-                    console.log(gl.getShaderInfoLog(vertSh))
+                    const shaderCompileLog = gl.getShaderInfoLog(vertSh)
+
+                    if (shaderCompileLog === "") {
+                        console.info("Vertex shader compiled correctly")
+                    } else {
+                        console.error(shaderCompileLog)
+                    }
                 } else {
                     console.log("Failed to get the vertex shader")
                 }
@@ -444,7 +444,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.shaderSource(fragSh, shaded_repeated_fragment_shader)
                     gl.compileShader(fragSh)
 
-                    console.log(gl.getShaderInfoLog(fragSh))
+                    const shaderCompileLog = gl.getShaderInfoLog(fragSh)
+
+                    if (shaderCompileLog === "") {
+                        console.info("Fragment shader compiled correctly")
+                    } else {
+                        console.error(gl.getShaderInfoLog(fragSh))
+                    }
                 } else {
                     console.log("Failed to get fragment shader")
                 }

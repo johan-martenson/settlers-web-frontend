@@ -25,7 +25,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
 
         this.state = { userNameEntered: false }
 
-        console.log("Running self test")
+        console.log("Running self tests")
 
         do_self_test()
 

@@ -6,7 +6,7 @@ import { Filename, houseImageMap, houseUnderConstructionImageMap } from './image
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimationUtil, camelCaseToWords, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation } from './utils'
+import { AnimationUtil, camelCaseToWords, Direction, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -1223,20 +1223,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 screenPoint.y -= scaleY
 
+                let direction: Direction = "WEST"
+
                 if (worker.previous) {
-                    const direction = getDirectionForWalkingWorker(worker, worker.previous)
+                    direction = getDirectionForWalkingWorker(worker, worker.previous)
+                }
 
-                    const animationImage = romanWorkers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                const animationImage = romanWorkers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
-                    if (animationImage) {
-                        ctx.drawImage(animationImage, screenPoint.x, screenPoint.y)
-                    } else if (workerImage) {
-                        ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
-                    }
-                } else {
-                    if (workerImage) {
-                        ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
-                    }
+                if (animationImage) {
+                    ctx.drawImage(animationImage, screenPoint.x, screenPoint.y)
+                } else if (workerImage) {
+                    ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
 
                 if (worker.cargo) {

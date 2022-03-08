@@ -6,7 +6,7 @@ import { Filename, houseImageMap, houseUnderConstructionImageMap } from './image
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimationUtil, camelCaseToWords, Direction, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation } from './utils'
+import { AnimationUtil, camelCaseToWords, Direction, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -128,6 +128,10 @@ const fire = new Map<Size, AnimationUtil>()
 fire.set('SMALL', new AnimationUtil("assets/nature/small-fire-", ".png", 8, 10))
 fire.set('MEDIUM', new AnimationUtil("assets/nature/medium-fire-", ".png", 8, 10))
 fire.set('LARGE', new AnimationUtil("assets/nature/large-fire-", ".png", 8, 10))
+
+const testGeneralAnimation = new WorkerAnimationBasedOnImageAtlas("assets/", "general")
+
+testGeneralAnimation.load()
 
 const animals = new Map<WildAnimalType, WorkerAnimation>()
 
@@ -1562,6 +1566,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         duration.after("draw hover point")
+
+        //////// TEMP
+        const drawInfo = testGeneralAnimation.getDrawingInformationFor("vikings", "EAST", Math.floor(this.animationIndex / 10), 0)
+        if (drawInfo?.image !== undefined) {
+            ctx.drawImage(drawInfo?.image,
+                drawInfo.sourceX,
+                drawInfo.sourceY,
+                drawInfo.width,
+                drawInfo.height,
+                100,
+                50,
+                drawInfo.width,
+                drawInfo.height)
+        }
+
+
 
         duration.reportStats()
 

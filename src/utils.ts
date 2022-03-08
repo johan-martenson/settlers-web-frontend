@@ -1,4 +1,4 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES } from './api'
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -421,6 +421,94 @@ class WorkerAnimation {
     }
 }
 
+class WorkerAnimationNew {
+    private imageAtlasHandler: ImageAtlasHandler
+
+    private speedAdjust: number
+
+    constructor(prefix: string, postfix: string, speedAdjust: number) {
+
+        this.imageAtlasHandler = new ImageAtlasHandler(prefix, postfix)
+
+        this.speedAdjust = speedAdjust
+    }
+
+    load() {
+        this.imageAtlasHandler.load()
+    }
+
+    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation | undefined {
+        return this.imageAtlasHandler.getDrawingInformationFor("romans", direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
+    }
+}
+
+interface OneDirecationImageAtlasAnimationInfo{
+    height: number
+    width: number
+    nrImages: number
+    startX: number
+    startY: number
+}
+
+interface DrawingInformation {
+    sourceX: number
+    sourceY: number
+    width: number
+    height: number
+    image: HTMLImageElement
+}
+
+class ImageAtlasHandler {
+    private pathPrefix: string
+    private name: string
+    private imageAtlasInfo?: Record<Nation, Record<Direction, OneDirecationImageAtlasAnimationInfo>>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string, name: string) {
+
+        this.pathPrefix = prefix
+        this.name = name
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        console.log(imageAtlasInfo)
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
+    }
+
+    getDrawingInformationFor(nation: Nation, direction: Direction, animationCounter: number, offset: number): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const infoPerNation = this.imageAtlasInfo[nation]
+
+        if (infoPerNation === undefined) {
+            return undefined
+        }
+
+        const infoPerDirection = infoPerNation[direction]
+
+        const frameIndex = (animationCounter + offset) % infoPerDirection.nrImages
+
+        return {
+            sourceX: infoPerDirection.startX + frameIndex * infoPerDirection.width,
+            sourceY: infoPerDirection.startY,
+            width: infoPerDirection.width,
+            height: infoPerDirection.height, // Verify that this goes in the right direction
+            image: this.image
+        }
+    }
+}
+
 class AnimationUtil {
     length: number
     postfix: string
@@ -511,7 +599,8 @@ export {
     vegetationToInt,
     intToVegetationColor,
     sumVectors,
-    loadImageNg
+    loadImageNg,
+    ImageAtlasHandler as WorkerAnimationBasedOnImageAtlas
 }
 
 

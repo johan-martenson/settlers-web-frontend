@@ -100,13 +100,13 @@ vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48
 vegetationToTextureMapping.set(13, { below: [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256), downRight: [3, 1, 3.5, 4, 2, 1].map(v => v * 48 / 256) }) // Mountain 4
 vegetationToTextureMapping.set(14, { below: [2, 190, 2, 146, 45, 146].map(v => v / 256), downRight: [2, 190, 45, 146, 45, 190].map(v => v / 256) }) // Steppe
 vegetationToTextureMapping.set(15, { below: [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256), downRight: [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256) }) // Flower meadow
-vegetationToTextureMapping.set(16, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 1
+vegetationToTextureMapping.set(16, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 1
 vegetationToTextureMapping.set(17, { below: [2, 4, 2.5, 3, 3, 4].map(v => v * 48 / 256), downRight: [2, 3, 2.5, 4, 3, 3].map(v => v * 48 / 256) }) // Magenta
 vegetationToTextureMapping.set(18, { below: [1, 4, 1.5, 3, 2, 4].map(v => v * 48 / 256), downRight: [1, 3, 1.5, 4, 2, 3].map(v => v * 48 / 256) }) // Mountain meadow
 vegetationToTextureMapping.set(19, { below: [194, 76, 219, 50, 245, 76].map(v => v / 256), downRight: [194, 77, 219, 101, 245, 77].map(v => v / 256) }) // Water 2
-vegetationToTextureMapping.set(20, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 2
-vegetationToTextureMapping.set(21, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 3
-vegetationToTextureMapping.set(22, { below: [192, 132, 219, 104, 247, 132], downRight: [192, 133, 220, 160, 246, 132] }) // Lava 4
+vegetationToTextureMapping.set(20, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 2
+vegetationToTextureMapping.set(21, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 3
+vegetationToTextureMapping.set(22, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 4
 vegetationToTextureMapping.set(23, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Buildable mountain
 
 const PLANNED_HOUSE_IMAGE_FILE = "assets/roman-buildings/construction-started-sign.png"
@@ -260,7 +260,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.images = new Map()
         this.normals = new PointMapFast()
 
-        this.loadImages(["tree.png", "stone.png", "worker.png", FLAG_FILE,
+        this.loadImages(["tree.png", "stone.png", "worker.png",
             AVAILABLE_LARGE_BUILDING_FILE, AVAILABLE_MEDIUM_BUILDING_FILE, AVAILABLE_SMALL_BUILDING_FILE, AVAILABLE_MINE_FILE, AVAILABLE_FLAG_FILE,
             SIGN_IRON_SMALL, SIGN_IRON_MEDIUM, SIGN_IRON_LARGE,
             SIGN_COAL_SMALL, SIGN_COAL_MEDIUM, SIGN_COAL_LARGE,

@@ -22,6 +22,8 @@ export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "
 export type Tool = 'axe' | 'shovel' | 'pick_axe' | 'fishing_rod' | 'bow' | 'saw' | 'cleaver' | 'rolling_pin' | 'crucible' | 'tongs' | 'scythe'
 export const TOOLS: Set<Tool> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
 
+export type Nation = 'romans' | 'africans' | 'japanese' | 'vikings'
+
 function isTool(material: Material): material is Tool {
     return material === 'axe' ||
         material === 'shovel' ||
@@ -200,7 +202,6 @@ export interface PointInformation {
 }
 
 export type TreeType = "PINE" | "BIRCH" | "OAK" | "PALM_1" | "PALM_2" | "PINE_APPLE" | "CYPRESS" | "CHERRY" | "FIR"
-
 
 export interface TreeInformation extends Point {
     id: TreeId

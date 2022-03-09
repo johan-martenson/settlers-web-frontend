@@ -421,6 +421,23 @@ class WorkerAnimation {
     }
 }
 
+class AnimalAnimation {
+
+    private imageAtlasHandler: AnimalImageAtlasHandler
+
+    constructor(prefix: string, name: string, speedAdjust: number) {
+        this.imageAtlasHandler = new AnimalImageAtlasHandler(prefix, name)
+    }
+
+    async load() {
+        this.imageAtlasHandler.load()
+    }
+
+    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation | undefined {
+        return this.imageAtlasHandler.getDrawingInformationFor(direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
+    }
+}
+
 class WorkerAnimationNew {
     private imageAtlasHandler: ImageAtlasHandler
 
@@ -496,6 +513,51 @@ class ImageAtlasHandler {
         }
 
         const infoPerDirection = infoPerNation[direction]
+
+        const frameIndex = (animationCounter + offset) % infoPerDirection.nrImages
+
+        return {
+            sourceX: infoPerDirection.startX + frameIndex * infoPerDirection.width,
+            sourceY: infoPerDirection.startY,
+            width: infoPerDirection.width,
+            height: infoPerDirection.height, // Verify that this goes in the right direction
+            image: this.image
+        }
+    }
+}
+
+class AnimalImageAtlasHandler {
+    private pathPrefix: string
+    private name: string
+    private imageAtlasInfo?: Record<Direction, OneDirecationImageAtlasAnimationInfo>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string, name: string) {
+
+        this.pathPrefix = prefix
+        this.name = name
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        console.log(imageAtlasInfo)
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
+    }
+
+    getDrawingInformationFor(direction: Direction, animationCounter: number, offset: number): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const infoPerDirection = this.imageAtlasInfo[direction]
 
         const frameIndex = (animationCounter + offset) % infoPerDirection.nrImages
 
@@ -600,7 +662,8 @@ export {
     intToVegetationColor,
     sumVectors,
     loadImageNg,
-    ImageAtlasHandler as WorkerAnimationBasedOnImageAtlas
+    ImageAtlasHandler as WorkerAnimationBasedOnImageAtlas,
+    WorkerAnimationNew
 }
 
 

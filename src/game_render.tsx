@@ -6,7 +6,7 @@ import { Filename, houseImageMap, houseUnderConstructionImageMap } from './image
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimationUtil, camelCaseToWords, Direction, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas } from './utils'
+import { AnimationUtil, camelCaseToWords, Direction, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -144,40 +144,40 @@ animals.set("RABBIT", new WorkerAnimation("assets/nature/animals/rabbit-", ".png
 animals.set("SHEEP", new WorkerAnimation("assets/nature/animals/sheep-", ".png", 2, 10))
 animals.set("STAG", new WorkerAnimation("assets/nature/animals/stag-", ".png", 8, 10))
 
-const romanWorkers = new Map<WorkerType, WorkerAnimation>()
+const workers = new Map<WorkerType, WorkerAnimationNew>()
 
-romanWorkers.set("Farmer", new WorkerAnimation("assets/romans-workers/farmer-", ".png", 8, 10))
-romanWorkers.set("Fisherman", new WorkerAnimation("assets/romans-workers/fisher-", ".png", 8, 10))
-romanWorkers.set("Courier", new WorkerAnimation("assets/romans-workers/helper-", ".png", 8, 10))
-romanWorkers.set("StorageWorker", new WorkerAnimation("assets/romans-workers/helper-", ".png", 8, 10))
-romanWorkers.set("Hunter", new WorkerAnimation("assets/romans-workers/hunter-", ".png", 8, 10))
-romanWorkers.set("IronFounder", new WorkerAnimation("assets/romans-workers/iron_founder-", ".png", 8, 10))
-romanWorkers.set("Metalworker", new WorkerAnimation("assets/romans-workers/metalworker-", ".png", 8, 10))
-romanWorkers.set("Miller", new WorkerAnimation("assets/romans-workers/miller-", ".png", 8, 10))
-romanWorkers.set("Miner", new WorkerAnimation("assets/romans-workers/miner-", ".png", 8, 10))
-romanWorkers.set("Minter", new WorkerAnimation("assets/romans-workers/minter-", ".png", 8, 10))
-//romanWorkers.set("Donkey", new WorkerAnimation("assets/romans-workers/pack_donkey-", ".png", 8, 10))
-romanWorkers.set("PigBreeder", new WorkerAnimation("assets/romans-workers/pig_breeder-", ".png", 8, 10))
-//romanWorkers.set("Planer", new WorkerAnimation("assets/romans-workers/planer-", ".png", 8, 10))
-romanWorkers.set("Scout", new WorkerAnimation("assets/romans-workers/scout-", ".png", 8, 10))
-//romanWorkers.set("ShipWright", new WorkerAnimation("assets/romans-workers/ship_wright-", ".png", 8, 10))
-romanWorkers.set("DonkeyBreeder", new WorkerAnimation("assets/romans-workers/donkey_breeder-", ".png", 8, 10))
-romanWorkers.set("Butcher", new WorkerAnimation("assets/romans-workers/butcher-", ".png", 8, 10))
-romanWorkers.set("Builder", new WorkerAnimation("assets/romans-workers/builder-", ".png", 8, 10))
-romanWorkers.set("Brewer", new WorkerAnimation("assets/romans-workers/brewer-", ".png", 8, 10))
-romanWorkers.set("Baker", new WorkerAnimation("assets/romans-workers/baker-", ".png", 8, 10))
-romanWorkers.set("Armorer", new WorkerAnimation("assets/romans-workers/armorer-", ".png", 8, 10))
-romanWorkers.set("WoodcutterWorker", new WorkerAnimation("assets/romans-workers/woodcutter-", ".png", 8, 10))
-romanWorkers.set("Forester", new WorkerAnimation("assets/romans-workers/forester-", ".png", 8, 10))
-romanWorkers.set("SawmillWorker", new WorkerAnimation("assets/romans-workers/carpenter-", ".png", 8, 10))
-romanWorkers.set("Stonemason", new WorkerAnimation("assets/romans-workers/stonemason-", ".png", 8, 10))
-romanWorkers.set("Scout", new WorkerAnimation("assets/romans-workers/scout-", ".png", 8, 10))
-romanWorkers.set("Private", new WorkerAnimation("assets/romans-workers/private-", ".png", 8, 10))
-romanWorkers.set("Private_first_class", new WorkerAnimation("assets/romans-workers/private_first_class-", ".png", 8, 10))
-romanWorkers.set("Sergeant", new WorkerAnimation("assets/romans-workers/sergeant-", ".png", 8, 10))
-romanWorkers.set("Officer", new WorkerAnimation("assets/romans-workers/officer-", ".png", 8, 10))
-romanWorkers.set("General", new WorkerAnimation("assets/romans-workers/general-", ".png", 8, 10))
-romanWorkers.set("Geologist", new WorkerAnimation("assets/romans-workers/geologist-", ".png", 8, 10))
+workers.set("Farmer", new WorkerAnimationNew("assets/", "farmer", 10))
+workers.set("Fisherman", new WorkerAnimationNew("assets/", "fisher", 10))
+workers.set("Courier", new WorkerAnimationNew("assets/", "helper", 10))
+workers.set("StorageWorker", new WorkerAnimationNew("assets/", "helper", 10))
+workers.set("Hunter", new WorkerAnimationNew("assets/", "hunter", 10))
+workers.set("IronFounder", new WorkerAnimationNew("assets/", "iron_founder", 10))
+workers.set("Metalworker", new WorkerAnimationNew("assets/", "metalworker", 10))
+workers.set("Miller", new WorkerAnimationNew("assets/", "miller", 10))
+workers.set("Miner", new WorkerAnimationNew("assets/", "miner", 10))
+workers.set("Minter", new WorkerAnimationNew("assets/", "minter", 10))
+//romanWorkers.set("Donkey", new WorkerAnimation("assets/", "pack_donkey", 10))
+workers.set("PigBreeder", new WorkerAnimationNew("assets/", "pig_breeder", 10))
+//romanWorkers.set("Planer", new WorkerAnimation("assets/", "planer", 10))
+workers.set("Scout", new WorkerAnimationNew("assets/", "scout", 10))
+//romanWorkers.set("ShipWright", new WorkerAnimation("assets/", "ship_wright", 10))
+workers.set("DonkeyBreeder", new WorkerAnimationNew("assets/", "donkey_breeder", 10))
+workers.set("Butcher", new WorkerAnimationNew("assets/", "butcher", 10))
+workers.set("Builder", new WorkerAnimationNew("assets/", "builder", 10))
+workers.set("Brewer", new WorkerAnimationNew("assets/", "brewer", 10))
+workers.set("Baker", new WorkerAnimationNew("assets/", "baker", 10))
+workers.set("Armorer", new WorkerAnimationNew("assets/", "armorer", 10))
+workers.set("WoodcutterWorker", new WorkerAnimationNew("assets/", "woodcutter", 10))
+workers.set("Forester", new WorkerAnimationNew("assets/", "forester", 10))
+workers.set("SawmillWorker", new WorkerAnimationNew("assets/", "carpenter", 10))
+workers.set("Stonemason", new WorkerAnimationNew("assets/", "stonemason", 10))
+workers.set("Scout", new WorkerAnimationNew("assets/", "scout", 10))
+workers.set("Private", new WorkerAnimationNew("assets/", "private", 10))
+workers.set("Private_first_class", new WorkerAnimationNew("assets/", "private_first_class", 10))
+workers.set("Sergeant", new WorkerAnimationNew("assets/", "sergeant", 10))
+workers.set("Officer", new WorkerAnimationNew("assets/", "officer", 10))
+workers.set("General", new WorkerAnimationNew("assets/", "general", 10))
+workers.set("Geologist", new WorkerAnimationNew("assets/", "geologist", 10))
 
 const romanNormalFlagAnimation = new AnimationUtil("assets/romans-flags/normal-", ".png", 8, 10)
 const romanMainFlagAnimation = new AnimationUtil("assets/romans-flags/main-", ".png", 8, 10)
@@ -356,7 +356,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         romanMainFlagAnimation.load()
         romanMarineFlagAnimation.load()
 
-        romanWorkers.forEach((animation, workerType) => animation.load())
+        workers.forEach((animation, workerType) => animation.load())
 
         animals.forEach((animation, animalType) => animation.load())
 
@@ -1203,10 +1203,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const direction = getDirectionForWalkingWorker(worker.next, worker.previous)
 
-                const animationImage = romanWorkers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
-                if (animationImage) {
-                    ctx.drawImage(animationImage, point.x, point.y)
+                if (animationImage !== undefined) {
+                    ctx.drawImage(animationImage.image,
+                        animationImage.sourceX, animationImage.sourceY,
+                        animationImage.width, animationImage.height,
+                        point.x, point.y,
+                        animationImage.width, animationImage.height)
                 } else if (workerImage) {
                     ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
@@ -1233,10 +1237,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     direction = getDirectionForWalkingWorker(worker, worker.previous)
                 }
 
-                const animationImage = romanWorkers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
                 if (animationImage) {
-                    ctx.drawImage(animationImage, screenPoint.x, screenPoint.y)
+                    ctx.drawImage(animationImage.image,
+                        animationImage.sourceX, animationImage.sourceY,
+                        animationImage.width, animationImage.height,
+                        screenPoint.x, screenPoint.y,
+                        animationImage.width, animationImage.height)
                 } else if (workerImage) {
                     ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
@@ -1568,7 +1576,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw hover point")
 
         //////// TEMP
-        const drawInfo = testGeneralAnimation.getDrawingInformationFor("vikings", "EAST", Math.floor(this.animationIndex / 10), 0)
+        const drawInfo = testGeneralAnimation.getDrawingInformationFor("africans", "EAST", Math.floor(this.animationIndex / 10), 0)
         if (drawInfo?.image !== undefined) {
             ctx.drawImage(drawInfo?.image,
                 drawInfo.sourceX,

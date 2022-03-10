@@ -1,12 +1,12 @@
 import React, { Component } from 'react'
-import { materialToColor, Point, RoadInformation, signToColor, Size, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, materialToColor, Point, RoadInformation, signToColor, Size, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { Filename, houseImageMap, houseUnderConstructionImageMap } from './images'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimationUtil, camelCaseToWords, Direction, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, AnimationUtil, camelCaseToWords, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, TreeAnimation, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -46,6 +46,8 @@ interface GameCanvasProps {
 interface GameCanvasState {
     hoverPoint?: Point
 }
+
+let logOnce = true
 
 const AVAILABLE_SMALL_BUILDING_FILE = "assets/ui-elements/available-small-building.png"
 const AVAILABLE_MEDIUM_BUILDING_FILE = "assets/ui-elements/available-medium-building.png"
@@ -113,15 +115,7 @@ const PLANNED_HOUSE_IMAGE_FILE = "assets/roman-buildings/construction-started-si
 
 const DEAD_TREE_IMAGE_FILE = "assets/nature/dead-tree.png"
 
-const treeType1Animation = new AnimationUtil("assets/nature/tree-type-1-animation-", ".png", 8, 20)
-const treeType2Animation = new AnimationUtil("assets/nature/tree-type-2-animation-", ".png", 8, 20)
-const treeType3Animation = new AnimationUtil("assets/nature/tree-type-3-animation-", ".png", 8, 20)
-const treeType4Animation = new AnimationUtil("assets/nature/tree-type-4-animation-", ".png", 8, 20)
-const treeType5Animation = new AnimationUtil("assets/nature/tree-type-5-animation-", ".png", 8, 20)
-const treeType6Animation = new AnimationUtil("assets/nature/tree-type-6-animation-", ".png", 8, 20)
-const treeType7Animation = new AnimationUtil("assets/nature/tree-type-7-animation-", ".png", 8, 20)
-const treeType8Animation = new AnimationUtil("assets/nature/tree-type-8-animation-", ".png", 8, 20)
-const treeType9Animation = new AnimationUtil("assets/nature/tree-type-9-animation-", ".png", 8, 20)
+const treeAnimations = new TreeAnimation("assets/nature/", 20)
 
 const fire = new Map<Size, AnimationUtil>()
 
@@ -133,16 +127,16 @@ const testGeneralAnimation = new WorkerAnimationBasedOnImageAtlas("assets/", "ge
 
 testGeneralAnimation.load()
 
-const animals = new Map<WildAnimalType, WorkerAnimation>()
+const animals = new Map<WildAnimalType, AnimalAnimation>()
 
-animals.set("DEER", new WorkerAnimation("assets/nature/animals/deer-", ".png", 8, 10))
-animals.set("DEER_2", new WorkerAnimation("assets/nature/animals/deer-2-", ".png", 8, 10))
-animals.set("DUCK", new WorkerAnimation("assets/nature/animals/duck-", ".png", 1, 10))
-animals.set("DUCK_2", new WorkerAnimation("assets/nature/animals/duck-", ".png", 1, 10))
-animals.set("FOX", new WorkerAnimation("assets/nature/animals/fox-", ".png", 8, 10))
-animals.set("RABBIT", new WorkerAnimation("assets/nature/animals/rabbit-", ".png", 8, 10))
-animals.set("SHEEP", new WorkerAnimation("assets/nature/animals/sheep-", ".png", 2, 10))
-animals.set("STAG", new WorkerAnimation("assets/nature/animals/stag-", ".png", 8, 10))
+animals.set("DEER", new AnimalAnimation("assets/nature/animals/", "deer", 10))
+animals.set("DEER_2", new AnimalAnimation("assets/nature/animals/", "deer2", 10))
+animals.set("DUCK", new AnimalAnimation("assets/nature/animals/", "duck", 10))
+animals.set("DUCK_2", new AnimalAnimation("assets/nature/animals/", "duck", 10))
+animals.set("FOX", new AnimalAnimation("assets/nature/animals/", "fox", 10))
+animals.set("RABBIT", new AnimalAnimation("assets/nature/animals/", "rabbit", 10))
+animals.set("SHEEP", new AnimalAnimation("assets/nature/animals/", "sheep", 10))
+animals.set("STAG", new AnimalAnimation("assets/nature/animals/", "stag", 10))
 
 const workers = new Map<WorkerType, WorkerAnimationNew>()
 
@@ -342,15 +336,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     async componentDidMount() {
 
         /* Load animations */
-        treeType1Animation.load()
-        treeType2Animation.load()
-        treeType3Animation.load()
-        treeType4Animation.load()
-        treeType5Animation.load()
-        treeType6Animation.load()
-        treeType7Animation.load()
-        treeType8Animation.load()
-        treeType9Animation.load()
+        treeAnimations.load()
 
         romanNormalFlagAnimation.load()
         romanMainFlagAnimation.load()
@@ -842,33 +828,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             screenPoint.x -= 0.5 * this.props.scale
             screenPoint.y -= 2.5 * scaleY
 
-            let treeImage
-            if (tree.type === "BIRCH") {
-                treeImage = treeType1Animation.getAnimationElement(this.animationIndex, treeIndex)
-            } else if (tree.type === "CHERRY") {
-                treeImage = treeType2Animation.getAnimationElement(this.animationIndex, treeIndex)
-            } else if (tree.type === "CYPRESS") {
-                treeImage = treeType3Animation.getAnimationElement(this.animationIndex, treeIndex)
-            } else if (tree.type === "FIR") {
-                treeImage = treeType4Animation.getAnimationElement(this.animationIndex, treeIndex)
-            } else if (tree.type === "OAK") {
-                treeImage = treeType5Animation.getAnimationElement(this.animationIndex, treeIndex)
-            } else if (tree.type === "PALM_1") {
-                treeImage = treeType6Animation.getAnimationElement(this.animationIndex, treeIndex)
-            } else if (tree.type === "PALM_2") {
-                treeImage = treeType7Animation.getAnimationElement(this.animationIndex, treeIndex)
-            } else if (tree.type === "PINE") {
-                treeImage = treeType8Animation.getAnimationElement(this.animationIndex, treeIndex)
-            } else if (tree.type === "PINE_APPLE") {
-                treeImage = treeType9Animation.getAnimationElement(this.animationIndex, treeIndex)
-            }
+            let treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)
 
-            if (treeImage === undefined) {
-                treeImage = this.images.get("tree.png")
-            }
-
-            if (treeImage) {
-                ctx.drawImage(treeImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(this.props.scale), Math.floor(3 * scaleY))
+            if (treeDrawInfo !== undefined) {
+                ctx.drawImage(treeDrawInfo.image,
+                    treeDrawInfo.sourceX,
+                    treeDrawInfo.sourceY,
+                    treeDrawInfo.width,
+                    treeDrawInfo.height,
+                    Math.floor(screenPoint.x),
+                    Math.floor(screenPoint.y),
+                    treeDrawInfo.width,
+                    treeDrawInfo.height
+                    )
             }
 
             treeIndex = treeIndex + 1
@@ -1101,15 +1073,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                if (this.animationIndex % 100 === 0) {
-                    console.log("moving")
-                    console.log(direction)
-                    console.log(animal)
-                    console.log(animationImage)
-                }
-
-                if (animationImage) {
-                    ctx.drawImage(animationImage, point.x, point.y)
+                if (animationImage !== undefined) {
+                    ctx.drawImage(animationImage.image,
+                        animationImage.sourceX, animationImage.sourceY,
+                        animationImage.width, animationImage.height,
+                        point.x, point.y,
+                        animationImage.width, animationImage.height)
                 } else if (fallbackWorkerImage) {
                     ctx.drawImage(fallbackWorkerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
@@ -1127,11 +1096,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (animal.previous) {
                     const direction = getDirectionForWalkingWorker(animal, animal.previous)
 
-                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, 0, animal.percentageTraveled)
+                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                    if (animationImage) {
-                        ctx.drawImage(animationImage, screenPoint.x, screenPoint.y)
-                    } else if (fallbackWorkerImage) {
+                    if (animationImage !== undefined) {
+                        ctx.drawImage(animationImage.image,
+                            animationImage.sourceX, animationImage.sourceY,
+                            animationImage.width, animationImage.height,
+                            screenPoint.x, screenPoint.y,
+                            animationImage.width, animationImage.height)
+                        } else if (fallbackWorkerImage) {
                         ctx.drawImage(fallbackWorkerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                     }
 
@@ -1144,19 +1117,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 } else {
                     const direction = 'EAST'
+                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, 0, animal.percentageTraveled)
-
-                    if (this.animationIndex % 100 === 0) {
-                        console.log("not moving. no previous")
-                        console.log(direction)
-                        console.log(animal)
-                        console.log(animationImage)
-                    }
-
-                    if (animationImage) {
-                        ctx.drawImage(animationImage, screenPoint.x, screenPoint.y)
-                    } else if (fallbackWorkerImage) {
+                    if (animationImage !== undefined) {
+                        ctx.drawImage(animationImage.image,
+                            animationImage.sourceX, animationImage.sourceY,
+                            animationImage.width, animationImage.height,
+                            screenPoint.x, screenPoint.y,
+                            animationImage.width, animationImage.height)
+                        } else if (fallbackWorkerImage) {
                         ctx.drawImage(fallbackWorkerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                     }
                 }
@@ -1589,6 +1558,40 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 drawInfo.height)
         }
 
+        const drawInfo2 = animals.get("DEER")?.getAnimationFrame("NORTH_EAST", Math.floor(this.animationIndex / 10), 0)
+
+        if (drawInfo2?.image !== undefined) {
+
+            if (logOnce) {
+                console.log(drawInfo2)
+
+                logOnce = false
+            }
+
+            ctx.drawImage(drawInfo2.image,
+                drawInfo2.sourceX,
+                drawInfo2.sourceY,
+                drawInfo2.width,
+                drawInfo2.height,
+                200,
+                50,
+                drawInfo2.width,
+                drawInfo2.height)
+        }
+
+        const drawInfo3 = treeAnimations.getAnimationFrame("CYPRESS", this.animationIndex, 0)
+
+        if (drawInfo3 !== undefined) {
+            ctx.drawImage(drawInfo3.image,
+                drawInfo3.sourceX,
+                drawInfo3.sourceY,
+                drawInfo3.width,
+                drawInfo3.height,
+                300,
+                50,
+                drawInfo3.width,
+                drawInfo3.height)
+        }
 
 
         duration.reportStats()

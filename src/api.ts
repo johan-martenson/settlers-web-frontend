@@ -24,6 +24,8 @@ export const TOOLS: Set<Tool> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_r
 
 export type Nation = 'romans' | 'africans' | 'japanese' | 'vikings'
 
+export type Direction = "EAST" | "SOUTH_EAST" | "SOUTH_WEST" | "WEST" | "NORTH_WEST" | "NORTH_EAST"
+
 function isTool(material: Material): material is Tool {
     return material === 'axe' ||
         material === 'shovel' ||

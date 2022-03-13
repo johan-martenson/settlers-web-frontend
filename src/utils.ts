@@ -1,4 +1,4 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction } from './api'
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -416,6 +416,24 @@ class WorkerAnimation {
     }
 }
 
+class FlagAnimation {
+    private imageAtlasHandler: FlagImageAtlasHandler
+    private speedAdjust: number
+
+    constructor(prefix: string, speedAdjust: number) {
+        this.imageAtlasHandler = new FlagImageAtlasHandler(prefix)
+        this.speedAdjust = speedAdjust
+    }
+
+    async load() {
+        this.imageAtlasHandler.load()
+    }
+
+    getAnimationFrame(nation: Nation, flagType: FlagType, animationIndex: number, offset: number) {
+        return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor( (animationIndex + offset) / this.speedAdjust))
+    }
+}
+
 class TreeAnimation {
     private imageAtlasHandler: TreeImageAtlasHandler
     private speedAdjust: number
@@ -431,6 +449,24 @@ class TreeAnimation {
 
     getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number) {
         return this.imageAtlasHandler.getDrawingInformationFor(treeType, Math.floor( (animationIndex + offset) / this.speedAdjust))
+    }
+}
+
+class FireAnimation {
+    private imageAtlasHandler: FireImageAtlasHandler
+    private speedAdjust: number
+
+    constructor(prefix: string, speedAdjust: number) {
+        this.imageAtlasHandler = new FireImageAtlasHandler(prefix)
+        this.speedAdjust = speedAdjust
+    }
+
+    async load() {
+        this.imageAtlasHandler.load()
+    }
+
+    getAnimationFrame(size: FireSize, animationIndex: number) {
+        return this.imageAtlasHandler.getDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
     }
 }
 
@@ -474,7 +510,7 @@ class WorkerAnimationNew {
     }
 }
 
-interface OneDirecationImageAtlasAnimationInfo{
+interface OneDirectionImageAtlasAnimationInfo{
     height: number
     width: number
     nrImages: number
@@ -493,7 +529,7 @@ interface DrawingInformation {
 class ImageAtlasHandler {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: Record<Nation, Record<Direction, OneDirecationImageAtlasAnimationInfo>>
+    private imageAtlasInfo?: Record<Nation, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
     private image?: HTMLImageElement
 
     constructor(prefix: string, name: string) {
@@ -509,8 +545,6 @@ class ImageAtlasHandler {
         const imageAtlasInfo = await response.json()
 
         this.imageAtlasInfo = imageAtlasInfo
-
-        console.log(imageAtlasInfo)
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
@@ -541,9 +575,94 @@ class ImageAtlasHandler {
     }
 }
 
+class FireImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: Record<FireSize, OneDirectionImageAtlasAnimationInfo>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-fire.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-fire.png")
+
+        console.log({info: imageAtlasInfo, image: this.image})
+    }
+
+    getDrawingInformation(size: FireSize, animationIndex: number): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const infoPerFireSize = this.imageAtlasInfo[size]
+
+        const frameIndex = animationIndex % infoPerFireSize.nrImages
+
+        return {
+            sourceX: infoPerFireSize.startX + frameIndex * infoPerFireSize.width,
+            sourceY: infoPerFireSize.startY,
+            width: infoPerFireSize.width,
+            height: infoPerFireSize.height,
+            image: this.image
+        }
+    }
+}
+
+class FlagImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: Record<Nation, Record<FlagType, OneDirectionImageAtlasAnimationInfo>>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-flags.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
+    }
+
+    getDrawingInformationFor(nation: Nation, flagType: FlagType, animationCounter: number): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const infoPerNation = this.imageAtlasInfo[nation]
+
+        const infoPerFlagType = infoPerNation[flagType]
+
+        const frameIndex = (animationCounter) % infoPerFlagType.nrImages
+
+        return {
+            sourceX: infoPerFlagType.startX + frameIndex * infoPerFlagType.width,
+            sourceY: infoPerFlagType.startY,
+            width: infoPerFlagType.width,
+            height: infoPerFlagType.height, // Verify that this goes in the right direction
+            image: this.image
+        }
+    }
+}
+
+
 class TreeImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<TreeType, OneDirecationImageAtlasAnimationInfo>
+    private imageAtlasInfo?: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
     private image?: HTMLImageElement
 
     constructor(prefix: string) {
@@ -584,7 +703,7 @@ class TreeImageAtlasHandler {
 class AnimalImageAtlasHandler {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: Record<Direction, OneDirecationImageAtlasAnimationInfo>
+    private imageAtlasInfo?: Record<Direction, OneDirectionImageAtlasAnimationInfo>
     private image?: HTMLImageElement
 
     constructor(prefix: string, name: string) {
@@ -595,20 +714,14 @@ class AnimalImageAtlasHandler {
 
     async load() {
 
-        console.log("Loading " + this.name)
-
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
         const imageAtlasInfo = await response.json()
 
         this.imageAtlasInfo = imageAtlasInfo
 
-        console.log(imageAtlasInfo)
-
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
-
-        console.log(this.image)
     }
 
     getDrawingInformationFor(direction: Direction, animationCounter: number): DrawingInformation | undefined {
@@ -724,7 +837,9 @@ export {
     ImageAtlasHandler as WorkerAnimationBasedOnImageAtlas,
     WorkerAnimationNew,
     AnimalAnimation,
-    TreeAnimation
+    TreeAnimation,
+    FlagAnimation,
+    FireAnimation
 }
 
 

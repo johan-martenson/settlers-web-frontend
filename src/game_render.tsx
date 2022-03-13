@@ -1,12 +1,12 @@
 import React, { Component } from 'react'
-import { Direction, materialToColor, Point, RoadInformation, signToColor, Size, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, materialToColor, Nation, Point, RoadInformation, signToColor, Size, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { Filename, houseImageMap, houseUnderConstructionImageMap } from './images'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, AnimationUtil, camelCaseToWords, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, TreeAnimation, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, AnimationUtil, camelCaseToWords, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, TreeAnimation, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -48,6 +48,9 @@ interface GameCanvasState {
 }
 
 let logOnce = true
+
+// Temporary workaround until buildings are correct for all players and the monitor and the backend retrives player nation correctly
+const currentPlayerNation: Nation = "romans"
 
 const AVAILABLE_SMALL_BUILDING_FILE = "assets/ui-elements/available-small-building.png"
 const AVAILABLE_MEDIUM_BUILDING_FILE = "assets/ui-elements/available-medium-building.png"
@@ -117,15 +120,11 @@ const DEAD_TREE_IMAGE_FILE = "assets/nature/dead-tree.png"
 
 const treeAnimations = new TreeAnimation("assets/nature/", 20)
 
-const fire = new Map<Size, AnimationUtil>()
-
-fire.set('SMALL', new AnimationUtil("assets/nature/small-fire-", ".png", 8, 10))
-fire.set('MEDIUM', new AnimationUtil("assets/nature/medium-fire-", ".png", 8, 10))
-fire.set('LARGE', new AnimationUtil("assets/nature/large-fire-", ".png", 8, 10))
-
 const testGeneralAnimation = new WorkerAnimationBasedOnImageAtlas("assets/", "general")
 
 testGeneralAnimation.load()
+
+const fireAnimations = new FireAnimation("assets/", 4)
 
 const animals = new Map<WildAnimalType, AnimalAnimation>()
 
@@ -173,9 +172,7 @@ workers.set("Officer", new WorkerAnimationNew("assets/", "officer", 10))
 workers.set("General", new WorkerAnimationNew("assets/", "general", 10))
 workers.set("Geologist", new WorkerAnimationNew("assets/", "geologist", 10))
 
-const romanNormalFlagAnimation = new AnimationUtil("assets/romans-flags/normal-", ".png", 8, 10)
-const romanMainFlagAnimation = new AnimationUtil("assets/romans-flags/main-", ".png", 8, 10)
-const romanMarineFlagAnimation = new AnimationUtil("assets/romans-flags/marine-", ".png", 8, 10)
+const flagAnimations = new FlagAnimation("assets/", 10)
 
 let overlayCtx: CanvasRenderingContext2D | null = null
 
@@ -338,15 +335,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Load animations */
         treeAnimations.load()
 
-        romanNormalFlagAnimation.load()
-        romanMainFlagAnimation.load()
-        romanMarineFlagAnimation.load()
+        flagAnimations.load()
 
         workers.forEach((animation, workerType) => animation.load())
 
         animals.forEach((animation, animalType) => animation.load())
 
-        fire.forEach((animation, fireSize) => animation.load())
+        fireAnimations.load()
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {
@@ -757,16 +752,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (plannedHouseImage) {
                     ctx.drawImage(plannedHouseImage, screenPoint.x, screenPoint.y)
                 }
-
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
 
-                const fireImage = fire.get(size)?.getAnimationElement(this.animationIndex, houseIndex)
+                const fireDrawInformation = fireAnimations.getAnimationFrame(size, this.animationIndex)
 
-                if (fireImage) {
-                    ctx.drawImage(fireImage, screenPoint.x, screenPoint.y)
+                if (fireDrawInformation !== undefined) {
+                    ctx.drawImage(fireDrawInformation.image,
+                        fireDrawInformation.sourceX,
+                        fireDrawInformation.sourceY,
+                        fireDrawInformation.width,
+                        fireDrawInformation.height,
+                        screenPoint.x - 100, screenPoint.y - 130,
+                        fireDrawInformation.width,
+                        fireDrawInformation.height)
                 }
-
             } else {
 
                 if (house.state === "UNFINISHED") {
@@ -1247,14 +1247,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const fallback = flagImage
 
-            flagImage = romanNormalFlagAnimation.getAnimationElement(this.animationIndex, flagCount)
+            const flagDrawInfo = flagAnimations.getAnimationFrame("romans", "NORMAL", this.animationIndex, flagCount)
 
-            if (flagImage === undefined) {
-                flagImage = fallback
-            }
-
-            if (flagImage) {
-                ctx.drawImage(flagImage, screenPoint.x, screenPoint.y, 10, 30)
+            if (flagDrawInfo?.image !== undefined) {
+                ctx.drawImage(flagDrawInfo.image,
+                    flagDrawInfo.sourceX,
+                    flagDrawInfo.sourceY,
+                    flagDrawInfo.width,
+                    flagDrawInfo.height,
+                    screenPoint.x,
+                    screenPoint.y,
+                    flagDrawInfo.width,
+                    flagDrawInfo.height
+                    )
             }
 
             if (flag.stackedCargo) {
@@ -1593,6 +1598,33 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 drawInfo3.height)
         }
 
+        const drawInfo4 = flagAnimations.getAnimationFrame("romans", "MAIN", this.animationIndex, 0)
+
+        if (drawInfo4 !== undefined) {
+            ctx.drawImage(drawInfo4.image,
+                drawInfo4.sourceX,
+                drawInfo4.sourceY,
+                drawInfo4.width,
+                drawInfo4.height,
+                400,
+                50,
+                drawInfo4.width,
+                drawInfo4.height)
+        }
+
+        const drawInfoFire = fireAnimations.getAnimationFrame("LARGE", this.animationIndex)
+
+        if (drawInfoFire !== undefined) {
+            ctx.drawImage(drawInfoFire.image,
+                drawInfoFire.sourceX,
+                drawInfoFire.sourceY,
+                drawInfoFire.width,
+                drawInfoFire.height,
+                500,
+                50,
+                drawInfoFire.width,
+                drawInfoFire.height)
+        }
 
         duration.reportStats()
 

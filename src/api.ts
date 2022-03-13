@@ -210,6 +210,8 @@ export interface TreeInformation extends Point {
     type: TreeType
 }
 
+export type FireSize = "LARGE" | "MEDIUM" | "SMALL" | "MINI"
+
 export type Vegetation = "SA" | "MO1" | "SN" | "SW" | "D1" | "W1" | "B" | "D2" | "ME1" | "ME2" | "ME3" | "MO2" | "MO3" | "MO4" | "ST" | "FM" | "L1" | "MA" | "MM" | "W2" | "L2" | "L3" | "L4" | "BM"
 
 export type HeightInformation = number
@@ -271,6 +273,8 @@ export interface CropInformation extends Point { }
 export type SignTypes = 'iron' | 'gold' | 'coal' | 'stone' | 'water'
 
 export type Size = 'SMALL' | 'MEDIUM' | 'LARGE'
+
+export type FlagType = 'MAIN' | 'MARINE' | 'NORMAL'
 
 export interface SignInformation extends Point {
     id: SignId

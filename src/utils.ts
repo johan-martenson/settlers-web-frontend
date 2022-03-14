@@ -1,4 +1,4 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize } from './api'
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -523,6 +523,8 @@ interface DrawingInformation {
     sourceY: number
     width: number
     height: number
+    offsetX: number
+    offsetY: number
     image: HTMLImageElement
 }
 
@@ -570,6 +572,86 @@ class ImageAtlasHandler {
             sourceY: infoPerDirection.startY,
             width: infoPerDirection.width,
             height: infoPerDirection.height, // Verify that this goes in the right direction
+            offsetX: 0,
+            offsetY: 0,
+            image: this.image
+        }
+    }
+}
+
+interface HouseImageInformation {
+    y: number
+    readyAtX: number
+    readyWidth: number
+    readyHeight: number,
+    readyOffsetX: number
+    readyOffsetY: number
+    underConstructionAtX: number
+    underConstructionWidth: number
+    underConstructionHeight: number
+    underConstructionOffsetX: number
+    underConstructionOffsetY: number
+}
+
+class HouseImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: Record<Nation, Record<AnyBuilding, HouseImageInformation>>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-buildings.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-buildings.png")
+
+        console.log({info: imageAtlasInfo, image: this.image})
+    }
+
+    getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation | undefined {
+        if (this.image === undefined || this.imageAtlasInfo === undefined) {
+            return undefined
+        }
+
+        const houseInformationForNation = this.imageAtlasInfo[nation]
+
+        const houseInformation = houseInformationForNation[houseType]
+
+        return {
+            sourceX: houseInformation.readyAtX,
+            sourceY: houseInformation.y,
+            width: houseInformation.readyWidth,
+            height: houseInformation.readyHeight,
+            offsetX: houseInformation.readyOffsetX,
+            offsetY: houseInformation.readyOffsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForHouseUnderConstruction(nation: Nation, houseType: AnyBuilding): DrawingInformation | undefined {
+        if (this.image === undefined || this.imageAtlasInfo === undefined) {
+            return undefined
+        }
+
+        const houseInformationForNation = this.imageAtlasInfo[nation]
+
+        const houseInformation = houseInformationForNation[houseType]
+
+        return {
+            sourceX: houseInformation.underConstructionAtX,
+            sourceY: houseInformation.y,
+            width: houseInformation.underConstructionWidth,
+            height: houseInformation.underConstructionHeight,
+            offsetX: houseInformation.underConstructionOffsetX,
+            offsetY: houseInformation.underConstructionOffsetY,
             image: this.image
         }
     }
@@ -612,6 +694,8 @@ class FireImageAtlasHandler {
             sourceY: infoPerFireSize.startY,
             width: infoPerFireSize.width,
             height: infoPerFireSize.height,
+            offsetX: 0,
+            offsetY: 0,
             image: this.image
         }
     }
@@ -654,6 +738,8 @@ class FlagImageAtlasHandler {
             sourceY: infoPerFlagType.startY,
             width: infoPerFlagType.width,
             height: infoPerFlagType.height, // Verify that this goes in the right direction
+            offsetX: 0,
+            offsetY: 0,
             image: this.image
         }
     }
@@ -695,6 +781,8 @@ class TreeImageAtlasHandler {
             sourceY: infoPerTreeType.startY,
             width: infoPerTreeType.width,
             height: infoPerTreeType.height, // Verify that this goes in the right direction
+            offsetX: 0,
+            offsetY: 0,
             image: this.image
         }
     }
@@ -738,6 +826,8 @@ class AnimalImageAtlasHandler {
             sourceY: infoPerDirection.startY,
             width: infoPerDirection.width,
             height: infoPerDirection.height, // Verify that this goes in the right direction
+            offsetX: 0,
+            offsetY: 0,
             image: this.image
         }
     }
@@ -839,7 +929,6 @@ export {
     AnimalAnimation,
     TreeAnimation,
     FlagAnimation,
-    FireAnimation
+    FireAnimation,
+    HouseImageAtlasHandler
 }
-
-

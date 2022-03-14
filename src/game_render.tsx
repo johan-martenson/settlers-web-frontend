@@ -2,11 +2,10 @@ import React, { Component } from 'react'
 import { Direction, materialToColor, Nation, Point, RoadInformation, signToColor, Size, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
-import { Filename, houseImageMap, houseUnderConstructionImageMap } from './images'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, AnimationUtil, camelCaseToWords, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, TreeAnimation, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, AnimationUtil, camelCaseToWords, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, TreeAnimation, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -137,6 +136,8 @@ animals.set("RABBIT", new AnimalAnimation("assets/nature/animals/", "rabbit", 10
 animals.set("SHEEP", new AnimalAnimation("assets/nature/animals/", "sheep", 10))
 animals.set("STAG", new AnimalAnimation("assets/nature/animals/", "stag", 10))
 
+const houses = new HouseImageAtlasHandler("assets/")
+
 const workers = new Map<WorkerType, WorkerAnimationNew>()
 
 workers.set("Farmer", new WorkerAnimationNew("assets/", "farmer", 10))
@@ -193,6 +194,8 @@ interface RenderInformation {
     normals: number[]
     textureMapping: number[]
 }
+
+type Filename = string
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
@@ -255,7 +258,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.images = new Map()
         this.normals = new PointMapFast()
 
-        this.loadImages(["tree.png", "stone.png", "worker.png",
+        this.loadImages(["stone.png", "worker.png",
             AVAILABLE_LARGE_BUILDING_FILE, AVAILABLE_MEDIUM_BUILDING_FILE, AVAILABLE_SMALL_BUILDING_FILE, AVAILABLE_MINE_FILE, AVAILABLE_FLAG_FILE,
             SIGN_IRON_SMALL, SIGN_IRON_MEDIUM, SIGN_IRON_LARGE,
             SIGN_COAL_SMALL, SIGN_COAL_MEDIUM, SIGN_COAL_LARGE,
@@ -266,9 +269,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             PLANNED_HOUSE_IMAGE_FILE,
             DEAD_TREE_IMAGE_FILE
         ])
-
-        this.loadImages(houseImageMap.values())
-        this.loadImages(houseUnderConstructionImageMap.values())
 
         /* Define the light vector */
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
@@ -340,6 +340,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         workers.forEach((animation, workerType) => animation.load())
 
         animals.forEach((animation, animalType) => animation.load())
+
+        houses.load()
 
         fireAnimations.load()
 
@@ -746,8 +748,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const screenPoint = this.gamePointToScreenPoint(house)
 
             /* Draw the house next to the point, instead of on top */
-            let imageFilename
-
             if (house.state === 'PLANNED') {
                 if (plannedHouseImage) {
                     ctx.drawImage(plannedHouseImage, screenPoint.x, screenPoint.y)
@@ -769,36 +769,42 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
             } else {
 
+                let houseDrawInformation
+
                 if (house.state === "UNFINISHED") {
-                    imageFilename = houseUnderConstructionImageMap.get(house.type)
+                    houseDrawInformation = houses.getDrawingInformationForHouseUnderConstruction(currentPlayerNation, house.type)
                 } else {
-                    imageFilename = houseImageMap.get(house.type)
+                    houseDrawInformation = houses.getDrawingInformationForHouseReady(currentPlayerNation, house.type)
                 }
 
-                if (imageFilename) {
+                if (houseDrawInformation !== undefined) {
 
-                    const houseImage = this.images.get(imageFilename)
+                    if (houseDrawInformation.image.width > 300 || houseDrawInformation.image.height > 300) {
 
-                    if (houseImage) {
-
-                        if (houseImage.width > 300 || houseImage.height > 300) {
-                            screenPoint.x -= 1.5 * this.props.scale
-                            screenPoint.y -= 2 * scaleY
-
-                            ctx.drawImage(houseImage, screenPoint.x, screenPoint.y, 3 * this.props.scale, 3 * scaleY)
-                        } else {
-                            screenPoint.x -= houseImage.width * this.props.scale / 40 / 1.4
-                            screenPoint.y -= houseImage.height * this.props.scale / 40 / 1.1
-
-                            ctx.drawImage(houseImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(houseImage.width * this.props.scale / 40), Math.floor(houseImage.height * this.props.scale / 40))
-                        }
+                        ctx.drawImage(
+                            houseDrawInformation.image,
+                            houseDrawInformation.sourceX,
+                            houseDrawInformation.sourceY,
+                            houseDrawInformation.width,
+                            houseDrawInformation.height,
+                            screenPoint.x - houseDrawInformation.offsetX,
+                            screenPoint.y - houseDrawInformation.offsetY,
+                            houseDrawInformation.width,
+                            houseDrawInformation.height
+                            )
                     } else {
-                        screenPoint.x -= 1.5 * this.props.scale
-                        screenPoint.y -= 2 * scaleY
 
-                        ctx.fillStyle = 'yellow'
-
-                        ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50)
+                        ctx.drawImage(
+                            houseDrawInformation.image,
+                            houseDrawInformation.sourceX,
+                            houseDrawInformation.sourceY,
+                            houseDrawInformation.width,
+                            houseDrawInformation.height,
+                            screenPoint.x - houseDrawInformation.offsetX,
+                            screenPoint.y - houseDrawInformation.offsetY,
+                            houseDrawInformation.width,
+                            houseDrawInformation.height
+                            )
                     }
                 } else {
                     screenPoint.x -= 1.5 * this.props.scale
@@ -1230,8 +1236,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw flags */
-        let flagImage = this.images.get(FLAG_FILE)
-
         let flagCount = 0
         for (const [id, flag] of monitor.flags) {
 
@@ -1244,8 +1248,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             /* Draw the flag slightly above the point */
             screenPoint.y -= 29
             screenPoint.x = screenPoint.x - 2
-
-            const fallback = flagImage
 
             const flagDrawInfo = flagAnimations.getAnimationFrame("romans", "NORMAL", this.animationIndex, flagCount)
 
@@ -2175,17 +2177,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-
         return {
             coordinates: coordinatesList,
             normals: normalsList,
             textureMapping: textureMappinglist
         }
     }
-
 }
 
-export { houseImageMap, GameCanvas, intToVegetationColor, vegetationToInt }
+export { GameCanvas, intToVegetationColor, vegetationToInt }
 
 function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement): WebGLTexture | null {
 
@@ -2205,5 +2205,5 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 
-    return texture;
+    return texture
 }

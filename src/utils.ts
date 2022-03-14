@@ -1,4 +1,4 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding } from './api'
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding, SignTypes } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -380,42 +380,6 @@ function loadImages(sources: string[] | IterableIterator<string>, onLoad: ((imag
     }
 }
 
-class WorkerAnimation {
-    animations: Map<Direction, AnimationUtil>
-
-    constructor(prefix: string, postfix: string, length: number, speedAdjust: number) {
-        this.animations = new Map<Direction, AnimationUtil>()
-
-        this.animations.set("EAST", new AnimationUtil(prefix + "east-", postfix, length, speedAdjust))
-        this.animations.set("SOUTH_EAST", new AnimationUtil(prefix + "south-east-", postfix, length, speedAdjust))
-        this.animations.set("SOUTH_WEST", new AnimationUtil(prefix + "south-west-", postfix, length, speedAdjust))
-        this.animations.set("WEST", new AnimationUtil(prefix + "west-", postfix, length, speedAdjust))
-        this.animations.set("NORTH_WEST", new AnimationUtil(prefix + "north-west-", postfix, length, speedAdjust))
-        this.animations.set("NORTH_EAST", new AnimationUtil(prefix + "north-east-", postfix, length, speedAdjust))
-    }
-
-    load() {
-        this.animations.get("EAST")?.load()
-        this.animations.get("SOUTH_EAST")?.load()
-        this.animations.get("SOUTH_WEST")?.load()
-        this.animations.get("WEST")?.load()
-        this.animations.get("NORTH_WEST")?.load()
-        this.animations.get("NORTH_EAST")?.load()
-    }
-
-    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): HTMLImageElement | undefined {
-        const animation = this.animations.get(direction)
-
-        if (animation === undefined) {
-            return undefined
-        }
-
-        const frame = animation.getAnimationElement(animationIndex, percentageTraveled)
-
-        return frame
-    }
-}
-
 class FlagAnimation {
     private imageAtlasHandler: FlagImageAtlasHandler
     private speedAdjust: number
@@ -657,6 +621,59 @@ class HouseImageAtlasHandler {
     }
 }
 
+interface OneImageInformation {
+    x: number
+    y: number
+    width: number
+    height: number
+    offsetX: number
+    offsetY: number
+}
+
+class SignImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: Record<SignTypes, Record<Size, OneImageInformation>>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-signs.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-signs.png")
+
+        console.log({info: imageAtlasInfo, image: this.image})
+    }
+
+    getDrawingInformation(signType: SignTypes, size: Size): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const infoPerSize = this.imageAtlasInfo[signType]
+
+        const imageInfo = infoPerSize[size]
+
+        return {
+            sourceX: imageInfo.x,
+            sourceY: imageInfo.y,
+            width: imageInfo.width,
+            height: imageInfo.height,
+            offsetX: imageInfo.offsetX,
+            offsetY: imageInfo.offsetY,
+            image: this.image
+        }
+    }
+}
+
 class FireImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<FireSize, OneDirectionImageAtlasAnimationInfo>
@@ -833,39 +850,6 @@ class AnimalImageAtlasHandler {
     }
 }
 
-class AnimationUtil {
-    length: number
-    postfix: string
-    prefix: string
-    frames: (HTMLImageElement | undefined)[]
-    speedAdjust: number
-
-    constructor(prefix: string, postfix: string, length: number, speedAdjust: number) {
-        this.prefix = prefix
-        this.postfix = postfix
-        this.length = length
-        this.speedAdjust = speedAdjust
-
-        this.frames = []
-    }
-
-    async load() {
-        for (let i = 0; i < this.length; i++) {
-            this.frames.push(undefined)
-
-            const filename = this.prefix + i + this.postfix
-
-            loadImage(filename, (image, filename) => this.frames[i] = image)
-        }
-    }
-
-    getAnimationElement(animationCounter: number, offset: number): HTMLImageElement | undefined {
-        const treeImage = this.frames[(Math.floor(animationCounter / this.speedAdjust) + offset) % this.frames.length]
-
-        return treeImage
-    }
-}
-
 function getDirectionForWalkingWorker(next: Point, previous: Point): Direction {
 
     if (next.x === previous.x + 1 && next.y === previous.y - 1) {
@@ -896,8 +880,6 @@ function getHouseSize(house: HouseInformation): Size {
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
-    WorkerAnimation,
-    AnimationUtil,
     loadImage,
     loadImages,
     getTimestamp,
@@ -930,5 +912,6 @@ export {
     TreeAnimation,
     FlagAnimation,
     FireAnimation,
-    HouseImageAtlasHandler
+    HouseImageAtlasHandler,
+    SignImageAtlasHandler
 }

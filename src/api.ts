@@ -270,7 +270,7 @@ export interface MapInformation {
 
 export interface CropInformation extends Point { }
 
-export type SignTypes = 'iron' | 'gold' | 'coal' | 'stone' | 'water'
+export type SignTypes = 'iron' | 'gold' | 'coal' | 'stone' | 'water' | 'nothing'
 
 export type Size = 'SMALL' | 'MEDIUM' | 'LARGE'
 

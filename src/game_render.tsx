@@ -1,11 +1,11 @@
 import React, { Component } from 'react'
-import { Direction, materialToColor, Nation, Point, RoadInformation, signToColor, Size, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, materialToColor, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, AnimationUtil, camelCaseToWords, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, sumVectors, TreeAnimation, Vector, vegetationToInt, WorkerAnimation, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, camelCaseToWords, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, sumVectors, TreeAnimation, Vector, vegetationToInt, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -51,32 +51,13 @@ let logOnce = true
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrives player nation correctly
 const currentPlayerNation: Nation = "romans"
 
+const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
+
 const AVAILABLE_SMALL_BUILDING_FILE = "assets/ui-elements/available-small-building.png"
 const AVAILABLE_MEDIUM_BUILDING_FILE = "assets/ui-elements/available-medium-building.png"
 const AVAILABLE_LARGE_BUILDING_FILE = "assets/ui-elements/available-large-building.png"
 const AVAILABLE_FLAG_FILE = "assets/ui-elements/available-flag.png"
 const AVAILABLE_MINE_FILE = "assets/ui-elements/available-mine.png"
-
-const SIGN_IRON_SMALL = "assets/signs/iron-sign-small.png"
-const SIGN_IRON_MEDIUM = "assets/signs/iron-sign-medium.png"
-const SIGN_IRON_LARGE = "assets/signs/iron-sign-large.png"
-
-const SIGN_COAL_SMALL = "assets/signs/coal-sign-small.png"
-const SIGN_COAL_MEDIUM = "assets/signs/coal-sign-medium.png"
-const SIGN_COAL_LARGE = "assets/signs/coal-sign-large.png"
-
-const SIGN_GRANITE_SMALL = "assets/signs/granite-sign-small.png"
-const SIGN_GRANITE_MEDIUM = "assets/signs/granite-sign-medium.png"
-const SIGN_GRANITE_LARGE = "assets/signs/granite-sign-large.png"
-
-const SIGN_GOLD_SMALL = "assets/signs/gold-sign-small.png"
-const SIGN_GOLD_MEDIUM = "assets/signs/gold-sign-medium.png"
-const SIGN_GOLD_LARGE = "assets/signs/gold-sign-large.png"
-
-const SIGN_WATER = "assets/signs/water-sign-large.png"
-const SIGN_NOTHING = "assets/signs/nothing-sign.png"
-
-const FLAG_FILE = "assets/roman-buildings/flag.png"
 
 const SELECTED_POINT = "assets/ui-elements/selected-point.png"
 
@@ -206,21 +187,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private terrainCanvasRef = React.createRef<HTMLCanvasElement>()
     private images: Map<Filename, HTMLImageElement>
 
-    private nothingSignImage: HTMLImageElement | undefined
-    private waterSignImage: HTMLImageElement | undefined
-    private coalSignLargeImage: HTMLImageElement | undefined
-    private coalSignMediumImage: HTMLImageElement | undefined
-    private coalSignalSmallImage: HTMLImageElement | undefined
-    private ironSignLargeImage: HTMLImageElement | undefined
-    private ironSignMediumImage: HTMLImageElement | undefined
-    private ironSignalSmallImage: HTMLImageElement | undefined
-    private goldSignLargeImage: HTMLImageElement | undefined
-    private goldSignMediumImage: HTMLImageElement | undefined
-    private goldSignalSmallImage: HTMLImageElement | undefined
-    private graniteSignLargeImage: HTMLImageElement | undefined
-    private graniteSignMediumImage: HTMLImageElement | undefined
-    private graniteSignalSmallImage: HTMLImageElement | undefined
-
     private animationIndex: number = 0
     private mapRenderInformation?: MapRenderInformation
     private gl?: WebGL2RenderingContext
@@ -260,11 +226,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.loadImages(["stone.png", "worker.png",
             AVAILABLE_LARGE_BUILDING_FILE, AVAILABLE_MEDIUM_BUILDING_FILE, AVAILABLE_SMALL_BUILDING_FILE, AVAILABLE_MINE_FILE, AVAILABLE_FLAG_FILE,
-            SIGN_IRON_SMALL, SIGN_IRON_MEDIUM, SIGN_IRON_LARGE,
-            SIGN_COAL_SMALL, SIGN_COAL_MEDIUM, SIGN_COAL_LARGE,
-            SIGN_GRANITE_SMALL, SIGN_GRANITE_MEDIUM, SIGN_GRANITE_LARGE,
-            SIGN_GOLD_SMALL, SIGN_GOLD_MEDIUM, SIGN_GOLD_LARGE,
-            SIGN_WATER, SIGN_NOTHING,
             SELECTED_POINT,
             PLANNED_HOUSE_IMAGE_FILE,
             DEAD_TREE_IMAGE_FILE
@@ -344,6 +305,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         houses.load()
 
         fireAnimations.load()
+
+        signImageAtlasHandler.load()
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {
@@ -791,7 +754,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             screenPoint.y - houseDrawInformation.offsetY,
                             houseDrawInformation.width,
                             houseDrawInformation.height
-                            )
+                        )
                     } else {
 
                         ctx.drawImage(
@@ -804,7 +767,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             screenPoint.y - houseDrawInformation.offsetY,
                             houseDrawInformation.width,
                             houseDrawInformation.height
-                            )
+                        )
                     }
                 } else {
                     screenPoint.x -= 1.5 * this.props.scale
@@ -846,7 +809,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     Math.floor(screenPoint.y),
                     treeDrawInfo.width,
                     treeDrawInfo.height
-                    )
+                )
             }
 
             treeIndex = treeIndex + 1
@@ -918,52 +881,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the signs */
-        if (monitor.signs.size > 0) {
-
-            if (this.nothingSignImage === undefined) {
-                this.nothingSignImage = this.images.get(SIGN_NOTHING)
-            }
-            if (this.waterSignImage === undefined) {
-                this.waterSignImage = this.images.get(SIGN_WATER)
-            }
-            if (this.coalSignLargeImage === undefined) {
-                this.coalSignLargeImage = this.images.get(SIGN_COAL_LARGE)
-            }
-            if (this.coalSignMediumImage === undefined) {
-                this.coalSignMediumImage = this.images.get(SIGN_COAL_MEDIUM)
-            }
-            if (this.coalSignalSmallImage === undefined) {
-                this.coalSignalSmallImage = this.images.get(SIGN_COAL_SMALL)
-            }
-            if (this.ironSignLargeImage === undefined) {
-                this.ironSignLargeImage = this.images.get(SIGN_IRON_LARGE)
-            }
-            if (this.ironSignMediumImage === undefined) {
-                this.ironSignMediumImage = this.images.get(SIGN_IRON_MEDIUM)
-            }
-            if (this.ironSignalSmallImage === undefined) {
-                this.ironSignalSmallImage = this.images.get(SIGN_IRON_SMALL)
-            }
-            if (this.goldSignLargeImage === undefined) {
-                this.goldSignLargeImage = this.images.get(SIGN_GOLD_LARGE)
-            }
-            if (this.goldSignMediumImage === undefined) {
-                this.goldSignMediumImage = this.images.get(SIGN_GOLD_MEDIUM)
-            }
-            if (this.goldSignalSmallImage === undefined) {
-                this.goldSignalSmallImage = this.images.get(SIGN_GOLD_SMALL)
-            }
-            if (this.graniteSignLargeImage === undefined) {
-                this.graniteSignLargeImage = this.images.get(SIGN_GRANITE_LARGE)
-            }
-            if (this.graniteSignMediumImage === undefined) {
-                this.graniteSignMediumImage = this.images.get(SIGN_GRANITE_MEDIUM)
-            }
-            if (this.graniteSignalSmallImage === undefined) {
-                this.graniteSignalSmallImage = this.images.get(SIGN_GRANITE_SMALL)
-            }
-        }
-
         for (const [id, sign] of monitor.signs) {
 
             if (sign.x < minXInGame || sign.x > maxXInGame || sign.y < minYInGame || sign.y > maxYInGame) {
@@ -972,57 +889,26 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const screenPoint = this.gamePointToScreenPoint(sign)
 
-            let signImage
+            let signDrawInfo
 
-            if (!sign.type) {
-                signImage = this.nothingSignImage
-            } else if (sign.type === "coal" && sign.amount === "LARGE") {
-                signImage = this.coalSignLargeImage
-            } else if (sign.type === "coal" && sign.amount === "MEDIUM") {
-                signImage = this.coalSignMediumImage
-            } else if (sign.type === "coal" && sign.amount === "SMALL") {
-                signImage = this.coalSignalSmallImage
-            } else if (sign.type === "iron" && sign.amount === "LARGE") {
-                signImage = this.ironSignLargeImage
-            } else if (sign.type === "iron" && sign.amount === "MEDIUM") {
-                signImage = this.ironSignMediumImage
-            } else if (sign.type === "iron" && sign.amount === "SMALL") {
-                signImage = this.ironSignalSmallImage
-            } else if (sign.type === "stone" && sign.amount === "LARGE") {
-                signImage = this.graniteSignLargeImage
-            } else if (sign.type === "stone" && sign.amount === "MEDIUM") {
-                signImage = this.graniteSignMediumImage
-            } else if (sign.type === "stone" && sign.amount === "SMALL") {
-                signImage = this.graniteSignalSmallImage
-            } else if (sign.type === "gold" && sign.amount === "LARGE") {
-                signImage = this.goldSignLargeImage
-            } else if (sign.type === "gold" && sign.amount === "MEDIUM") {
-                signImage = this.goldSignMediumImage
-            } else if (sign.type === "gold" && sign.amount === "SMALL") {
-                signImage = this.goldSignalSmallImage
-            } else if (sign.type === "water") {
-                signImage = this.waterSignImage
+            if (sign.type !== undefined) {
+                signDrawInfo = signImageAtlasHandler.getDrawingInformation(sign.type, sign.amount)
+            } else {
+                signDrawInfo = signImageAtlasHandler.getDrawingInformation("nothing", "LARGE")
             }
 
-            if (signImage) {
-                ctx.drawImage(signImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 0.5 * scaleY)
-            } else {
-
-                let fillColor = "brown"
-
-                if (sign.type) {
-                    const colorLookup = signToColor.get(sign.type)
-
-                    if (colorLookup) {
-                        fillColor = colorLookup
-                    }
-                }
-
-                ctx.fillStyle = fillColor
-
-                ctx.fillRect(screenPoint.x - 5, screenPoint.y - 5, 10, 10)
-
-                console.log(sign)
+            if (signDrawInfo !== undefined) {
+                ctx.drawImage(
+                    signDrawInfo?.image,
+                    signDrawInfo?.sourceX,
+                    signDrawInfo?.sourceY,
+                    signDrawInfo?.width,
+                    signDrawInfo?.height,
+                    screenPoint.x - signDrawInfo.offsetX,
+                    screenPoint.y - signDrawInfo.offsetY,
+                    signDrawInfo?.width,
+                    signDrawInfo?.height
+                )
             }
         }
 
@@ -1110,7 +996,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             animationImage.width, animationImage.height,
                             screenPoint.x, screenPoint.y,
                             animationImage.width, animationImage.height)
-                        } else if (fallbackWorkerImage) {
+                    } else if (fallbackWorkerImage) {
                         ctx.drawImage(fallbackWorkerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                     }
 
@@ -1131,7 +1017,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             animationImage.width, animationImage.height,
                             screenPoint.x, screenPoint.y,
                             animationImage.width, animationImage.height)
-                        } else if (fallbackWorkerImage) {
+                    } else if (fallbackWorkerImage) {
                         ctx.drawImage(fallbackWorkerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                     }
                 }
@@ -1261,7 +1147,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     screenPoint.y,
                     flagDrawInfo.width,
                     flagDrawInfo.height
-                    )
+                )
             }
 
             if (flag.stackedCargo) {
@@ -1626,6 +1512,25 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 50,
                 drawInfoFire.width,
                 drawInfoFire.height)
+        }
+
+
+        let signDrawInfo
+
+        signDrawInfo = signImageAtlasHandler.getDrawingInformation("coal", "LARGE")
+
+        if (signDrawInfo !== undefined) {
+            ctx.drawImage(
+                signDrawInfo?.image,
+                signDrawInfo?.sourceX,
+                signDrawInfo?.sourceY,
+                signDrawInfo?.width,
+                signDrawInfo?.height,
+                600,
+                50,
+                signDrawInfo?.width,
+                signDrawInfo?.height
+            )
         }
 
         duration.reportStats()

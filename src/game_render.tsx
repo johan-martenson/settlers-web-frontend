@@ -55,12 +55,6 @@ const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
 
 const uiElementsImageAtlasHandler = new UielementsImageAtlasHandler("assets/")
 
-const AVAILABLE_SMALL_BUILDING_FILE = "assets/ui-elements/available-small-building.png"
-const AVAILABLE_MEDIUM_BUILDING_FILE = "assets/ui-elements/available-medium-building.png"
-const AVAILABLE_LARGE_BUILDING_FILE = "assets/ui-elements/available-large-building.png"
-const AVAILABLE_FLAG_FILE = "assets/ui-elements/available-flag.png"
-const AVAILABLE_MINE_FILE = "assets/ui-elements/available-mine.png"
-
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
 
 interface BelowAndDownRight {
@@ -158,12 +152,6 @@ const flagAnimations = new FlagAnimation("assets/", 10)
 
 let overlayCtx: CanvasRenderingContext2D | null = null
 
-let largeHouseAvailableImage: HTMLImageElement | undefined
-let mediumHouseAvailableImage: HTMLImageElement | undefined
-let smallHouseAvailableImage: HTMLImageElement | undefined
-let flagAvailableImage: HTMLImageElement | undefined
-let mineAvailableImage: HTMLImageElement | undefined
-
 let plannedHouseImage: HTMLImageElement | undefined
 
 let deadTreeImage: HTMLImageElement | undefined
@@ -222,11 +210,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.images = new Map()
         this.normals = new PointMapFast()
 
-        this.loadImages(["stone.png", "worker.png",
-            AVAILABLE_LARGE_BUILDING_FILE, AVAILABLE_MEDIUM_BUILDING_FILE, AVAILABLE_SMALL_BUILDING_FILE, AVAILABLE_MINE_FILE, AVAILABLE_FLAG_FILE,
-            PLANNED_HOUSE_IMAGE_FILE,
-            DEAD_TREE_IMAGE_FILE
-        ])
+        this.loadImages(["stone.png", "worker.png", PLANNED_HOUSE_IMAGE_FILE, DEAD_TREE_IMAGE_FILE])
 
         /* Define the light vector */
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
@@ -1205,27 +1189,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw available construction */
         if (this.props.showAvailableConstruction) {
 
-            if (largeHouseAvailableImage === undefined) {
-                largeHouseAvailableImage = this.images.get(AVAILABLE_LARGE_BUILDING_FILE)
-            }
-
-            if (mediumHouseAvailableImage === undefined) {
-                mediumHouseAvailableImage = this.images.get(AVAILABLE_MEDIUM_BUILDING_FILE)
-            }
-
-            if (smallHouseAvailableImage === undefined) {
-                smallHouseAvailableImage = this.images.get(AVAILABLE_SMALL_BUILDING_FILE)
-            }
-
-            if (flagAvailableImage === undefined) {
-                flagAvailableImage = this.images.get(AVAILABLE_FLAG_FILE)
-            }
-
-            if (mineAvailableImage === undefined) {
-                mineAvailableImage = this.images.get(AVAILABLE_MINE_FILE)
-            }
-
-
             for (const [gamePoint, available] of monitor.availableConstruction.entries()) {
 
                 if (available.length === 0) {
@@ -1240,92 +1203,90 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (available.includes("large")) {
 
-                    if (largeHouseAvailableImage) {
-                        const offsetX = 0.2 * this.props.scale
-                        const offsetY = 0.4 * scaleY
+                    const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
 
-                        ctx.drawImage(largeHouseAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 20, 20)
-                    } else {
-                        ctx.fillStyle = 'yellow'
-                        ctx.strokeStyle = 'black'
-
-                        ctx.fillRect(screenPoint.x - 7, screenPoint.y - 15, 15, 15)
-
-                        ctx.strokeRect(screenPoint.x - 7, screenPoint.y - 15, 15, 15)
+                    if (largeHouseAvailableInfo !== undefined) {
+                        ctx.drawImage(
+                            largeHouseAvailableInfo.image,
+                            largeHouseAvailableInfo.sourceX,
+                            largeHouseAvailableInfo.sourceY,
+                            largeHouseAvailableInfo.width,
+                            largeHouseAvailableInfo.height,
+                            screenPoint.x - largeHouseAvailableInfo.offsetX,
+                            screenPoint.y - largeHouseAvailableInfo.offsetY,
+                            largeHouseAvailableInfo.width,
+                            largeHouseAvailableInfo.height
+                        )
                     }
                 } else if (available.includes("medium")) {
 
-                    if (mediumHouseAvailableImage) {
-                        const offsetX = 0.2 * this.props.scale
-                        const offsetY = 0.4 * scaleY
+                    const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
 
-                        ctx.drawImage(mediumHouseAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 20, 20)
-                    } else {
-                        ctx.fillStyle = 'yellow'
-                        ctx.strokeStyle = 'black'
-
-                        ctx.fillRect(screenPoint.x - 5, screenPoint.y - 10, 10, 10)
-                        ctx.strokeRect(screenPoint.x - 5, screenPoint.y - 10, 10, 10)
+                    if (mediumHouseAvailableInfo !== undefined) {
+                        ctx.drawImage(
+                            mediumHouseAvailableInfo.image,
+                            mediumHouseAvailableInfo.sourceX,
+                            mediumHouseAvailableInfo.sourceY,
+                            mediumHouseAvailableInfo.width,
+                            mediumHouseAvailableInfo.height,
+                            screenPoint.x - mediumHouseAvailableInfo.offsetX,
+                            screenPoint.y - mediumHouseAvailableInfo.offsetY,
+                            mediumHouseAvailableInfo.width,
+                            mediumHouseAvailableInfo.height
+                        )
                     }
                 } else if (available.includes("small")) {
 
-                    if (smallHouseAvailableImage) {
-                        const offsetX = 0.2 * this.props.scale
-                        const offsetY = 0.4 * scaleY
+                    const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
 
-                        ctx.drawImage(smallHouseAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 20, 20)
-                    } else {
-                        ctx.fillStyle = 'yellow'
-                        ctx.strokeStyle = 'black'
-
-                        ctx.fillRect(screenPoint.x - 3, screenPoint.y - 6, 6, 6)
-                        ctx.strokeRect(screenPoint.x - 3, screenPoint.y - 6, 6, 6)
-
+                    if (mediumHouseAvailableInfo !== undefined) {
+                        ctx.drawImage(
+                            mediumHouseAvailableInfo.image,
+                            mediumHouseAvailableInfo.sourceX,
+                            mediumHouseAvailableInfo.sourceY,
+                            mediumHouseAvailableInfo.width,
+                            mediumHouseAvailableInfo.height,
+                            screenPoint.x - mediumHouseAvailableInfo.offsetX,
+                            screenPoint.y - mediumHouseAvailableInfo.offsetY,
+                            mediumHouseAvailableInfo.width,
+                            mediumHouseAvailableInfo.height
+                        )
                     }
                 } else if (available.includes("mine")) {
 
-                    if (mineAvailableImage) {
-                        const offsetX = 0.2 * this.props.scale
-                        const offsetY = 0.4 * scaleY
+                    const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
 
-                        ctx.drawImage(mineAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 20, 20)
-                    } else {
-                        ctx.fillStyle = 'yellow'
-                        ctx.strokeStyle = 'black'
-
-                        ctx.beginPath()
-                        ctx.arc(screenPoint.x - 3, screenPoint.y - 6, 6, 0, 2 * Math.PI)
-                        ctx.closePath()
-
-                        ctx.fill()
-                        ctx.stroke()
+                    if (mineAvailableInfo !== undefined) {
+                        ctx.drawImage(
+                            mineAvailableInfo.image,
+                            mineAvailableInfo.sourceX,
+                            mineAvailableInfo.sourceY,
+                            mineAvailableInfo.width,
+                            mineAvailableInfo.height,
+                            screenPoint.x - mineAvailableInfo.offsetX,
+                            screenPoint.y - mineAvailableInfo.offsetY,
+                            mineAvailableInfo.width,
+                            mineAvailableInfo.height
+                        )
                     }
-
                 } else if (available.includes("flag")) {
 
-                    if (flagAvailableImage) {
-                        const offsetX = 4
-                        const offsetY = 15
+                    const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
 
-                        ctx.drawImage(flagAvailableImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY), 15, 15)
-                    } else {
-                        ctx.fillStyle = 'yellow'
-                        ctx.strokeStyle = 'black'
-
-                        ctx.beginPath()
-
-                        ctx.moveTo(screenPoint.x - 2, screenPoint.y)
-                        ctx.lineTo(screenPoint.x - 2, screenPoint.y - 10)
-                        ctx.lineTo(screenPoint.x + 3, screenPoint.y - 10)
-                        ctx.lineTo(screenPoint.x + 3, screenPoint.y - 5)
-                        ctx.lineTo(screenPoint.x, screenPoint.y - 5)
-                        ctx.lineTo(screenPoint.x, screenPoint.y)
-
-                        ctx.closePath()
-
-                        ctx.fill()
-                        ctx.stroke()
+                    if (flagAvailableInfo !== undefined) {
+                        ctx.drawImage(
+                            flagAvailableInfo.image,
+                            flagAvailableInfo.sourceX,
+                            flagAvailableInfo.sourceY,
+                            flagAvailableInfo.width,
+                            flagAvailableInfo.height,
+                            screenPoint.x - flagAvailableInfo.offsetX,
+                            screenPoint.y - flagAvailableInfo.offsetY,
+                            flagAvailableInfo.width,
+                            flagAvailableInfo.height
+                        )
                     }
+
                 }
             }
         }

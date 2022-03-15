@@ -814,6 +814,9 @@ interface UiElementsImageAtlasInfo {
     hoverAvailableBuildingLarge: OneImageInformation
     hoverAvailableBuildingMedium: OneImageInformation
     hoverAvailableBuildingSmall: OneImageInformation
+    availableFlag: OneImageInformation
+    availableMine: OneImageInformation
+    availableBuildingHarbor: OneImageInformation
     availableBuildingLarge: OneImageInformation
     availableBuildingMedium: OneImageInformation
     availableBuildingSmall: OneImageInformation
@@ -868,6 +871,86 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.hoverPoint.height,
             offsetX: this.imageAtlasInfo.hoverPoint.offsetX,
             offsetY: this.imageAtlasInfo.hoverPoint.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForLargeHouseAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.availableBuildingLarge.x,
+            sourceY: this.imageAtlasInfo.availableBuildingLarge.y,
+            width: this.imageAtlasInfo.availableBuildingLarge.width,
+            height: this.imageAtlasInfo.availableBuildingLarge.height,
+            offsetX: this.imageAtlasInfo.availableBuildingLarge.offsetX,
+            offsetY: this.imageAtlasInfo.availableBuildingLarge.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForMediumHouseAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.availableBuildingMedium.x,
+            sourceY: this.imageAtlasInfo.availableBuildingMedium.y,
+            width: this.imageAtlasInfo.availableBuildingMedium.width,
+            height: this.imageAtlasInfo.availableBuildingMedium.height,
+            offsetX: this.imageAtlasInfo.availableBuildingMedium.offsetX,
+            offsetY: this.imageAtlasInfo.availableBuildingMedium.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForSmallHouseAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.availableBuildingSmall.x,
+            sourceY: this.imageAtlasInfo.availableBuildingSmall.y,
+            width: this.imageAtlasInfo.availableBuildingSmall.width,
+            height: this.imageAtlasInfo.availableBuildingSmall.height,
+            offsetX: this.imageAtlasInfo.availableBuildingSmall.offsetX,
+            offsetY: this.imageAtlasInfo.availableBuildingSmall.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForMineAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.availableMine.x,
+            sourceY: this.imageAtlasInfo.availableMine.y,
+            width: this.imageAtlasInfo.availableMine.width,
+            height: this.imageAtlasInfo.availableMine.height,
+            offsetX: this.imageAtlasInfo.availableMine.offsetX,
+            offsetY: this.imageAtlasInfo.availableMine.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForFlagAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.availableFlag.x,
+            sourceY: this.imageAtlasInfo.availableFlag.y,
+            width: this.imageAtlasInfo.availableFlag.width,
+            height: this.imageAtlasInfo.availableFlag.height,
+            offsetX: this.imageAtlasInfo.availableFlag.offsetX,
+            offsetY: this.imageAtlasInfo.availableFlag.offsetY,
             image: this.image
         }
     }

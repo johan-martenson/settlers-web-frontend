@@ -805,6 +805,74 @@ class TreeImageAtlasHandler {
     }
 }
 
+interface UiElementsImageAtlasInfo {
+    selectedPoint: OneImageInformation
+    hoverPoint: OneImageInformation
+    hoverAvailableFlag: OneImageInformation
+    hoverAvailableMine: OneImageInformation
+    hoverAvailableHarbor: OneImageInformation
+    hoverAvailableBuildingLarge: OneImageInformation
+    hoverAvailableBuildingMedium: OneImageInformation
+    hoverAvailableBuildingSmall: OneImageInformation
+    availableBuildingLarge: OneImageInformation
+    availableBuildingMedium: OneImageInformation
+    availableBuildingSmall: OneImageInformation
+}
+
+class UielementsImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: UiElementsImageAtlasInfo
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-ui-elements.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-ui-elements.png")
+    }
+
+    getDrawingInformationForSelectedPoint(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.selectedPoint.x,
+            sourceY: this.imageAtlasInfo.selectedPoint.y,
+            width: this.imageAtlasInfo.selectedPoint.width,
+            height: this.imageAtlasInfo.selectedPoint.height,
+            offsetX: this.imageAtlasInfo.selectedPoint.offsetX,
+            offsetY: this.imageAtlasInfo.selectedPoint.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForHoverPoint(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.hoverPoint.x,
+            sourceY: this.imageAtlasInfo.hoverPoint.y,
+            width: this.imageAtlasInfo.hoverPoint.width,
+            height: this.imageAtlasInfo.hoverPoint.height,
+            offsetX: this.imageAtlasInfo.hoverPoint.offsetX,
+            offsetY: this.imageAtlasInfo.hoverPoint.offsetY,
+            image: this.image
+        }
+    }
+}
+
 class AnimalImageAtlasHandler {
     private pathPrefix: string
     private name: string
@@ -913,5 +981,6 @@ export {
     FlagAnimation,
     FireAnimation,
     HouseImageAtlasHandler,
-    SignImageAtlasHandler
+    SignImageAtlasHandler,
+    UielementsImageAtlasHandler
 }

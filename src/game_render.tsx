@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, camelCaseToWords, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, sumVectors, TreeAnimation, Vector, vegetationToInt, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, camelCaseToWords, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -53,13 +53,13 @@ const currentPlayerNation: Nation = "romans"
 
 const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
 
+const uiElementsImageAtlasHandler = new UielementsImageAtlasHandler("assets/")
+
 const AVAILABLE_SMALL_BUILDING_FILE = "assets/ui-elements/available-small-building.png"
 const AVAILABLE_MEDIUM_BUILDING_FILE = "assets/ui-elements/available-medium-building.png"
 const AVAILABLE_LARGE_BUILDING_FILE = "assets/ui-elements/available-large-building.png"
 const AVAILABLE_FLAG_FILE = "assets/ui-elements/available-flag.png"
 const AVAILABLE_MINE_FILE = "assets/ui-elements/available-mine.png"
-
-const SELECTED_POINT = "assets/ui-elements/selected-point.png"
 
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
 
@@ -158,8 +158,6 @@ const flagAnimations = new FlagAnimation("assets/", 10)
 
 let overlayCtx: CanvasRenderingContext2D | null = null
 
-let selectedImage: HTMLImageElement | undefined
-
 let largeHouseAvailableImage: HTMLImageElement | undefined
 let mediumHouseAvailableImage: HTMLImageElement | undefined
 let smallHouseAvailableImage: HTMLImageElement | undefined
@@ -226,7 +224,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.loadImages(["stone.png", "worker.png",
             AVAILABLE_LARGE_BUILDING_FILE, AVAILABLE_MEDIUM_BUILDING_FILE, AVAILABLE_SMALL_BUILDING_FILE, AVAILABLE_MINE_FILE, AVAILABLE_FLAG_FILE,
-            SELECTED_POINT,
             PLANNED_HOUSE_IMAGE_FILE,
             DEAD_TREE_IMAGE_FILE
         ])
@@ -307,6 +304,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         fireAnimations.load()
 
         signImageAtlasHandler.load()
+
+        uiElementsImageAtlasHandler.load()
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {
@@ -1391,29 +1390,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the selected point */
-        if (selectedImage === undefined) {
-            selectedImage = this.images.get(SELECTED_POINT)
-        }
-
         if (this.props.selectedPoint) {
             const screenPoint = this.gamePointToScreenPoint(this.props.selectedPoint)
 
-            if (selectedImage) {
-                const offsetX = selectedImage.width / 2
-                const offsetY = selectedImage.height / 2
+            const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
 
-                ctx.drawImage(selectedImage, Math.floor(screenPoint.x - offsetX), Math.floor(screenPoint.y - offsetY))
-            } else {
-
-                ctx.fillStyle = 'yellow'
-                ctx.strokeStyle = 'black'
-
-                ctx.beginPath()
-                ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI)
-                ctx.closePath()
-
-                ctx.fill()
-                ctx.stroke()
+            if (selectedPointDrawInfo !== undefined) {
+                ctx.drawImage(
+                    selectedPointDrawInfo.image,
+                    selectedPointDrawInfo.sourceX,
+                    selectedPointDrawInfo.sourceY,
+                    selectedPointDrawInfo.width,
+                    selectedPointDrawInfo.height,
+                    screenPoint.x - selectedPointDrawInfo.offsetX,
+                    screenPoint.y - selectedPointDrawInfo.offsetY,
+                    selectedPointDrawInfo.width,
+                    selectedPointDrawInfo.height
+                )
             }
         }
 
@@ -1424,15 +1417,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.state.hoverPoint) {
             const screenPoint = this.gamePointToScreenPoint(this.state.hoverPoint)
 
-            ctx.fillStyle = 'yellow'
-            ctx.strokeStyle = 'black'
+            const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
 
-            ctx.beginPath()
-            ctx.arc(screenPoint.x, screenPoint.y, 7, 0, 2 * Math.PI)
-            ctx.closePath()
+            if (hoverPointDrawInfo !== undefined) {
+                ctx.drawImage(
+                    hoverPointDrawInfo.image,
+                    hoverPointDrawInfo.sourceX,
+                    hoverPointDrawInfo.sourceY,
+                    hoverPointDrawInfo.width,
+                    hoverPointDrawInfo.height,
+                    screenPoint.x - hoverPointDrawInfo.offsetX,
+                    screenPoint.y - hoverPointDrawInfo.offsetY,
+                    hoverPointDrawInfo.width,
+                    hoverPointDrawInfo.height
+                )
+            }
 
-            ctx.fill()
-            ctx.stroke()
         }
 
         duration.after("draw hover point")

@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, camelCaseToWords, CropImageAtlasHandler, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, camelCaseToWords, CropImageAtlasHandler, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -96,11 +96,9 @@ const DEAD_TREE_IMAGE_FILE = "assets/nature/dead-tree.png"
 
 const treeAnimations = new TreeAnimation("assets/nature/", 20)
 
-const testGeneralAnimation = new WorkerAnimationBasedOnImageAtlas("assets/", "general")
-
-testGeneralAnimation.load()
-
 const fireAnimations = new FireAnimation("assets/", 4)
+
+const stoneImageAtlasHandler = new StoneImageAtlasHandler("assets/")
 
 const animals = new Map<WildAnimalType, AnimalAnimation>()
 
@@ -212,7 +210,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.images = new Map()
         this.normals = new PointMapFast()
 
-        this.loadImages(["stone.png", "worker.png", PLANNED_HOUSE_IMAGE_FILE, DEAD_TREE_IMAGE_FILE])
+        this.loadImages(["worker.png", PLANNED_HOUSE_IMAGE_FILE, DEAD_TREE_IMAGE_FILE])
 
         /* Define the light vector */
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
@@ -294,6 +292,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         uiElementsImageAtlasHandler.load()
 
         cropsImageAtlasHandler.load()
+
+        stoneImageAtlasHandler.load()
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {
@@ -923,13 +923,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const screenPoint = this.gamePointToScreenPoint(stone)
 
             /* Draw the stone next to the point, instead of on top */
-            screenPoint.x -= (2 * this.props.scale) / 2
-            screenPoint.y -= 3 * scaleY / 2
 
-            const stoneImage = this.images.get("stone.png")
+            // TODO: pick the right type and size of stone
+            const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor('TYPE_2', 'MIDDLE')
 
-            if (stoneImage) {
-                ctx.drawImage(stoneImage, Math.floor(screenPoint.x), Math.floor(screenPoint.y), Math.floor(2 * this.props.scale), Math.floor(3 * scaleY))
+            if (stoneDrawInfo !== undefined) {
+                ctx.drawImage(
+                    stoneDrawInfo.image,
+                    stoneDrawInfo.sourceX,
+                    stoneDrawInfo.sourceY,
+                    stoneDrawInfo.width,
+                    stoneDrawInfo.height,
+                    screenPoint.x - stoneDrawInfo.offsetX,
+                    screenPoint.y - stoneDrawInfo.offsetY,
+                    stoneDrawInfo.width,
+                    stoneDrawInfo.height
+                )
             }
         }
 
@@ -1443,117 +1452,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("draw hover point")
 
-        //////// TEMP
-        const drawInfo = testGeneralAnimation.getDrawingInformationFor("africans", "EAST", Math.floor(this.animationIndex / 10), 0)
-        if (drawInfo?.image !== undefined) {
-            ctx.drawImage(drawInfo.image,
-                drawInfo.sourceX,
-                drawInfo.sourceY,
-                drawInfo.width,
-                drawInfo.height,
-                100,
-                50,
-                drawInfo.width,
-                drawInfo.height)
-        }
-
-        const drawInfo2 = animals.get("DEER")?.getAnimationFrame("NORTH_EAST", Math.floor(this.animationIndex / 10), 0)
-
-        if (drawInfo2?.image !== undefined) {
-
-            if (logOnce) {
-                console.log(drawInfo2)
-
-                logOnce = false
-            }
-
-            ctx.drawImage(drawInfo2.image,
-                drawInfo2.sourceX,
-                drawInfo2.sourceY,
-                drawInfo2.width,
-                drawInfo2.height,
-                200,
-                50,
-                drawInfo2.width,
-                drawInfo2.height)
-        }
-
-        const drawInfo3 = treeAnimations.getAnimationFrame("CYPRESS", this.animationIndex, 0)
-
-        if (drawInfo3 !== undefined) {
-            ctx.drawImage(drawInfo3.image,
-                drawInfo3.sourceX,
-                drawInfo3.sourceY,
-                drawInfo3.width,
-                drawInfo3.height,
-                300,
-                50,
-                drawInfo3.width,
-                drawInfo3.height)
-        }
-
-        const drawInfo4 = flagAnimations.getAnimationFrame("romans", "MAIN", this.animationIndex, 0)
-
-        if (drawInfo4 !== undefined) {
-            ctx.drawImage(drawInfo4.image,
-                drawInfo4.sourceX,
-                drawInfo4.sourceY,
-                drawInfo4.width,
-                drawInfo4.height,
-                400,
-                50,
-                drawInfo4.width,
-                drawInfo4.height)
-        }
-
-        const drawInfoFire = fireAnimations.getAnimationFrame("LARGE", this.animationIndex)
-
-        if (drawInfoFire !== undefined) {
-            ctx.drawImage(drawInfoFire.image,
-                drawInfoFire.sourceX,
-                drawInfoFire.sourceY,
-                drawInfoFire.width,
-                drawInfoFire.height,
-                500,
-                50,
-                drawInfoFire.width,
-                drawInfoFire.height)
-        }
-
-
-        let signDrawInfo
-
-        signDrawInfo = signImageAtlasHandler.getDrawingInformation("coal", "LARGE")
-
-        if (signDrawInfo !== undefined) {
-            ctx.drawImage(
-                signDrawInfo.image,
-                signDrawInfo.sourceX,
-                signDrawInfo.sourceY,
-                signDrawInfo.width,
-                signDrawInfo.height,
-                600,
-                50,
-                signDrawInfo.width,
-                signDrawInfo.height
-            )
-        }
-
-        const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', 'LARGER')
-
-        if (cropDrawInfo !== undefined) {
-            ctx.drawImage(
-                cropDrawInfo.image,
-                cropDrawInfo.sourceX,
-                cropDrawInfo.sourceY,
-                cropDrawInfo.width,
-                cropDrawInfo.height,
-                700,
-                50,
-                cropDrawInfo.width,
-                cropDrawInfo.height
-            )
-        }
 
         duration.reportStats()
 

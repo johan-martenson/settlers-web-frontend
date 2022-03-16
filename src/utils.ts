@@ -1,4 +1,4 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding, SignTypes, CropType, CropGrowth } from './api'
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding, SignTypes, CropType, CropGrowth, StoneType, StoneAmount } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -956,6 +956,47 @@ class UielementsImageAtlasHandler {
     }
 }
 
+class StoneImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: Record<StoneType, Record<StoneAmount, OneImageInformation>>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-stones.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-stones.png")
+    }
+
+    getDrawingInformationFor(stoneType: StoneType, amount: StoneAmount): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const infoPerStoneType = this.imageAtlasInfo[stoneType]
+        const imageInfo = infoPerStoneType[amount]
+
+        return {
+            sourceX: imageInfo.x,
+            sourceY: imageInfo.y,
+            width: imageInfo.width,
+            height: imageInfo.height,
+            offsetX: imageInfo.offsetX,
+            offsetY: imageInfo.offsetY,
+            image: this.image
+        }
+    }
+}
+
 class CropImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<CropType, Record<CropGrowth, OneImageInformation>>
@@ -1107,5 +1148,6 @@ export {
     HouseImageAtlasHandler,
     SignImageAtlasHandler,
     UielementsImageAtlasHandler,
-    CropImageAtlasHandler
+    CropImageAtlasHandler,
+    StoneImageAtlasHandler
 }

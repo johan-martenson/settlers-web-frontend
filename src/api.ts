@@ -26,9 +26,13 @@ export type Nation = 'romans' | 'africans' | 'japanese' | 'vikings'
 
 export type Direction = "EAST" | "SOUTH_EAST" | "SOUTH_WEST" | "WEST" | "NORTH_WEST" | "NORTH_EAST"
 
+export type StoneType = 'TYPE_1' | 'TYPE_2'
+
 export type CropType = 'TYPE_1' | 'TYPE_2'
 
 export type CropGrowth = 'NEWLY_PLANTED' | 'SMALL' | 'LARGER' | 'FULLY_GROWN' | 'NEWLY_HARVESTED'
+
+export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST_FULL' | 'FULL'
 
 function isTool(material: Material): material is Tool {
     return material === 'axe' ||

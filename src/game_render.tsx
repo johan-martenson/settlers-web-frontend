@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, camelCaseToWords, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, camelCaseToWords, CropImageAtlasHandler, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -48,10 +48,12 @@ interface GameCanvasState {
 
 let logOnce = true
 
-// Temporary workaround until buildings are correct for all players and the monitor and the backend retrives player nation correctly
+// Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
 const currentPlayerNation: Nation = "romans"
 
 const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
+
+const cropsImageAtlasHandler = new CropImageAtlasHandler("assets/")
 
 const uiElementsImageAtlasHandler = new UielementsImageAtlasHandler("assets/")
 
@@ -290,6 +292,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         signImageAtlasHandler.load()
 
         uiElementsImageAtlasHandler.load()
+
+        cropsImageAtlasHandler.load()
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {
@@ -783,7 +787,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             let treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)
 
             if (treeDrawInfo !== undefined) {
-                ctx.drawImage(treeDrawInfo.image,
+                ctx.drawImage(
+                    treeDrawInfo.image,
                     treeDrawInfo.sourceX,
                     treeDrawInfo.sourceY,
                     treeDrawInfo.width,
@@ -852,12 +857,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const screenPoint = this.gamePointToScreenPoint(crop)
 
-            ctx.beginPath()
+            // TODO: get type and growth state from the backend
+            const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', 'FULLY_GROWN')
 
-            ctx.ellipse(screenPoint.x, screenPoint.y, 0.8 * this.props.scale, 0.4 * scaleY, 0, 0, 2 * Math.PI)
-            ctx.closePath()
-
-            ctx.fill()
+            if (cropDrawInfo !== undefined) {
+                ctx.drawImage(
+                    cropDrawInfo.image,
+                    cropDrawInfo.sourceX,
+                    cropDrawInfo.sourceY,
+                    cropDrawInfo.width,
+                    cropDrawInfo.height,
+                    screenPoint.x,
+                    screenPoint.y,
+                    cropDrawInfo.width,
+                    cropDrawInfo.height
+                )
+            }
         }
 
         duration.after("draw crops")
@@ -882,15 +897,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             if (signDrawInfo !== undefined) {
                 ctx.drawImage(
-                    signDrawInfo?.image,
-                    signDrawInfo?.sourceX,
-                    signDrawInfo?.sourceY,
-                    signDrawInfo?.width,
-                    signDrawInfo?.height,
+                    signDrawInfo.image,
+                    signDrawInfo.sourceX,
+                    signDrawInfo.sourceY,
+                    signDrawInfo.width,
+                    signDrawInfo.height,
                     screenPoint.x - signDrawInfo.offsetX,
                     screenPoint.y - signDrawInfo.offsetY,
-                    signDrawInfo?.width,
-                    signDrawInfo?.height
+                    signDrawInfo.width,
+                    signDrawInfo.height
                 )
             }
         }
@@ -949,11 +964,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
                 if (animationImage !== undefined) {
-                    ctx.drawImage(animationImage.image,
-                        animationImage.sourceX, animationImage.sourceY,
-                        animationImage.width, animationImage.height,
-                        point.x, point.y,
-                        animationImage.width, animationImage.height)
+                    ctx.drawImage(
+                        animationImage.image,
+                        animationImage.sourceX,
+                        animationImage.sourceY,
+                        animationImage.width,
+                        animationImage.height,
+                        point.x,
+                        point.y,
+                        animationImage.width,
+                        animationImage.height
+                        )
                 } else if (fallbackWorkerImage) {
                     ctx.drawImage(fallbackWorkerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
@@ -974,11 +995,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
                     if (animationImage !== undefined) {
-                        ctx.drawImage(animationImage.image,
-                            animationImage.sourceX, animationImage.sourceY,
-                            animationImage.width, animationImage.height,
-                            screenPoint.x, screenPoint.y,
-                            animationImage.width, animationImage.height)
+                        ctx.drawImage(
+                            animationImage.image,
+                            animationImage.sourceX,
+                            animationImage.sourceY,
+                            animationImage.width,
+                            animationImage.height,
+                            screenPoint.x,
+                            screenPoint.y,
+                            animationImage.width,
+                            animationImage.height
+                            )
                     } else if (fallbackWorkerImage) {
                         ctx.drawImage(fallbackWorkerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                     }
@@ -995,11 +1022,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
                     if (animationImage !== undefined) {
-                        ctx.drawImage(animationImage.image,
-                            animationImage.sourceX, animationImage.sourceY,
-                            animationImage.width, animationImage.height,
-                            screenPoint.x, screenPoint.y,
-                            animationImage.width, animationImage.height)
+                        ctx.drawImage(
+                            animationImage.image,
+                            animationImage.sourceX,
+                            animationImage.sourceY,
+                            animationImage.width,
+                            animationImage.height,
+                            screenPoint.x,
+                            screenPoint.y,
+                            animationImage.width,
+                            animationImage.height
+                            )
                     } else if (fallbackWorkerImage) {
                         ctx.drawImage(fallbackWorkerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                     }
@@ -1050,11 +1083,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
                 if (animationImage !== undefined) {
-                    ctx.drawImage(animationImage.image,
-                        animationImage.sourceX, animationImage.sourceY,
-                        animationImage.width, animationImage.height,
-                        point.x, point.y,
-                        animationImage.width, animationImage.height)
+                    ctx.drawImage(
+                        animationImage.image,
+                        animationImage.sourceX,
+                        animationImage.sourceY,
+                        animationImage.width,
+                        animationImage.height,
+                        point.x,
+                        point.y,
+                        animationImage.width,
+                        animationImage.height
+                        )
                 } else if (workerImage) {
                     ctx.drawImage(workerImage, point.x, point.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
@@ -1084,11 +1123,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
                 if (animationImage) {
-                    ctx.drawImage(animationImage.image,
-                        animationImage.sourceX, animationImage.sourceY,
-                        animationImage.width, animationImage.height,
-                        screenPoint.x, screenPoint.y,
-                        animationImage.width, animationImage.height)
+                    ctx.drawImage(
+                        animationImage.image,
+                        animationImage.sourceX,
+                        animationImage.sourceY,
+                        animationImage.width,
+                        animationImage.height,
+                        screenPoint.x,
+                        screenPoint.y,
+                        animationImage.width,
+                        animationImage.height
+                        )
                 } else if (workerImage) {
                     ctx.drawImage(workerImage, screenPoint.x, screenPoint.y, 0.25 * this.props.scale, 1.15 * scaleY)
                 }
@@ -1401,7 +1446,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         //////// TEMP
         const drawInfo = testGeneralAnimation.getDrawingInformationFor("africans", "EAST", Math.floor(this.animationIndex / 10), 0)
         if (drawInfo?.image !== undefined) {
-            ctx.drawImage(drawInfo?.image,
+            ctx.drawImage(drawInfo.image,
                 drawInfo.sourceX,
                 drawInfo.sourceY,
                 drawInfo.width,
@@ -1482,15 +1527,31 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         if (signDrawInfo !== undefined) {
             ctx.drawImage(
-                signDrawInfo?.image,
-                signDrawInfo?.sourceX,
-                signDrawInfo?.sourceY,
-                signDrawInfo?.width,
-                signDrawInfo?.height,
+                signDrawInfo.image,
+                signDrawInfo.sourceX,
+                signDrawInfo.sourceY,
+                signDrawInfo.width,
+                signDrawInfo.height,
                 600,
                 50,
-                signDrawInfo?.width,
-                signDrawInfo?.height
+                signDrawInfo.width,
+                signDrawInfo.height
+            )
+        }
+
+        const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', 'LARGER')
+
+        if (cropDrawInfo !== undefined) {
+            ctx.drawImage(
+                cropDrawInfo.image,
+                cropDrawInfo.sourceX,
+                cropDrawInfo.sourceY,
+                cropDrawInfo.width,
+                cropDrawInfo.height,
+                700,
+                50,
+                cropDrawInfo.width,
+                cropDrawInfo.height
             )
         }
 

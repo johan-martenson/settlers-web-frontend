@@ -1,4 +1,4 @@
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding, SignTypes, CropType, CropGrowth, StoneType, StoneAmount } from './api'
+import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding, SignTypes, CropType, CropGrowth, StoneType, StoneAmount, DecorationType } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -630,6 +630,54 @@ interface OneImageInformation {
     offsetY: number
 }
 
+class BorderImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: Record<Nation, Record<"landBorder" | "coastBorder", OneImageInformation>>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-border.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-border.png")
+
+        console.log({info: imageAtlasInfo, image: this.image})
+    }
+
+    getDrawingInformation(nation: Nation, type: "LAND" | "COAST"): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const infoPerNation = this.imageAtlasInfo[nation]
+
+        let imageInfo = infoPerNation["landBorder"]
+
+        if (type === "COAST") {
+            imageInfo = infoPerNation["coastBorder"]
+        }
+
+        return {
+            sourceX: imageInfo.x,
+            sourceY: imageInfo.y,
+            width: imageInfo.width,
+            height: imageInfo.height,
+            offsetX: imageInfo.offsetX,
+            offsetY: imageInfo.offsetY,
+            image: this.image
+        }
+    }
+}
+
 class SignImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<SignTypes, Record<Size, OneImageInformation>>
@@ -954,6 +1002,86 @@ class UielementsImageAtlasHandler {
             image: this.image
         }
     }
+
+    getDrawingInformationForHoverLargeHouseAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.hoverAvailableBuildingLarge.x,
+            sourceY: this.imageAtlasInfo.hoverAvailableBuildingLarge.y,
+            width: this.imageAtlasInfo.hoverAvailableBuildingLarge.width,
+            height: this.imageAtlasInfo.hoverAvailableBuildingLarge.height,
+            offsetX: this.imageAtlasInfo.hoverAvailableBuildingLarge.offsetX,
+            offsetY: this.imageAtlasInfo.hoverAvailableBuildingLarge.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForHoverMediumHouseAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.hoverAvailableBuildingMedium.x,
+            sourceY: this.imageAtlasInfo.hoverAvailableBuildingMedium.y,
+            width: this.imageAtlasInfo.hoverAvailableBuildingMedium.width,
+            height: this.imageAtlasInfo.hoverAvailableBuildingMedium.height,
+            offsetX: this.imageAtlasInfo.hoverAvailableBuildingMedium.offsetX,
+            offsetY: this.imageAtlasInfo.hoverAvailableBuildingMedium.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForHoverSmallHouseAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.hoverAvailableBuildingSmall.x,
+            sourceY: this.imageAtlasInfo.hoverAvailableBuildingSmall.y,
+            width: this.imageAtlasInfo.hoverAvailableBuildingSmall.width,
+            height: this.imageAtlasInfo.hoverAvailableBuildingSmall.height,
+            offsetX: this.imageAtlasInfo.hoverAvailableBuildingSmall.offsetX,
+            offsetY: this.imageAtlasInfo.hoverAvailableBuildingSmall.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForHoverMineAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.hoverAvailableMine.x,
+            sourceY: this.imageAtlasInfo.hoverAvailableMine.y,
+            width: this.imageAtlasInfo.hoverAvailableMine.width,
+            height: this.imageAtlasInfo.hoverAvailableMine.height,
+            offsetX: this.imageAtlasInfo.hoverAvailableMine.offsetX,
+            offsetY: this.imageAtlasInfo.hoverAvailableMine.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForHoverFlagAvailable(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        return {
+            sourceX: this.imageAtlasInfo.hoverAvailableFlag.x,
+            sourceY: this.imageAtlasInfo.hoverAvailableFlag.y,
+            width: this.imageAtlasInfo.hoverAvailableFlag.width,
+            height: this.imageAtlasInfo.hoverAvailableFlag.height,
+            offsetX: this.imageAtlasInfo.hoverAvailableFlag.offsetX,
+            offsetY: this.imageAtlasInfo.hoverAvailableFlag.offsetY,
+            image: this.image
+        }
+    }
 }
 
 class StoneImageAtlasHandler {
@@ -984,6 +1112,46 @@ class StoneImageAtlasHandler {
 
         const infoPerStoneType = this.imageAtlasInfo[stoneType]
         const imageInfo = infoPerStoneType[amount]
+
+        return {
+            sourceX: imageInfo.x,
+            sourceY: imageInfo.y,
+            width: imageInfo.width,
+            height: imageInfo.height,
+            offsetX: imageInfo.offsetX,
+            offsetY: imageInfo.offsetY,
+            image: this.image
+        }
+    }
+}
+
+class DecorationsImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: Record<DecorationType, OneImageInformation>
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-decorations.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-decorations.png")
+    }
+
+    getDrawingInformationFor(decorationType : DecorationType): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const imageInfo = this.imageAtlasInfo[decorationType]
 
         return {
             sourceX: imageInfo.x,
@@ -1149,5 +1317,7 @@ export {
     SignImageAtlasHandler,
     UielementsImageAtlasHandler,
     CropImageAtlasHandler,
-    StoneImageAtlasHandler
+    StoneImageAtlasHandler,
+    DecorationsImageAtlasHandler,
+    BorderImageAtlasHandler
 }

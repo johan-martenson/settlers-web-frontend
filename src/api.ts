@@ -213,6 +213,23 @@ export interface PointInformation {
 
 export type TreeType = "PINE" | "BIRCH" | "OAK" | "PALM_1" | "PALM_2" | "PINE_APPLE" | "CYPRESS" | "CHERRY" | "FIR"
 
+export type DecorationType = "MUSHROOM" |
+    "MINI_STONE" |
+    "MINI_STONES" |
+    "STONE" |
+    "FALLEN_TREE" |
+    "STANDING_DEAD_TREE" |
+    "SKELETON" |
+    "MINI_SKELETON" |
+    "FLOWERS" |
+    "BUSH" |
+    "LARGER_STONES" |
+    "CACTUS_1" |
+    "CACTUS_2" |
+    "BEACH_GRASS" |
+    "SMALL_GRASS"
+
+
 export interface TreeInformation extends Point {
     id: TreeId
     type: TreeType

@@ -480,6 +480,8 @@ interface OneDirectionImageAtlasAnimationInfo{
     nrImages: number
     startX: number
     startY: number
+    offsetX?: number
+    offsetY?: number
 }
 
 interface DrawingInformation {
@@ -754,13 +756,24 @@ class FireImageAtlasHandler {
 
         const frameIndex = animationIndex % infoPerFireSize.nrImages
 
+        let offsetX = 0
+        let offsetY = 0
+
+        if (infoPerFireSize.offsetX !== undefined) {
+            offsetX = infoPerFireSize.offsetX
+        }
+
+        if (infoPerFireSize.offsetY !== undefined) {
+            offsetY = infoPerFireSize.offsetY
+        }
+
         return {
             sourceX: infoPerFireSize.startX + frameIndex * infoPerFireSize.width,
             sourceY: infoPerFireSize.startY,
             width: infoPerFireSize.width,
             height: infoPerFireSize.height,
-            offsetX: 0,
-            offsetY: 0,
+            offsetX: offsetX,
+            offsetY: offsetY,
             image: this.image
         }
     }
@@ -841,13 +854,24 @@ class TreeImageAtlasHandler {
 
         const frameIndex = (animationCounter) % infoPerTreeType.nrImages
 
+        let offsetX = 0
+        let offsetY = 0
+
+        if (infoPerTreeType?.offsetX !== undefined) {
+            offsetX = infoPerTreeType.offsetX
+        }
+
+        if (infoPerTreeType?.offsetY !== undefined) {
+            offsetY = infoPerTreeType.offsetY
+        }
+
         return {
             sourceX: infoPerTreeType.startX + frameIndex * infoPerTreeType.width,
             sourceY: infoPerTreeType.startY,
             width: infoPerTreeType.width,
             height: infoPerTreeType.height, // Verify that this goes in the right direction
-            offsetX: 0,
-            offsetY: 0,
+            offsetX: offsetX,
+            offsetY: offsetY,
             image: this.image
         }
     }
@@ -1239,13 +1263,24 @@ class AnimalImageAtlasHandler {
 
         const frameIndex = (animationCounter) % infoPerDirection.nrImages
 
+        let offsetX = 0
+        let offsetY = 0
+
+        if (infoPerDirection?.offsetX !== undefined) {
+            offsetX = infoPerDirection.offsetX
+        }
+
+        if (infoPerDirection?.offsetY !== undefined) {
+            offsetY = infoPerDirection.offsetY
+        }
+
         return {
             sourceX: infoPerDirection.startX + frameIndex * infoPerDirection.width,
             sourceY: infoPerDirection.startY,
             width: infoPerDirection.width,
             height: infoPerDirection.height, // Verify that this goes in the right direction
-            offsetX: 0,
-            offsetY: 0,
+            offsetX: offsetX,
+            offsetY: offsetY,
             image: this.image
         }
     }

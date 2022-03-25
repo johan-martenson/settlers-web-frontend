@@ -725,7 +725,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         fireDrawInformation.sourceY,
                         fireDrawInformation.width,
                         fireDrawInformation.height,
-                        screenPoint.x - 100, screenPoint.y - 130,
+                        screenPoint.x - fireDrawInformation.offsetX,
+                        screenPoint.y - fireDrawInformation.offsetY,
                         fireDrawInformation.width,
                         fireDrawInformation.height)
                 }

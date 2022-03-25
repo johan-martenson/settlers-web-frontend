@@ -96,7 +96,7 @@ vegetationToTextureMapping.set(23, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48
 
 const PLANNED_HOUSE_IMAGE_FILE = "assets/roman-buildings/construction-started-sign.png"
 
-const treeAnimations = new TreeAnimation("assets/nature/", 20)
+const treeAnimations = new TreeAnimation("assets/nature/", 10)
 
 const fireAnimations = new FireAnimation("assets/", 4)
 

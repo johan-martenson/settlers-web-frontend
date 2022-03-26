@@ -777,7 +777,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         let treeIndex = 0
         for (const [treeId, tree] of monitor.visibleTrees) {
 
-            if (tree.x < minXInGame || tree.x > maxXInGame || tree.y < minYInGame || tree.y > maxYInGame) {
+            if (tree.x + 1 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 1 < minYInGame || tree.y - 1 > maxYInGame) {
                 continue
             }
 
@@ -1040,12 +1040,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const screenPoint1 = this.gamePointToScreenPoint(worker.previous)
                 const screenPoint2 = this.gamePointToScreenPoint(worker.next)
 
-                const point = {
+                const screenPoint = {
                     x: screenPoint1.x + (screenPoint2.x - screenPoint1.x) * (worker.percentageTraveled / 100),
                     y: screenPoint1.y + (screenPoint2.y - screenPoint1.y) * (worker.percentageTraveled / 100)
                 }
-
-                point.y -= scaleY
 
                 const direction = getDirectionForWalkingWorker(worker.next, worker.previous)
 
@@ -1055,7 +1053,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (donkeyImage !== undefined) {
                         toDrawRegular.push({
                             source: donkeyImage,
-                            screenPoint: point,
+                            screenPoint: screenPoint,
                             targetWidth: donkeyImage.width,
                             targetHeight: donkeyImage.height,
                             depth: worker.y
@@ -1067,7 +1065,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (animationImage !== undefined) {
                         toDrawRegular.push({
                             source: animationImage,
-                            screenPoint: point,
+                            screenPoint: { x: screenPoint.x, y: screenPoint.y - scaleY },
                             targetWidth: animationImage.width,
                             targetHeight: animationImage.height,
                             depth: worker.y
@@ -1078,7 +1076,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (worker.cargo) {
                     ctx.fillStyle = materialColor
 
-                    ctx.fillRect(point.x + 0.15 * this.props.scale, point.y + 0.5 * scaleY, 0.2 * this.props.scale, 0.3 * scaleY)
+                    ctx.fillRect(screenPoint.x + 0.15 * this.props.scale, screenPoint.y - 0.5 * scaleY, 0.2 * this.props.scale, 0.3 * scaleY)
                 }
 
             } else {
@@ -1089,8 +1087,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const screenPoint = this.gamePointToScreenPoint(worker)
 
-                screenPoint.y -= scaleY
-
                 let direction: Direction = "WEST"
 
                 if (worker.previous) {
@@ -1098,7 +1094,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.type === "Donkey") {
-                    const donkeyImage = donkeyAnimation.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                    const donkeyImage = donkeyAnimation.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
                     if (donkeyImage !== undefined) {
                         toDrawRegular.push({
@@ -1116,7 +1112,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (animationImage) {
                         toDrawRegular.push({
                             source: animationImage,
-                            screenPoint: screenPoint,
+                            screenPoint: { x: screenPoint.x, y: screenPoint.y - scaleY },
                             targetWidth: animationImage.width,
                             targetHeight: animationImage.height,
                             depth: worker.y
@@ -1127,7 +1123,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (worker.cargo) {
                     ctx.fillStyle = materialColor
 
-                    ctx.fillRect(screenPoint.x + 0.15 * this.props.scale, screenPoint.y + 0.5 * scaleY, 0.2 * this.props.scale, 0.3 * scaleY)
+                    ctx.fillRect(screenPoint.x + 0.15 * this.props.scale, screenPoint.y - 0.5 * scaleY, 0.2 * this.props.scale, 0.3 * scaleY)
                 }
             }
         }

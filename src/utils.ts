@@ -484,7 +484,7 @@ interface OneDirectionImageAtlasAnimationInfo{
     offsetY?: number
 }
 
-interface DrawingInformation {
+export interface DrawingInformation {
     sourceX: number
     sourceY: number
     width: number

@@ -559,9 +559,15 @@ interface HouseImageInformation {
     underConstructionOffsetY: number
 }
 
+interface HouseImageAtlasInformation {
+    buildings: Record<Nation, Record<AnyBuilding, HouseImageInformation>>
+    constructionPlanned: Record<Nation, OneImageInformation>
+    constructionJustStarted: Record<Nation, OneImageInformation>
+}
+
 class HouseImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<AnyBuilding, HouseImageInformation>>
+    private imageAtlasInfo?: HouseImageAtlasInformation
     private image?: HTMLImageElement
 
     constructor(prefix: string) {
@@ -582,12 +588,48 @@ class HouseImageAtlasHandler {
         console.log({info: imageAtlasInfo, image: this.image})
     }
 
+    getDrawingInformationForHouseJustStarted(nation: Nation): DrawingInformation | undefined {
+        if (this.image === undefined || this.imageAtlasInfo === undefined) {
+            return undefined
+        }
+
+        const houseInformation = this.imageAtlasInfo.constructionJustStarted[nation]
+
+        return {
+            sourceX: houseInformation.x,
+            sourceY: houseInformation.y,
+            width: houseInformation.width,
+            height: houseInformation.height,
+            offsetX: houseInformation.offsetX,
+            offsetY: houseInformation.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForHousePlanned(nation: Nation): DrawingInformation | undefined {
+        if (this.image === undefined || this.imageAtlasInfo === undefined) {
+            return undefined
+        }
+
+        const houseInformation = this.imageAtlasInfo.constructionPlanned[nation]
+
+        return {
+            sourceX: houseInformation.x,
+            sourceY: houseInformation.y,
+            width: houseInformation.width,
+            height: houseInformation.height,
+            offsetX: houseInformation.offsetX,
+            offsetY: houseInformation.offsetY,
+            image: this.image
+        }
+    }
+
     getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
 
-        const houseInformationForNation = this.imageAtlasInfo[nation]
+        const houseInformationForNation = this.imageAtlasInfo.buildings[nation]
 
         const houseInformation = houseInformationForNation[houseType]
 
@@ -607,7 +649,7 @@ class HouseImageAtlasHandler {
             return undefined
         }
 
-        const houseInformationForNation = this.imageAtlasInfo[nation]
+        const houseInformationForNation = this.imageAtlasInfo.buildings[nation]
 
         const houseInformation = houseInformationForNation[houseType]
 

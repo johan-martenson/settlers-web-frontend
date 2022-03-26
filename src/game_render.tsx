@@ -1,11 +1,11 @@
 import React, { Component } from 'react'
-import { Direction, materialToColor, MEDIUM_HOUSES, Nation, Point, RoadInformation, SMALL_HOUSES, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, materialToColor, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationBasedOnImageAtlas, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -105,8 +105,6 @@ vegetationToTextureMapping.set(21, { below: [192, 132, 219, 104, 247, 132].map(v
 vegetationToTextureMapping.set(22, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 4
 vegetationToTextureMapping.set(23, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Buildable mountain
 
-const PLANNED_HOUSE_IMAGE_FILE = "assets/roman-buildings/construction-started-sign.png"
-
 const treeAnimations = new TreeAnimation("assets/nature/", 10)
 
 const fireAnimations = new FireAnimation("assets/", 4)
@@ -167,8 +165,6 @@ const flagAnimations = new FlagAnimation("assets/", 10)
 
 let overlayCtx: CanvasRenderingContext2D | null = null
 
-let plannedHouseImage: HTMLImageElement | undefined
-
 interface RenderInformation {
     coordinates: number[]
     normals: number[]
@@ -222,8 +218,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.images = new Map()
         this.normals = new PointMapFast()
-
-        this.loadImages([PLANNED_HOUSE_IMAGE_FILE])
 
         /* Define the light vector */
         this.lightVector = normalize({ x: -1, y: 1, z: -1 })
@@ -707,10 +701,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the houses */
-        if (plannedHouseImage === undefined) {
-            plannedHouseImage = this.images.get(PLANNED_HOUSE_IMAGE_FILE)
-        }
-
         let houseIndex = -1
         for (const [id, house] of monitor.houses) {
 
@@ -724,9 +714,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             /* Draw the house next to the point, instead of on top */
             if (house.state === 'PLANNED') {
-                if (plannedHouseImage) {
-                    ctx.drawImage(plannedHouseImage, screenPoint.x, screenPoint.y)
+                const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(currentPlayerNation)
+
+                if (plannedDrawInformation !== undefined) {
+                    toDrawRegular.push({
+                        source: plannedDrawInformation,
+                        screenPoint,
+                        targetWidth: plannedDrawInformation.width,
+                        targetHeight: plannedDrawInformation.height,
+                        depth: house.y
+                    })
                 }
+
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
 

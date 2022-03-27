@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -22,9 +22,6 @@ interface ToDraw {
     targetWidth: number
     targetHeight: number
 }
-
-let toDrawRegular: ToDraw[] = []
-let toDrawOverlay: ToDraw[] = []
 
 interface MapRenderInformation {
     coordinates: number[] //x, y
@@ -61,6 +58,8 @@ let logOnce = true
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
 const currentPlayerNation: Nation = "romans"
+
+const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler("assets/")
 
 const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
 
@@ -308,6 +307,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         borderImageAtlasHandler.load()
 
+        roadBuildingImageAtlasHandler.load()
+
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {
 
@@ -508,8 +509,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Clear the drawing list */
-        toDrawRegular = []
-        toDrawOverlay = []
+        let toDrawRegular: ToDraw[] = []
+        let toDrawOverlay: ToDraw[] = []
 
         /*
           Make sure the width and height of the canvases match with the window
@@ -656,7 +657,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (borderPointInfo !== undefined) {
                     toDrawRegular.push({
                         source: borderPointInfo,
-                        screenPoint: screenPoint,
+                        screenPoint,
                         targetWidth: borderPointInfo.width,
                         targetHeight: borderPointInfo.height,
                         depth: borderPoint.y
@@ -669,7 +670,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the ongoing new road if it exists */
-        if (this.props.newRoad) {
+        if (this.props.newRoad !== undefined) {
 
             let previous = null
 
@@ -759,13 +760,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: house.y
                     })
 
-                } else {
-                    screenPoint.x -= 1.5 * this.props.scale
-                    screenPoint.y -= 2 * scaleY
-
-                    ctx.fillStyle = 'red'
-
-                    ctx.fillRect(screenPoint.x, screenPoint.y, 50, 50)
                 }
             }
         }
@@ -828,7 +822,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (deadTreeInfo !== undefined) {
                 toDrawRegular.push({
                     source: deadTreeInfo,
-                    screenPoint: screenPoint,
+                    screenPoint,
                     targetWidth: deadTreeInfo.width,
                     targetHeight: deadTreeInfo.height,
                     depth: deadTree.y
@@ -856,7 +850,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (cropDrawInfo !== undefined) {
                 toDrawRegular.push({
                     source: cropDrawInfo,
-                    screenPoint: screenPoint,
+                    screenPoint,
                     targetWidth: cropDrawInfo.width,
                     targetHeight: cropDrawInfo.height,
                     depth: crop.y
@@ -887,7 +881,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (signDrawInfo !== undefined) {
                 toDrawRegular.push({
                     source: signDrawInfo,
-                    screenPoint: screenPoint,
+                    screenPoint,
                     targetWidth: signDrawInfo.width,
                     targetHeight: signDrawInfo.height,
                     depth: sign.y
@@ -915,7 +909,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (stoneDrawInfo !== undefined) {
                 toDrawRegular.push({
                     source: stoneDrawInfo,
-                    screenPoint: screenPoint,
+                    screenPoint,
                     targetWidth: stoneDrawInfo.width,
                     targetHeight: stoneDrawInfo.height,
                     depth: stone.y
@@ -941,12 +935,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const screenPoint1 = this.gamePointToScreenPoint(animal.previous)
                 const screenPoint2 = this.gamePointToScreenPoint(animal.next)
 
-                const point = {
+                const screenPoint = {
                     x: screenPoint1.x + (screenPoint2.x - screenPoint1.x) * (animal.percentageTraveled / 100),
                     y: screenPoint1.y + (screenPoint2.y - screenPoint1.y) * (animal.percentageTraveled / 100)
                 }
 
-                point.y -= scaleY
+                screenPoint.y -= scaleY
 
                 const direction = getDirectionForWalkingWorker(animal.next, animal.previous)
 
@@ -955,7 +949,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (animationImage !== undefined) {
                     toDrawRegular.push({
                         source: animationImage,
-                        screenPoint: point,
+                        screenPoint,
                         targetWidth: animationImage.width,
                         targetHeight: animationImage.height,
                         depth: animal.y
@@ -980,7 +974,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (animationImage !== undefined) {
                         toDrawRegular.push({
                             source: animationImage,
-                            screenPoint: screenPoint,
+                            screenPoint,
                             targetWidth: animationImage.width,
                             targetHeight: animationImage.height,
                             depth: animal.y
@@ -1001,7 +995,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (animationImage !== undefined) {
                         toDrawRegular.push({
                             source: animationImage,
-                            screenPoint: screenPoint,
+                            screenPoint,
                             targetWidth: animationImage.width,
                             targetHeight: animationImage.height,
                             depth: animal.y
@@ -1027,6 +1021,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
             }
 
+            // If worker is moving and not at a fixed point
             if (worker.betweenPoints && worker.previous && worker.next) {
 
                 if (worker.previous.x < minXInGame || worker.previous.x > maxXInGame || worker.previous.y < minYInGame || worker.previous.y > maxYInGame) {
@@ -1053,7 +1048,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (donkeyImage !== undefined) {
                         toDrawRegular.push({
                             source: donkeyImage,
-                            screenPoint: screenPoint,
+                            screenPoint,
                             targetWidth: donkeyImage.width,
                             targetHeight: donkeyImage.height,
                             depth: worker.y
@@ -1099,7 +1094,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (donkeyImage !== undefined) {
                         toDrawRegular.push({
                             source: donkeyImage,
-                            screenPoint: screenPoint,
+                            screenPoint,
                             targetWidth: donkeyImage.width,
                             targetHeight: donkeyImage.height,
                             depth: worker.y
@@ -1142,15 +1137,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const screenPoint = this.gamePointToScreenPoint(flag)
 
             /* Draw the flag slightly above the point */
-            screenPoint.y -= 29
-            screenPoint.x = screenPoint.x - 2
-
             const flagDrawInfo = flagAnimations.getAnimationFrame("romans", "NORMAL", this.animationIndex, flagCount)
 
             if (flagDrawInfo?.image !== undefined) {
                 toDrawRegular.push({
                     source: flagDrawInfo,
-                    screenPoint: screenPoint,
+                    screenPoint,
                     targetWidth: flagDrawInfo.width,
                     targetHeight: flagDrawInfo.height,
                     depth: flag.y
@@ -1170,7 +1162,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     ctx.fillStyle = color
 
-                    ctx.fillRect(screenPoint.x - 15, screenPoint.y - 10 * i + 35, 10, 7)
+                    ctx.fillRect(screenPoint.x - 15, screenPoint.y - 10 * i + 5, 10, 7)
                 }
 
                 if (flag.stackedCargo.length > 3) {
@@ -1185,7 +1177,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         ctx.fillStyle = color
 
-                        ctx.fillRect(screenPoint.x + 4, screenPoint.y - 10 * (i - 4) + 45, 10, 7)
+                        ctx.fillRect(screenPoint.x + 4, screenPoint.y - 10 * (i - 4) + 15, 10, 7)
                     }
                 }
 
@@ -1201,13 +1193,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         ctx.fillStyle = color
 
-                        ctx.fillRect(screenPoint.x + 17, screenPoint.y - 10 * (i - 4) + 35, 10, 7)
+                        ctx.fillRect(screenPoint.x + 17, screenPoint.y - 10 * (i - 4) + 5, 10, 7)
                     }
                 }
             }
         }
 
         duration.after("draw flags")
+
 
         // Sort the toDrawList so it first draws things further away
         const sortedToDrawList = toDrawRegular.sort((draw1, draw2) => {
@@ -1321,20 +1314,41 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw possible road connections */
         if (this.props.possibleRoadConnections) {
+
+            if (this.props.newRoad !== undefined) {
+
+                const center = this.props.newRoad[this.props.newRoad.length - 1]
+
+                // Draw the starting point
+                const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForStartPoint()
+
+                if (startPointInfo !== undefined) {
+                    toDrawOverlay.push({
+                        source: startPointInfo,
+                        screenPoint: this.gamePointToScreenPoint(center),
+                        targetWidth: startPointInfo.width,
+                        targetHeight: startPointInfo.height,
+                        depth: center.y
+                    })
+                }
+            }
+
             this.props.possibleRoadConnections.forEach(
                 (point, _index) => {
 
                     const screenPoint = this.gamePointToScreenPoint(point)
 
-                    ctx.fillStyle = 'orange'
-                    ctx.strokeStyle = 'black'
+                    const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
 
-                    ctx.beginPath()
-                    ctx.arc(screenPoint.x, screenPoint.y, 6, 0, 2 * Math.PI)
-                    ctx.closePath()
-
-                    ctx.fill()
-                    ctx.stroke()
+                    if (startPointInfo !== undefined) {
+                        toDrawOverlay.push({
+                            source: startPointInfo,
+                            screenPoint,
+                            targetWidth: startPointInfo.width,
+                            targetHeight: startPointInfo.height,
+                            depth: point.y
+                        })
+                    }
                 }
             )
         }

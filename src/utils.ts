@@ -1,3 +1,4 @@
+import { HighlightSpan } from 'typescript'
 import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding, SignTypes, CropType, CropGrowth, StoneType, StoneAmount, DecorationType } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -853,18 +854,95 @@ class FlagImageAtlasHandler {
 
         const frameIndex = (animationCounter) % infoPerFlagType.nrImages
 
+        let offsetX = 0
+        let offsetY = 0
+
+        if (infoPerFlagType.offsetX !== undefined) {
+            offsetX = infoPerFlagType.offsetX
+        }
+
+        if (infoPerFlagType.offsetY !== undefined) {
+            offsetY = infoPerFlagType.offsetY
+        }
+
         return {
             sourceX: infoPerFlagType.startX + frameIndex * infoPerFlagType.width,
             sourceY: infoPerFlagType.startY,
             width: infoPerFlagType.width,
             height: infoPerFlagType.height, // Verify that this goes in the right direction
-            offsetX: 0,
-            offsetY: 0,
+            offsetX: offsetX,
+            offsetY: offsetY,
             image: this.image
         }
     }
 }
 
+interface RoadBuildingInfo {
+    startPoint: OneImageInformation
+    sameLevelConnection: OneImageInformation
+    upwardsConnections: Record<'HIGH' | 'MEDIUM' | 'LITTLE', OneImageInformation>
+    downwardsConnections: Record<'HIGH' | 'MEDIUM' | 'LITTLE', OneImageInformation>
+}
+
+class RoadBuildingImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: RoadBuildingInfo
+    private image?: HTMLImageElement
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load() {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-road-building.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-road-building.png")
+
+        console.log({img: this.image, info: this.imageAtlasInfo})
+    }
+
+    getDrawingInformationForStartPoint(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const startPointInfo = this.imageAtlasInfo.startPoint
+
+        return {
+            sourceX: startPointInfo.x,
+            sourceY: startPointInfo.y,
+            width: startPointInfo.width,
+            height: startPointInfo.height,
+            offsetX: startPointInfo.offsetX,
+            offsetY: startPointInfo.offsetY,
+            image: this.image
+        }
+    }
+
+    getDrawingInformationForSameLevelConnection(): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const sameLevelConnectionInfo = this.imageAtlasInfo.sameLevelConnection
+
+        return {
+            sourceX: sameLevelConnectionInfo.x,
+            sourceY: sameLevelConnectionInfo.y,
+            width: sameLevelConnectionInfo.width,
+            height: sameLevelConnectionInfo.height,
+            offsetX: sameLevelConnectionInfo.offsetX,
+            offsetY: sameLevelConnectionInfo.offsetY,
+            image: this.image
+        }
+    }
+}
 
 class TreeImageAtlasHandler {
     private pathPrefix: string
@@ -1396,5 +1474,6 @@ export {
     CropImageAtlasHandler,
     StoneImageAtlasHandler,
     DecorationsImageAtlasHandler,
-    BorderImageAtlasHandler
+    BorderImageAtlasHandler,
+    RoadBuildingImageAtlasHandler
 }

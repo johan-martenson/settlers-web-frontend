@@ -77,6 +77,7 @@ interface BelowAndDownRight {
     below: number[]
     downRight: number[]
 }
+
 const vegetationToTextureMapping: Map<VegetationIntegers, BelowAndDownRight> = new Map()
 
 vegetationToTextureMapping.set(0, { below: [0, 3, 0.5, 2, 1, 3].map(v => v * 48 / 256), downRight: [0, 2, 0.5, 3, 1, 2].map(v => v * 48 / 256) }) // Savannah
@@ -212,8 +213,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.screenPointToGamePoint = this.screenPointToGamePoint.bind(this)
         this.onClick = this.onClick.bind(this)
         this.onDoubleClick = this.onDoubleClick.bind(this)
-        this.getHeightForPoint = this.getHeightForPoint.bind(this)
-        this.pointToPoint3D = this.pointToPoint3D.bind(this)
 
         this.images = new Map()
         this.normals = new PointMapFast()
@@ -239,43 +238,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    loadImages(sources: string[] | IterableIterator<string>): void {
-        for (let source of sources) {
-
-            loadImage(source,
-                (image, filename) => {
-                    this.images.set(source, image)
-                }
-            )
-        }
-    }
-
     shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState) {
         return this.props.onKeyDown !== nextProps.onKeyDown
-    }
-
-    getHeightForPoint(point: Point): number | undefined {
-        const terrainAtPoint = monitor.allTiles.get(point)
-
-        if (!terrainAtPoint) {
-            return undefined
-        }
-
-        return terrainAtPoint.height
-    }
-
-    pointToPoint3D(point: Point): Point3D | undefined {
-        const height = this.getHeightForPoint(point)
-
-        if (height === undefined) {
-            return undefined
-        }
-
-        return {
-            x: point.x,
-            y: point.y,
-            z: height
-        }
     }
 
     async componentDidMount() {

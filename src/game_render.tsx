@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shaded_repeated_fragment_shader, vert } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -58,6 +58,8 @@ let logOnce = true
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
 const currentPlayerNation: Nation = "romans"
+
+const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
 
 const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler("assets/")
 
@@ -272,6 +274,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         borderImageAtlasHandler.load()
 
         roadBuildingImageAtlasHandler.load()
+
+        cargoImageAtlasHandler.load()
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {
@@ -1033,11 +1037,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-                    ctx.fillStyle = materialColor
+                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', worker.cargo) // TODO: use the right nationality
 
-                    ctx.fillRect(screenPoint.x + 0.15 * this.props.scale, screenPoint.y - 0.5 * scaleY, 0.2 * this.props.scale, 0.3 * scaleY)
+                    if (cargoDrawInfo !== undefined) {
+                        toDrawRegular.push({
+                            source: cargoDrawInfo,
+                            screenPoint: { x: screenPoint.x + 10, y: screenPoint.y - 15 },
+                            targetWidth: cargoDrawInfo.width,
+                            targetHeight: cargoDrawInfo.height,
+                            depth: worker.y
+                        })
+                    }
                 }
-
             } else {
 
                 if (worker.x < minXInGame || worker.x > maxXInGame || worker.y < minYInGame || worker.y > maxYInGame) {
@@ -1080,9 +1091,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-                    ctx.fillStyle = materialColor
+                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', worker.cargo) // TODO: use the right nationality
 
-                    ctx.fillRect(screenPoint.x + 0.15 * this.props.scale, screenPoint.y - 0.5 * scaleY, 0.2 * this.props.scale, 0.3 * scaleY)
+                    if (cargoDrawInfo !== undefined) {
+                        toDrawRegular.push({
+                            source: cargoDrawInfo,
+                            screenPoint: { x: screenPoint.x + 10, y: screenPoint.y - 15 },
+                            targetWidth: cargoDrawInfo.width,
+                            targetHeight: cargoDrawInfo.height,
+                            depth: worker.y
+                        })
+                    }
                 }
             }
         }
@@ -1124,9 +1143,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         continue
                     }
 
-                    ctx.fillStyle = color
+                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', cargo) // TODO: use the right nationality
 
-                    ctx.fillRect(screenPoint.x - 15, screenPoint.y - 10 * i + 5, 10, 7)
+                    if (cargoDrawInfo !== undefined) {
+                        toDrawRegular.push({
+                            source: cargoDrawInfo,
+                            screenPoint: { x: screenPoint.x - 10, y: screenPoint.y - 10 * i + 5 },
+                            targetWidth: cargoDrawInfo.width,
+                            targetHeight: cargoDrawInfo.height,
+                            depth: flag.y
+                        })
+                    }
                 }
 
                 if (flag.stackedCargo.length > 3) {
@@ -1139,9 +1166,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             continue
                         }
 
-                        ctx.fillStyle = color
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', cargo) // TODO: use the right nationality
 
-                        ctx.fillRect(screenPoint.x + 4, screenPoint.y - 10 * (i - 4) + 15, 10, 7)
+                        if (cargoDrawInfo !== undefined) {
+                            toDrawRegular.push({
+                                source: cargoDrawInfo,
+                                screenPoint: { x: screenPoint.x + 4, y: screenPoint.y - 10 * (i - 4) + 15 },
+                                targetWidth: cargoDrawInfo.width,
+                                targetHeight: cargoDrawInfo.height,
+                                depth: flag.y
+                            })
+                        }
                     }
                 }
 
@@ -1155,9 +1190,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             continue
                         }
 
-                        ctx.fillStyle = color
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', cargo) // TODO: use the right nationality
 
-                        ctx.fillRect(screenPoint.x + 17, screenPoint.y - 10 * (i - 4) + 5, 10, 7)
+                        if (cargoDrawInfo !== undefined) {
+                            toDrawRegular.push({
+                                source: cargoDrawInfo,
+                                screenPoint: { x: screenPoint.x + 17, y: screenPoint.y - 10 * (i - 4) + 5 },
+                                targetWidth: cargoDrawInfo.width,
+                                targetHeight: cargoDrawInfo.height,
+                                depth: flag.y
+                            })
+                        }
+
                     }
                 }
             }

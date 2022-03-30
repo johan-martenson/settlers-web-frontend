@@ -17,12 +17,13 @@ export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
 
 export type TransportCategories = 'food' | 'weapons' | 'tools' | 'iron' | 'iron_bar' | 'coal' | 'gold' | 'plank' | 'wood' | 'stone' | 'coin' | 'wheat' | 'water' | 'pig' | 'flour'
 
-export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker" | "wheat" | Tool
+export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker" | "wheat" | "shipwright" | Tool
 
 export type Tool = 'axe' | 'shovel' | 'pick_axe' | 'fishing_rod' | 'bow' | 'saw' | 'cleaver' | 'rolling_pin' | 'crucible' | 'tongs' | 'scythe'
 export const TOOLS: Set<Tool> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
 
-export type Nation = 'romans' | 'africans' | 'japanese' | 'vikings'
+export type NationSmallCaps = 'romans' | 'africans' | 'japanese' | 'vikings'
+export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
 
 export type Direction = "EAST" | "SOUTH_EAST" | "SOUTH_WEST" | "WEST" | "NORTH_WEST" | "NORTH_EAST"
 
@@ -181,7 +182,8 @@ export function isMaterial(material: string): material is Material {
         material === "metalworker" ||
         material === "wheat" ||
         material === "flour" ||
-        material === "builder"
+        material === "builder" ||
+        material === "shipwright"
 }
 
 interface Player {
@@ -367,6 +369,7 @@ export interface HouseResources {
     tongs?: HouseResourceItem
     scythe?: HouseResourceItem
     wheat?: HouseResourceItem
+    shipwright?: HouseResourceItem
 }
 
 interface HouseResourceItem {

@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, materialToColor, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, materialToColor, NationSmallCaps, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
@@ -57,7 +57,7 @@ interface GameCanvasState {
 let logOnce = true
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
-const currentPlayerNation: Nation = "romans"
+const currentPlayerNation: NationSmallCaps = "romans"
 
 const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
 
@@ -1037,7 +1037,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', worker.cargo) // TODO: use the right nationality
+                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
 
                     if (cargoDrawInfo !== undefined) {
                         toDrawRegular.push({
@@ -1091,7 +1091,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', worker.cargo) // TODO: use the right nationality
+                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
 
                     if (cargoDrawInfo !== undefined) {
                         toDrawRegular.push({
@@ -1143,7 +1143,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         continue
                     }
 
-                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', cargo) // TODO: use the right nationality
+                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
                     if (cargoDrawInfo !== undefined) {
                         toDrawRegular.push({
@@ -1166,7 +1166,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             continue
                         }
 
-                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', cargo) // TODO: use the right nationality
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
                         if (cargoDrawInfo !== undefined) {
                             toDrawRegular.push({
@@ -1190,7 +1190,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             continue
                         }
 
-                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('romans', cargo) // TODO: use the right nationality
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
                         if (cargoDrawInfo !== undefined) {
                             toDrawRegular.push({

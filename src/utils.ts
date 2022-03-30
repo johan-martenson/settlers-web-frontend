@@ -1,5 +1,4 @@
-import { HighlightSpan } from 'typescript'
-import { GameId, getHousesForPlayer, getInformationOnPoint, PlayerId, Point, removeFlag, removeHouse, RoadInformation, TerrainInformation, Vegetation, RoadId, removeRoad, TerrainAtPoint, WorkerInformation, HouseInformation, SMALL_HOUSES, Size, MEDIUM_HOUSES, LARGE_HOUSES, Nation, TreeType, Direction, FlagType, FireSize, AnyBuilding, SignTypes, CropType, CropGrowth, StoneType, StoneAmount, DecorationType, Material } from './api'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeType, Vegetation } from './api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -394,7 +393,7 @@ class FlagAnimation {
         this.imageAtlasHandler.load()
     }
 
-    getAnimationFrame(nation: Nation, flagType: FlagType, animationIndex: number, offset: number) {
+    getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number) {
         return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
 }
@@ -498,7 +497,7 @@ export interface DrawingInformation {
 class ImageAtlasHandler {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: Record<Nation, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
+    private imageAtlasInfo?: Record<NationSmallCaps, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
     private image?: HTMLImageElement
 
     constructor(prefix: string, name: string) {
@@ -519,7 +518,7 @@ class ImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
     }
 
-    getDrawingInformationFor(nation: Nation, direction: Direction, animationCounter: number, offset: number): DrawingInformation | undefined {
+    getDrawingInformationFor(nation: NationSmallCaps, direction: Direction, animationCounter: number, offset: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -561,9 +560,9 @@ interface HouseImageInformation {
 }
 
 interface HouseImageAtlasInformation {
-    buildings: Record<Nation, Record<AnyBuilding, HouseImageInformation>>
-    constructionPlanned: Record<Nation, OneImageInformation>
-    constructionJustStarted: Record<Nation, OneImageInformation>
+    buildings: Record<NationSmallCaps, Record<AnyBuilding, HouseImageInformation>>
+    constructionPlanned: Record<NationSmallCaps, OneImageInformation>
+    constructionJustStarted: Record<NationSmallCaps, OneImageInformation>
 }
 
 class HouseImageAtlasHandler {
@@ -589,7 +588,7 @@ class HouseImageAtlasHandler {
         console.log({ info: imageAtlasInfo, image: this.image })
     }
 
-    getDrawingInformationForHouseJustStarted(nation: Nation): DrawingInformation | undefined {
+    getDrawingInformationForHouseJustStarted(nation: NationSmallCaps): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
@@ -607,7 +606,7 @@ class HouseImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForHousePlanned(nation: Nation): DrawingInformation | undefined {
+    getDrawingInformationForHousePlanned(nation: NationSmallCaps): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
@@ -625,7 +624,7 @@ class HouseImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation | undefined {
+    getDrawingInformationForHouseReady(nation: NationSmallCaps, houseType: AnyBuilding): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
@@ -645,7 +644,7 @@ class HouseImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForHouseUnderConstruction(nation: Nation, houseType: AnyBuilding): DrawingInformation | undefined {
+    getDrawingInformationForHouseUnderConstruction(nation: NationSmallCaps, houseType: AnyBuilding): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
@@ -677,7 +676,7 @@ interface OneImageInformation {
 
 class BorderImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<"landBorder" | "coastBorder", OneImageInformation>>
+    private imageAtlasInfo?: Record<NationSmallCaps, Record<"landBorder" | "coastBorder", OneImageInformation>>
     private image?: HTMLImageElement
 
     constructor(prefix: string) {
@@ -698,7 +697,7 @@ class BorderImageAtlasHandler {
         console.log({ info: imageAtlasInfo, image: this.image })
     }
 
-    getDrawingInformation(nation: Nation, type: "LAND" | "COAST"): DrawingInformation | undefined {
+    getDrawingInformation(nation: NationSmallCaps, type: "LAND" | "COAST"): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -824,7 +823,7 @@ class FireImageAtlasHandler {
 
 class FlagImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<FlagType, OneDirectionImageAtlasAnimationInfo>>
+    private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, OneDirectionImageAtlasAnimationInfo>>
     private image?: HTMLImageElement
 
     constructor(prefix: string) {
@@ -843,7 +842,7 @@ class FlagImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
     }
 
-    getDrawingInformationFor(nation: Nation, flagType: FlagType, animationCounter: number): DrawingInformation | undefined {
+    getDrawingInformationFor(nation: NationSmallCaps, flagType: FlagType, animationCounter: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -1499,6 +1498,18 @@ function getHouseSize(house: HouseInformation): Size {
     }
 
     return 'LARGE'
+}
+
+function nationLowerCaseToAllCaps(nationSmall: NationSmallCaps): Nation {
+    if (nationSmall === 'romans') {
+        return 'ROMANS'
+    } else if (nationSmall === 'africans') {
+        return 'AFRICANS'
+    } else if (nationSmall === 'japanese') {
+        return 'JAPANESE'
+    } else {
+        return 'VIKINGS'
+    }
 }
 
 export {

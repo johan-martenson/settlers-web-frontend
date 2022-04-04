@@ -492,6 +492,7 @@ export interface DrawingInformation {
     offsetX: number
     offsetY: number
     image: HTMLImageElement
+    texture?: number
 }
 
 class ImageAtlasHandler {
@@ -1085,9 +1086,11 @@ class UielementsImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: UiElementsImageAtlasInfo
     private image?: HTMLImageElement
+    private textureIndex: number
 
-    constructor(prefix: string) {
+    constructor(prefix: string, textureIndex: number) {
         this.pathPrefix = prefix
+        this.textureIndex = textureIndex
     }
 
     async load() {
@@ -1102,6 +1105,16 @@ class UielementsImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-ui-elements.png")
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            const texture = makeTextureFromImage(gl, this.image)
+
+            gl.activeTexture(gl.TEXTURE0 + this.textureIndex)
+            gl.bindTexture(gl.TEXTURE_2D, texture)
+        }
+    }
+
     getDrawingInformationForSelectedPoint(): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
@@ -1114,7 +1127,9 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.selectedPoint.height,
             offsetX: this.imageAtlasInfo.selectedPoint.offsetX,
             offsetY: this.imageAtlasInfo.selectedPoint.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.textureIndex
+
         }
     }
 
@@ -1512,6 +1527,48 @@ function nationLowerCaseToAllCaps(nationSmall: NationSmallCaps): Nation {
     }
 }
 
+function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType: number): WebGLShader | null {
+    const compiledShader = gl.createShader(shaderType)
+
+    if (compiledShader) {
+        gl.shaderSource(compiledShader, shaderSource)
+        gl.compileShader(compiledShader)
+
+        const shaderCompileLog = gl.getShaderInfoLog(compiledShader)
+
+        if (shaderCompileLog === "") {
+            console.info("Shader compiled correctly")
+        } else {
+            console.error(shaderCompileLog)
+        }
+    } else {
+        console.log("Failed to get the shader")
+    }
+
+    return compiledShader
+}
+
+function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement): WebGLTexture | null {
+
+    const texture = gl.createTexture();
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const srcFormat = gl.RGBA;
+    const srcType = gl.UNSIGNED_BYTE;
+
+    //gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)
+
+    gl.generateMipmap(gl.TEXTURE_2D)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+
+    return texture
+}
+
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
@@ -1555,5 +1612,7 @@ export {
     DecorationsImageAtlasHandler,
     BorderImageAtlasHandler,
     RoadBuildingImageAtlasHandler,
-    CargoImageAtlasHandler
+    CargoImageAtlasHandler,
+    makeShader,
+    makeTextureFromImage
 }

@@ -3,9 +3,9 @@ import { Direction, materialToColor, NationSmallCaps, Point, RoadInformation, Ve
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
-import { shaded_repeated_fragment_shader, vert } from './shaders'
+import { textureAndLightingFragmentShader, texturedImageVertexShader, textureFragmentShader, textureAndLightingVertexShader, passthroughVertexShader, solidRedFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, normalize, Point3D, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, Point3D, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationNew } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -19,6 +19,7 @@ interface ToDraw {
     source: DrawingInformation
     depth: number
     screenPoint: Point
+    gamePoint?: Point
     targetWidth: number
     targetHeight: number
 }
@@ -67,7 +68,7 @@ const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
 
 const cropsImageAtlasHandler = new CropImageAtlasHandler("assets/")
 
-const uiElementsImageAtlasHandler = new UielementsImageAtlasHandler("assets/")
+const uiElementsImageAtlasHandler = new UielementsImageAtlasHandler("assets/", 4)
 
 const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler("assets/")
 
@@ -177,17 +178,15 @@ type Filename = string
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
+    private terrainCanvasRef = React.createRef<HTMLCanvasElement>()
     private overlayCanvasRef = React.createRef<HTMLCanvasElement>()
     private lightVector: Vector
     private debuggedPoint: Point | undefined
     private previousTimestamp?: number
-    private terrainCanvasRef = React.createRef<HTMLCanvasElement>()
-    private images: Map<Filename, HTMLImageElement>
 
     private animationIndex: number = 0
     private mapRenderInformation?: MapRenderInformation
     private gl?: WebGL2RenderingContext
-    private prog?: WebGLProgram
 
     private terrainCoordinatesBuffer?: WebGLBuffer | null
     private terrainNormalsBuffer?: WebGLBuffer | null
@@ -207,6 +206,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private coordAttributeLocation?: number
     private normalAttributeLocation?: number
     private textureMappingAttributeLocation?: number
+    private groundRenderProgram: WebGLProgram | null
+    private drawImageProgram: WebGLProgram | null
+    private drawImagePositionLocation?: number
+    private drawImageTexcoordLocation?: number
+    private drawImageTextureLocation?: WebGLUniformLocation | null
+    private drawImageGamePointLocation?: WebGLUniformLocation | null
+    private drawImageOffsetLocation?: WebGLUniformLocation | null
+    private drawImageScaleLocation?: WebGLUniformLocation | null
+    private drawImageSourceCoordinateLocation?: WebGLUniformLocation | null
+    private drawImageSourceDimensionsLocation?: WebGLUniformLocation | null
+    private drawImageScreenOffsetLocation?: WebGLUniformLocation | null
+    private drawImageScreenDimensionLocation?: WebGLUniformLocation | null
+    private drawImageTexCoordBuffer?: WebGLBuffer | null
+    private drawImagePositionBuffer?: WebGLBuffer | null
+
 
     constructor(props: GameCanvasProps) {
         super(props)
@@ -216,7 +230,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.onClick = this.onClick.bind(this)
         this.onDoubleClick = this.onDoubleClick.bind(this)
 
-        this.images = new Map()
         this.normals = new PointMapFast()
 
         /* Define the light vector */
@@ -225,6 +238,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         addVariableIfAbsent("fps")
 
         this.state = {}
+
+        this.groundRenderProgram = null
+        this.drawImageProgram = null
     }
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
@@ -284,7 +300,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
             // Update the map rendering buffers
-            if (this.gl && this.prog) {
+            if (this.gl && this.groundRenderProgram) {
                 if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
 
                     const mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
@@ -306,7 +322,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Subscribe for added and removed roads */
         listenToRoads(roads => {
 
-            if (this.gl !== undefined && this.prog !== undefined &&
+            if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
                 this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
 
                 this.roadRenderInformation = this.prepareToRenderRoads(roads)
@@ -338,64 +354,37 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             if (gl) {
 
-                // Create and compile the vertex shader
-                const vertSh = gl.createShader(gl.VERTEX_SHADER)
+                // Make textures for the image atlases
+                uiElementsImageAtlasHandler.makeTexture(gl)
 
-                if (vertSh) {
-                    gl.shaderSource(vertSh, vert)
-                    gl.compileShader(vertSh)
+                // Create and compile the shaders
+                const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
+                const lightingFragmentShader = makeShader(gl, textureAndLightingFragmentShader, gl.FRAGMENT_SHADER)
+                const drawImageVertexShader = makeShader(gl, passthroughVertexShader, gl.VERTEX_SHADER)
+                const drawImageFragmentShader = makeShader(gl, solidRedFragmentShader, gl.FRAGMENT_SHADER)
 
-                    const shaderCompileLog = gl.getShaderInfoLog(vertSh)
+                // Setup the program to render the ground
+                this.groundRenderProgram = gl.createProgram()
 
-                    if (shaderCompileLog === "") {
-                        console.info("Vertex shader compiled correctly")
-                    } else {
-                        console.error(shaderCompileLog)
-                    }
-                } else {
-                    console.log("Failed to get the vertex shader")
-                }
-
-                // Create and compile the fragment shader
-                const fragSh = gl.createShader(gl.FRAGMENT_SHADER)
-
-                if (fragSh) {
-                    gl.shaderSource(fragSh, shaded_repeated_fragment_shader)
-                    gl.compileShader(fragSh)
-
-                    const shaderCompileLog = gl.getShaderInfoLog(fragSh)
-
-                    if (shaderCompileLog === "") {
-                        console.info("Fragment shader compiled correctly")
-                    } else {
-                        console.error(gl.getShaderInfoLog(fragSh))
-                    }
-                } else {
-                    console.log("Failed to get fragment shader")
-                }
-
-                // Link the program and pass it to GPU
-                const prog = gl.createProgram()
-
-                if (prog && vertSh && fragSh) {
-                    gl.attachShader(prog, vertSh)
-                    gl.attachShader(prog, fragSh)
-                    gl.linkProgram(prog)
-                    gl.useProgram(prog)
+                if (this.groundRenderProgram && lightingVertexShader && lightingFragmentShader) {
+                    gl.attachShader(this.groundRenderProgram, lightingVertexShader)
+                    gl.attachShader(this.groundRenderProgram, lightingFragmentShader)
+                    gl.linkProgram(this.groundRenderProgram)
+                    gl.useProgram(this.groundRenderProgram)
                     gl.viewport(0, 0, canvas.width, canvas.height)
 
                     const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 
                     // Get handles
-                    this.uLightVector = gl.getUniformLocation(prog, "u_light_vector")
-                    this.uScale = gl.getUniformLocation(prog, "u_scale")
-                    this.uOffset = gl.getUniformLocation(prog, "u_offset")
-                    this.uSampler = gl.getUniformLocation(prog, 'u_sampler')
-                    this.uScreenWidth = gl.getUniformLocation(prog, "u_screen_width")
-                    this.uScreenHeight = gl.getUniformLocation(prog, "u_screen_height")
-                    this.coordAttributeLocation = gl.getAttribLocation(prog, "a_coords")
-                    this.normalAttributeLocation = gl.getAttribLocation(prog, "a_normal")
-                    this.textureMappingAttributeLocation = gl.getAttribLocation(prog, "a_texture_mapping")
+                    this.uLightVector = gl.getUniformLocation(this.groundRenderProgram, "u_light_vector")
+                    this.uScale = gl.getUniformLocation(this.groundRenderProgram, "u_scale")
+                    this.uOffset = gl.getUniformLocation(this.groundRenderProgram, "u_offset")
+                    this.uSampler = gl.getUniformLocation(this.groundRenderProgram, 'u_sampler')
+                    this.uScreenWidth = gl.getUniformLocation(this.groundRenderProgram, "u_screen_width")
+                    this.uScreenHeight = gl.getUniformLocation(this.groundRenderProgram, "u_screen_height")
+                    this.coordAttributeLocation = gl.getAttribLocation(this.groundRenderProgram, "a_coords")
+                    this.normalAttributeLocation = gl.getAttribLocation(this.groundRenderProgram, "a_normal")
+                    this.textureMappingAttributeLocation = gl.getAttribLocation(this.groundRenderProgram, "a_texture_mapping")
 
                     // Set up the buffer attributes
                     this.terrainCoordinatesBuffer = gl.createBuffer()
@@ -436,9 +425,78 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.bindTexture(gl.TEXTURE_2D, textureTerrainAndRoadAtlas)
 
                     this.gl = gl
-                    this.prog = prog
                 } else {
                     console.log("Failed to get prog")
+                }
+
+                // Setup the program to render images
+                this.drawImageProgram = gl.createProgram()
+
+                if (this.drawImageProgram && drawImageVertexShader && drawImageFragmentShader) {
+                    gl.attachShader(this.drawImageProgram, drawImageVertexShader)
+                    gl.attachShader(this.drawImageProgram, drawImageFragmentShader)
+
+                    gl.linkProgram(this.drawImageProgram)
+                    gl.useProgram(this.drawImageProgram)
+
+                    gl.viewport(0, 0, canvas.width, canvas.height)
+
+                    // Get attribute locations
+                    this.drawImagePositionLocation = gl.getAttribLocation(this.drawImageProgram, "a_position")
+                    this.drawImageTexcoordLocation = gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
+
+                    // Get uniform locations
+                    this.drawImageTextureLocation = gl.getUniformLocation(this.drawImageProgram, "u_texture")
+                    this.drawImageGamePointLocation = gl.getUniformLocation(this.drawImageProgram, "u_game_point")
+                    this.drawImageScreenOffsetLocation = gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
+                    this.drawImageOffsetLocation = gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
+                    this.drawImageScaleLocation = gl.getUniformLocation(this.drawImageProgram, "u_scale")
+                    this.drawImageSourceCoordinateLocation = gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
+                    this.drawImageSourceDimensionsLocation = gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
+                    this.drawImageScreenDimensionLocation = gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+
+                    // Create the position buffer
+                    this.drawImagePositionBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+
+                    const positions = [
+                        0, 0,
+                        0, 1,
+                        1, 0,
+                        1, 0,
+                        0, 1,
+                        1, 1,
+                    ]
+
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
+
+                    // Turn on the attribute
+                    gl.enableVertexAttribArray(this.drawImagePositionLocation)
+
+                    // Configure how the attribute gets data
+                    gl.vertexAttribPointer(this.drawImagePositionLocation, 2, gl.FLOAT, false, 0, 0)
+
+                    // Handle the tex coord attribute
+                    this.drawImageTexCoordBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+
+                    const texCoords = [
+                        0, 0,
+                        0, 1,
+                        1, 0,
+                        1, 0,
+                        0, 1,
+                        1, 1
+                    ]
+
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
+
+                    // Turn on the attribute
+                    gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
+
+                    // Configure how the attribute gets data
+                    gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, gl.FLOAT, false, 0, 0)
+
                 }
 
             } else {
@@ -449,7 +507,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             console.log("No canvasRef.current")
         }
 
-        /* Create the rendering thread if it doesn't exist */
+        /* Create the rendering thread */
         this.renderGame()
     }
 
@@ -528,7 +586,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("init")
 
         /* Do the accelerated drawing of terrain and roads */
-        if (this.gl && this.prog && this.mapRenderInformation &&
+        if (this.gl && this.groundRenderProgram && this.mapRenderInformation &&
             this.uScreenWidth !== undefined &&
             this.uScreenHeight !== undefined &&
             this.uLightVector !== undefined &&
@@ -541,8 +599,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const gl = this.gl
 
+            gl.useProgram(this.groundRenderProgram)
+
             gl.enable(gl.BLEND)
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
             // Set screen width and height
             gl.uniform1f(this.uScreenWidth, width)
@@ -554,7 +614,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Set the current values for the scale, offset and the sampler
             gl.uniform2f(this.uScale, this.props.scale, this.props.scale)
-            gl.uniform2fv(this.uOffset, [this.props.translateX, this.props.translateY])
+            gl.uniform2f(this.uOffset, this.props.translateX, this.props.translateY)
 
             // Fill the screen with black color
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
@@ -1374,6 +1434,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawOverlay.push({
                     source: selectedPointDrawInfo,
                     screenPoint,
+                    gamePoint: this.props.selectedPoint,
                     targetWidth: selectedPointDrawInfo.width,
                     targetHeight: selectedPointDrawInfo.height,
                     depth: this.props.selectedPoint.y
@@ -1479,17 +1540,110 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         // Draw the overlay images. Assume for now that they don't need sorting
         toDrawOverlay.forEach(draw => {
-            ctx.drawImage(
-                draw.source.image,
-                draw.source.sourceX,
-                draw.source.sourceY,
-                draw.source.width,
-                draw.source.height,
-                draw.screenPoint.x - draw.source.offsetX,
-                draw.screenPoint.y - draw.source.offsetY,
-                draw.source.width,
-                draw.source.height
-            )
+
+            if (draw.gamePoint !== undefined && draw.source.texture !== undefined) {
+
+                if (this.gl && this.drawImageProgram && draw.gamePoint && draw.source.texture) {
+
+                    if (oncePerNewSelectionPoint) {
+                        console.log("About to draw!")
+
+                        console.log(draw)
+                    }
+
+                    this.gl.useProgram(this.drawImageProgram)
+
+                    this.gl.viewport(0, 0, width, height)
+
+                    this.gl.enable(this.gl.BLEND)
+                    this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
+
+                    if (this.drawImagePositionBuffer && this.drawImagePositionLocation !== undefined) {
+                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+                        this.gl.vertexAttribPointer(this.drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+                        this.gl.enableVertexAttribArray(this.drawImagePositionLocation)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Can't re-init position buffer")
+                        console.log({ buffer: this.drawImagePositionBuffer, loc: this.drawImagePositionLocation })
+                    }
+
+                    if (this.drawImageTexCoordBuffer && this.drawImageTexcoordLocation !== undefined) {
+                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+                        this.gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+                        this.gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Can't re-init tex buffer")
+                    }
+
+                    // Tell the fragment shader what texture to use
+                    if (this.drawImageTextureLocation !== undefined && this.drawImageTextureLocation !== null) {
+                        this.gl.uniform1i(this.drawImageTextureLocation, draw.source.texture)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Texture uniform not used in the shader")
+                    }
+
+                    // Tell the vertex shader where to draw
+                    if (this.drawImageGamePointLocation !== undefined && this.drawImageGamePointLocation !== null) {
+                        this.gl.uniform2i(this.drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Game point uniform not used in the shader")
+                    }
+
+                    if (this.drawImageOffsetLocation !== undefined && this.drawImageOffsetLocation !== null) {
+                        this.gl.uniform2i(this.drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Image offset not used in the shader")
+                    }
+
+                    // Tell the vertex shader how to scale
+                    if (this.drawImageScaleLocation !== undefined && this.drawImageScaleLocation !== null) {
+                        this.gl.uniform1f(this.drawImageScaleLocation, this.props.scale)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Scale not used in the shader")
+                    }
+
+                    if (this.drawImageScreenOffsetLocation !== undefined && this.drawImageScreenOffsetLocation !== null) {
+                        this.gl.uniform2i(this.drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Screen offset not used in the shader")
+                    }
+
+                    if (this.drawImageScreenDimensionLocation !== undefined && this.drawImageScreenDimensionLocation !== null) {
+                        this.gl.uniform2i(this.drawImageScreenDimensionLocation, width, height)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Screen dimension not used in the shader")
+                    }
+
+                    // Tell the vertex shader what parts of the source image to draw
+                    if (this.drawImageSourceCoordinateLocation !== undefined && this.drawImageSourceCoordinateLocation !== null) {
+                        this.gl.uniform2i(this.drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Source coordinate not used in the shader")
+                    }
+
+                    if (this.drawImageSourceDimensionsLocation !== undefined && this.drawImageSourceDimensionsLocation !== null) {
+                        this.gl.uniform2i(this.drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Source dimensions not used in the shader")
+                    }
+
+                    // Draw the quad (2 triangles = 6 vertices)
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                }
+            } else {
+                ctx.drawImage(
+                    draw.source.image,
+                    draw.source.sourceX,
+                    draw.source.sourceY,
+                    draw.source.width,
+                    draw.source.height,
+                    draw.screenPoint.x - draw.source.offsetX,
+                    draw.screenPoint.y - draw.source.offsetY,
+                    draw.source.width,
+                    draw.source.height
+                )
+
+            }
         })
 
         duration.after("draw hover point")
@@ -2089,23 +2243,3 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 export { GameCanvas, intToVegetationColor, vegetationToInt }
 
-function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement): WebGLTexture | null {
-
-    const texture = gl.createTexture();
-    const level = 0;
-    const internalFormat = gl.RGBA;
-    const srcFormat = gl.RGBA;
-    const srcType = gl.UNSIGNED_BYTE;
-
-    //gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)
-
-    gl.generateMipmap(gl.TEXTURE_2D)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-
-    return texture
-}

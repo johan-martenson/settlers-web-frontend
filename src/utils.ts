@@ -1091,6 +1091,8 @@ class UielementsImageAtlasHandler {
 
         if (this.image) {
 
+            this.texture = makeTextureFromImage(gl, this.image)
+
             console.log({ title: "Created ui elements texture at " + this.textureIndex, image: this.image })
 
         } else {

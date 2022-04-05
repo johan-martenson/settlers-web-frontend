@@ -1590,13 +1590,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Tell the vertex shader where to draw
                     if (this.drawImageGamePointLocation !== null) {
-                        this.gl.uniform2i(this.drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                        this.gl.uniform2f(this.drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Game point uniform not used in the shader")
                     }
 
                     if (this.drawImageOffsetLocation !== null) {
-                        this.gl.uniform2i(this.drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                        this.gl.uniform2f(this.drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Image offset not used in the shader")
                     }
@@ -1609,28 +1609,41 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
 
                     if (this.drawImageScreenOffsetLocation !== null) {
-                        this.gl.uniform2i(this.drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                        this.gl.uniform2f(this.drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Screen offset not used in the shader")
                     }
 
                     if (this.drawImageScreenDimensionLocation !== null) {
-                        this.gl.uniform2i(this.drawImageScreenDimensionLocation, width, height)
+                        this.gl.uniform2f(this.drawImageScreenDimensionLocation, width, height)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Screen dimension not used in the shader")
                     }
 
                     // Tell the vertex shader what parts of the source image to draw
                     if (this.drawImageSourceCoordinateLocation !== null) {
-                        this.gl.uniform2i(this.drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                        this.gl.uniform2f(this.drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Source coordinate not used in the shader")
                     }
 
                     if (this.drawImageSourceDimensionsLocation !== null) {
-                        this.gl.uniform2i(this.drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                        this.gl.uniform2f(this.drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Source dimensions not used in the shader")
+                    }
+
+                    if (oncePerNewSelectionPoint) {
+                        console.log({
+                            u_texture: draw.source.textureIndex,
+                            u_game_point: draw.gamePoint,
+                            u_screen_offset: [this.props.translateX, this.props.translateY],
+                            u_image_offset: [draw.source.offsetX, draw.source.offsetY],
+                            u_scale: this.props.scale,
+                            u_source_coordinate: [draw.source.sourceX, draw.source.sourceY],
+                            u_source_dimensions: [draw.source.width, draw.source.height],
+                            u_screen_dimensions: [width, height]
+                        })
                     }
 
                     // Draw the quad (2 triangles = 6 vertices)

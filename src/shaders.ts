@@ -114,11 +114,12 @@ void main() {
   image_center.y = (((u_game_point.y * u_scale * 0.5 - u_screen_offset.y) / u_screen_dimensions.y) * 2.0) - 1.0;
 
   // Adjust for the image's own offset
-  adjusted_image_center = image_center + u_image_offset / u_scale / 100.0;
+  adjusted_image_center.x = image_center.x - u_image_offset.x * u_scale / 30000.0;
+  adjusted_image_center.y = image_center.y - u_image_offset.y * u_scale / 30000.0;
 
   // Get the individual vertex coordinate
-  vertex.x = adjusted_image_center.x + a_position.x * u_source_dimensions.x / 100.0 * u_scale;
-  vertex.y = adjusted_image_center.y + a_position.y * u_source_dimensions.y / 100.0 * u_scale;
+  vertex.x = adjusted_image_center.x + a_position.x * u_scale * u_source_dimensions.x / 30000.0;
+  vertex.y = adjusted_image_center.y + a_position.y * u_scale * u_source_dimensions.y / 30000.0;
 
   // Find the coordinates within the texture
   onePixel = vec2(1) / vec2(textureSize(u_texture, 0));

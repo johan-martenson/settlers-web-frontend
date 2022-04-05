@@ -3,9 +3,9 @@ import { Direction, materialToColor, NationSmallCaps, Point, RoadInformation, Ve
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
-import { textureAndLightingFragmentShader, texturedImageVertexShader, textureFragmentShader, textureAndLightingVertexShader, passthroughVertexShader, solidRedFragmentShader } from './shaders'
+import { textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShader, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImage, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, Point3D, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimationNew } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -129,39 +129,39 @@ const donkeyAnimation = new AnimalAnimation("assets/nature/animals/", "donkey", 
 
 const houses = new HouseImageAtlasHandler("assets/")
 
-const workers = new Map<WorkerType, WorkerAnimationNew>()
+const workers = new Map<WorkerType, WorkerAnimation>()
 
-workers.set("Farmer", new WorkerAnimationNew("assets/", "farmer", 10))
-workers.set("Fisherman", new WorkerAnimationNew("assets/", "fisher", 10))
-workers.set("Courier", new WorkerAnimationNew("assets/", "helper", 10))
-workers.set("StorageWorker", new WorkerAnimationNew("assets/", "helper", 10))
-workers.set("Hunter", new WorkerAnimationNew("assets/", "hunter", 10))
-workers.set("IronFounder", new WorkerAnimationNew("assets/", "iron_founder", 10))
-workers.set("Metalworker", new WorkerAnimationNew("assets/", "metalworker", 10))
-workers.set("Miller", new WorkerAnimationNew("assets/", "miller", 10))
-workers.set("Miner", new WorkerAnimationNew("assets/", "miner", 10))
-workers.set("Minter", new WorkerAnimationNew("assets/", "minter", 10))
-workers.set("PigBreeder", new WorkerAnimationNew("assets/", "pig_breeder", 10))
-workers.set("Planer", new WorkerAnimationNew("assets/", "planer", 10))
-workers.set("Scout", new WorkerAnimationNew("assets/", "scout", 10))
-workers.set("ShipWright", new WorkerAnimationNew("assets/", "ship_wright", 10))
-workers.set("DonkeyBreeder", new WorkerAnimationNew("assets/", "donkey_breeder", 10))
-workers.set("Butcher", new WorkerAnimationNew("assets/", "butcher", 10))
-workers.set("Builder", new WorkerAnimationNew("assets/", "builder", 10))
-workers.set("Brewer", new WorkerAnimationNew("assets/", "brewer", 10))
-workers.set("Baker", new WorkerAnimationNew("assets/", "baker", 10))
-workers.set("Armorer", new WorkerAnimationNew("assets/", "armorer", 10))
-workers.set("WoodcutterWorker", new WorkerAnimationNew("assets/", "woodcutter", 10))
-workers.set("Forester", new WorkerAnimationNew("assets/", "forester", 10))
-workers.set("SawmillWorker", new WorkerAnimationNew("assets/", "carpenter", 10))
-workers.set("Stonemason", new WorkerAnimationNew("assets/", "stonemason", 10))
-workers.set("Scout", new WorkerAnimationNew("assets/", "scout", 10))
-workers.set("Private", new WorkerAnimationNew("assets/", "private", 10))
-workers.set("Private_first_class", new WorkerAnimationNew("assets/", "private_first_class", 10))
-workers.set("Sergeant", new WorkerAnimationNew("assets/", "sergeant", 10))
-workers.set("Officer", new WorkerAnimationNew("assets/", "officer", 10))
-workers.set("General", new WorkerAnimationNew("assets/", "general", 10))
-workers.set("Geologist", new WorkerAnimationNew("assets/", "geologist", 10))
+workers.set("Farmer", new WorkerAnimation("assets/", "farmer", 10))
+workers.set("Fisherman", new WorkerAnimation("assets/", "fisher", 10))
+workers.set("Courier", new WorkerAnimation("assets/", "helper", 10))
+workers.set("StorageWorker", new WorkerAnimation("assets/", "helper", 10))
+workers.set("Hunter", new WorkerAnimation("assets/", "hunter", 10))
+workers.set("IronFounder", new WorkerAnimation("assets/", "iron_founder", 10))
+workers.set("Metalworker", new WorkerAnimation("assets/", "metalworker", 10))
+workers.set("Miller", new WorkerAnimation("assets/", "miller", 10))
+workers.set("Miner", new WorkerAnimation("assets/", "miner", 10))
+workers.set("Minter", new WorkerAnimation("assets/", "minter", 10))
+workers.set("PigBreeder", new WorkerAnimation("assets/", "pig_breeder", 10))
+workers.set("Planer", new WorkerAnimation("assets/", "planer", 10))
+workers.set("Scout", new WorkerAnimation("assets/", "scout", 10))
+workers.set("ShipWright", new WorkerAnimation("assets/", "ship_wright", 10))
+workers.set("DonkeyBreeder", new WorkerAnimation("assets/", "donkey_breeder", 10))
+workers.set("Butcher", new WorkerAnimation("assets/", "butcher", 10))
+workers.set("Builder", new WorkerAnimation("assets/", "builder", 10))
+workers.set("Brewer", new WorkerAnimation("assets/", "brewer", 10))
+workers.set("Baker", new WorkerAnimation("assets/", "baker", 10))
+workers.set("Armorer", new WorkerAnimation("assets/", "armorer", 10))
+workers.set("WoodcutterWorker", new WorkerAnimation("assets/", "woodcutter", 10))
+workers.set("Forester", new WorkerAnimation("assets/", "forester", 10))
+workers.set("SawmillWorker", new WorkerAnimation("assets/", "carpenter", 10))
+workers.set("Stonemason", new WorkerAnimation("assets/", "stonemason", 10))
+workers.set("Scout", new WorkerAnimation("assets/", "scout", 10))
+workers.set("Private", new WorkerAnimation("assets/", "private", 10))
+workers.set("Private_first_class", new WorkerAnimation("assets/", "private_first_class", 10))
+workers.set("Sergeant", new WorkerAnimation("assets/", "sergeant", 10))
+workers.set("Officer", new WorkerAnimation("assets/", "officer", 10))
+workers.set("General", new WorkerAnimation("assets/", "general", 10))
+workers.set("Geologist", new WorkerAnimation("assets/", "geologist", 10))
 
 const flagAnimations = new FlagAnimation("assets/", 10)
 
@@ -717,7 +717,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw the houses */
         let houseIndex = -1
-        for (const [id, house] of monitor.houses) {
+        for (const house of monitor.houses.values()) {
 
             houseIndex = houseIndex + 1
 
@@ -783,7 +783,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw the trees */
         let treeIndex = 0
-        for (const [treeId, tree] of monitor.visibleTrees) {
+        for (const tree of monitor.visibleTrees.values()) {
 
             if (tree.x + 1 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 1 < minYInGame || tree.y - 1 > maxYInGame) {
                 continue
@@ -876,7 +876,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the signs */
-        for (const [id, sign] of monitor.signs) {
+        for (const sign of monitor.signs.values()) {
 
             if (sign.x < minXInGame || sign.x > maxXInGame || sign.y < minYInGame || sign.y > maxYInGame) {
                 continue
@@ -935,7 +935,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw wild animals */
-        for (const [id, animal] of monitor.wildAnimals) {
+        for (const animal of monitor.wildAnimals.values()) {
             if (animal.betweenPoints && animal.previous && animal.next) {
 
                 if (animal.previous.x < minXInGame || animal.previous.x > maxXInGame || animal.previous.y < minYInGame || animal.previous.y > maxYInGame) {
@@ -1023,17 +1023,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw workers */
-        for (const [id, worker] of monitor.workers) {
-
-            let materialColor = 'black'
-
-            if (worker.cargo) {
-                const color = materialToColor.get(worker.cargo)
-
-                if (color) {
-                    materialColor = color
-                }
-            }
+        for (const worker of monitor.workers.values()) {
 
             // If worker is moving and not at a fixed point
             if (worker.betweenPoints && worker.previous && worker.next) {
@@ -1157,7 +1147,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw flags */
         let flagCount = 0
-        for (const [id, flag] of monitor.flags) {
+        for (const flag of monitor.flags.values()) {
 
             if (flag.x < minXInGame || flag.x > maxXInGame || flag.y < minYInGame || flag.y > maxYInGame) {
                 continue
@@ -1684,7 +1674,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ctx.strokeStyle = 'black'
             ctx.fillStyle = 'yellow'
 
-            for (const [id, house] of monitor.houses) {
+            for (const house of monitor.houses.values()) {
 
                 if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                     continue

@@ -587,12 +587,12 @@ class App extends Component<AppProps, AppState> {
         /* First, handle double clicks differently if a new road is being created */
         if (this.state.newRoad) {
 
-            const flag = await createFlag(point, this.props.gameId, this.state.player)
+            await createFlag(point, this.props.gameId, this.state.player)
 
             console.info("Created flag")
 
             if (this.state.newRoad) {
-                const road = await createRoad(this.state.newRoad, this.props.gameId, this.state.player)
+                await createRoad(this.state.newRoad, this.props.gameId, this.state.player)
                 console.info("Created road")
 
                 this.setState(

@@ -1,8 +1,6 @@
-import { WorkerType, AvailableConstruction, SignInformation, SignId, Point, GameId, PlayerId, getViewForPlayer, WorkerId, WorkerInformation, HouseId, HouseInformation, FlagId, FlagInformation, RoadId, RoadInformation, PlayerInformation, getPlayers, GameMessage, getMessagesForPlayer, getHouseInformation, printTimestamp, getTerrain, TerrainAtPoint, VegetationIntegers, Material, TreeInformation, TreeId, WildAnimalId, WildAnimalInformation } from './api'
+import { AvailableConstruction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
+import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
-import { terrainInformationToTerrainAtPointList, getPointDownLeft, getPointDownRight, getPointRight, getPointUpRight, getPointLeft, getPointUpLeft } from './utils'
-import { Player } from './player'
-import { publicEncrypt } from 'crypto'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
@@ -309,7 +307,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             let houseIdsToRemove = []
 
             for (const house of message.changedBuildings) {
-                for (const [id, oldHouse] of monitor.houses.entries()) {
+                for (const oldHouse of monitor.houses.values()) {
                     if (house.x === oldHouse.x && house.y === oldHouse.y) {
                         houseIdsToRemove.push(oldHouse.id)
                     }
@@ -397,7 +395,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
     setInterval(async () => {
 
-        for (const [id, worker] of monitor.workers) {
+        for (const worker of monitor.workers.values()) {
 
             /* Filter workers without any planned path */
             if (!worker.plannedPath || worker.plannedPath.length === 0) {
@@ -437,7 +435,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             }
         }
 
-        for (const [id, wildAnimal] of monitor.wildAnimals) {
+        for (const wildAnimal of monitor.wildAnimals.values()) {
 
             /* Filter workers without any planned path */
             if (!wildAnimal.path || wildAnimal.path.length === 0) {

@@ -754,7 +754,7 @@ async function deleteGame(gameId: GameId): Promise<void> {
 async function setMapForGame(mapId: MapId, gameId: GameId): Promise<void> {
     console.log("Setting map to " + mapId + " for game " + gameId)
 
-    const response = await fetch("/settlers/api/games/" + gameId,
+    await fetch("/settlers/api/games/" + gameId,
         {
             method: 'PATCH',
             headers: {
@@ -887,7 +887,7 @@ async function removeFlag(flagId: FlagId, gameId: GameId, playerId: PlayerId): P
 }
 
 async function removeRoad(roadId: RoadId, gameId: GameId, playerId: PlayerId): Promise<void> {
-    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/roads/" + roadId,
+    await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/roads/" + roadId,
         {
             method: 'delete'
         }
@@ -954,7 +954,7 @@ async function getTransportPriorityForPlayer(gameId: GameId, playerId: PlayerId)
 async function setTransportPriorityForMaterial(gameId: GameId, playerId: PlayerId, material: Material, priority: number): Promise<void> {
     console.log("Setting new priority for: " + material + " to " + priority)
 
-    const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/transportPriority",
+    await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/transportPriority",
         {
             method: "PATCH",
             headers: {
@@ -1128,7 +1128,7 @@ function isEvacuated(house: HouseInformation): boolean {
 }
 
 async function cancelEvacuationForHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
-    const response = await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/houses/' + houseId,
+    await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/houses/' + houseId,
         {
             method: 'PATCH',
             headers: {
@@ -1144,7 +1144,7 @@ async function cancelEvacuationForHouse(gameId: GameId, playerId: PlayerId, hous
 }
 
 async function evacuateHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
-    const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
+    await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
         {
             method: 'PATCH',
             headers: {
@@ -1159,7 +1159,7 @@ async function evacuateHouse(gameId: GameId, playerId: PlayerId, houseId: HouseI
 }
 
 async function pauseProductionForHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
-    const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
+    await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
         {
             method: 'PATCH',
             headers: {
@@ -1175,7 +1175,7 @@ async function pauseProductionForHouse(gameId: GameId, playerId: PlayerId, house
 }
 
 async function resumeProductionForHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
-    const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
+    await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
         {
             method: 'PATCH',
             headers: {
@@ -1225,7 +1225,7 @@ async function disablePromotionsForHouse(gameId: GameId, playerId: PlayerId, hou
 }
 
 async function upgradeMilitaryBuilding(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
-    const response = await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
+    await fetch('/settlers/api/games/' + gameId + "/players/" + playerId + "/houses/" + houseId,
         {
             method: "PATCH",
             headers: { 'Content-Type': 'application/json' },
@@ -1297,7 +1297,7 @@ signToColor.set("stone", "white")
 signToColor.set("water", "blue")
 
 function getFlagAtPoint(point: Point) {
-    for (const [id, flag] of monitor.flags) {
+    for (const flag of monitor.flags.values()) {
         if (flag.x === point.x && flag.y === point.y) {
             return flag
         }
@@ -1307,7 +1307,7 @@ function getFlagAtPoint(point: Point) {
 }
 
 function getHouseAtPoint(point: Point) {
-    for (const [id, house] of monitor.houses) {
+    for (const house of monitor.houses.values()) {
         if (house.x === point.x && house.y === point.y) {
             return house
         }

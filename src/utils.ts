@@ -177,26 +177,6 @@ function getLineBetweenPoints(p1: Point, p2: Point): Line {
     }
 }
 
-function getOrthogonalLine(line: Line, point: Point): Line {
-    const k = -1 / line.k
-    const m = point.y - k * point.x
-
-    return {
-        k: k,
-        m: m
-    }
-}
-
-function getIntersection(line1: Line, line2: Line): Point {
-    const x = (line2.m - line1.m) / (line1.k - line2.k)
-    const y = line1.k * x + line1.m
-
-    return {
-        x: x,
-        y: y
-    }
-}
-
 function almostEquals(a: number, b: number): boolean {
     const difference = a - b
     return difference < MINIMAL_DIFFERENCE && difference > -MINIMAL_DIFFERENCE
@@ -303,7 +283,7 @@ async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: Player
 
 function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boolean {
 
-    for (const [id, road] of roads) {
+    for (const road of roads.values()) {
         road.points.forEach(
             roadPoint => {
 
@@ -453,14 +433,14 @@ class AnimalAnimation {
     }
 }
 
-class WorkerAnimationNew {
-    private imageAtlasHandler: ImageAtlasHandler
+class WorkerAnimation {
+    private imageAtlasHandler: WorkerImageAtlasHandler
 
     private speedAdjust: number
 
     constructor(prefix: string, postfix: string, speedAdjust: number) {
 
-        this.imageAtlasHandler = new ImageAtlasHandler(prefix, postfix)
+        this.imageAtlasHandler = new WorkerImageAtlasHandler(prefix, postfix)
 
         this.speedAdjust = speedAdjust
     }
@@ -496,7 +476,7 @@ export interface DrawingInformation {
     texture?: WebGLTexture | null
 }
 
-class ImageAtlasHandler {
+class WorkerImageAtlasHandler {
     private pathPrefix: string
     private name: string
     private imageAtlasInfo?: Record<NationSmallCaps, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
@@ -1110,7 +1090,6 @@ class UielementsImageAtlasHandler {
     makeTexture(gl: WebGL2RenderingContext) {
 
         if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
 
             console.log({ title: "Created ui elements texture at " + this.textureIndex, image: this.image })
 
@@ -1637,8 +1616,8 @@ export {
     intToVegetationColor,
     sumVectors,
     loadImageNg,
-    ImageAtlasHandler as WorkerAnimationBasedOnImageAtlas,
-    WorkerAnimationNew,
+    WorkerImageAtlasHandler,
+    WorkerAnimation,
     AnimalAnimation,
     TreeAnimation,
     FlagAnimation,

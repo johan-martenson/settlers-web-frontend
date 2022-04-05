@@ -39,8 +39,6 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
     render() {
         const selectedMaterial = this.state.selected
 
-        let toolsDrawn = false
-
         return (
             <Dialog heading="Transport priority" floating onCloseDialog={this.props.onClose}>
                 <div className="TransportContainer">

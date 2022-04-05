@@ -1,4 +1,3 @@
-import { PointMapFast, PointSetFast } from './util_types'
 import React, { Component } from 'react'
 import Button from './button'
 import { Dialog } from './dialog'

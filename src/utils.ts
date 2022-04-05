@@ -465,7 +465,7 @@ class WorkerAnimationNew {
         this.speedAdjust = speedAdjust
     }
 
-    load() {
+    async load() {
         this.imageAtlasHandler.load()
     }
 
@@ -492,7 +492,8 @@ export interface DrawingInformation {
     offsetX: number
     offsetY: number
     image: HTMLImageElement
-    texture?: number
+    textureIndex?: number
+    texture?: WebGLTexture | null
 }
 
 class ImageAtlasHandler {
@@ -1087,6 +1088,7 @@ class UielementsImageAtlasHandler {
     private imageAtlasInfo?: UiElementsImageAtlasInfo
     private image?: HTMLImageElement
     private textureIndex: number
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string, textureIndex: number) {
         this.pathPrefix = prefix
@@ -1108,10 +1110,15 @@ class UielementsImageAtlasHandler {
     makeTexture(gl: WebGL2RenderingContext) {
 
         if (this.image) {
-            const texture = makeTextureFromImage(gl, this.image)
+            this.texture = makeTextureFromImage(gl, this.image)
 
             gl.activeTexture(gl.TEXTURE0 + this.textureIndex)
-            gl.bindTexture(gl.TEXTURE_2D, texture)
+            gl.bindTexture(gl.TEXTURE_2D, this.texture)
+
+            console.log({ title: "Created ui elements texture at " + this.textureIndex, image: this.image })
+
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
         }
     }
 
@@ -1128,7 +1135,8 @@ class UielementsImageAtlasHandler {
             offsetX: this.imageAtlasInfo.selectedPoint.offsetX,
             offsetY: this.imageAtlasInfo.selectedPoint.offsetY,
             image: this.image,
-            texture: this.textureIndex
+            textureIndex: this.textureIndex,
+            texture: this.texture
 
         }
     }

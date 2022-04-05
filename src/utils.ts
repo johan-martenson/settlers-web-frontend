@@ -1112,9 +1112,6 @@ class UielementsImageAtlasHandler {
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
 
-            gl.activeTexture(gl.TEXTURE0 + this.textureIndex)
-            gl.bindTexture(gl.TEXTURE_2D, this.texture)
-
             console.log({ title: "Created ui elements texture at " + this.textureIndex, image: this.image })
 
         } else {
@@ -1137,7 +1134,6 @@ class UielementsImageAtlasHandler {
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
-
         }
     }
 
@@ -1153,7 +1149,9 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.hoverPoint.height,
             offsetX: this.imageAtlasInfo.hoverPoint.offsetX,
             offsetY: this.imageAtlasInfo.hoverPoint.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
         }
     }
 
@@ -1169,7 +1167,9 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.availableBuildingLarge.height,
             offsetX: this.imageAtlasInfo.availableBuildingLarge.offsetX,
             offsetY: this.imageAtlasInfo.availableBuildingLarge.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
         }
     }
 
@@ -1185,7 +1185,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.availableBuildingMedium.height,
             offsetX: this.imageAtlasInfo.availableBuildingMedium.offsetX,
             offsetY: this.imageAtlasInfo.availableBuildingMedium.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 
@@ -1201,7 +1204,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.availableBuildingSmall.height,
             offsetX: this.imageAtlasInfo.availableBuildingSmall.offsetX,
             offsetY: this.imageAtlasInfo.availableBuildingSmall.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 
@@ -1217,7 +1223,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.availableMine.height,
             offsetX: this.imageAtlasInfo.availableMine.offsetX,
             offsetY: this.imageAtlasInfo.availableMine.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 
@@ -1233,7 +1242,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.availableFlag.height,
             offsetX: this.imageAtlasInfo.availableFlag.offsetX,
             offsetY: this.imageAtlasInfo.availableFlag.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 
@@ -1249,7 +1261,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.hoverAvailableBuildingLarge.height,
             offsetX: this.imageAtlasInfo.hoverAvailableBuildingLarge.offsetX,
             offsetY: this.imageAtlasInfo.hoverAvailableBuildingLarge.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 
@@ -1265,7 +1280,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.hoverAvailableBuildingMedium.height,
             offsetX: this.imageAtlasInfo.hoverAvailableBuildingMedium.offsetX,
             offsetY: this.imageAtlasInfo.hoverAvailableBuildingMedium.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 
@@ -1281,7 +1299,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.hoverAvailableBuildingSmall.height,
             offsetX: this.imageAtlasInfo.hoverAvailableBuildingSmall.offsetX,
             offsetY: this.imageAtlasInfo.hoverAvailableBuildingSmall.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 
@@ -1297,7 +1318,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.hoverAvailableMine.height,
             offsetX: this.imageAtlasInfo.hoverAvailableMine.offsetX,
             offsetY: this.imageAtlasInfo.hoverAvailableMine.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 
@@ -1313,7 +1337,10 @@ class UielementsImageAtlasHandler {
             height: this.imageAtlasInfo.hoverAvailableFlag.height,
             offsetX: this.imageAtlasInfo.hoverAvailableFlag.offsetX,
             offsetY: this.imageAtlasInfo.hoverAvailableFlag.offsetY,
-            image: this.image
+            image: this.image,
+            textureIndex: this.textureIndex,
+            texture: this.texture
+
         }
     }
 }
@@ -1556,7 +1583,7 @@ function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType
     return compiledShader
 }
 
-function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement): WebGLTexture | null {
+function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement, flipYAxis: "FLIP_Y" | "NO_FLIP_Y" = "NO_FLIP_Y"): WebGLTexture | null {
 
     const texture = gl.createTexture();
     const level = 0;
@@ -1564,7 +1591,11 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     const srcFormat = gl.RGBA;
     const srcType = gl.UNSIGNED_BYTE;
 
-    //gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+    if (flipYAxis === "FLIP_Y") {
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+    } else {
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
+    }
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)

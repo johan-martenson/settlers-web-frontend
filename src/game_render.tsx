@@ -1448,6 +1448,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawOverlay.push({
                             source: largeHouseAvailableInfo,
                             screenPoint,
+                            gamePoint: this.state.hoverPoint,
                             targetWidth: largeHouseAvailableInfo.width,
                             targetHeight: largeHouseAvailableInfo.height,
                             depth: this.state.hoverPoint.y
@@ -1461,6 +1462,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawOverlay.push({
                             source: mediumHouseAvailableInfo,
                             screenPoint,
+                            gamePoint: this.state.hoverPoint,
                             targetWidth: mediumHouseAvailableInfo.width,
                             targetHeight: mediumHouseAvailableInfo.height,
                             depth: this.state.hoverPoint.y
@@ -1474,6 +1476,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawOverlay.push({
                             source: smallHouseAvailableInfo,
                             screenPoint,
+                            gamePoint: this.state.hoverPoint,
                             targetWidth: smallHouseAvailableInfo.width,
                             targetHeight: smallHouseAvailableInfo.height,
                             depth: this.state.hoverPoint.y
@@ -1487,6 +1490,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawOverlay.push({
                             source: mineAvailableInfo,
                             screenPoint,
+                            gamePoint: this.state.hoverPoint,
                             targetWidth: mineAvailableInfo.width,
                             targetHeight: mineAvailableInfo.height,
                             depth: this.state.hoverPoint.y
@@ -1500,6 +1504,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawOverlay.push({
                             source: flagAvailableInfo,
                             screenPoint,
+                            gamePoint: this.state.hoverPoint,
                             targetWidth: flagAvailableInfo.width,
                             targetHeight: flagAvailableInfo.height,
                             depth: this.state.hoverPoint.y
@@ -1516,6 +1521,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawOverlay.push({
                         source: hoverPointDrawInfo,
                         screenPoint,
+                        gamePoint: this.state.hoverPoint,
                         targetWidth: hoverPointDrawInfo.width,
                         targetHeight: hoverPointDrawInfo.height,
                         depth: this.state.hoverPoint.y
@@ -1525,9 +1531,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         // Draw the overlay images. Assume for now that they don't need sorting
+
+        // Set up webgl2 with the right shaders
+        if (this.gl) {
+            this.gl.useProgram(this.drawImageProgram)
+
+            this.gl.viewport(0, 0, width, height)
+
+            this.gl.enable(this.gl.BLEND)
+            this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
+            this.gl.disable(this.gl.DEPTH_TEST)
+        }
+
+        // Go through the images to draw
         toDrawOverlay.forEach(draw => {
 
-            if (draw.gamePoint !== undefined && draw.source.textureIndex !== undefined) {
+            if (draw.gamePoint !== undefined && draw.source.textureIndex !== undefined && draw.source.texture !== undefined) {
 
                 if (this.gl && this.drawImageProgram && draw.gamePoint) {
 
@@ -1537,18 +1556,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         console.log(draw)
                     }
 
-                    this.gl.useProgram(this.drawImageProgram)
-
-                    this.gl.viewport(0, 0, width, height)
-
-                    this.gl.enable(this.gl.BLEND)
-                    this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
-                    this.gl.disable(this.gl.DEPTH_TEST)
-
-                    if (draw.source.texture) {
-                        this.gl.activeTexture(this.gl.TEXTURE0 + draw.source.textureIndex)
-                        this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
-                    }
+                    this.gl.activeTexture(this.gl.TEXTURE0 + draw.source.textureIndex)
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
 
                     // Re-assign the attribute locations
                     this.drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")

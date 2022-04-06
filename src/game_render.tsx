@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShader, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -332,10 +332,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.terrainCanvasRef?.current) {
             const canvas = this.terrainCanvasRef.current
 
-            // Set the resolution
-            canvas.width = document.documentElement.scrollWidth
-            canvas.height = document.documentElement.scrollHeight
-
             const gl = canvas.getContext("webgl2", { alpha: false })
 
             if (gl) {
@@ -501,17 +497,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         const duration = new Duration("GameRender::renderGame")
 
-        /* Ensure that the reference to the overlay canvas is set */
-        if (!this.overlayCanvasRef.current) {
-            console.error("The overlay canvas reference is not set properly")
+        /* Ensure that the reference to the canvases are set */
+        if (!this.overlayCanvasRef.current || !this.terrainCanvasRef.current) {
+            console.error("The canvas references are not set properly")
 
             return
         }
 
         /* Get the rendering context for the overlay canvas */
-        if (overlayCtx === null) {
-            overlayCtx = this.overlayCanvasRef.current.getContext("2d")
-        }
+        const overlayCtx = this.overlayCanvasRef.current.getContext("2d")
 
         /* Ensure that the canvas rendering context is valid */
         if (!overlayCtx) {
@@ -520,24 +514,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             return
         }
 
+        // Set the resolution
+        resizeCanvasToDisplaySize(this.terrainCanvasRef.current)
+        resizeCanvasToDisplaySize(this.overlayCanvasRef.current)
+
+        const width = this.terrainCanvasRef.current.width
+        const height = this.terrainCanvasRef.current.height
+
+        this.gl?.viewport(0, 0, width, height)
+
         /* Clear the drawing list */
-        let toDrawRegular: ToDraw[] = []
-        let toDrawOverlay: ToDraw[] = []
+        let toDrawNormal: ToDraw[] = []
 
-        /*
-          Make sure the width and height of the canvases match with the window
-
-          Note: this will clear the screen - only set if needed
-
-        */
-        const width = this.overlayCanvasRef.current.width
-        const height = this.overlayCanvasRef.current.height
-        if (this.overlayCanvasRef.current.width !== this.props.width || this.overlayCanvasRef.current.height !== this.props.height) {
-            this.overlayCanvasRef.current.width = this.props.width
-            this.overlayCanvasRef.current.height = this.props.height
-        }
-
-        let ctx: CanvasRenderingContext2D
 
         /* Clear the overlay - make it fully transparent */
         overlayCtx.clearRect(0, 0, width, height)
@@ -571,7 +559,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("init")
 
-        /* Do the accelerated drawing of terrain and roads */
+        /**
+         * Draw according to the following layers:
+         *    1. Terrain layer
+         *    2. Road layer
+         *    3. Normal layer: houses + names, flags, stones, trees, workers, animals, lanyards, etc.
+         *    4. Hover layer: hover icon and selected icon
+         */
+
+
+        /* Draw the terrain layer, followed by the road layer */
         if (this.gl && this.groundRenderProgram && this.mapRenderInformation &&
             this.uScreenWidth !== undefined &&
             this.uScreenHeight !== undefined &&
@@ -652,10 +649,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw terrain and roads")
 
 
-        ctx = overlayCtx
+        let ctx = overlayCtx
 
+        // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
-        /* Draw the borders */
+        /* Collect borders to draw */
         for (const [playerId, borderForPlayer] of monitor.border) {
 
             borderForPlayer.points.forEach(borderPoint => {
@@ -669,7 +667,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const borderPointInfo = borderImageAtlasHandler.getDrawingInformation('romans', 'LAND')
 
                 if (borderPointInfo !== undefined) {
-                    toDrawRegular.push({
+                    toDrawNormal.push({
                         source: borderPointInfo,
                         screenPoint,
                         targetWidth: borderPointInfo.width,
@@ -683,7 +681,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw borders")
 
 
-        /* Draw the ongoing new road if it exists */
+        /* Collect the ongoing new road if it exists */
         if (this.props.newRoad !== undefined) {
 
             let previous = null
@@ -715,7 +713,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw ongoing road")
 
 
-        /* Draw the houses */
+        /* Collect the houses */
         let houseIndex = -1
         for (const house of monitor.houses.values()) {
 
@@ -732,7 +730,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(currentPlayerNation)
 
                 if (plannedDrawInformation !== undefined) {
-                    toDrawRegular.push({
+                    toDrawNormal.push({
                         source: plannedDrawInformation,
                         screenPoint,
                         targetWidth: plannedDrawInformation.width,
@@ -747,7 +745,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const fireDrawInformation = fireAnimations.getAnimationFrame(size, this.animationIndex)
 
                 if (fireDrawInformation !== undefined) {
-                    toDrawRegular.push({
+                    toDrawNormal.push({
                         source: fireDrawInformation,
                         screenPoint,
                         targetWidth: fireDrawInformation.width,
@@ -766,7 +764,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (houseDrawInformation !== undefined) {
-                    toDrawRegular.push({
+                    toDrawNormal.push({
                         source: houseDrawInformation,
                         screenPoint,
                         targetWidth: houseDrawInformation.width,
@@ -781,7 +779,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw houses")
 
 
-        /* Draw the trees */
+        /* Collect the trees */
         let treeIndex = 0
         for (const tree of monitor.visibleTrees.values()) {
 
@@ -795,7 +793,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             let treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)
 
             if (treeDrawInfo !== undefined) {
-                toDrawRegular.push({
+                toDrawNormal.push({
                     source: treeDrawInfo,
                     screenPoint,
                     targetWidth: treeDrawInfo.width,
@@ -810,7 +808,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw trees")
 
 
-        /* Draw dead trees */
+        /* Collect dead trees */
         for (const deadTree of monitor.deadTrees) {
 
             if (deadTree.x < minXInGame || deadTree.x > maxXInGame || deadTree.y < minYInGame || deadTree.y > maxYInGame) {
@@ -834,7 +832,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const deadTreeInfo = decorationsImageAtlasHandler.getDrawingInformationFor("STANDING_DEAD_TREE")
 
             if (deadTreeInfo !== undefined) {
-                toDrawRegular.push({
+                toDrawNormal.push({
                     source: deadTreeInfo,
                     screenPoint,
                     targetWidth: deadTreeInfo.width,
@@ -847,9 +845,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw dead trees")
 
 
-        /* Draw the crops */
-        ctx.fillStyle = 'orange'
-
+        /* Collect the crops */
         for (const crop of monitor.crops) {
 
             if (crop.x < minXInGame || crop.x > maxXInGame || crop.y < minYInGame || crop.y > maxYInGame) {
@@ -862,7 +858,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', 'FULLY_GROWN')
 
             if (cropDrawInfo !== undefined) {
-                toDrawRegular.push({
+                toDrawNormal.push({
                     source: cropDrawInfo,
                     screenPoint,
                     targetWidth: cropDrawInfo.width,
@@ -875,7 +871,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw crops")
 
 
-        /* Draw the signs */
+        /* Collect the signs */
         for (const sign of monitor.signs.values()) {
 
             if (sign.x < minXInGame || sign.x > maxXInGame || sign.y < minYInGame || sign.y > maxYInGame) {
@@ -893,7 +889,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             if (signDrawInfo !== undefined) {
-                toDrawRegular.push({
+                toDrawNormal.push({
                     source: signDrawInfo,
                     screenPoint,
                     targetWidth: signDrawInfo.width,
@@ -906,7 +902,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw signs")
 
 
-        /* Draw the stones */
+        /* Collect the stones */
         for (const stone of monitor.stones) {
 
             if (stone.x + 1 < minXInGame || stone.x - 1 > maxXInGame || stone.y + 1 < minYInGame || stone.y - 1 > maxYInGame) {
@@ -921,7 +917,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor('TYPE_2', 'MIDDLE')
 
             if (stoneDrawInfo !== undefined) {
-                toDrawRegular.push({
+                toDrawNormal.push({
                     source: stoneDrawInfo,
                     screenPoint,
                     targetWidth: stoneDrawInfo.width,
@@ -934,7 +930,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw stones")
 
 
-        /* Draw wild animals */
+        /* Collect wild animals */
         for (const animal of monitor.wildAnimals.values()) {
             if (animal.betweenPoints && animal.previous && animal.next) {
 
@@ -961,7 +957,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
                 if (animationImage !== undefined) {
-                    toDrawRegular.push({
+                    toDrawNormal.push({
                         source: animationImage,
                         screenPoint,
                         targetWidth: animationImage.width,
@@ -986,7 +982,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
                     if (animationImage !== undefined) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: animationImage,
                             screenPoint,
                             targetWidth: animationImage.width,
@@ -1007,7 +1003,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
                     if (animationImage !== undefined) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: animationImage,
                             screenPoint,
                             targetWidth: animationImage.width,
@@ -1022,7 +1018,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw wild animals")
 
 
-        /* Draw workers */
+        /* Collect workers */
         for (const worker of monitor.workers.values()) {
 
             // If worker is moving and not at a fixed point
@@ -1050,7 +1046,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
                     if (donkeyImage !== undefined) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: donkeyImage,
                             screenPoint,
                             targetWidth: donkeyImage.width,
@@ -1062,7 +1058,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
                     if (animationImage !== undefined) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: animationImage,
                             screenPoint: { x: screenPoint.x, y: screenPoint.y - scaleY },
                             targetWidth: animationImage.width,
@@ -1076,7 +1072,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
 
                     if (cargoDrawInfo !== undefined) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: cargoDrawInfo,
                             screenPoint: { x: screenPoint.x + 10, y: screenPoint.y - 15 },
                             targetWidth: cargoDrawInfo.width,
@@ -1103,7 +1099,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
                     if (donkeyImage !== undefined) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: donkeyImage,
                             screenPoint,
                             targetWidth: donkeyImage.width,
@@ -1116,7 +1112,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
                     if (animationImage) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: animationImage,
                             screenPoint: { x: screenPoint.x, y: screenPoint.y - scaleY },
                             targetWidth: animationImage.width,
@@ -1130,7 +1126,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
 
                     if (cargoDrawInfo !== undefined) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: cargoDrawInfo,
                             screenPoint: { x: screenPoint.x + 10, y: screenPoint.y - 15 },
                             targetWidth: cargoDrawInfo.width,
@@ -1145,7 +1141,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw workers")
 
 
-        /* Draw flags */
+        /* Collect flags */
         let flagCount = 0
         for (const flag of monitor.flags.values()) {
 
@@ -1159,7 +1155,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const flagDrawInfo = flagAnimations.getAnimationFrame("romans", "NORMAL", this.animationIndex, flagCount)
 
             if (flagDrawInfo?.image !== undefined) {
-                toDrawRegular.push({
+                toDrawNormal.push({
                     source: flagDrawInfo,
                     screenPoint,
                     targetWidth: flagDrawInfo.width,
@@ -1182,7 +1178,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
                     if (cargoDrawInfo !== undefined) {
-                        toDrawRegular.push({
+                        toDrawNormal.push({
                             source: cargoDrawInfo,
                             screenPoint: { x: screenPoint.x - 10, y: screenPoint.y - 10 * i + 5 },
                             targetWidth: cargoDrawInfo.width,
@@ -1205,7 +1201,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
                         if (cargoDrawInfo !== undefined) {
-                            toDrawRegular.push({
+                            toDrawNormal.push({
                                 source: cargoDrawInfo,
                                 screenPoint: { x: screenPoint.x + 4, y: screenPoint.y - 10 * (i - 4) + 15 },
                                 targetWidth: cargoDrawInfo.width,
@@ -1229,7 +1225,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
                         if (cargoDrawInfo !== undefined) {
-                            toDrawRegular.push({
+                            toDrawNormal.push({
                                 source: cargoDrawInfo,
                                 screenPoint: { x: screenPoint.x + 17, y: screenPoint.y - 10 * (i - 4) + 5 },
                                 targetWidth: cargoDrawInfo.width,
@@ -1246,29 +1242,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw flags")
 
 
-        // Sort the toDrawList so it first draws things further away
-        const sortedToDrawList = toDrawRegular.sort((draw1, draw2) => {
-            return draw2.depth - draw1.depth
-        })
-
-        // Draw all regular queued up images in order
-        // TODO: add scaling
-        sortedToDrawList.forEach(draw => {
-            ctx.drawImage(
-                draw.source.image,
-                draw.source.sourceX,
-                draw.source.sourceY,
-                draw.source.width,
-                draw.source.height,
-                draw.screenPoint.x - draw.source.offsetX,
-                draw.screenPoint.y - draw.source.offsetY,
-                draw.source.width,
-                draw.source.height
-            )
-        })
-
-
-        /* Draw available construction */
+        /* Collect available construction */
         if (this.props.showAvailableConstruction) {
 
             for (const [gamePoint, available] of monitor.availableConstruction.entries()) {
@@ -1288,7 +1262,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
 
                     if (largeHouseAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawNormal.push({
                             source: largeHouseAvailableInfo,
                             screenPoint,
                             targetWidth: largeHouseAvailableInfo.width,
@@ -1301,7 +1275,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
 
                     if (mediumHouseAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawNormal.push({
                             source: mediumHouseAvailableInfo,
                             screenPoint,
                             targetWidth: mediumHouseAvailableInfo.width,
@@ -1314,7 +1288,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
 
                     if (mediumHouseAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawNormal.push({
                             source: mediumHouseAvailableInfo,
                             screenPoint,
                             targetWidth: mediumHouseAvailableInfo.width,
@@ -1327,7 +1301,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
 
                     if (mineAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawNormal.push({
                             source: mineAvailableInfo,
                             screenPoint,
                             targetWidth: mineAvailableInfo.width,
@@ -1340,7 +1314,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
 
                     if (flagAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawNormal.push({
                             source: flagAvailableInfo,
                             screenPoint,
                             targetWidth: flagAvailableInfo.width,
@@ -1353,8 +1327,33 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw available construction")
+        duration.after("Collect available construction")
 
+        // Sort the toDrawList so it first draws things further away
+        const sortedToDrawList = toDrawNormal.sort((draw1, draw2) => {
+            return draw2.depth - draw1.depth
+        })
+
+
+        // Draw all regular queued up images in order
+        // TODO: add scaling
+        sortedToDrawList.forEach(draw => {
+            ctx.drawImage(
+                draw.source.image,
+                draw.source.sourceX,
+                draw.source.sourceY,
+                draw.source.width,
+                draw.source.height,
+                draw.screenPoint.x - draw.source.offsetX,
+                draw.screenPoint.y - draw.source.offsetY,
+                draw.source.width,
+                draw.source.height
+            )
+        })
+
+
+        // Handle the hover layer
+        let toDrawHover: ToDraw[] = []
 
         /* Draw possible road connections */
         if (this.props.possibleRoadConnections) {
@@ -1367,7 +1366,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForStartPoint()
 
                 if (startPointInfo !== undefined) {
-                    toDrawOverlay.push({
+                    toDrawHover.push({
                         source: startPointInfo,
                         screenPoint: this.gamePointToScreenPoint(center),
                         targetWidth: startPointInfo.width,
@@ -1385,7 +1384,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
 
                     if (startPointInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawHover.push({
                             source: startPointInfo,
                             screenPoint,
                             targetWidth: startPointInfo.width,
@@ -1407,7 +1406,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
 
             if (selectedPointDrawInfo !== undefined) {
-                toDrawOverlay.push({
+                toDrawHover.push({
                     source: selectedPointDrawInfo,
                     screenPoint,
                     gamePoint: this.props.selectedPoint,
@@ -1435,7 +1434,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
 
                     if (largeHouseAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawHover.push({
                             source: largeHouseAvailableInfo,
                             screenPoint,
                             gamePoint: this.state.hoverPoint,
@@ -1449,7 +1448,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
 
                     if (mediumHouseAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawHover.push({
                             source: mediumHouseAvailableInfo,
                             screenPoint,
                             gamePoint: this.state.hoverPoint,
@@ -1463,7 +1462,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
 
                     if (smallHouseAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawHover.push({
                             source: smallHouseAvailableInfo,
                             screenPoint,
                             gamePoint: this.state.hoverPoint,
@@ -1477,7 +1476,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
 
                     if (mineAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawHover.push({
                             source: mineAvailableInfo,
                             screenPoint,
                             gamePoint: this.state.hoverPoint,
@@ -1491,7 +1490,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
 
                     if (flagAvailableInfo !== undefined) {
-                        toDrawOverlay.push({
+                        toDrawHover.push({
                             source: flagAvailableInfo,
                             screenPoint,
                             gamePoint: this.state.hoverPoint,
@@ -1508,7 +1507,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
 
                 if (hoverPointDrawInfo !== undefined) {
-                    toDrawOverlay.push({
+                    toDrawHover.push({
                         source: hoverPointDrawInfo,
                         screenPoint,
                         gamePoint: this.state.hoverPoint,
@@ -1534,7 +1533,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         // Go through the images to draw
-        toDrawOverlay.forEach(draw => {
+        toDrawHover.forEach(draw => {
 
             if (draw.gamePoint !== undefined && draw.source.textureIndex !== undefined && draw.source.texture !== undefined) {
 

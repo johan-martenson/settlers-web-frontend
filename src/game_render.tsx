@@ -162,8 +162,6 @@ workers.set("Geologist", new WorkerAnimation("assets/", "geologist", 10))
 
 const flagAnimations = new FlagAnimation("assets/", 10)
 
-let overlayCtx: CanvasRenderingContext2D | null = null
-
 interface RenderInformation {
     coordinates: number[]
     normals: number[]
@@ -893,8 +891,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            /* Draw the stone next to the point, instead of on top */
-
             // TODO: pick the right type and size of stone
             const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor('TYPE_2', 'MIDDLE')
 
@@ -1097,7 +1093,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            /* Draw the flag slightly above the point */
             const flagDrawInfo = flagAnimations.getAnimationFrame("romans", "NORMAL", this.animationIndex, flagCount)
 
             if (flagDrawInfo?.image !== undefined) {

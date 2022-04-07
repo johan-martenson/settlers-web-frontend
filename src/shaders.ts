@@ -109,9 +109,6 @@ vec2 pixel_scale;
 out vec2 v_texcoord;
 
 // At default screen size, to get pixel correct results: PIXEL_SCALE = (default_scale * width|height_in_pixels) / 2
-
-#define PIXEL_SCALE_X 28550.0
-#define PIXEL_SCALE_Y 27200.0
 #define DEFAULT_SCALE 50.0
 
 void main() {
@@ -121,12 +118,12 @@ void main() {
   image_center.y = (((u_game_point.y * u_scale * 0.5 - u_screen_offset.y) / u_screen_dimensions.y) * 2.0) - 1.0;
 
   // Calculate the pixel_scale factor to make drawing pixel-perfect at the default 50 scale
-  pixel_scale.x = (DEFAULT_SCALE * u_screen_dimensions.x) / 2.0;
-  pixel_scale.y = (DEFAULT_SCALE * u_screen_dimensions.y) / 2.0;
+  pixel_scale.x = (DEFAULT_SCALE * float(u_screen_dimensions.x)) / 2.0;
+  pixel_scale.y = (DEFAULT_SCALE * float(u_screen_dimensions.y)) / 2.0;
 
   // Adjust for the image's own offset
   adjusted_image_center.x = image_center.x - u_image_offset.x * u_scale / pixel_scale.x;
-  adjusted_image_center.y = image_center.y - u_image_offset.y * u_scale / pixel_scale.y;
+  adjusted_image_center.y = image_center.y - (u_source_dimensions.y - u_image_offset.y) * u_scale / pixel_scale.y;
 
   // Get the individual vertex coordinate
   vertex.x = adjusted_image_center.x + a_position.x * u_scale * u_source_dimensions.x / pixel_scale.x;

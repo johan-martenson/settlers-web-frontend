@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShader, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UielementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -19,7 +19,7 @@ interface ToDraw {
     source: DrawingInformation
     depth: number
     screenPoint: Point
-    gamePoint?: Point
+    gamePoint: Point
     targetWidth: number
     targetHeight: number
 }
@@ -68,7 +68,7 @@ const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
 
 const cropsImageAtlasHandler = new CropImageAtlasHandler("assets/")
 
-const uiElementsImageAtlasHandler = new UielementsImageAtlasHandler("assets/", 0)
+const uiElementsImageAtlasHandler = new UiElementsImageAtlasHandler("assets/", 0)
 
 const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler("assets/")
 
@@ -337,7 +337,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (gl) {
 
                 // Make textures for the image atlases
+                workers.forEach((animation, workerType) => animation.makeTexture(gl))
+                animals.forEach((animation, animalType) => animation.makeTexture(gl))
+
+                treeAnimations.makeTexture(gl)
+                flagAnimations.makeTexture(gl)
+                houses.makeTexture(gl)
+                fireAnimations.makeTexture(gl)
+                signImageAtlasHandler.makeTexture(gl)
                 uiElementsImageAtlasHandler.makeTexture(gl)
+                cropsImageAtlasHandler.makeTexture(gl)
+                stoneImageAtlasHandler.makeTexture(gl)
+                decorationsImageAtlasHandler.makeTexture(gl)
+                donkeyAnimation.makeTexture(gl)
+                borderImageAtlasHandler.makeTexture(gl)
+                roadBuildingImageAtlasHandler.makeTexture(gl)
+                cargoImageAtlasHandler.makeTexture(gl)
 
                 // Create and compile the shaders
                 const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
@@ -670,6 +685,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: borderPointInfo,
                         screenPoint,
+                        gamePoint: borderPoint,
                         targetWidth: borderPointInfo.width,
                         targetHeight: borderPointInfo.height,
                         depth: borderPoint.y
@@ -733,6 +749,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: plannedDrawInformation,
                         screenPoint,
+                        gamePoint: house,
                         targetWidth: plannedDrawInformation.width,
                         targetHeight: plannedDrawInformation.height,
                         depth: house.y
@@ -748,6 +765,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: fireDrawInformation,
                         screenPoint,
+                        gamePoint: house,
                         targetWidth: fireDrawInformation.width,
                         targetHeight: fireDrawInformation.height,
                         depth: house.y
@@ -767,6 +785,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: houseDrawInformation,
                         screenPoint,
+                        gamePoint: house,
                         targetWidth: houseDrawInformation.width,
                         targetHeight: houseDrawInformation.height,
                         depth: house.y
@@ -796,6 +815,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: treeDrawInfo,
                     screenPoint,
+                    gamePoint: tree,
                     targetWidth: treeDrawInfo.width,
                     targetHeight: treeDrawInfo.height,
                     depth: tree.y
@@ -835,6 +855,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: deadTreeInfo,
                     screenPoint,
+                    gamePoint: deadTree,
                     targetWidth: deadTreeInfo.width,
                     targetHeight: deadTreeInfo.height,
                     depth: deadTree.y
@@ -861,6 +882,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: cropDrawInfo,
                     screenPoint,
+                    gamePoint: crop,
                     targetWidth: cropDrawInfo.width,
                     targetHeight: cropDrawInfo.height,
                     depth: crop.y
@@ -892,6 +914,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: signDrawInfo,
                     screenPoint,
+                    gamePoint: sign,
                     targetWidth: signDrawInfo.width,
                     targetHeight: signDrawInfo.height,
                     depth: sign.y
@@ -920,6 +943,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: stoneDrawInfo,
                     screenPoint,
+                    gamePoint: stone,
                     targetWidth: stoneDrawInfo.width,
                     targetHeight: stoneDrawInfo.height,
                     depth: stone.y
@@ -952,6 +976,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 screenPoint.y -= scaleY
 
+                const interpolatedGamePoint = {
+                    x: animal.previous.x + (animal.next.x - animal.previous.x) * (animal.percentageTraveled / 100),
+                    y: animal.previous.y + (animal.next.y - animal.previous.y) * (animal.percentageTraveled / 100)
+                }
+
                 const direction = getDirectionForWalkingWorker(animal.next, animal.previous)
 
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
@@ -960,6 +989,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: animationImage,
                         screenPoint,
+                        gamePoint: interpolatedGamePoint,
                         targetWidth: animationImage.width,
                         targetHeight: animationImage.height,
                         depth: animal.y
@@ -985,6 +1015,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: animationImage,
                             screenPoint,
+                            gamePoint: animal,
                             targetWidth: animationImage.width,
                             targetHeight: animationImage.height,
                             depth: animal.y
@@ -1006,6 +1037,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: animationImage,
                             screenPoint,
+                            gamePoint: animal,
                             targetWidth: animationImage.width,
                             targetHeight: animationImage.height,
                             depth: animal.y
@@ -1040,6 +1072,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     y: screenPoint1.y + (screenPoint2.y - screenPoint1.y) * (worker.percentageTraveled / 100)
                 }
 
+                const interpolatedGamePoint = {
+                    x: worker.previous.x + (worker.next.x - worker.previous.x) * (worker.percentageTraveled / 100),
+                    y: worker.previous.y + (worker.next.y - worker.previous.y) * (worker.percentageTraveled / 100)
+                }
+
                 const direction = getDirectionForWalkingWorker(worker.next, worker.previous)
 
                 if (worker.type === "Donkey") {
@@ -1049,6 +1086,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: donkeyImage,
                             screenPoint,
+                            gamePoint: interpolatedGamePoint,
                             targetWidth: donkeyImage.width,
                             targetHeight: donkeyImage.height,
                             depth: worker.y
@@ -1061,6 +1099,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: animationImage,
                             screenPoint: { x: screenPoint.x, y: screenPoint.y - scaleY },
+                            gamePoint: worker,
                             targetWidth: animationImage.width,
                             targetHeight: animationImage.height,
                             depth: worker.y
@@ -1075,6 +1114,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             screenPoint: { x: screenPoint.x + 10, y: screenPoint.y - 15 },
+                            gamePoint: worker,
                             targetWidth: cargoDrawInfo.width,
                             targetHeight: cargoDrawInfo.height,
                             depth: worker.y
@@ -1102,6 +1142,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: donkeyImage,
                             screenPoint,
+                            gamePoint: worker,
                             targetWidth: donkeyImage.width,
                             targetHeight: donkeyImage.height,
                             depth: worker.y
@@ -1115,6 +1156,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: animationImage,
                             screenPoint: { x: screenPoint.x, y: screenPoint.y - scaleY },
+                            gamePoint: worker,
                             targetWidth: animationImage.width,
                             targetHeight: animationImage.height,
                             depth: worker.y
@@ -1129,6 +1171,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             screenPoint: { x: screenPoint.x + 10, y: screenPoint.y - 15 },
+                            gamePoint: worker,
                             targetWidth: cargoDrawInfo.width,
                             targetHeight: cargoDrawInfo.height,
                             depth: worker.y
@@ -1158,6 +1201,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: flagDrawInfo,
                     screenPoint,
+                    gamePoint: flag,
                     targetWidth: flagDrawInfo.width,
                     targetHeight: flagDrawInfo.height,
                     depth: flag.y
@@ -1181,6 +1225,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             screenPoint: { x: screenPoint.x - 10, y: screenPoint.y - 10 * i + 5 },
+                            gamePoint: { x: flag.x - 0.5, y: flag.y - 0.5 * i + 0.1 },
                             targetWidth: cargoDrawInfo.width,
                             targetHeight: cargoDrawInfo.height,
                             depth: flag.y
@@ -1204,6 +1249,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             toDrawNormal.push({
                                 source: cargoDrawInfo,
                                 screenPoint: { x: screenPoint.x + 4, y: screenPoint.y - 10 * (i - 4) + 15 },
+                                gamePoint: { x: flag.x + 0.08, y: flag.y - 0.2 * (i - 4) + 0.3 },
                                 targetWidth: cargoDrawInfo.width,
                                 targetHeight: cargoDrawInfo.height,
                                 depth: flag.y
@@ -1228,6 +1274,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             toDrawNormal.push({
                                 source: cargoDrawInfo,
                                 screenPoint: { x: screenPoint.x + 17, y: screenPoint.y - 10 * (i - 4) + 5 },
+                                gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.2 * (i - 4) + 0.1 },
                                 targetWidth: cargoDrawInfo.width,
                                 targetHeight: cargoDrawInfo.height,
                                 depth: flag.y
@@ -1265,6 +1312,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: largeHouseAvailableInfo,
                             screenPoint,
+                            gamePoint,
                             targetWidth: largeHouseAvailableInfo.width,
                             targetHeight: largeHouseAvailableInfo.height,
                             depth: gamePoint.y
@@ -1278,6 +1326,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: mediumHouseAvailableInfo,
                             screenPoint,
+                            gamePoint,
                             targetWidth: mediumHouseAvailableInfo.width,
                             targetHeight: mediumHouseAvailableInfo.height,
                             depth: gamePoint.y
@@ -1291,6 +1340,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: mediumHouseAvailableInfo,
                             screenPoint,
+                            gamePoint,
                             targetWidth: mediumHouseAvailableInfo.width,
                             targetHeight: mediumHouseAvailableInfo.height,
                             depth: gamePoint.y
@@ -1304,6 +1354,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: mineAvailableInfo,
                             screenPoint,
+                            gamePoint,
                             targetWidth: mineAvailableInfo.width,
                             targetHeight: mineAvailableInfo.height,
                             depth: gamePoint.y
@@ -1317,6 +1368,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: flagAvailableInfo,
                             screenPoint,
+                            gamePoint,
                             targetWidth: flagAvailableInfo.width,
                             targetHeight: flagAvailableInfo.height,
                             depth: gamePoint.y
@@ -1329,6 +1381,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("Collect available construction")
 
+        // Draw the Normal layer
+
         // Sort the toDrawList so it first draws things further away
         const sortedToDrawList = toDrawNormal.sort((draw1, draw2) => {
             return draw2.depth - draw1.depth
@@ -1337,18 +1391,132 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         // Draw all regular queued up images in order
         // TODO: add scaling
+        // Set up webgl2 with the right shaders
+        if (this.gl) {
+            this.gl.useProgram(this.drawImageProgram)
+
+            this.gl.viewport(0, 0, width, height)
+
+            this.gl.enable(this.gl.BLEND)
+            this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
+            this.gl.disable(this.gl.DEPTH_TEST)
+        }
+
         sortedToDrawList.forEach(draw => {
-            ctx.drawImage(
-                draw.source.image,
-                draw.source.sourceX,
-                draw.source.sourceY,
-                draw.source.width,
-                draw.source.height,
-                draw.screenPoint.x - draw.source.offsetX,
-                draw.screenPoint.y - draw.source.offsetY,
-                draw.source.width,
-                draw.source.height
-            )
+
+            if (draw.gamePoint !== undefined && draw.source.texture !== undefined) {
+
+                if (this.gl && this.drawImageProgram && draw.gamePoint) {
+
+                    if (oncePerNewSelectionPoint) {
+                        console.log("About to draw!")
+
+                        console.log(draw)
+                    }
+
+                    this.gl.activeTexture(this.gl.TEXTURE3)
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+
+                    // Re-assign the attribute locations
+                    this.drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
+                    this.drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
+
+                    if (this.drawImagePositionBuffer) {
+                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+                        this.gl.vertexAttribPointer(this.drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+                        this.gl.enableVertexAttribArray(this.drawImagePositionLocation)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Can't re-init position buffer")
+                    }
+
+                    if (this.drawImageTexCoordBuffer) {
+                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+                        this.gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+                        this.gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Can't re-init tex buffer")
+                    }
+
+                    // Re-assign the uniform locations
+                    this.drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
+                    this.drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
+                    this.drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
+                    this.drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
+                    this.drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
+                    this.drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
+                    this.drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
+                    this.drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+
+
+                    // Tell the fragment shader what texture to use
+                    if (this.drawImageTextureLocation !== null) {
+                        this.gl.uniform1i(this.drawImageTextureLocation, 3)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Texture uniform not used in the shader")
+                    }
+
+                    // Tell the vertex shader where to draw
+                    if (this.drawImageGamePointLocation !== null) {
+                        this.gl.uniform2f(this.drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Game point uniform not used in the shader")
+                    }
+
+                    if (this.drawImageOffsetLocation !== null) {
+                        this.gl.uniform2f(this.drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Image offset not used in the shader")
+                    }
+
+                    // Tell the vertex shader how to scale
+                    if (this.drawImageScaleLocation !== null) {
+                        this.gl.uniform1f(this.drawImageScaleLocation, this.props.scale)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Scale not used in the shader")
+                    }
+
+                    if (this.drawImageScreenOffsetLocation !== null) {
+                        this.gl.uniform2f(this.drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Screen offset not used in the shader")
+                    }
+
+                    if (this.drawImageScreenDimensionLocation !== null) {
+                        this.gl.uniform2f(this.drawImageScreenDimensionLocation, width, height)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Screen dimension not used in the shader")
+                    }
+
+                    // Tell the vertex shader what parts of the source image to draw
+                    if (this.drawImageSourceCoordinateLocation !== null) {
+                        this.gl.uniform2f(this.drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Source coordinate not used in the shader")
+                    }
+
+                    if (this.drawImageSourceDimensionsLocation !== null) {
+                        this.gl.uniform2f(this.drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                    } else if (oncePerNewSelectionPoint) {
+                        console.error("Source dimensions not used in the shader")
+                    }
+
+                    if (oncePerNewSelectionPoint) {
+                        console.log({
+                            u_texture: draw.source.textureIndex,
+                            u_game_point: draw.gamePoint,
+                            u_screen_offset: [this.props.translateX, this.props.translateY],
+                            u_image_offset: [draw.source.offsetX, draw.source.offsetY],
+                            u_scale: this.props.scale,
+                            u_source_coordinate: [draw.source.sourceX, draw.source.sourceY],
+                            u_source_dimensions: [draw.source.width, draw.source.height],
+                            u_screen_dimensions: [width, height]
+                        })
+                    }
+
+                    // Draw the quad (2 triangles = 6 vertices)
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                }
+            }
         })
 
 
@@ -1369,6 +1537,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawHover.push({
                         source: startPointInfo,
                         screenPoint: this.gamePointToScreenPoint(center),
+                        gamePoint: center,
                         targetWidth: startPointInfo.width,
                         targetHeight: startPointInfo.height,
                         depth: center.y
@@ -1387,6 +1556,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawHover.push({
                             source: startPointInfo,
                             screenPoint,
+                            gamePoint: point,
                             targetWidth: startPointInfo.width,
                             targetHeight: startPointInfo.height,
                             depth: point.y
@@ -1519,7 +1689,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        // Draw the overlay images. Assume for now that they don't need sorting
+        // Draw the overlay layer. Assume for now that they don't need sorting
 
         // Set up webgl2 with the right shaders
         if (this.gl) {
@@ -1535,7 +1705,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Go through the images to draw
         toDrawHover.forEach(draw => {
 
-            if (draw.gamePoint !== undefined && draw.source.textureIndex !== undefined && draw.source.texture !== undefined) {
+            if (draw.gamePoint !== undefined && draw.source.texture !== undefined) {
 
                 if (this.gl && this.drawImageProgram && draw.gamePoint) {
 
@@ -1545,7 +1715,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         console.log(draw)
                     }
 
-                    this.gl.activeTexture(this.gl.TEXTURE0 + draw.source.textureIndex)
+                    this.gl.activeTexture(this.gl.TEXTURE3)
                     this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
 
                     // Re-assign the attribute locations
@@ -1581,7 +1751,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Tell the fragment shader what texture to use
                     if (this.drawImageTextureLocation !== null) {
-                        this.gl.uniform1i(this.drawImageTextureLocation, draw.source.textureIndex)
+                        this.gl.uniform1i(this.drawImageTextureLocation, 3)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Texture uniform not used in the shader")
                     }
@@ -1659,7 +1829,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     draw.source.width,
                     draw.source.height
                 )
-
             }
         })
 

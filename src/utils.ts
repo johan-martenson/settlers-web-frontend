@@ -373,6 +373,10 @@ class FlagAnimation {
         this.imageAtlasHandler.load()
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+        this.imageAtlasHandler.makeTexture(gl)
+    }
+
     getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number) {
         return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
@@ -389,6 +393,10 @@ class TreeAnimation {
 
     async load() {
         this.imageAtlasHandler.load()
+    }
+
+    makeTexture(gl: WebGL2RenderingContext) {
+        this.imageAtlasHandler.makeTexture(gl)
     }
 
     getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number) {
@@ -409,13 +417,16 @@ class FireAnimation {
         this.imageAtlasHandler.load()
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+        this.imageAtlasHandler.makeTexture(gl)
+    }
+
     getAnimationFrame(size: FireSize, animationIndex: number) {
         return this.imageAtlasHandler.getDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
     }
 }
 
 class AnimalAnimation {
-
     private imageAtlasHandler: AnimalImageAtlasHandler
     private speedAdjust: number
 
@@ -426,6 +437,10 @@ class AnimalAnimation {
 
     async load() {
         this.imageAtlasHandler.load()
+    }
+
+    makeTexture(gl: WebGL2RenderingContext): void {
+        this.imageAtlasHandler.makeTexture(gl)
     }
 
     getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation | undefined {
@@ -447,6 +462,10 @@ class WorkerAnimation {
 
     async load() {
         this.imageAtlasHandler.load()
+    }
+
+    makeTexture(gl: WebGL2RenderingContext) {
+        this.imageAtlasHandler.makeTexture(gl)
     }
 
     getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation | undefined {
@@ -481,6 +500,7 @@ class WorkerImageAtlasHandler {
     private name: string
     private imageAtlasInfo?: Record<NationSmallCaps, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string, name: string) {
 
@@ -498,6 +518,15 @@ class WorkerImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
+    }
+
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
     }
 
     getDrawingInformationFor(nation: NationSmallCaps, direction: Direction, animationCounter: number, offset: number): DrawingInformation | undefined {
@@ -522,7 +551,8 @@ class WorkerImageAtlasHandler {
             height: infoPerDirection.height, // Verify that this goes in the right direction
             offsetX: 0,
             offsetY: 0,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -551,6 +581,7 @@ class HouseImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: HouseImageAtlasInformation
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -570,6 +601,15 @@ class HouseImageAtlasHandler {
         console.log({ info: imageAtlasInfo, image: this.image })
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
+    }
+
     getDrawingInformationForHouseJustStarted(nation: NationSmallCaps): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
@@ -584,7 +624,8 @@ class HouseImageAtlasHandler {
             height: houseInformation.height,
             offsetX: houseInformation.offsetX,
             offsetY: houseInformation.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 
@@ -602,7 +643,8 @@ class HouseImageAtlasHandler {
             height: houseInformation.height,
             offsetX: houseInformation.offsetX,
             offsetY: houseInformation.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 
@@ -622,7 +664,8 @@ class HouseImageAtlasHandler {
             height: houseInformation.readyHeight,
             offsetX: houseInformation.readyOffsetX,
             offsetY: houseInformation.readyOffsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 
@@ -642,7 +685,8 @@ class HouseImageAtlasHandler {
             height: houseInformation.underConstructionHeight,
             offsetX: houseInformation.underConstructionOffsetX,
             offsetY: houseInformation.underConstructionOffsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -660,6 +704,7 @@ class BorderImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<NationSmallCaps, Record<"landBorder" | "coastBorder", OneImageInformation>>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -677,6 +722,15 @@ class BorderImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-border.png")
 
         console.log({ info: imageAtlasInfo, image: this.image })
+    }
+
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
     }
 
     getDrawingInformation(nation: NationSmallCaps, type: "LAND" | "COAST"): DrawingInformation | undefined {
@@ -699,7 +753,8 @@ class BorderImageAtlasHandler {
             height: imageInfo.height,
             offsetX: imageInfo.offsetX,
             offsetY: imageInfo.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -708,6 +763,7 @@ class SignImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<SignTypes, Record<Size, OneImageInformation>>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -727,6 +783,15 @@ class SignImageAtlasHandler {
         console.log({ info: imageAtlasInfo, image: this.image })
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
+    }
+
     getDrawingInformation(signType: SignTypes, size: Size): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
@@ -743,7 +808,8 @@ class SignImageAtlasHandler {
             height: imageInfo.height,
             offsetX: imageInfo.offsetX,
             offsetY: imageInfo.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -752,6 +818,7 @@ class FireImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<FireSize, OneDirectionImageAtlasAnimationInfo>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -769,6 +836,15 @@ class FireImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-fire.png")
 
         console.log({ info: imageAtlasInfo, image: this.image })
+    }
+
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
     }
 
     getDrawingInformation(size: FireSize, animationIndex: number): DrawingInformation | undefined {
@@ -798,7 +874,8 @@ class FireImageAtlasHandler {
             height: infoPerFireSize.height,
             offsetX: offsetX,
             offsetY: offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -807,6 +884,7 @@ class FlagImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, OneDirectionImageAtlasAnimationInfo>>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -822,6 +900,15 @@ class FlagImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
+    }
+
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
     }
 
     getDrawingInformationFor(nation: NationSmallCaps, flagType: FlagType, animationCounter: number): DrawingInformation | undefined {
@@ -853,7 +940,8 @@ class FlagImageAtlasHandler {
             height: infoPerFlagType.height, // Verify that this goes in the right direction
             offsetX: offsetX,
             offsetY: offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -867,6 +955,7 @@ class CargoImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: CargoInformation
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -886,6 +975,15 @@ class CargoImageAtlasHandler {
         console.log({ img: this.image, info: this.imageAtlasInfo })
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
+    }
+
     getDrawingInformation(nation: Nation, material: Material): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
@@ -901,7 +999,8 @@ class CargoImageAtlasHandler {
                 height: genericInfo.height,
                 offsetX: genericInfo.offsetX,
                 offsetY: genericInfo.offsetY,
-                image: this.image
+                image: this.image,
+                texture: this.texture
             }
         }
 
@@ -918,7 +1017,8 @@ class CargoImageAtlasHandler {
                 height: drawInfo.height,
                 offsetX: drawInfo.offsetX,
                 offsetY: drawInfo.offsetY,
-                image: this.image
+                image: this.image,
+                texture: this.texture
             }
         }
 
@@ -937,6 +1037,7 @@ class RoadBuildingImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: RoadBuildingInfo
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -956,6 +1057,15 @@ class RoadBuildingImageAtlasHandler {
         console.log({ img: this.image, info: this.imageAtlasInfo })
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
+    }
+
     getDrawingInformationForStartPoint(): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
@@ -970,7 +1080,8 @@ class RoadBuildingImageAtlasHandler {
             height: startPointInfo.height,
             offsetX: startPointInfo.offsetX,
             offsetY: startPointInfo.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 
@@ -988,7 +1099,8 @@ class RoadBuildingImageAtlasHandler {
             height: sameLevelConnectionInfo.height,
             offsetX: sameLevelConnectionInfo.offsetX,
             offsetY: sameLevelConnectionInfo.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -997,6 +1109,7 @@ class TreeImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -1012,6 +1125,15 @@ class TreeImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-trees.png")
+    }
+
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
     }
 
     getDrawingInformationFor(treeType: TreeType, animationCounter: number): DrawingInformation | undefined {
@@ -1041,7 +1163,8 @@ class TreeImageAtlasHandler {
             height: infoPerTreeType.height, // Verify that this goes in the right direction
             offsetX: offsetX,
             offsetY: offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -1063,7 +1186,7 @@ interface UiElementsImageAtlasInfo {
     availableBuildingSmall: OneImageInformation
 }
 
-class UielementsImageAtlasHandler {
+class UiElementsImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: UiElementsImageAtlasInfo
     private image?: HTMLImageElement
@@ -1330,6 +1453,7 @@ class StoneImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<StoneType, Record<StoneAmount, OneImageInformation>>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -1347,6 +1471,15 @@ class StoneImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-stones.png")
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
+    }
+
     getDrawingInformationFor(stoneType: StoneType, amount: StoneAmount): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
@@ -1362,7 +1495,8 @@ class StoneImageAtlasHandler {
             height: imageInfo.height,
             offsetX: imageInfo.offsetX,
             offsetY: imageInfo.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -1371,6 +1505,7 @@ class DecorationsImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<DecorationType, OneImageInformation>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -1388,6 +1523,15 @@ class DecorationsImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-decorations.png")
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
+    }
+
     getDrawingInformationFor(decorationType: DecorationType): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
@@ -1402,7 +1546,8 @@ class DecorationsImageAtlasHandler {
             height: imageInfo.height,
             offsetX: imageInfo.offsetX,
             offsetY: imageInfo.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -1411,6 +1556,7 @@ class CropImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<CropType, Record<CropGrowth, OneImageInformation>>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
         this.pathPrefix = prefix
@@ -1428,6 +1574,15 @@ class CropImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-crops.png")
     }
 
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
+    }
+
     getDrawingInformationFor(cropType: CropType, growth: CropGrowth): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
@@ -1443,7 +1598,8 @@ class CropImageAtlasHandler {
             height: imageInfo.height,
             offsetX: imageInfo.offsetX,
             offsetY: imageInfo.offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -1453,6 +1609,7 @@ class AnimalImageAtlasHandler {
     private name: string
     private imageAtlasInfo?: Record<Direction, OneDirectionImageAtlasAnimationInfo>
     private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
 
     constructor(prefix: string, name: string) {
 
@@ -1470,6 +1627,15 @@ class AnimalImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
+    }
+
+    makeTexture(gl: WebGL2RenderingContext) {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
     }
 
     getDrawingInformationFor(direction: Direction, animationCounter: number): DrawingInformation | undefined {
@@ -1499,7 +1665,8 @@ class AnimalImageAtlasHandler {
             height: infoPerDirection.height, // Verify that this goes in the right direction
             offsetX: offsetX,
             offsetY: offsetY,
-            image: this.image
+            image: this.image,
+            texture: this.texture
         }
     }
 }
@@ -1644,7 +1811,7 @@ export {
     FireAnimation,
     HouseImageAtlasHandler,
     SignImageAtlasHandler,
-    UielementsImageAtlasHandler,
+    UiElementsImageAtlasHandler,
     CropImageAtlasHandler,
     StoneImageAtlasHandler,
     DecorationsImageAtlasHandler,

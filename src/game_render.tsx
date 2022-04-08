@@ -684,7 +684,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             })
         }
 
-        duration.after("draw borders")
+        duration.after("collect borders")
 
 
         /* Collect the ongoing new road if it exists */
@@ -774,7 +774,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw houses")
+        duration.after("collect houses")
 
 
         /* Collect the trees */
@@ -799,7 +799,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             treeIndex = treeIndex + 1
         }
 
-        duration.after("draw trees")
+        duration.after("collect trees")
 
 
         /* Collect dead trees */
@@ -832,7 +832,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw dead trees")
+        duration.after("collect dead trees")
 
 
         /* Collect the crops */
@@ -854,7 +854,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw crops")
+        duration.after("collect crops")
 
 
         /* Collect the signs */
@@ -881,7 +881,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw signs")
+        duration.after("collect signs")
 
 
         /* Collect the stones */
@@ -903,7 +903,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw stones")
+        duration.after("collect stones")
 
 
         /* Collect wild animals */
@@ -976,7 +976,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw wild animals")
+        duration.after("collect wild animals")
 
 
         /* Collect workers */
@@ -1082,7 +1082,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw workers")
+        duration.after("collect workers")
 
 
         /* Collect flags */
@@ -1172,7 +1172,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw flags")
+        duration.after("collect flags")
 
 
         /* Collect available construction */
@@ -1427,7 +1427,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             )
         }
 
-        duration.after("draw possible road connections")
+        duration.after("collect possible road connections")
 
 
         /* Draw the selected point */
@@ -1443,7 +1443,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw selected point")
+        duration.after("collect selected point")
 
 
         /* Draw the hover point */
@@ -1656,7 +1656,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         })
 
-        duration.after("draw hover point")
+        duration.after("draw normal layer")
 
 
         /* Draw house titles */

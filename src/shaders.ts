@@ -122,6 +122,7 @@ void main() {
   pixel_scale.y = (DEFAULT_SCALE * float(u_screen_dimensions.y)) / 2.0;
 
   // Adjust for the image's own offset
+  //   -- For the y axis, the u_image_offset.y variable is the distance to the top of the image but we need the distance to the bottom
   adjusted_image_center.x = image_center.x - u_image_offset.x * u_scale / pixel_scale.x;
   adjusted_image_center.y = image_center.y - (u_source_dimensions.y - u_image_offset.y) * u_scale / pixel_scale.y;
 

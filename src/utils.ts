@@ -345,13 +345,10 @@ function loadImage(source: string, onLoad: ((image: HTMLImageElement, source: st
 
 function loadImages(sources: string[] | IterableIterator<string>, onLoad: ((image: HTMLImageElement, source: string) => void)): void {
     for (let source of sources) {
-        console.log("Loading " + source)
-
         const image = new Image()
 
         image.addEventListener("load",
             () => {
-                console.log("Loaded " + source)
                 onLoad(image, source)
             }
         )
@@ -435,8 +432,8 @@ class AnimalAnimation {
         this.speedAdjust = speedAdjust
     }
 
-    async load() {
-        this.imageAtlasHandler.load()
+    async load(): Promise<void> {
+        await this.imageAtlasHandler.load()
     }
 
     makeTexture(gl: WebGL2RenderingContext): void {
@@ -460,11 +457,11 @@ class WorkerAnimation {
         this.speedAdjust = speedAdjust
     }
 
-    async load() {
-        this.imageAtlasHandler.load()
+    async load(): Promise<void> {
+        await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
@@ -508,7 +505,7 @@ class WorkerImageAtlasHandler {
         this.name = name
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
@@ -597,8 +594,6 @@ class HouseImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-buildings.png")
-
-        console.log({ info: imageAtlasInfo, image: this.image })
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -720,8 +715,6 @@ class BorderImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-border.png")
-
-        console.log({ info: imageAtlasInfo, image: this.image })
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -779,8 +772,6 @@ class SignImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-signs.png")
-
-        console.log({ info: imageAtlasInfo, image: this.image })
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -834,8 +825,6 @@ class FireImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-fire.png")
-
-        console.log({ info: imageAtlasInfo, image: this.image })
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -971,8 +960,6 @@ class CargoImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-cargos.png")
-
-        console.log({ img: this.image, info: this.imageAtlasInfo })
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -1053,8 +1040,6 @@ class RoadBuildingImageAtlasHandler {
 
         // Download the actual image atlas
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-road-building.png")
-
-        console.log({ img: this.image, info: this.imageAtlasInfo })
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -1213,11 +1198,7 @@ class UiElementsImageAtlasHandler {
     makeTexture(gl: WebGL2RenderingContext) {
 
         if (this.image) {
-
             this.texture = makeTextureFromImage(gl, this.image)
-
-            console.log({ title: "Created ui elements texture at " + this.textureIndex, image: this.image })
-
         } else {
             console.error("Failed to make the texture because image is null|undefined")
         }
@@ -1617,7 +1598,7 @@ class AnimalImageAtlasHandler {
         this.name = name
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
@@ -1725,7 +1706,7 @@ function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType
             console.error(shaderCompileLog)
         }
     } else {
-        console.log("Failed to get the shader")
+        console.error("Failed to get the shader")
     }
 
     return compiledShader

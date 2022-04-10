@@ -274,10 +274,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     async componentDidMount() {
 
         /* Load animations */
-        workers.forEach((animation, workerType) => animation.load())
-        animals.forEach((animation, animalType) => animation.load())
+        const fileLoading = []
 
-        await Promise.all([
+        for (const worker of workers.values()) {
+            fileLoading.push(worker.load())
+        }
+
+        for (const animal of animals.values()) {
+            fileLoading.push(animal.load())
+        }
+
+        const allFilesToWaitFor = fileLoading.concat([
             treeAnimations.load(),
             flagAnimations.load(),
             houses.load(),
@@ -292,6 +299,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             roadBuildingImageAtlasHandler.load(),
             cargoImageAtlasHandler.load()
         ])
+
+        await Promise.all(allFilesToWaitFor)
+
+        console.log("Download image atlases done")
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints((points) => {

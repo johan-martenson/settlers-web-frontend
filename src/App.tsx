@@ -372,21 +372,27 @@ class App extends Component<AppProps, AppState> {
     }
 
     /* Should move to the game canvas so the app doesn't have to know about this */
-    zoom(scale: number): void {
+    zoom(newScale: number): void {
+
+        // Set boundaries on how much scaling is allowed
+        newScale = Math.min(newScale, MAX_SCALE)
+        newScale = Math.max(newScale, MIN_SCALE)
 
         /* Center after zooming */
-        scale = Math.min(scale, MAX_SCALE)
-        scale = Math.max(scale, MIN_SCALE)
+        const centerGamePoint = {
+            x: (globalSyncState.width / 2 - this.state.translateX) / this.state.scale,
+            y: (globalSyncState.height / 2 + this.state.translateY) / (this.state.scale * 0.5)
+        }
 
-        const scaleY = this.state.scale * 0.5
-
-        const newTranslateX = globalSyncState.width / 2 - (((globalSyncState.width / 2) - this.state.translateX) / this.state.scale) * scale
-        const newTranslateY = -globalSyncState.height + (globalSyncState.height - (globalSyncState.height / 2) + this.state.translateY) / scaleY * scaleY + (globalSyncState.height / 2)
+        const newTranslate = {
+            x: globalSyncState.width / 2 - centerGamePoint.x * newScale,
+            y: globalSyncState.height / 2 - globalSyncState.height + centerGamePoint.y * newScale * + 0.5
+        }
 
         this.setState({
-            translateX: newTranslateX,
-            translateY: newTranslateY,
-            scale: scale
+            translateX: newTranslate.x,
+            translateY: newTranslate.y,
+            scale: newScale
         })
     }
 

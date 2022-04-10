@@ -52,6 +52,7 @@ interface GameCanvasState {
     hoverPoint?: Point
 }
 
+let newRoadCurrentLength = 0
 let logOnce = true
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
@@ -170,7 +171,7 @@ interface RenderInformation {
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
-    private terrainCanvasRef = React.createRef<HTMLCanvasElement>()
+    private normalCanvasRef = React.createRef<HTMLCanvasElement>()
     private overlayCanvasRef = React.createRef<HTMLCanvasElement>()
     private lightVector: Vector
     private debuggedPoint: Point | undefined
@@ -221,6 +222,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.screenPointToGamePoint = this.screenPointToGamePoint.bind(this)
         this.onClick = this.onClick.bind(this)
         this.onDoubleClick = this.onDoubleClick.bind(this)
+        this.updateRoadDrawingBuffers = this.updateRoadDrawingBuffers.bind(this)
 
         this.normals = new PointMapFast()
 
@@ -236,20 +238,37 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
-        if (prevProps.cursorState !== this.props.cursorState && this?.terrainCanvasRef?.current) {
+        if (prevProps.cursorState !== this.props.cursorState && this?.normalCanvasRef?.current) {
 
             if (this.props.cursorState === 'DRAGGING') {
-                this.terrainCanvasRef.current.style.cursor = "url(assets/ui-elements/dragging.png), pointer"
+                this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/dragging.png), pointer"
             } else if (this.props.cursorState === 'BUILDING_ROAD') {
-                this.terrainCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
+                this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
             } else {
-                this.terrainCanvasRef.current.style.cursor = "pointer"
+                this.normalCanvasRef.current.style.cursor = "pointer"
             }
         }
     }
 
     shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState) {
         return this.props.onKeyDown !== nextProps.onKeyDown
+    }
+
+    updateRoadDrawingBuffers(roads: Iterable<RoadInformation> | RoadInformation[]) {
+        if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
+            this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
+
+            this.roadRenderInformation = this.prepareToRenderRoads(roads)
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.coordinates), this.gl.STATIC_DRAW)
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadNormalsBuffer)
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.normals), this.gl.STATIC_DRAW)
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.textureMapping), this.gl.STATIC_DRAW)
+        }
     }
 
     async componentDidMount() {
@@ -301,31 +320,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         })
 
         /* Subscribe for added and removed roads */
-        listenToRoads(roads => {
-
-            if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
-                this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
-
-                this.roadRenderInformation = this.prepareToRenderRoads(roads)
-
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.coordinates), this.gl.STATIC_DRAW)
-
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadNormalsBuffer)
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.normals), this.gl.STATIC_DRAW)
-
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.textureMapping), this.gl.STATIC_DRAW)
-            }
-        })
+        listenToRoads(this.updateRoadDrawingBuffers)
 
         /* Put together the render information from the discovered tiles */
         this.mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
 
         /*  Initialize webgl2 */
-        if (this.terrainCanvasRef?.current) {
-            const canvas = this.terrainCanvasRef.current
+        if (this.normalCanvasRef?.current) {
+            const canvas = this.normalCanvasRef.current
 
             const gl = canvas.getContext("webgl2", { alpha: false })
 
@@ -507,8 +510,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         const duration = new Duration("GameRender::renderGame")
 
+        // Check if there are changes to the newRoads props array. In that case the buffers for drawing roads need to be updated.
+        const newRoadsUpdatedLength = this.props.newRoad?.length || 0
+
+        if (newRoadCurrentLength !== newRoadsUpdatedLength) {
+            newRoadCurrentLength = newRoadsUpdatedLength
+
+            let roadsToDraw: RoadInformation[] = []
+
+            if (this.props.newRoad !== undefined) {
+                roadsToDraw.push({ id: "", points: this.props.newRoad })
+            }
+
+            for (const road of monitor.roads.values()) {
+                roadsToDraw.push(road)
+            }
+
+            this.updateRoadDrawingBuffers(roadsToDraw)
+        }
+
         /* Ensure that the reference to the canvases are set */
-        if (!this.overlayCanvasRef.current || !this.terrainCanvasRef.current) {
+        if (!this.overlayCanvasRef.current || !this.normalCanvasRef.current) {
             console.error("The canvas references are not set properly")
 
             return
@@ -525,11 +547,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         // Set the resolution
-        resizeCanvasToDisplaySize(this.terrainCanvasRef.current)
+        resizeCanvasToDisplaySize(this.normalCanvasRef.current)
         resizeCanvasToDisplaySize(this.overlayCanvasRef.current)
 
-        const width = this.terrainCanvasRef.current.width
-        const height = this.terrainCanvasRef.current.height
+        const width = this.normalCanvasRef.current.width
+        const height = this.normalCanvasRef.current.height
 
         this.gl?.viewport(0, 0, width, height)
 
@@ -685,38 +707,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         duration.after("collect borders")
-
-
-        /* Collect the ongoing new road if it exists */
-        if (this.props.newRoad !== undefined) {
-
-            let previous = null
-
-            ctx.fillStyle = 'yellow'
-            ctx.strokeStyle = 'yellow'
-
-            for (let point of this.props.newRoad) {
-
-                if (previous) {
-
-                    const screenPointPrevious = this.gamePointToScreenPoint(previous)
-                    const screenPointCurrent = this.gamePointToScreenPoint(point)
-
-                    ctx.beginPath()
-
-                    ctx.moveTo(screenPointCurrent.x, screenPointCurrent.y)
-                    ctx.lineTo(screenPointPrevious.x, screenPointPrevious.y)
-
-                    ctx.closePath()
-
-                    ctx.stroke()
-                }
-
-                previous = point
-            }
-        }
-
-        duration.after("draw ongoing road")
 
 
         /* Collect the houses */
@@ -1277,12 +1267,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (this.gl && this.drawImageProgram && draw.gamePoint) {
 
-                    if (oncePerNewSelectionPoint) {
-                        console.log("About to draw!")
-
-                        console.log(draw)
-                    }
-
                     this.gl.activeTexture(this.gl.TEXTURE3)
                     this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
 
@@ -1367,19 +1351,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         this.gl.uniform2f(this.drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Source dimensions not used in the shader")
-                    }
-
-                    if (oncePerNewSelectionPoint) {
-                        console.log({
-                            u_texture: draw.source.textureIndex,
-                            u_game_point: draw.gamePoint,
-                            u_screen_offset: [this.props.translateX, this.props.translateY],
-                            u_image_offset: [draw.source.offsetX, draw.source.offsetY],
-                            u_scale: this.props.scale,
-                            u_source_coordinate: [draw.source.sourceX, draw.source.sourceY],
-                            u_source_dimensions: [draw.source.width, draw.source.height],
-                            u_screen_dimensions: [width, height]
-                        })
                     }
 
                     // Draw the quad (2 triangles = 6 vertices)
@@ -1543,12 +1514,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (this.gl && this.drawImageProgram && draw.gamePoint) {
 
-                    if (oncePerNewSelectionPoint) {
-                        console.log("About to draw!")
-
-                        console.log(draw)
-                    }
-
                     this.gl.activeTexture(this.gl.TEXTURE3)
                     this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
 
@@ -1633,19 +1598,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         this.gl.uniform2f(this.drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
                     } else if (oncePerNewSelectionPoint) {
                         console.error("Source dimensions not used in the shader")
-                    }
-
-                    if (oncePerNewSelectionPoint) {
-                        console.log({
-                            u_texture: draw.source.textureIndex,
-                            u_game_point: draw.gamePoint,
-                            u_screen_offset: [this.props.translateX, this.props.translateY],
-                            u_image_offset: [draw.source.offsetX, draw.source.offsetY],
-                            u_scale: this.props.scale,
-                            u_source_coordinate: [draw.source.sourceX, draw.source.sourceY],
-                            u_source_dimensions: [draw.source.width, draw.source.height],
-                            u_screen_dimensions: [width, height]
-                        })
                     }
 
                     // Draw the quad (2 triangles = 6 vertices)
@@ -1852,7 +1804,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 />
 
-                <canvas ref={this.terrainCanvasRef} className="TerrainCanvas" />
+                <canvas ref={this.normalCanvasRef} className="TerrainCanvas" />
 
             </>
         )

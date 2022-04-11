@@ -331,32 +331,6 @@ function loadImageNg(src: string): Promise<HTMLImageElement> {
     })
 }
 
-function loadImage(source: string, onLoad: ((image: HTMLImageElement, source: string) => void)): void {
-    const image = new Image()
-
-    image.addEventListener("load",
-        () => {
-            onLoad(image, source)
-        }
-    )
-
-    image.src = source
-}
-
-function loadImages(sources: string[] | IterableIterator<string>, onLoad: ((image: HTMLImageElement, source: string) => void)): void {
-    for (let source of sources) {
-        const image = new Image()
-
-        image.addEventListener("load",
-            () => {
-                onLoad(image, source)
-            }
-        )
-
-        image.src = source
-    }
-}
-
 class FlagAnimation {
     private imageAtlasHandler: FlagImageAtlasHandler
     private speedAdjust: number
@@ -366,8 +340,8 @@ class FlagAnimation {
         this.speedAdjust = speedAdjust
     }
 
-    async load() {
-        this.imageAtlasHandler.load()
+    async load(): Promise<void> {
+        await this.imageAtlasHandler.load()
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -388,8 +362,8 @@ class TreeAnimation {
         this.speedAdjust = speedAdjust
     }
 
-    async load() {
-        this.imageAtlasHandler.load()
+    async load(): Promise<void> {
+        await this.imageAtlasHandler.load()
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -410,8 +384,8 @@ class FireAnimation {
         this.speedAdjust = speedAdjust
     }
 
-    async load() {
-        this.imageAtlasHandler.load()
+    async load(): Promise<void> {
+        await this.imageAtlasHandler.load()
     }
 
     makeTexture(gl: WebGL2RenderingContext) {
@@ -584,7 +558,7 @@ class HouseImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-buildings.json")
@@ -705,7 +679,7 @@ class BorderImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-border.json")
@@ -762,7 +736,7 @@ class SignImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-signs.json")
@@ -815,7 +789,7 @@ class FireImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-fire.json")
@@ -879,7 +853,7 @@ class FlagImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-flags.json")
@@ -950,7 +924,7 @@ class CargoImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-cargos.json")
@@ -1030,7 +1004,7 @@ class RoadBuildingImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-road-building.json")
@@ -1100,7 +1074,7 @@ class TreeImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-trees.json")
@@ -1183,7 +1157,7 @@ class UiElementsImageAtlasHandler {
         this.textureIndex = textureIndex
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-ui-elements.json")
@@ -1440,7 +1414,7 @@ class StoneImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-stones.json")
@@ -1492,7 +1466,7 @@ class DecorationsImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-decorations.json")
@@ -1543,7 +1517,7 @@ class CropImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    async load() {
+    async load(): Promise<void> {
 
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-crops.json")
@@ -1758,8 +1732,6 @@ function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement) {
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
-    loadImage,
-    loadImages,
     getTimestamp,
     normalize,
     same,

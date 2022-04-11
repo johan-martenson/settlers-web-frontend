@@ -94,7 +94,7 @@ vegetationToTextureMapping.set(9, { below: [2, 3, 2.5, 2, 3, 3].map(v => v * 48 
 vegetationToTextureMapping.set(10, { below: [146, 142, 146, 98, 190, 98].map(v => v / 256), downRight: [146, 142, 190, 142, 190, 98].map(v => v / 256) }) // Meadow 3
 vegetationToTextureMapping.set(11, { below: [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256), downRight: [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256) }) // Mountain 2
 vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256), downRight: [2, 1, 2.5, 3, 2, 1].map(v => v * 48 / 256) }) // Mountain 3
-vegetationToTextureMapping.set(13, { below: [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256), downRight: [3, 1, 3.5, 4, 2, 1].map(v => v * 48 / 256) }) // Mountain 4
+vegetationToTextureMapping.set(13, { below: [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256), downRight: [3, 1, 3.5, 2, 4, 1].map(v => v * 48 / 256) }) // Mountain 4
 vegetationToTextureMapping.set(14, { below: [2, 190, 2, 146, 45, 146].map(v => v / 256), downRight: [2, 190, 45, 146, 45, 190].map(v => v / 256) }) // Steppe
 vegetationToTextureMapping.set(15, { below: [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256), downRight: [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256) }) // Flower meadow
 vegetationToTextureMapping.set(16, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 1
@@ -255,10 +255,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     updateRoadDrawingBuffers(roads: Iterable<RoadInformation> | RoadInformation[]) {
+        console.log("Should update road drawing buffers")
+
         if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
             this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
 
+            console.log("Updating")
+
             this.roadRenderInformation = this.prepareToRenderRoads(roads)
+
+            console.log(this.roadRenderInformation)
 
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.coordinates), this.gl.STATIC_DRAW)
@@ -527,6 +533,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (newRoadCurrentLength !== newRoadsUpdatedLength) {
             newRoadCurrentLength = newRoadsUpdatedLength
 
+            console.log("New roads changed. Now it is " + JSON.stringify(this.props.newRoad))
+
             let roadsToDraw: RoadInformation[] = []
 
             if (this.props.newRoad !== undefined) {
@@ -607,6 +615,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
          *    1. Terrain layer
          *    2. Road layer
          *    3. Normal layer: houses + names, flags, stones, trees, workers, animals, lanyards, etc.
+         *       3.1 Shadows (not implemented yet)
+         *       3.2 Objects
          *    4. Hover layer: hover icon and selected icon
          */
 
@@ -782,7 +792,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         let treeIndex = 0
         for (const tree of monitor.visibleTrees.values()) {
 
-            if (tree.x + 1 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 1 < minYInGame || tree.y - 1 > maxYInGame) {
+            if (tree.x + 1 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
                 continue
             }
 
@@ -1185,7 +1195,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                if (gamePoint.x < minXInGame || gamePoint.x > maxXInGame || gamePoint.y < minYInGame || gamePoint.y > maxYInGame) {
+                if (gamePoint.x + 1 < minXInGame || gamePoint.x - 1 > maxXInGame || gamePoint.y + 1 < minYInGame || gamePoint.y - 1 > maxYInGame) {
                     continue
                 }
 
@@ -2031,12 +2041,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     prepareToRenderRoads(roads: Iterable<RoadInformation>): RenderInformation {
 
+        console.log("Prepare to render roads")
+
         // Create the render information for the roads
         let coordinatesList: number[] = []
         let normalsList: number[] = []
         let textureMappinglist: number[] = []
 
         for (const road of roads) {
+
+            console.log("Handling")
+            console.log(road)
 
             // Iterate through each segment of the road
             let previous: Point | undefined = undefined
@@ -2053,6 +2068,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const normalPoint = this.normals?.get(point)
 
                 if (normalPrevious === undefined || normalPoint === undefined) {
+                    console.error("Missing normals")
+                    console.log(normalPrevious)
+                    console.log(normalPoint)
+
                     continue
                 }
 

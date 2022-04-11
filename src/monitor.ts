@@ -273,6 +273,11 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             return
         }
 
+        if (message.newRoads || message.removedRoads) {
+            console.log("Message with roads")
+            console.log(message)
+        }
+
         message.newDiscoveredLand?.forEach((point) => monitor.discoveredPoints.add(point))
 
         if (message.newDiscoveredLand) {

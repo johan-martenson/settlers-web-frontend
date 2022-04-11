@@ -16,7 +16,6 @@ import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import TypeControl from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPoint } from './utils'
-import { PointSetFast } from './util_types'
 
 const MENU_MENU = 0
 const MENU_FRIENDLY_HOUSE = 1
@@ -114,9 +113,7 @@ class App extends Component<AppProps, AppState> {
     constructor(props: AppProps) {
         super(props)
 
-
         this.monitoringPromise = startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
-
 
         this.onMouseDown = this.onMouseDown.bind(this)
         this.onMouseMove = this.onMouseMove.bind(this)
@@ -232,8 +229,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     toggleDetails(): void {
-        // for now - always show titles for now because the houses don't have their own pictures yet. In the end, titles and construction should both be toggled
-
         this.setState(
             {
                 showTitles: true,
@@ -295,14 +290,6 @@ class App extends Component<AppProps, AppState> {
             newTranslateX = (globalSyncState.width / 2) - player.centerPoint.x * this.state.scale
             newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * scaleY - globalSyncState.height
         }
-
-        const discoveredPointMap = new PointSetFast()
-
-        player.discoveredPoints.forEach(
-            (point: Point) => {
-                discoveredPointMap.add(point)
-            }
-        )
 
         this.setState({
             translateX: newTranslateX,
@@ -739,7 +726,7 @@ class App extends Component<AppProps, AppState> {
 
     onKeyPress(event: React.KeyboardEvent<HTMLDivElement>): void {
 
-        /* Filter out some input that should not result in type control */
+        /* Filter out input that should not result in type control */
         if (event.key === "+" || event.key === "-") {
             return
         }

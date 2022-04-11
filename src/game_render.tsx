@@ -24,7 +24,7 @@ interface ToDraw {
 interface MapRenderInformation {
     coordinates: number[] //x, y
     normals: number[] //x, y, z
-    textureMapping: number[]
+    textureMapping: number[] //u, v
 }
 
 interface GameCanvasProps {
@@ -919,7 +919,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Collect wild animals */
         for (const animal of monitor.wildAnimals.values()) {
-            if (animal.betweenPoints && animal.previous && animal.next) {
+            if (animal.previous && animal.next) {
 
                 if (animal.previous.x < minXInGame || animal.previous.x > maxXInGame || animal.previous.y < minYInGame || animal.previous.y > maxYInGame) {
                     continue
@@ -965,13 +965,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         })
                     }
 
-                    if (this.animationIndex % 100 === 0) {
-                        console.log("not moving. previous exists")
-                        console.log(direction)
-                        console.log(animal)
-                        console.log(animationImage)
-                    }
-
                 } else {
                     const direction = 'EAST'
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
@@ -994,7 +987,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         for (const worker of monitor.workers.values()) {
 
             // If worker is moving and not at a fixed point
-            if (worker.betweenPoints && worker.previous && worker.next) {
+            if (worker.previous && worker.next) {
 
                 if (worker.previous.x < minXInGame || worker.previous.x > maxXInGame || worker.previous.y < minYInGame || worker.previous.y > maxYInGame) {
                     continue

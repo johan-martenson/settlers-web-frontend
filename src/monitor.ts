@@ -430,6 +430,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
                     worker.next = { x: worker.plannedPath[0].x, y: worker.plannedPath[0].y }
                 } else {
                     worker.plannedPath = undefined
+
+                    worker.next = undefined
                 }
 
                 worker.betweenPoints = false

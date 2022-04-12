@@ -847,14 +847,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Collect the crops */
-        for (const crop of monitor.crops) {
+        for (const crop of monitor.crops.values()) {
 
             if (crop.x < minXInGame || crop.x > maxXInGame || crop.y < minYInGame || crop.y > maxYInGame) {
                 continue
             }
 
             // TODO: get type and growth state from the backend
-            const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', 'FULLY_GROWN')
+            const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', crop.state)
 
             if (cropDrawInfo !== undefined) {
                 toDrawNormal.push({

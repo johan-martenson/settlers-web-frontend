@@ -11,6 +11,7 @@ export type WorkerId = string
 export type SignId = string
 export type TreeId = string
 export type WildAnimalId = string
+export type CropId = string
 
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
@@ -31,7 +32,7 @@ export type StoneType = 'TYPE_1' | 'TYPE_2'
 
 export type CropType = 'TYPE_1' | 'TYPE_2'
 
-export type CropGrowth = 'NEWLY_PLANTED' | 'SMALL' | 'LARGER' | 'FULLY_GROWN' | 'NEWLY_HARVESTED'
+export type CropGrowth = 'JUST_PLANTED' | 'SMALL' | 'HALFWAY' | 'FULL_GROWN' | 'HARVESTED'
 
 export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST_FULL' | 'FULL'
 
@@ -235,6 +236,7 @@ export type DecorationType = "MUSHROOM" |
 export interface TreeInformation extends Point {
     id: TreeId
     type: TreeType
+    size: 'SMALL' | 'MEDIUM' | 'LARGE'
 }
 
 export type FireSize = "LARGE" | "MEDIUM" | "SMALL" | "MINI"
@@ -295,7 +297,14 @@ export interface MapInformation {
     startingPoints: Point[]
 }
 
-export interface CropInformation extends Point { }
+export interface CropInformation extends Point {
+    id: CropId
+    state: CropGrowth
+}
+
+export interface CropInformationLocal extends CropInformation {
+    growth: number
+}
 
 export type SignTypes = 'iron' | 'gold' | 'coal' | 'stone' | 'water' | 'nothing'
 

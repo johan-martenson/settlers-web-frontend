@@ -1,5 +1,5 @@
-import { AvailableConstruction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
-import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
+import { AvailableConstruction, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
+import { CropImageAtlasHandler, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
@@ -38,7 +38,7 @@ interface Monitor {
     border: Map<PlayerId, MonitoredBorderForPlayer>
     trees: Map<TreeId, TreeInformation>
     stones: PointSetFast
-    crops: PointSetFast
+    crops: Map<CropId, CropInformationLocal>
     discoveredPoints: PointSetFast
     signs: Map<SignId, SignInformation>
     players: Map<PlayerId, PlayerInformation>
@@ -62,7 +62,7 @@ const monitor: Monitor = {
     border: new Map<PlayerId, MonitoredBorderForPlayer>(),
     trees: new Map<TreeId, TreeInformation>(),
     stones: new PointSetFast(),
-    crops: new PointSetFast(),
+    crops: new Map<CropId, CropInformationLocal>(),
     discoveredPoints: new PointSetFast(),
     signs: new Map<SignId, SignInformation>(),
     players: new Map<PlayerId, PlayerInformation>(),
@@ -114,8 +114,8 @@ interface ChangesMessage {
     removedTrees?: TreeId[]
     newStones?: Point[]
     removedStones?: Point[]
-    newCrops?: Point[]
-    removedCrops?: Point[]
+    newCrops?: CropInformation[]
+    removedCrops?: CropId[]
     newDiscoveredLand?: Point[]
     newSigns?: SignInformation[]
     removedSigns?: SignId[]
@@ -195,7 +195,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
     view.trees.forEach(tree => monitor.trees.set(tree.id, tree))
 
-    view.crops.forEach(crop => monitor.crops.add(crop))
+    view.crops.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
 
     view.deadTrees.forEach(deadTree => monitor.deadTrees.add(deadTree))
 
@@ -360,8 +360,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             syncChangedBorders(message.changedBorders)
         }
 
-        message.newCrops?.forEach((crop) => monitor.crops.add(crop))
-        message.removedCrops?.forEach((crop) => monitor.crops.delete(crop))
+        message.newCrops?.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+        message.removedCrops?.forEach(cropId => monitor.crops.delete(cropId))
 
         message.newSigns?.forEach((sign) => monitor.signs.set(sign.id, sign))
         message.removedSigns?.forEach((id) => monitor.signs.delete(id))
@@ -398,6 +398,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         }
     }
 
+    // Move workers locally to reduce the amount of messages from the server
     setInterval(async () => {
 
         for (const worker of monitor.workers.values()) {
@@ -482,6 +483,25 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             }
         }
     }, 100)
+
+    // Similarly, grow the crops locally to avoid the need for the server to send messages when crops change growth state
+    setInterval(async () => {
+        monitor.crops.forEach((crop, cropId) => {
+            if (crop.state !== 'FULL_GROWN' && crop.state !== 'HARVESTED') {
+                crop.growth = crop.growth + 1
+
+                if (crop.growth >= 10 && crop.growth < 20) {
+                    crop.state = 'SMALL'
+                } else if (crop.growth >= 20 && crop.growth < 30) {
+                    crop.state = 'HALFWAY'
+                } else {
+                    crop.state = 'FULL_GROWN'
+                }
+            }
+        })
+
+        // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
+    }, 2000)
 
     console.info(websocket)
 }
@@ -821,6 +841,24 @@ function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefin
     )
 
     return headquarter
+}
+
+function serverSentCropToLocal(serverCrop: CropInformation): CropInformationLocal {
+    let growth = 0
+
+    if (serverCrop.state === 'SMALL') {
+        growth = 10
+    } else if (serverCrop.state === 'HALFWAY') {
+        growth = 20
+    }
+
+    return {
+        id: serverCrop.id,
+        state: serverCrop.state,
+        x: serverCrop.x,
+        y: serverCrop.y,
+        growth
+    }
 }
 
 export {

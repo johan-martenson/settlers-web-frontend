@@ -16,7 +16,7 @@ export interface ScreenPoint {
 export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD'
 
 interface ToDraw {
-    source: DrawingInformation
+    source: DrawingInformation | undefined
     depth: number
     gamePoint: Point
 }
@@ -204,14 +204,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private drawImageProgram: WebGLProgram | null
     private drawImagePositionLocation?: number
     private drawImageTexcoordLocation?: number
-    private drawImageTextureLocation?: WebGLUniformLocation | null
-    private drawImageGamePointLocation?: WebGLUniformLocation | null
-    private drawImageOffsetLocation?: WebGLUniformLocation | null
-    private drawImageScaleLocation?: WebGLUniformLocation | null
-    private drawImageSourceCoordinateLocation?: WebGLUniformLocation | null
-    private drawImageSourceDimensionsLocation?: WebGLUniformLocation | null
-    private drawImageScreenOffsetLocation?: WebGLUniformLocation | null
-    private drawImageScreenDimensionLocation?: WebGLUniformLocation | null
     private drawImageTexCoordBuffer?: WebGLBuffer | null
     private drawImagePositionBuffer?: WebGLBuffer | null
 
@@ -458,16 +450,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     this.drawImagePositionLocation = gl.getAttribLocation(this.drawImageProgram, "a_position")
                     this.drawImageTexcoordLocation = gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
 
-                    // Get uniform locations
-                    this.drawImageTextureLocation = gl.getUniformLocation(this.drawImageProgram, "u_texture")
-                    this.drawImageGamePointLocation = gl.getUniformLocation(this.drawImageProgram, "u_game_point")
-                    this.drawImageScreenOffsetLocation = gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
-                    this.drawImageOffsetLocation = gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
-                    this.drawImageScaleLocation = gl.getUniformLocation(this.drawImageProgram, "u_scale")
-                    this.drawImageSourceCoordinateLocation = gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
-                    this.drawImageSourceDimensionsLocation = gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
-                    this.drawImageScreenDimensionLocation = gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
-
                     // Create the position buffer
                     this.drawImagePositionBuffer = gl.createBuffer()
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
@@ -509,7 +491,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Configure how the attribute gets data
                     gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, gl.FLOAT, false, 0, 0)
-
                 }
 
             } else {
@@ -718,13 +699,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const borderPointInfo = borderImageAtlasHandler.getDrawingInformation('romans', 'LAND')
 
-                if (borderPointInfo !== undefined) {
-                    toDrawNormal.push({
-                        source: borderPointInfo,
-                        gamePoint: borderPoint,
-                        depth: borderPoint.y
-                    })
-                }
+                toDrawNormal.push({
+                    source: borderPointInfo,
+                    gamePoint: borderPoint,
+                    depth: borderPoint.y
+                })
             })
         }
 
@@ -732,10 +711,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Collect the houses */
-        let houseIndex = -1
         for (const house of monitor.houses.values()) {
-
-            houseIndex = houseIndex + 1
 
             if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                 continue
@@ -744,38 +720,31 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (house.state === 'PLANNED') {
                 const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(currentPlayerNation)
 
-                if (plannedDrawInformation !== undefined) {
-                    toDrawNormal.push({
-                        source: plannedDrawInformation,
-                        gamePoint: house,
-                        depth: house.y
-                    })
-                }
-
+                toDrawNormal.push({
+                    source: plannedDrawInformation,
+                    gamePoint: house,
+                    depth: house.y
+                })
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
 
                 const fireDrawInformation = fireAnimations.getAnimationFrame(size, this.animationIndex)
 
-                if (fireDrawInformation !== undefined) {
-                    toDrawNormal.push({
-                        source: fireDrawInformation,
-                        gamePoint: house,
-                        depth: house.y
-                    })
-                }
+                toDrawNormal.push({
+                    source: fireDrawInformation,
+                    gamePoint: house,
+                    depth: house.y
+                })
             } else if (house.state === 'DESTROYED') {
                 const size = getHouseSize(house)
 
                 const fireDrawInformation = fireImageAtlas.getBurntDownDrawingInformation(size)
 
-                if (fireDrawInformation !== undefined) {
-                    toDrawNormal.push({
-                        source: fireDrawInformation,
-                        gamePoint: house,
-                        depth: house.y
-                    })
-                }
+                toDrawNormal.push({
+                    source: fireDrawInformation,
+                    gamePoint: house,
+                    depth: house.y
+                })
             } else {
 
                 let houseDrawInformation
@@ -786,14 +755,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     houseDrawInformation = houses.getDrawingInformationForHouseReady(currentPlayerNation, house.type)
                 }
 
-                if (houseDrawInformation !== undefined) {
-                    toDrawNormal.push({
-                        source: houseDrawInformation,
-                        gamePoint: house,
-                        depth: house.y
-                    })
-
-                }
+                toDrawNormal.push({
+                    source: houseDrawInformation,
+                    gamePoint: house,
+                    depth: house.y
+                })
             }
         }
 
@@ -811,13 +777,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             /* Draw the tree next to the point, instead of on top */
             let treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)
 
-            if (treeDrawInfo !== undefined) {
-                toDrawNormal.push({
-                    source: treeDrawInfo,
-                    gamePoint: tree,
-                    depth: tree.y
-                })
-            }
+            toDrawNormal.push({
+                source: treeDrawInfo,
+                gamePoint: tree,
+                depth: tree.y
+            })
 
             treeIndex = treeIndex + 1
         }
@@ -846,13 +810,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             /* Draw the tree next to the point, instead of on top */
             const deadTreeInfo = decorationsImageAtlasHandler.getDrawingInformationFor("STANDING_DEAD_TREE")
 
-            if (deadTreeInfo !== undefined) {
-                toDrawNormal.push({
-                    source: deadTreeInfo,
-                    gamePoint: deadTree,
-                    depth: deadTree.y
-                })
-            }
+            toDrawNormal.push({
+                source: deadTreeInfo,
+                gamePoint: deadTree,
+                depth: deadTree.y
+            })
         }
 
         duration.after("collect dead trees")
@@ -865,16 +827,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            // TODO: get type and growth state from the backend
+            // TODO: get type from the backend
             const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', crop.state)
 
-            if (cropDrawInfo !== undefined) {
-                toDrawNormal.push({
-                    source: cropDrawInfo,
-                    gamePoint: crop,
-                    depth: crop.y
-                })
-            }
+            toDrawNormal.push({
+                source: cropDrawInfo,
+                gamePoint: crop,
+                depth: crop.y
+            })
         }
 
         duration.after("collect crops")
@@ -895,13 +855,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 signDrawInfo = signImageAtlasHandler.getDrawingInformation("nothing", "LARGE")
             }
 
-            if (signDrawInfo !== undefined) {
-                toDrawNormal.push({
-                    source: signDrawInfo,
-                    gamePoint: sign,
-                    depth: sign.y
-                })
-            }
+            toDrawNormal.push({
+                source: signDrawInfo,
+                gamePoint: sign,
+                depth: sign.y
+            })
         }
 
         duration.after("collect signs")
@@ -917,13 +875,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             // TODO: pick the right type and size of stone
             const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor('TYPE_2', 'MIDDLE')
 
-            if (stoneDrawInfo !== undefined) {
-                toDrawNormal.push({
-                    source: stoneDrawInfo,
-                    gamePoint: stone,
-                    depth: stone.y
-                })
-            }
+            toDrawNormal.push({
+                source: stoneDrawInfo,
+                gamePoint: stone,
+                depth: stone.y
+            })
         }
 
         duration.after("collect stones")
@@ -950,13 +906,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                if (animationImage !== undefined) {
-                    toDrawNormal.push({
-                        source: animationImage,
-                        gamePoint: interpolatedGamePoint,
-                        depth: animal.y
-                    })
-                }
+                toDrawNormal.push({
+                    source: animationImage,
+                    gamePoint: interpolatedGamePoint,
+                    depth: animal.y
+                })
 
             } else {
 
@@ -969,25 +923,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                    if (animationImage !== undefined) {
-                        toDrawNormal.push({
-                            source: animationImage,
-                            gamePoint: animal,
-                            depth: animal.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: animationImage,
+                        gamePoint: animal,
+                        depth: animal.y
+                    })
 
                 } else {
                     const direction = 'EAST'
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                    if (animationImage !== undefined) {
-                        toDrawNormal.push({
-                            source: animationImage,
-                            gamePoint: animal,
-                            depth: animal.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: animationImage,
+                        gamePoint: animal,
+                        depth: animal.y
+                    })
                 }
             }
         }
@@ -1019,35 +969,29 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (worker.type === "Donkey") {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
-                    if (donkeyImage !== undefined) {
-                        toDrawNormal.push({
-                            source: donkeyImage,
-                            gamePoint: interpolatedGamePoint,
-                            depth: worker.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: donkeyImage,
+                        gamePoint: interpolatedGamePoint,
+                        depth: worker.y
+                    })
                 } else {
                     const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
-                    if (animationImage !== undefined) {
-                        toDrawNormal.push({
-                            source: animationImage,
-                            gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y + 0.5 },
-                            depth: worker.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: animationImage,
+                        gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y + 0.5 },
+                        depth: worker.y
+                    })
                 }
 
                 if (worker.cargo) {
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
 
-                    if (cargoDrawInfo !== undefined) {
-                        toDrawNormal.push({
-                            source: cargoDrawInfo,
-                            gamePoint: interpolatedGamePoint,
-                            depth: worker.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: cargoDrawInfo,
+                        gamePoint: interpolatedGamePoint,
+                        depth: worker.y
+                    })
                 }
             } else {
 
@@ -1064,36 +1008,30 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (worker.type === "Donkey") {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
-                    if (donkeyImage !== undefined) {
-                        toDrawNormal.push({
-                            source: donkeyImage,
-                            gamePoint: worker,
-                            depth: worker.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: donkeyImage,
+                        gamePoint: worker,
+                        depth: worker.y
+                    })
                 } else {
 
                     const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
-                    if (animationImage) {
-                        toDrawNormal.push({
-                            source: animationImage,
-                            gamePoint: { x: worker.x, y: worker.y + 0.5 },
-                            depth: worker.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: animationImage,
+                        gamePoint: { x: worker.x, y: worker.y + 0.5 },
+                        depth: worker.y
+                    })
                 }
 
                 if (worker.cargo) {
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
 
-                    if (cargoDrawInfo !== undefined) {
-                        toDrawNormal.push({
-                            source: cargoDrawInfo,
-                            gamePoint: worker,
-                            depth: worker.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: cargoDrawInfo,
+                        gamePoint: worker,
+                        depth: worker.y
+                    })
                 }
             }
         }
@@ -1111,13 +1049,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const flagDrawInfo = flagAnimations.getAnimationFrame("romans", "NORMAL", this.animationIndex, flagCount)
 
-            if (flagDrawInfo?.image !== undefined) {
-                toDrawNormal.push({
-                    source: flagDrawInfo,
-                    gamePoint: flag,
-                    depth: flag.y
-                })
-            }
+            toDrawNormal.push({
+                source: flagDrawInfo,
+                gamePoint: flag,
+                depth: flag.y
+            })
 
             if (flag.stackedCargo) {
 
@@ -1132,13 +1068,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
-                    if (cargoDrawInfo !== undefined) {
-                        toDrawNormal.push({
-                            source: cargoDrawInfo,
-                            gamePoint: { x: flag.x - 0.5, y: flag.y - 0.5 * i + 0.1 },
-                            depth: flag.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: cargoDrawInfo,
+                        gamePoint: { x: flag.x - 0.5, y: flag.y - 0.5 * i + 0.1 },
+                        depth: flag.y
+                    })
                 }
 
                 if (flag.stackedCargo.length > 3) {
@@ -1153,13 +1087,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
-                        if (cargoDrawInfo !== undefined) {
-                            toDrawNormal.push({
-                                source: cargoDrawInfo,
-                                gamePoint: { x: flag.x + 0.08, y: flag.y - 0.2 * (i - 4) + 0.3 },
-                                depth: flag.y
-                            })
-                        }
+                        toDrawNormal.push({
+                            source: cargoDrawInfo,
+                            gamePoint: { x: flag.x + 0.08, y: flag.y - 0.2 * (i - 4) + 0.3 },
+                            depth: flag.y
+                        })
                     }
                 }
 
@@ -1175,14 +1107,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
-                        if (cargoDrawInfo !== undefined) {
-                            toDrawNormal.push({
-                                source: cargoDrawInfo,
-                                gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.2 * (i - 4) + 0.1 },
-                                depth: flag.y
-                            })
-                        }
-
+                        toDrawNormal.push({
+                            source: cargoDrawInfo,
+                            gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.2 * (i - 4) + 0.1 },
+                            depth: flag.y
+                        })
                     }
                 }
             }
@@ -1208,58 +1137,47 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
 
-                    if (largeHouseAvailableInfo !== undefined) {
-                        toDrawNormal.push({
-                            source: largeHouseAvailableInfo,
-                            gamePoint,
-                            depth: gamePoint.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: largeHouseAvailableInfo,
+                        gamePoint,
+                        depth: gamePoint.y
+                    })
                 } else if (available.includes("medium")) {
 
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
 
-                    if (mediumHouseAvailableInfo !== undefined) {
-                        toDrawNormal.push({
-                            source: mediumHouseAvailableInfo,
-                            gamePoint,
-                            depth: gamePoint.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: mediumHouseAvailableInfo,
+                        gamePoint,
+                        depth: gamePoint.y
+                    })
                 } else if (available.includes("small")) {
 
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
 
-                    if (mediumHouseAvailableInfo !== undefined) {
-                        toDrawNormal.push({
-                            source: mediumHouseAvailableInfo,
-                            gamePoint,
-                            depth: gamePoint.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: mediumHouseAvailableInfo,
+                        gamePoint,
+                        depth: gamePoint.y
+                    })
                 } else if (available.includes("mine")) {
 
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
 
-                    if (mineAvailableInfo !== undefined) {
-                        toDrawNormal.push({
-                            source: mineAvailableInfo,
-                            gamePoint,
-                            depth: gamePoint.y
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: mineAvailableInfo,
+                        gamePoint,
+                        depth: gamePoint.y
+                    })
                 } else if (available.includes("flag")) {
 
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
 
-                    if (flagAvailableInfo !== undefined) {
-                        toDrawNormal.push({
-                            source: flagAvailableInfo,
-                            gamePoint,
-                            depth: gamePoint.y
-                        })
-                    }
-
+                    toDrawNormal.push({
+                        source: flagAvailableInfo,
+                        gamePoint,
+                        depth: gamePoint.y
+                    })
                 }
             }
         }
@@ -1275,8 +1193,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Draw all regular queued up images in order
-        // TODO: add scaling
-        // Set up webgl2 with the right shaders
         if (this.gl) {
             this.gl.useProgram(this.drawImageProgram)
 
@@ -1289,7 +1205,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         sortedToDrawList.forEach(draw => {
 
-            if (draw.gamePoint !== undefined && draw.source.texture !== undefined) {
+            if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
 
                 if (this.gl && this.drawImageProgram && draw.gamePoint) {
 
@@ -1358,13 +1274,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 // Draw the starting point
                 const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForStartPoint()
 
-                if (startPointInfo !== undefined) {
-                    toDrawHover.push({
-                        source: startPointInfo,
-                        gamePoint: center,
-                        depth: center.y
-                    })
-                }
+                toDrawHover.push({
+                    source: startPointInfo,
+                    gamePoint: center,
+                    depth: center.y
+                })
             }
 
             this.props.possibleRoadConnections.forEach(
@@ -1372,13 +1286,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
 
-                    if (startPointInfo !== undefined) {
-                        toDrawHover.push({
-                            source: startPointInfo,
-                            gamePoint: point,
-                            depth: point.y
-                        })
-                    }
+                    toDrawHover.push({
+                        source: startPointInfo,
+                        gamePoint: point,
+                        depth: point.y
+                    })
                 }
             )
         }
@@ -1390,13 +1302,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.props.selectedPoint) {
             const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
 
-            if (selectedPointDrawInfo !== undefined) {
-                toDrawHover.push({
-                    source: selectedPointDrawInfo,
-                    gamePoint: this.props.selectedPoint,
-                    depth: this.props.selectedPoint.y
-                })
-            }
+            toDrawHover.push({
+                source: selectedPointDrawInfo,
+                gamePoint: this.props.selectedPoint,
+                depth: this.props.selectedPoint.y
+            })
         }
 
         duration.after("collect selected point")
@@ -1413,69 +1323,57 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
 
-                    if (largeHouseAvailableInfo !== undefined) {
-                        toDrawHover.push({
-                            source: largeHouseAvailableInfo,
-                            gamePoint: this.state.hoverPoint,
-                            depth: this.state.hoverPoint.y
-                        })
-                    }
+                    toDrawHover.push({
+                        source: largeHouseAvailableInfo,
+                        gamePoint: this.state.hoverPoint,
+                        depth: this.state.hoverPoint.y
+                    })
                 } else if (availableConstructionAtHoverPoint.includes("medium")) {
 
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
 
-                    if (mediumHouseAvailableInfo !== undefined) {
-                        toDrawHover.push({
-                            source: mediumHouseAvailableInfo,
-                            gamePoint: this.state.hoverPoint,
-                            depth: this.state.hoverPoint.y
-                        })
-                    }
+                    toDrawHover.push({
+                        source: mediumHouseAvailableInfo,
+                        gamePoint: this.state.hoverPoint,
+                        depth: this.state.hoverPoint.y
+                    })
                 } else if (availableConstructionAtHoverPoint.includes("small")) {
 
                     const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
 
-                    if (smallHouseAvailableInfo !== undefined) {
-                        toDrawHover.push({
-                            source: smallHouseAvailableInfo,
-                            gamePoint: this.state.hoverPoint,
-                            depth: this.state.hoverPoint.y
-                        })
-                    }
+                    toDrawHover.push({
+                        source: smallHouseAvailableInfo,
+                        gamePoint: this.state.hoverPoint,
+                        depth: this.state.hoverPoint.y
+                    })
                 } else if (availableConstructionAtHoverPoint.includes("mine")) {
 
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
 
-                    if (mineAvailableInfo !== undefined) {
-                        toDrawHover.push({
-                            source: mineAvailableInfo,
-                            gamePoint: this.state.hoverPoint,
-                            depth: this.state.hoverPoint.y
-                        })
-                    }
+                    toDrawHover.push({
+                        source: mineAvailableInfo,
+                        gamePoint: this.state.hoverPoint,
+                        depth: this.state.hoverPoint.y
+                    })
                 } else if (availableConstructionAtHoverPoint.includes("flag")) {
 
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
 
-                    if (flagAvailableInfo !== undefined) {
-                        toDrawHover.push({
-                            source: flagAvailableInfo,
-                            gamePoint: this.state.hoverPoint,
-                            depth: this.state.hoverPoint.y
-                        })
-                    }
+                    toDrawHover.push({
+                        source: flagAvailableInfo,
+                        gamePoint: this.state.hoverPoint,
+                        depth: this.state.hoverPoint.y
+                    })
                 }
             } else {
 
                 const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
 
-                if (hoverPointDrawInfo !== undefined) {
-                    toDrawHover.push({
-                        source: hoverPointDrawInfo,
-                        gamePoint: this.state.hoverPoint,
-                        depth: this.state.hoverPoint.y
-                    })
-                }
+                toDrawHover.push({
+                    source: hoverPointDrawInfo,
+                    gamePoint: this.state.hoverPoint,
+                    depth: this.state.hoverPoint.y
+                })
             }
         }
 
@@ -1495,7 +1393,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Go through the images to draw
         toDrawHover.forEach(draw => {
 
-            if (draw.gamePoint !== undefined && draw.source.texture !== undefined) {
+            if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
 
                 if (this.gl && this.drawImageProgram && draw.gamePoint) {
 
@@ -1571,7 +1469,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const screenPoint = this.gamePointToScreenPoint(house)
 
-                /* Draw the house next to the point, instead of on top */
                 screenPoint.x -= 0.8 * this.props.scale // 30
                 screenPoint.y -= 1 * scaleY // 15
 

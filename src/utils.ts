@@ -393,7 +393,11 @@ class FireAnimation {
     }
 
     getAnimationFrame(size: FireSize, animationIndex: number) {
-        return this.imageAtlasHandler.getDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
+        return this.imageAtlasHandler.getFireDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
+    }
+
+    getImageAtlasHandler(): FireImageAtlasHandler {
+        return this.imageAtlasHandler
     }
 }
 
@@ -779,9 +783,14 @@ class SignImageAtlasHandler {
     }
 }
 
+interface FireImageAtlasFormat {
+    fires: Record<FireSize, OneDirectionImageAtlasAnimationInfo>
+    burntDown: Record<Size, OneImageInformation>
+}
+
 class FireImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<FireSize, OneDirectionImageAtlasAnimationInfo>
+    private imageAtlasInfo?: FireImageAtlasFormat
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -810,12 +819,12 @@ class FireImageAtlasHandler {
         }
     }
 
-    getDrawingInformation(size: FireSize, animationIndex: number): DrawingInformation | undefined {
+    getFireDrawingInformation(size: FireSize, animationIndex: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerFireSize = this.imageAtlasInfo[size]
+        const infoPerFireSize = this.imageAtlasInfo.fires[size]
 
         const frameIndex = animationIndex % infoPerFireSize.nrImages
 
@@ -837,6 +846,25 @@ class FireImageAtlasHandler {
             height: infoPerFireSize.height,
             offsetX: offsetX,
             offsetY: offsetY,
+            image: this.image,
+            texture: this.texture
+        }
+    }
+
+    getBurntDownDrawingInformation(size: Size): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const drawingInfo = this.imageAtlasInfo.burntDown[size]
+
+        return {
+            sourceX: drawingInfo.x,
+            sourceY: drawingInfo.y,
+            width: drawingInfo.width,
+            height: drawingInfo.height,
+            offsetX: drawingInfo.offsetX,
+            offsetY: drawingInfo.offsetY,
             image: this.image,
             texture: this.texture
         }

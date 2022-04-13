@@ -108,7 +108,8 @@ vegetationToTextureMapping.set(23, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48
 
 const treeAnimations = new TreeAnimation("assets/nature/", 10)
 
-const fireAnimations = new FireAnimation("assets/", 4)
+const fireAnimations = new FireAnimation("assets/", 2)
+const fireImageAtlas = fireAnimations.getImageAtlasHandler()
 
 const stoneImageAtlasHandler = new StoneImageAtlasHandler("assets/")
 
@@ -740,7 +741,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            /* Draw the house next to the point, instead of on top */
             if (house.state === 'PLANNED') {
                 const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(currentPlayerNation)
 
@@ -756,6 +756,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const size = getHouseSize(house)
 
                 const fireDrawInformation = fireAnimations.getAnimationFrame(size, this.animationIndex)
+
+                if (fireDrawInformation !== undefined) {
+                    toDrawNormal.push({
+                        source: fireDrawInformation,
+                        gamePoint: house,
+                        depth: house.y
+                    })
+                }
+            } else if (house.state === 'DESTROYED') {
+                const size = getHouseSize(house)
+
+                const fireDrawInformation = fireImageAtlas.getBurntDownDrawingInformation(size)
 
                 if (fireDrawInformation !== undefined) {
                     toDrawNormal.push({

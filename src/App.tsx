@@ -561,6 +561,8 @@ class App extends Component<AppProps, AppState> {
                     console.log("Creating road to flag")
                     await createFlag(point, this.props.gameId, this.props.selfPlayerId)
                     await createRoad(possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
+
+                    // TODO: introduce a function in the backend that can do both actions to avoid one roundtrip
                 }
 
                 /* Add the new possible road points to the ongoing road and don't create the road */
@@ -624,7 +626,7 @@ class App extends Component<AppProps, AppState> {
                         continue
                     }
 
-                    if (Math.max(point.x - previous.x) > 2 || Math.max(point.y - previous.y) > 1) {
+                    if (Math.abs(point.x - previous.x) > 2 || Math.abs(point.y - previous.y) > 1) {
                         roadHasGap = true
 
                         console.log("There is a too long gap")

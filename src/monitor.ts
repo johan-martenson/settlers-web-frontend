@@ -1,11 +1,11 @@
 import { AvailableConstruction, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
-import { CropImageAtlasHandler, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
+import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
 const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
-const roadListeners: ((roads: Iterable<RoadInformation>) => void)[] = []
+const roadListeners: (() => void)[] = []
 
 interface MonitoredBorderForPlayer {
     color: string
@@ -52,6 +52,10 @@ interface Monitor {
     deadTrees: PointSetFast
     visibleTrees: Map<TreeId, TreeInformation>
     wildAnimals: Map<WildAnimalId, WildAnimalInformation>
+
+    placeLocalRoad: ((points: Point[]) => void)
+    placeLocalFlag: ((point: Point, playerId: PlayerId) => void)
+    isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
 }
 
 const monitor: Monitor = {
@@ -75,7 +79,11 @@ const monitor: Monitor = {
     pointsWithDownRightTileDiscovered: new PointSetFast(),
     deadTrees: new PointSetFast(),
     visibleTrees: new Map<TreeId, TreeInformation>(),
-    wildAnimals: new Map<WildAnimalId, WildAnimalInformation>()
+    wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
+
+    placeLocalRoad: placeLocalRoad,
+    placeLocalFlag: placeLocalFlag,
+    isAvailable: isAvailable
 }
 
 interface WalkerTargetChange {
@@ -236,7 +244,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
     /* Finally notify the listeners, after all data has been stored */
     notifyDiscoveredPointsListeners(monitor.discoveredPoints)
-    notifyRoadListeners(view.roads)
+    roadListeners.forEach(roadListener => roadListener())
 
     /* Subscribe to changes */
     const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
@@ -273,11 +281,17 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
             return
         }
 
+        // Start by clearing any locally cached changes
+        monitor.roads.delete('LOCAL')
+        monitor.flags.delete('LOCAL')
+
+        // Debug message to troubleshoot roads that disappear for no reason
         if (message.newRoads || message.removedRoads) {
             console.log("Message with roads")
             console.log(message)
         }
 
+        // Digest all changes from the message
         message.newDiscoveredLand?.forEach((point) => monitor.discoveredPoints.add(point))
 
         if (message.newDiscoveredLand) {
@@ -330,8 +344,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         message.changedFlags?.forEach((flag) => monitor.flags.set(flag.id, flag))
         message.removedFlags?.forEach((id) => monitor.flags.delete(id))
 
-        message.newRoads?.forEach((road) => monitor.roads.set(road.id, road))
-        message.removedRoads?.forEach((id) => monitor.roads.delete(id))
+        message.newRoads?.forEach(road => monitor.roads.set(road.id, road))
+        message.removedRoads?.forEach(id => monitor.roads.delete(id))
 
         message.newTrees?.forEach(tree => {
             monitor.trees.set(tree.id, tree)
@@ -390,7 +404,9 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         }
 
         if (message.newRoads !== undefined || message.removedRoads !== undefined) {
-            notifyRoadListeners(monitor.roads.values())
+            console.log({ title: "Before notifying road listeners", roads: monitor.roads.values(), listeners: roadListeners })
+
+            roadListeners.forEach(roadListener => roadListener())
         }
 
         if (message.changedBuildings) {
@@ -764,12 +780,6 @@ function notifyDiscoveredPointsListeners(discoveredPoints: PointSetFast): void {
     }
 }
 
-function notifyRoadListeners(roads: Iterable<RoadInformation>): void {
-    for (const listener of roadListeners) {
-        listener(roads)
-    }
-}
-
 function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void) {
     messageListeners.push(messageListenerFn)
 }
@@ -790,7 +800,7 @@ function listenToDiscoveredPoints(listenerFn: ((discoveredPoints: PointSetFast) 
     discoveredPointListeners.push(listenerFn)
 }
 
-function listenToRoads(listenerFn: ((roads: Iterable<RoadInformation>) => void)): void {
+function listenToRoads(listenerFn: (() => void)): void {
     roadListeners.push(listenerFn)
 }
 
@@ -859,6 +869,28 @@ function serverSentCropToLocal(serverCrop: CropInformation): CropInformationLoca
         y: serverCrop.y,
         growth
     }
+}
+
+function placeLocalRoad(points: Point[]): void {
+    monitor.roads.set('LOCAL', { id: 'LOCAL', points })
+}
+
+function placeLocalFlag(point: Point, playerId: PlayerId): void {
+    monitor.flags.set('LOCAL', { id: 'LOCAL', playerId, x: point.x, y: point.y })
+}
+
+function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
+    const availableAtPoint = monitor.availableConstruction.get(point)
+
+    if (availableAtPoint === undefined) {
+        return false
+    }
+
+    if (whatToBuild === 'FLAG' && availableAtPoint.indexOf('flag') !== -1) {
+        return true
+    }
+
+    return false
 }
 
 export {

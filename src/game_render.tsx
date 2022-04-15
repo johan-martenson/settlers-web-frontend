@@ -54,6 +54,7 @@ interface GameCanvasState {
 
 let newRoadCurrentLength = 0
 let logOnce = true
+let timer: ReturnType<typeof setTimeout>
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
 const currentPlayerNation: NationSmallCaps = "romans"
@@ -216,6 +217,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.onClick = this.onClick.bind(this)
         this.onDoubleClick = this.onDoubleClick.bind(this)
         this.updateRoadDrawingBuffers = this.updateRoadDrawingBuffers.bind(this)
+        this.onClickOrDoubleClick = this.onClickOrDoubleClick.bind(this)
 
         this.normals = new PointMapFast()
 
@@ -247,7 +249,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         return this.props.onKeyDown !== nextProps.onKeyDown
     }
 
-    updateRoadDrawingBuffers(roads: Iterable<RoadInformation> | RoadInformation[]) {
+    updateRoadDrawingBuffers() {
         console.log("Should update road drawing buffers")
 
         if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
@@ -255,7 +257,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             console.log("Updating")
 
-            this.roadRenderInformation = this.prepareToRenderRoads(roads)
+            this.roadRenderInformation = this.prepareToRenderRoads(monitor.roads.values())
 
             console.log(this.roadRenderInformation)
 
@@ -517,17 +519,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             console.log("New roads changed. Now it is " + JSON.stringify(this.props.newRoad))
 
-            let roadsToDraw: RoadInformation[] = []
-
             if (this.props.newRoad !== undefined) {
-                roadsToDraw.push({ id: "", points: this.props.newRoad })
+                monitor.placeLocalRoad(this.props.newRoad)
             }
 
-            for (const road of monitor.roads.values()) {
-                roadsToDraw.push(road)
-            }
-
-            this.updateRoadDrawingBuffers(roadsToDraw)
+            this.updateRoadDrawingBuffers()
         }
 
         /* Ensure that the reference to the canvases are set */
@@ -1566,13 +1562,33 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         return { x: roundedGameX, y: roundedGameY }
     }
 
-    async onClick(event: React.MouseEvent): Promise<void> {
+    async onClickOrDoubleClick(event: React.MouseEvent): Promise<void> {
 
-        if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
-            console.error("Received invalid click event")
+        // Save currentTarget. This field becomes null directly after
+        const currentTarget = event.currentTarget
 
-            return
+        // Distinguish between single and doubleclick
+        if (event.detail === 1) {
+            timer = setTimeout(() => {
+                event.currentTarget = currentTarget
+
+                this.onClick(event)
+            }, 200)
+        } else {
+
+            if (timer) {
+                clearTimeout(timer)
+            }
+
+            event.currentTarget = currentTarget
+
+            this.onDoubleClick(event)
         }
+
+        event.stopPropagation()
+    }
+
+    async onClick(event: React.MouseEvent): Promise<void> {
 
         /* Convert to game coordinates */
         if (this.overlayCanvasRef.current) {
@@ -1584,8 +1600,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             this.props.onPointClicked(gamePoint)
         }
-
-        event.stopPropagation()
     }
 
     onDoubleClick(event: React.MouseEvent): void {
@@ -1606,8 +1620,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             this.props.onDoubleClick(screenPoint)
         }
-
-        event.stopPropagation()
     }
 
     render() {
@@ -1617,8 +1629,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 <canvas
                     className="GameCanvas"
                     onKeyDown={this.props.onKeyDown}
-                    onClick={this.onClick}
-                    onDoubleClick={this.onDoubleClick}
+                    onClick={this.onClickOrDoubleClick}
+
                     ref={this.overlayCanvasRef}
                     onMouseMove={
                         (event: React.MouseEvent) => {

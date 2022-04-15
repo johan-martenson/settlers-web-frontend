@@ -119,6 +119,7 @@ class App extends Component<AppProps, AppState> {
         this.onMouseMove = this.onMouseMove.bind(this)
         this.onMouseUp = this.onMouseUp.bind(this)
         this.onMouseLeave = this.onMouseLeave.bind(this)
+        this.onDoubleClick = this.onDoubleClick.bind(this)
 
         this.onTouchStart = this.onTouchStart.bind(this)
         this.onTouchEnd = this.onTouchEnd.bind(this)
@@ -204,7 +205,13 @@ class App extends Component<AppProps, AppState> {
             }
         )
 
-        this.commands.set("Flag", () => { createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
+        this.commands.set("Flag", () => {
+            if (monitor.isAvailable(this.state.selected, 'FLAG')) {
+                monitor.placeLocalFlag(this.state.selected, this.props.selfPlayerId)
+
+                createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId)
+            }
+        })
         this.commands.set("Remove (house, flag, or road)", () => { removeHouseOrFlagOrRoadAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
         this.commands.set("Statistics", () => this.setState({ showStatistics: true }))
         this.commands.set("Game information",
@@ -518,33 +525,45 @@ class App extends Component<AppProps, AppState> {
             if (flag) {
                 console.info("Placing road directly to flag")
 
-                await createRoad(possibleNewRoad,
-                    this.props.gameId,
-                    this.state.player)
-
+                // Do this first to make the UI feel quicker
                 this.setState({
                     newRoad: undefined,
                     possibleRoadConnections: [],
                     selected: point
                 })
 
+                // Make a local change in the client first so the road doesn't disappear until the server sends a message with the new road
+                monitor.placeLocalRoad(possibleNewRoad)
+
+                // Last, call the backend to create the road
+                await createRoad(possibleNewRoad,
+                    this.props.gameId,
+                    this.state.player)
+
                 /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
             } else if (isRoadAtPoint(point, monitor.roads)) {
 
                 console.info('Placing flag for road')
 
-                await createFlag(point, this.props.gameId, this.props.selfPlayerId)
+                if (monitor.isAvailable(point, 'FLAG')) {
 
-                console.log("Creating road to flag")
+                    // Make local changes in the client first so the road doesn't disappear until the server sends a message with the new road
+                    monitor.placeLocalRoad(possibleNewRoad)
+                    monitor.placeLocalFlag(point, this.props.selfPlayerId)
 
-                await createRoad(possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
+                    // Start with changing the UI state to make the user experience feel quicker
+                    this.setState({
+                        newRoad: undefined,
+                        possibleRoadConnections: []
+                    })
 
-                this.setState({
-                    newRoad: undefined,
-                    possibleRoadConnections: []
-                })
+                    // Tell the backend to make the changes
+                    console.log("Creating road to flag")
+                    await createFlag(point, this.props.gameId, this.props.selfPlayerId)
+                    await createRoad(possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
+                }
 
-                /* Add the new possible road points to the ongoing road and don't create the road*/
+                /* Add the new possible road points to the ongoing road and don't create the road */
             } else if (recent.x !== point.x || recent.y !== point.y) {
                 console.info("Continuing road building with extended road segment")
 
@@ -580,14 +599,49 @@ class App extends Component<AppProps, AppState> {
         /* First, handle double clicks differently if a new road is being created */
         if (this.state.newRoad) {
 
-            await createFlag(point, this.props.gameId, this.state.player)
+            console.log("New road exists")
 
-            console.info("Created flag")
+            if (monitor.isAvailable(point, 'FLAG')) {
 
-            if (this.state.newRoad) {
-                await createRoad(this.state.newRoad, this.props.gameId, this.state.player)
-                console.info("Created road")
+                console.log("Can place flag")
 
+                // Make local changes in the client first so the road doesn't disappear until the server sends a message with the new road
+                monitor.placeLocalFlag(point, this.props.selfPlayerId)
+
+                // Keep a reference to the new road so it doesn't get lost when the state is changed
+                const newRoadPoints = this.state.newRoad
+
+                newRoadPoints.push(point)
+
+                // Only place a local road if there is no gap that the backend needs to fill in
+                let previous = undefined
+                let roadHasGap = false
+
+                for (point of newRoadPoints) {
+                    if (previous === undefined) {
+                        previous = point
+
+                        continue
+                    }
+
+                    if (Math.max(point.x - previous.x) > 2 || Math.max(point.y - previous.y) > 1) {
+                        roadHasGap = true
+
+                        console.log("There is a too long gap")
+
+                        break
+                    }
+
+                    previous = point
+                }
+
+                if (!roadHasGap) {
+                    console.log("There was no gap so place local road")
+
+                    monitor.placeLocalRoad(this.state.newRoad)
+                }
+
+                // Update the state before calling the backend to make the user experience feel quicker
                 this.setState(
                     {
                         newRoad: undefined,
@@ -595,6 +649,15 @@ class App extends Component<AppProps, AppState> {
                         selected: point
                     }
                 )
+
+                // Call the backend to make the changes take effect
+                await createFlag(point, this.props.gameId, this.state.player)
+                console.info("Created flag")
+
+                await createRoad(newRoadPoints, this.props.gameId, this.state.player)
+                console.info("Created road")
+            } else {
+                console.log("Could not place flag")
             }
 
             return
@@ -661,6 +724,8 @@ class App extends Component<AppProps, AppState> {
 
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
+            monitor.placeLocalFlag(pointInformation, this.props.selfPlayerId)
+
             await createFlag(pointInformation, this.props.gameId, this.props.selfPlayerId)
         }
 

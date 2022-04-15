@@ -936,6 +936,7 @@ async function createRoad(points: Point[], gameId: GameId, playerId: PlayerId): 
             },
             body: JSON.stringify({ points: points, playerId: playerId })
         })
+
     return await response.json()
 }
 

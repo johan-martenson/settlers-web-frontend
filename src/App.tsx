@@ -17,11 +17,7 @@ import { SetTransportPriority } from './transport_priority'
 import TypeControl from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPoint } from './utils'
 
-const MENU_MENU = 0
-const MENU_FRIENDLY_HOUSE = 1
-const MENU_FRIENDLY_FLAG = 2
-const MENU_CONSTRUCTION = 3
-const MENU_GUIDE = 4
+type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
 const MAX_SCALE = 80
 const MIN_SCALE = 20
@@ -85,7 +81,7 @@ interface AppState {
 
     player: PlayerId
 
-    activeMenu?: 0 | 1 | 2 | 3 | 4
+    activeMenu?: Menu
 
     showFriendlyHouseInfo?: ShowFriendlyHouseInfo
     showFriendlyFlagInfo?: ShowFriendlyFlagInfo
@@ -323,7 +319,7 @@ class App extends Component<AppProps, AppState> {
         this.setState(
             {
                 menuVisible: true,
-                activeMenu: MENU_MENU
+                activeMenu: 'MAIN'
             }
         )
     }
@@ -331,7 +327,7 @@ class App extends Component<AppProps, AppState> {
     showHelp(): void {
         this.setState(
             {
-                activeMenu: MENU_GUIDE,
+                activeMenu: 'GUIDE',
                 showHelp: true
             }
         )
@@ -684,7 +680,7 @@ class App extends Component<AppProps, AppState> {
                 this.setState({
                     menuVisible: false,
                     showFriendlyHouseInfo: { house: house },
-                    activeMenu: MENU_FRIENDLY_HOUSE
+                    activeMenu: 'FRIENDLY_HOUSE'
                 })
             } else {
 
@@ -713,7 +709,7 @@ class App extends Component<AppProps, AppState> {
                     {
                         menuVisible: false,
                         showFriendlyFlagInfo: { flag: flag },
-                        activeMenu: MENU_FRIENDLY_FLAG
+                        activeMenu: 'FRIENDLY_FLAG'
                     }
                 )
             }
@@ -736,7 +732,7 @@ class App extends Component<AppProps, AppState> {
                 {
                     menuVisible: false,
                     showConstructionInfo: pointInformation,
-                    activeMenu: MENU_CONSTRUCTION
+                    activeMenu: 'CONSTRUCTION'
                 }
             )
         }
@@ -746,7 +742,7 @@ class App extends Component<AppProps, AppState> {
             this.setState(
                 {
                     showConstructionInfo: pointInformation,
-                    activeMenu: MENU_CONSTRUCTION
+                    activeMenu: 'CONSTRUCTION'
                 }
             )
         }

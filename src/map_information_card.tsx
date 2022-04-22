@@ -251,7 +251,7 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
         this.cacheThumbnail()
     }
 
-    cacheThumbnail() {
+    cacheThumbnail(): void {
         let thumbnail = this.state.cachedThumbnails.get(this.props.map.id)
 
         if (this.state.expanded && !thumbnail) {

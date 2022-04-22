@@ -245,11 +245,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState) {
+    shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState): boolean {
         return this.props.onKeyDown !== nextProps.onKeyDown
     }
 
-    updateRoadDrawingBuffers() {
+    updateRoadDrawingBuffers(): void {
         console.log("Should update road drawing buffers")
 
         if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
@@ -1882,9 +1882,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         let textureMappinglist: number[] = []
 
         for (const road of roads) {
-
-            console.log("Handling")
-            console.log(road)
 
             // Iterate through each segment of the road
             let previous: Point | undefined = undefined

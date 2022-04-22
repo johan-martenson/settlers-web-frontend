@@ -18,13 +18,13 @@ class Duration {
         this.stamps = []
     }
 
-    after(name: string) {
+    after(name: string): void {
         const time = getTimestamp()
 
         this.stamps.push({ time, name })
     }
 
-    reportStats() {
+    reportStats(): void {
 
         let previous = null
 
@@ -65,7 +65,7 @@ class AggregatedDuration {
         this.stamps = new Map<string, number>()
     }
 
-    after(name: string) {
+    after(name: string): void {
         const current = this.stamps.get(name)
 
         const timeNow = getTimestamp()
@@ -80,7 +80,7 @@ class AggregatedDuration {
         this.previousTimestamp = timeNow
     }
 
-    reportStats() {
+    reportStats(): void {
         for (const [name, value] of this.stamps.entries()) {
             addVariableIfAbsent(name + ".aggregated")
 

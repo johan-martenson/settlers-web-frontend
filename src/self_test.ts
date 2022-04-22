@@ -1,12 +1,12 @@
 import { PointSetFast, PointMapFast } from './util_types'
 import { Point } from './api'
 
-function do_self_test() {
+function do_self_test(): void {
     testPointSet()
     testPointMap()
 }
 
-function testPointSet() {
+function testPointSet(): void {
 
     const pointSet = new PointSetFast()
 
@@ -179,11 +179,10 @@ function testPointSet() {
     } else {
         console.error("NOT OK")
     }
-
 }
 
 
-function testPointMap() {
+function testPointMap(): void {
 
     /* Test creating a map from points to strings */
     const pointMap = new PointMapFast<string>()

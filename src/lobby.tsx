@@ -96,7 +96,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
         )
     }
 
-    onObserveGame(game: GameInformation) {
+    onObserveGame(game: GameInformation): void {
         this.setState(
             {
                 gameId: game.id,
@@ -106,7 +106,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
         )
     }
 
-    async onJoinGame(game: GameInformation) {
+    async onJoinGame(game: GameInformation): Promise<void> {
 
         console.log("Joining game " + game.id + " as player " + JSON.stringify(this.props.player))
 
@@ -127,21 +127,12 @@ class Lobby extends Component<LobbyProps, LobbyState> {
             )
 
             setTimeout(this.waitForGameStartThenJoin.bind(this), 100)
-        
-
-/*                this.setState(
-                    {
-                        gameId: game.id,
-                        state: "PLAY_GAME",
-                        selfPlayerId: player.id
-                    }
-                )*/
         } catch (err) {
             console.log(err)
         }
     }
 
-    async waitForGameStartThenJoin() {
+    async waitForGameStartThenJoin(): Promise<void> {
 
         if (this.state.gameId) {
             const game = await getGameInformation(this.state.gameId)

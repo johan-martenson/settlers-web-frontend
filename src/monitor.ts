@@ -157,7 +157,7 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
     return false
 }
 
-async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
+async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<void> {
 
     /* Get the list of players */
     const players = await getPlayers(gameId)
@@ -540,7 +540,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
     console.info(websocket)
 }
 
-function populateVisibleTrees(trees: Map<TreeId, TreeInformation>) {
+function populateVisibleTrees(trees: Map<TreeId, TreeInformation>): void {
     for (const [id, tree] of monitor.trees) {
 
         if (
@@ -558,7 +558,7 @@ function populateVisibleTrees(trees: Map<TreeId, TreeInformation>) {
     }
 }
 
-function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
+function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): void {
     for (const point of newlyDiscoveredPoints) {
         const terrainAtPoint = monitor.allTiles.get(point)
 
@@ -687,7 +687,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]) {
     }
 }
 
-function syncChangedBorders(borderChanges: BorderChange[]) {
+function syncChangedBorders(borderChanges: BorderChange[]): void {
 
     for (const borderChange of borderChanges) {
         const currentBorderForPlayer = monitor.border.get(borderChange.playerId)

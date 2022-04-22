@@ -9,7 +9,7 @@ class Checkbox extends Component<CheckboxProps, CheckboxState> {
 
     private checkboxRef = React.createRef<HTMLInputElement>()
 
-    onChange() {
+    onChange(): void {
         if (this.checkboxRef.current) {
 
             this.props.onCheckboxChange(this.checkboxRef.current.checked)

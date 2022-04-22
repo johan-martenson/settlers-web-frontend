@@ -621,7 +621,7 @@ export interface StoreHouseIsReadyMessage extends GameMessage {
     houseId: HouseId
 }
 
-function printTimestamp(message: string) {
+function printTimestamp(message: string): void {
     const date = new Date()
     const timestamp = date.getTime()
 
@@ -1063,7 +1063,7 @@ async function getInformationOnPoint(point: Point, gameId: GameId, playerId: Pla
     return await response.json()
 }
 
-async function callGeologist(point: Point, gameId: GameId, playerId: PlayerId) {
+async function callGeologist(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
 
     const response = await fetch("/settlers/api/games/" + gameId + "/map/points?x=" + point.x + "&y=" + point.y + "&playerId=" + playerId,
         {
@@ -1077,7 +1077,9 @@ async function callGeologist(point: Point, gameId: GameId, playerId: PlayerId) {
         }
     )
 
-    return await response.json()
+    await response.json()
+
+    return
 }
 
 async function getTerrainForMap(mapId: MapId): Promise<TerrainInformation> {
@@ -1090,7 +1092,7 @@ async function getTerrain(gameId: GameId): Promise<TerrainInformation> {
     return await response.json()
 }
 
-async function sendScout(point: Point, gameId: GameId, playerId: PlayerId) {
+async function sendScout(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
     const response = await fetch("/settlers/api/games/" + gameId + "/map/points?x=" + point.x + "&y=" + point.y + "&playerId=" + playerId,
         {
             method: 'put',
@@ -1102,7 +1104,9 @@ async function sendScout(point: Point, gameId: GameId, playerId: PlayerId) {
             )
         })
 
-    return await response.json()
+    await response.json()
+
+    return
 }
 
 async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[], gameId: GameId, playerId: PlayerId): Promise<PossibleNewRoadInformation | undefined> {
@@ -1310,7 +1314,7 @@ signToColor.set("gold", "yellow")
 signToColor.set("stone", "white")
 signToColor.set("water", "blue")
 
-function getFlagAtPoint(point: Point) {
+function getFlagAtPoint(point: Point): FlagInformation | undefined {
     for (const flag of monitor.flags.values()) {
         if (flag.x === point.x && flag.y === point.y) {
             return flag
@@ -1320,7 +1324,7 @@ function getFlagAtPoint(point: Point) {
     return undefined
 }
 
-function getHouseAtPoint(point: Point) {
+function getHouseAtPoint(point: Point): HouseInformation | undefined {
     for (const house of monitor.houses.values()) {
         if (house.x === point.x && house.y === point.y) {
             return house

@@ -31,7 +31,7 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
         }
     }
 
-    newMessages(messages: GameMessage[]) {
+    newMessages(messages: GameMessage[]): void {
         this.setState({ messages: this.state.messages.concat(messages) })
     }
 
@@ -56,7 +56,7 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
             nextProps.playerId !== this.props.playerId
     }
 
-    onClearAll() {
+    onClearAll(): void {
         this.setState({ messages: [] })
     }
 

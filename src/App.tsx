@@ -255,7 +255,7 @@ class App extends Component<AppProps, AppState> {
         )
     }
 
-    goToHouse(houseId: HouseId) {
+    goToHouse(houseId: HouseId): void {
         console.info("Go to house " + houseId)
 
         const house = monitor.houses.get(houseId)
@@ -267,7 +267,7 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
-    goToPoint(point: Point) {
+    goToPoint(point: Point): void {
         console.info("Go to point: " + JSON.stringify(point))
 
         const scaleY = this.state.scale * 0.5

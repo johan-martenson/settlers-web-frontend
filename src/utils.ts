@@ -344,11 +344,11 @@ class FlagAnimation {
         await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number) {
+    getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation | undefined {
         return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
 }
@@ -366,11 +366,11 @@ class TreeAnimation {
         await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number) {
+    getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number): DrawingInformation | undefined {
         return this.imageAtlasHandler.getDrawingInformationFor(treeType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
 }
@@ -388,11 +388,11 @@ class FireAnimation {
         await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(size: FireSize, animationIndex: number) {
+    getAnimationFrame(size: FireSize, animationIndex: number): DrawingInformation | undefined {
         return this.imageAtlasHandler.getFireDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
     }
 
@@ -495,7 +495,7 @@ class WorkerImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -574,7 +574,7 @@ class HouseImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-buildings.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -695,7 +695,7 @@ class BorderImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-border.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -752,7 +752,7 @@ class SignImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-signs.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -810,7 +810,7 @@ class FireImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-fire.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -893,7 +893,7 @@ class FlagImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -964,7 +964,7 @@ class CargoImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-cargos.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -1044,7 +1044,7 @@ class RoadBuildingImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-road-building.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -1114,7 +1114,7 @@ class TreeImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-trees.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -1197,7 +1197,7 @@ class UiElementsImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-ui-elements.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -1454,7 +1454,7 @@ class StoneImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-stones.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -1506,7 +1506,7 @@ class DecorationsImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-decorations.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -1557,7 +1557,7 @@ class CropImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-crops.png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -1612,7 +1612,7 @@ class AnimalImageAtlasHandler {
         this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
     }
 
-    makeTexture(gl: WebGL2RenderingContext) {
+    makeTexture(gl: WebGL2RenderingContext): void {
 
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
@@ -1739,22 +1739,21 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     return texture
 }
 
-function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement) {
+function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement): boolean {
     // Lookup the size the browser is displaying the canvas in CSS pixels.
-    const displayWidth = canvas.clientWidth;
-    const displayHeight = canvas.clientHeight;
+    const displayWidth = canvas.clientWidth
+    const displayHeight = canvas.clientHeight
 
     // Check if the canvas is not the same size.
-    const needResize = canvas.width !== displayWidth ||
-        canvas.height !== displayHeight;
+    const needResize = canvas.width !== displayWidth || canvas.height !== displayHeight
 
     if (needResize) {
         // Make the canvas the same size
-        canvas.width = displayWidth;
-        canvas.height = displayHeight;
+        canvas.width = displayWidth
+        canvas.height = displayHeight
     }
 
-    return needResize;
+    return needResize
 }
 
 export {

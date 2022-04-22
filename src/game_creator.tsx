@@ -107,11 +107,11 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         return false
     }
 
-    async setOthersCanJoin(othersCanJoin: boolean) {
+    async setOthersCanJoin(othersCanJoin: boolean): Promise<void> {
 
     }
 
-    async setAvailableResources(level: ResourceLevel) {
+    async setAvailableResources(level: ResourceLevel): Promise<void> {
 
         if (this.state.game) {
             await setResourceLevelForGame(level, this.state.game.id)

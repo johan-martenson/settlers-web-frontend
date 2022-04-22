@@ -29,7 +29,7 @@ function maxTime(data: Measurement[]): number {
     return maxNumber
 }
 
-function maxValue(data: Measurement[]) {
+function maxValue(data: Measurement[]): number {
     let maxValue = 0
 
     for (const measurement of data) {
@@ -207,7 +207,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         )
     }
 
-    onClose() {
+    onClose(): void {
         this.props.onClose()
     }
 

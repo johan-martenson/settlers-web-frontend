@@ -405,9 +405,11 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
         }
 
         if (message.newRoads !== undefined || message.removedRoads !== undefined) {
-            console.log({ title: "Before notifying road listeners", roads: monitor.roads.values(), listeners: roadListeners })
+            console.log({ title: "Before notifying road listeners", roads: monitor.roads.values(), listeners: roadListeners, numberRoads: monitor.roads.size })
 
             roadListeners.forEach(roadListener => roadListener())
+
+            console.log({ title: "After calling road listeners", numberRoads: monitor.roads.size })
         }
 
         if (message.changedBuildings) {

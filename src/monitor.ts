@@ -1,4 +1,4 @@
-import { AvailableConstruction, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AvailableConstruction, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -36,7 +36,7 @@ interface Monitor {
     flags: Map<FlagId, FlagInformation>
     roads: Map<RoadId, RoadInformation>
     border: Map<PlayerId, MonitoredBorderForPlayer>
-    trees: Map<TreeId, TreeInformation>
+    trees: Map<TreeId, TreeInformationLocal>
     stones: PointSetFast
     crops: Map<CropId, CropInformationLocal>
     discoveredPoints: PointSetFast
@@ -64,7 +64,7 @@ const monitor: Monitor = {
     flags: new Map<FlagId, FlagInformation>(),
     roads: new Map<RoadId, RoadInformation>(),
     border: new Map<PlayerId, MonitoredBorderForPlayer>(),
-    trees: new Map<TreeId, TreeInformation>(),
+    trees: new Map<TreeId, TreeInformationLocal>(),
     stones: new PointSetFast(),
     crops: new Map<CropId, CropInformationLocal>(),
     discoveredPoints: new PointSetFast(),
@@ -201,7 +201,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
 
     view.roads.forEach(road => monitor.roads.set(road.id, road))
 
-    view.trees.forEach(tree => monitor.trees.set(tree.id, tree))
+    view.trees.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
 
     view.crops.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
 
@@ -284,6 +284,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         // Start by clearing any locally cached changes
         monitor.roads.delete('LOCAL')
         monitor.flags.delete('LOCAL')
+        monitor.houses.delete('LOCAL')
 
         // Debug message to troubleshoot roads that disappear for no reason
         if (message.newRoads || message.removedRoads) {
@@ -348,7 +349,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
         message.removedRoads?.forEach(id => monitor.roads.delete(id))
 
         message.newTrees?.forEach(tree => {
-            monitor.trees.set(tree.id, tree)
+            monitor.trees.set(tree.id, serverSentTreeToLocal(tree))
 
             if (monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) &&
                 monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) &&
@@ -512,6 +513,23 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId) {
                     crop.state = 'HALFWAY'
                 } else {
                     crop.state = 'FULL_GROWN'
+                }
+            }
+        })
+
+        // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
+    }, 2000)
+
+    // Also grow the trees locally to minimize the need for messages from the backend
+    setInterval(async () => {
+        monitor.trees.forEach((tree, treeId) => {
+            if (tree.size !== 'LARGE') {
+                tree.growth = tree.growth + 1
+
+                if (tree.growth >= 10 && tree.growth < 20) {
+                    tree.size = 'MEDIUM'
+                } else if (tree.growth >= 20) {
+                    tree.size = 'LARGE'
                 }
             }
         })
@@ -868,6 +886,23 @@ function serverSentCropToLocal(serverCrop: CropInformation): CropInformationLoca
         x: serverCrop.x,
         y: serverCrop.y,
         growth
+    }
+}
+
+function serverSentTreeToLocal(serverTree: TreeInformation): TreeInformationLocal {
+    let growth = 0
+
+    if (serverTree.size === 'MEDIUM') {
+        growth = 10
+    }
+
+    return {
+        id: serverTree.id,
+        x: serverTree.x,
+        y: serverTree.y,
+        size: serverTree.size,
+        type: serverTree.type,
+        growth: growth
     }
 }
 

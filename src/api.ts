@@ -306,6 +306,10 @@ export interface CropInformationLocal extends CropInformation {
     growth: number
 }
 
+export interface TreeInformationLocal extends TreeInformation {
+    growth: number
+}
+
 export type SignTypes = 'iron' | 'gold' | 'coal' | 'stone' | 'water' | 'nothing'
 
 export type Size = 'SMALL' | 'MEDIUM' | 'LARGE'

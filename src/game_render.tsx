@@ -1062,11 +1062,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
 
                     const cargo = flag.stackedCargo[i]
-                    const color = materialToColor.get(cargo)
-
-                    if (color === undefined) {
-                        continue
-                    }
 
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
@@ -1081,11 +1076,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     for (let i = 3; i < Math.min(flag.stackedCargo.length, 6); i++) {
 
                         const cargo = flag.stackedCargo[i]
-                        const color = materialToColor.get(cargo)
-
-                        if (color === undefined) {
-                            continue
-                        }
 
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 
@@ -1101,11 +1091,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     for (let i = 6; i < flag.stackedCargo.length; i++) {
 
                         const cargo = flag.stackedCargo[i]
-                        const color = materialToColor.get(cargo)
-
-                        if (color === undefined) {
-                            continue
-                        }
 
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
 

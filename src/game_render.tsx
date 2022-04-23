@@ -108,6 +108,7 @@ vegetationToTextureMapping.set(22, { below: [192, 132, 219, 104, 247, 132].map(v
 vegetationToTextureMapping.set(23, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Buildable mountain
 
 const treeAnimations = new TreeAnimation("assets/nature/", 10)
+const treeImageAtlasHandler = treeAnimations.getImageAtlasHandler()
 
 const fireAnimations = new FireAnimation("assets/", 2)
 const fireImageAtlas = fireAnimations.getImageAtlasHandler()
@@ -770,8 +771,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            /* Draw the tree next to the point, instead of on top */
-            let treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)
+            let treeDrawInfo
+
+            if (tree.size === 'SMALL' || tree.size === 'MEDIUM') {
+                treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree.type, tree.size)
+            } else {
+                treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)
+            }
 
             toDrawNormal.push({
                 source: treeDrawInfo,

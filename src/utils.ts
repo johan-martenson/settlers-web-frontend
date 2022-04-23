@@ -362,6 +362,10 @@ class TreeAnimation {
         this.speedAdjust = speedAdjust
     }
 
+    getImageAtlasHandler(): TreeImageAtlasHandler {
+        return this.imageAtlasHandler
+    }
+
     async load(): Promise<void> {
         await this.imageAtlasHandler.load()
     }
@@ -371,7 +375,7 @@ class TreeAnimation {
     }
 
     getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationFor(treeType, Math.floor((animationIndex + offset) / this.speedAdjust))
+        return this.imageAtlasHandler.getDrawingInformationForGrownTree(treeType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
 }
 
@@ -1092,9 +1096,17 @@ class RoadBuildingImageAtlasHandler {
     }
 }
 
+type TreeSize = 'SMALLEST' | 'SMALL' | 'ALMOST_GROWN' | 'GROWN'
+
+interface TreeImageAtlasFormat {
+    grownTrees: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
+    growingTrees: Record<TreeType, Record<TreeSize, OneImageInformation>>
+    fallingTrees: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
+}
+
 class TreeImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
+    private imageAtlasInfo?: TreeImageAtlasFormat
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1123,12 +1135,12 @@ class TreeImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(treeType: TreeType, animationCounter: number): DrawingInformation | undefined {
+    getDrawingInformationForGrownTree(treeType: TreeType, animationCounter: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerTreeType = this.imageAtlasInfo[treeType]
+        const infoPerTreeType = this.imageAtlasInfo.grownTrees[treeType]
 
         const frameIndex = (animationCounter) % infoPerTreeType.nrImages
 
@@ -1150,6 +1162,32 @@ class TreeImageAtlasHandler {
             height: infoPerTreeType.height, // Verify that this goes in the right direction
             offsetX: offsetX,
             offsetY: offsetY,
+            image: this.image,
+            texture: this.texture
+        }
+    }
+
+    getImageForGrowingTree(treeType: TreeType, treeSize: Size) {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        let size: TreeSize = 'SMALL'
+
+        if (treeSize === 'MEDIUM') {
+            size = 'ALMOST_GROWN'
+        }
+
+        const infoPerTreeType = this.imageAtlasInfo.growingTrees[treeType]
+        const imageInfo = infoPerTreeType[size]
+
+        return {
+            sourceX: imageInfo.x,
+            sourceY: imageInfo.y,
+            width: imageInfo.width,
+            height: imageInfo.height,
+            offsetX: imageInfo.offsetX,
+            offsetY: imageInfo.offsetY,
             image: this.image,
             texture: this.texture
         }

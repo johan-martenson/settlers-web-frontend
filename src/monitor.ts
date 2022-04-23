@@ -50,7 +50,7 @@ interface Monitor {
     pointsWithBelowTileDiscovered: PointSetFast
     pointsWithDownRightTileDiscovered: PointSetFast
     deadTrees: PointSetFast
-    visibleTrees: Map<TreeId, TreeInformation>
+    visibleTrees: Map<TreeId, TreeInformationLocal>
     wildAnimals: Map<WildAnimalId, WildAnimalInformation>
 
     placeLocalRoad: ((points: Point[]) => void)
@@ -78,7 +78,7 @@ const monitor: Monitor = {
     pointsWithBelowTileDiscovered: new PointSetFast(),
     pointsWithDownRightTileDiscovered: new PointSetFast(),
     deadTrees: new PointSetFast(),
-    visibleTrees: new Map<TreeId, TreeInformation>(),
+    visibleTrees: new Map<TreeId, TreeInformationLocal>(),
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
 
     placeLocalRoad: placeLocalRoad,
@@ -226,7 +226,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
     }
 
     /* Populate visible trees */
-    populateVisibleTrees(monitor.trees)
+    populateVisibleTrees()
 
     /* Store the full terrain */
     const terrain = await getTerrain(gameId)
@@ -296,7 +296,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
         message.newDiscoveredLand?.forEach((point) => monitor.discoveredPoints.add(point))
 
         if (message.newDiscoveredLand) {
-            populateVisibleTrees(monitor.trees)
+            populateVisibleTrees()
 
             storeDiscoveredTiles(message.newDiscoveredLand)
         }
@@ -357,7 +357,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
                 monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) &&
                 monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) &&
                 monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })) {
-                monitor.visibleTrees.set(tree.id, tree)
+                monitor.visibleTrees.set(tree.id, serverSentTreeToLocal(tree))
             }
         })
         message.removedTrees?.forEach(treeId => {
@@ -525,13 +525,23 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
     // Also grow the trees locally to minimize the need for messages from the backend
     setInterval(async () => {
         monitor.trees.forEach((tree, treeId) => {
+            const visibleTree = monitor.visibleTrees.get(treeId)
+
             if (tree.size !== 'LARGE') {
                 tree.growth = tree.growth + 1
 
                 if (tree.growth >= 10 && tree.growth < 20) {
                     tree.size = 'MEDIUM'
+
+                    if (visibleTree) {
+                        visibleTree.size = 'MEDIUM'
+                    }
                 } else if (tree.growth >= 20) {
                     tree.size = 'LARGE'
+
+                    if (visibleTree) {
+                        visibleTree.size = 'LARGE'
+                    }
                 }
             }
         })
@@ -542,7 +552,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
     console.info(websocket)
 }
 
-function populateVisibleTrees(trees: Map<TreeId, TreeInformation>): void {
+function populateVisibleTrees(): void {
     for (const [id, tree] of monitor.trees) {
 
         if (

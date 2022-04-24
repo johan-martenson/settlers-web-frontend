@@ -310,12 +310,24 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, play
 
         try {
             await removeFlag(pointInformation.flagId, gameId, playerId)
-        } catch (error) {
+        } catch (error) {}
+
+        const updatedPointInformation = await getInformationOnPoint(point, gameId, playerId)
+
+        if (updatedPointInformation.is === 'flag') {
             monitor.undoRemoveLocalFlag(pointInformation.flagId)
         }
 
     } else if (pointInformation.is === "road" && pointInformation.roadId) {
+        monitor.removeLocalRoad(pointInformation.roadId)
+
         await removeRoad(pointInformation.roadId, gameId, playerId)
+
+        const updatedPointInformation = await getInformationOnPoint(point, gameId, playerId)
+
+        if (updatedPointInformation.is === 'road' && updatedPointInformation.roadId === pointInformation.roadId) {
+            monitor.undoRemoveLocalRoad(pointInformation.roadId)
+        }
     }
 }
 

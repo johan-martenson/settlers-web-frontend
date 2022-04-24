@@ -54,12 +54,15 @@ interface Monitor {
     wildAnimals: Map<WildAnimalId, WildAnimalInformation>
 
     localRemovedFlags: Map<FlagId, FlagInformation>
+    localRemovedRoads: Map<RoadId, RoadInformation>
 
     placeLocalRoad: ((points: Point[]) => void)
     placeLocalFlag: ((point: Point, playerId: PlayerId) => void)
     isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
     removeLocalFlag: ((flagId: FlagId) => void)
     undoRemoveLocalFlag: ((flagId: FlagId) => void)
+    removeLocalRoad: ((roadId: RoadId) => void)
+    undoRemoveLocalRoad: ((roadId: RoadId) => void)
 }
 
 const monitor: Monitor = {
@@ -86,12 +89,15 @@ const monitor: Monitor = {
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
 
     localRemovedFlags: new Map<FlagId, FlagInformation>(),
+    localRemovedRoads: new Map<RoadId, RoadInformation>(),
 
     placeLocalRoad: placeLocalRoad,
     placeLocalFlag: placeLocalFlag,
     isAvailable: isAvailable,
     removeLocalFlag: removeLocalFlag,
-    undoRemoveLocalFlag: undoRemoveLocalFlag
+    undoRemoveLocalFlag: undoRemoveLocalFlag,
+    removeLocalRoad: removeLocalRoad,
+    undoRemoveLocalRoad: undoRemoveLocalRoad
 }
 
 interface WalkerTargetChange {
@@ -968,6 +974,28 @@ function undoRemoveLocalFlag(flagId: FlagId): void {
 
     if (flagToRestore !== undefined) {
         monitor.flags.set(flagToRestore.id, flagToRestore)
+
+        monitor.localRemovedFlags.delete(flagId)
+    }
+}
+
+function removeLocalRoad(roadId: RoadId): void {
+    const road = monitor.roads.get(roadId)
+
+    if (road !== undefined) {
+        monitor.localRemovedRoads.set(roadId, road)
+
+        monitor.roads.delete(roadId)
+    }
+}
+
+function undoRemoveLocalRoad(roadId: RoadId): void {
+    const roadToRestore = monitor.localRemovedRoads.get(roadId)
+
+    if (roadToRestore !== undefined) {
+        monitor.roads.set(roadId, roadToRestore)
+
+        monitor.localRemovedRoads.delete(roadId)
     }
 }
 

@@ -946,6 +946,8 @@ async function createRoad(points: Point[], gameId: GameId, playerId: PlayerId): 
 
 async function createFlag(point: Point, gameId: GameId, playerId: PlayerId): Promise<FlagInformation> {
 
+    // TODO: make sure this function throws an error if the call to create the flag failed!
+
     console.info("Creating flag at " + JSON.stringify({ x: point.x, y: point.y }))
 
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/flags",

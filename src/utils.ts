@@ -1,4 +1,5 @@
 import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeType, Vegetation } from './api'
+import { monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -305,7 +306,14 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, play
     if (pointInformation.is === "building" && pointInformation.buildingId) {
         await removeHouse(pointInformation.buildingId, playerId, gameId)
     } else if (pointInformation.is === "flag" && pointInformation.flagId) {
-        await removeFlag(pointInformation.flagId, gameId, playerId)
+        monitor.removeLocalFlag(pointInformation.flagId)
+
+        try {
+            await removeFlag(pointInformation.flagId, gameId, playerId)
+        } catch (error) {
+            monitor.undoRemoveLocalFlag(pointInformation.flagId)
+        }
+
     } else if (pointInformation.is === "road" && pointInformation.roadId) {
         await removeRoad(pointInformation.roadId, gameId, playerId)
     }

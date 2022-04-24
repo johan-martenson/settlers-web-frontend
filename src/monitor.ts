@@ -53,9 +53,13 @@ interface Monitor {
     visibleTrees: Map<TreeId, TreeInformationLocal>
     wildAnimals: Map<WildAnimalId, WildAnimalInformation>
 
+    localRemovedFlags: Map<FlagId, FlagInformation>
+
     placeLocalRoad: ((points: Point[]) => void)
     placeLocalFlag: ((point: Point, playerId: PlayerId) => void)
     isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
+    removeLocalFlag: ((flagId: FlagId) => void)
+    undoRemoveLocalFlag: ((flagId: FlagId) => void)
 }
 
 const monitor: Monitor = {
@@ -81,9 +85,13 @@ const monitor: Monitor = {
     visibleTrees: new Map<TreeId, TreeInformationLocal>(),
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
 
+    localRemovedFlags: new Map<FlagId, FlagInformation>(),
+
     placeLocalRoad: placeLocalRoad,
     placeLocalFlag: placeLocalFlag,
-    isAvailable: isAvailable
+    isAvailable: isAvailable,
+    removeLocalFlag: removeLocalFlag,
+    undoRemoveLocalFlag: undoRemoveLocalFlag
 }
 
 interface WalkerTargetChange {
@@ -281,10 +289,15 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
             return
         }
 
-        // Start by clearing any locally cached changes
+        // Start by handling locally cached changes
+
+        // Clear local additions
         monitor.roads.delete('LOCAL')
         monitor.flags.delete('LOCAL')
         monitor.houses.delete('LOCAL')
+
+        // Confirm local removals if they are part of the message
+        message?.removedFlags?.forEach(removedFlagId => monitor.localRemovedFlags.delete(removedFlagId))
 
         // Debug message to troubleshoot roads that disappear for no reason
         if (message.newRoads || message.removedRoads) {
@@ -938,6 +951,24 @@ function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
     }
 
     return false
+}
+
+function removeLocalFlag(flagId: FlagId): void {
+    const flag = monitor.flags.get(flagId)
+
+    if (flag !== undefined) {
+        monitor.localRemovedFlags.set(flagId, flag)
+
+        monitor.flags.delete(flagId)
+    }
+}
+
+function undoRemoveLocalFlag(flagId: FlagId): void {
+    const flagToRestore = monitor.localRemovedFlags.get(flagId)
+
+    if (flagToRestore !== undefined) {
+        monitor.flags.set(flagToRestore.id, flagToRestore)
+    }
 }
 
 export {

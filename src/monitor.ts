@@ -1,4 +1,4 @@
-import { AvailableConstruction, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AvailableConstruction, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -56,6 +56,11 @@ interface Monitor {
     localRemovedFlags: Map<FlagId, FlagInformation>
     localRemovedRoads: Map<RoadId, RoadInformation>
 
+    placeRoadSnappy: ((points: Point[], gameId: GameId, playerId: PlayerId) => Promise<void>)
+    placeFlagSnappy: ((point: Point, gameId: GameId, playerId: PlayerId) => Promise<void>)
+    placeRoadAndFlagSnappy: ((point: Point, points: Point[], gameId: GameId, playerId: PlayerId) => void)
+    removeFlagSnappy: ((flagId: FlagId, gameId: GameId, playerId: PlayerId) => Promise<void>)
+    removeRoadSnappy: ((roadId: FlagId, gameId: GameId, playerId: PlayerId) => Promise<void>)
     placeLocalRoad: ((points: Point[]) => void)
     placeLocalFlag: ((point: Point, playerId: PlayerId) => void)
     isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
@@ -91,6 +96,11 @@ const monitor: Monitor = {
     localRemovedFlags: new Map<FlagId, FlagInformation>(),
     localRemovedRoads: new Map<RoadId, RoadInformation>(),
 
+    placeRoadSnappy: placeRoadSnappy,
+    placeFlagSnappy: placeFlagSnappy,
+    placeRoadAndFlagSnappy: placeRoadAndFlagSnappy,
+    removeFlagSnappy: removeFlagSnappy,
+    removeRoadSnappy: removeRoadSnappy,
     placeLocalRoad: placeLocalRoad,
     placeLocalFlag: placeLocalFlag,
     isAvailable: isAvailable,
@@ -996,6 +1006,102 @@ function undoRemoveLocalRoad(roadId: RoadId): void {
         monitor.roads.set(roadId, roadToRestore)
 
         monitor.localRemovedRoads.delete(roadId)
+    }
+}
+
+async function placeRoadSnappy(points: Point[], gameId: GameId, playerId: PlayerId): Promise<void> {
+    monitor.roads.set('LOCAL', { id: 'LOCAL', points })
+
+    try {
+        await createRoad(points, gameId, playerId)
+    } catch (error) {
+        console.error("Got error while creating road: " + error)
+    }
+
+    const pointInformation = await getInformationOnPoint(points[1], gameId, playerId)
+
+    if (pointInformation.is !== 'road') {
+        monitor.roads.delete('LOCAL')
+    }
+}
+
+async function placeFlagSnappy(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
+    monitor.flags.set('LOCAL', { id: 'LOCAL', playerId: playerId, x: point.x, y: point.y })
+
+    try {
+        await createFlag(point, gameId, playerId)
+    } catch (error) {
+        console.error("Got error while placing flag: " + error)
+    }
+
+    const pointInformation = await getInformationOnPoint(point, gameId, playerId)
+
+    if (pointInformation.is !== 'flag') {
+        monitor.flags.delete('LOCAL')
+    }
+}
+
+async function placeRoadAndFlagSnappy(point: Point, points: Point[], gameId: GameId, playerId: PlayerId): Promise<void> {
+    monitor.flags.set('LOCAL', { id: 'LOCAL', playerId: playerId, x: point.x, y: point.y })
+    monitor.roads.set('LOCAL', { id: 'LOCAL', points })
+
+    // TODO: add a function to the backend that can both place a flag and a road in one call and use it here
+    try {
+        await createFlag(point, gameId, playerId)
+        await createRoad(points, gameId, playerId)
+    } catch (error) {
+        console.error("Got error while placing flag and road")
+    }
+
+    const flagPointInformation = await getInformationOnPoint(point, gameId, playerId)
+    const roadPointInformation = await getInformationOnPoint(points[1], gameId, playerId)
+
+    if (roadPointInformation.is !== 'road' && flagPointInformation.is === 'flag' && flagPointInformation.flagId !== undefined) {
+        await removeFlag(flagPointInformation.flagId, gameId, playerId)
+    }
+}
+
+async function removeFlagSnappy(flagId: FlagId, gameId: GameId, playerId: PlayerId): Promise<void> {
+    const flag = monitor.flags.get(flagId)
+
+    if (flag !== undefined) {
+        monitor.localRemovedFlags.set(flagId, flag)
+
+        monitor.flags.delete(flagId)
+
+        try {
+            await removeFlag(flagId, gameId, playerId)
+        } catch (error) {
+            console.error("Got error while removing flag: " + error)
+        }
+
+        const pointInformation = await getInformationOnPoint(flag, gameId, playerId)
+
+        if (pointInformation.is === 'flag') {
+            monitor.flags.delete('LOCAL')
+        }
+    }
+}
+
+async function removeRoadSnappy(roadId: RoadId, gameId: GameId, playerId: PlayerId): Promise<void> {
+    const road = monitor.roads.get(roadId)
+
+    if (road !== undefined) {
+        monitor.localRemovedRoads.set(roadId, road)
+
+        monitor.roads.delete(roadId)
+
+        try {
+            await removeRoad(roadId, gameId, playerId)
+        } catch (error) {
+            console.error("Got error while removing road: " + error)
+        }
+
+        const pointInformation = await getInformationOnPoint(road.points[1], gameId, playerId)
+
+        if (pointInformation.is === 'road') {
+            monitor.roads.delete('LOCAL')
+        }
     }
 }
 

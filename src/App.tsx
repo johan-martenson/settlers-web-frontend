@@ -203,9 +203,7 @@ class App extends Component<AppProps, AppState> {
 
         this.commands.set("Flag", () => {
             if (monitor.isAvailable(this.state.selected, 'FLAG')) {
-                monitor.placeLocalFlag(this.state.selected, this.props.selfPlayerId)
-
-                createFlag(this.state.selected, this.props.gameId, this.props.selfPlayerId)
+                monitor.placeFlagSnappy(this.state.selected, this.props.gameId, this.props.selfPlayerId)
             }
         })
         this.commands.set("Remove (house, flag, or road)", () => { removeHouseOrFlagOrRoadAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
@@ -528,13 +526,8 @@ class App extends Component<AppProps, AppState> {
                     selected: point
                 })
 
-                // Make a local change in the client first so the road doesn't disappear until the server sends a message with the new road
-                monitor.placeLocalRoad(possibleNewRoad)
-
-                // Last, call the backend to create the road
-                await createRoad(possibleNewRoad,
-                    this.props.gameId,
-                    this.state.player)
+                // Create the road, including making an optimistic change first on the client side
+                monitor.placeRoadSnappy(possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
 
                 /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
             } else if (isRoadAtPoint(point, monitor.roads)) {
@@ -543,22 +536,13 @@ class App extends Component<AppProps, AppState> {
 
                 if (monitor.isAvailable(point, 'FLAG')) {
 
-                    // Make local changes in the client first so the road doesn't disappear until the server sends a message with the new road
-                    monitor.placeLocalRoad(possibleNewRoad)
-                    monitor.placeLocalFlag(point, this.props.selfPlayerId)
-
                     // Start with changing the UI state to make the user experience feel quicker
                     this.setState({
                         newRoad: undefined,
                         possibleRoadConnections: []
                     })
 
-                    // Tell the backend to make the changes
-                    console.log("Creating road to flag")
-                    await createFlag(point, this.props.gameId, this.props.selfPlayerId)
-                    await createRoad(possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
-
-                    // TODO: introduce a function in the backend that can do both actions to avoid one roundtrip
+                    monitor.placeRoadAndFlagSnappy(point, possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
                 }
 
                 /* Add the new possible road points to the ongoing road and don't create the road */
@@ -722,9 +706,7 @@ class App extends Component<AppProps, AppState> {
 
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
-            monitor.placeLocalFlag(pointInformation, this.props.selfPlayerId)
-
-            await createFlag(pointInformation, this.props.gameId, this.props.selfPlayerId)
+            monitor.placeFlagSnappy(pointInformation, this.props.gameId, this.props.selfPlayerId)
         }
 
         else if (pointInformation.is === "road" && pointInformation.roadId) {

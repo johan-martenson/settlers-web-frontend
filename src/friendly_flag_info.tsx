@@ -3,6 +3,7 @@ import { callGeologist, FlagInformation, GameId, PlayerId, removeFlag, sendScout
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_flag_info.css'
+import { monitor } from './monitor'
 
 interface FriendlyFlagInfoProps {
     closeDialog: (() => void)
@@ -32,7 +33,8 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                 onButtonClicked={
                                     async () => {
                                         console.log("Removing flag")
-                                        await removeFlag(this.props.flag.id, this.props.gameId, this.props.playerId)
+
+                                        monitor.removeFlagSnappy(this.props.flag.id, this.props.gameId, this.props.playerId)
 
                                         this.props.closeDialog()
                                     }
@@ -44,10 +46,10 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                 image="road-1.png"
                                 imageLabel="Road"
                                 onButtonClicked={
-                                    async () => {
+                                    () => {
                                         console.info("Starting to build road")
 
-                                        await this.props.startNewRoad(this.props.flag)
+                                        this.props.startNewRoad(this.props.flag)
 
                                         this.props.closeDialog()
                                     }

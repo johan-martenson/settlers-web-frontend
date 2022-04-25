@@ -1,4 +1,4 @@
-import { AvailableConstruction, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AnyBuilding, AvailableConstruction, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -56,6 +56,7 @@ interface Monitor {
     localRemovedFlags: Map<FlagId, FlagInformation>
     localRemovedRoads: Map<RoadId, RoadInformation>
 
+    placeHouseSnappy: ((houseType: AnyBuilding, point: Point, gameId: GameId, playerId: PlayerId) => void)
     placeRoadSnappy: ((points: Point[], gameId: GameId, playerId: PlayerId) => Promise<void>)
     placeFlagSnappy: ((point: Point, gameId: GameId, playerId: PlayerId) => Promise<void>)
     placeRoadAndFlagSnappy: ((point: Point, points: Point[], gameId: GameId, playerId: PlayerId) => void)
@@ -96,6 +97,7 @@ const monitor: Monitor = {
     localRemovedFlags: new Map<FlagId, FlagInformation>(),
     localRemovedRoads: new Map<RoadId, RoadInformation>(),
 
+    placeHouseSnappy: placeHouseSnappy,
     placeRoadSnappy: placeRoadSnappy,
     placeFlagSnappy: placeFlagSnappy,
     placeRoadAndFlagSnappy: placeRoadAndFlagSnappy,
@@ -1009,6 +1011,36 @@ function undoRemoveLocalRoad(roadId: RoadId): void {
     }
 }
 
+async function placeHouseSnappy(houseType: AnyBuilding, point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
+    monitor.houses.set('LOCAL',
+        {
+            id: 'LOCAL',
+            type: houseType,
+            x: point.x,
+            y: point.y,
+            playerId: playerId,
+            inventory: new Map<string, number>(),
+            evacuated: false,
+            promotionsEnabled: true,
+            state: 'PLANNED',
+            productionEnabled: true,
+            resources: {}
+        }
+    )
+
+    try {
+    await createBuilding(houseType, point, gameId, playerId)
+    } catch (error) {
+        console.error("Got error while creating building: " + error)
+    }
+
+    const pointInformation = await getInformationOnPoint(point, gameId, playerId)
+
+    if (pointInformation.is !== 'building') {
+        monitor.houses.delete('LOCAL')
+    }
+}
+
 async function placeRoadSnappy(points: Point[], gameId: GameId, playerId: PlayerId): Promise<void> {
     monitor.roads.set('LOCAL', { id: 'LOCAL', points })
 
@@ -1100,7 +1132,7 @@ async function removeRoadSnappy(roadId: RoadId, gameId: GameId, playerId: Player
         const pointInformation = await getInformationOnPoint(road.points[1], gameId, playerId)
 
         if (pointInformation.is === 'road') {
-            monitor.roads.delete('LOCAL')
+            monitor.roads.set(roadId, road)
         }
     }
 }

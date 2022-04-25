@@ -1,11 +1,12 @@
 import React, { Component } from 'react'
-import { removeRoad, createBuilding, createFlag, GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api'
+import { GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api'
 import Button from './button'
+import './construction_info.css'
 import { Dialog, DialogSection } from './dialog'
 import { houseImageMap } from './images'
+import { monitor } from './monitor'
 import SelectableButtonRow from './selectable_button_row'
 import { camelCaseToWords } from './utils'
-import './construction_info.css'
 
 interface ConstructionInfoProps {
     selected?: "Buildings" | "FlagsAndRoads"
@@ -168,9 +169,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                 onButtonClicked={
                                     async () => {
                                         console.info("Raising flag")
-                                        await createFlag(this.props.point,
-                                            this.props.gameId,
-                                            this.props.playerId)
+                                        await monitor.placeFlagSnappy(this.props.point, this.props.gameId, this.props.playerId)
 
                                         this.props.closeDialog()
                                     }
@@ -207,7 +206,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 return
                                             }
 
-                                            await removeRoad(this.props.point.roadId, this.props.gameId, this.props.playerId)
+                                            await monitor.removeRoadSnappy(this.props.point.roadId, this.props.gameId, this.props.playerId)
 
                                             this.props.closeDialog()
                                         }
@@ -250,7 +249,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         onButtonClicked={
                                             async () => {
                                                 console.info("Creating house")
-                                                await createBuilding(house,
+                                                await monitor.placeHouseSnappy(house,
                                                     this.props.point,
                                                     this.props.gameId,
                                                     this.props.playerId)
@@ -281,7 +280,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         onButtonClicked={
                                             async () => {
                                                 console.info("Creating house")
-                                                await createBuilding(house,
+                                                await monitor.placeHouseSnappy(house,
                                                     this.props.point,
                                                     this.props.gameId,
                                                     this.props.playerId)
@@ -316,7 +315,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                             onButtonClicked={
                                                 async () => {
                                                     console.info("Creating house")
-                                                    await createBuilding(house,
+                                                    await monitor.placeHouseSnappy(house,
                                                         this.props.point,
                                                         this.props.gameId,
                                                         this.props.playerId)

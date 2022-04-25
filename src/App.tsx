@@ -633,11 +633,22 @@ class App extends Component<AppProps, AppState> {
                 )
 
                 // Call the backend to make the changes take effect
+                // TODO: introduce a method in the backend to do both as a single operation and then use it here
                 await createFlag(point, this.props.gameId, this.state.player)
-                console.info("Created flag")
-
                 await createRoad(newRoadPoints, this.props.gameId, this.state.player)
-                console.info("Created road")
+
+                console.info("Created flag and road")
+
+                const flagPointInformation = await getInformationOnPoint(point, this.props.gameId, this.props.selfPlayerId)
+                const roadPointInformation = await getInformationOnPoint(newRoadPoints[1], this.props.gameId, this.props.selfPlayerId)
+
+                if (flagPointInformation.is !== 'flag') {
+                    monitor.flags.delete('LOCAL')
+                }
+
+                if (roadPointInformation.is !== 'road') {
+                    monitor.roads.delete('LOCAL')
+                }
             } else {
                 console.log("Could not place flag")
             }

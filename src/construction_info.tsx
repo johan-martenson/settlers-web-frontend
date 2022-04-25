@@ -54,7 +54,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
     }
 
     canRaiseFlag(): boolean {
-        if (this.props.point.canBuild.find((x) => x === "flag")) {
+        if (this.props.point.canBuild.find(x => x === "flag")) {
             return true
         }
 
@@ -70,7 +70,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
     }
 
     canBuildLargeHouse(): boolean {
-        if (this.props.point.canBuild.find((x) => x === "large")) {
+        if (this.props.point.canBuild.find(x => x === "large")) {
             return true
         }
 
@@ -78,7 +78,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
     }
 
     canBuildMediumHouse(): boolean {
-        if (this.props.point.canBuild.find((x) => x === "medium")) {
+        if (this.props.point.canBuild.find(x => x === "medium")) {
             return true
         }
 
@@ -86,7 +86,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
     }
 
     canBuildSmallHouse(): boolean {
-        if (this.props.point.canBuild.find((x) => x === "small")) {
+        if (this.props.point.canBuild.find(x => x === "small")) {
             return true
         }
 
@@ -94,7 +94,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
     }
 
     canBuildMine(): boolean {
-        if (this.props.point.canBuild.find((x) => x === "mine")) {
+        if (this.props.point.canBuild.find(x => x === "mine")) {
             return true
         }
 

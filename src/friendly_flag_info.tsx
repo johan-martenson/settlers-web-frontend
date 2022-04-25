@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, FlagInformation, GameId, PlayerId, removeFlag, sendScout } from './api'
+import { callGeologist, FlagInformation, GameId, PlayerId, sendScout } from './api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_flag_info.css'
@@ -34,7 +34,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                     async () => {
                                         console.log("Removing flag")
 
-                                        monitor.removeFlagSnappy(this.props.flag.id, this.props.gameId, this.props.playerId)
+                                        await monitor.removeFlagSnappy(this.props.flag.id, this.props.gameId, this.props.playerId)
 
                                         this.props.closeDialog()
                                     }

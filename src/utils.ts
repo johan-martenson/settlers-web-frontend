@@ -178,11 +178,6 @@ function getLineBetweenPoints(p1: Point, p2: Point): Line {
     }
 }
 
-function almostEquals(a: number, b: number): boolean {
-    const difference = a - b
-    return difference < MINIMAL_DIFFERENCE && difference > -MINIMAL_DIFFERENCE
-}
-
 function sumVectors(v1: Vector | undefined, v2: Vector | undefined): Vector {
 
     let vector1: Vector
@@ -259,27 +254,6 @@ function getPointLeft(point: Point): Point {
 
 function arrayToRgbStyle(rgb: number[]): string {
     return 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')'
-}
-
-async function removeHouseAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
-
-    /* Get the player's houses */
-    const buildings = await getHousesForPlayer(playerId, gameId)
-
-    /* Find the one on the point */
-    let buildingOnPoint
-
-    for (const building of buildings) {
-        if (building.x === point.x && building.y === point.y) {
-            buildingOnPoint = building
-
-            break
-        }
-    }
-
-    if (buildingOnPoint) {
-        await removeHouse(buildingOnPoint.id, playerId, gameId)
-    }
 }
 
 function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boolean {
@@ -1803,8 +1777,6 @@ export {
     same,
     removeHouseOrFlagOrRoadAtPoint,
     isRoadAtPoint,
-    almostEquals,
-    removeHouseAtPoint,
     isContext2D,
     terrainInformationToTerrainAtPointList,
     arrayToRgbStyle,

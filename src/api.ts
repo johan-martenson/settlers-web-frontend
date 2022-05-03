@@ -32,7 +32,7 @@ export type StoneType = 'TYPE_1' | 'TYPE_2'
 
 export type CropType = 'TYPE_1' | 'TYPE_2'
 
-export type CropGrowth = 'JUST_PLANTED' | 'SMALL' | 'HALFWAY' | 'FULL_GROWN' | 'HARVESTED'
+export type CropGrowth = 'JUST_PLANTED' | 'SMALL' | 'ALMOST_GROWN' | 'FULL_GROWN' | 'HARVESTED'
 
 export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST_FULL' | 'FULL'
 
@@ -233,10 +233,12 @@ export type DecorationType = "MUSHROOM" |
     "SMALL_GRASS"
 
 
+export type TreeSize = 'NEWLY_PLANTED' | 'SMALL' | 'MEDIUM' | 'FULL_GROWN'
+
 export interface TreeInformation extends Point {
     id: TreeId
     type: TreeType
-    size: 'SMALL' | 'MEDIUM' | 'LARGE'
+    size: TreeSize
 }
 
 export type FireSize = "LARGE" | "MEDIUM" | "SMALL" | "MINI"

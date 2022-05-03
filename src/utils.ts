@@ -1,4 +1,4 @@
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeType, Vegetation } from './api'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation } from './api'
 import { monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -1071,8 +1071,6 @@ class RoadBuildingImageAtlasHandler {
     }
 }
 
-type TreeSize = 'SMALLEST' | 'SMALL' | 'ALMOST_GROWN' | 'GROWN'
-
 interface TreeImageAtlasFormat {
     grownTrees: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
     growingTrees: Record<TreeType, Record<TreeSize, OneImageInformation>>
@@ -1142,19 +1140,13 @@ class TreeImageAtlasHandler {
         }
     }
 
-    getImageForGrowingTree(treeType: TreeType, treeSize: Size) {
+    getImageForGrowingTree(treeType: TreeType, treeSize: TreeSize) {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        let size: TreeSize = 'SMALL'
-
-        if (treeSize === 'MEDIUM') {
-            size = 'ALMOST_GROWN'
-        }
-
         const infoPerTreeType = this.imageAtlasInfo.growingTrees[treeType]
-        const imageInfo = infoPerTreeType[size]
+        const imageInfo = infoPerTreeType[treeSize]
 
         return {
             sourceX: imageInfo.x,

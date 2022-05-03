@@ -149,6 +149,7 @@ interface ChangesMessage {
     newStones?: Point[]
     removedStones?: Point[]
     newCrops?: CropInformation[]
+    harvestedCrops?: CropId[]
     removedCrops?: CropId[]
     newDiscoveredLand?: Point[]
     newSigns?: SignInformation[]
@@ -168,7 +169,7 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
             message.newRoads || message.removedRoads ||
             message.changedBorders ||
             message.newTrees || message.removedTrees ||
-            message.newCrops || message.removedCrops ||
+            message.newCrops || message.harvestedCrops || message.removedCrops ||
             message.newStones || message.removedStones ||
             message.newSigns || message.removedSigns ||
             message.newDiscoveredLand ||
@@ -407,6 +408,15 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
         }
 
         message.newCrops?.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+
+        message.harvestedCrops?.forEach(cropId => {
+            const crop = monitor.crops.get(cropId)
+
+            if (crop !== undefined) {
+                crop.state = 'HARVESTED'
+            }
+        })
+
         message.removedCrops?.forEach(cropId => monitor.crops.delete(cropId))
 
         message.newSigns?.forEach((sign) => monitor.signs.set(sign.id, sign))
@@ -543,7 +553,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
                 if (crop.growth >= 10 && crop.growth < 20) {
                     crop.state = 'SMALL'
                 } else if (crop.growth >= 20 && crop.growth < 30) {
-                    crop.state = 'HALFWAY'
+                    crop.state = 'ALMOST_GROWN'
                 } else {
                     crop.state = 'FULL_GROWN'
                 }
@@ -558,20 +568,26 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
         monitor.trees.forEach((tree, treeId) => {
             const visibleTree = monitor.visibleTrees.get(treeId)
 
-            if (tree.size !== 'LARGE') {
+            if (tree.size !== 'FULL_GROWN') {
                 tree.growth = tree.growth + 1
 
                 if (tree.growth >= 10 && tree.growth < 20) {
+                    tree.size = 'SMALL'
+
+                    if (visibleTree) {
+                        visibleTree.size = 'SMALL'
+                    }
+                } else if (tree.growth >= 20 && tree.growth < 30) {
                     tree.size = 'MEDIUM'
 
                     if (visibleTree) {
                         visibleTree.size = 'MEDIUM'
                     }
-                } else if (tree.growth >= 20) {
-                    tree.size = 'LARGE'
+                } else if (tree.growth >= 30) {
+                    tree.size = 'FULL_GROWN'
 
                     if (visibleTree) {
-                        visibleTree.size = 'LARGE'
+                        visibleTree.size = 'FULL_GROWN'
                     }
                 }
             }
@@ -919,7 +935,7 @@ function serverSentCropToLocal(serverCrop: CropInformation): CropInformationLoca
 
     if (serverCrop.state === 'SMALL') {
         growth = 10
-    } else if (serverCrop.state === 'HALFWAY') {
+    } else if (serverCrop.state === 'ALMOST_GROWN') {
         growth = 20
     }
 
@@ -935,8 +951,10 @@ function serverSentCropToLocal(serverCrop: CropInformation): CropInformationLoca
 function serverSentTreeToLocal(serverTree: TreeInformation): TreeInformationLocal {
     let growth = 0
 
-    if (serverTree.size === 'MEDIUM') {
+    if (serverTree.size === 'SMALL') {
         growth = 10
+    } else if (serverTree.size === 'MEDIUM') {
+        growth = 20
     }
 
     return {

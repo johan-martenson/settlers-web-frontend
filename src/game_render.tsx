@@ -773,7 +773,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             let treeDrawInfo
 
-            if (tree.size === 'SMALL' || tree.size === 'MEDIUM') {
+            if (tree.size !== 'FULL_GROWN') {
                 treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree.type, tree.size)
             } else {
                 treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)

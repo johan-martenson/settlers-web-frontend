@@ -1140,7 +1140,7 @@ class TreeImageAtlasHandler {
         }
     }
 
-    getImageForGrowingTree(treeType: TreeType, treeSize: TreeSize) {
+    getImageForGrowingTree(treeType: TreeType, treeSize: TreeSize): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }

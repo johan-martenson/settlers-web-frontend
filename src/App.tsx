@@ -152,7 +152,7 @@ class App extends Component<AppProps, AppState> {
             translateX: 0,
             translateY: 0,
             selected: { x: 0, y: 0 },
-            scale: 50,
+            scale: 35,
             gameWidth: 0,
             gameHeight: 0,
             player: props.selfPlayerId,
@@ -268,7 +268,7 @@ class App extends Component<AppProps, AppState> {
     goToPoint(point: Point): void {
         console.info("Go to point: " + JSON.stringify(point))
 
-        const scaleY = this.state.scale * 0.5
+        const scaleY = this.state.scale
 
         const newTranslateX = (globalSyncState.width / 2) - point.x * this.state.scale
         const newTranslateY = (globalSyncState.height / 2) + point.y * scaleY - globalSyncState.height
@@ -282,7 +282,7 @@ class App extends Component<AppProps, AppState> {
     onPlayerSelected(player: PlayerInformation): void {
         console.info("Selected player " + JSON.stringify(player))
 
-        const scaleY = this.state.scale * 0.5
+        const scaleY = this.state.scale
 
         let newTranslateX = this.state.translateX
         let newTranslateY = this.state.translateY
@@ -369,12 +369,12 @@ class App extends Component<AppProps, AppState> {
         /* Center after zooming */
         const centerGamePoint = {
             x: (globalSyncState.width / 2 - this.state.translateX) / this.state.scale,
-            y: (globalSyncState.height / 2 + this.state.translateY) / (this.state.scale * 0.5)
+            y: (globalSyncState.height / 2 + this.state.translateY) / (this.state.scale)
         }
 
         const newTranslate = {
             x: globalSyncState.width / 2 - centerGamePoint.x * newScale,
-            y: globalSyncState.height / 2 - globalSyncState.height + centerGamePoint.y * newScale * + 0.5
+            y: globalSyncState.height / 2 - globalSyncState.height + centerGamePoint.y * newScale
         }
 
         this.setState({

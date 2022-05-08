@@ -1513,14 +1513,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {
         return {
             x: gamePoint.x * this.props.scale + this.props.translateX,
-            y: this.props.screenHeight - gamePoint.y * this.props.scale * 0.5 + this.props.translateY
+            y: this.props.screenHeight - gamePoint.y * this.props.scale + this.props.translateY
         }
     }
 
     screenPointToGamePoint(screenPoint: ScreenPoint): Point {
 
         const gameX = (screenPoint.x - this.props.translateX) / this.props.scale
-        const gameY = (this.props.screenHeight - screenPoint.y + this.props.translateY) / (this.props.scale * 0.5)
+        const gameY = (this.props.screenHeight - screenPoint.y + this.props.translateY) / (this.props.scale)
 
         let roundedGameX = Math.round(gameX)
         let roundedGameY = Math.round(gameY)

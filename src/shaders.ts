@@ -40,7 +40,7 @@ void main (void) {
     // Calculate the on-screen coordinates
     //vertex = a_coords * u_scale + u_offset;
     vertex.x = (((a_coords.x * u_scale.x + u_offset.x) / u_screen_width) * 2.0) - 1.0;
-    vertex.y = (((a_coords.y * u_scale.y * 0.5 - u_offset.y) / u_screen_height) * 2.0) - 1.0;
+    vertex.y = (((a_coords.y * u_scale.y - u_offset.y) / u_screen_height) * 2.0) - 1.0;
 
     //vertex[1] = 1.0 - vertex[1];
 
@@ -109,15 +109,15 @@ vec2 pixel_scale;
 out vec2 v_texcoord;
 
 // At default screen size, to get pixel correct results: PIXEL_SCALE = (default_scale * width|height_in_pixels) / 2
-#define DEFAULT_SCALE 50.0
+#define DEFAULT_SCALE 35.0
 
 void main() {
 
   // Calculate the on-screen center of the image
   image_center.x = (((u_game_point.x * u_scale + u_screen_offset.x) / u_screen_dimensions.x) * 2.0) - 1.0;
-  image_center.y = (((u_game_point.y * u_scale * 0.5 - u_screen_offset.y) / u_screen_dimensions.y) * 2.0) - 1.0;
+  image_center.y = (((u_game_point.y * u_scale - u_screen_offset.y) / u_screen_dimensions.y) * 2.0) - 1.0;
 
-  // Calculate the pixel_scale factor to make drawing pixel-perfect at the default 50 scale
+  // Calculate the pixel_scale factor to make drawing pixel-perfect at the default scale
   pixel_scale.x = (DEFAULT_SCALE * float(u_screen_dimensions.x)) / 2.0;
   pixel_scale.y = (DEFAULT_SCALE * float(u_screen_dimensions.y)) / 2.0;
 

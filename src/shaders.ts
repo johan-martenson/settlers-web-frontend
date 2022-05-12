@@ -86,7 +86,7 @@ void main(void) {
 }
 `
 
-const texturedImageVertexShader=`#version 300 es
+const texturedImageVertexShader = `#version 300 es
 
 in vec2 a_position;
 in vec2 a_texcoord;
@@ -142,7 +142,7 @@ void main() {
   gl_Position = vec4(vertex, 0.0, 1.0);
 }`
 
-const passthroughVertexShader=`#version 300 es
+const passthroughVertexShader = `#version 300 es
 
 in vec2 a_coord;
 in vec2 a_texcoord;
@@ -156,7 +156,7 @@ void main() {
 }
 `
 
-const textureFragmentShader=`#version 300 es
+const textureFragmentShader = `#version 300 es
 precision highp float;
 
 in vec2 v_texcoord;
@@ -164,12 +164,29 @@ in vec2 v_texcoord;
 uniform sampler2D u_texture;
 
 out vec4 outColor;
- 
+
 void main() {
    outColor = texture(u_texture, v_texcoord);
 }`
 
-const solidRedFragmentShader=`#version 300 es
+const shadowFragmentShader = `#version 300 es
+precision highp float;
+
+in vec2 v_texcoord;
+
+uniform sampler2D u_texture;
+
+vec4 textureColor;
+
+out vec4 outColor;
+
+void main() {
+   textureColor = texture(u_texture, v_texcoord);
+
+   outColor = vec4(0.0, 0.0, 0.0, textureColor[3] * 0.6);
+}`
+
+const solidRedFragmentShader = `#version 300 es
 precision highp float;
 
 out vec4 outColor;
@@ -185,4 +202,5 @@ export {
   textureAndLightingFragmentShader,
   texturedImageVertexShader,
   textureFragmentShader,
+  shadowFragmentShader
 }

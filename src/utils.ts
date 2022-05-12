@@ -349,7 +349,7 @@ class TreeAnimation {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number): DrawingInformation | undefined {
+    getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getDrawingInformationForGrownTree(treeType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
 }
@@ -433,8 +433,8 @@ interface OneDirectionImageAtlasAnimationInfo {
     nrImages: number
     startX: number
     startY: number
-    offsetX?: number
-    offsetY?: number
+    offsetX: number
+    offsetY: number
 }
 
 export interface DrawingInformation {
@@ -1073,8 +1073,11 @@ class RoadBuildingImageAtlasHandler {
 
 interface TreeImageAtlasFormat {
     grownTrees: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
+    grownTreeShadows: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
     growingTrees: Record<TreeType, Record<TreeSize, OneImageInformation>>
+    growingTreeShadows: Record<TreeType, Record<TreeSize, OneImageInformation>>
     fallingTrees: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
+    fallingTreeShadows: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
 }
 
 class TreeImageAtlasHandler {
@@ -1108,56 +1111,75 @@ class TreeImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForGrownTree(treeType: TreeType, animationCounter: number): DrawingInformation | undefined {
+    getDrawingInformationForGrownTree(treeType: TreeType, animationCounter: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerTreeType = this.imageAtlasInfo.grownTrees[treeType]
+        const imagesForTreeType = this.imageAtlasInfo.grownTrees[treeType]
+        const shadowImagesForTreeType = this.imageAtlasInfo.grownTreeShadows[treeType]
 
-        const frameIndex = (animationCounter) % infoPerTreeType.nrImages
+        const frameIndex = animationCounter % imagesForTreeType.nrImages
 
-        let offsetX = 0
-        let offsetY = 0
-
-        if (infoPerTreeType?.offsetX !== undefined) {
-            offsetX = infoPerTreeType.offsetX
-        }
-
-        if (infoPerTreeType?.offsetY !== undefined) {
-            offsetY = infoPerTreeType.offsetY
-        }
-
-        return {
-            sourceX: infoPerTreeType.startX + frameIndex * infoPerTreeType.width,
-            sourceY: infoPerTreeType.startY,
-            width: infoPerTreeType.width,
-            height: infoPerTreeType.height, // Verify that this goes in the right direction
-            offsetX: offsetX,
-            offsetY: offsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        return [
+            {
+                sourceX: imagesForTreeType.startX + frameIndex * imagesForTreeType.width,
+                sourceY: imagesForTreeType.startY,
+                width: imagesForTreeType.width,
+                height: imagesForTreeType.height,
+                offsetX: imagesForTreeType.offsetX,
+                offsetY: imagesForTreeType.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImagesForTreeType.startX + frameIndex * shadowImagesForTreeType.width,
+                sourceY: shadowImagesForTreeType.startY,
+                width: shadowImagesForTreeType.width,
+                height: shadowImagesForTreeType.height,
+                offsetX: shadowImagesForTreeType.offsetX,
+                offsetY: shadowImagesForTreeType.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+        ]
     }
 
-    getImageForGrowingTree(treeType: TreeType, treeSize: TreeSize): DrawingInformation | undefined {
+
+
+    getImageForGrowingTree(treeType: TreeType, treeSize: TreeSize): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerTreeType = this.imageAtlasInfo.growingTrees[treeType]
-        const imageInfo = infoPerTreeType[treeSize]
+        const imagePerTreeType = this.imageAtlasInfo.growingTrees[treeType]
+        const shadowImagePerTreeType = this.imageAtlasInfo.growingTreeShadows[treeType]
 
-        return {
-            sourceX: imageInfo.x,
-            sourceY: imageInfo.y,
-            width: imageInfo.width,
-            height: imageInfo.height,
-            offsetX: imageInfo.offsetX,
-            offsetY: imageInfo.offsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        const imageInfo = imagePerTreeType[treeSize]
+        const shadowImageInfo = shadowImagePerTreeType[treeSize]
+
+        return [
+            {
+                sourceX: imageInfo.x,
+                sourceY: imageInfo.y,
+                width: imageInfo.width,
+                height: imageInfo.height,
+                offsetX: imageInfo.offsetX,
+                offsetY: imageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImageInfo.x,
+                sourceY: shadowImageInfo.y,
+                width: shadowImageInfo.width,
+                height: shadowImageInfo.height,
+                offsetX: shadowImageInfo.offsetX,
+                offsetY: shadowImageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 }
 

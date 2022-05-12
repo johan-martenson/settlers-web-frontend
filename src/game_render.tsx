@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
-import { Direction, materialToColor, NationSmallCaps, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, NationSmallCaps, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
-import { textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShader, textureFragmentShader } from './shaders'
+import { shadowFragmentShader, textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShader, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
 import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
@@ -204,10 +204,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private textureMappingAttributeLocation?: number
     private groundRenderProgram: WebGLProgram | null
     private drawImageProgram: WebGLProgram | null
+    private drawShadowProgram: WebGLProgram | null
     private drawImagePositionLocation?: number
     private drawImageTexcoordLocation?: number
     private drawImageTexCoordBuffer?: WebGLBuffer | null
     private drawImagePositionBuffer?: WebGLBuffer | null
+    private drawShadowTexCoordBuffer?: WebGLBuffer | null
+    private drawShadowPositionBuffer?: WebGLBuffer | null
 
 
     constructor(props: GameCanvasProps) {
@@ -231,6 +234,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.groundRenderProgram = null
         this.drawImageProgram = null
+        this.drawShadowProgram = null
     }
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
@@ -370,10 +374,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const lightingFragmentShader = makeShader(gl, textureAndLightingFragmentShader, gl.FRAGMENT_SHADER)
                 const drawImageVertexShader = makeShader(gl, texturedImageVertexShader, gl.VERTEX_SHADER)
                 const drawImageFragmentShader = makeShader(gl, textureFragmentShader, gl.FRAGMENT_SHADER)
+                const drawShadowFragmentShader = makeShader(gl, shadowFragmentShader, gl.FRAGMENT_SHADER)
+
+                // Create the programs
+                this.groundRenderProgram = gl.createProgram()
+                this.drawImageProgram = gl.createProgram()
+                this.drawShadowProgram = gl.createProgram()
 
                 // Setup the program to render the ground
-                this.groundRenderProgram = gl.createProgram()
-
                 if (this.groundRenderProgram && lightingVertexShader && lightingFragmentShader) {
                     gl.attachShader(this.groundRenderProgram, lightingVertexShader)
                     gl.attachShader(this.groundRenderProgram, lightingFragmentShader)
@@ -438,8 +446,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 // Setup the program to render images
-                this.drawImageProgram = gl.createProgram()
-
                 if (this.drawImageProgram && drawImageVertexShader && drawImageFragmentShader) {
                     gl.attachShader(this.drawImageProgram, drawImageVertexShader)
                     gl.attachShader(this.drawImageProgram, drawImageFragmentShader)
@@ -496,6 +502,62 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, gl.FLOAT, false, 0, 0)
                 }
 
+                // Setup the program to render shadows
+                if (this.drawShadowProgram && drawImageVertexShader && drawShadowFragmentShader) {
+                    gl.attachShader(this.drawShadowProgram, drawImageVertexShader)
+                    gl.attachShader(this.drawShadowProgram, drawShadowFragmentShader)
+
+                    gl.linkProgram(this.drawShadowProgram)
+                    gl.useProgram(this.drawImageProgram)
+
+                    gl.viewport(0, 0, canvas.width, canvas.height)
+
+                    // Get attribute locations
+                    const positionLocation = gl.getAttribLocation(this.drawShadowProgram, "a_position")
+                    const texcoordLocation = gl.getAttribLocation(this.drawShadowProgram, "a_texcoord")
+
+                    // Create the position buffer
+                    this.drawShadowPositionBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.drawShadowPositionBuffer)
+
+                    const positions = [
+                        0, 0,
+                        0, 1,
+                        1, 0,
+                        1, 0,
+                        0, 1,
+                        1, 1,
+                    ]
+
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
+
+                    // Turn on the attribute
+                    gl.enableVertexAttribArray(positionLocation)
+
+                    // Configure how the attribute gets data
+                    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+
+                    // Handle the tex coord attribute
+                    this.drawShadowTexCoordBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.drawShadowTexCoordBuffer)
+
+                    const texCoords = [
+                        0, 0,
+                        0, 1,
+                        1, 0,
+                        1, 0,
+                        0, 1,
+                        1, 1
+                    ]
+
+                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
+
+                    // Turn on the attribute
+                    gl.enableVertexAttribArray(texcoordLocation)
+
+                    // Configure how the attribute gets data
+                    gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
+                }
             } else {
                 console.log(gl)
             }
@@ -555,6 +617,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Clear the drawing list */
         let toDrawNormal: ToDraw[] = []
+        const shadowsToDraw: ToDraw[] = []
 
 
         /* Clear the overlay - make it fully transparent */
@@ -773,17 +836,39 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             let treeDrawInfo
 
-            if (tree.size !== 'FULL_GROWN') {
-                treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree.type, tree.size)
-            } else {
+            if (tree.size === 'FULL_GROWN') {
                 treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)
-            }
 
-            toDrawNormal.push({
-                source: treeDrawInfo,
-                gamePoint: tree,
-                depth: tree.y
-            })
+                if (treeDrawInfo) {
+                    toDrawNormal.push({
+                        source: treeDrawInfo[0],
+                        gamePoint: tree,
+                        depth: tree.y
+                    })
+
+                    shadowsToDraw.push({
+                        source: treeDrawInfo[1],
+                        gamePoint: tree,
+                        depth: tree.y
+                    })
+                }
+            } else {
+                treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree.type, tree.size)
+
+                if (treeDrawInfo) {
+                    toDrawNormal.push({
+                        source: treeDrawInfo[0],
+                        gamePoint: tree,
+                        depth: tree.y
+                    })
+
+                    shadowsToDraw.push({
+                        source: treeDrawInfo[1],
+                        gamePoint: tree,
+                        depth: tree.y
+                    })
+                }
+            }
 
             treeIndex = treeIndex + 1
         }
@@ -1171,7 +1256,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("Collect available construction")
 
-        // Draw the Normal layer
+        // Draw the Shadow layer and the Normal layer
 
         // Sort the toDrawList so it first draws things further away
         const sortedToDrawList = toDrawNormal.sort((draw1, draw2) => {
@@ -1179,7 +1264,76 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         })
 
 
-        // Draw all regular queued up images in order
+        // Set up webgl2 with the right shaders to prepare for drawing shadows
+        if (this.gl) {
+            this.gl.useProgram(this.drawShadowProgram)
+
+            this.gl.viewport(0, 0, width, height)
+
+            this.gl.enable(this.gl.BLEND)
+            this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
+            this.gl.disable(this.gl.DEPTH_TEST)
+        }
+
+        // Draw all shadows
+        shadowsToDraw.forEach(shadow => {
+
+            if (shadow.gamePoint !== undefined && shadow.source && shadow.source.texture !== undefined) {
+
+                if (this.gl && this.drawShadowProgram && shadow.gamePoint) {
+
+                    this.gl.activeTexture(this.gl.TEXTURE3)
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
+
+                    // Re-assign the attribute locations
+                    const drawImagePositionLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_position")
+                    const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_texcoord")
+
+                    if (this.drawImagePositionBuffer) {
+                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+                        this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+                        this.gl.enableVertexAttribArray(drawImagePositionLocation)
+                    }
+
+                    if (this.drawImageTexCoordBuffer) {
+                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+                        this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+                        this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
+                    }
+
+                    // Re-assign the uniform locations
+                    const drawImageTextureLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_texture")
+                    const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_game_point")
+                    const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_offset")
+                    const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_image_offset")
+                    const drawImageScaleLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_scale")
+                    const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_coordinate")
+                    const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_dimensions")
+                    const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_dimensions")
+
+                    // Tell the fragment shader what texture to use
+                    this.gl.uniform1i(drawImageTextureLocation, 3)
+
+                    // Tell the vertex shader where to draw
+                    this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
+                    this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
+
+                    // Tell the vertex shader how to draw
+                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+
+                    // Tell the vertex shader what parts of the source image to draw
+                    this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
+                    this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
+
+                    // Draw the quad (2 triangles = 6 vertices)
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                }
+            }
+        })
+
+        // Set up webgl2 with the right shaders to prepare for drawing normal objects
         if (this.gl) {
             this.gl.useProgram(this.drawImageProgram)
 
@@ -1190,6 +1344,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.gl.disable(this.gl.DEPTH_TEST)
         }
 
+        // Draw normal objects
         sortedToDrawList.forEach(draw => {
 
             if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {

@@ -57,8 +57,6 @@ intToVegetationColor.set(21, [220, 0, 0])      // Lava 3
 intToVegetationColor.set(22, [220, 0, 0])      // Lava 4
 intToVegetationColor.set(23, [140, 140, 140])  // Buildable mountain
 
-const MINIMAL_DIFFERENCE = 0.0000001
-
 // FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {
     return camelCaseStr
@@ -323,7 +321,7 @@ class FlagAnimation {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation | undefined {
+    getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
 }
@@ -511,24 +509,10 @@ class WorkerImageAtlasHandler {
     }
 }
 
-interface HouseImageInformation {
-    y: number
-    readyAtX: number
-    readyWidth: number
-    readyHeight: number,
-    readyOffsetX: number
-    readyOffsetY: number
-    underConstructionAtX: number
-    underConstructionWidth: number
-    underConstructionHeight: number
-    underConstructionOffsetX: number
-    underConstructionOffsetY: number
-}
-
 interface HouseImageAtlasInformation {
-    buildings: Record<NationSmallCaps, Record<AnyBuilding, HouseImageInformation>>
-    constructionPlanned: Record<NationSmallCaps, OneImageInformation>
-    constructionJustStarted: Record<NationSmallCaps, OneImageInformation>
+    buildings: Record<Nation, Record<AnyBuilding, Record<'ready' | 'underConstruction' | 'underConstructionShadow' | 'readyShadow', OneImageInformation>>>
+    constructionPlanned: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
+    constructionJustStarted: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
 }
 
 class HouseImageAtlasHandler {
@@ -562,12 +546,12 @@ class HouseImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForHouseJustStarted(nation: NationSmallCaps): DrawingInformation | undefined {
+    getDrawingInformationForHouseJustStarted(nation: Nation): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
 
-        const houseInformation = this.imageAtlasInfo.constructionJustStarted[nation]
+        const houseInformation = this.imageAtlasInfo.constructionJustStarted[nation].image
 
         return {
             sourceX: houseInformation.x,
@@ -581,12 +565,12 @@ class HouseImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForHousePlanned(nation: NationSmallCaps): DrawingInformation | undefined {
+    getDrawingInformationForHousePlanned(nation: Nation): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
 
-        const houseInformation = this.imageAtlasInfo.constructionPlanned[nation]
+        const houseInformation = this.imageAtlasInfo.constructionPlanned[nation].image
 
         return {
             sourceX: houseInformation.x,
@@ -600,46 +584,67 @@ class HouseImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForHouseReady(nation: NationSmallCaps, houseType: AnyBuilding): DrawingInformation | undefined {
+    getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
 
-        const houseInformationForNation = this.imageAtlasInfo.buildings[nation]
+        const houseImage = this.imageAtlasInfo.buildings[nation][houseType].ready
+        const houseShadowImage = this.imageAtlasInfo.buildings[nation][houseType].readyShadow
 
-        const houseInformation = houseInformationForNation[houseType]
-
-        return {
-            sourceX: houseInformation.readyAtX,
-            sourceY: houseInformation.y,
-            width: houseInformation.readyWidth,
-            height: houseInformation.readyHeight,
-            offsetX: houseInformation.readyOffsetX,
-            offsetY: houseInformation.readyOffsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        return [
+            {
+                sourceX: houseImage.x,
+                sourceY: houseImage.y,
+                width: houseImage.width,
+                height: houseImage.height,
+                offsetX: houseImage.offsetX,
+                offsetY: houseImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: houseShadowImage.x,
+                sourceY: houseShadowImage.y,
+                width: houseShadowImage.width,
+                height: houseShadowImage.height,
+                offsetX: houseShadowImage.offsetX,
+                offsetY: houseShadowImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 
-    getDrawingInformationForHouseUnderConstruction(nation: NationSmallCaps, houseType: AnyBuilding): DrawingInformation | undefined {
+    getDrawingInformationForHouseUnderConstruction(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
         }
 
-        const houseInformationForNation = this.imageAtlasInfo.buildings[nation]
+        const houseImage = this.imageAtlasInfo.buildings[nation][houseType].underConstruction
+        const houseShadowImage = this.imageAtlasInfo.buildings[nation][houseType].underConstructionShadow
 
-        const houseInformation = houseInformationForNation[houseType]
-
-        return {
-            sourceX: houseInformation.underConstructionAtX,
-            sourceY: houseInformation.y,
-            width: houseInformation.underConstructionWidth,
-            height: houseInformation.underConstructionHeight,
-            offsetX: houseInformation.underConstructionOffsetX,
-            offsetY: houseInformation.underConstructionOffsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        return [
+            {
+                sourceX: houseImage.x,
+                sourceY: houseImage.y,
+                width: houseImage.width,
+                height: houseImage.height,
+                offsetX: houseImage.offsetX,
+                offsetY: houseImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: houseShadowImage.x,
+                sourceY: houseShadowImage.y,
+                width: houseShadowImage.width,
+                height: houseShadowImage.height,
+                offsetX: houseShadowImage.offsetX,
+                offsetY: houseShadowImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            }]
     }
 }
 
@@ -852,7 +857,7 @@ class FireImageAtlasHandler {
 
 class FlagImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, OneDirectionImageAtlasAnimationInfo>>
+    private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, Record<'images' | 'shadows', OneDirectionImageAtlasAnimationInfo>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -881,38 +886,38 @@ class FlagImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(nation: NationSmallCaps, flagType: FlagType, animationCounter: number): DrawingInformation | undefined {
+    getDrawingInformationFor(nation: NationSmallCaps, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerNation = this.imageAtlasInfo[nation]
+        const images = this.imageAtlasInfo[nation][flagType].images
+        const shadowImages = this.imageAtlasInfo[nation][flagType].shadows
 
-        const infoPerFlagType = infoPerNation[flagType]
+        const frameIndex = animationCounter % images.nrImages
 
-        const frameIndex = (animationCounter) % infoPerFlagType.nrImages
-
-        let offsetX = 0
-        let offsetY = 0
-
-        if (infoPerFlagType.offsetX !== undefined) {
-            offsetX = infoPerFlagType.offsetX
-        }
-
-        if (infoPerFlagType.offsetY !== undefined) {
-            offsetY = infoPerFlagType.offsetY
-        }
-
-        return {
-            sourceX: infoPerFlagType.startX + frameIndex * infoPerFlagType.width,
-            sourceY: infoPerFlagType.startY,
-            width: infoPerFlagType.width,
-            height: infoPerFlagType.height, // Verify that this goes in the right direction
-            offsetX: offsetX,
-            offsetY: offsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        return [
+            {
+                sourceX: images.startX + frameIndex * images.width,
+                sourceY: images.startY,
+                width: images.width,
+                height: images.height,
+                offsetX: images.offsetX,
+                offsetY: images.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImages.startX + frameIndex * shadowImages.width,
+                sourceY: shadowImages.startY,
+                width: shadowImages.width,
+                height: shadowImages.height,
+                offsetX: shadowImages.offsetX,
+                offsetY: shadowImages.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 }
 
@@ -1513,7 +1518,7 @@ class StoneImageAtlasHandler {
 
 class DecorationsImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<DecorationType, OneImageInformation>
+    private imageAtlasInfo?: Record<DecorationType, Record<'image' | 'shadowImage', OneImageInformation>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1542,29 +1547,59 @@ class DecorationsImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(decorationType: DecorationType): DrawingInformation | undefined {
+    getDrawingInformationFor(decorationType: DecorationType): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const imageInfo = this.imageAtlasInfo[decorationType]
+        const imageInfo = this.imageAtlasInfo[decorationType].image
+        const shadowImage = this.imageAtlasInfo[decorationType].shadowImage
 
-        return {
-            sourceX: imageInfo.x,
-            sourceY: imageInfo.y,
-            width: imageInfo.width,
-            height: imageInfo.height,
-            offsetX: imageInfo.offsetX,
-            offsetY: imageInfo.offsetY,
-            image: this.image,
-            texture: this.texture
+        if (shadowImage) {
+            return [
+                {
+                    sourceX: imageInfo.x,
+                    sourceY: imageInfo.y,
+                    width: imageInfo.width,
+                    height: imageInfo.height,
+                    offsetX: imageInfo.offsetX,
+                    offsetY: imageInfo.offsetY,
+                    image: this.image,
+                    texture: this.texture
+
+                },
+                {
+                    sourceX: shadowImage.x,
+                    sourceY: shadowImage.y,
+                    width: shadowImage.width,
+                    height: shadowImage.height,
+                    offsetX: shadowImage.offsetX,
+                    offsetY: shadowImage.offsetY,
+                    image: this.image,
+                    texture: this.texture
+
+                }
+            ]
         }
+
+        return [
+            {
+                sourceX: imageInfo.x,
+                sourceY: imageInfo.y,
+                width: imageInfo.width,
+                height: imageInfo.height,
+                offsetX: imageInfo.offsetX,
+                offsetY: imageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 }
 
 class CropImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<CropType, Record<CropGrowth, OneImageInformation>>
+    private imageAtlasInfo?: Record<CropType, Record<CropGrowth, Record<'image' | 'shadowImage', OneImageInformation>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1593,24 +1628,36 @@ class CropImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(cropType: CropType, growth: CropGrowth): DrawingInformation | undefined {
+    getDrawingInformationFor(cropType: CropType, growth: CropGrowth): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerCropType = this.imageAtlasInfo[cropType]
-        const imageInfo = infoPerCropType[growth]
+        const imageInfo = this.imageAtlasInfo[cropType][growth].image
+        const shadowImageInfo = this.imageAtlasInfo[cropType][growth].shadowImage
 
-        return {
-            sourceX: imageInfo.x,
-            sourceY: imageInfo.y,
-            width: imageInfo.width,
-            height: imageInfo.height,
-            offsetX: imageInfo.offsetX,
-            offsetY: imageInfo.offsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        return [
+            {
+                sourceX: imageInfo.x,
+                sourceY: imageInfo.y,
+                width: imageInfo.width,
+                height: imageInfo.height,
+                offsetX: imageInfo.offsetX,
+                offsetY: imageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImageInfo.x,
+                sourceY: shadowImageInfo.y,
+                width: shadowImageInfo.width,
+                height: shadowImageInfo.height,
+                offsetX: shadowImageInfo.offsetX,
+                offsetY: shadowImageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 }
 

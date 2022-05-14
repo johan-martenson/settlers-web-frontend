@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, NationSmallCaps, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, Nation, NationSmallCaps, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
@@ -57,7 +57,8 @@ let logOnce = true
 let timer: ReturnType<typeof setTimeout>
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
-const currentPlayerNation: NationSmallCaps = "romans"
+const currentPlayerNation: Nation = "ROMANS"
+const currentPlayerNationSmallCaps: NationSmallCaps = "romans"
 
 const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
 
@@ -226,7 +227,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.normals = new PointMapFast()
 
         /* Define the light vector */
-        this.lightVector = normalize({ x: -1, y: 1, z: -1 })
+        this.lightVector = normalize({ x: 1, y: 1, z: -1 })
 
         addVariableIfAbsent("fps")
 
@@ -805,21 +806,39 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gamePoint: house,
                     depth: house.y
                 })
-            } else {
+            } else if (house.state === "UNFINISHED") {
 
-                let houseDrawInformation
+                const houseDrawInformation = houses.getDrawingInformationForHouseUnderConstruction(currentPlayerNation, house.type)
 
-                if (house.state === "UNFINISHED") {
-                    houseDrawInformation = houses.getDrawingInformationForHouseUnderConstruction(currentPlayerNation, house.type)
-                } else {
-                    houseDrawInformation = houses.getDrawingInformationForHouseReady(currentPlayerNation, house.type)
+                if (houseDrawInformation) {
+                    toDrawNormal.push({
+                        source: houseDrawInformation[0],
+                        gamePoint: house,
+                        depth: house.y
+                    })
+
+                    shadowsToDraw.push({
+                        source: houseDrawInformation[1],
+                        gamePoint: house,
+                        depth: house.y
+                    })
                 }
+            } else {
+                const houseDrawInformation = houses.getDrawingInformationForHouseReady(currentPlayerNation, house.type)
 
-                toDrawNormal.push({
-                    source: houseDrawInformation,
-                    gamePoint: house,
-                    depth: house.y
-                })
+                if (houseDrawInformation) {
+                    toDrawNormal.push({
+                        source: houseDrawInformation[0],
+                        gamePoint: house,
+                        depth: house.y
+                    })
+
+                    shadowsToDraw.push({
+                        source: houseDrawInformation[1],
+                        gamePoint: house,
+                        depth: house.y
+                    })
+                }
             }
         }
 
@@ -897,11 +916,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             /* Draw the tree next to the point, instead of on top */
             const deadTreeInfo = decorationsImageAtlasHandler.getDrawingInformationFor("STANDING_DEAD_TREE")
 
-            toDrawNormal.push({
-                source: deadTreeInfo,
-                gamePoint: deadTree,
-                depth: deadTree.y
-            })
+            if (deadTreeInfo) {
+                toDrawNormal.push({
+                    source: deadTreeInfo[0],
+                    gamePoint: deadTree,
+                    depth: deadTree.y
+                })
+
+                shadowsToDraw.push({
+                    source: deadTreeInfo[1],
+                    gamePoint: deadTree,
+                    depth: deadTree.y
+                })
+            }
         }
 
         duration.after("collect dead trees")
@@ -917,11 +944,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             // TODO: get type from the backend
             const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', crop.state)
 
-            toDrawNormal.push({
-                source: cropDrawInfo,
-                gamePoint: crop,
-                depth: crop.y
-            })
+            if (cropDrawInfo) {
+                toDrawNormal.push({
+                    source: cropDrawInfo[0],
+                    gamePoint: crop,
+                    depth: crop.y
+                })
+
+                shadowsToDraw.push({
+                    source: cropDrawInfo[1],
+                    gamePoint: crop,
+                    depth: crop.y
+                })
+            }
         }
 
         duration.after("collect crops")
@@ -1136,11 +1171,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             const flagDrawInfo = flagAnimations.getAnimationFrame("romans", "NORMAL", this.animationIndex, flagCount)
 
-            toDrawNormal.push({
-                source: flagDrawInfo,
-                gamePoint: flag,
-                depth: flag.y
-            })
+            if (flagDrawInfo) {
+                toDrawNormal.push({
+                    source: flagDrawInfo[0],
+                    gamePoint: flag,
+                    depth: flag.y
+                })
+
+                shadowsToDraw.push({
+                    source: flagDrawInfo[1],
+                    gamePoint: flag,
+                    depth: flag.y
+                })
+            }
 
             if (flag.stackedCargo) {
 

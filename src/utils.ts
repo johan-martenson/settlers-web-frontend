@@ -369,7 +369,7 @@ class FireAnimation {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(size: FireSize, animationIndex: number): DrawingInformation | undefined {
+    getAnimationFrame(size: FireSize, animationIndex: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getFireDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
     }
 
@@ -768,7 +768,7 @@ class SignImageAtlasHandler {
 }
 
 interface FireImageAtlasFormat {
-    fires: Record<FireSize, OneDirectionImageAtlasAnimationInfo>
+    fires: Record<FireSize, Record<'image' | 'shadowImage', OneDirectionImageAtlasAnimationInfo>>
     burntDown: Record<Size, OneImageInformation>
 }
 
@@ -803,36 +803,53 @@ class FireImageAtlasHandler {
         }
     }
 
-    getFireDrawingInformation(size: FireSize, animationIndex: number): DrawingInformation | undefined {
+    getFireDrawingInformation(size: FireSize, animationIndex: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerFireSize = this.imageAtlasInfo.fires[size]
+        const fireImage = this.imageAtlasInfo.fires[size].image
+        const fireShadowImage = this.imageAtlasInfo.fires[size].shadowImage
 
-        const frameIndex = animationIndex % infoPerFireSize.nrImages
+        const frameIndex = animationIndex % fireImage.nrImages
 
-        let offsetX = 0
-        let offsetY = 0
-
-        if (infoPerFireSize.offsetX !== undefined) {
-            offsetX = infoPerFireSize.offsetX
+        if (fireShadowImage) {
+            return [
+                {
+                    sourceX: fireImage.startX + frameIndex * fireImage.width,
+                    sourceY: fireImage.startY,
+                    width: fireImage.width,
+                    height: fireImage.height,
+                    offsetX: fireImage.offsetX,
+                    offsetY: fireImage.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                },
+                {
+                    sourceX: fireShadowImage.startX + frameIndex * fireShadowImage.width,
+                    sourceY: fireShadowImage.startY,
+                    width: fireShadowImage.width,
+                    height: fireShadowImage.height,
+                    offsetX: fireShadowImage.offsetX,
+                    offsetY: fireShadowImage.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            ]
         }
 
-        if (infoPerFireSize.offsetY !== undefined) {
-            offsetY = infoPerFireSize.offsetY
-        }
-
-        return {
-            sourceX: infoPerFireSize.startX + frameIndex * infoPerFireSize.width,
-            sourceY: infoPerFireSize.startY,
-            width: infoPerFireSize.width,
-            height: infoPerFireSize.height,
-            offsetX: offsetX,
-            offsetY: offsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        return [
+            {
+                sourceX: fireImage.startX + frameIndex * fireImage.width,
+                sourceY: fireImage.startY,
+                width: fireImage.width,
+                height: fireImage.height,
+                offsetX: fireImage.offsetX,
+                offsetY: fireImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 
     getBurntDownDrawingInformation(size: Size): DrawingInformation | undefined {

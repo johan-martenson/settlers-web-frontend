@@ -791,11 +791,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const fireDrawInformation = fireAnimations.getAnimationFrame(size, this.animationIndex)
 
-                toDrawNormal.push({
-                    source: fireDrawInformation,
-                    gamePoint: house,
-                    depth: house.y
-                })
+                if (fireDrawInformation) {
+                    toDrawNormal.push({
+                        source: fireDrawInformation[0],
+                        gamePoint: house,
+                        depth: house.y
+                    })
+
+                    shadowsToDraw.push({
+                        source: fireDrawInformation[1],
+                        gamePoint: house,
+                        depth: house.y
+                    })
+                }
             } else if (house.state === 'DESTROYED') {
                 const size = getHouseSize(house)
 

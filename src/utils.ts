@@ -714,9 +714,14 @@ class BorderImageAtlasHandler {
     }
 }
 
+interface SignImageAtlasFormat {
+    images: Record<SignTypes | 'shadowImage', Record<Size, OneImageInformation>>
+    shadowImage: OneImageInformation
+}
+
 class SignImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<SignTypes, Record<Size, OneImageInformation>>
+    private imageAtlasInfo?: SignImageAtlasFormat
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -745,25 +750,36 @@ class SignImageAtlasHandler {
         }
     }
 
-    getDrawingInformation(signType: SignTypes, size: Size): DrawingInformation | undefined {
+    getDrawingInformation(signType: SignTypes, size: Size): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerSize = this.imageAtlasInfo[signType]
+        const image = this.imageAtlasInfo.images[signType][size]
+        const shadowImage = this.imageAtlasInfo.shadowImage
 
-        const imageInfo = infoPerSize[size]
-
-        return {
-            sourceX: imageInfo.x,
-            sourceY: imageInfo.y,
-            width: imageInfo.width,
-            height: imageInfo.height,
-            offsetX: imageInfo.offsetX,
-            offsetY: imageInfo.offsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        return [
+            {
+                sourceX: image.x,
+                sourceY: image.y,
+                width: image.width,
+                height: image.height,
+                offsetX: image.offsetX,
+                offsetY: image.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImage.x,
+                sourceY: shadowImage.y,
+                width: shadowImage.width,
+                height: shadowImage.height,
+                offsetX: shadowImage.offsetX,
+                offsetY: shadowImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 }
 

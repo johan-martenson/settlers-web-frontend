@@ -985,11 +985,20 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 signDrawInfo = signImageAtlasHandler.getDrawingInformation("nothing", "LARGE")
             }
 
-            toDrawNormal.push({
-                source: signDrawInfo,
-                gamePoint: sign,
-                depth: sign.y
-            })
+            if (signDrawInfo) {
+
+                toDrawNormal.push({
+                    source: signDrawInfo[0],
+                    gamePoint: sign,
+                    depth: sign.y
+                })
+
+                shadowsToDraw.push({
+                    source: signDrawInfo[1],
+                    gamePoint: sign,
+                    depth: sign.y
+                })
+            }
         }
 
         duration.after("collect signs")

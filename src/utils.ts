@@ -1499,7 +1499,7 @@ class UiElementsImageAtlasHandler {
 
 class StoneImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<StoneType, Record<StoneAmount, OneImageInformation>>
+    private imageAtlasInfo?: Record<StoneType, Record<StoneAmount, Record<'image' | 'shadowImage', OneImageInformation>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1528,24 +1528,36 @@ class StoneImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(stoneType: StoneType, amount: StoneAmount): DrawingInformation | undefined {
+    getDrawingInformationFor(stoneType: StoneType, amount: StoneAmount): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerStoneType = this.imageAtlasInfo[stoneType]
-        const imageInfo = infoPerStoneType[amount]
+        const image = this.imageAtlasInfo[stoneType][amount].image
+        const shadowImage = this.imageAtlasInfo[stoneType][amount].shadowImage
 
-        return {
-            sourceX: imageInfo.x,
-            sourceY: imageInfo.y,
-            width: imageInfo.width,
-            height: imageInfo.height,
-            offsetX: imageInfo.offsetX,
-            offsetY: imageInfo.offsetY,
-            image: this.image,
-            texture: this.texture
-        }
+        return [
+            {
+                sourceX: image.x,
+                sourceY: image.y,
+                width: image.width,
+                height: image.height,
+                offsetX: image.offsetX,
+                offsetY: image.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImage.x,
+                sourceY: shadowImage.y,
+                width: shadowImage.width,
+                height: shadowImage.height,
+                offsetX: shadowImage.offsetX,
+                offsetY: shadowImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 }
 

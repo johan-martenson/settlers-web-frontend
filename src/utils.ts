@@ -1,3 +1,5 @@
+import { dir } from 'console'
+import { Dir } from 'fs'
 import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation } from './api'
 import { monitor } from './monitor'
 
@@ -420,8 +422,12 @@ class WorkerAnimation {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationFor("romans", direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
+    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
+        return this.imageAtlasHandler.getDrawingInformationFor("ROMANS", direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
+    }
+
+    getImageAtlasHandler(): WorkerImageAtlasHandler {
+        return this.imageAtlasHandler
     }
 }
 
@@ -447,10 +453,17 @@ export interface DrawingInformation {
     texture?: WebGLTexture | null
 }
 
+interface WorkerImageAtlasFormat {
+    images: Record<Nation, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
+    shadowImages: Record<Direction, OneDirectionImageAtlasAnimationInfo>
+    singleCargoImages?: Record<Direction, OneImageInformation>
+    multipleCargoImages?: Record<Direction, OneDirectionImageAtlasAnimationInfo>
+}
+
 class WorkerImageAtlasHandler {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: Record<NationSmallCaps, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
+    private imageAtlasInfo?: WorkerImageAtlasFormat
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -481,31 +494,80 @@ class WorkerImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(nation: NationSmallCaps, direction: Direction, animationCounter: number, offset: number): DrawingInformation | undefined {
+    getDrawingInformationFor(nation: Nation, direction: Direction, animationCounter: number, offset: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerNation = this.imageAtlasInfo[nation]
+        const imageInfo = this.imageAtlasInfo.images[nation][direction]
+        const shadowImageInfo = this.imageAtlasInfo.shadowImages[direction]
 
-        if (infoPerNation === undefined) {
+        const frameIndex = (animationCounter + offset) % imageInfo.nrImages
+
+        return [
+            {
+                sourceX: imageInfo.startX + frameIndex * imageInfo.width,
+                sourceY: imageInfo.startY,
+                width: imageInfo.width,
+                height: imageInfo.height,
+                offsetX: imageInfo.offsetX,
+                offsetY: imageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImageInfo.startX + frameIndex * shadowImageInfo.width,
+                sourceY: shadowImageInfo.startY,
+                width: shadowImageInfo.width,
+                height: shadowImageInfo.height,
+                offsetX: shadowImageInfo.offsetX,
+                offsetY: shadowImageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
+    }
+
+    getDrawingInformationForCargo(direction: Direction, animationIndex: number): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerDirection = infoPerNation[direction]
+        const singleCargoImages = this.imageAtlasInfo.singleCargoImages
 
-        const frameIndex = (animationCounter + offset) % infoPerDirection.nrImages
+        if (singleCargoImages) {
+            const cargoImage = singleCargoImages[direction]
 
-        return {
-            sourceX: infoPerDirection.startX + frameIndex * infoPerDirection.width,
-            sourceY: infoPerDirection.startY,
-            width: infoPerDirection.width,
-            height: infoPerDirection.height, // Verify that this goes in the right direction
-            offsetX: 0,
-            offsetY: 0,
-            image: this.image,
-            texture: this.texture
+            return {
+                sourceX: cargoImage.x,
+                sourceY: cargoImage.y,
+                width: cargoImage.width,
+                height: cargoImage.height,
+                offsetX: cargoImage.offsetX,
+                offsetY: cargoImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
         }
+
+        const multipleCargoImages = this.imageAtlasInfo.multipleCargoImages
+
+        if (multipleCargoImages) {
+            const cargoImages = multipleCargoImages[direction]
+
+            return {
+                sourceX: cargoImages.startX + (animationIndex % cargoImages.nrImages) * cargoImages.width,
+                sourceY: cargoImages.startY,
+                width: cargoImages.width,
+                height: cargoImages.height,
+                offsetX: cargoImages.offsetX,
+                offsetY: cargoImages.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        }
+
+        return undefined
     }
 }
 

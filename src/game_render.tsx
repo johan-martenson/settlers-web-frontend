@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shadowFragmentShader, textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShader, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation, WorkerImageAtlasHandler } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -1124,21 +1124,42 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else {
                     const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
-                    toDrawNormal.push({
-                        source: animationImage,
-                        gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y + 0.5 },
-                        depth: worker.y
-                    })
+                    if (animationImage) {
+                        toDrawNormal.push({
+                            source: animationImage[0],
+                            gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y },
+                            depth: worker.y
+                        })
+
+                        shadowsToDraw.push({
+                            source: animationImage[1],
+                            gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y },
+                            depth: worker.y
+                        })
+                    }
                 }
 
                 if (worker.cargo) {
-                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
 
-                    toDrawNormal.push({
-                        source: cargoDrawInfo,
-                        gamePoint: interpolatedGamePoint,
-                        depth: worker.y
-                    })
+                    if (worker.type === 'Courier') {
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
+
+                        toDrawNormal.push({
+                            source: cargoDrawInfo,
+                            gamePoint: interpolatedGamePoint,
+                            depth: worker.y
+                        })
+                    } else {
+                        const cargo = workers.get(worker.type)?.getImageAtlasHandler().getDrawingInformationForCargo(direction, this.animationIndex)
+
+                        if (cargo) {
+                            toDrawNormal.push({
+                                source: cargo,
+                                gamePoint: interpolatedGamePoint,
+                                depth: worker.y
+                            })
+                        }
+                    }
                 }
             } else {
 
@@ -1164,11 +1185,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
-                    toDrawNormal.push({
-                        source: animationImage,
-                        gamePoint: { x: worker.x, y: worker.y + 0.5 },
-                        depth: worker.y
-                    })
+                    if (animationImage) {
+                        toDrawNormal.push({
+                            source: animationImage[0],
+                            gamePoint: { x: worker.x, y: worker.y },
+                            depth: worker.y
+                        })
+
+                        shadowsToDraw.push({
+                            source: animationImage[1],
+                            gamePoint: { x: worker.x, y: worker.y },
+                            depth: worker.y
+                        })
+                    }
                 }
 
                 if (worker.cargo) {

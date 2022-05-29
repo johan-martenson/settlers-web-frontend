@@ -18,8 +18,14 @@ export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
 
 export type TransportCategories = 'food' | 'weapons' | 'tools' | 'iron' | 'iron_bar' | 'coal' | 'gold' | 'plank' | 'wood' | 'stone' | 'coin' | 'wheat' | 'water' | 'pig' | 'flour'
 
+export type MaterialAllUpperCase = "GOLD" | "IRON" | "COAL" | "STONE" | "WATER" | "WOOD" | "PLANK" | "BREAD" | "FISH" | "MEAT" | "SHIELD" | "SWORD" | "BEER" | "COIN" | "METALWORKER" | "WHEAT" | "SHIPWRIGHT" | ToolAllUpperCase
+
+export const MATERIALS_UPPER_CASE = new Set<MaterialAllUpperCase>(["GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
+export const MATERIALS_UPPER_CASE_AS_STRING = new Set<string>(["GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
+
 export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker" | "wheat" | "shipwright" | Tool
 
+export type ToolAllUpperCase = 'AXE' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
 export type Tool = 'axe' | 'shovel' | 'pick_axe' | 'fishing_rod' | 'bow' | 'saw' | 'cleaver' | 'rolling_pin' | 'crucible' | 'tongs' | 'scythe'
 export const TOOLS: Set<Tool> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
 

@@ -1,6 +1,6 @@
 import { dir } from 'console'
 import { Dir } from 'fs'
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation } from './api'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation } from './api'
 import { monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -397,7 +397,7 @@ class AnimalAnimation {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation | undefined {
+    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getDrawingInformationFor(direction, Math.floor((animationIndex + percentageTraveled) / this.speedAdjust))
     }
 }
@@ -424,6 +424,10 @@ class WorkerAnimation {
 
     getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getDrawingInformationFor("ROMANS", direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
+    }
+
+    getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
+        return this.imageAtlasHandler.getDrawingInformationForCargo(direction, material, animationIndex, offset)
     }
 
     getImageAtlasHandler(): WorkerImageAtlasHandler {
@@ -456,8 +460,8 @@ export interface DrawingInformation {
 interface WorkerImageAtlasFormat {
     images: Record<Nation, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
     shadowImages: Record<Direction, OneDirectionImageAtlasAnimationInfo>
-    singleCargoImages?: Record<Direction, OneImageInformation>
-    multipleCargoImages?: Record<Direction, OneDirectionImageAtlasAnimationInfo>
+    singleCargoImages?: Record<MaterialAllUpperCase, Record<Direction, OneImageInformation>>
+    multipleCargoImages?: Record<MaterialAllUpperCase, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
 }
 
 class WorkerImageAtlasHandler {
@@ -528,7 +532,7 @@ class WorkerImageAtlasHandler {
         ]
     }
 
-    getDrawingInformationForCargo(direction: Direction, animationIndex: number): DrawingInformation | undefined {
+    getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -536,7 +540,7 @@ class WorkerImageAtlasHandler {
         const singleCargoImages = this.imageAtlasInfo.singleCargoImages
 
         if (singleCargoImages) {
-            const cargoImage = singleCargoImages[direction]
+            const cargoImage = singleCargoImages[material][direction]
 
             return {
                 sourceX: cargoImage.x,
@@ -553,10 +557,10 @@ class WorkerImageAtlasHandler {
         const multipleCargoImages = this.imageAtlasInfo.multipleCargoImages
 
         if (multipleCargoImages) {
-            const cargoImages = multipleCargoImages[direction]
+            const cargoImages = multipleCargoImages[material][direction]
 
             return {
-                sourceX: cargoImages.startX + (animationIndex % cargoImages.nrImages) * cargoImages.width,
+                sourceX: cargoImages.startX + ((animationIndex + offset) % cargoImages.nrImages) * cargoImages.width,
                 sourceY: cargoImages.startY,
                 width: cargoImages.width,
                 height: cargoImages.height,
@@ -1768,10 +1772,23 @@ class CropImageAtlasHandler {
     }
 }
 
+interface AnimalImageAtlasFormat {
+    images: Record<Direction, OneDirectionImageAtlasAnimationInfo>
+    shadowImages?: Record<Direction, OneImageInformation>
+}
+
+const ANIMAL_FALLBACK_DIRECTION = new Map<Direction, Direction>()
+
+ANIMAL_FALLBACK_DIRECTION.set('SOUTH_EAST', 'EAST')
+ANIMAL_FALLBACK_DIRECTION.set('SOUTH_WEST', 'EAST')
+ANIMAL_FALLBACK_DIRECTION.set('WEST', 'EAST')
+ANIMAL_FALLBACK_DIRECTION.set('NORTH_WEST', 'SOUTH_EAST')
+ANIMAL_FALLBACK_DIRECTION.set('NORTH_EAST', 'SOUTH_WEST')
+
 class AnimalImageAtlasHandler {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: Record<Direction, OneDirectionImageAtlasAnimationInfo>
+    private imageAtlasInfo?: AnimalImageAtlasFormat
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1802,36 +1819,67 @@ class AnimalImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(direction: Direction, animationCounter: number): DrawingInformation | undefined {
+    getDrawingInformationFor(direction: Direction, animationCounter: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerDirection = this.imageAtlasInfo[direction]
+        const image = this.imageAtlasInfo.images[direction]
 
-        const frameIndex = (animationCounter) % infoPerDirection.nrImages
+        const frameIndex = (animationCounter) % image.nrImages
 
-        let offsetX = 0
-        let offsetY = 0
+        if (this.imageAtlasInfo.shadowImages) {
+            let shadowImage = this.imageAtlasInfo.shadowImages[direction]
 
-        if (infoPerDirection?.offsetX !== undefined) {
-            offsetX = infoPerDirection.offsetX
+            if (shadowImage === undefined) {
+                const fallbackDirection = ANIMAL_FALLBACK_DIRECTION.get(direction)
+
+                if (fallbackDirection !== undefined) {
+                    shadowImage = this.imageAtlasInfo.shadowImages[fallbackDirection]
+                }
+            }
+
+            if (shadowImage === undefined) {
+                shadowImage = this.imageAtlasInfo.shadowImages['EAST']
+            }
+
+            return [
+                {
+                    sourceX: image.startX + frameIndex * image.width,
+                    sourceY: image.startY,
+                    width: image.width,
+                    height: image.height,
+                    offsetX: image.offsetX,
+                    offsetY: image.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                },
+                {
+                    sourceX: shadowImage.x,
+                    sourceY: shadowImage.y,
+                    width: shadowImage.width,
+                    height: shadowImage.height,
+                    offsetX: shadowImage.offsetX,
+                    offsetY: shadowImage.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            ]
         }
 
-        if (infoPerDirection?.offsetY !== undefined) {
-            offsetY = infoPerDirection.offsetY
-        }
+        return [
+            {
+                sourceX: image.startX + frameIndex * image.width,
+                sourceY: image.startY,
+                width: image.width,
+                height: image.height,
+                offsetX: image.offsetX,
+                offsetY: image.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
 
-        return {
-            sourceX: infoPerDirection.startX + frameIndex * infoPerDirection.width,
-            sourceY: infoPerDirection.startY,
-            width: infoPerDirection.width,
-            height: infoPerDirection.height, // Verify that this goes in the right direction
-            offsetX: offsetX,
-            offsetY: offsetY,
-            image: this.image,
-            texture: this.texture
-        }
     }
 }
 
@@ -1937,6 +1985,20 @@ function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement): boolean {
     return needResize
 }
 
+function isMaterialAllUpperCase(possibleMaterialUpperCase: string): possibleMaterialUpperCase is MaterialAllUpperCase {
+    return MATERIALS_UPPER_CASE_AS_STRING.has(possibleMaterialUpperCase)
+}
+
+function materialToAllUpperCase(materialLowerCase: Material): MaterialAllUpperCase | undefined {
+    const possibleMaterialUpperCase = materialLowerCase.toLocaleUpperCase()
+
+    if (isMaterialAllUpperCase(possibleMaterialUpperCase)) {
+        return possibleMaterialUpperCase
+    }
+
+    return undefined
+}
+
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
@@ -1979,5 +2041,6 @@ export {
     CargoImageAtlasHandler,
     makeShader,
     makeTextureFromImage,
-    resizeCanvasToDisplaySize
+    resizeCanvasToDisplaySize,
+    materialToAllUpperCase
 }

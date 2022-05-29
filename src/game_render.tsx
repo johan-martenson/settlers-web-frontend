@@ -1,3 +1,4 @@
+import { dir } from 'console'
 import React, { Component } from 'react'
 import { Direction, Nation, NationSmallCaps, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
@@ -5,7 +6,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shadowFragmentShader, textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShader, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation, WorkerImageAtlasHandler } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, materialToAllUpperCase, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation, WorkerImageAtlasHandler } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -165,6 +166,9 @@ workers.set("Officer", new WorkerAnimation("assets/", "officer", 10))
 workers.set("General", new WorkerAnimation("assets/", "general", 10))
 workers.set("Geologist", new WorkerAnimation("assets/", "geologist", 10))
 
+const thinCarrierWithCargo = new WorkerAnimation("assets/", "thin-carrier", 10)
+const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier", 10)
+
 const flagAnimations = new FlagAnimation("assets/", 10)
 
 interface RenderInformation {
@@ -304,7 +308,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             donkeyAnimation.load(),
             borderImageAtlasHandler.load(),
             roadBuildingImageAtlasHandler.load(),
-            cargoImageAtlasHandler.load()
+            cargoImageAtlasHandler.load(),
+            fatCarrierWithCargo.load(),
+            thinCarrierWithCargo.load()
         ])
 
         await Promise.all(allFilesToWaitFor)
@@ -369,6 +375,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 borderImageAtlasHandler.makeTexture(gl)
                 roadBuildingImageAtlasHandler.makeTexture(gl)
                 cargoImageAtlasHandler.makeTexture(gl)
+                fatCarrierWithCargo.makeTexture(gl)
+                thinCarrierWithCargo.makeTexture(gl)
 
                 // Create and compile the shaders
                 const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
@@ -1053,12 +1061,21 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                toDrawNormal.push({
-                    source: animationImage,
-                    gamePoint: interpolatedGamePoint,
-                    depth: animal.y
-                })
+                if (animationImage) {
+                    toDrawNormal.push({
+                        source: animationImage[0],
+                        gamePoint: interpolatedGamePoint,
+                        depth: animal.y
+                    })
 
+                    if (animationImage.length > 1) {
+                        shadowsToDraw.push({
+                            source: animationImage[1],
+                            gamePoint: interpolatedGamePoint,
+                            depth: animal.y
+                        })
+                    }
+                }
             } else {
 
                 if (animal.x < minXInGame || animal.x > maxXInGame || animal.y < minYInGame || animal.y > maxYInGame) {
@@ -1070,21 +1087,40 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                    toDrawNormal.push({
-                        source: animationImage,
-                        gamePoint: animal,
-                        depth: animal.y
-                    })
+                    if (animationImage) {
+                        toDrawNormal.push({
+                            source: animationImage[0],
+                            gamePoint: animal,
+                            depth: animal.y
+                        })
 
+                        if (animationImage.length > 1) {
+                            shadowsToDraw.push({
+                                source: animationImage[1],
+                                gamePoint: animal,
+                                depth: animal.y
+                            })
+                        }
+                    }
                 } else {
                     const direction = 'EAST'
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
 
-                    toDrawNormal.push({
-                        source: animationImage,
-                        gamePoint: animal,
-                        depth: animal.y
-                    })
+                    if (animationImage) {
+                        toDrawNormal.push({
+                            source: animationImage[0],
+                            gamePoint: animal,
+                            depth: animal.y
+                        })
+
+                        if (animationImage.length > 1) {
+                            shadowsToDraw.push({
+                                source: animationImage[1],
+                                gamePoint: animal,
+                                depth: animal.y
+                            })
+                        }
+                    }
                 }
             }
         }
@@ -1116,11 +1152,37 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (worker.type === "Donkey") {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
-                    toDrawNormal.push({
-                        source: donkeyImage,
-                        gamePoint: interpolatedGamePoint,
-                        depth: worker.y
-                    })
+                    if (donkeyImage) {
+                        toDrawNormal.push({
+                            source: donkeyImage[0],
+                            gamePoint: interpolatedGamePoint,
+                            depth: worker.y
+                        })
+
+                        if (donkeyImage.length > 1) {
+                            shadowsToDraw.push({
+                                source: donkeyImage[1],
+                                gamePoint: interpolatedGamePoint,
+                                depth: worker.y
+                            })
+                        }
+                    }
+                } else if (worker.type == "Courier" && worker.cargo) {
+                    const image = fatCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (image) {
+                        toDrawNormal.push({
+                            source: image[0],
+                            gamePoint: interpolatedGamePoint,
+                            depth: worker.y
+                        })
+
+                        shadowsToDraw.push({
+                            source: image[1],
+                            gamePoint: interpolatedGamePoint,
+                            depth: worker.y
+                        })
+                    }
                 } else {
                     const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
@@ -1141,23 +1203,28 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (worker.cargo) {
 
-                    if (worker.type === 'Courier') {
-                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
+                    const material = materialToAllUpperCase(worker.cargo)
 
-                        toDrawNormal.push({
-                            source: cargoDrawInfo,
-                            gamePoint: interpolatedGamePoint,
-                            depth: worker.y
-                        })
-                    } else {
-                        const cargo = workers.get(worker.type)?.getImageAtlasHandler().getDrawingInformationForCargo(direction, this.animationIndex)
+                    if (material) {
+                        if (worker.type === 'Courier' && worker.cargo) {
+                            const cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
 
-                        if (cargo) {
                             toDrawNormal.push({
-                                source: cargo,
+                                source: cargoDrawInfo,
                                 gamePoint: interpolatedGamePoint,
                                 depth: worker.y
                             })
+                        } else {
+
+                            const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+
+                            if (cargo) {
+                                toDrawNormal.push({
+                                    source: cargo,
+                                    gamePoint: interpolatedGamePoint,
+                                    depth: worker.y
+                                })
+                            }
                         }
                     }
                 }
@@ -1176,11 +1243,35 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (worker.type === "Donkey") {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(direction, 0, worker.percentageTraveled)
 
-                    toDrawNormal.push({
-                        source: donkeyImage,
-                        gamePoint: worker,
-                        depth: worker.y
-                    })
+                    if (donkeyImage) {
+                        toDrawNormal.push({
+                            source: donkeyImage[0],
+                            gamePoint: worker,
+                            depth: worker.y
+                        })
+
+                        shadowsToDraw.push({
+                            source: donkeyImage[1],
+                            gamePoint: worker,
+                            depth: worker.y
+                        })
+                    }
+                } else if (worker.type === "Courier" && worker.cargo) {
+                    const image = fatCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+
+                    if (image) {
+                        toDrawNormal.push({
+                            source: image[0],
+                            gamePoint: worker,
+                            depth: worker.y
+                        })
+
+                        shadowsToDraw.push({
+                            source: image[1],
+                            gamePoint: worker,
+                            depth: worker.y
+                        })
+                    }
                 } else {
 
                     const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
@@ -1201,13 +1292,31 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', worker.cargo) // TODO: use the right nationality
 
-                    toDrawNormal.push({
-                        source: cargoDrawInfo,
-                        gamePoint: worker,
-                        depth: worker.y
-                    })
+                    const material = materialToAllUpperCase(worker.cargo)
+
+                    if (material) {
+                        if (worker.type === 'Courier' && worker.cargo) {
+                            const cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+
+                            toDrawNormal.push({
+                                source: cargoDrawInfo,
+                                gamePoint: worker,
+                                depth: worker.y
+                            })
+                        } else {
+
+                            const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+
+                            if (cargo) {
+                                toDrawNormal.push({
+                                    source: cargo,
+                                    gamePoint: worker,
+                                    depth: worker.y
+                                })
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -376,7 +376,7 @@ export interface WorkerInformation extends Point {
     next?: Point
     percentageTraveled: number
     plannedPath?: Point[]
-    cargo?: Material
+    cargo?: MaterialAllUpperCase
 }
 
 export interface ShipInformation extends Point {

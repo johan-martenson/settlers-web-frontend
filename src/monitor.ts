@@ -1,5 +1,5 @@
 import { SignatureHelpInvokedReason } from 'typescript'
-import { AnyBuilding, AvailableConstruction, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ShipId, ShipInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AnyBuilding, AvailableConstruction, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ShipId, ShipInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -120,7 +120,7 @@ interface WalkerTargetChange {
     x: number
     y: number
     path: Point[]
-    cargo?: Material
+    cargo?: MaterialAllUpperCase
     type: WorkerType
 }
 

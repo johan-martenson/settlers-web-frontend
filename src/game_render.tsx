@@ -1033,7 +1033,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     depth: stone.y
                 })
 
-                toDrawNormal.push({
+                shadowsToDraw.push({
                     source: stoneDrawInfo[1],
                     gamePoint: stone,
                     depth: stone.y
@@ -1287,7 +1287,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (worker.cargo) {
 
-                    const material = materialToAllUpperCase(worker.cargo)
+                    const material = worker.cargo
 
                     if (material) {
                         if (worker.type === 'Courier' && worker.cargo) {
@@ -1377,7 +1377,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (worker.cargo) {
 
-                    const material = materialToAllUpperCase(worker.cargo)
+                    const material = worker.cargo
 
                     if (material) {
                         if (worker.type === 'Courier' && worker.cargo) {

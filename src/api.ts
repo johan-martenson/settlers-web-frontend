@@ -12,6 +12,9 @@ export type SignId = string
 export type TreeId = string
 export type WildAnimalId = string
 export type CropId = string
+export type ShipId = string
+
+export type ShipConstructionProgress = 'JUST_STARTED' | 'HALF_WAY' | 'ALMOST_DONE' | 'READY'
 
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
@@ -374,6 +377,16 @@ export interface WorkerInformation extends Point {
     percentageTraveled: number
     plannedPath?: Point[]
     cargo?: Material
+}
+
+export interface ShipInformation extends Point {
+    id: ShipId
+    betweenPoints: boolean
+    previous?: Point
+    next?: Point
+    percentageTraveled: number
+    plannedPath?: Point[]
+    constructionState: ShipConstructionProgress
 }
 
 export type SoldierType = "PRIVATE_RANK" | "PRIVATE_FIRST_CLASS_RANK" | "SERGEANT_RANK" | "OFFICER_RANK" | "GENERAL_RANK"

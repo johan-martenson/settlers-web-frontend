@@ -6,7 +6,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
 import { shadowFragmentShader, textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShader, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, materialToAllUpperCase, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation, WorkerImageAtlasHandler } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, materialToAllUpperCase, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation, WorkerImageAtlasHandler } from './utils'
 import { PointMapFast } from './util_types'
 
 export interface ScreenPoint {
@@ -131,6 +131,8 @@ animals.set("STAG", new AnimalAnimation("assets/nature/animals/", "stag", 10))
 const donkeyAnimation = new AnimalAnimation("assets/nature/animals/", "donkey", 10)
 
 const houses = new HouseImageAtlasHandler("assets/")
+
+const shipImageAtlas = new ShipImageAtlasHandler("assets/")
 
 const workers = new Map<WorkerType, WorkerAnimation>()
 
@@ -310,7 +312,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             roadBuildingImageAtlasHandler.load(),
             cargoImageAtlasHandler.load(),
             fatCarrierWithCargo.load(),
-            thinCarrierWithCargo.load()
+            thinCarrierWithCargo.load(),
+            shipImageAtlas.load()
         ])
 
         await Promise.all(allFilesToWaitFor)
@@ -377,6 +380,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 cargoImageAtlasHandler.makeTexture(gl)
                 fatCarrierWithCargo.makeTexture(gl)
                 thinCarrierWithCargo.makeTexture(gl)
+                shipImageAtlas.makeTexture(gl)
 
                 // Create and compile the shaders
                 const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
@@ -1065,14 +1069,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: animationImage[0],
                         gamePoint: interpolatedGamePoint,
-                        depth: animal.y
+                        depth: interpolatedGamePoint.y
                     })
 
                     if (animationImage.length > 1) {
                         shadowsToDraw.push({
                             source: animationImage[1],
                             gamePoint: interpolatedGamePoint,
-                            depth: animal.y
+                            depth: interpolatedGamePoint.y
                         })
                     }
                 }
@@ -1128,6 +1132,86 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("collect wild animals")
 
 
+        /* Collect ships */
+        for (const ship of monitor.ships.values()) {
+
+            // If worker is moving and not at a fixed point
+            if (ship.previous && ship.next) {
+
+                if (ship.previous.x < minXInGame || ship.previous.x > maxXInGame || ship.previous.y < minYInGame || ship.previous.y > maxYInGame) {
+                    continue
+                }
+
+                if (ship.next.x < minXInGame || ship.next.x > maxXInGame || ship.next.y < minYInGame || ship.next.y > maxYInGame) {
+                    continue
+                }
+
+                const interpolatedGamePoint = {
+                    x: ship.previous.x + (ship.next.x - ship.previous.x) * (ship.percentageTraveled / 100),
+                    y: ship.previous.y + (ship.next.y - ship.previous.y) * (ship.percentageTraveled / 100)
+                }
+
+                const direction = getDirectionForWalkingWorker(ship.next, ship.previous)
+
+                let shipImage
+
+                if (ship.constructionState === 'READY') {
+                    shipImage = shipImageAtlas.getDrawingInformationForShip(direction)
+                } else {
+                    shipImage = shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship.constructionState)
+                }
+
+                if (shipImage) {
+                    toDrawNormal.push({
+                        source: shipImage[0],
+                        gamePoint: interpolatedGamePoint,
+                        depth: interpolatedGamePoint.y
+                    })
+
+                    shadowsToDraw.push({
+                        source: shipImage[1],
+                        gamePoint: interpolatedGamePoint,
+                        depth: interpolatedGamePoint.y
+                    })
+                }
+
+            } else {
+
+                if (ship.x < minXInGame || ship.x > maxXInGame || ship.y < minYInGame || ship.y > maxYInGame) {
+                    continue
+                }
+
+                let direction: Direction = "WEST"
+
+                if (ship.previous) {
+                    direction = getDirectionForWalkingWorker(ship, ship.previous)
+                }
+
+                let shipImage
+
+                if (ship.constructionState === 'READY') {
+                    shipImage = shipImageAtlas.getDrawingInformationForShip(direction)
+                } else {
+                    shipImage = shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship.constructionState)
+                }
+
+                if (shipImage) {
+                    toDrawNormal.push({
+                        source: shipImage[0],
+                        gamePoint: ship,
+                        depth: ship.y
+                    })
+
+                    shadowsToDraw.push({
+                        source: shipImage[1],
+                        gamePoint: ship,
+                        depth: ship.y
+                    })
+                }
+            }
+        }
+
+
         /* Collect workers */
         for (const worker of monitor.workers.values()) {
 
@@ -1156,31 +1240,31 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: donkeyImage[0],
                             gamePoint: interpolatedGamePoint,
-                            depth: worker.y
+                            depth: interpolatedGamePoint.y
                         })
 
                         if (donkeyImage.length > 1) {
                             shadowsToDraw.push({
                                 source: donkeyImage[1],
                                 gamePoint: interpolatedGamePoint,
-                                depth: worker.y
+                                depth: interpolatedGamePoint.y
                             })
                         }
                     }
-                } else if (worker.type == "Courier" && worker.cargo) {
+                } else if (worker.type === "Courier" && worker.cargo) {
                     const image = fatCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
 
                     if (image) {
                         toDrawNormal.push({
                             source: image[0],
                             gamePoint: interpolatedGamePoint,
-                            depth: worker.y
+                            depth: interpolatedGamePoint.y
                         })
 
                         shadowsToDraw.push({
                             source: image[1],
                             gamePoint: interpolatedGamePoint,
-                            depth: worker.y
+                            depth: interpolatedGamePoint.y
                         })
                     }
                 } else {
@@ -1190,13 +1274,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: animationImage[0],
                             gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y },
-                            depth: worker.y
+                            depth: interpolatedGamePoint.y
                         })
 
                         shadowsToDraw.push({
                             source: animationImage[1],
                             gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y },
-                            depth: worker.y
+                            depth: interpolatedGamePoint.y
                         })
                     }
                 }
@@ -1212,7 +1296,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             toDrawNormal.push({
                                 source: cargoDrawInfo,
                                 gamePoint: interpolatedGamePoint,
-                                depth: worker.y
+                                depth: interpolatedGamePoint.y
                             })
                         } else {
 
@@ -1222,7 +1306,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                                 toDrawNormal.push({
                                     source: cargo,
                                     gamePoint: interpolatedGamePoint,
-                                    depth: worker.y
+                                    depth: interpolatedGamePoint.y
                                 })
                             }
                         }

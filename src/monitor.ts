@@ -1,4 +1,5 @@
-import { AnyBuilding, AvailableConstruction, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
+import { SignatureHelpInvokedReason } from 'typescript'
+import { AnyBuilding, AvailableConstruction, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ShipId, ShipInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -32,6 +33,7 @@ interface Monitor {
     gameId?: GameId
     playerId?: PlayerId
     workers: Map<WorkerId, WorkerInformation>
+    ships: Map<ShipId, ShipInformation>
     houses: Map<HouseId, HouseInformation>
     flags: Map<FlagId, FlagInformation>
     roads: Map<RoadId, RoadInformation>
@@ -73,6 +75,7 @@ interface Monitor {
 
 const monitor: Monitor = {
     workers: new Map<WorkerId, WorkerInformation>(),
+    ships: new Map<ShipId, ShipInformation>(),
     houses: new Map<HouseId, HouseInformation>(),
     flags: new Map<FlagId, FlagInformation>(),
     roads: new Map<RoadId, RoadInformation>(),

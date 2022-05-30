@@ -1,6 +1,6 @@
 import { dir } from 'console'
 import { Dir } from 'fs'
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation } from './api'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation } from './api'
 import { monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -455,6 +455,109 @@ export interface DrawingInformation {
     image: HTMLImageElement
     textureIndex?: number
     texture?: WebGLTexture | null
+}
+
+interface ShipImageAtlasFormat {
+    ready: Record<Direction, Record<'image' | 'shadowImage', OneImageInformation>>
+    underConstruction: Record<ShipConstructionProgress, Record<'image' | 'shadowImage', OneImageInformation>>
+}
+
+class ShipImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: ShipImageAtlasFormat
+    private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
+
+    constructor(prefix: string) {
+
+        this.pathPrefix = prefix
+    }
+
+    async load(): Promise<void> {
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-ship.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-ship.png")
+    }
+
+    makeTexture(gl: WebGL2RenderingContext): void {
+
+        if (this.image) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null|undefined")
+        }
+    }
+
+    getDrawingInformationForShip(direction: Direction): DrawingInformation[] | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const imageInfo = this.imageAtlasInfo.ready[direction].image
+        const shadowImageInfo = this.imageAtlasInfo.ready[direction].shadowImage
+
+        return [
+            {
+                sourceX: imageInfo.x,
+                sourceY: imageInfo.y,
+                width: imageInfo.width,
+                height: imageInfo.height,
+                offsetX: imageInfo.offsetX,
+                offsetY: imageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImageInfo.x,
+                sourceY: shadowImageInfo.y,
+                width: shadowImageInfo.width,
+                height: shadowImageInfo.height,
+                offsetX: shadowImageInfo.offsetX,
+                offsetY: shadowImageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
+    }
+
+    getDrawingInformationForShipUnderConstruction(constructionProgress: ShipConstructionProgress): DrawingInformation[] | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const image = this.imageAtlasInfo.underConstruction[constructionProgress].image
+        const shadowImage = this.imageAtlasInfo.underConstruction[constructionProgress].shadowImage
+
+
+        return [
+            {
+                sourceX: image.x,
+                sourceY: image.y,
+                width: image.width,
+                height: image.height,
+                offsetX: image.offsetX,
+                offsetY: image.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImage.x,
+                sourceY: shadowImage.y,
+                width: shadowImage.width,
+                height: shadowImage.height,
+                offsetX: shadowImage.offsetX,
+                offsetY: shadowImage.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
+    }
 }
 
 interface WorkerImageAtlasFormat {
@@ -2042,5 +2145,6 @@ export {
     makeShader,
     makeTextureFromImage,
     resizeCanvasToDisplaySize,
-    materialToAllUpperCase
+    materialToAllUpperCase,
+    ShipImageAtlasHandler
 }

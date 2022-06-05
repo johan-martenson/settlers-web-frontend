@@ -1,5 +1,5 @@
 import { SignatureHelpInvokedReason } from 'typescript'
-import { AnyBuilding, AvailableConstruction, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ShipId, ShipInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ShipId, ShipInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -122,6 +122,7 @@ interface WalkerTargetChange {
     path: Point[]
     cargo?: MaterialAllUpperCase
     type: WorkerType
+    bodyType?: BodyType
 }
 
 interface BorderChange {
@@ -829,7 +830,8 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
                 plannedPath: walkerTargetChange.path,
                 betweenPoints: false,
                 percentageTraveled: 0,
-                type: walkerTargetChange.type
+                type: walkerTargetChange.type,
+                bodyType: walkerTargetChange.bodyType
             }
 
             monitor.workers.set(worker.id, worker)

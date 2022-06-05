@@ -368,6 +368,8 @@ export type WorkerType = "Armorer" |
     'Planer' |
     'ShipWright'
 
+export type BodyType = 'FAT' | 'THIN'
+
 export interface WorkerInformation extends Point {
     id: WorkerId
     type: WorkerType
@@ -377,6 +379,7 @@ export interface WorkerInformation extends Point {
     percentageTraveled: number
     plannedPath?: Point[]
     cargo?: MaterialAllUpperCase
+    bodyType?: BodyType
 }
 
 export interface ShipInformation extends Point {

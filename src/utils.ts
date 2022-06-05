@@ -423,7 +423,7 @@ class WorkerAnimation {
     }
 
     getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationFor("ROMANS", direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
+        return this.imageAtlasHandler.getDrawingInformationForWorker("ROMANS", direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
     }
 
     getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
@@ -560,11 +560,21 @@ class ShipImageAtlasHandler {
     }
 }
 
-interface WorkerImageAtlasFormat {
-    images: Record<Nation, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
+interface WorkerCommonFormat {
     shadowImages: Record<Direction, OneDirectionImageAtlasAnimationInfo>
-    singleCargoImages?: Record<MaterialAllUpperCase, Record<Direction, OneImageInformation>>
-    multipleCargoImages?: Record<MaterialAllUpperCase, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
+    fullImages: Record<Direction, OneDirectionImageAtlasAnimationInfo>
+    bodyImages: Record<Direction, OneDirectionImageAtlasAnimationInfo>
+    cargoImages?: Record<MaterialAllUpperCase, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
+}
+
+interface WorkerNationSpecificFormat {
+    fullImages: Record<Nation, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
+    cargoImages?: Record<Nation, Record<MaterialAllUpperCase, Record<Direction, OneDirectionImageAtlasAnimationInfo>>>
+}
+
+interface WorkerImageAtlasFormat {
+    common: WorkerCommonFormat
+    nationSpecific: WorkerNationSpecificFormat
 }
 
 class WorkerImageAtlasHandler {
@@ -601,34 +611,46 @@ class WorkerImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(nation: Nation, direction: Direction, animationCounter: number, offset: number): DrawingInformation[] | undefined {
+    getDrawingInformationForWorker(nation: Nation, direction: Direction, animationCounter: number, offset: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const imageInfo = this.imageAtlasInfo.images[nation][direction]
-        const shadowImageInfo = this.imageAtlasInfo.shadowImages[direction]
+        // Shadows are common for all nations
+        let shadowImages = this.imageAtlasInfo.common.shadowImages[direction]
 
-        const frameIndex = (animationCounter + offset) % imageInfo.nrImages
+        let images
+
+        if (this.imageAtlasInfo.nationSpecific?.fullImages) {
+            images = this.imageAtlasInfo.nationSpecific.fullImages[nation][direction]
+        } else if (this.imageAtlasInfo.common?.fullImages) {
+            images = this.imageAtlasInfo.common.fullImages[direction]
+        } else if (this.imageAtlasInfo.common?.bodyImages) {
+            images = this.imageAtlasInfo.common.bodyImages[direction]
+        } else {
+            return undefined
+        }
+
+        const frameIndex = (animationCounter + offset) % images.nrImages
 
         return [
             {
-                sourceX: imageInfo.startX + frameIndex * imageInfo.width,
-                sourceY: imageInfo.startY,
-                width: imageInfo.width,
-                height: imageInfo.height,
-                offsetX: imageInfo.offsetX,
-                offsetY: imageInfo.offsetY,
+                sourceX: images.startX + frameIndex * images.width,
+                sourceY: images.startY,
+                width: images.width,
+                height: images.height,
+                offsetX: images.offsetX,
+                offsetY: images.offsetY,
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImageInfo.startX + frameIndex * shadowImageInfo.width,
-                sourceY: shadowImageInfo.startY,
-                width: shadowImageInfo.width,
-                height: shadowImageInfo.height,
-                offsetX: shadowImageInfo.offsetX,
-                offsetY: shadowImageInfo.offsetY,
+                sourceX: shadowImages.startX + frameIndex * shadowImages.width,
+                sourceY: shadowImages.startY,
+                width: shadowImages.width,
+                height: shadowImages.height,
+                offsetX: shadowImages.offsetX,
+                offsetY: shadowImages.offsetY,
                 image: this.image,
                 texture: this.texture
             }
@@ -640,27 +662,11 @@ class WorkerImageAtlasHandler {
             return undefined
         }
 
-        const singleCargoImages = this.imageAtlasInfo.singleCargoImages
+        if (this.imageAtlasInfo.nationSpecific.cargoImages) {
+            return undefined // TODO: fix this when there is a nation specific cargo image
 
-        if (singleCargoImages) {
-            const cargoImage = singleCargoImages[material][direction]
-
-            return {
-                sourceX: cargoImage.x,
-                sourceY: cargoImage.y,
-                width: cargoImage.width,
-                height: cargoImage.height,
-                offsetX: cargoImage.offsetX,
-                offsetY: cargoImage.offsetY,
-                image: this.image,
-                texture: this.texture
-            }
-        }
-
-        const multipleCargoImages = this.imageAtlasInfo.multipleCargoImages
-
-        if (multipleCargoImages) {
-            const cargoImages = multipleCargoImages[material][direction]
+        } else if (this.imageAtlasInfo.common.cargoImages) {
+            const cargoImages = this.imageAtlasInfo.common.cargoImages[material][direction]
 
             return {
                 sourceX: cargoImages.startX + ((animationIndex + offset) % cargoImages.nrImages) * cargoImages.width,

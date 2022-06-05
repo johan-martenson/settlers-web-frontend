@@ -168,8 +168,10 @@ workers.set("Officer", new WorkerAnimation("assets/", "officer", 10))
 workers.set("General", new WorkerAnimation("assets/", "general", 10))
 workers.set("Geologist", new WorkerAnimation("assets/", "geologist", 10))
 
-const thinCarrierWithCargo = new WorkerAnimation("assets/", "thin-carrier", 10)
-const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier", 10)
+const thinCarrierWithCargo = new WorkerAnimation("assets/", "thin-carrier-with-cargo", 10)
+const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-cargo", 10)
+const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo", 10)
+const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
 
 const flagAnimations = new FlagAnimation("assets/", 10)
 
@@ -313,6 +315,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             cargoImageAtlasHandler.load(),
             fatCarrierWithCargo.load(),
             thinCarrierWithCargo.load(),
+            fatCarrierNoCargo.load(),
+            thinCarrierNoCargo.load(),
             shipImageAtlas.load()
         ])
 
@@ -380,6 +384,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 cargoImageAtlasHandler.makeTexture(gl)
                 fatCarrierWithCargo.makeTexture(gl)
                 thinCarrierWithCargo.makeTexture(gl)
+                fatCarrierNoCargo.makeTexture(gl)
+                thinCarrierNoCargo.makeTexture(gl)
                 shipImageAtlas.makeTexture(gl)
 
                 // Create and compile the shaders
@@ -1251,8 +1257,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             })
                         }
                     }
-                } else if (worker.type === "Courier" && worker.cargo) {
-                    const image = fatCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                } else if (worker.type === "Courier") {
+
+                    let image
+
+                    if (worker.cargo) {
+                        if (worker?.bodyType === 'FAT') {
+                            image = fatCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                        } else {
+                            image = thinCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                        }
+                    } else {
+                        if (worker?.bodyType === 'FAT') {
+                            image = fatCarrierNoCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                        } else {
+                            image = thinCarrierNoCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                        }
+                    }
 
                     if (image) {
                         toDrawNormal.push({
@@ -1291,7 +1312,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (material) {
                         if (worker.type === 'Courier' && worker.cargo) {
-                            const cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                            let cargoDrawInfo
+
+                            if (worker?.bodyType === 'FAT') {
+                                cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                            } else {
+                                cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                            }
 
                             toDrawNormal.push({
                                 source: cargoDrawInfo,
@@ -1340,8 +1367,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             depth: worker.y
                         })
                     }
-                } else if (worker.type === "Courier" && worker.cargo) {
-                    const image = fatCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                } else if (worker.type === "Courier") {
+
+                    let image
+
+                    if (worker.cargo) {
+                        if (worker?.bodyType === 'FAT') {
+                            image = fatCarrierWithCargo.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                        } else {
+                            image = thinCarrierWithCargo.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                        }
+                    } else {
+                        if (worker?.bodyType === 'FAT') {
+                            image = fatCarrierNoCargo.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                        } else {
+                            image = thinCarrierNoCargo.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                        }
+                    }
 
                     if (image) {
                         toDrawNormal.push({
@@ -1381,7 +1423,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (material) {
                         if (worker.type === 'Courier' && worker.cargo) {
-                            const cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                            let cargoDrawInfo
+
+                            if (worker?.bodyType === 'FAT') {
+                                cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                            } else {
+                                cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                            }
 
                             toDrawNormal.push({
                                 source: cargoDrawInfo,

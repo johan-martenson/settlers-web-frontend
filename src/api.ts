@@ -330,7 +330,7 @@ export type FlagType = 'MAIN' | 'MARINE' | 'NORMAL'
 export interface SignInformation extends Point {
     id: SignId
     type?: SignTypes
-    amount: Size
+    amount?: Size
 }
 
 export interface StoneInformation extends Point { }
@@ -370,16 +370,38 @@ export type WorkerType = "Armorer" |
 
 export type BodyType = 'FAT' | 'THIN'
 
+export type WorkerAction = 'PLANTING_TREE' | 'CUTTING' | 'HACKING_STONE' | 'FISHING' | 'INVESTIGATING' | 'PLANTING_WHEAT' | 'HARVESTING'
+
+export type SimpleDirection = 'UP_LEFT' | 'UP_RIGHT' | 'RIGHT' | 'DOWN_RIGHT' | 'DOWN_LEFT' | 'LEFT'
+
 export interface WorkerInformation extends Point {
     id: WorkerId
     type: WorkerType
     betweenPoints: boolean
+    direction: Direction
     previous?: Point
     next?: Point
     percentageTraveled: number
     plannedPath?: Point[]
     cargo?: MaterialAllUpperCase
     bodyType?: BodyType
+    action?: WorkerAction
+    actionAnimationIndex?: number
+}
+
+export interface ServerWorkerInformation extends Point {
+    id: WorkerId
+    type: WorkerType
+    betweenPoints: boolean
+    direction: SimpleDirection
+    previous?: Point
+    next?: Point
+    percentageTraveled: number
+    plannedPath?: Point[]
+    cargo?: MaterialAllUpperCase
+    bodyType?: BodyType
+    action?: WorkerAction
+    actionAnimationIndex?: number
 }
 
 export interface ShipInformation extends Point {
@@ -480,7 +502,7 @@ export interface BorderInformation {
 export interface PlayerViewInformation {
     borders: BorderInformation[]
     houses: HouseInformation[]
-    workers: WorkerInformation[]
+    workers: ServerWorkerInformation[]
     roads: RoadInformation[]
     trees: TreeInformation[]
     flags: FlagInformation[]

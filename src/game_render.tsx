@@ -108,7 +108,7 @@ vegetationToTextureMapping.set(21, { below: [192, 132, 219, 104, 247, 132].map(v
 vegetationToTextureMapping.set(22, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 4
 vegetationToTextureMapping.set(23, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Buildable mountain
 
-const treeAnimations = new TreeAnimation("assets/nature/", 10)
+const treeAnimations = new TreeAnimation("assets/nature/", 2)
 const treeImageAtlasHandler = treeAnimations.getImageAtlasHandler()
 
 const fireAnimations = new FireAnimation("assets/", 2)
@@ -996,7 +996,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             let signDrawInfo
 
-            if (sign.type !== undefined) {
+            if (sign.type !== undefined && sign.amount !== undefined) {
                 signDrawInfo = signImageAtlasHandler.getDrawingInformation(sign.type, sign.amount)
             } else {
                 signDrawInfo = signImageAtlasHandler.getDrawingInformation("nothing", "LARGE")
@@ -1221,7 +1221,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         for (const worker of monitor.workers.values()) {
 
             // If worker is moving and not at a fixed point
-            if (worker.previous && worker.next) {
+            if (worker.betweenPoints && worker.previous !== undefined && worker.next) {
 
                 if (worker.previous.x < minXInGame || worker.previous.x > maxXInGame || worker.previous.y < minYInGame || worker.previous.y > maxYInGame) {
                     continue
@@ -1236,10 +1236,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     y: worker.previous.y + (worker.next.y - worker.previous.y) * (worker.percentageTraveled / 100)
                 }
 
-                const direction = getDirectionForWalkingWorker(worker.next, worker.previous)
-
                 if (worker.type === "Donkey") {
-                    const donkeyImage = donkeyAnimation.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                    const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, this.animationIndex, worker.percentageTraveled)
 
                     if (donkeyImage) {
                         toDrawNormal.push({
@@ -1262,15 +1260,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (worker.cargo) {
                         if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                            image = fatCarrierWithCargo.getAnimationFrame(worker.direction, this.animationIndex, worker.percentageTraveled)
                         } else {
-                            image = thinCarrierWithCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                            image = thinCarrierWithCargo.getAnimationFrame(worker.direction, this.animationIndex, worker.percentageTraveled)
                         }
                     } else {
                         if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierNoCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                            image = fatCarrierNoCargo.getAnimationFrame(worker.direction, this.animationIndex, worker.percentageTraveled)
                         } else {
-                            image = thinCarrierNoCargo.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                            image = thinCarrierNoCargo.getAnimationFrame(worker.direction, this.animationIndex, worker.percentageTraveled)
                         }
                     }
 
@@ -1288,7 +1286,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         })
                     }
                 } else {
-                    const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, this.animationIndex, worker.percentageTraveled)
+                    const animationImage = workers.get(worker.type)?.getAnimationFrame(worker.direction, this.animationIndex, worker.percentageTraveled)
 
                     if (animationImage) {
                         toDrawNormal.push({
@@ -1307,16 +1305,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (worker.cargo) {
 
-                    const material = worker.cargo
-
-                    if (material) {
+                    if (worker.cargo) {
                         if (worker.type === 'Courier' && worker.cargo) {
                             let cargoDrawInfo
 
                             if (worker?.bodyType === 'FAT') {
-                                cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                                cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
                             } else {
-                                cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                                cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
                             }
 
                             toDrawNormal.push({
@@ -1326,7 +1322,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             })
                         } else {
 
-                            const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                            const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
 
                             if (cargo) {
                                 toDrawNormal.push({
@@ -1344,14 +1340,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                let direction: Direction = "WEST"
-
-                if (worker.previous) {
-                    direction = getDirectionForWalkingWorker(worker, worker.previous)
-                }
-
                 if (worker.type === "Donkey") {
-                    const donkeyImage = donkeyAnimation.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                    const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
 
                     if (donkeyImage) {
                         toDrawNormal.push({
@@ -1372,15 +1362,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (worker.cargo) {
                         if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierWithCargo.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                            image = fatCarrierWithCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
                         } else {
-                            image = thinCarrierWithCargo.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                            image = thinCarrierWithCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
                         }
                     } else {
                         if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierNoCargo.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                            image = fatCarrierNoCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
                         } else {
-                            image = thinCarrierNoCargo.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                            image = thinCarrierNoCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
                         }
                     }
 
@@ -1399,35 +1389,51 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 } else {
 
-                    const animationImage = workers.get(worker.type)?.getAnimationFrame(direction, 0, worker.percentageTraveled)
+                    let didDrawAnimation = false
 
-                    if (animationImage) {
-                        toDrawNormal.push({
-                            source: animationImage[0],
-                            gamePoint: { x: worker.x, y: worker.y },
-                            depth: worker.y
-                        })
+                    if (worker.action && worker.actionAnimationIndex !== undefined) {
+                        const animationImage = workers.get(worker.type)?.getActionAnimation(worker.direction, worker.action, worker.actionAnimationIndex)
 
-                        shadowsToDraw.push({
-                            source: animationImage[1],
-                            gamePoint: { x: worker.x, y: worker.y },
-                            depth: worker.y
-                        })
+                        if (animationImage) {
+                            didDrawAnimation = true
+
+                            toDrawNormal.push({
+                                source: animationImage,
+                                gamePoint: { x: worker.x, y: worker.y },
+                                depth: worker.y
+                            })
+                        }
+                    }
+
+                    if (!didDrawAnimation) {
+                        const animationImage = workers.get(worker.type)?.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
+
+                        if (animationImage) {
+                            toDrawNormal.push({
+                                source: animationImage[0],
+                                gamePoint: { x: worker.x, y: worker.y },
+                                depth: worker.y
+                            })
+
+                            shadowsToDraw.push({
+                                source: animationImage[1],
+                                gamePoint: { x: worker.x, y: worker.y },
+                                depth: worker.y
+                            })
+                        }
                     }
                 }
 
                 if (worker.cargo) {
 
-                    const material = worker.cargo
-
-                    if (material) {
+                    if (worker.cargo) {
                         if (worker.type === 'Courier' && worker.cargo) {
                             let cargoDrawInfo
 
                             if (worker?.bodyType === 'FAT') {
-                                cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                                cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
                             } else {
-                                cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                                cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
                             }
 
                             toDrawNormal.push({
@@ -1437,7 +1443,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             })
                         } else {
 
-                            const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(direction, material, this.animationIndex, worker.percentageTraveled)
+                            const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
 
                             if (cargo) {
                                 toDrawNormal.push({

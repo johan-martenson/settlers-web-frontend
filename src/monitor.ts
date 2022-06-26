@@ -1,6 +1,5 @@
-import { SignatureHelpInvokedReason } from 'typescript'
-import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, Material, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ShipId, ShipInformation, SignId, SignInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerId, WorkerInformation, WorkerType } from './api'
-import { getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
+import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
+import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
@@ -120,6 +119,7 @@ interface WalkerTargetChange {
     x: number
     y: number
     path: Point[]
+    direction: SimpleDirection
     cargo?: MaterialAllUpperCase
     type: WorkerType
     bodyType?: BodyType
@@ -135,8 +135,16 @@ interface ChangedAvailableConstruction extends Point {
     available: AvailableConstruction[]
 }
 
+interface WorkerNewAction {
+    id: WorkerId
+    x: number
+    y: number
+    startedAction: WorkerAction
+}
+
 interface ChangesMessage {
     workersWithNewTargets?: WalkerTargetChange[]
+    workersWithStartedActions?: WorkerNewAction[]
     wildAnimalsWithNewTargets?: WildAnimalInformation[]
     removedWorkers?: WorkerId[]
     newBuildings?: HouseInformation[]
@@ -181,7 +189,8 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
             message.newMessages ||
             message.discoveredDeadTrees ||
             message.removedDeadTrees ||
-            message.wildAnimalsWithNewTargets || message.removedWildAnimals)) {
+            message.wildAnimalsWithNewTargets || message.removedWildAnimals ||
+            message.workersWithStartedActions)) {
         return true
     }
 
@@ -222,7 +231,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
 
     view.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
 
-    view.workers.forEach(worker => monitor.workers.set(worker.id, worker))
+    view.workers.forEach(worker => monitor.workers.set(worker.id, serverWorkerToLocalWorker(worker)))
 
     view.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
 
@@ -339,6 +348,22 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
 
         if (message.workersWithNewTargets) {
             syncWorkersWithNewTargets(message.workersWithNewTargets)
+        }
+
+        if (message.workersWithStartedActions) {
+
+            message.workersWithStartedActions.forEach(workerWithNewAction => {
+                const worker = monitor.workers.get(workerWithNewAction.id)
+
+                if (worker) {
+                    worker.x = workerWithNewAction.x
+                    worker.y = workerWithNewAction.y
+                    worker.plannedPath = undefined
+                    worker.next = undefined
+                    worker.action = workerWithNewAction.startedAction
+                    worker.actionAnimationIndex = 0
+                }
+            })
         }
 
         if (message.wildAnimalsWithNewTargets) {
@@ -462,6 +487,15 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
         }
     }
 
+    // Drive worker animations
+    setInterval(async () => {
+        for (const worker of monitor.workers.values()) {
+            if (worker.action && worker.actionAnimationIndex !== undefined) {
+                worker.actionAnimationIndex = worker.actionAnimationIndex + 1
+            }
+        }
+    }, 200)
+
     // Move workers locally to reduce the amount of messages from the server
     setInterval(async () => {
 
@@ -472,27 +506,33 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
                 continue
             }
 
+            /* Take a step forward */
             worker.percentageTraveled = worker.percentageTraveled + 5
 
-            /* Get the next point and the target point */
-            const next = worker.plannedPath[0]
-
-            /* Clear the planned path for workers that have reached the target */
+            /* Worker is at an exact point */
             if (worker.percentageTraveled === 100) {
 
+                // The point that the worker was going towards is now the current position
                 if (worker.next) {
-                    worker.previous = { x: worker.next.x, y: worker.next.y }
+
+                    // Update current position
+                    worker.x = worker.next.x
+                    worker.y = worker.next.y
+
+                    // Set previous to the current position - which means that it's invalid 
+                    // when the worker is at a fixed point, but it will always be correct otherwise
+                    worker.previous = { x: worker.x, y: worker.y }
                 }
 
-                worker.x = next.x
-                worker.y = next.y
+                // Set up to walk towards the next point if there is any remaining points to walk
+                if (worker.plannedPath.length > 1) {
+                    worker.percentageTraveled = 0
 
-                worker.percentageTraveled = 0
+                    worker.plannedPath.shift()
 
-                worker.plannedPath.shift()
-
-                if (worker.plannedPath.length > 0) {
                     worker.next = { x: worker.plannedPath[0].x, y: worker.plannedPath[0].y }
+
+                    worker.direction = getDirectionForWalkingWorker(worker, worker.next)
                 } else {
                     worker.plannedPath = undefined
 
@@ -546,7 +586,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
                 wildAnimal.betweenPoints = true
             }
         }
-    }, 100)
+    }, 72)
 
     // Similarly, grow the crops locally to avoid the need for the server to send messages when crops change growth state
     setInterval(async () => {
@@ -821,6 +861,7 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     for (const walkerTargetChange of targetChanges) {
 
         let worker = monitor.workers.get(walkerTargetChange.id)
+        const direction = simpleDirectionToCompassDirection(walkerTargetChange.direction)
 
         if (worker === undefined) {
             worker = {
@@ -829,6 +870,7 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
                 y: walkerTargetChange.y,
                 plannedPath: walkerTargetChange.path,
                 betweenPoints: false,
+                direction,
                 percentageTraveled: 0,
                 type: walkerTargetChange.type,
                 bodyType: walkerTargetChange.bodyType
@@ -849,10 +891,13 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
             worker.betweenPoints = false
         }
 
+        worker.action = undefined
+
         worker.cargo = walkerTargetChange.cargo
 
         worker.x = walkerTargetChange.x
         worker.y = walkerTargetChange.y
+        worker.direction = direction
     }
 }
 
@@ -1052,7 +1097,7 @@ async function placeHouseSnappy(houseType: AnyBuilding, point: Point, gameId: Ga
     )
 
     try {
-    await createBuilding(houseType, point, gameId, playerId)
+        await createBuilding(houseType, point, gameId, playerId)
     } catch (error) {
         console.error("Got error while creating building: " + error)
     }
@@ -1158,6 +1203,32 @@ async function removeRoadSnappy(roadId: RoadId, gameId: GameId, playerId: Player
             monitor.roads.set(roadId, road)
         }
     }
+}
+
+function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
+    let compassDirection: Direction = 'NORTH_WEST'
+
+    if (simpleDirection === 'UP_RIGHT') {
+        compassDirection = 'NORTH_EAST'
+    } else if (simpleDirection === 'RIGHT') {
+        compassDirection = 'EAST'
+    } else if (simpleDirection === 'DOWN_RIGHT') {
+        compassDirection = 'SOUTH_EAST'
+    } else if (simpleDirection === 'DOWN_LEFT') {
+        compassDirection = 'SOUTH_WEST'
+    } else if (simpleDirection === 'LEFT') {
+        compassDirection = 'WEST'
+    }
+
+    return compassDirection
+}
+
+function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): WorkerInformation {
+    let compassDirection = simpleDirectionToCompassDirection(serverWorker.direction)
+
+    const worker: WorkerInformation = { ...serverWorker, direction: compassDirection }
+
+    return worker
 }
 
 export {

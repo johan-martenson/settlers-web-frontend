@@ -1,6 +1,6 @@
 import { dir } from 'console'
 import { Dir } from 'fs'
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation } from './api'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
 import { monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -426,6 +426,10 @@ class WorkerAnimation {
         return this.imageAtlasHandler.getDrawingInformationForWorker("ROMANS", direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
     }
 
+    getActionAnimation(direction: Direction, action: WorkerAction, animationIndex: number): DrawingInformation | undefined {
+        return this.imageAtlasHandler.getDrawingInformationForAction(direction, action, animationIndex)
+    }
+
     getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
         return this.imageAtlasHandler.getDrawingInformationForCargo(direction, material, animationIndex, offset)
     }
@@ -435,7 +439,7 @@ class WorkerAnimation {
     }
 }
 
-interface OneDirectionImageAtlasAnimationInfo {
+interface ImageSeriesInformation {
     height: number
     width: number
     nrImages: number
@@ -560,16 +564,29 @@ class ShipImageAtlasHandler {
     }
 }
 
+export type AnimationType = 'SINGLE' | 'REPEAT'
+
+const actionAnimationType = new Map<WorkerAction, AnimationType>()
+
+actionAnimationType.set('PLANTING_TREE', 'SINGLE')
+actionAnimationType.set('PLANTING_WHEAT', 'REPEAT')
+actionAnimationType.set('HARVESTING', 'REPEAT')
+actionAnimationType.set('INVESTIGATING', 'REPEAT')
+actionAnimationType.set('CUTTING', 'REPEAT')
+actionAnimationType.set('HACKING_STONE', 'REPEAT')
+actionAnimationType.set('FISHING', 'REPEAT')
+
 interface WorkerCommonFormat {
-    shadowImages: Record<Direction, OneDirectionImageAtlasAnimationInfo>
-    fullImages: Record<Direction, OneDirectionImageAtlasAnimationInfo>
-    bodyImages: Record<Direction, OneDirectionImageAtlasAnimationInfo>
-    cargoImages?: Record<MaterialAllUpperCase, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
+    shadowImages: Record<Direction, ImageSeriesInformation>
+    fullImages: Record<Direction, ImageSeriesInformation>
+    bodyImages: Record<Direction, ImageSeriesInformation>
+    cargoImages?: Record<MaterialAllUpperCase, Record<Direction, ImageSeriesInformation>>
+    actions?: Record<WorkerAction, Record<Direction | 'any', ImageSeriesInformation>>
 }
 
 interface WorkerNationSpecificFormat {
-    fullImages: Record<Nation, Record<Direction, OneDirectionImageAtlasAnimationInfo>>
-    cargoImages?: Record<Nation, Record<MaterialAllUpperCase, Record<Direction, OneDirectionImageAtlasAnimationInfo>>>
+    fullImages: Record<Nation, Record<Direction, ImageSeriesInformation>>
+    cargoImages?: Record<Nation, Record<MaterialAllUpperCase, Record<Direction, ImageSeriesInformation>>>
 }
 
 interface WorkerImageAtlasFormat {
@@ -657,6 +674,68 @@ class WorkerImageAtlasHandler {
         ]
     }
 
+    getDrawingInformationForAction(direction: Direction, action: WorkerAction, animationIndex: number): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        if (direction && this.imageAtlasInfo.common?.actions && this.imageAtlasInfo.common.actions[action][direction]) {
+            const actionImages = this.imageAtlasInfo.common.actions[action][direction]
+
+            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
+                return {
+                    sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
+                    sourceY: actionImages.startY,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            } else {
+                return {
+                    sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
+                    sourceY: actionImages.startY,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            }
+        } else if (this.imageAtlasInfo.common?.actions && this.imageAtlasInfo.common.actions[action] && this.imageAtlasInfo.common.actions[action]?.any) {
+            const actionImages = this.imageAtlasInfo.common.actions[action].any
+
+            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
+                return {
+                    sourceX: actionImages.startX,
+                    sourceY: actionImages.startY + ((animationIndex) % actionImages.nrImages) * actionImages.height,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            } else {
+                return {
+                    sourceX: actionImages.startX,
+                    sourceY: actionImages.startY + (actionImages.nrImages - 1) * actionImages.height,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            }
+        }
+
+        return undefined
+    }
+
     getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
@@ -664,7 +743,6 @@ class WorkerImageAtlasHandler {
 
         if (this.imageAtlasInfo.nationSpecific.cargoImages) {
             return undefined // TODO: fix this when there is a nation specific cargo image
-
         } else if (this.imageAtlasInfo.common.cargoImages) {
             const cargoImages = this.imageAtlasInfo.common.cargoImages[material][direction]
 
@@ -959,7 +1037,7 @@ class SignImageAtlasHandler {
 }
 
 interface FireImageAtlasFormat {
-    fires: Record<FireSize, Record<'image' | 'shadowImage', OneDirectionImageAtlasAnimationInfo>>
+    fires: Record<FireSize, Record<'image' | 'shadowImage', ImageSeriesInformation>>
     burntDown: Record<Size, OneImageInformation>
 }
 
@@ -1065,7 +1143,7 @@ class FireImageAtlasHandler {
 
 class FlagImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, Record<'images' | 'shadows', OneDirectionImageAtlasAnimationInfo>>>
+    private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, Record<'images' | 'shadows', ImageSeriesInformation>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1285,12 +1363,12 @@ class RoadBuildingImageAtlasHandler {
 }
 
 interface TreeImageAtlasFormat {
-    grownTrees: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
-    grownTreeShadows: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
+    grownTrees: Record<TreeType, ImageSeriesInformation>
+    grownTreeShadows: Record<TreeType, ImageSeriesInformation>
     growingTrees: Record<TreeType, Record<TreeSize, OneImageInformation>>
     growingTreeShadows: Record<TreeType, Record<TreeSize, OneImageInformation>>
-    fallingTrees: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
-    fallingTreeShadows: Record<TreeType, OneDirectionImageAtlasAnimationInfo>
+    fallingTrees: Record<TreeType, ImageSeriesInformation>
+    fallingTreeShadows: Record<TreeType, ImageSeriesInformation>
 }
 
 class TreeImageAtlasHandler {
@@ -1882,7 +1960,7 @@ class CropImageAtlasHandler {
 }
 
 interface AnimalImageAtlasFormat {
-    images: Record<Direction, OneDirectionImageAtlasAnimationInfo>
+    images: Record<Direction, ImageSeriesInformation>
     shadowImages?: Record<Direction, OneImageInformation>
 }
 
@@ -1992,17 +2070,17 @@ class AnimalImageAtlasHandler {
     }
 }
 
-function getDirectionForWalkingWorker(next: Point, previous: Point): Direction {
+function getDirectionForWalkingWorker(from: Point, to: Point): Direction {
 
-    if (next.x === previous.x + 1 && next.y === previous.y - 1) {
+    if (to.x === from.x + 1 && to.y === from.y - 1) {
         return "SOUTH_EAST"
-    } else if (next.x === previous.x - 1 && next.y === previous.y - 1) { // SOUTH WEST
+    } else if (to.x === from.x - 1 && to.y === from.y - 1) {
         return "SOUTH_WEST"
-    } else if (next.x === previous.x - 2) { // WEST
+    } else if (to.x === from.x - 2) {
         return "WEST"
-    } else if (next.x === previous.x - 1 && next.y === previous.y + 1) { // NORTH WEST
+    } else if (to.x === from.x - 1 && to.y === from.y + 1) {
         return "NORTH_WEST"
-    } else if (next.x === previous.x + 1 && next.y === previous.y + 1) { // NORTH EAST
+    } else if (to.x === from.x + 1 && to.y === from.y + 1) {
         return "NORTH_EAST"
     }
 

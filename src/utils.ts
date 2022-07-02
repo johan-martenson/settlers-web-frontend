@@ -574,7 +574,7 @@ actionAnimationType.set('HARVESTING', 'REPEAT')
 actionAnimationType.set('INVESTIGATING', 'REPEAT')
 actionAnimationType.set('CUTTING', 'REPEAT')
 actionAnimationType.set('HACKING_STONE', 'REPEAT')
-actionAnimationType.set('FISHING', 'REPEAT')
+actionAnimationType.set('FISHING', 'SINGLE')
 
 interface WorkerCommonFormat {
     shadowImages: Record<Direction, ImageSeriesInformation>

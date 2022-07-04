@@ -370,7 +370,7 @@ export type WorkerType = "Armorer" |
 
 export type BodyType = 'FAT' | 'THIN'
 
-export type WorkerAction = 'PLANTING_TREE' | 'CUTTING' | 'HACKING_STONE' | 'FISHING' | 'INVESTIGATING' | 'PLANTING_WHEAT' | 'HARVESTING'
+export type WorkerAction = 'PLANTING_TREE' | 'CUTTING' | 'HACKING_STONE' | 'FISHING' | 'INVESTIGATING' | 'PLANTING_WHEAT' | 'HARVESTING' | 'LOWERING_FISHING_ROD' | 'PULL_UP_FISHING_ROD'
 
 export type SimpleDirection = 'UP_LEFT' | 'UP_RIGHT' | 'RIGHT' | 'DOWN_RIGHT' | 'DOWN_LEFT' | 'LEFT'
 

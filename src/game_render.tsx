@@ -1358,34 +1358,67 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 } else if (worker.type === "Courier") {
 
-                    let image
+                    let didDrawAnimation = false
 
-                    if (worker.cargo) {
-                        if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierWithCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
+                    if (worker.action && worker.actionAnimationIndex !== undefined) {
+
+                        if (worker.bodyType === 'FAT') {
+                            const animationImage = fatCarrierNoCargo.getActionAnimation(worker.direction, worker.action, worker.actionAnimationIndex)
+
+                            if (animationImage) {
+                                didDrawAnimation = true
+
+                                toDrawNormal.push({
+                                    source: animationImage,
+                                    gamePoint: { x: worker.x, y: worker.y },
+                                    depth: worker.y
+                                })
+                            }
                         } else {
-                            image = thinCarrierWithCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
-                        }
-                    } else {
-                        if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierNoCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
-                        } else {
-                            image = thinCarrierNoCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
+                            const animationImage = thinCarrierNoCargo.getActionAnimation(worker.direction, worker.action, worker.actionAnimationIndex)
+
+                            if (animationImage) {
+                                didDrawAnimation = true
+
+                                toDrawNormal.push({
+                                    source: animationImage,
+                                    gamePoint: { x: worker.x, y: worker.y },
+                                    depth: worker.y
+                                })
+                            }
                         }
                     }
 
-                    if (image) {
-                        toDrawNormal.push({
-                            source: image[0],
-                            gamePoint: worker,
-                            depth: worker.y
-                        })
+                    if (!didDrawAnimation) {
+                        let image
 
-                        shadowsToDraw.push({
-                            source: image[1],
-                            gamePoint: worker,
-                            depth: worker.y
-                        })
+                        if (worker.cargo) {
+                            if (worker?.bodyType === 'FAT') {
+                                image = fatCarrierWithCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
+                            } else {
+                                image = thinCarrierWithCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
+                            }
+                        } else {
+                            if (worker?.bodyType === 'FAT') {
+                                image = fatCarrierNoCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
+                            } else {
+                                image = thinCarrierNoCargo.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
+                            }
+                        }
+
+                        if (image) {
+                            toDrawNormal.push({
+                                source: image[0],
+                                gamePoint: worker,
+                                depth: worker.y
+                            })
+
+                            shadowsToDraw.push({
+                                source: image[1],
+                                gamePoint: worker,
+                                depth: worker.y
+                            })
+                        }
                     }
                 } else {
 

@@ -564,19 +564,20 @@ class ShipImageAtlasHandler {
     }
 }
 
-export type AnimationType = 'SINGLE' | 'REPEAT'
+export type AnimationType = 'SINGLE_THEN_FREEZE' | 'REPEAT' | 'SINGLE_THEN_STOP'
 
 const actionAnimationType = new Map<WorkerAction, AnimationType>()
 
-actionAnimationType.set('PLANTING_TREE', 'SINGLE')
+actionAnimationType.set('PLANTING_TREE', 'SINGLE_THEN_FREEZE')
 actionAnimationType.set('PLANTING_WHEAT', 'REPEAT')
 actionAnimationType.set('HARVESTING', 'REPEAT')
 actionAnimationType.set('INVESTIGATING', 'REPEAT')
 actionAnimationType.set('CUTTING', 'REPEAT')
 actionAnimationType.set('HACKING_STONE', 'REPEAT')
-actionAnimationType.set('LOWERING_FISHING_ROD', 'SINGLE')
+actionAnimationType.set('LOWERING_FISHING_ROD', 'SINGLE_THEN_FREEZE')
 actionAnimationType.set('FISHING', 'REPEAT')
-actionAnimationType.set('PULL_UP_FISHING_ROD', 'SINGLE')
+actionAnimationType.set('PULL_UP_FISHING_ROD', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('CHEW_GUM', 'SINGLE_THEN_STOP')
 
 interface WorkerCommonFormat {
     shadowImages: Record<Direction, ImageSeriesInformation>
@@ -695,7 +696,7 @@ class WorkerImageAtlasHandler {
                     image: this.image,
                     texture: this.texture
                 }
-            } else {
+            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
                 return {
                     sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
                     sourceY: actionImages.startY,
@@ -721,7 +722,7 @@ class WorkerImageAtlasHandler {
                     image: this.image,
                     texture: this.texture
                 }
-            } else {
+            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
                 return {
                     sourceX: actionImages.startX,
                     sourceY: actionImages.startY + (actionImages.nrImages - 1) * actionImages.height,

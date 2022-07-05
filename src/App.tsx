@@ -718,6 +718,8 @@ class App extends Component<AppProps, AppState> {
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
             monitor.placeFlagSnappy(pointInformation, this.props.gameId, this.props.selfPlayerId)
+
+            this.setState({ selected: point })
         }
 
         else if (pointInformation.is === "road" && pointInformation.roadId) {

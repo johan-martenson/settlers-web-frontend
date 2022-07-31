@@ -52,6 +52,8 @@ interface GameCanvasState {
     hoverPoint?: Point
 }
 
+const ANIMATION_PERIOD = 100
+
 let newRoadCurrentLength = 0
 let logOnce = true
 let timer: ReturnType<typeof setTimeout>
@@ -187,6 +189,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private lightVector: Vector
     private debuggedPoint: Point | undefined
     private previousTimestamp?: number
+    private previous: number
+    private overshoot: number
 
     private animationIndex: number = 0
     private mapRenderInformation?: MapRenderInformation
@@ -243,6 +247,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.groundRenderProgram = null
         this.drawImageProgram = null
         this.drawShadowProgram = null
+
+        this.previous = performance.now()
+        this.overshoot = 0
     }
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
@@ -316,7 +323,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             thinCarrierWithCargo.load(),
             fatCarrierNoCargo.load(),
             thinCarrierNoCargo.load(),
-            shipImageAtlas.load()
+            shipImageAtlas.load(),
+            decorationsImageAtlasHandler.load()
         ])
 
         await Promise.all(allFilesToWaitFor)
@@ -386,6 +394,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 fatCarrierNoCargo.makeTexture(gl)
                 thinCarrierNoCargo.makeTexture(gl)
                 shipImageAtlas.makeTexture(gl)
+                decorationsImageAtlasHandler.makeTexture(gl)
 
                 // Create and compile the shaders
                 const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
@@ -592,6 +601,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         const duration = new Duration("GameRender::renderGame")
 
+        // Handle the animation counter
+        const now = performance.now()
+        const timeSinceLastDraw = now - this.previous + this.overshoot
+
+        this.animationIndex = this.animationIndex + Math.floor(timeSinceLastDraw / ANIMATION_PERIOD)
+        this.overshoot = timeSinceLastDraw % ANIMATION_PERIOD
+        this.previous = now
+
         // Check if there are changes to the newRoads props array. In that case the buffers for drawing roads need to be updated.
         const newRoadsUpdatedLength = this.props.newRoad?.length || 0
 
@@ -658,7 +675,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.debuggedPoint = this.props.selectedPoint
         }
 
-
         if (oncePerNewSelectionPoint && this.props.selectedPoint !== undefined) {
             console.log({
                 title: "Information about selection point",
@@ -673,15 +689,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /**
          * Draw according to the following layers:
          *    1. Terrain layer
-         *    2. Road layer
-         *    3. Normal layer: houses + names, flags, stones, trees, workers, animals, lanyards, etc.
+         *    2. Decorations
+         *    3. Road layer
+         *    4. Normal layer: houses + names, flags, stones, trees, workers, animals, lanyards, etc.
          *       3.1 Shadows (not implemented yet)
          *       3.2 Objects
-         *    4. Hover layer: hover icon and selected icon
+         *    5. Hover layer: hover icon and selected icon
          */
 
 
-        /* Draw the terrain layer, followed by the road layer */
+        /* Draw the terrain layer */
         if (this.gl && this.groundRenderProgram && this.mapRenderInformation &&
             this.uScreenWidth !== undefined &&
             this.uScreenHeight !== undefined &&
@@ -737,6 +754,146 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 2)
                 }
             }
+        }
+
+        duration.after("draw terrain")
+
+
+        /* Draw decorations on the ground */
+        const decorationsToDraw: ToDraw[] = []
+
+        monitor.decorations.forEach(decoration => {
+            const image = decorationsImageAtlasHandler.getDrawingInformationFor(decoration.decoration)
+
+            if (image) {
+                decorationsToDraw.push({
+                    source: image[0],
+                    gamePoint: decoration,
+                    depth: decoration.y
+                })
+
+                shadowsToDraw.push({
+                    source: image[1],
+                    gamePoint: decoration,
+                    depth: decoration.y
+                })
+            } else if (oncePerNewSelectionPoint) {
+                console.log({ title: 'No image!', decoration: decoration })
+            }
+        })
+
+        // Set up webgl2 with the right shaders to prepare for drawing normal objects
+        if (this.gl) {
+            this.gl.useProgram(this.drawImageProgram)
+
+            this.gl.viewport(0, 0, width, height)
+
+            this.gl.enable(this.gl.BLEND)
+            this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
+            this.gl.disable(this.gl.DEPTH_TEST)
+        }
+
+        // Draw decorations objects
+        decorationsToDraw.forEach(draw => {
+
+            if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
+
+                if (this.gl && this.drawImageProgram && draw.gamePoint) {
+
+                    this.gl.activeTexture(this.gl.TEXTURE3)
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+
+                    // Re-assign the attribute locations
+                    const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
+                    const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
+
+                    if (this.drawImagePositionBuffer) {
+                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+                        this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+                        this.gl.enableVertexAttribArray(drawImagePositionLocation)
+                    }
+
+                    if (this.drawImageTexCoordBuffer) {
+                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+                        this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+                        this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
+                    }
+
+                    // Re-assign the uniform locations
+                    const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
+                    const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
+                    const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
+                    const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
+                    const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
+                    const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
+                    const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
+                    const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+
+                    // Tell the fragment shader what texture to use
+                    this.gl.uniform1i(drawImageTextureLocation, 3)
+
+                    // Tell the vertex shader where to draw
+                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+
+                    // Tell the vertex shader how to draw
+                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+
+                    // Tell the vertex shader what parts of the source image to draw
+                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+
+                    // Draw the quad (2 triangles = 6 vertices)
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                }
+            }
+        })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /* Draw the road layer */
+        if (this.gl && this.groundRenderProgram && this.mapRenderInformation &&
+            this.uScreenWidth !== undefined &&
+            this.uScreenHeight !== undefined &&
+            this.uLightVector !== undefined &&
+            this.uScale !== undefined &&
+            this.uOffset !== undefined &&
+            this.coordAttributeLocation !== undefined &&
+            this.normalAttributeLocation !== undefined &&
+            this.textureMappingAttributeLocation !== undefined &&
+            this.uSampler !== undefined) {
+
+            const gl = this.gl
+
+            gl.useProgram(this.groundRenderProgram)
+
+            gl.enable(gl.BLEND)
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+
+            // Set screen width and height
+            gl.uniform1f(this.uScreenWidth, width)
+            gl.uniform1f(this.uScreenHeight, height)
+
+            // Set the light vector
+            const lightVector = [-1, 1, -1]
+            gl.uniform3fv(this.uLightVector, lightVector)
+
+            // Set the current values for the scale, offset and the sampler
+            gl.uniform2f(this.uScale, this.props.scale, this.props.scale)
+            gl.uniform2f(this.uOffset, this.props.translateX, this.props.translateY)
 
             // Draw the roads
             if (this.roadRenderInformation !== undefined &&
@@ -759,7 +916,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        duration.after("draw terrain and roads")
+        duration.after("draw roads")
+
+
+
 
 
         let ctx = overlayCtx
@@ -918,45 +1078,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         duration.after("collect trees")
-
-
-        /* Collect dead trees */
-        for (const deadTree of monitor.deadTrees) {
-
-            if (deadTree.x < minXInGame || deadTree.x > maxXInGame || deadTree.y < minYInGame || deadTree.y > maxYInGame) {
-                continue
-            }
-
-            if (
-                !monitor.discoveredPoints.has({ x: deadTree.x - 1, y: deadTree.y - 1 }) ||
-                !monitor.discoveredPoints.has({ x: deadTree.x - 1, y: deadTree.y + 1 }) ||
-                !monitor.discoveredPoints.has({ x: deadTree.x + 1, y: deadTree.y - 1 }) ||
-                !monitor.discoveredPoints.has({ x: deadTree.x + 1, y: deadTree.y + 1 }) ||
-                !monitor.discoveredPoints.has({ x: deadTree.x - 2, y: deadTree.y }) ||
-                !monitor.discoveredPoints.has({ x: deadTree.x + 2, y: deadTree.y })
-            ) {
-                continue
-            }
-
-            /* Draw the tree next to the point, instead of on top */
-            const deadTreeInfo = decorationsImageAtlasHandler.getDrawingInformationFor("STANDING_DEAD_TREE")
-
-            if (deadTreeInfo) {
-                toDrawNormal.push({
-                    source: deadTreeInfo[0],
-                    gamePoint: deadTree,
-                    depth: deadTree.y
-                })
-
-                shadowsToDraw.push({
-                    source: deadTreeInfo[1],
-                    gamePoint: deadTree,
-                    depth: deadTree.y
-                })
-            }
-        }
-
-        duration.after("collect dead trees")
 
 
         /* Collect the crops */
@@ -2031,12 +2152,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         this.previousTimestamp = timestamp
-
-        if (this.animationIndex === 1000) {
-            this.animationIndex = 0
-        } else {
-            this.animationIndex = this.animationIndex + 1
-        }
 
         requestAnimationFrame(this.renderGame.bind(this))
     }

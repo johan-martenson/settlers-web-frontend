@@ -225,23 +225,6 @@ export interface PointInformation {
 
 export type TreeType = "PINE" | "BIRCH" | "OAK" | "PALM_1" | "PALM_2" | "PINE_APPLE" | "CYPRESS" | "CHERRY" | "FIR"
 
-export type DecorationType = "MUSHROOM" |
-    "MINI_STONE" |
-    "MINI_STONES" |
-    "STONE" |
-    "FALLEN_TREE" |
-    "STANDING_DEAD_TREE" |
-    "SKELETON" |
-    "MINI_SKELETON" |
-    "FLOWERS" |
-    "BUSH" |
-    "LARGER_STONES" |
-    "CACTUS_1" |
-    "CACTUS_2" |
-    "BEACH_GRASS" |
-    "SMALL_GRASS"
-
-
 export type TreeSize = 'NEWLY_PLANTED' | 'SMALL' | 'MEDIUM' | 'FULL_GROWN'
 
 export interface TreeInformation extends Point {
@@ -379,7 +362,43 @@ export type WorkerAction = 'PLANTING_TREE' |
     'HARVESTING' |
     'LOWERING_FISHING_ROD' |
     'PULL_UP_FISHING_ROD' |
-    'CHEW_GUM'
+    'CHEW_GUM' |
+    'READ_NEWSPAPER' |
+    'TOUCH_NOSE' |
+    'JUMP_SKIP_ROPE'
+
+export type DecorationType = 'BROWN_MUSHROOM' |
+    'MINI_BROWN_MUSHROOM' |
+    'TOADSTOOL' |
+    'MINI_STONE' |
+    'SMALL_STONE' |
+    'STONE' |
+    'DEAD_TREE_LYING_DOWN' |
+    'DEAD_TREE' |
+    'SMALL_SKELETON' |
+    'FLOWERS' |
+    'LARGE_BUSH' |
+    'PILE_OF_STONES' |
+    'CACTUS_1' |
+    'CACTUS_2' |
+    'CATTAIL' |
+    'GRASS_1' |
+    'BUSH' |
+    'SMALL_BUSH' |
+    'MINI_BUSH' |
+    'GRASS_2' |
+    'MINI_GRASS' |
+    'PORTAL' |
+    'SHINING_PORTAL' |
+    'MINI_STONE_WITH_GRASS' |
+    'SMALL_STONE_WITH_GRASS' |
+    'SOME_SMALL_STONES' |
+    'SOME_SMALLER_STONES' |
+    'FEW_SMALL_STONES' |
+    'SPARSE_BUSH' |
+    'SOME_WATER' |
+    'LITTLE_GRASS' |
+    'SNOWMAN'
 
 export type SimpleDirection = 'UP_LEFT' | 'UP_RIGHT' | 'RIGHT' | 'DOWN_RIGHT' | 'DOWN_LEFT' | 'LEFT'
 
@@ -508,6 +527,12 @@ export interface BorderInformation {
     points: Point[]
 }
 
+export interface Decoration {
+    x: number
+    y: number
+    decoration: DecorationType
+}
+
 export interface PlayerViewInformation {
     borders: BorderInformation[]
     houses: HouseInformation[]
@@ -522,6 +547,7 @@ export interface PlayerViewInformation {
     discoveredPoints: Point[]
     availableConstruction: PointMapFast<AvailableConstruction[]>
     deadTrees: Point[]
+    decorations: Decoration[]
 }
 
 export interface PossibleNewRoadInformation {

@@ -1,4 +1,4 @@
-import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -53,6 +53,7 @@ interface Monitor {
     deadTrees: PointSetFast
     visibleTrees: Map<TreeId, TreeInformationLocal>
     wildAnimals: Map<WildAnimalId, WildAnimalInformation>
+    decorations: PointMapFast<Decoration>
 
     localRemovedFlags: Map<FlagId, FlagInformation>
     localRemovedRoads: Map<RoadId, RoadInformation>
@@ -95,6 +96,7 @@ const monitor: Monitor = {
     deadTrees: new PointSetFast(),
     visibleTrees: new Map<TreeId, TreeInformationLocal>(),
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
+    decorations: new PointMapFast<Decoration>(),
 
     localRemovedFlags: new Map<FlagId, FlagInformation>(),
     localRemovedRoads: new Map<RoadId, RoadInformation>(),
@@ -171,6 +173,7 @@ interface ChangesMessage {
     discoveredDeadTrees?: Point[]
     removedDeadTrees?: Point[]
     removedWildAnimals?: WildAnimalId[]
+    removedDecorations?: Point[]
 }
 
 function isGameChangesMessage(message: any): message is ChangesMessage {
@@ -246,6 +249,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
     view.crops.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
 
     view.deadTrees.forEach(deadTree => monitor.deadTrees.add(deadTree))
+
+    view.decorations.forEach(decoration => monitor.decorations.set({ x: decoration.x, y: decoration.y }, decoration))
 
     for (const borderInformation of view.borders) {
 
@@ -395,16 +400,18 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
                 }
             }
 
-            houseIdsToRemove.forEach((id) => monitor.houses.delete(id))
+            houseIdsToRemove.forEach(id => monitor.houses.delete(id))
 
-            message.changedBuildings.forEach((house) => monitor.houses.set(house.id, house))
+            message.changedBuildings.forEach(house => monitor.houses.set(house.id, house))
         }
 
-        message.removedBuildings?.forEach((id) => monitor.houses.delete(id))
+        message.removedBuildings?.forEach(id => monitor.houses.delete(id))
 
-        message.newFlags?.forEach((flag) => monitor.flags.set(flag.id, flag))
-        message.changedFlags?.forEach((flag) => monitor.flags.set(flag.id, flag))
-        message.removedFlags?.forEach((id) => monitor.flags.delete(id))
+        message.removedDecorations?.forEach(point => monitor.decorations.delete(point))
+
+        message.newFlags?.forEach(flag => monitor.flags.set(flag.id, flag))
+        message.changedFlags?.forEach(flag => monitor.flags.set(flag.id, flag))
+        message.removedFlags?.forEach(id => monitor.flags.delete(id))
 
         message.newRoads?.forEach(road => monitor.roads.set(road.id, road))
         message.removedRoads?.forEach(id => monitor.roads.delete(id))
@@ -429,8 +436,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
         message.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
         message.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
 
-        message.newStones?.forEach((stone) => monitor.stones.add(stone))
-        message.removedStones?.forEach((stone) => monitor.stones.delete(stone))
+        message.newStones?.forEach(stone => monitor.stones.add(stone))
+        message.removedStones?.forEach(stone => monitor.stones.delete(stone))
 
         if (message.changedBorders) {
             syncChangedBorders(message.changedBorders)
@@ -448,8 +455,8 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
 
         message.removedCrops?.forEach(cropId => monitor.crops.delete(cropId))
 
-        message.newSigns?.forEach((sign) => monitor.signs.set(sign.id, sign))
-        message.removedSigns?.forEach((id) => monitor.signs.delete(id))
+        message.newSigns?.forEach(sign => monitor.signs.set(sign.id, sign))
+        message.removedSigns?.forEach(id => monitor.signs.delete(id))
 
         if (message.changedAvailableConstruction) {
             for (const change of message.changedAvailableConstruction) {
@@ -494,7 +501,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
                 worker.actionAnimationIndex = worker.actionAnimationIndex + 1
             }
         }
-    }, 200)
+    }, 300)
 
     // Move workers locally to reduce the amount of messages from the server
     setInterval(async () => {

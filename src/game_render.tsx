@@ -783,7 +783,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         })
 
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (this.gl) {
+        if (this.gl && this.drawImageProgram) {
             this.gl.useProgram(this.drawImageProgram)
 
             this.gl.viewport(0, 0, width, height)
@@ -791,77 +791,67 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.gl.enable(this.gl.BLEND)
             this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
             this.gl.disable(this.gl.DEPTH_TEST)
+
+            // Re-assign the attribute locations
+            const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
+            const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
+
+            if (this.drawImagePositionBuffer) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+                this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+                this.gl.enableVertexAttribArray(drawImagePositionLocation)
+            }
+
+            if (this.drawImageTexCoordBuffer) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+                this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+                this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
+            }
+
+            // Re-assign the uniform locations
+            const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
+            const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
+            const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
+            const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
+            const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
+            const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
+            const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
+            const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+
+            // Draw decorations objects
+            decorationsToDraw.forEach(draw => {
+
+                if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
+
+                    if (this.gl && this.drawImageProgram && draw.gamePoint) {
+
+                        this.gl.activeTexture(this.gl.TEXTURE3)
+                        this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+
+                        // Tell the fragment shader what texture to use
+                        this.gl.uniform1i(drawImageTextureLocation, 3)
+
+                        // Tell the vertex shader where to draw
+                        this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                        this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+
+                        // Tell the vertex shader how to draw
+                        this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                        this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                        this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+
+                        // Tell the vertex shader what parts of the source image to draw
+                        this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                        this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+
+                        // Draw the quad (2 triangles = 6 vertices)
+                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                    }
+                }
+            })
         }
 
-        // Draw decorations objects
-        decorationsToDraw.forEach(draw => {
-
-            if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
-
-                if (this.gl && this.drawImageProgram && draw.gamePoint) {
-
-                    this.gl.activeTexture(this.gl.TEXTURE3)
-                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
-
-                    // Re-assign the attribute locations
-                    const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
-                    const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
-
-                    if (this.drawImagePositionBuffer) {
-                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-                        this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-                        this.gl.enableVertexAttribArray(drawImagePositionLocation)
-                    }
-
-                    if (this.drawImageTexCoordBuffer) {
-                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-                        this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-                        this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-                    }
-
-                    // Re-assign the uniform locations
-                    const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
-                    const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
-                    const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
-                    const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
-                    const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
-                    const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
-                    const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
-                    const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
-
-                    // Tell the fragment shader what texture to use
-                    this.gl.uniform1i(drawImageTextureLocation, 3)
-
-                    // Tell the vertex shader where to draw
-                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-
-                    // Tell the vertex shader how to draw
-                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-
-                    // Tell the vertex shader what parts of the source image to draw
-                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-
-                    // Draw the quad (2 triangles = 6 vertices)
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                }
-            }
-        })
-
-
-
-
-
-
-
-
-
-
-
-
+        duration.after("drawing decorations")
 
 
         /* Draw the road layer */
@@ -874,7 +864,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.coordAttributeLocation !== undefined &&
             this.normalAttributeLocation !== undefined &&
             this.textureMappingAttributeLocation !== undefined &&
-            this.uSampler !== undefined) {
+            this.uSampler !== undefined &&
+            this.roadRenderInformation !== undefined &&
+            this.roadCoordinatesBuffer !== undefined &&
+            this.roadNormalsBuffer !== undefined &&
+            this.roadTextureMappingBuffer !== undefined) {
 
             const gl = this.gl
 
@@ -896,30 +890,24 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.uniform2f(this.uOffset, this.props.translateX, this.props.translateY)
 
             // Draw the roads
-            if (this.roadRenderInformation !== undefined &&
-                this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
-                gl.vertexAttribPointer(this.coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(this.coordAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
+            gl.vertexAttribPointer(this.coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.coordAttributeLocation)
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.roadNormalsBuffer)
-                gl.vertexAttribPointer(this.normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(this.normalAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.roadNormalsBuffer)
+            gl.vertexAttribPointer(this.normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.normalAttributeLocation)
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
-                gl.vertexAttribPointer(this.textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(this.textureMappingAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
+            gl.vertexAttribPointer(this.textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.textureMappingAttributeLocation)
 
-                gl.uniform1i(this.uSampler, 1)
+            gl.uniform1i(this.uSampler, 1)
 
-                gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 2)
-            }
+            gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 2)
         }
 
         duration.after("draw roads")
-
-
-
 
 
         let ctx = overlayCtx
@@ -1762,7 +1750,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Set up webgl2 with the right shaders to prepare for drawing shadows
-        if (this.gl) {
+        if (this.gl && this.drawShadowProgram) {
             this.gl.useProgram(this.drawShadowProgram)
 
             this.gl.viewport(0, 0, width, height)
@@ -1770,68 +1758,69 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.gl.enable(this.gl.BLEND)
             this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
             this.gl.disable(this.gl.DEPTH_TEST)
+
+
+            // Re-assign the attribute locations
+            const drawImagePositionLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_position")
+            const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_texcoord")
+
+            if (this.drawImagePositionBuffer) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+                this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+                this.gl.enableVertexAttribArray(drawImagePositionLocation)
+            }
+
+            if (this.drawImageTexCoordBuffer) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+                this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+                this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
+            }
+
+            // Re-assign the uniform locations
+            const drawImageTextureLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_texture")
+            const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_game_point")
+            const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_offset")
+            const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_image_offset")
+            const drawImageScaleLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_scale")
+            const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_coordinate")
+            const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_dimensions")
+            const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_dimensions")
+
+            // Draw all shadows
+            shadowsToDraw.forEach(shadow => {
+
+                if (shadow.gamePoint !== undefined && shadow.source && shadow.source.texture !== undefined) {
+
+                    if (this.gl && this.drawShadowProgram && shadow.gamePoint) {
+
+                        this.gl.activeTexture(this.gl.TEXTURE3)
+                        this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
+
+                        // Tell the fragment shader what texture to use
+                        this.gl.uniform1i(drawImageTextureLocation, 3)
+
+                        // Tell the vertex shader where to draw
+                        this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
+                        this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
+
+                        // Tell the vertex shader how to draw
+                        this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                        this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                        this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+
+                        // Tell the vertex shader what parts of the source image to draw
+                        this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
+                        this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
+
+                        // Draw the quad (2 triangles = 6 vertices)
+                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                    }
+                }
+            })
         }
 
-        // Draw all shadows
-        shadowsToDraw.forEach(shadow => {
-
-            if (shadow.gamePoint !== undefined && shadow.source && shadow.source.texture !== undefined) {
-
-                if (this.gl && this.drawShadowProgram && shadow.gamePoint) {
-
-                    this.gl.activeTexture(this.gl.TEXTURE3)
-                    this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
-
-                    // Re-assign the attribute locations
-                    const drawImagePositionLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_position")
-                    const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_texcoord")
-
-                    if (this.drawImagePositionBuffer) {
-                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-                        this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-                        this.gl.enableVertexAttribArray(drawImagePositionLocation)
-                    }
-
-                    if (this.drawImageTexCoordBuffer) {
-                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-                        this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-                        this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-                    }
-
-                    // Re-assign the uniform locations
-                    const drawImageTextureLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_texture")
-                    const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_game_point")
-                    const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_offset")
-                    const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_image_offset")
-                    const drawImageScaleLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_scale")
-                    const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_coordinate")
-                    const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_dimensions")
-                    const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_dimensions")
-
-                    // Tell the fragment shader what texture to use
-                    this.gl.uniform1i(drawImageTextureLocation, 3)
-
-                    // Tell the vertex shader where to draw
-                    this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
-                    this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
-
-                    // Tell the vertex shader how to draw
-                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-
-                    // Tell the vertex shader what parts of the source image to draw
-                    this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
-                    this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
-
-                    // Draw the quad (2 triangles = 6 vertices)
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                }
-            }
-        })
-
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (this.gl) {
+        if (this.gl && this.drawImageProgram) {
             this.gl.useProgram(this.drawImageProgram)
 
             this.gl.viewport(0, 0, width, height)
@@ -1839,65 +1828,66 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.gl.enable(this.gl.BLEND)
             this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
             this.gl.disable(this.gl.DEPTH_TEST)
-        }
 
-        // Draw normal objects
-        sortedToDrawList.forEach(draw => {
 
-            if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
+            // Re-assign the attribute locations
+            const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
+            const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
 
-                if (this.gl && this.drawImageProgram && draw.gamePoint) {
-
-                    this.gl.activeTexture(this.gl.TEXTURE3)
-                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
-
-                    // Re-assign the attribute locations
-                    const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
-                    const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
-
-                    if (this.drawImagePositionBuffer) {
-                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-                        this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-                        this.gl.enableVertexAttribArray(drawImagePositionLocation)
-                    }
-
-                    if (this.drawImageTexCoordBuffer) {
-                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-                        this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-                        this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-                    }
-
-                    // Re-assign the uniform locations
-                    const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
-                    const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
-                    const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
-                    const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
-                    const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
-                    const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
-                    const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
-                    const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
-
-                    // Tell the fragment shader what texture to use
-                    this.gl.uniform1i(drawImageTextureLocation, 3)
-
-                    // Tell the vertex shader where to draw
-                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-
-                    // Tell the vertex shader how to draw
-                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-
-                    // Tell the vertex shader what parts of the source image to draw
-                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-
-                    // Draw the quad (2 triangles = 6 vertices)
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                }
+            if (this.drawImagePositionBuffer) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+                this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+                this.gl.enableVertexAttribArray(drawImagePositionLocation)
             }
-        })
+
+            if (this.drawImageTexCoordBuffer) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+                this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+                this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
+            }
+
+            // Re-assign the uniform locations
+            const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
+            const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
+            const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
+            const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
+            const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
+            const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
+            const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
+            const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+
+            // Draw normal objects
+            sortedToDrawList.forEach(draw => {
+
+                if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
+
+                    if (this.gl && this.drawImageProgram && draw.gamePoint) {
+
+                        this.gl.activeTexture(this.gl.TEXTURE3)
+                        this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+
+                        // Tell the fragment shader what texture to use
+                        this.gl.uniform1i(drawImageTextureLocation, 3)
+
+                        // Tell the vertex shader where to draw
+                        this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                        this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+
+                        // Tell the vertex shader how to draw
+                        this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                        this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                        this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+
+                        // Tell the vertex shader what parts of the source image to draw
+                        this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                        this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+
+                        // Draw the quad (2 triangles = 6 vertices)
+                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                    }
+                }
+            })
+        }
 
 
         // Handle the hover layer
@@ -2019,7 +2009,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Draw the overlay layer. Assume for now that they don't need sorting
 
         // Set up webgl2 with the right shaders
-        if (this.gl) {
+        if (this.gl && this.drawImageProgram) {
             this.gl.useProgram(this.drawImageProgram)
 
             this.gl.viewport(0, 0, width, height)
@@ -2027,68 +2017,68 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.gl.enable(this.gl.BLEND)
             this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
             this.gl.disable(this.gl.DEPTH_TEST)
-        }
-
-        // Go through the images to draw
-        toDrawHover.forEach(draw => {
-
-            if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
-
-                if (this.gl && this.drawImageProgram && draw.gamePoint) {
-
-                    this.gl.activeTexture(this.gl.TEXTURE3)
-                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
-
-                    // Re-assign the attribute locations
-                    this.drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
-                    this.drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
-
-                    if (this.drawImagePositionBuffer) {
-                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-                        this.gl.vertexAttribPointer(this.drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-                        this.gl.enableVertexAttribArray(this.drawImagePositionLocation)
-                    }
-
-                    if (this.drawImageTexCoordBuffer) {
-                        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-                        this.gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-                        this.gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
-                    }
-
-                    // Re-assign the uniform locations
-                    const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
-                    const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
-                    const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
-                    const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
-                    const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
-                    const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
-                    const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
-                    const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
 
 
-                    // Tell the fragment shader what texture to use
-                    this.gl.uniform1i(drawImageTextureLocation, 3)
+            // Re-assign the attribute locations
+            this.drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
+            this.drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
 
-                    // Tell the vertex shader where to draw
-                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-
-                    // Tell the vertex shader how to scale
-                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-
-                    // Tell the vertex shader what parts of the source image to draw
-                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-
-                    // Draw the quad (2 triangles = 6 vertices)
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                }
-            } else if (oncePerNewSelectionPoint) {
-                console.log({ title: "Can't draw", draw })
+            if (this.drawImagePositionBuffer) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+                this.gl.vertexAttribPointer(this.drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+                this.gl.enableVertexAttribArray(this.drawImagePositionLocation)
             }
-        })
+
+            if (this.drawImageTexCoordBuffer) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+                this.gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+                this.gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
+            }
+
+            // Re-assign the uniform locations
+            const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
+            const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
+            const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
+            const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
+            const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
+            const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
+            const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
+            const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+
+            // Go through the images to draw
+            toDrawHover.forEach(draw => {
+
+                if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
+
+                    if (this.gl && this.drawImageProgram && draw.gamePoint) {
+
+                        this.gl.activeTexture(this.gl.TEXTURE3)
+                        this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+
+                        // Tell the fragment shader what texture to use
+                        this.gl.uniform1i(drawImageTextureLocation, 3)
+
+                        // Tell the vertex shader where to draw
+                        this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                        this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+
+                        // Tell the vertex shader how to scale
+                        this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                        this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                        this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+
+                        // Tell the vertex shader what parts of the source image to draw
+                        this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                        this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+
+                        // Draw the quad (2 triangles = 6 vertices)
+                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                    }
+                } else if (oncePerNewSelectionPoint) {
+                    console.log({ title: "Can't draw", draw })
+                }
+            })
+        }
 
         duration.after("draw normal layer")
 

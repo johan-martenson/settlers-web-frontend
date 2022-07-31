@@ -1,4 +1,4 @@
-import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -144,6 +144,12 @@ interface WorkerNewAction {
     startedAction: WorkerAction
 }
 
+interface PointAndDecoration {
+    x: number
+    y: number
+    decoration: DecorationType
+}
+
 interface ChangesMessage {
     workersWithNewTargets?: WalkerTargetChange[]
     workersWithStartedActions?: WorkerNewAction[]
@@ -174,6 +180,7 @@ interface ChangesMessage {
     removedDeadTrees?: Point[]
     removedWildAnimals?: WildAnimalId[]
     removedDecorations?: Point[]
+    newDecorations?: PointAndDecoration[]
 }
 
 function isGameChangesMessage(message: any): message is ChangesMessage {
@@ -193,7 +200,8 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
             message.discoveredDeadTrees ||
             message.removedDeadTrees ||
             message.wildAnimalsWithNewTargets || message.removedWildAnimals ||
-            message.workersWithStartedActions)) {
+            message.workersWithStartedActions ||
+            message.removedDecorations || message.newDecorations)) {
         return true
     }
 
@@ -407,6 +415,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
 
         message.removedBuildings?.forEach(id => monitor.houses.delete(id))
 
+        message.newDecorations?.forEach(pointAndDecoration => monitor.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
         message.removedDecorations?.forEach(point => monitor.decorations.delete(point))
 
         message.newFlags?.forEach(flag => monitor.flags.set(flag.id, flag))

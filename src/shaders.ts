@@ -179,13 +179,9 @@ void main() {
   adjusted_image_center.x = image_center.x - (u_image_offset.x * u_scale / DEFAULT_SCALE);
   adjusted_image_center.y = image_center.y - (u_source_dimensions.y - u_image_offset.y) * u_scale / DEFAULT_SCALE;
 
-  // Calculate the pixel_scale factor to make drawing pixel-perfect at the default scale
-  pixel_scale.x = (DEFAULT_SCALE * float(u_screen_dimensions.x)) / 2.0;
-  pixel_scale.y = (DEFAULT_SCALE * float(u_screen_dimensions.y)) / 2.0;
-
   // Get the individual vertex coordinate (pixel space)
-  vertex_pixels.x = round(adjusted_image_center.x + a_position.x * u_source_dimensions.x);
-  vertex_pixels.y = round(adjusted_image_center.y + a_position.y * u_source_dimensions.y);
+  vertex_pixels.x = round(adjusted_image_center.x + a_position.x * u_source_dimensions.x * u_scale / DEFAULT_SCALE);
+  vertex_pixels.y = round(adjusted_image_center.y + a_position.y * u_source_dimensions.y * u_scale / DEFAULT_SCALE);
 
   // Convert to gl space
   vertex.x = (float(vertex_pixels.x) / u_screen_dimensions.x) * 2.0 - 1.0;

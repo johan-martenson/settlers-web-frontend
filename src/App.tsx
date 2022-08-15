@@ -7,7 +7,7 @@ import FriendlyFlagInfo from './friendly_flag_info'
 import FriendlyHouseInfo from './friendly_house_info'
 import GameMenu from './game_menu'
 import GameMessagesViewer from './game_messages_viewer'
-import { GameCanvas } from './game_render'
+import { CursorState, GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
 import { getHeadquarterForPlayer, monitor, startMonitoringGame } from './monitor'
@@ -96,6 +96,8 @@ interface AppState {
     showSetTransportPriority: boolean
 
     serverUnreachable?: string
+
+    cursorState: CursorState
 }
 
 class App extends Component<AppProps, AppState> {
@@ -158,7 +160,8 @@ class App extends Component<AppProps, AppState> {
             player: props.selfPlayerId,
             menuVisible: false,
             showTitles: true,
-            showSetTransportPriority: false
+            showSetTransportPriority: false,
+            cursorState: 'NOTHING'
         }
 
         /* Set up type control commands */
@@ -186,7 +189,8 @@ class App extends Component<AppProps, AppState> {
                     this.setState(
                         {
                             newRoad: [pointDownRight],
-                            possibleRoadConnections: pointDownRightInformation.possibleRoadConnections
+                            possibleRoadConnections: pointDownRightInformation.possibleRoadConnections,
+                            cursorState: 'BUILDING_ROAD'
                         }
                     )
                 } else if (pointInformation.is && pointInformation.is === "flag") {
@@ -194,7 +198,8 @@ class App extends Component<AppProps, AppState> {
                     this.setState(
                         {
                             newRoad: [this.state.selected],
-                            possibleRoadConnections: pointInformation.possibleRoadConnections
+                            possibleRoadConnections: pointInformation.possibleRoadConnections,
+                            cursorState: 'BUILDING_ROAD'
                         }
                     )
                 }
@@ -393,13 +398,19 @@ class App extends Component<AppProps, AppState> {
     }
 
     onMouseDown(event: React.MouseEvent): void {
-        globalSyncState.mouseDown = true
-        globalSyncState.mouseDownX = event.pageX
-        globalSyncState.mouseDownY = event.pageY
-        globalSyncState.mouseMoving = false
+        console.log("mouse down")
 
-        globalSyncState.translateXAtMouseDown = this.state.translateX
-        globalSyncState.translateYAtMouseDown = this.state.translateY
+        if (event.button === 2) {
+            globalSyncState.mouseDown = true
+            globalSyncState.mouseDownX = event.pageX
+            globalSyncState.mouseDownY = event.pageY
+            globalSyncState.mouseMoving = false
+
+            globalSyncState.translateXAtMouseDown = this.state.translateX
+            globalSyncState.translateYAtMouseDown = this.state.translateY
+
+            this.setState({ cursorState: 'DRAGGING' })
+        }
 
         event.stopPropagation()
     }
@@ -424,16 +435,34 @@ class App extends Component<AppProps, AppState> {
     }
 
     onMouseUp(event: React.MouseEvent): void {
+        console.log("Mouse up")
+        console.log(globalSyncState)
+
         globalSyncState.mouseDown = false
+        globalSyncState.mouseMoving = false
+
+        this.setState({ cursorState: 'NOTHING' })
 
         event.stopPropagation()
     }
 
     onMouseLeave(event: React.MouseEvent): void {
+        this.setState({ cursorState: 'NOTHING' })
+
         globalSyncState.mouseDown = false
+        globalSyncState.mouseMoving = false
     }
 
     async componentDidMount(): Promise<void> {
+
+        if (document.addEventListener) {
+            document.addEventListener('contextmenu', function (e) {
+
+                // Do nothing. The purpose is to make it possible to drag the screen with the right mouse button
+
+                e.preventDefault()
+            }, false);
+        }
 
         await this.monitoringPromise
 
@@ -472,6 +501,7 @@ class App extends Component<AppProps, AppState> {
 
     async onPointClicked(point: Point): Promise<void> {
         console.info("Clicked point: " + point.x + ", " + point.y)
+        console.log(globalSyncState)
 
         /* Ignore clicks if the player is an observer */
         if (this.props.observe) {
@@ -556,7 +586,8 @@ class App extends Component<AppProps, AppState> {
 
                 this.setState({
                     newRoad: possibleNewRoad,
-                    possibleRoadConnections: pointInformation.possibleRoadConnections
+                    possibleRoadConnections: pointInformation.possibleRoadConnections,
+                    cursorState: 'BUILDING_ROAD'
                 })
             }
 
@@ -805,7 +836,8 @@ class App extends Component<AppProps, AppState> {
         this.setState(
             {
                 newRoad: [{ x: point.x, y: point.y }],
-                possibleRoadConnections: pointInformation.possibleRoadConnections
+                possibleRoadConnections: pointInformation.possibleRoadConnections,
+                cursorState: 'BUILDING_ROAD'
             }
         )
     }
@@ -964,7 +996,7 @@ class App extends Component<AppProps, AppState> {
                     showAvailableConstruction={this.state.showAvailableConstruction}
                     width={globalSyncState.width}
                     height={globalSyncState.height}
-                    cursorState={'NOTHING'}
+                    cursorState={this.state.cursorState}
                 />
 
                 <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />

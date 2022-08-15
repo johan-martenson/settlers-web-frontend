@@ -132,13 +132,15 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
                 const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
                 const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
 
+                // Use height - y to translate between context 2d coordinate system where (0, 0) is upper left
+                // and the settlers game point where (0, 0) is bottom left
                 if (colorStraightBelow &&
                     pointTerrainInformation.below !== waterIntValue0 &&
                     pointTerrainInformation.below !== waterIntValue1 &&
                     pointTerrainInformation.below !== waterIntValue2) {
                     ctx.beginPath()
                     ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
-                    ctx.rect(point.x, point.y, 4, 4)
+                    ctx.rect(point.x, this.props.map.height - point.y, 4, 4)
                     ctx.fill()
                 }
 
@@ -148,7 +150,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
                     pointTerrainInformation.downRight !== waterIntValue2) {
                     ctx.beginPath()
                     ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
-                    ctx.rect(point.x + 4, point.y, 4, 4)
+                    ctx.rect(point.x + 4, this.props.map.height - point.y, 4, 4)
                     ctx.fill()
                 }
             }
@@ -159,7 +161,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
         ctx.fillStyle = 'yellow'
         this.props.map.startingPoints.forEach(point => {
             ctx.beginPath()
-            ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI)
+            ctx.arc(point.x, this.props.map.height - point.y, 3, 0, 2 * Math.PI)
             ctx.fill()
         }
         )

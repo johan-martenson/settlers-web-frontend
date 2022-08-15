@@ -54,6 +54,12 @@ interface GameCanvasState {
 
 const ANIMATION_PERIOD = 100
 
+const MOUSE_STYLES = new Map<CursorState, string>()
+
+MOUSE_STYLES.set('NOTHING', 'default')
+MOUSE_STYLES.set('DRAGGING', 'move')
+MOUSE_STYLES.set('BUILDING_ROAD', "url(assets/ui-elements/building-road.png), pointer")
+
 let newRoadCurrentLength = 0
 let logOnce = true
 let timer: ReturnType<typeof setTimeout>
@@ -97,7 +103,7 @@ vegetationToTextureMapping.set(8, { below: [1, 3, 1.5, 2, 2, 3].map(v => v * 48 
 vegetationToTextureMapping.set(9, { below: [2, 3, 2.5, 2, 3, 3].map(v => v * 48 / 256), downRight: [2, 2, 2.5, 3, 3, 2].map(v => v * 48 / 256) }) // Meadow 2
 vegetationToTextureMapping.set(10, { below: [146, 142, 146, 98, 190, 98].map(v => v / 256), downRight: [146, 142, 190, 142, 190, 98].map(v => v / 256) }) // Meadow 3
 vegetationToTextureMapping.set(11, { below: [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256), downRight: [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256) }) // Mountain 2
-vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256), downRight: [2, 1, 2.5, 3, 2, 1].map(v => v * 48 / 256) }) // Mountain 3
+vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256), downRight: [2, 1, 2.5, 2, 3, 1].map(v => v * 48 / 256) }) // Mountain 3
 vegetationToTextureMapping.set(13, { below: [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256), downRight: [3, 1, 3.5, 2, 4, 1].map(v => v * 48 / 256) }) // Mountain 4
 vegetationToTextureMapping.set(14, { below: [2, 190, 2, 146, 45, 146].map(v => v / 256), downRight: [2, 190, 45, 146, 45, 190].map(v => v / 256) }) // Steppe
 vegetationToTextureMapping.set(15, { below: [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256), downRight: [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256) }) // Flower meadow
@@ -253,10 +259,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
+        console.log("Component did update")
+        console.log(this.props.cursorState)
+
         if (prevProps.cursorState !== this.props.cursorState && this?.normalCanvasRef?.current) {
 
             if (this.props.cursorState === 'DRAGGING') {
-                this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/dragging.png), pointer"
+                //this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/dragging.png), pointer"
+                this.normalCanvasRef.current.style.cursor = 'move'
             } else if (this.props.cursorState === 'BUILDING_ROAD') {
                 this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
             } else {
@@ -266,7 +276,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState): boolean {
-        return this.props.onKeyDown !== nextProps.onKeyDown
+        return this.props.onKeyDown !== nextProps.onKeyDown ||
+            this.props.cursorState !== nextProps.cursorState ||
+            this.props?.selectedPoint?.x !== nextProps?.selectedPoint?.x ||
+            this.props?.selectedPoint?.y !== nextProps?.selectedPoint?.y
     }
 
     updateRoadDrawingBuffers(): void {
@@ -332,7 +345,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         console.log("Download image atlases done")
 
         /* Subscribe for new discovered points */
-        listenToDiscoveredPoints((points) => {
+        listenToDiscoveredPoints(points => {
 
             // Update the calculated normals
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
@@ -1637,7 +1650,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     toDrawNormal.push({
                         source: cargoDrawInfo,
-                        gamePoint: { x: flag.x - 0.5, y: flag.y - 0.5 * i + 0.1 },
+                        gamePoint: { x: flag.x - 0.5, y: flag.y - 0.1 * i + 0.1 },
                         depth: flag.y
                     })
                 }
@@ -1651,7 +1664,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
-                            gamePoint: { x: flag.x + 0.08, y: flag.y - 0.2 * (i - 4) + 0.3 },
+                            gamePoint: { x: flag.x + 0.08, y: flag.y - 0.1 * (i - 4) + 0.3 },
                             depth: flag.y
                         })
                     }
@@ -1666,7 +1679,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
-                            gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.2 * (i - 4) + 0.1 },
+                            gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.1 },
                             depth: flag.y
                         })
                     }
@@ -2257,6 +2270,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     className="GameCanvas"
                     onKeyDown={this.props.onKeyDown}
                     onClick={this.onClickOrDoubleClick}
+                    style={{ cursor: MOUSE_STYLES.get(this.props.cursorState) }}
 
                     ref={this.overlayCanvasRef}
                     onMouseMove={
@@ -2473,6 +2487,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         // Calculate the normal for each point
         for (let point of monitor.discoveredPoints) {
+
             const normals = [
                 straightBelowNormals.get(getPointUpLeft(point)),
                 downRightNormals.get(getPointUpLeft(point)),
@@ -2486,16 +2501,20 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             let vectors: Vector[] = []
 
             for (let normal of normals) {
-                if (normal) {
+                if (normal !== undefined) {
                     vectors.push(normal)
                 }
             }
 
-            const combinedVector = vectors.reduce(sumVectors)
+            if (vectors.length > 0) {
+                const combinedVector = vectors.reduce(sumVectors)
 
-            const normalized = normalize(combinedVector)
+                const normalized = normalize(combinedVector)
 
-            this.normals.set(point, normalized)
+                this.normals.set(point, normalized)
+            } else {
+                this.normals.set(point, { x: 0, y: 0, z: 1 })
+            }
         }
     }
 

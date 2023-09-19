@@ -316,10 +316,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     websocket = new WebSocket(websocketUrl)
 
-    websocket.onopen = () => {
-        console.info("Websocket for subscription is open")
-    }
-
+    websocket.onopen = () => { console.info("Websocket for subscription is open") }
     websocket.onclose = (e) => { console.info("Websocket closed: " + JSON.stringify(e)) }
     websocket.onerror = (e) => { console.info("Websocket error: " + JSON.stringify(e)) }
 
@@ -489,13 +486,16 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
         /* Finally, notify listeners when all data is updated */
         if (message.newDiscoveredLand) {
-            notifyDiscoveredPointsListeners(new PointSetFast(message.newDiscoveredLand))
+            const newDiscoveredLand = new PointSetFast(message.newDiscoveredLand)
+            discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
         }
 
         if (message.newMessages) {
             monitor.messages = monitor.messages.concat(message.newMessages)
 
-            notifyMessageListeners(message.newMessages)
+            const newMessages = message.newMessages
+
+            messageListeners.forEach(listener => listener(newMessages))
         }
 
         if (message.newRoads !== undefined || message.removedRoads !== undefined) {
@@ -925,12 +925,6 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     }
 }
 
-function notifyDiscoveredPointsListeners(discoveredPoints: PointSetFast): void {
-    for (const listener of discoveredPointListeners) {
-        listener(discoveredPoints)
-    }
-}
-
 function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void) {
     messageListeners.push(messageListenerFn)
 }
@@ -953,17 +947,6 @@ function listenToDiscoveredPoints(listenerFn: ((discoveredPoints: PointSetFast) 
 
 function listenToRoads(listenerFn: (() => void)): void {
     roadListeners.push(listenerFn)
-}
-
-function notifyMessageListeners(messages: GameMessage[]): void {
-    for (const listener of messageListeners) {
-        try {
-            listener(messages)
-        } catch (exception) {
-            console.info("Failed to notify listener about messages")
-            console.error(exception)
-        }
-    }
 }
 
 function notifyHouseListeners(houses: HouseInformation[]): void {

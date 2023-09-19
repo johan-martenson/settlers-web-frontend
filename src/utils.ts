@@ -2152,6 +2152,7 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     } else {
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
     }
+
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)

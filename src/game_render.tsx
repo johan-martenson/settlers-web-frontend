@@ -287,11 +287,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
             this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
 
-            console.log("Updating")
-
             this.roadRenderInformation = this.prepareToRenderRoads(monitor.roads.values())
-
-            console.log(this.roadRenderInformation)
 
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.coordinates), this.gl.STATIC_DRAW)

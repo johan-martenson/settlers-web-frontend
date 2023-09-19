@@ -474,7 +474,7 @@ class App extends Component<AppProps, AppState> {
             globalSyncState.width = this.selfNameRef.current.clientWidth
             globalSyncState.height = this.selfNameRef.current.clientHeight
 
-            console.info("Screen width: " + globalSyncState.width + ", height: " + globalSyncState.height)
+            console.info("Screen dimensions: " + globalSyncState.width + "x" + globalSyncState.height)
 
             /* Request focus if the game is not blocked */
             if (!this.state.menuVisible) {

@@ -131,8 +131,8 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                 <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} inverted />
                 <div className={className}>{this.state.input}</div>
 
-                {Array.from(this.props.commands.keys()).map(
-                    (option, index) => {
+                {Array.from(this.props.commands.entries()).map(
+                    ([option, action], index) => {
 
                         if (inputToMatch.length > 0 && option.toLowerCase().startsWith(inputToMatch)) {
 
@@ -146,7 +146,9 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
                             if (this.state.expanded) {
                                 return (
-                                    <div key={index} className="Alternative">{option}</div>
+                                    <div key={index} className="Alternative" onClick={() => action()}>
+                                        {option}
+                                    </div>
                                 )
                             } else {
                                 return null

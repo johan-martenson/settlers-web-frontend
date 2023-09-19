@@ -19,3 +19,7 @@
 .Alternative {
     text-align: left;
 }
+
+.Alternative:hover {
+    background-color: lightblue;
+}

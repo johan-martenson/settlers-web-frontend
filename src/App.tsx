@@ -114,6 +114,7 @@ class App extends Component<AppProps, AppState> {
     constructor(props: AppProps) {
         super(props)
 
+        console.log("Start monitoring game")
         this.monitoringPromise = startMonitoringGame(this.props.gameId, this.props.selfPlayerId)
 
         this.onMouseDown = this.onMouseDown.bind(this)

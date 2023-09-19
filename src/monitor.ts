@@ -7,6 +7,8 @@ const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new 
 const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
 const roadListeners: (() => void)[] = []
 
+let loadingPromise: Promise<void> | undefined = undefined
+
 interface MonitoredBorderForPlayer {
     color: string
     points: PointSetFast
@@ -29,6 +31,8 @@ export interface TileDownRight {
 }
 
 interface Monitor {
+    getLoadingPromise(): Promise<void> | undefined
+    isGameDataAvailable(): boolean
     gameId?: GameId
     playerId?: PlayerId
     workers: Map<WorkerId, WorkerInformation>
@@ -97,15 +101,21 @@ const monitor: Monitor = {
     localRemovedFlags: new Map<FlagId, FlagInformation>(),
     localRemovedRoads: new Map<RoadId, RoadInformation>(),
 
-    placeHouse: placeBuilding,
-    placeRoad: placeRoad,
-    placeFlag: placeFlag,
-    placeRoadAndFlag: placeFlagAndRoad,
-    removeFlag: removeFlag,
-    removeRoad: removeRoad,
-    removeBuilding: removeBuilding,
+    placeHouse: placeBuildingWebsocket,
+    placeRoad: placeRoadWebsocket,
+    placeFlag: placeFlagWebsocket,
+    placeRoadAndFlag: placeRoadWithFlagWebsocket,
+    removeFlag: removeFlagWebsocket,
+    removeRoad: removeRoadWebsocket,
+    removeBuilding: removeBuildingWebsocket,
     isAvailable: isAvailable,
-    placeLocalRoad: placeLocalRoad
+    placeLocalRoad: placeLocalRoad,
+    removeLocalFlag: removeLocalFlag,
+    undoRemoveLocalFlag: undoRemoveLocalFlag,
+    removeLocalRoad: removeLocalRoad,
+    undoRemoveLocalRoad: undoRemoveLocalRoad,
+    isGameDataAvailable: isGameDataAvailable,
+    getLoadingPromise: getLoadingPromise
 }
 
 let websocket: WebSocket
@@ -203,6 +213,12 @@ function isGameChangesMessage(message: any): message is ChangesMessage {
 }
 
 async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<void> {
+    loadingPromise = startMonitoringGame_internal(gameId, playerId)
+
+    return loadingPromise
+}
+
+async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId): Promise<void> {
 
     /* Get the list of players */
     const players = await getPlayers(gameId)
@@ -290,7 +306,7 @@ async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<
     monitor.playerId = playerId
 
     /* Finally notify the listeners, after all data has been stored */
-    notifyDiscoveredPointsListeners(monitor.discoveredPoints)
+    discoveredPointListeners.forEach(listener => listener(monitor.discoveredPoints))
     roadListeners.forEach(roadListener => roadListener())
 
     /* Subscribe to changes */
@@ -1043,6 +1059,180 @@ function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
     return false
 }
 
+function removeLocalFlag(flagId: FlagId): void {
+    const flag = monitor.flags.get(flagId)
+
+    if (flag !== undefined) {
+        monitor.localRemovedFlags.set(flagId, flag)
+
+        monitor.flags.delete(flagId)
+    }
+}
+
+function undoRemoveLocalFlag(flagId: FlagId): void {
+    const flagToRestore = monitor.localRemovedFlags.get(flagId)
+
+    if (flagToRestore !== undefined) {
+        monitor.flags.set(flagToRestore.id, flagToRestore)
+
+        monitor.localRemovedFlags.delete(flagId)
+    }
+}
+
+function removeLocalRoad(roadId: RoadId): void {
+    const road = monitor.roads.get(roadId)
+
+    if (road !== undefined) {
+        monitor.localRemovedRoads.set(roadId, road)
+
+        monitor.roads.delete(roadId)
+    }
+}
+
+function undoRemoveLocalRoad(roadId: RoadId): void {
+    const roadToRestore = monitor.localRemovedRoads.get(roadId)
+
+    if (roadToRestore !== undefined) {
+        monitor.roads.set(roadId, roadToRestore)
+
+        monitor.localRemovedRoads.delete(roadId)
+    }
+}
+
+function getLoadingPromise(): Promise<void> | undefined {
+    return loadingPromise
+}
+
+function isGameDataAvailable(): boolean {
+    return monitor.discoveredBelowTiles.size > 0
+}
+
+async function placeHouseSnappy(houseType: AnyBuilding, point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
+    monitor.houses.set('LOCAL',
+        {
+            id: 'LOCAL',
+            type: houseType,
+            x: point.x,
+            y: point.y,
+            playerId: playerId,
+            inventory: new Map<string, number>(),
+            evacuated: false,
+            promotionsEnabled: true,
+            state: 'PLANNED',
+            productionEnabled: true,
+            resources: {}
+        }
+    )
+
+    try {
+        await createBuilding(houseType, point, gameId, playerId)
+    } catch (error) {
+        console.error("Got error while creating building: " + error)
+    }
+
+    const pointInformation = await getInformationOnPoint(point, gameId, playerId)
+
+    if (pointInformation.is !== 'building') {
+        monitor.houses.delete('LOCAL')
+    }
+}
+
+async function placeRoadSnappy(points: Point[], gameId: GameId, playerId: PlayerId): Promise<void> {
+    monitor.roads.set('LOCAL', { id: 'LOCAL', points })
+
+    try {
+        await createRoad(points, gameId, playerId)
+    } catch (error) {
+        console.error("Got error while creating road: " + error)
+    }
+
+    const pointInformation = await getInformationOnPoint(points[1], gameId, playerId)
+
+    if (pointInformation.is !== 'road') {
+        monitor.roads.delete('LOCAL')
+    }
+}
+
+async function placeFlagSnappy(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
+    monitor.flags.set('LOCAL', { id: 'LOCAL', playerId: playerId, x: point.x, y: point.y })
+
+    try {
+        await createFlag(point, gameId, playerId)
+    } catch (error) {
+        console.error("Got error while placing flag: " + error)
+    }
+
+    const pointInformation = await getInformationOnPoint(point, gameId, playerId)
+
+    if (pointInformation.is !== 'flag') {
+        monitor.flags.delete('LOCAL')
+    }
+}
+
+async function placeRoadAndFlagSnappy(point: Point, points: Point[], gameId: GameId, playerId: PlayerId): Promise<void> {
+    monitor.flags.set('LOCAL', { id: 'LOCAL', playerId: playerId, x: point.x, y: point.y })
+    monitor.roads.set('LOCAL', { id: 'LOCAL', points })
+
+    // TODO: add a function to the backend that can both place a flag and a road in one call and use it here
+    try {
+        await createFlag(point, gameId, playerId)
+        await createRoad(points, gameId, playerId)
+    } catch (error) {
+        console.error("Got error while placing flag and road")
+    }
+
+    const flagPointInformation = await getInformationOnPoint(point, gameId, playerId)
+    const roadPointInformation = await getInformationOnPoint(points[1], gameId, playerId)
+
+    if (roadPointInformation.is !== 'road' && flagPointInformation.is === 'flag' && flagPointInformation.flagId !== undefined) {
+        removeFlagWebsocket(flagPointInformation.flagId)
+    }
+}
+
+async function removeFlagSnappy(flagId: FlagId, gameId: GameId, playerId: PlayerId): Promise<void> {
+    const flag = monitor.flags.get(flagId)
+
+    if (flag !== undefined) {
+        monitor.localRemovedFlags.set(flagId, flag)
+
+        monitor.flags.delete(flagId)
+
+        try {
+            removeFlagWebsocket(flagId)
+        } catch (error) {
+            console.error("Got error while removing flag: " + error)
+        }
+
+        const pointInformation = await getInformationOnPoint(flag, gameId, playerId)
+
+        if (pointInformation.is === 'flag') {
+            monitor.flags.delete('LOCAL')
+        }
+    }
+}
+
+async function removeRoadSnappy(roadId: RoadId, gameId: GameId, playerId: PlayerId): Promise<void> {
+    const road = monitor.roads.get(roadId)
+
+    if (road !== undefined) {
+        monitor.localRemovedRoads.set(roadId, road)
+
+        monitor.roads.delete(roadId)
+
+        try {
+            removeRoadWebsocket(roadId)
+        } catch (error) {
+            console.error("Got error while removing road: " + error)
+        }
+
+        const pointInformation = await getInformationOnPoint(road.points[1], gameId, playerId)
+
+        if (pointInformation.is === 'road') {
+            monitor.roads.set(roadId, road)
+        }
+    }
+}
+
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
     let compassDirection: Direction = 'NORTH_WEST'
 
@@ -1069,7 +1259,7 @@ function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): Worke
     return worker
 }
 
-function placeBuilding(houseType: AnyBuilding, point: Point): void {
+function placeBuildingWebsocket(houseType: AnyBuilding, point: Point): void {
     websocket.send(JSON.stringify(
         {
             command: 'PLACE_BUILDING',
@@ -1080,7 +1270,7 @@ function placeBuilding(houseType: AnyBuilding, point: Point): void {
     ))
 }
 
-function placeRoad(points: Point[]): void {
+function placeRoadWebsocket(points: Point[]): void {
     websocket.send(JSON.stringify(
         {
             command: 'PLACE_ROAD',
@@ -1089,7 +1279,7 @@ function placeRoad(points: Point[]): void {
     )
 }
 
-function placeFlag(flagPoint: Point): void {
+function placeFlagWebsocket(flagPoint: Point): void {
     websocket.send(JSON.stringify(
         {
             command: 'PLACE_FLAG',
@@ -1102,7 +1292,7 @@ function placeFlag(flagPoint: Point): void {
 }
 
 
-function placeFlagAndRoad(flagPoint: Point, points: Point[]): void {
+function placeRoadWithFlagWebsocket(flagPoint: Point, points: Point[]): void {
     websocket.send(JSON.stringify(
         {
             command: 'PLACE_FLAG_AND_ROAD',
@@ -1115,7 +1305,7 @@ function placeFlagAndRoad(flagPoint: Point, points: Point[]): void {
     )
 }
 
-function removeFlag(flagId: FlagId): void {
+function removeFlagWebsocket(flagId: FlagId): void {
     websocket.send(JSON.stringify(
         {
             command: 'REMOVE_FLAG',
@@ -1124,7 +1314,7 @@ function removeFlag(flagId: FlagId): void {
     )
 }
 
-function removeRoad(roadId: RoadId): void {
+function removeRoadWebsocket(roadId: RoadId): void {
     websocket.send(JSON.stringify(
         {
             command: 'REMOVE_ROAD',
@@ -1133,7 +1323,7 @@ function removeRoad(roadId: RoadId): void {
     )
 }
 
-function removeBuilding(houseId: HouseId): void {
+function removeBuildingWebsocket(houseId: HouseId): void {
     websocket.send(JSON.stringify(
         {
             command: 'REMOVE_BUILDING',

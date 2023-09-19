@@ -301,6 +301,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.textureMapping), this.gl.STATIC_DRAW)
+        } else {
+            console.error("Failed to update road drawing buffers. At least one input is undefined")
         }
     }
 
@@ -317,7 +319,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             fileLoading.push(animal.load())
         }
 
-        const allFilesToWaitFor = fileLoading.concat([
+        const allThingsToWaitFor = fileLoading.concat([
             treeAnimations.load(),
             flagAnimations.load(),
             houses.load(),
@@ -339,15 +341,33 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             decorationsImageAtlasHandler.load()
         ])
 
-        await Promise.all(allFilesToWaitFor)
+        const monitorLoadingPromise = monitor.getLoadingPromise()
+
+        if (monitorLoadingPromise !== undefined) {
+            allThingsToWaitFor.push(monitorLoadingPromise)
+        }
+
+        await Promise.all(allThingsToWaitFor)
 
         console.log("Download image atlases done")
+
+
+        /*
+           Update the calculated normals -- avoid the race condition by doing this after subscription is established.
+           This must be performed before subscribing for road changes
+        */
+        if (monitor.isGameDataAvailable() && this.normals.size == 0) {
+            console.log("Game data available and no normals. Calculating before setting up listeners")
+
+            this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+        }
 
         /* Subscribe for new discovered points */
         listenToDiscoveredPoints(points => {
 
             // Update the calculated normals
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+            console.log("New discovered points - calculated normals")
 
             // Update the map rendering buffers
             if (this.gl && this.groundRenderProgram) {
@@ -365,16 +385,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
+                } else {
+                    console.error("At least one render buffer was undefined")
                 }
+            } else {
+                console.error("Gl or ground render pgrogram is undefined")
             }
         })
+
+        console.log("Subscribed to changes in discovered points")
 
         /* Subscribe for added and removed roads */
         listenToRoads(this.updateRoadDrawingBuffers)
 
+        console.log("Subscribed to changes in roads")
+
         /* Put together the render information from the discovered tiles */
         this.mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-
 
         /*  Initialize webgl2 */
         if (this.normalCanvasRef?.current) {
@@ -481,7 +508,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     this.gl = gl
                 } else {
-                    console.log("Failed to get prog")
+                    console.error("Failed to create terrain rendering gl program")
                 }
 
                 // Setup the program to render images
@@ -539,6 +566,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Configure how the attribute gets data
                     gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, gl.FLOAT, false, 0, 0)
+                } else {
+                    console.error("Failed to create image rendering gl program")
                 }
 
                 // Setup the program to render shadows
@@ -598,12 +627,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
                 }
             } else {
-                console.log(gl)
+                console.error("Failed to create shadow rendering gl program")
             }
 
         } else {
-            console.log("No canvasRef.current")
+            console.error("No canvasRef.current")
         }
+
+        /* Prepare to draw roads */
+        this.updateRoadDrawingBuffers()
 
         /* Create the rendering thread */
         this.renderGame()
@@ -612,6 +644,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     renderGame(): void {
 
         const duration = new Duration("GameRender::renderGame")
+
+        // Only draw if the game data is available
+        if (!monitor.isGameDataAvailable()) {
+            return
+        }
 
         // Handle the animation counter
         const now = performance.now()
@@ -764,8 +801,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // mode, offset (nr vertices), count (nr vertices)
                     gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 2)
+                } else {
+                    console.error("Map render information was missing when trying to draw the terrain")
                 }
+            } else {
+                console.error("Buffers were undefined when trying to draw the terrain")
             }
+        } else {
+            console.error("Did not draw the terrain layer")
         }
 
         duration.after("draw terrain")
@@ -917,6 +960,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.uniform1i(this.uSampler, 1)
 
             gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 2)
+        } else {
+            console.error("Missing information to draw roads")
         }
 
         duration.after("draw roads")

@@ -22,6 +22,25 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
         }
     }
 
+    commandChosen(command: string): void {
+
+        /* Run the command */
+        console.log("Command: " + command + " (" + this.state.input + ")")
+
+        const fn = this.props.commands.get(command)
+
+        if (fn) {
+            fn()
+        }
+
+        /* Clear the input */
+        this.setState(
+            {
+                input: ""
+            }
+        )
+    }
+
     onKeyDown(event: React.KeyboardEvent): void {
 
         /* Clear the command if escape is pressed */
@@ -53,21 +72,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
             /* Run the command */
             if (commandHit) {
-
-                console.log("Command: " + commandHit + " (" + this.state.input + ")")
-
-                const fn = this.props.commands.get(commandHit)
-
-                if (fn) {
-                    fn()
-                }
-
-                /* Clear the input */
-                this.setState(
-                    {
-                        input: ""
-                    }
-                )
+                this.commandChosen(commandHit)
             } else {
                 console.log("Can't find command matching: " + this.state.input)
             }
@@ -137,7 +142,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                         if (inputToMatch.length > 0 && option.toLowerCase().startsWith(inputToMatch)) {
 
                             return (
-                                <div key={index} className="Alternative">
+                                <div key={index} className="Alternative" onClick={() => this.commandChosen(option)}>
                                     <span className="MatchingPart">{option.substring(0, this.state.input.length)}</span>
                                     <span className="RemainingPart">{option.substring(this.state.input.length, option.length)}</span>
                                 </div>
@@ -146,7 +151,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
                             if (this.state.expanded) {
                                 return (
-                                    <div key={index} className="Alternative" onClick={() => action()}>
+                                    <div key={index} className="Alternative" onClick={() => this.commandChosen(option)}>
                                         {option}
                                     </div>
                                 )

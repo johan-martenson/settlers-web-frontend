@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
+import { callGeologist, canBeUpgraded, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getHouseInformation, getInformationOnPoint, getPlayers, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import EnemyHouseInfo from './enemy_house_info'
@@ -10,12 +10,12 @@ import GameMessagesViewer from './game_messages_viewer'
 import { CursorState, GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
-import { getHeadquarterForPlayer, monitor, startMonitoringGame } from './monitor'
+import { getHeadquarterForPlayer, monitor, placeBuildingWebsocket, startMonitoringGame } from './monitor'
 import MusicPlayer from './music_player'
 import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
-import TypeControl from './type_control'
+import { TypeControl, Command } from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPoint } from './utils'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
@@ -108,7 +108,7 @@ class App extends Component<AppProps, AppState> {
     private keyHandlers: Map<number, (() => void)> = new Map()
     private selfNameRef = React.createRef<HTMLDivElement>()
     private typeControlRef = React.createRef<TypeControl>()
-    private readonly commands: Map<string, (() => void)>
+    private readonly commands: Map<string, Command>
     monitoringPromise: Promise<void>
 
     constructor(props: AppProps) {
@@ -172,12 +172,22 @@ class App extends Component<AppProps, AppState> {
         /* Set up type control commands */
         this.commands = new Map()
 
-        SMALL_HOUSES.forEach(building => this.commands.set(building, () => { monitor.placeHouse(building, this.state.selected) }))
-        MEDIUM_HOUSES.forEach(building => this.commands.set(building, () => { monitor.placeHouse(building, this.state.selected) }))
-        LARGE_HOUSES.forEach(building => this.commands.set(building, () => { monitor.placeHouse(building, this.state.selected) }))
+        SMALL_HOUSES.forEach(building => this.commands.set(building, {
+            action: () => placeBuildingWebsocket(building, this.state.selected),
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.canBuild.find(a => a === 'small') !== undefined
+        }
+        ))
+        MEDIUM_HOUSES.forEach(building => this.commands.set(building, {
+            action: () => placeBuildingWebsocket(building, this.state.selected),
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.canBuild.find(a => a === 'medium') !== undefined
+        }))
+        LARGE_HOUSES.forEach(building => this.commands.set(building, {
+            action: () => placeBuildingWebsocket(building, this.state.selected),
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.canBuild.find(a => a === 'large') !== undefined
+        }))
 
-        this.commands.set("Road",
-            async () => {
+        this.commands.set("Road", {
+            action: async () => {
                 console.log("Building road")
 
                 /* Get the possible connections from the server and draw them */
@@ -208,36 +218,73 @@ class App extends Component<AppProps, AppState> {
                         }
                     )
                 }
-            }
-        )
-
-        this.commands.set("Flag", () => {
-            if (monitor.isAvailable(this.state.selected, 'FLAG')) {
-                monitor.placeFlag(this.state.selected)
-            }
+            },
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'building' || pointInformation.is === 'flag'
         })
-        this.commands.set("Remove (house, flag, or road)", () => { removeHouseOrFlagOrRoadAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
-        this.commands.set("Statistics", () => this.setState({ showStatistics: true }))
-        this.commands.set("Game information",
-            () => {
+
+        this.commands.set("Flag", {
+            action: () => {
+                if (monitor.isAvailable(this.state.selected, 'FLAG')) {
+                    monitor.placeFlag(this.state.selected)
+                }
+            },
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.canBuild.find(a => a === 'flag') !== undefined
+        })
+        this.commands.set("Remove (house, flag, or road)", {
+            action: () => removeHouseOrFlagOrRoadAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId),
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is !== undefined
+        })
+        this.commands.set("Statistics", {
+            action: () => this.setState({ showStatistics: true }),
+            filter: undefined
+        })
+        this.commands.set("Game information", {
+            action: () => {
                 console.info("Game id: " + this.props.gameId)
                 console.info("Player id: " + this.props.selfPlayerId)
-            }
-        )
-        this.commands.set("Titles", () => { this.setState({ showTitles: !this.state.showTitles }) })
-        this.commands.set("Geologist", async () => { await callGeologist(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
-        this.commands.set("Scout", async () => { await sendScout(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
-        this.commands.set("Evacuate building", () => { evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
-        this.commands.set("Transport priority (set)", () => { this.setState({ showSetTransportPriority: true }) })
-        this.commands.set("List statistics", () => { printVariables() })
-        this.commands.set("Upgrade", async () => {
-            const houseInformation = getHouseAtPoint(this.state.selected)
 
-            if (houseInformation && canBeUpgraded(houseInformation)) {
-                upgradeMilitaryBuilding(this.props.gameId, this.props.selfPlayerId, houseInformation.id)
-            }
+                getPlayers(this.props.gameId).then(players => console.info({ title: "Players: ", players }))
+            },
+            filter: undefined
         })
-        this.commands.set("Fps", () => { this.setState({ showFpsCounter: !this.state.showFpsCounter }) })
+        this.commands.set("Titles", {
+            action: () => this.setState({ showTitles: !this.state.showTitles }),
+            filter: undefined
+        })
+        this.commands.set("Geologist", {
+            action: async () => await callGeologist(this.state.selected, this.props.gameId, this.props.selfPlayerId),
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'flag'
+        })
+        this.commands.set("Scout", {
+            action: async () => await sendScout(this.state.selected, this.props.gameId, this.props.selfPlayerId),
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'flag'
+        })
+        this.commands.set("Evacuate building", {
+            action: () => evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId),
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'building'
+        })
+        this.commands.set("Transport priority (set)", {
+            action: () => this.setState({ showSetTransportPriority: true }),
+            filter: undefined
+        })
+        this.commands.set("List statistics", {
+            action: () => printVariables(),
+            filter: undefined
+        })
+        this.commands.set("Upgrade", {
+            action: async () => {
+                const houseInformation = getHouseAtPoint(this.state.selected)
+
+                if (houseInformation && canBeUpgraded(houseInformation)) {
+                    upgradeMilitaryBuilding(this.props.gameId, this.props.selfPlayerId, houseInformation.id)
+                }
+            },
+            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'building'
+        })
+        this.commands.set("Fps", {
+            action: () => { this.setState({ showFpsCounter: !this.state.showFpsCounter }) },
+            filter: undefined
+        })
     }
 
     toggleDetails(): void {
@@ -1030,7 +1077,12 @@ class App extends Component<AppProps, AppState> {
                     />
                 }
 
-                <TypeControl commands={this.commands} ref={this.typeControlRef} />
+                <TypeControl commands={this.commands}
+                    ref={this.typeControlRef}
+                    selectedPoint={this.state.selected}
+                    gameId={this.props.gameId}
+                    playerId={this.props.selfPlayerId}
+                />
 
                 <GameMessagesViewer gameId={this.props.gameId}
                     playerId={this.props.selfPlayerId}

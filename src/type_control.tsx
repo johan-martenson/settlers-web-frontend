@@ -1,14 +1,24 @@
 import React, { Component } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
+import { GameId, PlayerId, Point, PointInformation, getInformationOnPoint } from './api'
+
+export interface Command {
+    action: (() => void)
+    filter: ((selectedPointInformation: PointInformation, playerId: PlayerId) => boolean) | undefined
+}
 
 interface TypeControlProps {
-    commands: Map<string, (() => void)>
+    commands: Map<string, Command>
+    selectedPoint: Point
+    gameId: GameId
+    playerId: PlayerId
 }
 
 interface TypeControlState {
     input: string
     expanded: boolean
+    selectedPointInformation: PointInformation | undefined
 }
 
 class TypeControl extends Component<TypeControlProps, TypeControlState> {
@@ -18,19 +28,28 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
         this.state = {
             input: "",
-            expanded: false
+            expanded: false,
+            selectedPointInformation: undefined
         }
     }
 
-    commandChosen(command: string): void {
+    async componentDidUpdate(prevProps: Readonly<TypeControlProps>, prevState: Readonly<TypeControlState>, snapshot?: any): Promise<void> {
+        if (prevProps.selectedPoint !== this.props.selectedPoint) {
+            const pointInformation = await getInformationOnPoint(this.props.selectedPoint, this.props.gameId, this.props.playerId)
+
+            this.setState({selectedPointInformation: pointInformation})
+        }
+    }
+
+    commandChosen(commandName: string): void {
 
         /* Run the command */
-        console.log("Command: " + command + " (" + this.state.input + ")")
+        console.log("Command: " + commandName + " (" + this.state.input + ")")
 
-        const fn = this.props.commands.get(command)
+        const command = this.props.commands.get(commandName)
 
-        if (fn) {
-            fn()
+        if (command) {
+            command.action()
         }
 
         /* Clear the input */
@@ -137,22 +156,28 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                 <div className={className}>{this.state.input}</div>
 
                 {Array.from(this.props.commands.entries()).map(
-                    ([option, action], index) => {
+                    ([commandName, command], index) => {
 
-                        if (inputToMatch.length > 0 && option.toLowerCase().startsWith(inputToMatch)) {
+                        let show = true
+
+                        if (command.filter && this.state.selectedPointInformation) {
+                            show = command.filter(this.state.selectedPointInformation, this.props.playerId)
+                        }
+
+                        if (show && inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)) {
 
                             return (
-                                <div key={index} className="Alternative" onClick={() => this.commandChosen(option)}>
-                                    <span className="MatchingPart">{option.substring(0, this.state.input.length)}</span>
-                                    <span className="RemainingPart">{option.substring(this.state.input.length, option.length)}</span>
+                                <div key={index} className="Alternative" onClick={() => this.commandChosen(commandName)}>
+                                    <span className="MatchingPart">{commandName.substring(0, this.state.input.length)}</span>
+                                    <span className="RemainingPart">{commandName.substring(this.state.input.length, commandName.length)}</span>
                                 </div>
                             )
-                        } else {
+                        } else if (show) {
 
                             if (this.state.expanded) {
                                 return (
-                                    <div key={index} className="Alternative" onClick={() => this.commandChosen(option)}>
-                                        {option}
+                                    <div key={index} className="Alternative" onClick={() => this.commandChosen(commandName)}>
+                                        {commandName}
                                     </div>
                                 )
                             } else {
@@ -168,4 +193,4 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
     }
 }
 
-export default TypeControl
+export { TypeControl }

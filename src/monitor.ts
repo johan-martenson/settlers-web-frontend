@@ -1,4 +1,4 @@
-import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, PointInformation, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -31,8 +31,6 @@ export interface TileDownRight {
 }
 
 interface Monitor {
-    getLoadingPromise(): Promise<void> | undefined
-    isGameDataAvailable(): boolean
     gameId?: GameId
     playerId?: PlayerId
     workers: Map<WorkerId, WorkerInformation>
@@ -70,7 +68,12 @@ interface Monitor {
     removeRoad: ((roadId: FlagId) => void)
     removeBuilding: ((houseId: HouseId) => void)
     isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
-    placeLocalRoad: ((points: Point[]) => void)
+    removeLocalFlag: ((flagId: FlagId) => void)
+    undoRemoveLocalFlag: ((flagId: FlagId) => void)
+    removeLocalRoad: ((roadId: RoadId) => void)
+    undoRemoveLocalRoad: ((roadId: RoadId) => void)
+    getLoadingPromise(): Promise<void> | undefined
+    isGameDataAvailable(): boolean
 }
 
 const monitor: Monitor = {
@@ -109,13 +112,12 @@ const monitor: Monitor = {
     removeRoad: removeRoadWebsocket,
     removeBuilding: removeBuildingWebsocket,
     isAvailable: isAvailable,
-    placeLocalRoad: placeLocalRoad,
     removeLocalFlag: removeLocalFlag,
     undoRemoveLocalFlag: undoRemoveLocalFlag,
     removeLocalRoad: removeLocalRoad,
     undoRemoveLocalRoad: undoRemoveLocalRoad,
     isGameDataAvailable: isGameDataAvailable,
-    getLoadingPromise: getLoadingPromise
+    getLoadingPromise: getLoadingPromise,
 }
 
 let websocket: WebSocket
@@ -1323,5 +1325,7 @@ export {
     listenToMessages,
     listenToRoads,
     startMonitoringGame,
+    placeBuildingWebsocket,
+    placeFlagWebsocket,
     monitor
 }

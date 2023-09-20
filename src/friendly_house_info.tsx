@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import { Component } from 'react'
 import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, HouseResources, isEvacuated, isMaterial, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse } from './api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'

@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, canBeUpgraded, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getHouseInformation, getInformationOnPoint, getPlayers, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
+import { callGeologist, canBeUpgraded, createBuilding, createRoadWithFlag, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, getPlayers, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import EnemyHouseInfo from './enemy_house_info'

@@ -352,7 +352,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
            Update the calculated normals -- avoid the race condition by doing this after subscription is established.
            This must be performed before subscribing for road changes
         */
-        if (monitor.isGameDataAvailable() && this.normals.size == 0) {
+        if (monitor.isGameDataAvailable() && this.normals.size === 0) {
             console.log("Game data available and no normals. Calculating before setting up listeners")
 
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)

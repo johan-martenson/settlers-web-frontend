@@ -1,6 +1,4 @@
-import { dir } from 'console'
-import { Dir } from 'fs'
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeHouse, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
 import { monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -2104,18 +2102,6 @@ function getHouseSize(house: HouseInformation): Size {
     }
 
     return 'LARGE'
-}
-
-function nationLowerCaseToAllCaps(nationSmall: NationSmallCaps): Nation {
-    if (nationSmall === 'romans') {
-        return 'ROMANS'
-    } else if (nationSmall === 'africans') {
-        return 'AFRICANS'
-    } else if (nationSmall === 'japanese') {
-        return 'JAPANESE'
-    } else {
-        return 'VIKINGS'
-    }
 }
 
 function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType: number): WebGLShader | null {

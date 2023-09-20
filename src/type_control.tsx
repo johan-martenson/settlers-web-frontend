@@ -180,10 +180,10 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                                         {commandName}
                                     </div>
                                 )
-                            } else {
-                                return null
                             }
                         }
+
+                        return null
                     }
                 )
                 }

@@ -492,7 +492,6 @@ class App extends Component<AppProps, AppState> {
 
     async componentDidMount(): Promise<void> {
 
-<<<<<<< HEAD
         if (document.addEventListener) {
             document.addEventListener('contextmenu', function (e) {
 
@@ -504,8 +503,6 @@ class App extends Component<AppProps, AppState> {
 
         await this.monitoringPromise
 
-=======
->>>>>>> a9b2b4e (Minor polish)
         if (this.selfNameRef.current) {
 
             // Store the width and height of the canvas when it's been rendered

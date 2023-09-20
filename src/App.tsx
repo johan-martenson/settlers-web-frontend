@@ -297,7 +297,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     closeActiveMenu(): void {
-
         this.setState(
             {
                 activeMenu: undefined,
@@ -359,11 +358,8 @@ class App extends Component<AppProps, AppState> {
 
     closeFriendlyHouseInfo(): void {
         console.info("Closing friendly house info")
-        this.setState(
-            {
-                showFriendlyHouseInfo: undefined
-            }
-        )
+
+        this.setState({ showFriendlyHouseInfo: undefined })
     }
 
     showMenu(): void {
@@ -390,27 +386,19 @@ class App extends Component<AppProps, AppState> {
     }
 
     moveGameUp(): void {
-        this.setState({
-            translateY: this.state.translateY + 10
-        })
+        this.setState({ translateY: this.state.translateY + 10 })
     }
 
     moveGameDown(): void {
-        this.setState({
-            translateY: this.state.translateY - 10
-        })
+        this.setState({ translateY: this.state.translateY - 10 })
     }
 
     moveGameRight(): void {
-        this.setState({
-            translateX: this.state.translateX - 10
-        })
+        this.setState({ translateX: this.state.translateX - 10 })
     }
 
     moveGameLeft(): void {
-        this.setState({
-            translateX: this.state.translateX + 10
-        })
+        this.setState({ translateX: this.state.translateX + 10 })
     }
 
     zoomIn(): void {
@@ -504,6 +492,7 @@ class App extends Component<AppProps, AppState> {
 
     async componentDidMount(): Promise<void> {
 
+<<<<<<< HEAD
         if (document.addEventListener) {
             document.addEventListener('contextmenu', function (e) {
 
@@ -515,6 +504,8 @@ class App extends Component<AppProps, AppState> {
 
         await this.monitoringPromise
 
+=======
+>>>>>>> a9b2b4e (Minor polish)
         if (this.selfNameRef.current) {
 
             // Store the width and height of the canvas when it's been rendered
@@ -529,6 +520,9 @@ class App extends Component<AppProps, AppState> {
                 this.selfNameRef.current.focus()
             }
         }
+
+        /* Make sure the game data is loaded and being updated before accessing the game */
+        await this.monitoringPromise
 
         /* Center the view on the headquarter on the first update */
         const headquarter = getHeadquarterForPlayer(this.props.selfPlayerId)

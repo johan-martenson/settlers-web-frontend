@@ -181,7 +181,7 @@ const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-car
 const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo", 10)
 const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
 
-const flagAnimations = new FlagAnimation("assets/", 10)
+const flagAnimations = new FlagAnimation("assets/", 2)
 
 interface RenderInformation {
     coordinates: number[]

@@ -11,6 +11,7 @@ interface ButtonProps {
     imageLabel?: string
     disabled?: boolean
     autoFocus?: true
+    children?: React.ReactNode
     onButtonClicked: (() => void)
 }
 

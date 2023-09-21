@@ -1,4 +1,4 @@
-import { Component } from 'react'
+import React, { Component } from 'react'
 import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, HouseResources, isEvacuated, isMaterial, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse } from './api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
@@ -53,7 +53,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
     render() {
 
-        let soldiers: (SoldierType | null)[] = []
+        const soldiers: (SoldierType | null)[] = []
 
         if (this.props.house.soldiers && this.props.house.maxSoldiers) {
             soldiers.push(...this.props.house.soldiers)
@@ -65,8 +65,8 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
         const house = this.state.updatedHouse ? this.state.updatedHouse : this.props.house
 
-        let needs: HouseResources = {}
-        let has: HouseResources = {}
+        const needs: HouseResources = {}
+        const has: HouseResources = {}
 
         Object.entries(house.resources).forEach(
             ([material, hasAndNeeds]) => {
@@ -86,7 +86,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
         let hasAmountCoin: number = 0
         let needsAmountCoin: number = 0
 
-        let coinResources = house.resources.coin
+        const coinResources = house.resources.coin
 
         if (coinResources) {
             hasAmountCoin = coinResources.has

@@ -144,12 +144,12 @@ export interface WildAnimalInformation extends Point {
     path?: Point[]
 }
 
-export function isWildAnimal(animal: any): animal is WildAnimalInformation {
-    if (animal.type !== undefined && WILD_ANIMAL_TYPES.findIndex(animal.type) !== -1) {
-        return true
-    }
-
-    return false
+export function isWildAnimal(animal: unknown): animal is WildAnimalInformation {
+    return animal !== null &&
+        typeof animal === 'object' &&
+        'type' in animal &&
+        typeof animal.type === 'string' &&
+        WILD_ANIMAL_TYPES.findIndex((type) => type === animal.type) !== -1
 }
 
 export function isMaterial(material: string): material is Material {
@@ -808,7 +808,7 @@ async function getMaps(): Promise<MapInformation[]> {
 }
 
 async function createGame(name: string, mapId: MapId | undefined, players: Player[]): Promise<GameInformation> {
-    let gameBody: GameToCreate = {}
+    const gameBody: GameToCreate = {}
 
     if (name) {
         gameBody.name = name
@@ -1143,10 +1143,7 @@ async function getHouseInformation(houseId: HouseId, gameId: GameId, playerId: P
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/houses/" + houseId)
     const receivedHouse = await response.json()
 
-    let house = receivedHouse
-
-    return house
-
+    return receivedHouse
 }
 
 async function getHouseInformationWithAttackPossibility(houseId: HouseId, gameId: GameId, playerIdForOwner: PlayerId, playerIdForAsker: PlayerId): Promise<HouseInformation> {
@@ -1154,10 +1151,7 @@ async function getHouseInformationWithAttackPossibility(houseId: HouseId, gameId
 
     const receivedHouse = await response.json()
 
-    let house = receivedHouse
-
-    return house
-
+    return receivedHouse
 }
 
 async function getInformationOnPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<PointInformation> {

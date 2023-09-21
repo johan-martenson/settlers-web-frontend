@@ -3,6 +3,7 @@ import './row.css'
 
 interface RawRowProps {
     className?: string
+    children?: React.ReactNode
 }
 
 interface RawRowState { }

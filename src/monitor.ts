@@ -189,29 +189,40 @@ interface ChangesMessage {
     newDecorations?: PointAndDecoration[]
 }
 
-function isGameChangesMessage(message: any): message is ChangesMessage {
-    if (message.time &&
-        (message.workersWithNewTargets || message.removedWorkers ||
-            message.newFlags || message.changedFlags || message.removedFlags ||
-            message.newBuildings || message.changedBuildings || message.removedBuildings ||
-            message.newRoads || message.removedRoads ||
-            message.changedBorders ||
-            message.newTrees || message.removedTrees ||
-            message.newCrops || message.harvestedCrops || message.removedCrops ||
-            message.newStones || message.removedStones ||
-            message.newSigns || message.removedSigns ||
-            message.newDiscoveredLand ||
-            message.changedAvailableConstruction ||
-            message.newMessages ||
-            message.discoveredDeadTrees ||
-            message.removedDeadTrees ||
-            message.wildAnimalsWithNewTargets || message.removedWildAnimals ||
-            message.workersWithStartedActions ||
-            message.removedDecorations || message.newDecorations)) {
-        return true
-    }
+function isGameChangesMessage(message: unknown): message is ChangesMessage {
 
-    return false
+    return message !== null &&
+        message !== undefined &&
+        typeof message === 'object' &&
+        'time' in message &&
+        ('workersWithNewTargets' in message ||
+        'removedWorkers' in message ||
+        'newFlags' in message ||
+        'changedFlags' in message ||
+        'removedFlags' in message ||
+        'newBuildings' in message ||
+        'changedBuildings' in message ||
+        'removedBuildings' in message ||
+        'newRoads' in message ||
+        'removedRoads' in message ||
+        'changedBorders' in message ||
+        'newTrees' in message ||
+        'removedTrees' in message ||
+        'newCrops' in message ||
+        'harvestedCrops' in message ||
+        'removedCrops' in message ||
+        'newStones' in message ||
+        'removedStones' in message ||
+        'newSigns' in message ||
+        'removedSigns' in message ||
+        'newDiscoveredLand' in message ||
+        'changedAvailableConstruction' in message ||
+        'newMessages' in message ||
+        'discoveredDeadTrees' in message ||
+        'removedDeadTrees' in message ||
+        'wildAnimalsWithNewTargets' in message ||
+        'removedWildAnimals' in message ||
+        'workersWithStartedActions' in message)
 }
 
 async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<void> {
@@ -337,6 +348,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
         if (!isGameChangesMessage(message)) {
             console.error("Is not game change message!")
             console.error(JSON.stringify(message))
+            console.error(message)
 
             return
         }
@@ -405,7 +417,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
         }
 
         if (message.changedBuildings) {
-            let houseIdsToRemove = []
+            const houseIdsToRemove = []
 
             for (const house of message.changedBuildings) {
                 for (const oldHouse of monitor.houses.values()) {
@@ -1237,7 +1249,7 @@ function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Di
 }
 
 function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): WorkerInformation {
-    let compassDirection = simpleDirectionToCompassDirection(serverWorker.direction)
+    const compassDirection = simpleDirectionToCompassDirection(serverWorker.direction)
 
     const worker: WorkerInformation = { ...serverWorker, direction: compassDirection }
 

@@ -696,7 +696,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.gl?.viewport(0, 0, width, height)
 
         /* Clear the drawing list */
-        let toDrawNormal: ToDraw[] = []
+        const toDrawNormal: ToDraw[] = []
         const shadowsToDraw: ToDraw[] = []
 
 
@@ -963,7 +963,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw roads")
 
 
-        let ctx = overlayCtx
+        const ctx = overlayCtx
 
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
@@ -1725,6 +1725,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 }
             }
+
+            flagCount = flagCount + 1
         }
 
         duration.after("collect flags")
@@ -1944,7 +1946,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Handle the hover layer
-        let toDrawHover: ToDraw[] = []
+        const toDrawHover: ToDraw[] = []
 
         /* Draw possible road connections */
         if (this.props.possibleRoadConnections) {
@@ -2526,8 +2528,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         // Calculate the normal for each point
-        for (let point of monitor.discoveredPoints) {
-
+        for (const point of monitor.discoveredPoints) {
             const normals = [
                 straightBelowNormals.get(getPointUpLeft(point)),
                 downRightNormals.get(getPointUpLeft(point)),
@@ -2538,10 +2539,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ]
 
             // Calculate the combined normal as the average of the normal for the surrounding triangles
-            let vectors: Vector[] = []
+            const vectors: Vector[] = []
 
-            for (let normal of normals) {
-                if (normal !== undefined) {
+            for (const normal of normals) {
+                if (normal) {
                     vectors.push(normal)
                 }
             }
@@ -2563,9 +2564,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         console.log("Prepare to render roads")
 
         // Create the render information for the roads
-        let coordinatesList: number[] = []
-        let normalsList: number[] = []
-        let textureMappinglist: number[] = []
+        const coordinatesList: number[] = []
+        const normalsList: number[] = []
+        const textureMappinglist: number[] = []
 
         for (const road of roads) {
 

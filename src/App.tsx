@@ -25,7 +25,7 @@ const MIN_SCALE = 20
 
 const LONGEST_TICK_LENGTH = 500
 
-let globalSyncState = {
+const globalSyncState = {
     mouseDown: false,
     mouseDownX: 0,
     mouseDownY: 0,
@@ -39,10 +39,10 @@ let globalSyncState = {
 }
 
 /* Track ongoing touches to make touch control work */
-const ongoingTouches: Map<any, StoredTouch> = new Map()
+const ongoingTouches: Map<number, StoredTouch> = new Map()
 
 interface StoredTouch {
-    identifier: any
+    identifier: number
     pageX: number
     pageY: number
 }
@@ -557,7 +557,7 @@ class App extends Component<AppProps, AppState> {
             const recent = this.state.newRoad[this.state.newRoad.length - 1]
 
             /* Create the possible new road including the addition */
-            let possibleNewRoad = this.state.newRoad
+            const possibleNewRoad = this.state.newRoad
 
             /* Handle the case where one of the directly adjacent possible new road connections is selected */
             if (this.state.possibleRoadConnections.find(e => e.x === point.x && e.y === point.y)) {

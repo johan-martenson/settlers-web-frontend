@@ -34,7 +34,7 @@ function maxValue(data: Measurement[]): number {
 
     for (const measurement of data) {
 
-        for (let value of measurement.values) {
+        for (const value of measurement.values) {
             if (value > maxValue) {
                 maxValue = value
             }
@@ -150,7 +150,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
     }
 
     render() {
-        let titleLabel = "Statistics"
+        const titleLabel = "Statistics"
 
         const statisticsChoices = new Map<string, string>()
 
@@ -168,41 +168,42 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         return (
             <Dialog heading={titleLabel} onCloseDialog={this.onClose.bind(this)} floating >
-                <SelectableButtonRow values={statisticsChoices} onSelected={(value) => { this.setStatisticsMode(value) }}
-                    initialValue={this.state.state.toLowerCase()}
-                />
+                <>
+                    <SelectableButtonRow values={statisticsChoices} onSelected={(value) => { this.setStatisticsMode(value) }}
+                        initialValue={this.state.state.toLowerCase()}
+                    />
 
-                <div>
-                    <svg className="StatisticsContainer" ref={this.statisticsContainerRef} />
-                </div>
+                    <div>
+                        <svg className="StatisticsContainer" ref={this.statisticsContainerRef} />
+                    </div>
 
-                {this.state.state === "LAND" &&
-                    <>
+                    {this.state.state === "LAND" &&
+                        <>
 
-                    </>
-                }
+                        </>
+                    }
 
-                {this.state.state === "PRODUCTION" &&
-                    <>
+                    {this.state.state === "PRODUCTION" &&
+                        <>
 
-                        {this.state.productionStatistics &&
-                            <SelectableButtonRow values={materialChoices}
-                                initialValue={"" + this.state.materialToShow}
-                                onSelected={
-                                    (value) => {
+                            {this.state.productionStatistics &&
+                                <SelectableButtonRow values={materialChoices}
+                                    initialValue={"" + this.state.materialToShow}
+                                    onSelected={
+                                        (value) => {
 
-                                        this.setState(
-                                            {
-                                                materialToShow: Number(value),
-                                                drawnStatistics: false
-                                            }
-                                        )
-                                    }
-                                } />
-                        }
-                    </>
-                }
-
+                                            this.setState(
+                                                {
+                                                    materialToShow: Number(value),
+                                                    drawnStatistics: false
+                                                }
+                                            )
+                                        }
+                                    } />
+                            }
+                        </>
+                    }
+                </>
             </Dialog>
         )
     }
@@ -214,7 +215,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
     drawLandStatistics(statisticsSvgElement: SVGSVGElement, landStatistics: LandStatistics): void {
 
         /*  Complement the reported land metrics */
-        let augmentedLandStatistics: LandDataPoint[] = []
+        const augmentedLandStatistics: LandDataPoint[] = []
 
         let previousMeasurement = undefined
         for (let i = 0; i < landStatistics.landStatistics.length; i++) {
@@ -282,9 +283,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const yAxis = d3.axisLeft(yScale)
 
         /* Create the lines */
-        let lines: any = []
+        const lines: d3.Line<LandDataPoint>[] = []
 
-        for (let i in landStatistics.players) {
+        for (const i in landStatistics.players) {
 
             lines.push(
                 d3.line<LandDataPoint>()
@@ -327,16 +328,16 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         /* Add the x axis */
-/*        statisticsSvg.append("g")
-            .attr("transform", "translate(0, " + height + ")")
-            .call(xAxis)*/
+        /*        statisticsSvg.append("g")
+                    .attr("transform", "translate(0, " + height + ")")
+                    .call(xAxis)*/
 
         /* Add the y axis */
         statisticsSvg.append("g")
             .call(yAxis)
 
         /* Instantiate the lines */
-        for (let i in landStatistics.players) {
+        for (const i in landStatistics.players) {
             lines[i](augmentedLandStatistics)
         }
 
@@ -344,7 +345,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const colors = ["red", "blue"]
 
         /* Add the lines */
-        for (let i in landStatistics.players) {
+        for (const i in landStatistics.players) {
             statisticsSvg.append("path")
                 .attr("fill", "none")
                 .attr("stroke", colors[i])
@@ -484,9 +485,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const yAxis = d3.axisLeft(yScale)
 
         /* Create the lines */
-        let lines: any = []
+        const lines: d3.Line<LandDataPoint>[] = []
 
-        for (let i in gameStatistics.players) {
+        for (const i in gameStatistics.players) {
 
             lines.push(
                 d3.line<Measurement>()
@@ -538,7 +539,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .call(yAxis)
 
         /* Instantiate the lines */
-        for (let i in gameStatistics.players) {
+        for (const i in gameStatistics.players) {
             lines[i](resourceStatistics)
         }
 
@@ -546,7 +547,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const colors = ["red", "blue"]
 
         /* Add the lines */
-        for (let i in gameStatistics.players) {
+        for (const i in gameStatistics.players) {
             statisticsSvg.append("path")
                 .attr("fill", "none")
                 .attr("stroke", colors[i])
@@ -577,16 +578,16 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .attr("fill", colors[i])
                 .attr("class", "dot") // Assign a class for styling
                 .attr("cx", function (data, index) {
-                     const xScaled = xScale(data.time)
+                    const xScaled = xScale(data.time)
 
-                     if (xScaled === undefined) {
-                         return 0
-                     }
+                    if (xScaled === undefined) {
+                        return 0
+                    }
 
-                     return xScaled
-                    })
+                    return xScaled
+                })
                 .attr("cy", function (data) {
-                    const yScaled =  yScale(data.values[i])
+                    const yScaled = yScale(data.values[i])
 
                     if (yScaled === undefined) {
                         return 0

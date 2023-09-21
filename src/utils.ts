@@ -303,7 +303,8 @@ function getTimestamp(): number {
 
 function loadImageNg(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
-        let image = new Image()
+        const image = new Image()
+
         image.onload = () => resolve(image)
         image.onerror = reject
         image.src = src
@@ -641,7 +642,7 @@ class WorkerImageAtlasHandler {
         }
 
         // Shadows are common for all nations
-        let shadowImages = this.imageAtlasInfo.common.shadowImages[direction]
+        const shadowImages = this.imageAtlasInfo.common.shadowImages[direction]
 
         let images
 

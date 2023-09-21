@@ -1,7 +1,9 @@
 import React, { Component } from 'react'
 import MenuSectionLabel from './menu_section_label'
 
-interface MenuProps { }
+interface MenuProps {
+    children?: React.ReactNode
+}
 
 interface MenuState { }
 
@@ -20,6 +22,7 @@ interface MenuSectionProps {
     selected?: boolean
     className?: string
     label?: string
+    children?: React.ReactNode
 }
 
 interface MenuSectionState { }

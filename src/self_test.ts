@@ -251,7 +251,7 @@ function testPointMap(): void {
     }
 
     /* Test iteration through the keys */
-    let seenKeys: Array<Point> = []
+    const seenKeys: Array<Point> = []
     for (const key of pointMap.keys()) {
         seenKeys.push(key)
     }
@@ -269,7 +269,7 @@ function testPointMap(): void {
     }
 
     /* Test iteration through the values */
-    let seenValues: Array<string> = []
+    const seenValues: Array<string> = []
     for (const value of pointMap.values()) {
         seenValues.push(value)
     }

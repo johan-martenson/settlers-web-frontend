@@ -311,40 +311,41 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
 
         return (
             <Card>
-                <div className="MapCardTop">
+                <>
+                    <div className="MapCardTop">
 
-                    {!this.state.expanded &&
-                        <div className="MapCardTitle">{this.props.map.title}</div>
-                    }
+                        {!this.state.expanded &&
+                            <div className="MapCardTitle">{this.props.map.title}</div>
+                        }
 
-                    {this.state.expanded &&
-                        <div className="MapCardTitle">
-                            <strong>{this.props.map.title}</strong>
-                        </div>
-                    }
+                        {this.state.expanded &&
+                            <div className="MapCardTitle">
+                                <strong>{this.props.map.title}</strong>
+                            </div>
+                        }
 
-                    {controls &&
-                        <div className="ExpandAndSelectButtons">
-                            <Button onButtonClicked={() => this.onMapSelected()}>Select</Button>
-                            <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
-                        </div>
-                    }
-                </div>
+                        {controls &&
+                            <div className="ExpandAndSelectButtons">
+                                <Button onButtonClicked={() => this.onMapSelected()}>Select</Button>
+                                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
+                            </div>
+                        }
+                    </div>
 
-                <div style={{ display: this.state.expanded ? undefined : "none" }}>
-                    <RawRow>
-                        <div className="MapCardAttributes">
-                            <div className="MapCardAttribute">Title: {this.props.map.title}</div>
-                            <div className="MapCardAttribute">Author: {this.props.map.author}</div>
-                            <div className="MapCardAttribute">Dimensions: {this.props.map.width}x{this.props.map.height}</div>
-                            <div className="MapCardAttribute">Max players: {this.props.map.maxPlayers}</div>
-                        </div>
+                    <div style={{ display: this.state.expanded ? undefined : "none" }}>
+                        <RawRow>
+                            <div className="MapCardAttributes">
+                                <div className="MapCardAttribute">Title: {this.props.map.title}</div>
+                                <div className="MapCardAttribute">Author: {this.props.map.author}</div>
+                                <div className="MapCardAttribute">Dimensions: {this.props.map.width}x{this.props.map.height}</div>
+                                <div className="MapCardAttribute">Max players: {this.props.map.maxPlayers}</div>
+                            </div>
 
-                        {this.state.expanded && thumbnail}
+                            {this.state.expanded && thumbnail}
 
-                    </RawRow>
-                </div>
-
+                        </RawRow>
+                    </div>
+                </>
             </Card>
         )
     }

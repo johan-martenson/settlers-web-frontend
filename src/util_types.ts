@@ -157,7 +157,7 @@ class PointSetFast implements IterableIterator<Point> {
         return this.entries()
     }
 
-    next(value?: any): IteratorResult<Point> {
+    next(value?: unknown): IteratorResult<Point> {
         throw new Error("Method not implemented.")
     }
 
@@ -194,7 +194,7 @@ class PointMapFast<T> implements Map<Point, T> {
         return this.numberToPointMap.delete(pointToFastKey(point))
     }
 
-    forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: any): void {
+    forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: unknown): void {
         this.numberToPointMap.forEach(
             (value, key, map) => {
                 callbackfn(value, keyToFastPoint(key), this)
@@ -223,9 +223,11 @@ class PointMapFast<T> implements Map<Point, T> {
     [Symbol.iterator](): IterableIterator<[Point, T]> {
         return this.entries()
     }
+
     entries(): IterableIterator<[Point, T]> {
         return new PointEntryFastIterator(this.numberToPointMap.entries())
     }
+
     keys(): IterableIterator<Point> {
         return new PointFastIterator(this.numberToPointMap.keys())
     }

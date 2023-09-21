@@ -83,7 +83,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         }
 
         if (isTool(selectedMaterial)) {
-            let updatedPriority = Object.assign([], this.state.priority)
+            const updatedPriority = Object.assign([], this.state.priority)
 
             for (const tool of TOOLS) {
                 await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, tool, currentPriority + 1)
@@ -101,7 +101,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
 
             await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, selectedMaterial, currentPriority + 1)
 
-            let updatedPriority = Object.assign([], this.state.priority)
+            const updatedPriority = Object.assign([], this.state.priority)
 
             delete updatedPriority[currentPriority]
 
@@ -124,7 +124,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         }
 
         if (isTool(selectedMaterial)) {
-            let updatedPriority = Object.assign([], this.state.priority)
+            const updatedPriority = Object.assign([], this.state.priority)
 
             for (const tool of TOOLS) {
                 console.log("Changing priority for " + tool)
@@ -144,7 +144,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
 
             await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, selectedMaterial, currentPriority - 1)
 
-            let updatedPriority = Object.assign([], this.state.priority)
+            const updatedPriority = Object.assign([], this.state.priority)
 
             delete updatedPriority[currentPriority]
 

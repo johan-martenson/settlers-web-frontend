@@ -45,7 +45,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
     async componentDidMount() {
 
-        let addedPlayers: PlayerInformation[] = []
+        const addedPlayers: PlayerInformation[] = []
 
         console.info("Adding default computer players")
 

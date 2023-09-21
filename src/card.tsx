@@ -3,6 +3,7 @@ import './card.css'
 
 interface CardProps {
     className?: string
+    children?: React.ReactNode
 }
 
 interface CardState { }

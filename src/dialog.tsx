@@ -11,6 +11,7 @@ interface DialogProps {
     className?: string
     id?: string
     floating?: boolean
+    children?: React.ReactNode
 }
 
 interface DialogState { }
@@ -59,6 +60,7 @@ class Dialog extends Component<DialogProps, DialogState> {
 
 interface DialogSectionProps {
     label?: string
+    children?: React.ReactNode
 }
 
 interface DialogSectionState { }

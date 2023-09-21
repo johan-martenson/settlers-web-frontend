@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { MenuSection } from './menu'
 
-let immediateState = {
+const immediateState = {
     dragging: false,
     clickOffset: 0
 }

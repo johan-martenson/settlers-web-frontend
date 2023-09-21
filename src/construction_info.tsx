@@ -142,26 +142,36 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
         return (
             <Dialog id="ConstructionInfo" className="ConstructionInfoWindow" heading="Construction" onCloseDialog={this.props.closeDialog} floating={true}>
 
-                <SelectableButtonRow values={constructionOptions}
-                    initialValue={constructionInitialSelection}
-                    onSelected={
-                        (value) => {
+                <>
 
-                            if (value === "Buildings" || value === "FlagsAndRoads") {
-                                this.setState(
-                                    {
-                                        selected: value
-                                    }
-                                )
+                    <SelectableButtonRow values={constructionOptions}
+                        initialValue={constructionInitialSelection}
+                        onSelected={
+                            (value) => {
+
+                                if (value === "Buildings" || value === "FlagsAndRoads") {
+                                    this.setState(
+                                        {
+                                            selected: value
+                                        }
+                                    )
+                                }
                             }
                         }
-                    }
-                />
+                    />
 
-                {this.state.selected === "FlagsAndRoads" &&
-                    <DialogSection>
-                        <div className="DialogSection">
+                    {this.state.selected === "FlagsAndRoads" &&
+                        <DialogSection>
+                            <div className="DialogSection">
 
+                                <Button className="ConstructionItem"
+                                    label="Raise flag"
+                                    image="flag.png"
+                                    imageLabel="Flag"
+                                    onButtonClicked={
+                                        async () => {
+                                            console.info("Raising flag")
+                                            await monitor.placeFlagSnappy(this.props.point, this.props.gameId, this.props.playerId)
                             <Button className="ConstructionItem"
                                 label="Raise flag"
                                 image="flag.png"
@@ -171,75 +181,89 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         console.info("Raising flag")
                                         monitor.placeFlag(this.props.point)
 
-                                        this.props.closeDialog()
-                                    }
-                                }
-                            />
-
-                            {this.canBuildRoad() &&
-                                <Button className="ConstructionItem"
-                                    label="Build road"
-                                    image="road-1.png"
-                                    imageLabel="Road"
-                                    onButtonClicked={
-                                        async () => {
-                                            console.info("Starting to build road")
-
-                                            await this.props.startNewRoad(this.props.point)
-
                                             this.props.closeDialog()
                                         }
                                     }
                                 />
-                            }
 
-                            {this.canRemoveRoad() &&
-                                <Button className="ConstructionItem"
-                                    label="Dig up road"
-                                    image="scissor.png"
-                                    imageLabel="Scissor"
-                                    onButtonClicked={
-                                        async () => {
-                                            console.info("Starting to dig up road")
+                                {this.canBuildRoad() &&
+                                    <Button className="ConstructionItem"
+                                        label="Build road"
+                                        image="road-1.png"
+                                        imageLabel="Road"
+                                        onButtonClicked={
+                                            async () => {
+                                                console.info("Starting to build road")
 
-                                            if (!this.props.point.roadId) {
-                                                return
+                                                await this.props.startNewRoad(this.props.point)
+
+                                                this.props.closeDialog()
                                             }
+                                        }
+                                    />
+                                }
 
+                                {this.canRemoveRoad() &&
+                                    <Button className="ConstructionItem"
+                                        label="Dig up road"
+                                        image="scissor.png"
+                                        imageLabel="Scissor"
+                                        onButtonClicked={
+                                            async () => {
+                                                console.info("Starting to dig up road")
+
+                                                if (!this.props.point.roadId) {
+                                                    return
+                                                }
+
+                                                await monitor.removeRoadSnappy(this.props.point.roadId, this.props.gameId, this.props.playerId)
                                             monitor.removeRoad(this.props.point.roadId)
 
-                                            this.props.closeDialog()
+                                                this.props.closeDialog()
+                                            }
                                         }
+                                    />
+                                }
+                            </div>
+                        </DialogSection>
+                    }
+
+                    {this.state.selected === "Buildings" &&
+                        <SelectableButtonRow values={houseOptions}
+                            initialValue={houseInitialSelection}
+                            onSelected={
+                                (value) => {
+
+                                    if (value === "small" || value === "medium" || value === "large") {
+                                        this.setState(
+                                            {
+                                                buildingSizeSelected: value
+                                            }
+                                        )
                                     }
-                                />
-                            }
-                        </div>
-                    </DialogSection>
-                }
-
-                {this.state.selected === "Buildings" &&
-                    <SelectableButtonRow values={houseOptions}
-                        initialValue={houseInitialSelection}
-                        onSelected={
-                            (value) => {
-
-                                if (value === "small" || value === "medium" || value === "large") {
-                                    this.setState(
-                                        {
-                                            buildingSizeSelected: value
-                                        }
-                                    )
                                 }
                             }
-                        }
-                    />
-                }
+                        />
+                    }
 
-                {this.state.selected === "Buildings" && this.state.buildingSizeSelected === "small" &&
-                    <DialogSection>
-                        {SMALL_HOUSES.map(
-                            (house, index) => {
+                    {this.state.selected === "Buildings" && this.state.buildingSizeSelected === "small" &&
+                        <DialogSection>
+                            {SMALL_HOUSES.map(
+                                (house, index) => {
 
+                                    return (
+                                        <Button className="ConstructionItem"
+                                            key={index}
+                                            label={camelCaseToWords(house)}
+                                            image={houseImageMap.get(house)}
+                                            imageLabel="House"
+                                            onButtonClicked={
+                                                async () => {
+                                                    console.info("Creating house")
+                                                    await monitor.placeHouseSnappy(house,
+                                                        this.props.point,
+                                                        this.props.gameId,
+                                                        this.props.playerId)
                                 return (
                                     <Button className="ConstructionItem"
                                         key={index}
@@ -251,22 +275,22 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 console.info("Creating house")
                                                 monitor.placeHouse(house, this.props.point)
 
-                                                this.props.closeDialog()
+                                                    this.props.closeDialog()
+                                                }
                                             }
-                                        }
-                                    />
-                                )
-                            })
-                        }
-                    </DialogSection>
-                }
+                                        />
+                                    )
+                                })
+                            }
+                        </DialogSection>
+                    }
 
-                {this.state.selected === "Buildings" &&
-                    this.canBuildMediumHouse() &&
-                    this.state.buildingSizeSelected === "medium" &&
-                    <DialogSection>
-                        {MEDIUM_HOUSES.map(
-                            (house, index) => {
+                    {this.state.selected === "Buildings" &&
+                        this.canBuildMediumHouse() &&
+                        this.state.buildingSizeSelected === "medium" &&
+                        <DialogSection>
+                            {MEDIUM_HOUSES.map(
+                                (house, index) => {
 
                                 return (
                                     <Button className="ConstructionItem"
@@ -279,26 +303,26 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 console.info("Creating house")
                                                 monitor.placeHouse(house, this.props.point)
 
-                                                this.props.closeDialog()
+                                                    this.props.closeDialog()
+                                                }
                                             }
-                                        }
-                                    />
-                                )
-                            })
-                        }
-                    </DialogSection>
-                }
+                                        />
+                                    )
+                                })
+                            }
+                        </DialogSection>
+                    }
 
-                {this.state.selected === "Buildings" &&
-                    this.canBuildLargeHouse() &&
-                    this.state.buildingSizeSelected === "large" &&
-                    <DialogSection>
-                        {LARGE_HOUSES.map(
-                            (house, index) => {
+                    {this.state.selected === "Buildings" &&
+                        this.canBuildLargeHouse() &&
+                        this.state.buildingSizeSelected === "large" &&
+                        <DialogSection>
+                            {LARGE_HOUSES.map(
+                                (house, index) => {
 
-                                if (house === "Headquarter") {
-                                    return null
-                                } else {
+                                    if (house === "Headquarter") {
+                                        return <></>
+                                    } else {
 
                                     return (
                                         <Button className="ConstructionItem"
@@ -311,17 +335,17 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                     console.info("Creating house")
                                                     monitor.placeHouse(house, this.props.point)
 
-                                                    this.props.closeDialog()
+                                                        this.props.closeDialog()
+                                                    }
                                                 }
-                                            }
-                                        />
-                                    )
-                                }
-                            })
-                        }
-                    </DialogSection>
-                }
-
+                                            />
+                                        )
+                                    }
+                                })
+                            }
+                        </DialogSection>
+                    }
+                </>
             </Dialog>
         )
     }

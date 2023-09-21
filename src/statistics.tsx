@@ -291,6 +291,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             lines.push(
                 d3.line<LandDataPoint>()
                     .x(
+
+                        // eslint-disable-next-line
                         (d, i, arr) => {
                             const xScaled = xScale(d.time)
 
@@ -376,6 +378,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .enter().append("circle") // Uses the enter().append() method
                 .attr("fill", colors[i])
                 .attr("class", "dot") // Assign a class for styling
+
+                // eslint-disable-next-line
                 .attr("cx", function (data, index) {
                     const xScaled = xScale(data.time)
 
@@ -481,6 +485,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .domain([0, maxValueCalculated]).nice()
             .range([height - margin.bottom, margin.top])
 
+        // eslint-disable-next-line
         const xAxis = d3.axisBottom(xScale)
 
         const yAxis = d3.axisLeft(yScale)
@@ -493,6 +498,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             lines.push(
                 d3.line<Measurement>()
                     .x(
+
+                        // eslint-disable-next-line
                         (d, i, arr) => {
                             const xScaled = xScale(d.time)
 
@@ -578,6 +585,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .enter().append("circle") // Uses the enter().append() method
                 .attr("fill", colors[i])
                 .attr("class", "dot") // Assign a class for styling
+
+                // eslint-disable-next-line
                 .attr("cx", function (data, index) {
                     const xScaled = xScale(data.time)
 

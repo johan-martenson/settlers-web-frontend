@@ -194,6 +194,7 @@ class PointMapFast<T> implements Map<Point, T> {
         return this.numberToPointMap.delete(pointToFastKey(point))
     }
 
+    // eslint-disable-next-line
     forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: unknown): void {
         this.numberToPointMap.forEach(
             (value, key) => {

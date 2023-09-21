@@ -33,6 +33,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
         }
     }
 
+    // eslint-disable-next-line
     async componentDidUpdate(prevProps: Readonly<TypeControlProps>, prevState: Readonly<TypeControlState>, snapshot?: unknown): Promise<void> {
         if (prevProps.selectedPoint !== this.props.selectedPoint) {
             const pointInformation = await getInformationOnPoint(this.props.selectedPoint, this.props.gameId, this.props.playerId)

@@ -21,7 +21,7 @@ class GameList extends Component<GameListProps, GameListState> {
         this.state = {}
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         const games = await getGames()
 
@@ -32,7 +32,7 @@ class GameList extends Component<GameListProps, GameListState> {
         )
     }
 
-    render() {
+    render(): JSX.Element {
         return (
             <div className="GameList">
                 {this.state.games && this.state.games.map(

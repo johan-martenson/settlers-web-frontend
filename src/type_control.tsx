@@ -130,7 +130,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
         )
     }
 
-    render() {
+    render(): JSX.Element {
 
         let hasMatch = false
         const inputToMatch = this.state.input.toLowerCase()

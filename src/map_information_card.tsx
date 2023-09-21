@@ -30,7 +30,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
         this.state = { terrain: this.props.terrain ? this.props.terrain : undefined }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         let terrain = this.state.terrain
 
@@ -58,7 +58,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
         }
     }
 
-    async componentDidUpdate() {
+    async componentDidUpdate(): Promise<void> {
 
         if (!this.selfRef.current) {
             console.log("ERROR: no self ref")
@@ -103,7 +103,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
         }
     }
 
-    private renderMap(ctx: CanvasRenderingContext2D, terrain: TerrainAtPoint[]) {
+    private renderMap(ctx: CanvasRenderingContext2D, terrain: TerrainAtPoint[]): ImageData {
 
         const waterIntValue0 = vegetationToInt.get("W1")
         const waterIntValue1 = vegetationToInt.get("W2")
@@ -169,7 +169,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
         return ctx.getImageData(0, 0, this.props.map.width * 2, this.props.map.height)
     }
 
-    private renderMapHighResolution(ctx: CanvasRenderingContext2D, terrain: TerrainAtPoint[]) {
+    private renderMapHighResolution(ctx: CanvasRenderingContext2D, terrain: TerrainAtPoint[]): ImageData {
 
         terrain.forEach(pointTerrainInformation => {
 
@@ -205,7 +205,7 @@ class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
         return ctx.getImageData(0, 0, this.props.map.width * 2, this.props.map.height)
     }
 
-    render() {
+    render(): JSX.Element {
 
         let className = "MapThumbnail"
 
@@ -245,11 +245,11 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
         }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
         this.cacheThumbnail()
     }
 
-    async componentDidUpdate() {
+    async componentDidUpdate(): Promise<void> {
         this.cacheThumbnail()
     }
 
@@ -295,7 +295,7 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
         let thumbnail = this.state.cachedThumbnails.get(this.props.map.id)
 

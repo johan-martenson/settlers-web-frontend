@@ -105,12 +105,13 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
         return this.props.point.is === "flag"
     }
 
-    shouldComponentUpdate(nextProps: ConstructionInfoProps, nextState: ConstructionInfoState) {
+    // eslint-disable-next-line
+    shouldComponentUpdate(nextProps: ConstructionInfoProps, nextState: ConstructionInfoState): boolean {
         return nextState.selected !== this.state.selected ||
             nextState.buildingSizeSelected !== this.state.buildingSizeSelected
     }
 
-    render() {
+    render(): JSX.Element {
 
         const constructionOptions = new Map()
         const constructionInitialSelection = this.canBuildHouse() ? "Buildings" : "FlagsAndRoads"
@@ -260,7 +261,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                             onButtonClicked={
                                                 async () => {
                                                     console.info("Creating house")
-                                                    await monitor.placeHouseSnappy(house,
+                                                    monitor.placeHouseSnappy(house,
                                                         this.props.point,
                                                         this.props.gameId,
                                                         this.props.playerId)

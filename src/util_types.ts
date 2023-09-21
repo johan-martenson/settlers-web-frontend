@@ -161,7 +161,7 @@ class PointSetFast implements IterableIterator<Point> {
         throw new Error("Method not implemented.")
     }
 
-    forEach(arg0: (v: Point, i: number) => void) {
+    forEach(arg0: (v: Point, i: number) => void): void {
         this.pointSet.forEach((value, index) => {
             const point = keyToFastPoint(value)
             arg0(point, index)

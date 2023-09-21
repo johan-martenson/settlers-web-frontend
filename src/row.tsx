@@ -10,7 +10,7 @@ interface RowState { }
 
 class Row extends Component<RowProps, RowState> {
 
-    render() {
+    render(): JSX.Element {
 
         let childClassName = "RowItemLeft"
         let className = "Row"

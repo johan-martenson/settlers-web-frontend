@@ -963,7 +963,7 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div

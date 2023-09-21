@@ -304,7 +304,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         /* Load animations */
         const fileLoading = []
@@ -2311,7 +2311,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <>

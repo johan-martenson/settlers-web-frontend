@@ -16,7 +16,7 @@ interface FriendlyFlagInfoState { }
 
 class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfoState> {
 
-    render() {
+    render(): JSX.Element {
         return (
             <Dialog heading="Flag" onCloseDialog={this.props.closeDialog} floating>
 

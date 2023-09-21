@@ -62,7 +62,7 @@ class Player extends Component<PlayerProps, PlayerState> {
         this.props.onNameChanged(nameField.value)
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div>

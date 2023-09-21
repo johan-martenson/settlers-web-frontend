@@ -24,7 +24,7 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
         }
     }
 
-    shouldComponentUpdate(nextProps: SelectPlayerProps, nextState: SelectPlayerState) {
+    shouldComponentUpdate(nextProps: SelectPlayerProps, nextState: SelectPlayerState): boolean {
         if (nextState.players === this.state.players &&
             nextState.gettingPlayers === this.state.gettingPlayers &&
             nextProps.currentPlayer === this.props.currentPlayer) {
@@ -44,7 +44,7 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
         })
     }
 
-    componentDidMount() {
+    componentDidMount(): void {
 
         if (this.state.players.length === 0 && !this.state.gettingPlayers) {
             this.setState({
@@ -56,7 +56,7 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
         return (
             <div className="PlayerSelect">
                 {this.state.players.map(

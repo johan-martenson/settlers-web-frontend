@@ -25,7 +25,7 @@ class GameInit extends Component<GameInitProps, GameInitState> {
         }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         const urlParams = new URLSearchParams(window.location.search)
         const gameId = urlParams.get("gameId")
@@ -62,7 +62,7 @@ class GameInit extends Component<GameInitProps, GameInitState> {
         console.log("Now in lobby")
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div>

@@ -36,7 +36,7 @@ class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
         this.props.setAvailableResources(level);
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div className="GameOptionsContainer">

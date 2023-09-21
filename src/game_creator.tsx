@@ -43,7 +43,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         }
     }
 
-    componentDidMount() {
+    componentDidMount(): void {
 
         if (this.titleFieldRef && this.titleFieldRef.current) {
             this.titleFieldRef.current.focus()
@@ -178,7 +178,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <>

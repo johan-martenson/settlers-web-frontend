@@ -19,7 +19,7 @@ class MapList extends Component<MapListProps, MapListState> {
         this.state = { maps: [] }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         const maps = await getMaps()
 
@@ -34,7 +34,7 @@ class MapList extends Component<MapListProps, MapListState> {
         this.props.onMapSelected(map)
     }
 
-    render() {
+    render(): JSX.Element {
         return (
             <div className="MapList">
                 {this.state.maps.map(

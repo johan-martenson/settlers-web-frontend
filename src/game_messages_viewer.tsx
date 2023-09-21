@@ -38,7 +38,7 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
         play('NEW-MESSAGE')
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
         const messages = await getMessagesForPlayer(this.props.gameId, this.props.playerId)
 
         this.setState({ messages: messages })
@@ -46,13 +46,13 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
         listenToMessages(this.newMessages.bind(this))
     }
 
-    componentWillUnmount() {
+    componentWillUnmount(): void {
         if (this.periodicUpdates) {
             clearInterval(this.periodicUpdates)
         }
     }
 
-    shouldComponentUpdate(nextProps: GameMessagesViewerProps, nextState: GameMessagesViewerState) {
+    shouldComponentUpdate(nextProps: GameMessagesViewerProps, nextState: GameMessagesViewerState): boolean {
         return nextState.messages.length !== this.state.messages.length ||
             nextState.expanded !== this.state.expanded ||
             nextProps.gameId !== this.props.gameId ||
@@ -63,7 +63,7 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
         this.setState({ messages: [] })
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div className="GameMessages">

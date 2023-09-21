@@ -46,7 +46,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         }
     }
 
-    componentDidMount() {
+    componentDidMount(): void {
 
         /* Try to pre-populate the screen with the most recent player */
         const lastPlayerName = localStorage.getItem("mostRecentPlayer")
@@ -83,7 +83,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         }
     }
 
-    render() {
+    render(): JSX.Element {
         return (
             <Dialog heading="Enter player information" noCloseButton={true}>
                 <div>Name:

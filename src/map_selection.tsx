@@ -20,7 +20,7 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
         this.state = {}
     }
 
-    render() {
+    render(): JSX.Element {
 
         let className = this.props.className ? this.props.className : ""
 

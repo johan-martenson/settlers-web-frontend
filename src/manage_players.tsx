@@ -43,7 +43,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         this.state = { players: players }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         const addedPlayers: PlayerInformation[] = []
 
@@ -117,7 +117,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div className="PlayerList">

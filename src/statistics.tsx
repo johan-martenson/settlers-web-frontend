@@ -58,7 +58,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         }
     }
 
-    shouldComponentUpdate() {
+    shouldComponentUpdate(): boolean {
         return !this.state.drawnStatistics
     }
 
@@ -149,7 +149,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
         const titleLabel = "Statistics"
 
         const statisticsChoices = new Map<string, string>()

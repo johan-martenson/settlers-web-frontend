@@ -48,7 +48,7 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
         return inventory
     }
 
-    render() {
+    render(): JSX.Element {
 
         const inventory = this.calculateInventory(this.props.house)
         const inventoryItems = []

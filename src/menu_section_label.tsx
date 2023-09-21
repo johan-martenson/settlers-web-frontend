@@ -7,7 +7,7 @@ interface MenuSectionLabelProps {
 interface MenuSectionLabelState { }
 
 class MenuSectionLabel extends Component<MenuSectionLabelProps, MenuSectionLabelState> {
-    render() {
+    render(): JSX.Element {
         return (
             <div className="MenuSectionLabel">{this.props.label}</div>
         )

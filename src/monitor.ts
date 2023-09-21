@@ -939,11 +939,11 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     }
 }
 
-function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void) {
+function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void): void {
     messageListeners.push(messageListenerFn)
 }
 
-function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformation) => void) {
+function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformation) => void): void {
     let listenersForHouseId = houseListeners.get(houseId)
 
     if (!listenersForHouseId) {

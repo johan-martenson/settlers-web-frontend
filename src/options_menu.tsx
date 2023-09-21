@@ -35,7 +35,7 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
         //FIXME: actually adjust the speed
     }
 
-    render() {
+    render(): JSX.Element {
         return (
             <Dialog heading="Options" onCloseDialog={this.onClose.bind(this)}>
                 <DialogSection label="Zoom level">

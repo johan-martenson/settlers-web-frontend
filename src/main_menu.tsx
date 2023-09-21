@@ -32,7 +32,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
         }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         await getGameInformation(this.props.gameId)
 
@@ -51,7 +51,7 @@ class MainMenu extends Component<MainMenuProps, MainMenuState> {
         this.props.onPlayerSelected(player)
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <Dialog heading="Menu" onCloseDialog={this.props.onClose} floating={true}>

@@ -8,7 +8,7 @@ interface ProgressBarState { }
 
 class ProgressBar extends Component<ProgressBarProps, ProgressBarState>{
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <>

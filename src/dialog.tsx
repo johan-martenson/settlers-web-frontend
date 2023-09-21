@@ -18,7 +18,7 @@ interface DialogState { }
 
 class Dialog extends Component<DialogProps, DialogState> {
 
-    render() {
+    render(): JSX.Element {
 
         let className = "Dialog"
 
@@ -66,7 +66,7 @@ interface DialogSectionProps {
 interface DialogSectionState { }
 
 class DialogSection extends Component<DialogSectionProps, DialogSectionState> {
-    render() {
+    render(): JSX.Element {
         return (
             <div className="DialogSection">
                 {this.props.label && <MenuSectionLabel label={this.props.label} />}

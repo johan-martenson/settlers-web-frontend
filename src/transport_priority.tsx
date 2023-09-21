@@ -24,7 +24,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         this.state = {}
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
         const currentPriority = await getTransportPriorityForPlayer(this.props.gameId, this.props.playerId)
 
         console.log(currentPriority)
@@ -36,7 +36,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         this.setState({ selected: material })
     }
 
-    render() {
+    render(): JSX.Element {
         const selectedMaterial = this.state.selected
 
         return (

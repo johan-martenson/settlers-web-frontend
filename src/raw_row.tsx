@@ -10,7 +10,7 @@ interface RawRowState { }
 
 class RawRow extends Component<RawRowProps, RawRowState> {
 
-    render() {
+    render(): JSX.Element {
 
         let className = "Row"
 

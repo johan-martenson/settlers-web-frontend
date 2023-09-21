@@ -9,7 +9,7 @@ interface MenuState { }
 
 class Menu extends Component<MenuProps, MenuState> {
 
-    render() {
+    render(): JSX.Element {
         return (
             <div className="Menu">
                 {this.props.children}
@@ -29,7 +29,7 @@ interface MenuSectionState { }
 
 class MenuSection extends Component<MenuSectionProps, MenuSectionState> {
 
-    render() {
+    render(): JSX.Element {
         let className = "MenuSectionContent"
 
         if (this.props.selected && this.props.selected) {

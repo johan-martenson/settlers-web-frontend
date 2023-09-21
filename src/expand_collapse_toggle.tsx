@@ -34,11 +34,11 @@ class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCo
         this.setState({ expanded: !this.state.expanded })
     }
 
-    componentDidMount() {
+    componentDidMount(): void {
         this.componentDidUpdate()
     }
 
-    componentDidUpdate() {
+    componentDidUpdate(): void {
 
         if (!this.selfRef.current) {
             console.log("ERROR: no self ref")
@@ -86,7 +86,7 @@ class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCo
         }
     }
 
-    render() {
+    render(): JSX.Element {
         return (
             <canvas
                 width={20}

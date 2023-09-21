@@ -29,7 +29,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
         this.state = {}
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         listenToHouse(this.props.house.id, this.onHouseUpdated.bind(this))
 
@@ -44,14 +44,14 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
         this.setState({ updatedHouse: house })
     }
 
-    componentWillUnmount() {
+    componentWillUnmount(): void {
 
         if (this.periodicUpdates) {
             clearInterval(this.periodicUpdates)
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
         const soldiers: (SoldierType | null)[] = []
 

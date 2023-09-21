@@ -56,7 +56,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
         window.location.href = "?gameId=" + gameId + "&playerId=" + selfPlayerId
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div>

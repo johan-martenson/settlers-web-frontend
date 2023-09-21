@@ -286,6 +286,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         /* Create the lines */
         const lines: d3.Line<LandDataPoint>[] = []
 
+        // eslint-disable-next-line
         for (const i in landStatistics.players) {
 
             lines.push(
@@ -340,6 +341,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .call(yAxis)
 
         /* Instantiate the lines */
+        // eslint-disable-next-line
         for (const i in landStatistics.players) {
             lines[i](augmentedLandStatistics)
         }
@@ -348,6 +350,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const colors = ["red", "blue"]
 
         /* Add the lines */
+        // eslint-disable-next-line
         for (const i in landStatistics.players) {
             statisticsSvg.append("path")
                 .attr("fill", "none")
@@ -493,6 +496,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         /* Create the lines */
         const lines: d3.Line<LandDataPoint>[] = []
 
+        // eslint-disable-next-line
         for (const i in gameStatistics.players) {
 
             lines.push(
@@ -547,6 +551,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .call(yAxis)
 
         /* Instantiate the lines */
+        // eslint-disable-next-line
         for (const i in gameStatistics.players) {
             lines[i](resourceStatistics)
         }
@@ -555,6 +560,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const colors = ["red", "blue"]
 
         /* Add the lines */
+        // eslint-disable-next-line
         for (const i in gameStatistics.players) {
             statisticsSvg.append("path")
                 .attr("fill", "none")

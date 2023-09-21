@@ -107,6 +107,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         return false
     }
 
+    // eslint-disable-next-line
     async setOthersCanJoin(othersCanJoin: boolean): Promise<void> {
 
     }
@@ -189,14 +190,16 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                             <input type="text" placeholder="Name..."
                                 ref={this.titleFieldRef}
                                 onChange={
-                                    (e: React.FormEvent<HTMLInputElement>) => {
+
+                                    // eslint-disable-next-line
+                                    (event: React.FormEvent<HTMLInputElement>) => {
                                         if (this.isNameReady()) {
                                             this.setState({ isNameReady: true })
                                         }
                                     }
                                 }
 
-                                onKeyPress={
+                                onKeyDown={
                                     (event) => {
                                         if (event.key === "Enter" && this.state.isNameReady) {
                                             this.startCreatingGame()

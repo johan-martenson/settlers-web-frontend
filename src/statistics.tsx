@@ -278,6 +278,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .domain([0, maxValueCalculated]).nice()
             .range([height - margin.bottom, margin.top])
 
+        // eslint-disable-next-line
         const xAxis = d3.axisBottom(xScale)
 
         const yAxis = d3.axisLeft(yScale)

@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, Nation, NationSmallCaps, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
@@ -62,12 +62,13 @@ MOUSE_STYLES.set('DRAGGING', 'move')
 MOUSE_STYLES.set('BUILDING_ROAD', "url(assets/ui-elements/building-road.png), pointer")
 
 let newRoadCurrentLength = 0
+
+// eslint-disable-next-line
 let logOnce = true
 let timer: ReturnType<typeof setTimeout>
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
 const currentPlayerNation: Nation = "ROMANS"
-const currentPlayerNationSmallCaps: NationSmallCaps = "romans"
 
 const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
 
@@ -274,6 +275,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
+    // eslint-disable-next-line
     shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState): boolean {
         return this.props.onKeyDown !== nextProps.onKeyDown ||
             this.props.cursorState !== nextProps.cursorState ||
@@ -359,7 +361,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Subscribe for new discovered points */
-        listenToDiscoveredPoints(points => {
+        // eslint-disable-next-line
+        listenToDiscoveredPoints((points) => {
 
             // Update the calculated normals
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
@@ -408,8 +411,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (gl) {
 
                 // Make textures for the image atlases
-                workers.forEach((animation, workerType) => animation.makeTexture(gl))
-                animals.forEach((animation, animalType) => animation.makeTexture(gl))
+                for (const animation of workers.values()) {
+                    animation.makeTexture(gl)
+                }
+
+                for (const animation of animals.values()) {
+                    animation.makeTexture(gl)
+                }
 
                 treeAnimations.makeTexture(gl)
                 flagAnimations.makeTexture(gl)
@@ -968,8 +976,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
         /* Collect borders to draw */
-        for (const [playerId, borderForPlayer] of monitor.border) {
-
+        for (const borderForPlayer of monitor.border.values()) {
             borderForPlayer.points.forEach(borderPoint => {
 
                 if (borderPoint.x < minXInGame || borderPoint.x > maxXInGame || borderPoint.y < minYInGame || borderPoint.y > maxYInGame) {
@@ -1966,7 +1973,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             this.props.possibleRoadConnections.forEach(
-                (point, _index) => {
+                (point) => {
 
                     const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
 

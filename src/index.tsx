@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import ReactDOM from 'react-dom'
+import {createRoot} from 'react-dom/client'
 import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'
 import { Lobby } from './lobby'
@@ -87,7 +87,9 @@ class GameInit extends Component<GameInitProps, GameInitState> {
     }
 }
 
-ReactDOM.render(
-    <GameInit />,
-    document.getElementById('root')
-)
+const container = document.getElementById('root')
+
+if (container) {
+    const root = createRoot(container)
+    root.render(<GameInit />)
+}

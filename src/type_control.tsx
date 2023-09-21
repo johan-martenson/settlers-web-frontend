@@ -5,7 +5,7 @@ import { GameId, PlayerId, Point, PointInformation, getInformationOnPoint } from
 
 export interface Command {
     action: (() => void)
-    filter: ((selectedPointInformation: PointInformation, playerId: PlayerId) => boolean) | undefined
+    filter: ((selectedPointInformation: PointInformation) => boolean) | undefined
 }
 
 interface TypeControlProps {
@@ -161,7 +161,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                         let show = true
 
                         if (command.filter && this.state.selectedPointInformation) {
-                            show = command.filter(this.state.selectedPointInformation, this.props.playerId)
+                            show = command.filter(this.state.selectedPointInformation)
                         }
 
                         if (show && inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)) {

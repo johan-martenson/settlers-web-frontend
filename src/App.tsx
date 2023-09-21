@@ -219,7 +219,7 @@ class App extends Component<AppProps, AppState> {
                     )
                 }
             },
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'building' || pointInformation.is === 'flag'
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'building' || pointInformation.is === 'flag'
         })
 
         this.commands.set("Flag", {
@@ -228,11 +228,11 @@ class App extends Component<AppProps, AppState> {
                     monitor.placeFlag(this.state.selected)
                 }
             },
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.canBuild.find(a => a === 'flag') !== undefined
+            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'flag') !== undefined
         })
         this.commands.set("Remove (house, flag, or road)", {
             action: () => removeHouseOrFlagOrRoadAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId),
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is !== undefined
+            filter: (pointInformation: PointInformation) => pointInformation.is !== undefined
         })
         this.commands.set("Statistics", {
             action: () => this.setState({ showStatistics: true }),
@@ -253,15 +253,15 @@ class App extends Component<AppProps, AppState> {
         })
         this.commands.set("Geologist", {
             action: async () => await callGeologist(this.state.selected, this.props.gameId, this.props.selfPlayerId),
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'flag'
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
         })
         this.commands.set("Scout", {
             action: async () => await sendScout(this.state.selected, this.props.gameId, this.props.selfPlayerId),
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'flag'
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
         })
         this.commands.set("Evacuate building", {
             action: () => evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId),
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'building'
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
         })
         this.commands.set("Transport priority (set)", {
             action: () => this.setState({ showSetTransportPriority: true }),
@@ -279,7 +279,11 @@ class App extends Component<AppProps, AppState> {
                     upgradeMilitaryBuilding(this.props.gameId, this.props.selfPlayerId, houseInformation.id)
                 }
             },
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.is === 'building'
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
+        })
+        this.commands.set("Fps", {
+            action: () => { this.setState({ showFpsCounter: !this.state.showFpsCounter }) },
+            filter: undefined
         })
         this.commands.set("Fps", {
             action: () => { this.setState({ showFpsCounter: !this.state.showFpsCounter }) },
@@ -483,6 +487,7 @@ class App extends Component<AppProps, AppState> {
         event.stopPropagation()
     }
 
+    // eslint-disable-next-line
     onMouseLeave(event: React.MouseEvent): void {
         this.setState({ cursorState: 'NOTHING' })
 

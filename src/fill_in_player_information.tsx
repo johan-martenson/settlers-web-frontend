@@ -89,15 +89,16 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                 <div>Name:
                     <input type="text" placeholder="Name" ref={this.nameFieldRef}
                         onChange={
-                            (e: React.FormEvent<HTMLInputElement>) => {
+
+                            // eslint-disable-next-line
+                            (event: React.FormEvent<HTMLInputElement>) => {
                                 this.onInformationEntered()
                             }
                         }
 
                         onKeyDown={
-                            (e: React.KeyboardEvent) => {
-                                if (e.keyCode === 13) {
-
+                            (event: React.KeyboardEvent) => {
+                                if (event.code === 'Enter') {
                                     if (this.state.userNameEntered) {
                                         this.onPlayerInformationDone()
                                     }

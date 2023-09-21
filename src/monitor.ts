@@ -628,7 +628,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     // Similarly, grow the crops locally to avoid the need for the server to send messages when crops change growth state
     setInterval(async () => {
-        monitor.crops.forEach((crop, cropId) => {
+        for (const crop of monitor.crops.values()) {
             if (crop.state !== 'FULL_GROWN' && crop.state !== 'HARVESTED') {
                 crop.growth = crop.growth + 1
 
@@ -640,7 +640,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
                     crop.state = 'FULL_GROWN'
                 }
             }
-        })
+        }
 
         // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
     }, 2000)
@@ -990,13 +990,11 @@ async function forceUpdateOfHouse(houseId: HouseId): Promise<void> {
 function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefined {
     let headquarter
 
-    monitor.houses.forEach(
-        (house, houseId) => {
-            if (house.type === 'Headquarter' && house.playerId === playerId) {
-                headquarter = house
-            }
+    for (const house of monitor.houses.values()) {
+        if (house.type === 'Headquarter' && house.playerId === playerId) {
+            headquarter = house
         }
-    )
+    }
 
     return headquarter
 }

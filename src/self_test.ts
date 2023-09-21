@@ -110,7 +110,7 @@ function testPointSet(): void {
 
     /* Test iteration with forEach */
     seen = []
-    pointSet.forEach((v, index) => {
+    pointSet.forEach((v) => {
         seen.push(v)
     })
 

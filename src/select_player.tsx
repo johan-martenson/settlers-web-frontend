@@ -60,7 +60,7 @@ class SelectPlayer extends Component<SelectPlayerProps, SelectPlayerState> {
         return (
             <div className="PlayerSelect">
                 {this.state.players.map(
-                    (player, index) => {
+                    (player) => {
 
                         if (this.props.currentPlayer && this.props.currentPlayer === player.id) {
                             return (

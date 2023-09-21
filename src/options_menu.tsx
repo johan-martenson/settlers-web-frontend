@@ -30,6 +30,7 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
         this.props.onClose()
     }
 
+    // eslint-disable-next-line
     adjustSpeed(speed: number): void {
         //FIXME: actually adjust the speed
     }

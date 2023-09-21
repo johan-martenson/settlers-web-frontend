@@ -39,7 +39,7 @@ class PointFastIterator implements IterableIterator<Point> {
         return this
     }
 
-    next(value?: Point): IteratorResult<Point> {
+    next(): IteratorResult<Point> {
         const result = this.pointFastSetIterator.next()
 
         if (result.value) {
@@ -70,7 +70,7 @@ class PointSetFastIterator implements IterableIterator<Point> {
         return this
     }
 
-    next(value?: Point): IteratorResult<Point> {
+    next(): IteratorResult<Point> {
         const result = this.pointFastSetIterator.next()
 
         if (result.value) {
@@ -100,7 +100,7 @@ class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
         return this
     }
 
-    next(inValue?: [Point, T]): IteratorResult<[Point, T]> {
+    next(): IteratorResult<[Point, T]> {
         const result = this.pointEntryFastIterator.next()
 
         if (result.done) {
@@ -157,7 +157,7 @@ class PointSetFast implements IterableIterator<Point> {
         return this.entries()
     }
 
-    next(value?: unknown): IteratorResult<Point> {
+    next(): IteratorResult<Point> {
         throw new Error("Method not implemented.")
     }
 
@@ -196,7 +196,7 @@ class PointMapFast<T> implements Map<Point, T> {
 
     forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: unknown): void {
         this.numberToPointMap.forEach(
-            (value, key, map) => {
+            (value, key) => {
                 callbackfn(value, keyToFastPoint(key), this)
             }
         )

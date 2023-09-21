@@ -107,7 +107,7 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                         {
                                             isUnderAttackMessage(message) &&
                                             <>
-                                                We're under attack!
+                                                We&apos;re under attack!
                                                 <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
                                             </>
                                         }

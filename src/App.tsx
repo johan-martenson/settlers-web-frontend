@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, canBeUpgraded, createBuilding, createFlag, createRoad, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
+import { callGeologist, canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import EnemyHouseInfo from './enemy_house_info'
@@ -11,6 +11,7 @@ import { CursorState, GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
 import { getHeadquarterForPlayer, monitor, startMonitoringGame } from './monitor'
+import MusicPlayer from './music_player'
 import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
@@ -98,6 +99,8 @@ interface AppState {
     serverUnreachable?: string
 
     cursorState: CursorState
+
+    showFpsCounter: boolean
 }
 
 class App extends Component<AppProps, AppState> {
@@ -161,15 +164,16 @@ class App extends Component<AppProps, AppState> {
             menuVisible: false,
             showTitles: true,
             showSetTransportPriority: false,
-            cursorState: 'NOTHING'
+            cursorState: 'NOTHING',
+            showFpsCounter: false
         }
 
         /* Set up type control commands */
         this.commands = new Map()
 
-        SMALL_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }))
-        MEDIUM_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }))
-        LARGE_HOUSES.forEach((building) => this.commands.set(building, () => { createBuilding(building, this.state.selected, this.props.gameId, this.props.selfPlayerId) }))
+        SMALL_HOUSES.forEach(building => this.commands.set(building, () => { monitor.placeHouse(building, this.state.selected) }))
+        MEDIUM_HOUSES.forEach(building => this.commands.set(building, () => { monitor.placeHouse(building, this.state.selected) }))
+        LARGE_HOUSES.forEach(building => this.commands.set(building, () => { monitor.placeHouse(building, this.state.selected) }))
 
         this.commands.set("Road",
             async () => {
@@ -208,7 +212,7 @@ class App extends Component<AppProps, AppState> {
 
         this.commands.set("Flag", () => {
             if (monitor.isAvailable(this.state.selected, 'FLAG')) {
-                monitor.placeFlagSnappy(this.state.selected, this.props.gameId, this.props.selfPlayerId)
+                monitor.placeFlag(this.state.selected)
             }
         })
         this.commands.set("Remove (house, flag, or road)", () => { removeHouseOrFlagOrRoadAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId) })
@@ -226,12 +230,13 @@ class App extends Component<AppProps, AppState> {
         this.commands.set("Transport priority (set)", () => { this.setState({ showSetTransportPriority: true }) })
         this.commands.set("List statistics", () => { printVariables() })
         this.commands.set("Upgrade", async () => {
-            const houseInformation = await getHouseAtPoint(this.state.selected)
+            const houseInformation = getHouseAtPoint(this.state.selected)
 
             if (houseInformation && canBeUpgraded(houseInformation)) {
                 upgradeMilitaryBuilding(this.props.gameId, this.props.selfPlayerId, houseInformation.id)
             }
         })
+        this.commands.set("Fps", () => { this.setState({ showFpsCounter: !this.state.showFpsCounter }) })
     }
 
     toggleDetails(): void {
@@ -398,7 +403,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     onMouseDown(event: React.MouseEvent): void {
-        console.log("mouse down")
 
         if (event.button === 2) {
             globalSyncState.mouseDown = true
@@ -435,9 +439,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     onMouseUp(event: React.MouseEvent): void {
-        console.log("Mouse up")
-        console.log(globalSyncState)
-
         globalSyncState.mouseDown = false
         globalSyncState.mouseMoving = false
 
@@ -501,7 +502,6 @@ class App extends Component<AppProps, AppState> {
 
     async onPointClicked(point: Point): Promise<void> {
         console.info("Clicked point: " + point.x + ", " + point.y)
-        console.log(globalSyncState)
 
         /* Ignore clicks if the player is an observer */
         if (this.props.observe) {
@@ -557,7 +557,7 @@ class App extends Component<AppProps, AppState> {
                 })
 
                 // Create the road, including making an optimistic change first on the client side
-                monitor.placeRoadSnappy(possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
+                monitor.placeRoad(possibleNewRoad)
 
                 /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
             } else if (isRoadAtPoint(point, monitor.roads)) {
@@ -572,7 +572,7 @@ class App extends Component<AppProps, AppState> {
                         possibleRoadConnections: []
                     })
 
-                    monitor.placeRoadAndFlagSnappy(point, possibleNewRoad, this.props.gameId, this.props.selfPlayerId)
+                    monitor.placeRoadAndFlag(point, possibleNewRoad)
                 }
 
                 /* Add the new possible road points to the ongoing road and don't create the road */
@@ -618,41 +618,10 @@ class App extends Component<AppProps, AppState> {
 
                 console.log("Can place flag")
 
-                // Make local changes in the client first so the road doesn't disappear until the server sends a message with the new road
-                monitor.placeLocalFlag(point, this.props.selfPlayerId)
-
                 // Keep a reference to the new road so it doesn't get lost when the state is changed
                 const newRoadPoints = this.state.newRoad
 
                 newRoadPoints.push(point)
-
-                // Only place a local road if there is no gap that the backend needs to fill in
-                let previous = undefined
-                let roadHasGap = false
-
-                for (point of newRoadPoints) {
-                    if (previous === undefined) {
-                        previous = point
-
-                        continue
-                    }
-
-                    if (Math.abs(point.x - previous.x) > 2 || Math.abs(point.y - previous.y) > 1) {
-                        roadHasGap = true
-
-                        console.log("There is a too long gap")
-
-                        break
-                    }
-
-                    previous = point
-                }
-
-                if (!roadHasGap) {
-                    console.log("There was no gap so place local road")
-
-                    monitor.placeLocalRoad(this.state.newRoad)
-                }
 
                 // Update the state before calling the backend to make the user experience feel quicker
                 this.setState(
@@ -665,21 +634,9 @@ class App extends Component<AppProps, AppState> {
 
                 // Call the backend to make the changes take effect
                 // TODO: introduce a method in the backend to do both as a single operation and then use it here
-                await createFlag(point, this.props.gameId, this.state.player)
-                await createRoad(newRoadPoints, this.props.gameId, this.state.player)
+                monitor.placeRoadAndFlag(point, newRoadPoints)
 
                 console.info("Created flag and road")
-
-                const flagPointInformation = await getInformationOnPoint(point, this.props.gameId, this.props.selfPlayerId)
-                const roadPointInformation = await getInformationOnPoint(newRoadPoints[1], this.props.gameId, this.props.selfPlayerId)
-
-                if (flagPointInformation.is !== 'flag') {
-                    monitor.flags.delete('LOCAL')
-                }
-
-                if (roadPointInformation.is !== 'road') {
-                    monitor.roads.delete('LOCAL')
-                }
             } else {
                 console.log("Could not place flag")
             }
@@ -748,7 +705,7 @@ class App extends Component<AppProps, AppState> {
 
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
-            monitor.placeFlagSnappy(pointInformation, this.props.gameId, this.props.selfPlayerId)
+            monitor.placeFlag(pointInformation)
 
             this.setState({ selected: point })
         }
@@ -1079,6 +1036,8 @@ class App extends Component<AppProps, AppState> {
                     onGoToHouse={this.goToHouse.bind(this)}
                     onGoToPoint={this.goToPoint.bind(this)}
                 />
+
+                <MusicPlayer />
             </div>
         )
     }

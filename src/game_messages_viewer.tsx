@@ -1,9 +1,10 @@
-import React, { Component } from 'react';
-import { GameId, GameMessage, getMessagesForPlayer, HouseId, isBuildingCapturedMessage, isBuildingLostMessage, isGeologistFindMessage, isMilitaryBuildingCausedLostLandMessage, isMilitaryBuildingOccupiedMessage, isMilitaryBuildingReadyMessage, isNoMoreResourcesMessage, isStoreHouseIsReadyMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isUnderAttackMessage, PlayerId, Point } from './api';
-import Button from './button';
-import ExpandCollapseToggle from './expand_collapse_toggle';
-import './game_messages_viewer.css';
-import { listenToMessages } from './monitor';
+import { Component } from 'react'
+import { GameId, GameMessage, getMessagesForPlayer, HouseId, isBuildingCapturedMessage, isBuildingLostMessage, isGeologistFindMessage, isMilitaryBuildingCausedLostLandMessage, isMilitaryBuildingOccupiedMessage, isMilitaryBuildingReadyMessage, isNoMoreResourcesMessage, isStoreHouseIsReadyMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isUnderAttackMessage, PlayerId, Point } from './api'
+import Button from './button'
+import ExpandCollapseToggle from './expand_collapse_toggle'
+import './game_messages_viewer.css'
+import { listenToMessages } from './monitor'
+import { play } from './sound_effects'
 
 interface GameMessagesViewerProps {
     gameId: GameId
@@ -33,6 +34,8 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
 
     newMessages(messages: GameMessage[]): void {
         this.setState({ messages: this.state.messages.concat(messages) })
+
+        play('NEW-MESSAGE')
     }
 
     async componentDidMount() {

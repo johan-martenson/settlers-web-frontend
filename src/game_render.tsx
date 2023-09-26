@@ -39,6 +39,7 @@ interface GameCanvasProps {
     newRoad?: Point[]
     showAvailableConstruction: boolean
     showHouseTitles: boolean
+    showFpsCounter?: boolean
 
     width: number
     height: number
@@ -259,8 +260,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
-        console.log("Component did update")
-        console.log(this.props.cursorState)
 
         if (prevProps.cursorState !== this.props.cursorState && this?.normalCanvasRef?.current) {
 
@@ -2140,7 +2139,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw the FPS counter */
         const timestamp = getTimestamp()
 
-        if (this.previousTimestamp) {
+        if (this.props.showFpsCounter && this.previousTimestamp) {
             const fps = getLatestValueForVariable("GameRender::renderGame.total")
 
             ctx.fillStyle = 'white'

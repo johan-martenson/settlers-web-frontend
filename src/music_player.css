@@ -1,0 +1,30 @@
+.MusicPlayer {
+
+    position: absolute;
+    z-index: 99;
+    right: 0;
+    top: 0;
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 0.7rem;
+}
+
+.SongList {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: 80vh;
+}
+
+.SongItem {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.PlayingSongItem {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    font-weight: bold;
+}

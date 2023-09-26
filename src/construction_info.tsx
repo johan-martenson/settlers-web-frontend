@@ -169,7 +169,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                 onButtonClicked={
                                     async () => {
                                         console.info("Raising flag")
-                                        await monitor.placeFlagSnappy(this.props.point, this.props.gameId, this.props.playerId)
+                                        monitor.placeFlag(this.props.point)
 
                                         this.props.closeDialog()
                                     }
@@ -206,7 +206,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 return
                                             }
 
-                                            await monitor.removeRoadSnappy(this.props.point.roadId, this.props.gameId, this.props.playerId)
+                                            monitor.removeRoad(this.props.point.roadId)
 
                                             this.props.closeDialog()
                                         }
@@ -249,10 +249,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         onButtonClicked={
                                             async () => {
                                                 console.info("Creating house")
-                                                await monitor.placeHouseSnappy(house,
-                                                    this.props.point,
-                                                    this.props.gameId,
-                                                    this.props.playerId)
+                                                monitor.placeHouse(house, this.props.point)
 
                                                 this.props.closeDialog()
                                             }
@@ -280,10 +277,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         onButtonClicked={
                                             async () => {
                                                 console.info("Creating house")
-                                                await monitor.placeHouseSnappy(house,
-                                                    this.props.point,
-                                                    this.props.gameId,
-                                                    this.props.playerId)
+                                                monitor.placeHouse(house, this.props.point)
 
                                                 this.props.closeDialog()
                                             }
@@ -315,10 +309,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                             onButtonClicked={
                                                 async () => {
                                                     console.info("Creating house")
-                                                    await monitor.placeHouseSnappy(house,
-                                                        this.props.point,
-                                                        this.props.gameId,
-                                                        this.props.playerId)
+                                                    monitor.placeHouse(house, this.props.point)
 
                                                     this.props.closeDialog()
                                                 }

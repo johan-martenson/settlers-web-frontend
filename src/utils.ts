@@ -258,19 +258,25 @@ function arrayToRgbStyle(rgb: number[]): string {
 
 function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boolean {
 
+    let found = false
+
     for (const road of roads.values()) {
+
+        if (road.id === 'LOCAL') {
+            continue
+        }
+
         road.points.forEach(
             roadPoint => {
 
                 if (point.x === roadPoint.x && point.y === roadPoint.y) {
-
-                    return true
+                    found = true
                 }
             }
         )
     }
 
-    return false
+    return found
 }
 
 async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
@@ -280,9 +286,9 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, play
     if (pointInformation.is === "building" && pointInformation.buildingId) {
         await removeHouse(pointInformation.buildingId, playerId, gameId)
     } else if (pointInformation.is === "flag" && pointInformation.flagId) {
-        await monitor.removeFlagSnappy(pointInformation.flagId, gameId, playerId)
+        monitor.removeFlag(pointInformation.flagId)
     } else if (pointInformation.is === "road" && pointInformation.roadId) {
-        await monitor.removeRoadSnappy(pointInformation.roadId, gameId, playerId)
+        monitor.removeRoad(pointInformation.roadId)
     }
 }
 

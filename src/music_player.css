@@ -22,9 +22,17 @@
     justify-content: space-between;
 }
 
+.SongItem:hover {
+    background-color: lightblue;
+}
+
 .PlayingSongItem {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     font-weight: bold;
+}
+
+.PlayingSongItem:hover {
+    background-color: lightblue;
 }

@@ -41,8 +41,6 @@ class MusicPlayer extends Component<MusicPlayerProps, MusicPlayerState> {
         this.audioAtlasSongs?.forEach(song => this.audioInstances.push(new Audio(song.path)))
     }
 
-    componentWillUnmount() { }
-
     play(): void {
         if (this.audioAtlasSongs) {
             this.audioInstances[this.state.currentSong].onended = () => { this.next() }
@@ -83,6 +81,21 @@ class MusicPlayer extends Component<MusicPlayerProps, MusicPlayerState> {
         this.setState({ currentSong: newSong })
     }
 
+    playSong(newSong: number): void {
+        if (this.state.playing) {
+            this.audioInstances[this.state.currentSong].pause()
+        }
+
+        this.audioInstances[newSong].currentTime = 0
+        this.audioInstances[newSong].onended = () => { this.next() }
+        this.audioInstances[newSong].play()
+
+        this.setState({
+            currentSong: newSong,
+            playing: true
+        })
+    }
+
     render() {
 
         return (
@@ -116,7 +129,10 @@ class MusicPlayer extends Component<MusicPlayerProps, MusicPlayerState> {
                                     (song, index) => {
 
                                         return (
-                                            <div className={(index === this.state.currentSong) ? "PlayingSongItem" : "SongItem"} key={index}>
+                                            <div className={(index === this.state.currentSong) ? "PlayingSongItem" : "SongItem"}
+                                                key={index}
+                                                onClick={() => { this.playSong(index) }}
+                                            >
                                                 {song.title}
                                             </div>
                                         )

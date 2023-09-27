@@ -64,7 +64,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                     async () => {
                                         console.info("Calling for geologist")
 
-                                        await callGeologist(this.props.flag, this.props.gameId, this.props.playerId)
+                                        monitor.callGeologist(this.props.flag)
 
                                         this.props.closeDialog()
                                     }
@@ -79,7 +79,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                     async () => {
                                         console.info("Sending scout")
 
-                                        await sendScout(this.props.flag, this.props.gameId, this.props.playerId)
+                                        monitor.callScout(this.props.flag)
 
                                         this.props.closeDialog()
                                     }

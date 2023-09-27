@@ -254,11 +254,11 @@ class App extends Component<AppProps, AppState> {
             filter: undefined
         })
         this.commands.set("Geologist", {
-            action: async () => await callGeologist(this.state.selected, this.props.gameId, this.props.selfPlayerId),
+            action: async () => monitor.callGeologist(this.state.selected),
             filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
         })
         this.commands.set("Scout", {
-            action: async () => await sendScout(this.state.selected, this.props.gameId, this.props.selfPlayerId),
+            action: async () => monitor.callScout(this.state.selected),
             filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
         })
         this.commands.set("Evacuate building", {

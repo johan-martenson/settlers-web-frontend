@@ -77,6 +77,8 @@ export interface Monitor {
     getInformationOnPointLocal: ((point: Point) => PointInformationLocal)
     getHouseAtPointLocal: ((point: Point) => HouseInformation | undefined)
     getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
+    callScout: ((point: Point) => void)
+    callGeologist: ((point: Point) => void)
 }
 
 const monitor: Monitor = {
@@ -123,7 +125,9 @@ const monitor: Monitor = {
     getLoadingPromise: getLoadingPromise,
     getInformationOnPointLocal: getInformationOnPointLocal,
     getHouseAtPointLocal: getHouseAtPointLocal,
-    getFlagAtPointLocal: getFlagAtPointLocal
+    getFlagAtPointLocal: getFlagAtPointLocal,
+    callScout: callScoutWebsocket,
+    callGeologist: callGeologistWebsocket
 }
 
 let websocket: WebSocket
@@ -1331,6 +1335,24 @@ function removeBuildingWebsocket(houseId: HouseId): void {
             id: houseId
         })
     )
+}
+
+function callScoutWebsocket(point: Point): void {
+    websocket.send(JSON.stringify(
+        {
+            command: 'CALL_SCOUT',
+            point: { x: point.x, y: point.y }
+        }
+    ))
+}
+
+function callGeologistWebsocket(point: Point): void {
+    websocket.send(JSON.stringify(
+        {
+            command: 'CALL_GEOLOGIST',
+            point: { x: point.x, y: point.y }
+        }
+    ))
 }
 
 export interface PointInformationLocal extends Point {

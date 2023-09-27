@@ -1,5 +1,5 @@
 import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeHouse, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
-import { monitor } from './monitor'
+import { Monitor, monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -283,6 +283,21 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, play
 
     if (pointInformation.is === "building" && pointInformation.buildingId) {
         await removeHouse(pointInformation.buildingId, playerId, gameId)
+    } else if (pointInformation.is === "flag" && pointInformation.flagId) {
+        monitor.removeFlag(pointInformation.flagId)
+    } else if (pointInformation.is === "road" && pointInformation.roadId) {
+        monitor.removeRoad(pointInformation.roadId)
+    }
+}
+
+async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: Monitor): Promise<void> {
+
+    const pointInformation = monitor.getInformationOnPointLocal(point)
+
+    console.log({ title: "Remove house/flag/road via websocket", localPointInformation: pointInformation })
+
+    if (pointInformation.is === "building" && pointInformation.buildingId) {
+        monitor.removeBuilding(pointInformation.buildingId)
     } else if (pointInformation.is === "flag" && pointInformation.flagId) {
         monitor.removeFlag(pointInformation.flagId)
     } else if (pointInformation.is === "road" && pointInformation.roadId) {
@@ -2227,5 +2242,6 @@ export {
     makeTextureFromImage,
     resizeCanvasToDisplaySize,
     materialToAllUpperCase,
-    ShipImageAtlasHandler
+    ShipImageAtlasHandler,
+    removeHouseOrFlagOrRoadAtPointWebsocket
 }

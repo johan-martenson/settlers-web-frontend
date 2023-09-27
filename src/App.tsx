@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, canBeUpgraded, createBuilding, createRoadWithFlag, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getFlagAtPoint, getHouseAtPoint, getInformationOnPoint, getPlayers, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
+import { callGeologist, canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getInformationOnPoint, getPlayers, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, sendScout, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import EnemyHouseInfo from './enemy_house_info'
@@ -10,13 +10,13 @@ import GameMessagesViewer from './game_messages_viewer'
 import { CursorState, GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
-import { getHeadquarterForPlayer, monitor, placeBuildingWebsocket, startMonitoringGame } from './monitor'
+import { getHeadquarterForPlayer, monitor, startMonitoringGame } from './monitor'
 import MusicPlayer from './music_player'
 import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import { TypeControl, Command } from './type_control'
-import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPoint } from './utils'
+import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
@@ -173,22 +173,24 @@ class App extends Component<AppProps, AppState> {
         this.commands = new Map()
 
         SMALL_HOUSES.forEach(building => this.commands.set(building, {
-            action: () => placeBuildingWebsocket(building, this.state.selected),
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.canBuild.find(a => a === 'small') !== undefined
+            action: () => monitor.placeHouse(building, this.state.selected),
+            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'small') !== undefined
         }
         ))
         MEDIUM_HOUSES.forEach(building => this.commands.set(building, {
-            action: () => placeBuildingWebsocket(building, this.state.selected),
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.canBuild.find(a => a === 'medium') !== undefined
+            action: () => monitor.placeHouse(building, this.state.selected),
+            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'medium') !== undefined
         }))
         LARGE_HOUSES.forEach(building => this.commands.set(building, {
-            action: () => placeBuildingWebsocket(building, this.state.selected),
-            filter: (pointInformation: PointInformation, playerId: PlayerId) => pointInformation.canBuild.find(a => a === 'large') !== undefined
+            action: () => monitor.placeHouse(building, this.state.selected),
+            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'large') !== undefined
         }))
 
         this.commands.set("Road", {
             action: async () => {
                 console.log("Building road")
+
+                // TODO: optimize by introducing a method to get information about two points with one call
 
                 /* Get the possible connections from the server and draw them */
                 const pointInformation = await getInformationOnPoint(this.state.selected, this.props.gameId, this.state.player)
@@ -231,7 +233,7 @@ class App extends Component<AppProps, AppState> {
             filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'flag') !== undefined
         })
         this.commands.set("Remove (house, flag, or road)", {
-            action: () => removeHouseOrFlagOrRoadAtPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId),
+            action: () => removeHouseOrFlagOrRoadAtPointWebsocket(this.state.selected, monitor),
             filter: (pointInformation: PointInformation) => pointInformation.is !== undefined
         })
         this.commands.set("Statistics", {
@@ -273,7 +275,7 @@ class App extends Component<AppProps, AppState> {
         })
         this.commands.set("Upgrade", {
             action: async () => {
-                const houseInformation = getHouseAtPoint(this.state.selected)
+                const houseInformation = monitor.getHouseAtPointLocal(this.state.selected)
 
                 if (houseInformation && canBeUpgraded(houseInformation)) {
                     upgradeMilitaryBuilding(this.props.gameId, this.props.selfPlayerId, houseInformation.id)
@@ -588,7 +590,7 @@ class App extends Component<AppProps, AppState> {
             console.log("Ongoing road construction: " + JSON.stringify(possibleNewRoad))
 
             /* Handle the case when a flag is clicked and create a road to it. Also select the point of the flag */
-            const flag = getFlagAtPoint(point)
+            const flag = monitor.getFlagAtPointLocal(point)
 
             if (flag) {
                 console.info("Placing road directly to flag")
@@ -616,7 +618,7 @@ class App extends Component<AppProps, AppState> {
                         possibleRoadConnections: []
                     })
 
-                    monitor.placeRoadAndFlag(point, possibleNewRoad)
+                    monitor.placeRoadWithFlag(point, possibleNewRoad)
                 }
 
                 /* Add the new possible road points to the ongoing road and don't create the road */
@@ -678,7 +680,7 @@ class App extends Component<AppProps, AppState> {
 
                 // Call the backend to make the changes take effect
                 // TODO: introduce a method in the backend to do both as a single operation and then use it here
-                monitor.placeRoadAndFlag(point, newRoadPoints)
+                monitor.placeRoadWithFlag(point, newRoadPoints)
 
                 console.info("Created flag and road")
             } else {
@@ -695,7 +697,7 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Handle click on house */
-        const house = getHouseAtPoint(point)
+        const house = monitor.getHouseAtPointLocal(point)
 
         if (house) {
             console.info("Clicked house " + JSON.stringify(house))
@@ -722,7 +724,7 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Handle the case where a flag was double clicked */
-        const flag = getFlagAtPoint(point)
+        const flag = monitor.getFlagAtPointLocal(point)
 
         if (flag) {
 

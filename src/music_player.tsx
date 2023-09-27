@@ -1,5 +1,4 @@
-import { Component } from 'react';
-import { GameId, HouseId, PlayerId, Point } from './api';
+import React, { Component } from 'react';
 import Button from './button';
 import ExpandCollapseToggle from './expand_collapse_toggle';
 import './music_player.css';
@@ -76,7 +75,7 @@ class MusicPlayer extends Component<MusicPlayerProps, MusicPlayerState> {
         }
 
         if (this.state.playing) {
-            this.audioInstances[newSong].fastSeek(0)
+            this.audioInstances[newSong].currentTime = 0
             this.audioInstances[newSong].onended = () => { this.next() }
             this.audioInstances[newSong].play()
         }

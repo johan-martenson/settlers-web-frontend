@@ -170,17 +170,20 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                     image="flag.png"
                                     imageLabel="Flag"
                                     onButtonClicked={
-                                        async () => {
+                                        () => {
                                             console.info("Raising flag")
-                                            await monitor.placeFlagSnappy(this.props.point, this.props.gameId, this.props.playerId)
-                            <Button className="ConstructionItem"
-                                label="Raise flag"
-                                image="flag.png"
-                                imageLabel="Flag"
-                                onButtonClicked={
-                                    async () => {
-                                        console.info("Raising flag")
-                                        monitor.placeFlag(this.props.point)
+                                            monitor.placeFlag(this.props.point)
+                                        }
+                                    }
+                                />
+                                <Button className="ConstructionItem"
+                                    label="Raise flag"
+                                    image="flag.png"
+                                    imageLabel="Flag"
+                                    onButtonClicked={
+                                        () => {
+                                            console.info("Raising flag")
+                                            monitor.placeFlag(this.props.point)
 
                                             this.props.closeDialog()
                                         }
@@ -193,10 +196,10 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         image="road-1.png"
                                         imageLabel="Road"
                                         onButtonClicked={
-                                            async () => {
+                                            () => {
                                                 console.info("Starting to build road")
 
-                                                await this.props.startNewRoad(this.props.point)
+                                                this.props.startNewRoad(this.props.point)
 
                                                 this.props.closeDialog()
                                             }
@@ -217,8 +220,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                     return
                                                 }
 
-                                                await monitor.removeRoadSnappy(this.props.point.roadId, this.props.gameId, this.props.playerId)
-                                            monitor.removeRoad(this.props.point.roadId)
+                                                monitor.removeRoad(this.props.point.roadId)
 
                                                 this.props.closeDialog()
                                             }
@@ -261,20 +263,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                             onButtonClicked={
                                                 async () => {
                                                     console.info("Creating house")
-                                                    monitor.placeHouseSnappy(house,
-                                                        this.props.point,
-                                                        this.props.gameId,
-                                                        this.props.playerId)
-                                return (
-                                    <Button className="ConstructionItem"
-                                        key={index}
-                                        label={camelCaseToWords(house)}
-                                        image={houseImageMap.get(house)}
-                                        imageLabel="House"
-                                        onButtonClicked={
-                                            async () => {
-                                                console.info("Creating house")
-                                                monitor.placeHouse(house, this.props.point)
+                                                    monitor.placeHouse(house, this.props.point)
 
                                                     this.props.closeDialog()
                                                 }
@@ -293,16 +282,16 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                             {MEDIUM_HOUSES.map(
                                 (house, index) => {
 
-                                return (
-                                    <Button className="ConstructionItem"
-                                        label={camelCaseToWords(house)}
-                                        image={houseImageMap.get(house)}
-                                        imageLabel="House"
-                                        key={index}
-                                        onButtonClicked={
-                                            async () => {
-                                                console.info("Creating house")
-                                                monitor.placeHouse(house, this.props.point)
+                                    return (
+                                        <Button className="ConstructionItem"
+                                            label={camelCaseToWords(house)}
+                                            image={houseImageMap.get(house)}
+                                            imageLabel="House"
+                                            key={index}
+                                            onButtonClicked={
+                                                async () => {
+                                                    console.info("Creating house")
+                                                    monitor.placeHouse(house, this.props.point)
 
                                                     this.props.closeDialog()
                                                 }
@@ -325,16 +314,16 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         return <></>
                                     } else {
 
-                                    return (
-                                        <Button className="ConstructionItem"
-                                            label={camelCaseToWords(house)}
-                                            image={houseImageMap.get(house)}
-                                            imageLabel={house}
-                                            key={index}
-                                            onButtonClicked={
-                                                async () => {
-                                                    console.info("Creating house")
-                                                    monitor.placeHouse(house, this.props.point)
+                                        return (
+                                            <Button className="ConstructionItem"
+                                                label={camelCaseToWords(house)}
+                                                image={houseImageMap.get(house)}
+                                                imageLabel={house}
+                                                key={index}
+                                                onButtonClicked={
+                                                    async () => {
+                                                        console.info("Creating house")
+                                                        monitor.placeHouse(house, this.props.point)
 
                                                         this.props.closeDialog()
                                                     }

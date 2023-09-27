@@ -1,4 +1,3 @@
-import { monitor } from './monitor'
 import { PointMapFast } from './util_types'
 
 export type GameId = string
@@ -1420,28 +1419,9 @@ signToColor.set("gold", "yellow")
 signToColor.set("stone", "white")
 signToColor.set("water", "blue")
 
-function getFlagAtPoint(point: Point): FlagInformation | undefined {
-    for (const flag of monitor.flags.values()) {
-        if (flag.x === point.x && flag.y === point.y) {
-            return flag
-        }
-    }
-
-    return undefined
-}
-
-function getHouseAtPoint(point: Point): HouseInformation | undefined {
-    for (const house of monitor.houses.values()) {
-        if (house.x === point.x && house.y === point.y) {
-            return house
-        }
-    }
-
-    return undefined
-}
-
 export {
-    signToColor, pauseProductionForHouse, resumeProductionForHouse, isTool, printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage, getHouseAtPoint, getFlagAtPoint, addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame,
+    signToColor, pauseProductionForHouse, resumeProductionForHouse, isTool, printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage,
+    addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame,
     createRoadWithFlag,
     VEGETATION_INTEGERS
 }

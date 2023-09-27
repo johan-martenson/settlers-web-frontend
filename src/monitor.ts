@@ -1,4 +1,4 @@
-import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, removeFlag, removeRoad, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -30,7 +30,7 @@ export interface TileDownRight {
     vegetation: VegetationIntegers
 }
 
-interface Monitor {
+export interface Monitor {
     gameId?: GameId
     playerId?: PlayerId
     workers: Map<WorkerId, WorkerInformation>
@@ -63,7 +63,7 @@ interface Monitor {
     placeHouse: ((houseType: AnyBuilding, point: Point) => void)
     placeRoad: ((points: Point[]) => void)
     placeFlag: ((point: Point) => void)
-    placeRoadAndFlag: ((point: Point, points: Point[]) => void)
+    placeRoadWithFlag: ((point: Point, points: Point[]) => void)
     removeFlag: ((flagId: FlagId) => void)
     removeRoad: ((roadId: FlagId) => void)
     removeBuilding: ((houseId: HouseId) => void)
@@ -72,8 +72,11 @@ interface Monitor {
     undoRemoveLocalFlag: ((flagId: FlagId) => void)
     removeLocalRoad: ((roadId: RoadId) => void)
     undoRemoveLocalRoad: ((roadId: RoadId) => void)
-    getLoadingPromise(): Promise<void> | undefined
-    isGameDataAvailable(): boolean
+    getLoadingPromise: (() => Promise<void> | undefined)
+    isGameDataAvailable: (() => boolean)
+    getInformationOnPointLocal: ((point: Point) => PointInformationLocal)
+    getHouseAtPointLocal: ((point: Point) => HouseInformation | undefined)
+    getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
 }
 
 const monitor: Monitor = {
@@ -107,7 +110,7 @@ const monitor: Monitor = {
     placeHouse: placeBuildingWebsocket,
     placeRoad: placeRoadWebsocket,
     placeFlag: placeFlagWebsocket,
-    placeRoadAndFlag: placeRoadWithFlagWebsocket,
+    placeRoadWithFlag: placeRoadWithFlagWebsocket,
     removeFlag: removeFlagWebsocket,
     removeRoad: removeRoadWebsocket,
     removeBuilding: removeBuildingWebsocket,
@@ -118,6 +121,9 @@ const monitor: Monitor = {
     undoRemoveLocalRoad: undoRemoveLocalRoad,
     isGameDataAvailable: isGameDataAvailable,
     getLoadingPromise: getLoadingPromise,
+    getInformationOnPointLocal: getInformationOnPointLocal,
+    getHouseAtPointLocal: getHouseAtPointLocal,
+    getFlagAtPointLocal: getFlagAtPointLocal
 }
 
 let websocket: WebSocket
@@ -196,33 +202,33 @@ function isGameChangesMessage(message: unknown): message is ChangesMessage {
         typeof message === 'object' &&
         'time' in message &&
         ('workersWithNewTargets' in message ||
-        'removedWorkers' in message ||
-        'newFlags' in message ||
-        'changedFlags' in message ||
-        'removedFlags' in message ||
-        'newBuildings' in message ||
-        'changedBuildings' in message ||
-        'removedBuildings' in message ||
-        'newRoads' in message ||
-        'removedRoads' in message ||
-        'changedBorders' in message ||
-        'newTrees' in message ||
-        'removedTrees' in message ||
-        'newCrops' in message ||
-        'harvestedCrops' in message ||
-        'removedCrops' in message ||
-        'newStones' in message ||
-        'removedStones' in message ||
-        'newSigns' in message ||
-        'removedSigns' in message ||
-        'newDiscoveredLand' in message ||
-        'changedAvailableConstruction' in message ||
-        'newMessages' in message ||
-        'discoveredDeadTrees' in message ||
-        'removedDeadTrees' in message ||
-        'wildAnimalsWithNewTargets' in message ||
-        'removedWildAnimals' in message ||
-        'workersWithStartedActions' in message)
+            'removedWorkers' in message ||
+            'newFlags' in message ||
+            'changedFlags' in message ||
+            'removedFlags' in message ||
+            'newBuildings' in message ||
+            'changedBuildings' in message ||
+            'removedBuildings' in message ||
+            'newRoads' in message ||
+            'removedRoads' in message ||
+            'changedBorders' in message ||
+            'newTrees' in message ||
+            'removedTrees' in message ||
+            'newCrops' in message ||
+            'harvestedCrops' in message ||
+            'removedCrops' in message ||
+            'newStones' in message ||
+            'removedStones' in message ||
+            'newSigns' in message ||
+            'removedSigns' in message ||
+            'newDiscoveredLand' in message ||
+            'changedAvailableConstruction' in message ||
+            'newMessages' in message ||
+            'discoveredDeadTrees' in message ||
+            'removedDeadTrees' in message ||
+            'wildAnimalsWithNewTargets' in message ||
+            'removedWildAnimals' in message ||
+            'workersWithStartedActions' in message)
 }
 
 async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<void> {
@@ -1325,6 +1331,88 @@ function removeBuildingWebsocket(houseId: HouseId): void {
             id: houseId
         })
     )
+}
+
+export interface PointInformationLocal extends Point {
+    canBuild: AvailableConstruction[]
+    buildingId?: HouseId
+    flagId?: FlagId
+    roadId?: RoadId
+    is: "flag" | "building" | "road" | undefined
+}
+
+function getInformationOnPointLocal(point: Point): PointInformationLocal {
+    let canBuild = monitor.availableConstruction.get(point)
+    let buildingId = undefined
+    let flagId = undefined
+    let roadId = undefined
+    let is: "flag" | "building" | "road" | undefined = undefined
+
+    for (const building of monitor.houses.values()) {
+        if (building.x === point.x && building.y === point.y) {
+            buildingId = building.id
+
+            is = "building"
+
+            break
+        }
+    }
+
+    for (const flag of monitor.flags.values()) {
+        if (flag.x === point.x && flag.y === point.y) {
+            flagId = flag.id
+
+            is = "flag"
+
+            break
+        }
+    }
+
+    if (buildingId === undefined) {
+        for (const [candidateRoadId, road] of monitor.roads) {
+            if (road.points.find(roadPoint => roadPoint.x === point.x && roadPoint.y === point.y)) {
+                is = "road"
+
+                roadId = candidateRoadId
+
+                break
+            }
+        }
+    }
+
+    if (canBuild === undefined) {
+        canBuild = []
+    }
+
+    return {
+        x: point.x,
+        y: point.y,
+        canBuild,
+        buildingId,
+        flagId,
+        roadId,
+        is
+    }
+}
+
+function getFlagAtPointLocal(point: Point): FlagInformation | undefined {
+    for (const flag of monitor.flags.values()) {
+        if (flag.x === point.x && flag.y === point.y) {
+            return flag
+        }
+    }
+
+    return undefined
+}
+
+function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
+    for (const house of monitor.houses.values()) {
+        if (house.x === point.x && house.y === point.y) {
+            return house
+        }
+    }
+
+    return undefined
 }
 
 export {

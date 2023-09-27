@@ -670,9 +670,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             console.log("New roads changed. Now it is " + JSON.stringify(this.props.newRoad))
 
-            if (this.props.newRoad !== undefined) {
+/*            if (this.props.newRoad !== undefined) {
                 monitor.placeLocalRoad(this.props.newRoad)
-            }
+            }*/
 
             this.updateRoadDrawingBuffers()
         }

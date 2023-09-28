@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, FlagInformation, GameId, PlayerId, sendScout } from './api'
+import { FlagInformation, GameId, PlayerId } from './api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_flag_info.css'

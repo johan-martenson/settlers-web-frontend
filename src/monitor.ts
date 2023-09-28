@@ -79,6 +79,7 @@ export interface Monitor {
     getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
     callScout: ((point: Point) => void)
     callGeologist: ((point: Point) => void)
+    placeLocalRoad: ((points: Point[]) => void)
 }
 
 const monitor: Monitor = {
@@ -127,7 +128,8 @@ const monitor: Monitor = {
     getHouseAtPointLocal: getHouseAtPointLocal,
     getFlagAtPointLocal: getFlagAtPointLocal,
     callScout: callScoutWebsocket,
-    callGeologist: callGeologistWebsocket
+    callGeologist: callGeologistWebsocket,
+    placeLocalRoad: placeLocalRoad
 }
 
 let websocket: WebSocket

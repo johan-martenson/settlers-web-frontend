@@ -342,7 +342,11 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
     websocket = new WebSocket(websocketUrl)
 
     websocket.onopen = () => { console.info("Websocket for subscription is open") }
-    websocket.onclose = (e) => { console.info("Websocket closed: " + JSON.stringify(e)) }
+    websocket.onclose = (e) => {
+        console.info("Websocket closed: " + JSON.stringify(e))
+
+        setTimeout(() => startMonitoringGame(gameId, playerId), 100)
+    }
     websocket.onerror = (e) => { console.info("Websocket error: " + JSON.stringify(e)) }
 
     websocket.onmessage = (messageFromServer) => {
@@ -365,7 +369,167 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
             return
         }
 
-        // Start by handling locally cached changes
+        receivedGameChangesMessage(message)
+    }
+
+    // Drive worker animations
+    setInterval(async () => {
+        for (const worker of monitor.workers.values()) {
+            if (worker.action && worker.actionAnimationIndex !== undefined) {
+                worker.actionAnimationIndex = worker.actionAnimationIndex + 1
+            }
+        }
+    }, 300)
+
+    // Move workers locally to reduce the amount of messages from the server
+    setInterval(async () => {
+
+        for (const worker of monitor.workers.values()) {
+
+            /* Filter workers without any planned path */
+            if (!worker.plannedPath || worker.plannedPath.length === 0) {
+                continue
+            }
+
+            /* Take a step forward */
+            worker.percentageTraveled = worker.percentageTraveled + 5
+
+            /* Worker is at an exact point */
+            if (worker.percentageTraveled === 100) {
+
+                // The point that the worker was going towards is now the current position
+                if (worker.next) {
+
+                    // Update current position
+                    worker.x = worker.next.x
+                    worker.y = worker.next.y
+
+                    // Set previous to the current position - which means that it's invalid 
+                    // when the worker is at a fixed point, but it will always be correct otherwise
+                    worker.previous = { x: worker.x, y: worker.y }
+                }
+
+                // Set up to walk towards the next point if there is any remaining points to walk
+                if (worker.plannedPath.length > 1) {
+                    worker.percentageTraveled = 0
+
+                    worker.plannedPath.shift()
+
+                    worker.next = { x: worker.plannedPath[0].x, y: worker.plannedPath[0].y }
+
+                    worker.direction = getDirectionForWalkingWorker(worker, worker.next)
+                } else {
+                    worker.plannedPath = undefined
+
+                    worker.next = undefined
+                }
+
+                worker.betweenPoints = false
+
+                /* Show that the worker is walking between two points */
+            } else {
+                worker.betweenPoints = true
+            }
+        }
+
+        for (const wildAnimal of monitor.wildAnimals.values()) {
+
+            /* Filter workers without any planned path */
+            if (!wildAnimal.path || wildAnimal.path.length === 0) {
+                continue
+            }
+
+            wildAnimal.percentageTraveled = wildAnimal.percentageTraveled + 5
+
+            /* Get the next point */
+            const next = wildAnimal.path[0]
+
+            /* Clear the planned path for workers that have reached the target */
+            if (wildAnimal.percentageTraveled === 100) {
+
+                if (wildAnimal.next) {
+                    wildAnimal.previous = { x: wildAnimal.next.x, y: wildAnimal.next.y }
+                }
+
+                wildAnimal.x = next.x
+                wildAnimal.y = next.y
+
+                wildAnimal.percentageTraveled = 0
+
+                wildAnimal.path.shift()
+
+                if (wildAnimal.path.length > 0) {
+                    wildAnimal.next = { x: wildAnimal.path[0].x, y: wildAnimal.path[0].y }
+                } else {
+                    wildAnimal.path = undefined
+                }
+
+                wildAnimal.betweenPoints = false
+
+                /* Show that the worker is walking between two points */
+            } else {
+                wildAnimal.betweenPoints = true
+            }
+        }
+    }, 72)
+
+    // Similarly, grow the crops locally to avoid the need for the server to send messages when crops change growth state
+    setInterval(async () => {
+        for (const crop of monitor.crops.values()) {
+            if (crop.state !== 'FULL_GROWN' && crop.state !== 'HARVESTED') {
+                crop.growth = crop.growth + 1
+
+                if (crop.growth >= 10 && crop.growth < 20) {
+                    crop.state = 'SMALL'
+                } else if (crop.growth >= 20 && crop.growth < 30) {
+                    crop.state = 'ALMOST_GROWN'
+                } else {
+                    crop.state = 'FULL_GROWN'
+                }
+            }
+        }
+
+        // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
+    }, 2000)
+
+    // Also grow the trees locally to minimize the need for messages from the backend
+    setInterval(async () => {
+        monitor.trees.forEach((tree, treeId) => {
+            const visibleTree = monitor.visibleTrees.get(treeId)
+
+            if (tree.size !== 'FULL_GROWN') {
+                tree.growth = tree.growth + 1
+
+                if (tree.growth >= 10 && tree.growth < 20) {
+                    tree.size = 'SMALL'
+
+                    if (visibleTree) {
+                        visibleTree.size = 'SMALL'
+                    }
+                } else if (tree.growth >= 20 && tree.growth < 30) {
+                    tree.size = 'MEDIUM'
+
+                    if (visibleTree) {
+                        visibleTree.size = 'MEDIUM'
+                    }
+                } else if (tree.growth >= 30) {
+                    tree.size = 'FULL_GROWN'
+
+                    if (visibleTree) {
+                        visibleTree.size = 'FULL_GROWN'
+                    }
+                }
+            }
+        })
+
+        // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
+    }, 2000)
+
+    console.info(websocket)
+}
+
+function receivedGameChangesMessage(message: ChangesMessage): void {
+    // Start by handling locally cached changes
 
         // Clear local additions
         monitor.roads.delete('LOCAL')
@@ -535,162 +699,6 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
         if (message.changedBuildings) {
             notifyHouseListeners(message.changedBuildings)
         }
-    }
-
-    // Drive worker animations
-    setInterval(async () => {
-        for (const worker of monitor.workers.values()) {
-            if (worker.action && worker.actionAnimationIndex !== undefined) {
-                worker.actionAnimationIndex = worker.actionAnimationIndex + 1
-            }
-        }
-    }, 300)
-
-    // Move workers locally to reduce the amount of messages from the server
-    setInterval(async () => {
-
-        for (const worker of monitor.workers.values()) {
-
-            /* Filter workers without any planned path */
-            if (!worker.plannedPath || worker.plannedPath.length === 0) {
-                continue
-            }
-
-            /* Take a step forward */
-            worker.percentageTraveled = worker.percentageTraveled + 5
-
-            /* Worker is at an exact point */
-            if (worker.percentageTraveled === 100) {
-
-                // The point that the worker was going towards is now the current position
-                if (worker.next) {
-
-                    // Update current position
-                    worker.x = worker.next.x
-                    worker.y = worker.next.y
-
-                    // Set previous to the current position - which means that it's invalid 
-                    // when the worker is at a fixed point, but it will always be correct otherwise
-                    worker.previous = { x: worker.x, y: worker.y }
-                }
-
-                // Set up to walk towards the next point if there is any remaining points to walk
-                if (worker.plannedPath.length > 1) {
-                    worker.percentageTraveled = 0
-
-                    worker.plannedPath.shift()
-
-                    worker.next = { x: worker.plannedPath[0].x, y: worker.plannedPath[0].y }
-
-                    worker.direction = getDirectionForWalkingWorker(worker, worker.next)
-                } else {
-                    worker.plannedPath = undefined
-
-                    worker.next = undefined
-                }
-
-                worker.betweenPoints = false
-
-                /* Show that the worker is walking between two points */
-            } else {
-                worker.betweenPoints = true
-            }
-        }
-
-        for (const wildAnimal of monitor.wildAnimals.values()) {
-
-            /* Filter workers without any planned path */
-            if (!wildAnimal.path || wildAnimal.path.length === 0) {
-                continue
-            }
-
-            wildAnimal.percentageTraveled = wildAnimal.percentageTraveled + 5
-
-            /* Get the next point */
-            const next = wildAnimal.path[0]
-
-            /* Clear the planned path for workers that have reached the target */
-            if (wildAnimal.percentageTraveled === 100) {
-
-                if (wildAnimal.next) {
-                    wildAnimal.previous = { x: wildAnimal.next.x, y: wildAnimal.next.y }
-                }
-
-                wildAnimal.x = next.x
-                wildAnimal.y = next.y
-
-                wildAnimal.percentageTraveled = 0
-
-                wildAnimal.path.shift()
-
-                if (wildAnimal.path.length > 0) {
-                    wildAnimal.next = { x: wildAnimal.path[0].x, y: wildAnimal.path[0].y }
-                } else {
-                    wildAnimal.path = undefined
-                }
-
-                wildAnimal.betweenPoints = false
-
-                /* Show that the worker is walking between two points */
-            } else {
-                wildAnimal.betweenPoints = true
-            }
-        }
-    }, 72)
-
-    // Similarly, grow the crops locally to avoid the need for the server to send messages when crops change growth state
-    setInterval(async () => {
-        for (const crop of monitor.crops.values()) {
-            if (crop.state !== 'FULL_GROWN' && crop.state !== 'HARVESTED') {
-                crop.growth = crop.growth + 1
-
-                if (crop.growth >= 10 && crop.growth < 20) {
-                    crop.state = 'SMALL'
-                } else if (crop.growth >= 20 && crop.growth < 30) {
-                    crop.state = 'ALMOST_GROWN'
-                } else {
-                    crop.state = 'FULL_GROWN'
-                }
-            }
-        }
-
-        // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
-    }, 2000)
-
-    // Also grow the trees locally to minimize the need for messages from the backend
-    setInterval(async () => {
-        monitor.trees.forEach((tree, treeId) => {
-            const visibleTree = monitor.visibleTrees.get(treeId)
-
-            if (tree.size !== 'FULL_GROWN') {
-                tree.growth = tree.growth + 1
-
-                if (tree.growth >= 10 && tree.growth < 20) {
-                    tree.size = 'SMALL'
-
-                    if (visibleTree) {
-                        visibleTree.size = 'SMALL'
-                    }
-                } else if (tree.growth >= 20 && tree.growth < 30) {
-                    tree.size = 'MEDIUM'
-
-                    if (visibleTree) {
-                        visibleTree.size = 'MEDIUM'
-                    }
-                } else if (tree.growth >= 30) {
-                    tree.size = 'FULL_GROWN'
-
-                    if (visibleTree) {
-                        visibleTree.size = 'FULL_GROWN'
-                    }
-                }
-            }
-        })
-
-        // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
-    }, 2000)
-
-    console.info(websocket)
 }
 
 function populateVisibleTrees(): void {

@@ -186,6 +186,11 @@ class App extends Component<AppProps, AppState> {
             filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'large') !== undefined
         }))
 
+        this.commands.set("Kill websocket", {
+            action: () => monitor.killWebsocket(),
+            filter: undefined
+        })
+
         this.commands.set("Road", {
             action: async () => {
                 console.log("Building road")

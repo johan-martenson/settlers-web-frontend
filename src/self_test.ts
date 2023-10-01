@@ -179,6 +179,17 @@ function testPointSet(): void {
     } else {
         console.error("NOT OK")
     }
+
+    /* Verify that the set can be cleared */
+    pointSetFromRegularSet.clear()
+
+    if (pointSetFromRegularSet.size() === 0 &&
+        !pointSetFromRegularSet.has(point0) &&
+        !pointSetFromRegularSet.has(point1)) {
+            //console.info("OK")
+    } else {
+        console.error("NOT OK")
+    }
 }
 
 

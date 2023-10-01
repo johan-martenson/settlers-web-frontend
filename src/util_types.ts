@@ -133,6 +133,10 @@ class PointSetFast implements IterableIterator<Point> {
         }
     }
 
+    clear(): void {
+        this.pointSet.clear()
+    }
+
     add(point: Point): void {
         this.pointSet.add(pointToFastKey(point))
     }

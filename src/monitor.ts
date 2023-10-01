@@ -1,5 +1,5 @@
-import { AnyBuilding, AvailableConstruction, BodyType, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
-import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, terrainInformationToTerrainAtPointList } from './utils'
+import { AnyBuilding, AvailableConstruction, BodyType, BorderInformation, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, StoneInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
+import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, removeHouseOrFlagOrRoadAtPointWebsocket, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
@@ -8,6 +8,8 @@ const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = [
 const roadListeners: (() => void)[] = []
 
 let loadingPromise: Promise<void> | undefined = undefined
+let websocket: WebSocket | undefined = undefined
+let gameHasExpired = false
 
 interface MonitoredBorderForPlayer {
     color: string
@@ -80,6 +82,7 @@ export interface Monitor {
     callScout: ((point: Point) => void)
     callGeologist: ((point: Point) => void)
     placeLocalRoad: ((points: Point[]) => void)
+    killWebsocket: (() => void)
 }
 
 const monitor: Monitor = {
@@ -129,10 +132,9 @@ const monitor: Monitor = {
     getFlagAtPointLocal: getFlagAtPointLocal,
     callScout: callScoutWebsocket,
     callGeologist: callGeologistWebsocket,
-    placeLocalRoad: placeLocalRoad
+    placeLocalRoad: placeLocalRoad,
+    killWebsocket: killWebsocket
 }
-
-let websocket: WebSocket
 
 interface WalkerTargetChange {
     id: string
@@ -201,8 +203,50 @@ interface ChangesMessage {
     newDecorations?: PointAndDecoration[]
 }
 
-function isGameChangesMessage(message: unknown): message is ChangesMessage {
+interface FullSyncMessage {
+    workers: ServerWorkerInformation[]
+    ships: ShipInformation[]
+    houses: HouseInformation[]
+    flags: FlagInformation[]
+    roads: RoadInformation[]
+    borders: BorderInformation[]
+    trees: TreeInformation[]
+    stones: StoneInformation[]
+    crops: CropInformation[]
+    discoveredPoints: Point[]
+    signs: SignInformation[]
+    players: PlayerInformation[]
+    availableConstruction: Map<string, AvailableConstruction[]>
+    messages: GameMessage[]
+    deadTrees: Point[]
+    wildAnimals: WildAnimalInformation[]
+    decorations: Decoration[]
+}
 
+function isFullSyncMessage(message: unknown): message is FullSyncMessage {
+    return message !== null &&
+        message !== undefined &&
+        typeof message === 'object' &&
+        ('workers' in message ||
+            'ships' in message ||
+            'houses' in message ||
+            'flags' in message ||
+            'roads' in message ||
+            'borders' in message ||
+            'trees' in message ||
+            'stones' in message ||
+            'crops' in message ||
+            'discoveredPoints' in message ||
+            'signs' in message ||
+            'players' in message ||
+            'availableConstruction' in message ||
+            'messages' in message ||
+            'deadTrees' in message ||
+            'wildAnimals' in message ||
+            'decorations' in message)
+}
+
+function isGameChangesMessage(message: unknown): message is ChangesMessage {
     return message !== null &&
         message !== undefined &&
         typeof message === 'object' &&
@@ -341,36 +385,11 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     websocket = new WebSocket(websocketUrl)
 
-    websocket.onopen = () => { console.info("Websocket for subscription is open") }
-    websocket.onclose = (e) => {
-        console.info("Websocket closed: " + JSON.stringify(e))
+    websocket.onopen = () => console.info("Websocket for subscription is open")
+    websocket.onclose = (e) => websocketDisconnected(gameId, playerId, e)
+    websocket.onerror = (e) => websocketError(e)
 
-        setTimeout(() => startMonitoringGame(gameId, playerId), 100)
-    }
-    websocket.onerror = (e) => { console.info("Websocket error: " + JSON.stringify(e)) }
-
-    websocket.onmessage = (messageFromServer) => {
-
-        let message
-
-        try {
-            message = JSON.parse(messageFromServer.data)
-        } catch (e) {
-            console.error(e)
-            console.error(JSON.stringify(e))
-            console.info(messageFromServer.data)
-        }
-
-        if (!isGameChangesMessage(message)) {
-            console.error("Is not game change message!")
-            console.error(JSON.stringify(message))
-            console.error(message)
-
-            return
-        }
-
-        receivedGameChangesMessage(message)
-    }
+    websocket.onmessage = (message) => websocketMessageReceived(message)
 
     // Drive worker animations
     setInterval(async () => {
@@ -528,177 +547,312 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
     console.info(websocket)
 }
 
+function websocketError(error: unknown): void {
+    console.error(error)
+}
+
+function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent): void {
+    console.info("Websocket closed: " + JSON.stringify(e))
+    console.info(e)
+
+    if (e.code === 1003) {
+        console.error("The game has been removed from the backend")
+
+        gameHasExpired = true
+    } else {
+
+        setTimeout(() => {
+
+            const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
+
+            console.info("Websocket url: " + websocketUrl)
+
+            websocket = new WebSocket(websocketUrl)
+
+            websocket.onopen = () => {
+                console.info("Websocket for subscription is open. Requesting full sync.")
+
+                if (websocket) {
+                    websocket.send(JSON.stringify({
+                        command: "FULL_SYNC",
+                        playerId
+                    }))
+                }
+            }
+            websocket.onclose = (e) => websocketDisconnected(gameId, playerId, e)
+            websocket.onerror = (e) => websocketError(e)
+            websocket.onmessage = (message) => websocketMessageReceived(message)
+        }, 1000)
+    }
+}
+
+// eslint-disable-next-line
+function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
+    try {
+        const message = JSON.parse(messageFromServer.data)
+
+        if (isGameChangesMessage(message)) {
+            receivedGameChangesMessage(message)
+        } else if (isFullSyncMessage(message)) {
+            receivedFullSyncMessage(message)
+        }
+    } catch (e) {
+        console.error(e)
+        console.error(JSON.stringify(e))
+        console.info(messageFromServer.data)
+    }
+}
+
+function receivedFullSyncMessage(message: FullSyncMessage): void {
+
+    console.log("Handling full sync message")
+
+    monitor.availableConstruction.clear()
+    monitor.signs.clear()
+    monitor.stones.clear()
+    monitor.discoveredPoints.clear()
+    monitor.workers.clear()
+    monitor.wildAnimals.clear()
+    monitor.houses.clear()
+    monitor.flags.clear()
+    monitor.roads.clear()
+    monitor.trees.clear()
+    monitor.crops.clear()
+    monitor.deadTrees.clear()
+    monitor.decorations.clear()
+
+    message.availableConstruction.forEach((availableAtPoint, pointString) => {
+        const point = pointStringToPoint(pointString)
+
+        monitor.availableConstruction.set(point, availableAtPoint)
+    })
+
+    message.signs.forEach(sign => monitor.signs.set(sign.id, sign))
+
+    message.stones.forEach(stone => monitor.stones.add(stone))
+
+    message.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
+
+    message.workers.forEach(worker => monitor.workers.set(worker.id, serverWorkerToLocalWorker(worker)))
+
+    message.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
+
+    message.houses.forEach(house => monitor.houses.set(house.id, house))
+
+    message.flags.forEach(flag => monitor.flags.set(flag.id, flag))
+
+    message.roads.forEach(road => monitor.roads.set(road.id, road))
+
+    message.trees.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
+
+    message.crops.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+
+    message.deadTrees.forEach(deadTree => monitor.deadTrees.add(deadTree))
+
+    message.decorations.forEach(decoration => monitor.decorations.set({ x: decoration.x, y: decoration.y }, decoration))
+
+    for (const borderInformation of message.borders) {
+
+        const player = monitor.players.get(borderInformation.playerId)
+
+        if (!player) {
+            console.error("UNKNOWN PLAYER: " + borderInformation.playerId)
+
+            continue
+        }
+
+        monitor.border.set(borderInformation.playerId,
+            {
+                color: player.color,
+                points: new PointSetFast(borderInformation.points)
+            }
+        )
+    }
+
+    /* Populate visible trees */
+    populateVisibleTrees()
+
+    /* Store the discovered tiles */
+    storeDiscoveredTiles(monitor.discoveredPoints)
+
+    /* Finally notify the listeners, after all data has been stored */
+    discoveredPointListeners.forEach(listener => listener(monitor.discoveredPoints))
+    roadListeners.forEach(roadListener => roadListener())
+}
+
 function receivedGameChangesMessage(message: ChangesMessage): void {
     // Start by handling locally cached changes
 
-        // Clear local additions
-        monitor.roads.delete('LOCAL')
-        monitor.flags.delete('LOCAL')
-        monitor.houses.delete('LOCAL')
+    // Clear local additions
+    monitor.roads.delete('LOCAL')
+    monitor.flags.delete('LOCAL')
+    monitor.houses.delete('LOCAL')
 
-        // Confirm local removals if they are part of the message
-        message?.removedFlags?.forEach(removedFlagId => monitor.localRemovedFlags.delete(removedFlagId))
+    // Confirm local removals if they are part of the message
+    message.removedFlags?.forEach(removedFlagId => monitor.localRemovedFlags.delete(removedFlagId))
 
-        // Debug message to troubleshoot roads that disappear for no reason
-        if (message.newRoads || message.removedRoads) {
-            console.log("Message with roads")
-            console.log(message)
-        }
+    // Debug message to troubleshoot roads that disappear for no reason
+    if (message.newRoads || message.removedRoads) {
+        console.log("Message with roads")
+        console.log(message)
+    }
 
-        // Digest all changes from the message
-        message.newDiscoveredLand?.forEach(point => monitor.discoveredPoints.add(point))
+    // Digest all changes from the message
+    message.newDiscoveredLand?.forEach(point => monitor.discoveredPoints.add(point))
 
-        if (message.newDiscoveredLand) {
-            populateVisibleTrees()
+    if (message.newDiscoveredLand) {
+        populateVisibleTrees()
 
-            storeDiscoveredTiles(message.newDiscoveredLand)
-        }
+        storeDiscoveredTiles(message.newDiscoveredLand)
+    }
 
-        if (message.workersWithNewTargets) {
-            syncWorkersWithNewTargets(message.workersWithNewTargets)
-        }
+    if (message.workersWithNewTargets) {
+        syncWorkersWithNewTargets(message.workersWithNewTargets)
+    }
 
-        if (message.workersWithStartedActions) {
+    if (message.workersWithStartedActions) {
 
-            message.workersWithStartedActions.forEach(workerWithNewAction => {
-                const worker = monitor.workers.get(workerWithNewAction.id)
+        message.workersWithStartedActions.forEach(workerWithNewAction => {
+            const worker = monitor.workers.get(workerWithNewAction.id)
 
-                if (worker) {
-                    worker.x = workerWithNewAction.x
-                    worker.y = workerWithNewAction.y
-                    worker.plannedPath = undefined
-                    worker.next = undefined
-                    worker.action = workerWithNewAction.startedAction
-                    worker.actionAnimationIndex = 0
-                }
-            })
-        }
-
-        if (message.wildAnimalsWithNewTargets) {
-            syncNewOrUpdatedWildAnimals(message.wildAnimalsWithNewTargets)
-        }
-
-        message.removedWorkers?.forEach(id => monitor.workers.delete(id))
-
-        message.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
-
-        if (message.newBuildings) {
-            printTimestamp("About to add new houses")
-        }
-
-        message.newBuildings?.forEach((house) => monitor.houses.set(house.id, house))
-
-        if (message.newBuildings) {
-            printTimestamp("Added new houses")
-        }
-
-        if (message.changedBuildings) {
-            const houseIdsToRemove = []
-
-            for (const house of message.changedBuildings) {
-                for (const oldHouse of monitor.houses.values()) {
-                    if (house.x === oldHouse.x && house.y === oldHouse.y) {
-                        houseIdsToRemove.push(oldHouse.id)
-                    }
-                }
-            }
-
-            houseIdsToRemove.forEach(id => monitor.houses.delete(id))
-
-            message.changedBuildings.forEach(house => monitor.houses.set(house.id, house))
-        }
-
-        message.removedBuildings?.forEach(id => monitor.houses.delete(id))
-
-        message.newDecorations?.forEach(pointAndDecoration => monitor.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
-        message.removedDecorations?.forEach(point => monitor.decorations.delete(point))
-
-        message.newFlags?.forEach(flag => monitor.flags.set(flag.id, flag))
-        message.changedFlags?.forEach(flag => monitor.flags.set(flag.id, flag))
-        message.removedFlags?.forEach(id => monitor.flags.delete(id))
-
-        message.newRoads?.forEach(road => monitor.roads.set(road.id, road))
-        message.removedRoads?.forEach(id => monitor.roads.delete(id))
-
-        message.newTrees?.forEach(tree => {
-            monitor.trees.set(tree.id, serverSentTreeToLocal(tree))
-
-            if (monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) &&
-                monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) &&
-                monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) &&
-                monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) &&
-                monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) &&
-                monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })) {
-                monitor.visibleTrees.set(tree.id, serverSentTreeToLocal(tree))
+            if (worker) {
+                worker.x = workerWithNewAction.x
+                worker.y = workerWithNewAction.y
+                worker.plannedPath = undefined
+                worker.next = undefined
+                worker.action = workerWithNewAction.startedAction
+                worker.actionAnimationIndex = 0
             }
         })
-        message.removedTrees?.forEach(treeId => {
-            monitor.trees.delete(treeId)
-            monitor.visibleTrees.delete(treeId)
-        })
+    }
 
-        message.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
-        message.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
+    if (message.wildAnimalsWithNewTargets) {
+        syncNewOrUpdatedWildAnimals(message.wildAnimalsWithNewTargets)
+    }
 
-        message.newStones?.forEach(stone => monitor.stones.add(stone))
-        message.removedStones?.forEach(stone => monitor.stones.delete(stone))
+    message.removedWorkers?.forEach(id => monitor.workers.delete(id))
 
-        if (message.changedBorders) {
-            syncChangedBorders(message.changedBorders)
-        }
+    message.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
 
-        message.newCrops?.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+    if (message.newBuildings) {
+        printTimestamp("About to add new houses")
+    }
 
-        message.harvestedCrops?.forEach(cropId => {
-            const crop = monitor.crops.get(cropId)
+    message.newBuildings?.forEach((house) => monitor.houses.set(house.id, house))
 
-            if (crop !== undefined) {
-                crop.state = 'HARVESTED'
-            }
-        })
+    if (message.newBuildings) {
+        printTimestamp("Added new houses")
+    }
 
-        message.removedCrops?.forEach(cropId => monitor.crops.delete(cropId))
+    if (message.changedBuildings) {
+        const houseIdsToRemove = []
 
-        message.newSigns?.forEach(sign => monitor.signs.set(sign.id, sign))
-        message.removedSigns?.forEach(id => monitor.signs.delete(id))
-
-        if (message.changedAvailableConstruction) {
-            for (const change of message.changedAvailableConstruction) {
-                const point = { x: change.x, y: change.y }
-
-                if (change.available.length === 0) {
-                    monitor.availableConstruction.delete(point)
-                } else {
-                    monitor.availableConstruction.set(point, change.available)
+        for (const house of message.changedBuildings) {
+            for (const oldHouse of monitor.houses.values()) {
+                if (house.x === oldHouse.x && house.y === oldHouse.y) {
+                    houseIdsToRemove.push(oldHouse.id)
                 }
             }
         }
 
-        /* Finally, notify listeners when all data is updated */
-        if (message.newDiscoveredLand) {
-            const newDiscoveredLand = new PointSetFast(message.newDiscoveredLand)
-            discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
+        houseIdsToRemove.forEach(id => monitor.houses.delete(id))
+
+        message.changedBuildings.forEach(house => monitor.houses.set(house.id, house))
+    }
+
+    message.removedBuildings?.forEach(id => monitor.houses.delete(id))
+
+    message.newDecorations?.forEach(pointAndDecoration => monitor.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
+    message.removedDecorations?.forEach(point => monitor.decorations.delete(point))
+
+    message.newFlags?.forEach(flag => monitor.flags.set(flag.id, flag))
+    message.changedFlags?.forEach(flag => monitor.flags.set(flag.id, flag))
+    message.removedFlags?.forEach(id => monitor.flags.delete(id))
+
+    message.newRoads?.forEach(road => monitor.roads.set(road.id, road))
+    message.removedRoads?.forEach(id => monitor.roads.delete(id))
+
+    message.newTrees?.forEach(tree => {
+        monitor.trees.set(tree.id, serverSentTreeToLocal(tree))
+
+        // TODO: use populateVisibleTrees instead
+
+        if (monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) &&
+            monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) &&
+            monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) &&
+            monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) &&
+            monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) &&
+            monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })) {
+            monitor.visibleTrees.set(tree.id, serverSentTreeToLocal(tree))
         }
+    })
+    message.removedTrees?.forEach(treeId => {
+        monitor.trees.delete(treeId)
+        monitor.visibleTrees.delete(treeId)
+    })
 
-        if (message.newMessages) {
-            monitor.messages = monitor.messages.concat(message.newMessages)
+    message.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
+    message.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
 
-            const newMessages = message.newMessages
+    message.newStones?.forEach(stone => monitor.stones.add(stone))
+    message.removedStones?.forEach(stone => monitor.stones.delete(stone))
 
-            messageListeners.forEach(listener => listener(newMessages))
+    if (message.changedBorders) {
+        syncChangedBorders(message.changedBorders)
+    }
+
+    message.newCrops?.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+
+    message.harvestedCrops?.forEach(cropId => {
+        const crop = monitor.crops.get(cropId)
+
+        if (crop !== undefined) {
+            crop.state = 'HARVESTED'
         }
+    })
 
-        if (message.newRoads !== undefined || message.removedRoads !== undefined) {
-            console.log({ title: "Before notifying road listeners", roads: monitor.roads.values(), listeners: roadListeners, numberRoads: monitor.roads.size })
+    message.removedCrops?.forEach(cropId => monitor.crops.delete(cropId))
 
-            roadListeners.forEach(roadListener => roadListener())
+    message.newSigns?.forEach(sign => monitor.signs.set(sign.id, sign))
+    message.removedSigns?.forEach(id => monitor.signs.delete(id))
 
-            console.log({ title: "After calling road listeners", numberRoads: monitor.roads.size })
+    if (message.changedAvailableConstruction) {
+        for (const change of message.changedAvailableConstruction) {
+            const point = { x: change.x, y: change.y }
+
+            if (change.available.length === 0) {
+                monitor.availableConstruction.delete(point)
+            } else {
+                monitor.availableConstruction.set(point, change.available)
+            }
         }
+    }
 
-        if (message.changedBuildings) {
-            notifyHouseListeners(message.changedBuildings)
-        }
+    /* Finally, notify listeners when all data is updated */
+    if (message.newDiscoveredLand) {
+        const newDiscoveredLand = new PointSetFast(message.newDiscoveredLand)
+        discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
+    }
+
+    if (message.newMessages) {
+        monitor.messages = monitor.messages.concat(message.newMessages)
+
+        const newMessages = message.newMessages
+
+        messageListeners.forEach(listener => listener(newMessages))
+    }
+
+    if (message.newRoads !== undefined || message.removedRoads !== undefined) {
+        console.log({ title: "Before notifying road listeners", roads: monitor.roads.values(), listeners: roadListeners, numberRoads: monitor.roads.size })
+
+        roadListeners.forEach(roadListener => roadListener())
+
+        console.log({ title: "After calling road listeners", numberRoads: monitor.roads.size })
+    }
+
+    if (message.changedBuildings) {
+        notifyHouseListeners(message.changedBuildings)
+    }
 }
 
 function populateVisibleTrees(): void {
@@ -1275,7 +1429,7 @@ function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): Worke
 }
 
 function placeBuildingWebsocket(houseType: AnyBuilding, point: Point): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'PLACE_BUILDING',
             x: point.x,
@@ -1286,7 +1440,7 @@ function placeBuildingWebsocket(houseType: AnyBuilding, point: Point): void {
 }
 
 function placeRoadWebsocket(points: Point[]): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'PLACE_ROAD',
             road: points
@@ -1295,7 +1449,7 @@ function placeRoadWebsocket(points: Point[]): void {
 }
 
 function placeFlagWebsocket(flagPoint: Point): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'PLACE_FLAG',
             flag: {
@@ -1308,7 +1462,7 @@ function placeFlagWebsocket(flagPoint: Point): void {
 
 
 function placeRoadWithFlagWebsocket(flagPoint: Point, points: Point[]): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'PLACE_FLAG_AND_ROAD',
             flag: {
@@ -1321,7 +1475,7 @@ function placeRoadWithFlagWebsocket(flagPoint: Point, points: Point[]): void {
 }
 
 function removeFlagWebsocket(flagId: FlagId): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'REMOVE_FLAG',
             id: flagId
@@ -1330,7 +1484,7 @@ function removeFlagWebsocket(flagId: FlagId): void {
 }
 
 function removeRoadWebsocket(roadId: RoadId): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'REMOVE_ROAD',
             id: roadId
@@ -1339,7 +1493,7 @@ function removeRoadWebsocket(roadId: RoadId): void {
 }
 
 function removeBuildingWebsocket(houseId: HouseId): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'REMOVE_BUILDING',
             id: houseId
@@ -1348,7 +1502,7 @@ function removeBuildingWebsocket(houseId: HouseId): void {
 }
 
 function callScoutWebsocket(point: Point): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'CALL_SCOUT',
             point: { x: point.x, y: point.y }
@@ -1357,7 +1511,7 @@ function callScoutWebsocket(point: Point): void {
 }
 
 function callGeologistWebsocket(point: Point): void {
-    websocket.send(JSON.stringify(
+    websocket?.send(JSON.stringify(
         {
             command: 'CALL_GEOLOGIST',
             point: { x: point.x, y: point.y }
@@ -1445,6 +1599,10 @@ function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
     }
 
     return undefined
+}
+
+function killWebsocket(): void {
+    websocket?.close()
 }
 
 export {

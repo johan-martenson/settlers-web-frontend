@@ -2198,6 +2198,18 @@ function materialToAllUpperCase(materialLowerCase: Material): MaterialAllUpperCa
     return undefined
 }
 
+function pointStringToPoint(pointString: string): Point {
+    const indexOfComma = pointString.indexOf(',')
+
+    const x = pointString.substring(0, indexOfComma)
+    const y = pointString.substring(indexOfComma + 1, pointString.length)
+
+    console.log(x)
+    console.log(y)
+
+    return { x: parseInt(x), y: parseInt(y) }
+}
+
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
@@ -2243,5 +2255,6 @@ export {
     resizeCanvasToDisplaySize,
     materialToAllUpperCase,
     ShipImageAtlasHandler,
-    removeHouseOrFlagOrRoadAtPointWebsocket
+    removeHouseOrFlagOrRoadAtPointWebsocket,
+    pointStringToPoint
 }

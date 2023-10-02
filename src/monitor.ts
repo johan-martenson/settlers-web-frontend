@@ -1,5 +1,5 @@
-import { AnyBuilding, AvailableConstruction, BodyType, BorderInformation, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, PointInformation, printTimestamp, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, StoneInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
-import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, removeHouseOrFlagOrRoadAtPointWebsocket, terrainInformationToTerrainAtPointList } from './utils'
+import { AnyBuilding, AvailableConstruction, BodyType, BorderInformation, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, PointInformation, printTimestamp, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, StoneInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
+import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
@@ -32,7 +32,7 @@ function isInformationOnPointsMessage(message: ReplyMessage): message is PointsI
     return 'pointsWithInformation' in message
 }
 
-let replies: Map<RequestId, ReplyMessage> = new Map()
+const replies: Map<RequestId, ReplyMessage> = new Map()
 let nextRequestId = 0
 
 interface MonitoredBorderForPlayer {
@@ -618,11 +618,6 @@ function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent
 function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
     try {
         const message = JSON.parse(messageFromServer.data)
-
-        console.log({
-            title: "Received something",
-            message
-        })
 
         if (isGameChangesMessage(message)) {
             receivedGameChangesMessage(message)

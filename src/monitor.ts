@@ -1,4 +1,4 @@
-import { AnyBuilding, AvailableConstruction, BodyType, BorderInformation, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, printTimestamp, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, StoneInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
+import { AnyBuilding, AvailableConstruction, BodyType, BorderInformation, createBuilding, createFlag, createRoad, CropId, CropInformation, CropInformationLocal, Decoration, DecorationType, Direction, FlagId, FlagInformation, GameId, GameMessage, getHouseInformation, getInformationOnPoint, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, HouseId, HouseInformation, MaterialAllUpperCase, PlayerId, PlayerInformation, Point, PointInformation, printTimestamp, RoadId, RoadInformation, ServerWorkerInformation, ShipId, ShipInformation, SignId, SignInformation, SimpleDirection, StoneInformation, TerrainAtPoint, TreeId, TreeInformation, TreeInformationLocal, VegetationIntegers, WildAnimalId, WildAnimalInformation, WorkerAction, WorkerId, WorkerInformation, WorkerType } from './api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, removeHouseOrFlagOrRoadAtPointWebsocket, terrainInformationToTerrainAtPointList } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 
@@ -10,6 +10,30 @@ const roadListeners: (() => void)[] = []
 let loadingPromise: Promise<void> | undefined = undefined
 let websocket: WebSocket | undefined = undefined
 let gameHasExpired = false
+
+type RequestId = number
+
+interface ReplyMessage {
+    requestId: RequestId
+}
+
+function isReplyMessage(message: unknown): message is ReplyMessage {
+    return message !== undefined &&
+        message !== null &&
+        typeof message === 'object' &&
+        'requestId' in message
+}
+
+interface PointsInformationMessage extends ReplyMessage {
+    pointsWithInformation: PointInformation[]
+}
+
+function isInformationOnPointsMessage(message: ReplyMessage): message is PointsInformationMessage {
+    return 'pointsWithInformation' in message
+}
+
+let replies: Map<RequestId, ReplyMessage> = new Map()
+let nextRequestId = 0
 
 interface MonitoredBorderForPlayer {
     color: string
@@ -82,6 +106,8 @@ export interface Monitor {
     callScout: ((point: Point) => void)
     callGeologist: ((point: Point) => void)
     placeLocalRoad: ((points: Point[]) => void)
+    getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
+
     killWebsocket: (() => void)
 }
 
@@ -133,6 +159,8 @@ const monitor: Monitor = {
     callScout: callScoutWebsocket,
     callGeologist: callGeologistWebsocket,
     placeLocalRoad: placeLocalRoad,
+    getInformationOnPoints: getInformationOnPoints,
+
     killWebsocket: killWebsocket
 }
 
@@ -591,10 +619,17 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
     try {
         const message = JSON.parse(messageFromServer.data)
 
+        console.log({
+            title: "Received something",
+            message
+        })
+
         if (isGameChangesMessage(message)) {
             receivedGameChangesMessage(message)
         } else if (isFullSyncMessage(message)) {
             receivedFullSyncMessage(message)
+        } else if (isReplyMessage(message)) {
+            replies.set(message.requestId, message)
         }
     } catch (e) {
         console.error(e)
@@ -1276,132 +1311,6 @@ function isGameDataAvailable(): boolean {
     return monitor.discoveredBelowTiles.size > 0
 }
 
-async function placeHouseSnappy(houseType: AnyBuilding, point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
-    monitor.houses.set('LOCAL',
-        {
-            id: 'LOCAL',
-            type: houseType,
-            x: point.x,
-            y: point.y,
-            playerId: playerId,
-            inventory: new Map<string, number>(),
-            evacuated: false,
-            promotionsEnabled: true,
-            state: 'PLANNED',
-            productionEnabled: true,
-            resources: {}
-        }
-    )
-
-    try {
-        await createBuilding(houseType, point, gameId, playerId)
-    } catch (error) {
-        console.error("Got error while creating building: " + error)
-    }
-
-    const pointInformation = await getInformationOnPoint(point, gameId, playerId)
-
-    if (pointInformation.is !== 'building') {
-        monitor.houses.delete('LOCAL')
-    }
-}
-
-async function placeRoadSnappy(points: Point[], gameId: GameId, playerId: PlayerId): Promise<void> {
-    monitor.roads.set('LOCAL', { id: 'LOCAL', points })
-
-    try {
-        await createRoad(points, gameId, playerId)
-    } catch (error) {
-        console.error("Got error while creating road: " + error)
-    }
-
-    const pointInformation = await getInformationOnPoint(points[1], gameId, playerId)
-
-    if (pointInformation.is !== 'road') {
-        monitor.roads.delete('LOCAL')
-    }
-}
-
-async function placeFlagSnappy(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
-    monitor.flags.set('LOCAL', { id: 'LOCAL', playerId: playerId, x: point.x, y: point.y })
-
-    try {
-        await createFlag(point, gameId, playerId)
-    } catch (error) {
-        console.error("Got error while placing flag: " + error)
-    }
-
-    const pointInformation = await getInformationOnPoint(point, gameId, playerId)
-
-    if (pointInformation.is !== 'flag') {
-        monitor.flags.delete('LOCAL')
-    }
-}
-
-async function placeRoadAndFlagSnappy(point: Point, points: Point[], gameId: GameId, playerId: PlayerId): Promise<void> {
-    monitor.flags.set('LOCAL', { id: 'LOCAL', playerId: playerId, x: point.x, y: point.y })
-    monitor.roads.set('LOCAL', { id: 'LOCAL', points })
-
-    // TODO: add a function to the backend that can both place a flag and a road in one call and use it here
-    try {
-        await createFlag(point, gameId, playerId)
-        await createRoad(points, gameId, playerId)
-    } catch (error) {
-        console.error("Got error while placing flag and road")
-    }
-
-    const flagPointInformation = await getInformationOnPoint(point, gameId, playerId)
-    const roadPointInformation = await getInformationOnPoint(points[1], gameId, playerId)
-
-    if (roadPointInformation.is !== 'road' && flagPointInformation.is === 'flag' && flagPointInformation.flagId !== undefined) {
-        removeFlagWebsocket(flagPointInformation.flagId)
-    }
-}
-
-async function removeFlagSnappy(flagId: FlagId, gameId: GameId, playerId: PlayerId): Promise<void> {
-    const flag = monitor.flags.get(flagId)
-
-    if (flag !== undefined) {
-        monitor.localRemovedFlags.set(flagId, flag)
-
-        monitor.flags.delete(flagId)
-
-        try {
-            removeFlagWebsocket(flagId)
-        } catch (error) {
-            console.error("Got error while removing flag: " + error)
-        }
-
-        const pointInformation = await getInformationOnPoint(flag, gameId, playerId)
-
-        if (pointInformation.is === 'flag') {
-            monitor.flags.delete('LOCAL')
-        }
-    }
-}
-
-async function removeRoadSnappy(roadId: RoadId, gameId: GameId, playerId: PlayerId): Promise<void> {
-    const road = monitor.roads.get(roadId)
-
-    if (road !== undefined) {
-        monitor.localRemovedRoads.set(roadId, road)
-
-        monitor.roads.delete(roadId)
-
-        try {
-            removeRoadWebsocket(roadId)
-        } catch (error) {
-            console.error("Got error while removing road: " + error)
-        }
-
-        const pointInformation = await getInformationOnPoint(road.points[1], gameId, playerId)
-
-        if (pointInformation.is === 'road') {
-            monitor.roads.set(roadId, road)
-        }
-    }
-}
-
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
     let compassDirection: Direction = 'NORTH_WEST'
 
@@ -1599,6 +1508,57 @@ function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
     }
 
     return undefined
+}
+
+async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<PointInformation>> {
+    const requestId = getRequestId()
+
+    console.log({
+        title: "Request information on points",
+        requestId
+    })
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'INFORMATION_ON_POINTS',
+            requestId,
+            points
+        }
+    ))
+
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            console.log({
+                title: "Looking for replies for request",
+                requestId,
+                reply
+            })
+
+            if (!reply) {
+                return
+            }
+
+            if (isInformationOnPointsMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                const map = new PointMapFast<PointInformation>()
+
+                reply.pointsWithInformation.forEach(pointInformation => map.set({x: pointInformation.x, y: pointInformation.y}, pointInformation))
+
+                result(map)
+            }
+        }, 5)
+    })
+}
+
+function getRequestId(): number {
+    nextRequestId += 1
+
+    return nextRequestId - 1
 }
 
 function killWebsocket(): void {

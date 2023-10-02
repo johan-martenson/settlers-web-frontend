@@ -198,15 +198,27 @@ class App extends Component<AppProps, AppState> {
                 // TODO: optimize by introducing a method to get information about two points with one call
 
                 /* Get the possible connections from the server and draw them */
-                const pointInformation = await getInformationOnPoint(this.state.selected, this.props.gameId, this.state.player)
+                const pointDownRight = { x: this.state.selected.x + 1, y: this.state.selected.y - 1 }
+                const pointInformations = await monitor.getInformationOnPoints([this.state.selected, pointDownRight])
+
+                const pointInformation = pointInformations.get(this.state.selected)
+                const pointDownRightInformation = pointInformations.get(pointDownRight)
+
+                if (pointInformation === undefined) {
+                    console.error("Failed to get point information!")
+                    console.error(this.state.selected)
+
+                    return
+                }
 
                 /* If a house is selected, start the road from the flag */
                 if (pointInformation.is && pointInformation.is === "building") {
-                    let pointDownRight = this.state.selected
+                    if (pointDownRightInformation === undefined) {
+                        console.error("Failed to get point down right information!")
+                        console.error(pointDownRight)
 
-                    pointDownRight = { x: pointDownRight.x + 1, y: pointDownRight.y - 1 }
-
-                    const pointDownRightInformation = await getInformationOnPoint(pointDownRight, this.props.gameId, this.state.player)
+                        return
+                    }
 
                     this.setState(
                         {
@@ -671,8 +683,12 @@ class App extends Component<AppProps, AppState> {
 
                 // Keep a reference to the new road so it doesn't get lost when the state is changed
                 const newRoadPoints = this.state.newRoad
+                const lastPoint = this.state.newRoad[this.state.newRoad.length - 1]
 
-                newRoadPoints.push(point)
+                // Only add this point to the road points if the distance is acceptable - otherwise let the backend fill in
+                if (Math.abs(lastPoint.x - point.x) <=2 && Math.abs(lastPoint.y - point.y) <= 2) {
+                    newRoadPoints.push(point)
+                }
 
                 // Update the state before calling the backend to make the user experience feel quicker
                 this.setState(

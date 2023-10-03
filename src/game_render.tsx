@@ -8,6 +8,8 @@ import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVaria
 import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
 
+export const DEFAULT_SCALE = 35.0
+
 export interface ScreenPoint {
     x: number
     y: number
@@ -2148,7 +2150,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw house titles */
         if (this.props.showHouseTitles) {
 
-            ctx.font = "bold 10px sans-serif"
+            ctx.font = "bold 12px sans-serif"
             ctx.strokeStyle = 'black'
             ctx.fillStyle = 'yellow'
 
@@ -2160,8 +2162,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const screenPoint = this.gamePointToScreenPoint(house)
 
-                screenPoint.x -= 0.8 * this.props.scale // 30
-                screenPoint.y -= 1 * scaleY // 15
+                const houseDrawInformation = houses.getDrawingInformationForHouseReady(currentPlayerNation, house.type)
+
+                let heightOffset = 0
+
+                if (houseDrawInformation) {
+                    heightOffset = houseDrawInformation[0].offsetY * this.props.scale / DEFAULT_SCALE
+                }
 
                 let houseTitle = camelCaseToWords(house.type)
 
@@ -2170,6 +2177,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else if (house.productivity !== undefined) {
                     houseTitle = houseTitle + " (" + house.productivity + "%)"
                 }
+
+                const widthOffset = ctx.measureText(houseTitle).width / 2
+
+                screenPoint.x -= widthOffset
+                screenPoint.y -= heightOffset
 
                 ctx.strokeText(houseTitle, screenPoint.x, screenPoint.y - 5)
                 ctx.fillText(houseTitle, screenPoint.x, screenPoint.y - 5)

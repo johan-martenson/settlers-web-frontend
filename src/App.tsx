@@ -7,7 +7,7 @@ import FriendlyFlagInfo from './friendly_flag_info'
 import FriendlyHouseInfo from './friendly_house_info'
 import GameMenu from './game_menu'
 import GameMessagesViewer from './game_messages_viewer'
-import { CursorState, GameCanvas } from './game_render'
+import { CursorState, DEFAULT_SCALE, GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
 import { getHeadquarterForPlayer, monitor, startMonitoringGame } from './monitor'
@@ -158,7 +158,7 @@ class App extends Component<AppProps, AppState> {
             translateX: 0,
             translateY: 0,
             selected: { x: 0, y: 0 },
-            scale: 35,
+            scale: DEFAULT_SCALE,
             gameWidth: 0,
             gameHeight: 0,
             player: props.selfPlayerId,

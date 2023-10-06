@@ -422,6 +422,11 @@ class AnimalAnimation {
     }
 }
 
+export interface Dimension {
+    width: number
+    height: number
+}
+
 class WorkerAnimation {
     private imageAtlasHandler: WorkerImageAtlasHandler
 
@@ -456,6 +461,10 @@ class WorkerAnimation {
 
     getImageAtlasHandler(): WorkerImageAtlasHandler {
         return this.imageAtlasHandler
+    }
+
+    getSize(nation: Nation, direction: Direction): Dimension {
+        return this.imageAtlasHandler.getSize(nation, direction)
     }
 }
 
@@ -782,6 +791,24 @@ class WorkerImageAtlasHandler {
         }
 
         return undefined
+    }
+
+    getSize(nation: Nation, direction: Direction): Dimension {
+        const drawingInfo = this.getDrawingInformationForWorker(nation, direction, 0, 0)
+
+        if (drawingInfo) {
+
+            return {
+                width: drawingInfo[0].width,
+                height: drawingInfo[0].height
+            }
+
+        } else {
+            return {
+                width: 0,
+                height: 0
+            }
+        }
     }
 }
 

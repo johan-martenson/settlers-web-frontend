@@ -2,6 +2,8 @@ import React, { Component } from 'react'
 import Button from './button'
 import { Dialog } from './dialog'
 import { do_self_test } from './self_test'
+import { WorkerIcon } from './icon'
+import './fill_in_player_information.css'
 
 export interface EnteredPlayerInformation {
     name: string
@@ -85,34 +87,41 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
 
     render(): JSX.Element {
         return (
-            <Dialog heading="Enter player information" noCloseButton={true}>
-                <div>Name:
-                    <input type="text" placeholder="Name" ref={this.nameFieldRef}
-                        onChange={
+            <>
+                <div className="CenterOnScreen">
+                    <div className="SetPlayerNameDialog">
 
-                            // eslint-disable-next-line
-                            (event: React.FormEvent<HTMLInputElement>) => {
-                                this.onInformationEntered()
+                        <div id="NameLabel">Name</div>
+                        <input type="text" placeholder="Name" ref={this.nameFieldRef}
+                            onChange={
+
+                                // eslint-disable-next-line
+                                (event: React.FormEvent<HTMLInputElement>) => {
+                                    this.onInformationEntered()
+                                }
                             }
-                        }
 
-                        onKeyDown={
-                            (event: React.KeyboardEvent) => {
-                                if (event.code === 'Enter') {
-                                    if (this.state.userNameEntered) {
-                                        this.onPlayerInformationDone()
+                            onKeyDown={
+                                (event: React.KeyboardEvent) => {
+                                    if (event.code === 'Enter') {
+                                        if (this.state.userNameEntered) {
+                                            this.onPlayerInformationDone()
+                                        }
                                     }
                                 }
                             }
-                        }
-                    />
-                </div>
+                        />
 
-                <Button label="Enter lobby"
-                    onButtonClicked={this.onPlayerInformationDone.bind(this)}
-                    disabled={!this.state.userNameEntered}
-                />
-            </Dialog>
+                        <Button label="Go"
+                            onButtonClicked={this.onPlayerInformationDone.bind(this)}
+                            disabled={!this.state.userNameEntered}
+                        />
+                    </div>
+                </div>
+                <div className="WorkerAnimation">
+                    <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                </div>
+            </>
         )
     }
 }

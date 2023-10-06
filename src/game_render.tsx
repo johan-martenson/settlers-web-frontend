@@ -145,7 +145,7 @@ const houses = new HouseImageAtlasHandler("assets/")
 
 const shipImageAtlas = new ShipImageAtlasHandler("assets/")
 
-const workers = new Map<WorkerType, WorkerAnimation>()
+export const workers = new Map<WorkerType, WorkerAnimation>()
 
 workers.set("Farmer", new WorkerAnimation("assets/", "farmer", 10))
 workers.set("Fisherman", new WorkerAnimation("assets/", "fisher", 10))

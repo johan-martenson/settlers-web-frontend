@@ -1,0 +1,29 @@
+.CenterOnScreen {
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    top: 0px;
+    left: 0px;
+    height: 100vh;
+}
+
+.SetPlayerNameDialog {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    margin: auto;
+    width: 20em;
+}
+
+.WorkerAnimation {
+    position: absolute;
+    right: 50px;
+    bottom: 50px;
+}
+
+#NameLabel {
+    font-family: Verdana, sans-serif;
+}

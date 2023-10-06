@@ -641,6 +641,10 @@ class WorkerImageAtlasHandler {
 
     async load(): Promise<void> {
 
+        if (this.image) {
+            return
+        }
+
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
         const imageAtlasInfo = await response.json()

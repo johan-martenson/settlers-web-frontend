@@ -3,3 +3,9 @@
     flex-direction: column;
     align-items: flex-start;
 }
+
+.HouseConstructionButtons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}

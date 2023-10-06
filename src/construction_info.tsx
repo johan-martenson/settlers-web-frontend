@@ -251,27 +251,29 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 
                     {this.state.selected === "Buildings" && this.state.buildingSizeSelected === "small" &&
                         <DialogSection>
-                            {SMALL_HOUSES.map(
-                                (house, index) => {
+                            <div className="HouseConstructionButtons">
+                                {SMALL_HOUSES.map(
+                                    (house, index) => {
 
-                                    return (
-                                        <Button className="ConstructionItem"
-                                            key={index}
-                                            label={camelCaseToWords(house)}
-                                            image={houseImageMap.get(house)}
-                                            imageLabel="House"
-                                            onButtonClicked={
-                                                async () => {
-                                                    console.info("Creating house")
-                                                    monitor.placeHouse(house, this.props.point)
+                                        return (
+                                            <Button className="ConstructionItem"
+                                                key={index}
+                                                label={camelCaseToWords(house)}
+                                                image={houseImageMap.get(house)}
+                                                imageLabel="House"
+                                                onButtonClicked={
+                                                    async () => {
+                                                        console.info("Creating house")
+                                                        monitor.placeHouse(house, this.props.point)
 
-                                                    this.props.closeDialog()
+                                                        this.props.closeDialog()
+                                                    }
                                                 }
-                                            }
-                                        />
-                                    )
-                                })
-                            }
+                                            />
+                                        )
+                                    })
+                                }
+                            </div>
                         </DialogSection>
                     }
 
@@ -279,46 +281,15 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                         this.canBuildMediumHouse() &&
                         this.state.buildingSizeSelected === "medium" &&
                         <DialogSection>
-                            {MEDIUM_HOUSES.map(
-                                (house, index) => {
-
-                                    return (
-                                        <Button className="ConstructionItem"
-                                            label={camelCaseToWords(house)}
-                                            image={houseImageMap.get(house)}
-                                            imageLabel="House"
-                                            key={index}
-                                            onButtonClicked={
-                                                async () => {
-                                                    console.info("Creating house")
-                                                    monitor.placeHouse(house, this.props.point)
-
-                                                    this.props.closeDialog()
-                                                }
-                                            }
-                                        />
-                                    )
-                                })
-                            }
-                        </DialogSection>
-                    }
-
-                    {this.state.selected === "Buildings" &&
-                        this.canBuildLargeHouse() &&
-                        this.state.buildingSizeSelected === "large" &&
-                        <DialogSection>
-                            {LARGE_HOUSES.map(
-                                (house, index) => {
-
-                                    if (house === "Headquarter") {
-                                        return <></>
-                                    } else {
+                            <div className="HouseConstructionButtons">
+                                {MEDIUM_HOUSES.map(
+                                    (house, index) => {
 
                                         return (
                                             <Button className="ConstructionItem"
                                                 label={camelCaseToWords(house)}
                                                 image={houseImageMap.get(house)}
-                                                imageLabel={house}
+                                                imageLabel="House"
                                                 key={index}
                                                 onButtonClicked={
                                                     async () => {
@@ -330,9 +301,44 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 }
                                             />
                                         )
-                                    }
-                                })
-                            }
+                                    })
+                                }
+                            </div>
+                        </DialogSection>
+                    }
+
+                    {this.state.selected === "Buildings" &&
+                        this.canBuildLargeHouse() &&
+                        this.state.buildingSizeSelected === "large" &&
+                        <DialogSection>
+                            <div className="HouseConstructionButtons">
+                                {LARGE_HOUSES.map(
+                                    (house, index) => {
+
+                                        if (house === "Headquarter") {
+                                            return <></>
+                                        } else {
+
+                                            return (
+                                                <Button className="ConstructionItem"
+                                                    label={camelCaseToWords(house)}
+                                                    image={houseImageMap.get(house)}
+                                                    imageLabel={house}
+                                                    key={index}
+                                                    onButtonClicked={
+                                                        async () => {
+                                                            console.info("Creating house")
+                                                            monitor.placeHouse(house, this.props.point)
+
+                                                            this.props.closeDialog()
+                                                        }
+                                                    }
+                                                />
+                                            )
+                                        }
+                                    })
+                                }
+                            </div>
                         </DialogSection>
                     }
                 </>

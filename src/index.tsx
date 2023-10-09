@@ -1,10 +1,11 @@
 import React, { Component } from 'react'
-import {createRoot} from 'react-dom/client'
+import { createRoot } from 'react-dom/client'
 import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'
 import { Lobby } from './lobby'
 import { GameId, PlayerId, getPlayers } from './api'
 import App from './App'
+import { FluentProvider, teamsLightTheme } from '@fluentui/react-components';
 
 
 interface GameInitProps { }
@@ -91,5 +92,8 @@ const container = document.getElementById('root')
 
 if (container) {
     const root = createRoot(container)
-    root.render(<GameInit />)
+    root.render(
+        <FluentProvider theme={teamsLightTheme}>
+            <GameInit />
+        </FluentProvider>)
 }

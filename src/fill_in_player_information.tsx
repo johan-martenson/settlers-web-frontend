@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import Button from './button'
+import { Label, Input, Button } from "@fluentui/react-components";
 import { Dialog } from './dialog'
 import { do_self_test } from './self_test'
 import { WorkerIcon } from './icon'
@@ -88,37 +88,40 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
     render(): JSX.Element {
         return (
             <>
-                <div className="CenterOnScreen">
-                    <div className="SetPlayerNameDialog">
+                <div id="center-on-screen">
+                    <div id="set-player-name-dialog">
 
-                        <div id="NameLabel">Name</div>
-                        <input type="text" placeholder="Name" ref={this.nameFieldRef}
-                            onChange={
+                        <div id="label-and-input">
+                            <Label>Name</Label>
+                            <Input type="text" placeholder="Name" ref={this.nameFieldRef}
+                                onChange={
 
-                                // eslint-disable-next-line
-                                (event: React.FormEvent<HTMLInputElement>) => {
-                                    this.onInformationEntered()
+                                    // eslint-disable-next-line
+                                    (event: React.FormEvent<HTMLInputElement>) => {
+                                        this.onInformationEntered()
+                                    }
                                 }
-                            }
 
-                            onKeyDown={
-                                (event: React.KeyboardEvent) => {
-                                    if (event.code === 'Enter') {
-                                        if (this.state.userNameEntered) {
-                                            this.onPlayerInformationDone()
+                                onKeyDown={
+                                    (event: React.KeyboardEvent) => {
+                                        if (event.code === 'Enter') {
+                                            if (this.state.userNameEntered) {
+                                                this.onPlayerInformationDone()
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        />
-
-                        <Button label="Go"
-                            onButtonClicked={this.onPlayerInformationDone.bind(this)}
+                            />
+                        </div>
+                        <Button
+                            onClick={this.onPlayerInformationDone.bind(this)}
                             disabled={!this.state.userNameEntered}
-                        />
+                            appearance='primary'
+
+                        >Go</Button>
                     </div>
                 </div>
-                <div className="WorkerAnimation">
+                <div id="worker-animation">
                     <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
                 </div>
             </>

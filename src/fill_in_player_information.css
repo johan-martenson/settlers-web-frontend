@@ -1,4 +1,4 @@
-.CenterOnScreen {
+#center-on-screen {
     background-color: white;
     display: flex;
     justify-content: center;
@@ -9,21 +9,23 @@
     height: 100vh;
 }
 
-.SetPlayerNameDialog {
+#set-player-name-dialog {
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    margin: auto;
-    width: 20em;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 2px;
+    width: 15em;
 }
 
-.WorkerAnimation {
+#worker-animation {
     position: absolute;
     right: 50px;
     bottom: 50px;
 }
 
-#NameLabel {
-    font-family: Verdana, sans-serif;
+#label-and-input {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
 }

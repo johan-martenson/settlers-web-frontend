@@ -90,7 +90,7 @@ interface AppState {
     showEnemyHouseInfo?: ShowEnemyHouseInfo
     showHelp?: boolean
     showStatistics?: boolean
-    menuVisible: boolean
+    showMenu: boolean
 
     showTitles: boolean
     showAvailableConstruction: boolean
@@ -162,7 +162,7 @@ class App extends Component<AppProps, AppState> {
             gameWidth: 0,
             gameHeight: 0,
             player: props.selfPlayerId,
-            menuVisible: false,
+            showMenu: false,
             showTitles: true,
             showSetTransportPriority: false,
             cursorState: 'NOTHING',
@@ -308,6 +308,10 @@ class App extends Component<AppProps, AppState> {
             action: () => { this.setState({ showFpsCounter: !this.state.showFpsCounter }) },
             filter: undefined
         })
+        this.commands.set("Menu", {
+            action: () => this.setState({ showMenu: true }),
+            filter: undefined
+        })
     }
 
     toggleDetails(): void {
@@ -328,7 +332,7 @@ class App extends Component<AppProps, AppState> {
                 showEnemyHouseInfo: undefined,
                 showFriendlyFlagInfo: undefined,
                 showFriendlyHouseInfo: undefined,
-                menuVisible: false
+                showMenu: false
             }
         )
     }
@@ -393,7 +397,7 @@ class App extends Component<AppProps, AppState> {
         /* Open the menu */
         this.setState(
             {
-                menuVisible: true,
+                showMenu: true,
                 activeMenu: 'MAIN'
             }
         )
@@ -536,7 +540,7 @@ class App extends Component<AppProps, AppState> {
             console.info("Screen dimensions: " + globalSyncState.width + "x" + globalSyncState.height)
 
             /* Request focus if the game is not blocked */
-            if (!this.state.menuVisible) {
+            if (!this.state.showMenu) {
                 console.info("Putting focus on main game screen")
                 this.selfNameRef.current.focus()
             }
@@ -686,7 +690,7 @@ class App extends Component<AppProps, AppState> {
                 const lastPoint = this.state.newRoad[this.state.newRoad.length - 1]
 
                 // Only add this point to the road points if the distance is acceptable - otherwise let the backend fill in
-                if (Math.abs(lastPoint.x - point.x) <=2 && Math.abs(lastPoint.y - point.y) <= 2) {
+                if (Math.abs(lastPoint.x - point.x) <= 2 && Math.abs(lastPoint.y - point.y) <= 2) {
                     newRoadPoints.push(point)
                 }
 
@@ -728,7 +732,7 @@ class App extends Component<AppProps, AppState> {
                 console.info("Friendly house")
 
                 this.setState({
-                    menuVisible: false,
+                    showMenu: false,
                     showFriendlyHouseInfo: { house: house },
                     activeMenu: 'FRIENDLY_HOUSE'
                 })
@@ -736,7 +740,7 @@ class App extends Component<AppProps, AppState> {
 
                 /* Show minimal house info for enemy's house */
                 this.setState({
-                    menuVisible: false,
+                    showMenu: false,
                     showEnemyHouseInfo: { house: house }
                 })
             }
@@ -757,7 +761,7 @@ class App extends Component<AppProps, AppState> {
 
                 this.setState(
                     {
-                        menuVisible: false,
+                        showMenu: false,
                         showFriendlyFlagInfo: { flag: flag },
                         activeMenu: 'FRIENDLY_FLAG'
                     }
@@ -780,7 +784,7 @@ class App extends Component<AppProps, AppState> {
         else if (pointInformation.is === "road" && pointInformation.roadId) {
             this.setState(
                 {
-                    menuVisible: false,
+                    showMenu: false,
                     showConstructionInfo: pointInformation,
                     activeMenu: 'CONSTRUCTION'
                 }
@@ -1025,22 +1029,25 @@ class App extends Component<AppProps, AppState> {
 
                 <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
 
-                {this.state.menuVisible &&
-                    <GameMenu
-                        currentPlayerId={this.state.player}
-                        onCloseMenu={this.closeActiveMenu.bind(this)}
-                        onPlayerSelected={this.onPlayerSelected.bind(this)}
-                        onChangedZoom={this.zoom.bind(this)}
-                        currentZoom={this.state.scale}
-                        minZoom={MIN_SCALE}
-                        maxZoom={MAX_SCALE}
-                        adjustSpeed={this.onSpeedSliderChange.bind(this)}
-                        gameId={this.props.gameId}
-                        setShowTitles={this.setShowTitles.bind(this)}
-                        currentShowTitles={this.state.showTitles}
-                        onLeaveGame={this.props.onLeaveGame}
-                    />
-                }
+                <GameMenu
+                    currentPlayerId={this.state.player}
+                    onPlayerSelected={this.onPlayerSelected.bind(this)}
+                    onChangedZoom={this.zoom.bind(this)}
+                    currentZoom={this.state.scale}
+                    minZoom={MIN_SCALE}
+                    maxZoom={MAX_SCALE}
+                    adjustSpeed={this.onSpeedSliderChange.bind(this)}
+                    gameId={this.props.gameId}
+                    setShowTitles={this.setShowTitles.bind(this)}
+                    currentShowTitles={this.state.showTitles}
+                    onLeaveGame={this.props.onLeaveGame}
+                    currentSpeed={0}
+                    onStatistics={() => this.setState({ showStatistics: true })}
+                    onHelp={() => this.setState({ showHelp: true })}
+                    onSetTransportPriority={() => this.setState({ showSetTransportPriority: true })}
+                    isOpen={this.state.showMenu}
+                    onClose={() => this.setState({ showMenu: false })}
+                />
 
                 {this.state.showFriendlyHouseInfo &&
                     <FriendlyHouseInfo
@@ -1110,6 +1117,7 @@ class App extends Component<AppProps, AppState> {
                 />
 
                 <MusicPlayer />
+
             </div>
         )
     }

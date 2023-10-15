@@ -1,27 +1,31 @@
-import React, { Component } from 'react';
+import React, { ChangeEvent, Component } from 'react';
 import { GameId, PlayerId, PlayerInformation } from './api';
-import Guide from './guide';
-import MainMenu from './main_menu';
-import OptionMenu from './options_menu';
-import Statistics from './statistics';
-import { SetTransportPriority } from './transport_priority';
+import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable';
+import { Button, Slider, SliderOnChangeData, Switch, SwitchOnChangeData } from '@fluentui/react-components';
+import { Dismiss24Regular } from '@fluentui/react-icons';
+import SelectPlayer from './select_player';
 
 interface GameMenuProps {
-    onCloseMenu: (() => void)
-    onPlayerSelected: ((player: PlayerInformation) => void)
     gameId: GameId
     currentPlayerId: PlayerId
-    onChangedZoom: ((scale: number) => void)
     maxZoom: number
     minZoom: number
     currentZoom: number
     currentShowTitles: boolean
+    currentSpeed: number
+    isOpen: boolean
+
+    onChangedZoom: ((scale: number) => void)
+    onPlayerSelected: ((player: PlayerInformation) => void)
     adjustSpeed: ((speed: number) => void)
     setShowTitles: ((showTitles: boolean) => void)
     onLeaveGame: (() => void)
+    onStatistics: (() => void)
+    onHelp: (() => void)
+    onSetTransportPriority: (() => void)
+    onClose: (() => void)
 }
 interface GameMenuState {
-    state: "MAIN" | "OPTIONS" | "HELP" | "STATISTICS" | "TRANSPORT_PRIORITY"
 }
 
 class GameMenu extends Component<GameMenuProps, GameMenuState> {
@@ -30,92 +34,63 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
         super(props);
 
         this.state = {
-            state: "MAIN"
+            isOpen: false
         };
-    }
-
-    onOptions(): void {
-        this.setState(
-            {
-                state: "OPTIONS"
-            }
-        );
-    }
-
-    onClose(): void {
-        this.props.onCloseMenu();
-    }
-
-    onChoose(): void {
-        this.setState({ state: "OPTIONS" });
-    }
-
-    onPlayerSelected(player: PlayerInformation): void {
-        this.props.onPlayerSelected(player);
-    }
-
-    onStatistics(): void {
-        this.setState(
-            {
-                state: "STATISTICS"
-            }
-        )
-    }
-
-    onSetTransportPriority(): void {
-        this.setState(
-            {
-                state: "TRANSPORT_PRIORITY"
-            }
-        )
     }
 
     render(): JSX.Element {
 
+        console.log(this.props)
+
         return (
-            <div>
-                {this.state.state === "MAIN" &&
-                    <MainMenu
-                        currentPlayerId={this.props.currentPlayerId}
-                        gameId={this.props.gameId}
-                        onHelp={() => { this.setState({ state: "HELP" }) }}
-                        onClose={this.onClose.bind(this)}
-                        onChoose={this.onChoose.bind(this)}
-                        onPlayerSelected={this.onPlayerSelected.bind(this)}
-                        onLeaveGame={this.props.onLeaveGame}
-                        onStatistics={this.onStatistics.bind(this)}
-                        onSetTransportPriority={this.onSetTransportPriority.bind(this)}
-                    />
-                }
+            <Drawer
+                type='overlay'
+                separator
+                open={this.props.isOpen}
+                onOpenChange={() => this.props.onClose()}>
+                <DrawerHeader>
 
-                {this.state.state === "OPTIONS" &&
-                    <OptionMenu
-                        maxZoom={this.props.maxZoom}
-                        minZoom={this.props.minZoom}
-                        currentZoom={this.props.currentZoom}
-                        currentShowTitles={this.props.currentShowTitles}
-                        onClose={() => { this.setState({ state: "MAIN" }) }}
-                        onChangedZoom={this.props.onChangedZoom}
-                        setShowTitles={this.props.setShowTitles.bind(this)}
-                    />
-                }
-
-                {this.state.state === "HELP" &&
-                    <Guide onClose={() => { this.setState({ state: "MAIN" }) }} />
-                }
-
-                {this.state.state === "STATISTICS" &&
-                    <Statistics onClose={() => { this.setState({ state: "MAIN" }) }} 
+                    <DrawerHeaderTitle
+                        action={
+                            <Button
+                                appearance="subtle"
+                                aria-label="Close"
+                                icon={<Dismiss24Regular />}
+                                onClick={() => this.props.onClose()}
+                            />
+                        }
+                    >
+                        Default Drawer
+                    </DrawerHeaderTitle>
+                </DrawerHeader>
+                <DrawerBody>
+                    <SelectPlayer onPlayerSelected={this.props.onPlayerSelected}
+                        currentPlayer={this.props.currentPlayerId}
                         gameId={this.props.gameId}
                     />
-                }
+                    <Button onClick={this.props.onLeaveGame} >Leave game</Button>
+                    <Slider max={this.props.maxZoom}
+                        min={this.props.minZoom}
+                        defaultValue={this.props.currentZoom}
+                        step={1}
+                        onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => this.props.onChangedZoom(data.value)}
+                    />
+                    <Switch
+                        onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.setShowTitles(data.checked)}
+                        defaultChecked={this.props.currentShowTitles} />
 
-                {this.state.state === "TRANSPORT_PRIORITY" &&
-                    <SetTransportPriority gameId={this.props.gameId} playerId={this.props.currentPlayerId} onClose={() => this.setState({ state: "MAIN" })} />
-                }
-
-            </div>
-        );
+                    <Slider max={10}
+                        min={1}
+                        defaultValue={this.props.currentSpeed}
+                        step={1}
+                        onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => this.props.adjustSpeed(data.value)}
+                    />
+                    <Button onClick={this.props.onStatistics} >Statistics</Button>
+                    <Button onClick={this.props.onSetTransportPriority} >Set transport priority</Button>
+                    <Button onClick={this.props.onHelp} >Help</Button>
+                </DrawerBody>
+            </Drawer>
+        )
     }
 }
 

@@ -151,9 +151,9 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
         }
 
         return (
-            <div className="TypeControl">
+            <div className="type-control">
 
-                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} inverted />
+                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
                 <div className={className}>{this.state.input}</div>
 
                 {Array.from(this.props.commands.entries()).map(

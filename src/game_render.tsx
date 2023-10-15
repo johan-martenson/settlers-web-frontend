@@ -713,8 +713,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Clear the overlay - make it fully transparent */
         overlayCtx.clearRect(0, 0, width, height)
 
-        const scaleY = this.props.scale * 0.5
-
         let oncePerNewSelectionPoint = false
 
         const upLeft = this.screenPointToGamePoint({ x: 0, y: 0 })

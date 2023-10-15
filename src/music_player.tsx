@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
-import Button from './button';
+import { Button } from '@fluentui/react-components';
 import ExpandCollapseToggle from './expand_collapse_toggle';
 import './music_player.css';
+import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons';
 
 interface MusicPlayerProps { }
 
@@ -99,7 +100,7 @@ class MusicPlayer extends Component<MusicPlayerProps, MusicPlayerState> {
     render() {
 
         return (
-            <div className="MusicPlayer">
+            <div className="music-player">
 
                 <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} inverted />
                 <div> <b>Music</b></div>
@@ -112,14 +113,14 @@ class MusicPlayer extends Component<MusicPlayerProps, MusicPlayerState> {
                     <>
                         <div>
                             {this.state.playing &&
-                                <span><Button onButtonClicked={this.pause.bind(this)} label="Pause" /></span>
+                                <span><Button onClick={this.pause.bind(this)} icon={<Pause24Filled />} appearance='transparent'/></span>
                             }
 
                             {!this.state.playing &&
-                                <span><Button onButtonClicked={this.play.bind(this)} label="Play" /></span>
+                                <span><Button onClick={this.play.bind(this)} icon={<Play24Filled/>} appearance='transparent'/></span>
                             }
 
-                            <span><Button onButtonClicked={this.next.bind(this)} label="Next" /></span>
+                            <span><Button onClick={this.next.bind(this)} icon={<FastForward24Filled />} appearance='transparent'/></span>
                         </div>
 
                         <div id="SongList">

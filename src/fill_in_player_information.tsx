@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import { Label, Input, Button } from "@fluentui/react-components";
-import { Dialog } from './dialog'
 import { do_self_test } from './self_test'
 import { WorkerIcon } from './icon'
 import './fill_in_player_information.css'
@@ -86,6 +85,9 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
     }
 
     render(): JSX.Element {
+        const storedName = localStorage.getItem("mostRecentPlayer")
+        const defaultName = (storedName) ? storedName : ""
+
         return (
             <>
                 <div id="center-on-screen">
@@ -93,7 +95,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
 
                         <div id="label-and-input">
                             <Label>Name</Label>
-                            <Input type="text" placeholder="Name" ref={this.nameFieldRef}
+                            <Input type="text" ref={this.nameFieldRef}
                                 onChange={
 
                                     // eslint-disable-next-line
@@ -111,11 +113,12 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                                         }
                                     }
                                 }
+                                defaultValue={defaultName}
                             />
                         </div>
                         <Button
                             onClick={this.onPlayerInformationDone.bind(this)}
-                            disabled={!this.state.userNameEntered}
+                            disabled={!this.nameFieldRef.current?.value}
                             appearance='primary'
 
                         >Go</Button>
@@ -130,4 +133,3 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
 }
 
 export { FillInPlayerInformation }
-

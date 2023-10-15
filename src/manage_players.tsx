@@ -1,8 +1,8 @@
-import React, { Component } from 'react'
-import Button from './button'
-import { Player } from './player'
-import './select_player.css'
-import { GameId, addComputerPlayerToGame, PlayerInformation, getPlayers, updatePlayer, removePlayerFromGame, PlayerType } from './api'
+import React, { Component } from 'react';
+import { Button, Subtitle1 } from "@fluentui/react-components";
+import { Player } from './player';
+import './manage_players.css';
+import { GameId, addComputerPlayerToGame, PlayerInformation, getPlayers, updatePlayer, removePlayerFromGame, PlayerType } from './api';
 
 export interface PlayerCandidateType {
     name: string
@@ -11,12 +11,12 @@ export interface PlayerCandidateType {
 }
 
 const PLAYER_COLORS = [
-/*    "Yellow",
-    "Red",
-    "Blue",
-    "Green",
-    "Black",
-    "White"*/
+    /*    "Yellow",
+        "Red",
+        "Blue",
+        "Green",
+        "Black",
+        "White"*/
     "#AABBCC",
     "#BBCCAA",
     "#CCAABB"
@@ -26,9 +26,11 @@ interface ManagePlayersProps {
     selfPlayer: PlayerInformation
     gameId: GameId
     defaultComputerPlayers: number
+    maxPlayers: number
     onPlayerAdded?: ((player: PlayerInformation) => void)
     onPlayerRemoved?: ((player: PlayerInformation) => void)
 }
+
 interface ManagePlayersState {
     players: PlayerInformation[]
 }
@@ -51,7 +53,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
         for (let i = 0; i < this.props.defaultComputerPlayers; i++) {
             console.info("Adding computer player " + i)
-            const addedPlayer = await addComputerPlayerToGame(this.props.gameId, "Computer Player " + i, PLAYER_COLORS[i])
+            const addedPlayer = await addComputerPlayerToGame(this.props.gameId, "Computer Player " + i, PLAYER_COLORS[i], 'ROMANS')
 
             console.info(addedPlayer)
 
@@ -62,18 +64,41 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
             }
         }
 
-        this.setState({ players: addedPlayers.concat(this.state.players) })
+        this.setState({ players: this.state.players.concat(addedPlayers) })
     }
 
-    async addAiPlayer(): Promise<void> {
+    async addComputerPlayer(): Promise<void> {
+
+        console.log("Add computer player")
+
+        let nextPlayer = undefined;
+
+        // Find next computer player
+        for (let i = 0; i < this.props.maxPlayers; i++) {
+            if (this.state.players.find(player => player.name === 'Computer Player ' + i) === undefined) {
+                console.log("Did not find Computer Player " + i)
+
+                nextPlayer = i;
+
+                break;
+            }
+
+            console.log("Did find Computer Player " + i)
+        }
+
+        console.log("Next player is: " + nextPlayer)
+
+        if (nextPlayer === undefined) {
+            return;
+        }
 
         const aiPlayer: PlayerCandidateType = {
-            name: "An AI player",
+            name: "Computer Player " + nextPlayer,
             type: "COMPUTER",
             color: "#777777"
         }
 
-        const addedPlayer = await addComputerPlayerToGame(this.props.gameId, aiPlayer.name, aiPlayer.color)
+        const addedPlayer = await addComputerPlayerToGame(this.props.gameId, aiPlayer.name, aiPlayer.color, 'ROMANS')
 
         this.setState(
             {
@@ -106,11 +131,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
         const players = await getPlayers(this.props.gameId)
 
-        this.setState(
-            {
-                players: players
-            }
-        )
+        this.setState({ players: players })
 
         if (this.props.onPlayerRemoved) {
             this.props.onPlayerRemoved(player)
@@ -120,8 +141,8 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
     render(): JSX.Element {
 
         return (
-            <div className="PlayerList">
-                Manage players
+            <div className="player-list">
+                <Subtitle1 as="h4" block>Players</Subtitle1>
                 {this.state.players.map(
                     (player, index) => {
                         return (
@@ -149,9 +170,8 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
                             </div>
                         )
                     }
-                )
-                }
-                <Button label="Add AI player" onButtonClicked={this.addAiPlayer.bind(this)} />
+                )}
+                <Button onClick={this.addComputerPlayer.bind(this)} >Add computer player</Button>
             </div>
         )
     }

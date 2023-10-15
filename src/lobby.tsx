@@ -1,11 +1,12 @@
 import React, { Component } from 'react'
 import { addHumanPlayerToGame, GameId, GameInformation, getGameInformation, getPlayers, PlayerId } from './api'
 import App from './App'
-import Button from './button'
-import { Dialog } from './dialog'
+import { Button } from "@fluentui/react-components";
 import { EnteredPlayerInformation } from './fill_in_player_information'
 import { GameCreator } from './game_creator'
 import GameList from './game_list'
+import './lobby.css'
+import { WorkerIcon } from './icon';
 
 type LobbyStates = "LIST_GAMES" | "CREATE_GAME" | "PLAY_GAME" | "WAIT_FOR_GAME"
 
@@ -59,7 +60,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
     render(): JSX.Element {
 
         return (
-            <div>
+            <div id="center-on-screen">
 
                 {this.state.state === "CREATE_GAME" &&
                     <GameCreator
@@ -71,20 +72,32 @@ class Lobby extends Component<LobbyProps, LobbyState> {
                 }
 
                 {this.state.state === "LIST_GAMES" &&
-                    <Dialog heading="Join an existing game or create a new game" noCloseButton={true}>
-                        <GameList hideStarted={true} onJoinGame={this.onJoinGame.bind(this)} onObserveGame={this.onObserveGame.bind(this)} />
-                        <Button label="Create new game" onButtonClicked={this.createNewGame.bind(this)} autoFocus />
-                    </Dialog>
+                    <>
+                        <div id="list-games-or-create-new">
+                            <GameList hideStarted={true} onJoinGame={this.onJoinGame.bind(this)} onObserveGame={this.onObserveGame.bind(this)} />
+                            <Button onClick={this.createNewGame.bind(this)} autoFocus appearance='primary'>Create new game</Button>
+                        </div>
+                        <div id="worker-animation">
+                            <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                        </div>
+
+                    </>
                 }
 
                 {this.state.state === "PLAY_GAME" && this.state.gameId && this.state.selfPlayerId &&
-                    <App gameId={this.state.gameId}
-                        selfPlayerId={this.state.selfPlayerId}
-                        observe={this.state.observe}
-                        onLeaveGame={
-                            () => this.setState({ state: "LIST_GAMES" })
-                        }
-                    />
+                    <>
+                        <App gameId={this.state.gameId}
+                            selfPlayerId={this.state.selfPlayerId}
+                            observe={this.state.observe}
+                            onLeaveGame={
+                                () => this.setState({ state: "LIST_GAMES" })
+                            }
+                        />
+                        <div id="worker-animation">
+                            <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                        </div>
+
+                    </>
                 }
 
                 {this.state.state === "WAIT_FOR_GAME" &&
@@ -111,7 +124,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
         console.log("Joining game " + game.id + " as player " + JSON.stringify(this.props.player))
 
         try {
-            const player = await addHumanPlayerToGame(game.id, this.props.player.name, "#123456")
+            const player = await addHumanPlayerToGame(game.id, this.props.player.name, "#123456", "ROMANS")
             console.log("Added player to game " + JSON.stringify(player))
 
             const players = await getPlayers(game.id)
@@ -136,7 +149,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
 
         if (this.state.gameId) {
             const game = await getGameInformation(this.state.gameId)
-            
+
             if (game.status === "NOT_STARTED") {
                 setTimeout(this.waitForGameStartThenJoin.bind(this), 100)
             } else {

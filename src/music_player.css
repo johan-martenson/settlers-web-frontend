@@ -1,12 +1,13 @@
-.MusicPlayer {
-
+.music-player {
     position: absolute;
     z-index: 99;
     right: 0;
     top: 0;
     background-color: white;
+    color: black;
     border-radius: 0.5rem;
     padding: 0.7rem;
+    gap: 10px;
 }
 
 .SongList {

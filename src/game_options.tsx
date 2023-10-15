@@ -1,8 +1,7 @@
-import React, { Component } from 'react';
+import React, { ChangeEvent, Component } from 'react';
 import './game_options.css';
-import OnOffSlider from './on_off_slider';
-import RawRow from './raw_row';
-import SelectableButtonRow from './selectable_button_row';
+import { Switch, Select, SelectOnChangeData, Subtitle1, Field } from "@fluentui/react-components";
+
 import { ResourceLevel } from './api';
 
 interface GameOptionsProps {
@@ -39,33 +38,38 @@ class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
     render(): JSX.Element {
 
         return (
-            <div className="GameOptionsContainer">
-                Set game options
-                <RawRow>
-                    <div className="Label">Allow others to join?</div>
-                    <OnOffSlider className="OthersCanJoinSlider" initialValue={true} onValueChange={(value) => console.log(value)} />
-                </RawRow>
+            <div className="settings">
+                <Subtitle1 as="h4" block>Settings</Subtitle1>
+                <Field orientation='horizontal' label="Allow others to join?">
+                    <Switch defaultChecked={true} onChange={(value) => console.log(value)} />
+                </Field>
 
-                <RawRow>
-                    <div className="ResourceLabel">Amount of initial resources</div>
-                    <SelectableButtonRow
+                <Field orientation='horizontal' label="Initial resources">
+                    <Select
                         className="ResourceButtons"
-                        values={OPTIONS} initialValue="MEDIUM"
-                        onSelected={
-                            (value: string) => {
+                        onChange={
+                            (ev: ChangeEvent<HTMLSelectElement>, data: SelectOnChangeData) => {
+                                const value = data.value
+
+                                console.log(data)
 
                                 // FIXME: change SelectableButtonRow to be parameterized so the callback can be more specific in types
-                                if (value === "LOW") {
+                                if (value === "Low") {
                                     this.setAvailableResources("LOW");
-                                } else if (value === "MEDIUM") {
+                                } else if (value === "Medium") {
                                     this.setAvailableResources("MEDIUM");
                                 } else {
                                     this.setAvailableResources("HIGH");
                                 }
                             }
                         }
-                    />
-                </RawRow>
+                    >
+                        <option>High</option>
+                        <option>Medium</option>
+                        <option>Low</option>
+                    </Select>
+
+                </Field>
             </div>
         );
     }

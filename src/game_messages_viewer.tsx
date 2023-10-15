@@ -1,10 +1,11 @@
 import React, { Component } from 'react'
 import { GameId, GameMessage, getMessagesForPlayer, HouseId, isBuildingCapturedMessage, isBuildingLostMessage, isGeologistFindMessage, isMilitaryBuildingCausedLostLandMessage, isMilitaryBuildingOccupiedMessage, isMilitaryBuildingReadyMessage, isNoMoreResourcesMessage, isStoreHouseIsReadyMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isUnderAttackMessage, PlayerId, Point } from './api'
-import Button from './button'
+import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import './game_messages_viewer.css'
 import { listenToMessages } from './monitor'
 import { play } from './sound_effects'
+import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
 
 interface GameMessagesViewerProps {
     gameId: GameId
@@ -66,25 +67,26 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
     render(): JSX.Element {
 
         return (
-            <div className="GameMessages">
+            <div className="game-messages">
 
-                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} inverted />
+                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
                 <div> <b>Messages</b></div>
 
-                <Button onButtonClicked={this.onClearAll.bind(this)} label="Clear all" />
-
                 {this.state.expanded &&
-                    <div className="GameMessageList">
+                    <div className="game-message-list">
 
                         {this.state.messages.map(
                             (message, index) => {
 
                                 return (
-                                    <div className="GameMessage" key={index}>
+                                    <div className="game-message" key={index}>
                                         {isMilitaryBuildingOccupiedMessage(message) &&
                                             <>
                                                 Military building occupied
-                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
+                                                    icon={<ArrowStepInRight24Regular />}
+                                                    appearance='transparent'
+                                                />
                                             </>
                                         }
 
@@ -92,7 +94,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             isNoMoreResourcesMessage(message) &&
                                             <>
                                                 No more resources
-                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
+                                                    appearance='transparent'
+                                                    icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
 
@@ -100,7 +104,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             isMilitaryBuildingReadyMessage(message) &&
                                             <>
                                                 Military building is ready
-                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
+                                                    appearance='transparent'
+                                                    icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
 
@@ -108,14 +114,18 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             isUnderAttackMessage(message) &&
                                             <>
                                                 We&apos;re under attack!
-                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
+                                                    appearance='transparent'
+                                                    icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
                                         {
                                             isGeologistFindMessage(message) &&
                                             <>
                                                 Geologist has found {message.material.toLowerCase()}!
-                                                <Button label="Go to point" onButtonClicked={() => { this.props.onGoToPoint(message.point) }} />
+                                                <Button onClick={() => { this.props.onGoToPoint(message.point) }}
+                                                    appearance='transparent'
+                                                    icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
 
@@ -123,7 +133,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             isBuildingLostMessage(message) &&
                                             <>
                                                 Building lost to enemy
-                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
+                                                    appearance='transparent'
+                                                    icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
 
@@ -131,7 +143,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             isBuildingCapturedMessage(message) &&
                                             <>
                                                 Building captured
-                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
+                                                    appearance='transparent'
+                                                    icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
 
@@ -139,7 +153,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             isStoreHouseIsReadyMessage(message) &&
                                             <>
                                                 A store house is ready
-                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
+                                                    appearance='transparent'
+                                                    icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
 
@@ -147,7 +163,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             isMilitaryBuildingCausedLostLandMessage(message) &&
                                             <>
                                                 This building has caused you to lose land
-                                                <Button label="Go to house" onButtonClicked={() => { this.props.onGoToHouse(message.houseId) }} />
+                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
+                                                    appearance='transparent'
+                                                    icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
 
@@ -164,11 +182,16 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                                 The tree conservation program has been deactivated.
                                             </>
                                         }
+                                        <Button icon={<Delete24Filled />}
+                                            onClick={() => this.setState({ messages: this.state.messages.filter(m => m !== message) })}
+                                            appearance='transparent' />
                                     </div>
-                                );
+                                )
                             }
                         )
                         }
+                        <Button onClick={this.onClearAll.bind(this)} >Clear all</Button>
+
                     </div>
                 }
             </div>

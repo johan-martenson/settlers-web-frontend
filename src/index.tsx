@@ -1,11 +1,11 @@
-import React, { Component } from 'react'
+import React, { Component, PropsWithChildren } from 'react'
 import { createRoot } from 'react-dom/client'
 import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'
 import { Lobby } from './lobby'
 import { GameId, PlayerId, getPlayers } from './api'
 import App from './App'
-import { FluentProvider, teamsLightTheme } from '@fluentui/react-components';
+import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/react-components';
 
 
 interface GameInitProps { }
@@ -92,8 +92,25 @@ const container = document.getElementById('root')
 
 if (container) {
     const root = createRoot(container)
+
     root.render(
-        <FluentProvider theme={teamsLightTheme}>
-            <GameInit />
+        <FluentProvider theme={teamsDarkTheme}>
+            <AppWrapper>
+                <GameInit />
+            </AppWrapper>
         </FluentProvider>)
+}
+
+const useStyles = makeStyles({
+    wrapper: {
+        backgroundColor: tokens.colorNeutralBackground2,
+        width: "100%",
+        height: "100%"
+    }
+})
+
+function AppWrapper({ children }: PropsWithChildren) {
+    const className = useStyles()
+
+    return (<div className={className.wrapper}>{children}</div>)
 }

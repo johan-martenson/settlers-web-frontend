@@ -1,14 +1,13 @@
 import React, { Component, createRef } from 'react'
 import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel, PlayerInformation, getMaps } from './api'
-import BottomButtons from './bottom_buttons'
-import Button from './button'
-import { Dialog } from './dialog'
+import { Input, Button, Subtitle1, Field } from "@fluentui/react-components";
+
 import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
-import MapInformationCard from './map_information_card'
 import './game_creator.css'
 import ManagePlayers from './manage_players'
+import { WorkerIcon } from './icon';
 
 interface SelfPlayer {
     name: string
@@ -32,7 +31,7 @@ interface GameCreatorState {
 class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
     private titleFieldRef = createRef<HTMLInputElement>()
-    private createGameButtonRef = createRef<Button>()
+    private createGameButtonRef = createRef<typeof Button>()
 
     constructor(props: GameCreatorProps) {
         super(props)
@@ -63,7 +62,7 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
             /* Set focus on the start game button */
             if (this.createGameButtonRef && this.createGameButtonRef.current) {
-                this.createGameButtonRef.current.focus()
+                //this.createGameButtonRef.current.focus()
             }
         }
     }
@@ -153,11 +152,12 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
         /* Create the new game */
         const game: GameInformation = await createGame(gameTitle, defaultMapId, [
-                {
-                    name: this.props.selfPlayer.name,
-                    color: "0xAABBCC"
-                }
-            ])
+            {
+                name: this.props.selfPlayer.name,
+                color: "0xAABBCC",
+                nation: "ROMANS"
+            }
+        ])
 
         /* Find the self player id */
         const selfPlayer = game.players[0]
@@ -174,79 +174,90 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
         /* Enable the "create game" button if there is a map set */
         if (defaultMap && this.createGameButtonRef && this.createGameButtonRef.current) {
-            this.createGameButtonRef.current.focus()
+            //this.createGameButtonRef.current.focus()
         }
     }
 
     render(): JSX.Element {
 
+
         return (
             <>
                 {this.state.state === "GET_NAME_FOR_GAME" &&
-                    <Dialog heading="Create Game" noCloseButton={true} closeLabel="Cancel">
+                    <div>
 
                         <div className="SetGameNameLabel">
-                            <div>Enter a new for the game:</div>
-                            <input type="text" placeholder="Name..."
-                                ref={this.titleFieldRef}
-                                onChange={
 
-                                    // eslint-disable-next-line
-                                    (event: React.FormEvent<HTMLInputElement>) => {
-                                        if (this.isNameReady()) {
-                                            this.setState({ isNameReady: true })
+                            <Field label={"Enter a name for the game"} >
+                                <Input type="text" placeholder="Name..."
+                                    ref={this.titleFieldRef}
+                                    onChange={
+
+                                        // eslint-disable-next-line
+                                        (event: React.FormEvent<HTMLInputElement>) => {
+                                            if (this.isNameReady()) {
+                                                this.setState({ isNameReady: true })
+                                            }
                                         }
                                     }
-                                }
 
-                                onKeyDown={
-                                    (event) => {
-                                        if (event.key === "Enter" && this.state.isNameReady) {
-                                            this.startCreatingGame()
+                                    onKeyDown={
+                                        (event) => {
+                                            if (event.key === "Enter" && this.state.isNameReady) {
+                                                this.startCreatingGame()
+                                            }
                                         }
                                     }
-                                }
-                            />
-                        </div>
-                        <BottomButtons>
-                            <Button label="Cancel" onButtonClicked={this.props.onGameCreateCanceled} />
-                            <Button label="Create game"
+                                />
+                            </Field>
+                            <Button onClick={this.props.onGameCreateCanceled} >Cancel</Button>
+                            <Button
                                 disabled={!this.state.isNameReady && !this.state.map}
-                                onButtonClicked={
+                                appearance='primary'
+                                onClick={
                                     async () => {
                                         await this.startCreatingGame()
                                     }
                                 }
-                            />
-                        </BottomButtons>
-                    </Dialog>
+                            >Create game</Button>
+                        </div>
+                    </div>
                 }
 
                 {this.state.state === "CREATE_GAME" && this.state.game && this.state.selfPlayer &&
-                    <div className="GameCreationScreen">
-                        <h1>Create Game</h1>
-                        <div className="CreateGameColumns">
-                            <div className="PlayersAndOptions">
-                                <ManagePlayers gameId={this.state.game.id} selfPlayer={this.state.selfPlayer} defaultComputerPlayers={1} />
+                    <div className="game-creation-screen">
+                        <Subtitle1 as="h1">Create Game</Subtitle1>
+                        <div className="create-game-columns">
+                            <div className='players-column'>
+                                <ManagePlayers gameId={this.state.game.id}
+                                    selfPlayer={this.state.selfPlayer}
+                                    defaultComputerPlayers={1}
+                                    maxPlayers={10}
+                                />
+                            </div>
+
+                            <div className='options-column'>
                                 <GameOptions setAvailableResources={this.setAvailableResources.bind(this)} setOthersCanJoin={this.setOthersCanJoin.bind(this)} />
                             </div>
 
-                            <div className="MapColumn">
-                                Select map
-
-                                {this.state.map &&
-                                    <MapInformationCard map={this.state.map} expanded={true} controls={false} />
-                                }
-
-                                <MapSelection onMapSelected={this.onMapSelected.bind(this)} className={this.state.map ? "SmallMapSelection" : "FullMapSelection"} />
+                            <div className='map-column'>
+                                <MapSelection onMapSelected={this.onMapSelected.bind(this)} />
                             </div>
                         </div>
-                        <BottomButtons>
-                            <Button label="Delete game" onButtonClicked={this.onDeleteGame.bind(this)} />
-                            <Button label="Start game" onButtonClicked={this.onStartGame.bind(this)} disabled={!this.state.map} ref={this.createGameButtonRef} />
-                        </BottomButtons>
+                        <div className='start-or-cancel'>
+                            <Button onClick={this.onDeleteGame.bind(this)} >Discard game</Button>
+                            <Button onClick={this.onStartGame.bind(this)}
+                                disabled={!this.state.map}
+
+                                appearance='primary'
+                            >Launch game</Button>
+                        </div>
                     </div>
                 }
+
+                <div id="worker-animation">
+                    <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                </div>
 
             </>
         )

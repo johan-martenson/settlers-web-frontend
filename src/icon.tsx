@@ -1,5 +1,5 @@
 import React, { Component, ReactNode } from 'react'
-import { texturedImageVertexShaderPixelPerfectStraightCoordinates, shadowFragmentShader, textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShaderPixelPerfect, textureFragmentShader } from './shaders'
+import { texturedImageVertexShaderPixelPerfectStraightCoordinates, textureFragmentShader } from './shaders'
 import { Direction, Nation, WorkerType } from './api'
 import { workers } from './assets'
 import { Dimension, WorkerAnimation, makeShader, resizeCanvasToDisplaySize } from './utils'
@@ -124,7 +124,7 @@ class WorkerIcon extends Component<WorkerIconProps, WorkerIconState> {
         gl.useProgram(this.drawImageProgram)
         gl.viewport(0, 0, canvas.width, canvas.height)
 
-        this.drawImagePositionLocation = gl.getAttribLocation(this.drawImageProgram, "a_coord")
+        this.drawImagePositionLocation = gl.getAttribLocation(this.drawImageProgram, "a_position")
         this.drawImageTexcoordLocation = gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
 
         // Create the position buffer
@@ -249,9 +249,7 @@ class WorkerIcon extends Component<WorkerIconProps, WorkerIconState> {
                 return
             }
 
-            const gamePoint = { x: 0, y: 0 }
             const scale = DEFAULT_SCALE * ((this.props.scale) ? this.props.scale : 1)
-            const translate = { x: draw.offsetX, y: -(draw.height / 2) }
 
             this.gl.activeTexture(this.gl.TEXTURE0)
             this.gl.bindTexture(this.gl.TEXTURE_2D, draw.texture)

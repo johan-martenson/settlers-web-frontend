@@ -198,6 +198,7 @@ export function isMaterial(material: string): material is Material {
 interface Player {
     name: string
     color: string
+    nation: Nation
 }
 
 interface GameToCreate {
@@ -271,6 +272,7 @@ export interface PlayerInformation {
     readonly color: string
     readonly centerPoint: Point
     readonly discoveredPoints: Set<Point>
+    readonly nation: Nation
 }
 
 export interface GameInformation {
@@ -278,6 +280,7 @@ export interface GameInformation {
     id: GameId
     status: "STARTED" | "NOT_STARTED"
     name: string
+    map: MapInformation
 }
 
 export interface MapInformation {
@@ -729,7 +732,7 @@ async function getGames(): Promise<GameInformation[]> {
     return await response.json()
 }
 
-async function addHumanPlayerToGame(gameId: GameId, name: string, color: string): Promise<PlayerInformation> {
+async function addHumanPlayerToGame(gameId: GameId, name: string, color: string, nation: Nation): Promise<PlayerInformation> {
     const response = await fetch("/settlers/api/games/" + gameId + "/players",
         {
             method: 'POST',
@@ -738,8 +741,9 @@ async function addHumanPlayerToGame(gameId: GameId, name: string, color: string)
             },
             body: JSON.stringify(
                 {
-                    name: name,
-                    color: color
+                    name,
+                    color,
+                    nation
                 }
             )
         }
@@ -748,7 +752,7 @@ async function addHumanPlayerToGame(gameId: GameId, name: string, color: string)
     return await response.json()
 }
 
-async function addComputerPlayerToGame(gameId: GameId, name: string, color: string): Promise<PlayerInformation> {
+async function addComputerPlayerToGame(gameId: GameId, name: string, color: string, nation: Nation): Promise<PlayerInformation> {
     const response = await fetch("/settlers/api/games/" + gameId + "/players",
         {
             method: 'POST',
@@ -757,9 +761,10 @@ async function addComputerPlayerToGame(gameId: GameId, name: string, color: stri
             },
             body: JSON.stringify(
                 {
-                    name: name,
-                    color: color,
-                    type: 'COMPUTER_PLAYER'
+                    name,
+                    color,
+                    type: 'COMPUTER',
+                    nation
                 }
             )
         }

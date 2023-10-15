@@ -36,12 +36,12 @@ class MapList extends Component<MapListProps, MapListState> {
 
     render(): JSX.Element {
         return (
-            <div className="MapList">
+            <div className="map-list">
                 {this.state.maps.map(
                     (map, index) => {
 
                         return (
-                            <div key={index} className="MapListItem">
+                            <div key={index} >
                                 <MapInformationCard map={map} onMapSelected={this.onMapSelected.bind(this)} />
                             </div>
                         )

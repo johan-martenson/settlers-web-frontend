@@ -5,13 +5,11 @@
     align-items: center;
 }
 
-.MapListItem {
-    margin-bottom: 0.5rem;
-}
 
-.MapList {
-    overflow-y: auto;
+.map-list {
+    overflow-y: scroll;
     display: flex;
     flex-direction: column;
-    height: 90%;
+    gap: 10px;
+    height: 60vh;
 }

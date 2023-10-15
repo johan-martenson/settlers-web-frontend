@@ -9,6 +9,8 @@ const roadListeners: (() => void)[] = []
 
 let loadingPromise: Promise<void> | undefined = undefined
 let websocket: WebSocket | undefined = undefined
+
+// eslint-disable-next-line
 let gameHasExpired = false
 
 type RequestId = number
@@ -1521,6 +1523,7 @@ async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<Poi
         }
     ))
 
+    // eslint-disable-next-line
     return new Promise((result, reject) => {
         const timer = setInterval(() => {
             const reply = replies.get(requestId)

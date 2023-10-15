@@ -1,14 +1,24 @@
 import React, { Component } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
+import { GameId, PlayerId, Point, PointInformation, getInformationOnPoint } from './api'
+
+export interface Command {
+    action: (() => void)
+    filter: ((selectedPointInformation: PointInformation) => boolean) | undefined
+}
 
 interface TypeControlProps {
-    commands: Map<string, (() => void)>
+    commands: Map<string, Command>
+    selectedPoint: Point
+    gameId: GameId
+    playerId: PlayerId
 }
 
 interface TypeControlState {
     input: string
     expanded: boolean
+    selectedPointInformation: PointInformation | undefined
 }
 
 class TypeControl extends Component<TypeControlProps, TypeControlState> {
@@ -18,8 +28,37 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
         this.state = {
             input: "",
-            expanded: false
+            expanded: false,
+            selectedPointInformation: undefined
         }
+    }
+
+    // eslint-disable-next-line
+    async componentDidUpdate(prevProps: Readonly<TypeControlProps>, prevState: Readonly<TypeControlState>, snapshot?: unknown): Promise<void> {
+        if (prevProps.selectedPoint !== this.props.selectedPoint) {
+            const pointInformation = await getInformationOnPoint(this.props.selectedPoint, this.props.gameId, this.props.playerId)
+
+            this.setState({selectedPointInformation: pointInformation})
+        }
+    }
+
+    commandChosen(commandName: string): void {
+
+        /* Run the command */
+        console.log("Command: " + commandName + " (" + this.state.input + ")")
+
+        const command = this.props.commands.get(commandName)
+
+        if (command) {
+            command.action()
+        }
+
+        /* Clear the input */
+        this.setState(
+            {
+                input: ""
+            }
+        )
     }
 
     onKeyDown(event: React.KeyboardEvent): void {
@@ -53,21 +92,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
             /* Run the command */
             if (commandHit) {
-
-                console.log("Command: " + commandHit + " (" + this.state.input + ")")
-
-                const fn = this.props.commands.get(commandHit)
-
-                if (fn) {
-                    fn()
-                }
-
-                /* Clear the input */
-                this.setState(
-                    {
-                        input: ""
-                    }
-                )
+                this.commandChosen(commandHit)
             } else {
                 console.log("Can't find command matching: " + this.state.input)
             }
@@ -105,7 +130,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
         )
     }
 
-    render() {
+    render(): JSX.Element {
 
         let hasMatch = false
         const inputToMatch = this.state.input.toLowerCase()
@@ -126,32 +151,40 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
         }
 
         return (
-            <div className="TypeControl">
+            <div className="type-control">
 
-                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} inverted />
+                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
                 <div className={className}>{this.state.input}</div>
 
-                {Array.from(this.props.commands.keys()).map(
-                    (option, index) => {
+                {Array.from(this.props.commands.entries()).map(
+                    ([commandName, command], index) => {
 
-                        if (inputToMatch.length > 0 && option.toLowerCase().startsWith(inputToMatch)) {
+                        let show = true
+
+                        if (command.filter && this.state.selectedPointInformation) {
+                            show = command.filter(this.state.selectedPointInformation)
+                        }
+
+                        if (show && inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)) {
 
                             return (
-                                <div key={index} className="Alternative">
-                                    <span className="MatchingPart">{option.substring(0, this.state.input.length)}</span>
-                                    <span className="RemainingPart">{option.substring(this.state.input.length, option.length)}</span>
+                                <div key={index} className="Alternative" onClick={() => this.commandChosen(commandName)}>
+                                    <span className="MatchingPart">{commandName.substring(0, this.state.input.length)}</span>
+                                    <span className="RemainingPart">{commandName.substring(this.state.input.length, commandName.length)}</span>
                                 </div>
                             )
-                        } else {
+                        } else if (show) {
 
                             if (this.state.expanded) {
                                 return (
-                                    <div key={index} className="Alternative">{option}</div>
+                                    <div key={index} className="Alternative" onClick={() => this.commandChosen(commandName)}>
+                                        {commandName}
+                                    </div>
                                 )
-                            } else {
-                                return null
                             }
                         }
+
+                        return null
                     }
                 )
                 }
@@ -161,4 +194,4 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
     }
 }
 
-export default TypeControl
+export { TypeControl }

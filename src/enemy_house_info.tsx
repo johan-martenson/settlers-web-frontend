@@ -27,7 +27,7 @@ class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState>
         this.state = {}
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
         const house = await getHouseInformationWithAttackPossibility(this.props.house.id, this.props.gameId, this.props.house.playerId, this.props.playerId)
 
         if (house.maxAttackers && house.maxAttackers > 0) {
@@ -36,7 +36,7 @@ class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState>
 
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
 

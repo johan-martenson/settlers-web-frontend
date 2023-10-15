@@ -3,13 +3,14 @@ import './row.css'
 
 interface RawRowProps {
     className?: string
+    children?: React.ReactNode
 }
 
 interface RawRowState { }
 
 class RawRow extends Component<RawRowProps, RawRowState> {
 
-    render() {
+    render(): JSX.Element {
 
         let className = "Row"
 

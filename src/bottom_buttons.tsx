@@ -7,7 +7,7 @@ interface BottomButtonsProps {
 interface BottomButtonsState { }
 
 class BottomButtons extends Component<BottomButtonsProps, BottomButtonsState> {
-    render() {
+    render(): JSX.Element {
         return (
             <div className="BottomButtons">
                 {this.props.children}

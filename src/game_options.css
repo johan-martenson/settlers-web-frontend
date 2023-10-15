@@ -1,21 +1,5 @@
-.GameOptionsContainer {
-    padding: 1em;
-}
-
-.ResourceButtons {
-    float: right;
-}
-
-.ResourceLabel {
-    float: left;
-    vertical-align: middle;
-}
-
-.Label {
-    float: left;
-    margin-right: 4em;
-}
-
-.OthersCanJoinSlider {
-    float: right;
+.settings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }

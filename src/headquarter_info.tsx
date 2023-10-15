@@ -30,7 +30,7 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
         const inventory: Map<Material, number> = new Map()
 
         Object.entries(house.resources).forEach(
-            ([material, hasAndNeeds], index) => {
+            ([material, hasAndNeeds]) => {
                 const hasAmount = hasAndNeeds.has
 
                 if (!isMaterial(material)) {
@@ -48,7 +48,7 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
         return inventory
     }
 
-    render() {
+    render(): JSX.Element {
 
         const inventory = this.calculateInventory(this.props.house)
         const inventoryItems = []

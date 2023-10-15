@@ -1,23 +1,27 @@
-.GameMessages {
+.game-messages {
 
     position: absolute;
     z-index: 99;
     left: 0;
     bottom: 0;
     background-color: white;
+    color: black;
     border-radius: 0.5rem;
     padding: 0.7rem;
+    gap: 10px;
 }
 
-.GameMessageList {
+.game-message-list {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     max-height: 80vh;
+    gap: 10px;
 }
 
-.GameMessage {
+.game-message {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    gap: 10px;
 }

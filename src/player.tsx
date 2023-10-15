@@ -1,12 +1,11 @@
-import React, { Component, createRef } from 'react'
-import Button from './button'
-import Card from './card'
-import ExpandCollapseToggle from './expand_collapse_toggle'
-import './player.css'
-import { PlayerInformation } from './api'
+import React, { Component, createRef } from 'react';
+import { Text, CardHeader, Caption1, Card, Button } from "@fluentui/react-components";
+import './player.css';
+import { PlayerInformation } from './api';
+import { MoreHorizontal20Regular } from "@fluentui/react-icons";
+
 
 interface PlayerState {
-    type: string
     name: string
     isSelf: boolean
     expanded: boolean
@@ -34,7 +33,6 @@ class Player extends Component<PlayerProps, PlayerState> {
         }
 
         this.state = {
-            type: props.player.type,
             name: props.player.name,
             isSelf: isSelf,
             nameField: null,
@@ -62,29 +60,38 @@ class Player extends Component<PlayerProps, PlayerState> {
         this.props.onNameChanged(nameField.value)
     }
 
-    render() {
+    render(): JSX.Element {
+
+        console.log(this.props.player.type)
 
         return (
-            <div>
-                <Card className="Player">
-                    <div className="PlayerTop">
-                        <div className="PlayerNameLabel">{this.props.player.name} {this.state.type === "COMPUTER" && "(computer)"}</div>
-                        <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
-                    </div>
-                    {this.state.type === "COMPUTER" && this.state.expanded &&
+                <Card>
+                    <CardHeader
+                    header={<Text weight="semibold">{this.props.player.name} {this.props.player.type === "COMPUTER" && "(computer)"}</Text>}
+                    description={
+                        <Caption1>{this.props.player.nation}, {this.props.player.type === "COMPUTER" && "(computer)"}</Caption1>
+                    }
+                    action={
+                        <Button
+                            appearance="transparent"
+                            icon={<MoreHorizontal20Regular />}
+                            aria-label="More options"
+                        />}
+                />
+                <p>
+                    {this.props.player.type === "COMPUTER" && this.state.expanded &&
                         <div className="SetName">
                             <div className="SetNameLabel">Change name:</div>
                             <input type="text" className="SetNameField" placeholder="Name" ref={this.nameFieldRef} />
-                            <Button label="Ok" className="SetNameButton" onButtonClicked={this.changeName.bind(this)} />
+                            <Button onClick={this.changeName.bind(this)} >Ok</Button>
                         </div>
                     }
 
                     {!this.props.isSelf && this.props.onPlayerRemoved && this.state.expanded &&
-                        <Button label="Remove" className="RemovePlayerButton" onButtonClicked={this.props.onPlayerRemoved} />
+                        <Button onClick={this.props.onPlayerRemoved} >Remove</Button>
                     }
-
+</p>
                 </Card>
-            </div>
         )
     }
 }

@@ -1,0 +1,41 @@
+.music-player {
+    position: absolute;
+    z-index: 99;
+    right: 0;
+    top: 0;
+    background-color: white;
+    color: black;
+    border-radius: 0.5rem;
+    padding: 0.7rem;
+    gap: 10px;
+}
+
+.SongList {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: 80vh;
+}
+
+.SongItem {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.SongItem:hover {
+    background-color: lightblue;
+    cursor: pointer;
+}
+
+.PlayingSongItem {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    font-weight: bold;
+}
+
+.PlayingSongItem:hover {
+    background-color: lightblue;
+    cursor: pointer;
+}

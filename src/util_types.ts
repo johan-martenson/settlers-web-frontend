@@ -39,7 +39,7 @@ class PointFastIterator implements IterableIterator<Point> {
         return this
     }
 
-    next(value?: Point): IteratorResult<Point> {
+    next(): IteratorResult<Point> {
         const result = this.pointFastSetIterator.next()
 
         if (result.value) {
@@ -70,7 +70,7 @@ class PointSetFastIterator implements IterableIterator<Point> {
         return this
     }
 
-    next(value?: Point): IteratorResult<Point> {
+    next(): IteratorResult<Point> {
         const result = this.pointFastSetIterator.next()
 
         if (result.value) {
@@ -100,7 +100,7 @@ class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
         return this
     }
 
-    next(inValue?: [Point, T]): IteratorResult<[Point, T]> {
+    next(): IteratorResult<[Point, T]> {
         const result = this.pointEntryFastIterator.next()
 
         if (result.done) {
@@ -133,6 +133,10 @@ class PointSetFast implements IterableIterator<Point> {
         }
     }
 
+    clear(): void {
+        this.pointSet.clear()
+    }
+
     add(point: Point): void {
         this.pointSet.add(pointToFastKey(point))
     }
@@ -157,11 +161,11 @@ class PointSetFast implements IterableIterator<Point> {
         return this.entries()
     }
 
-    next(value?: any): IteratorResult<Point> {
+    next(): IteratorResult<Point> {
         throw new Error("Method not implemented.")
     }
 
-    forEach(arg0: (v: Point, i: number) => void) {
+    forEach(arg0: (v: Point, i: number) => void): void {
         this.pointSet.forEach((value, index) => {
             const point = keyToFastPoint(value)
             arg0(point, index)
@@ -194,9 +198,10 @@ class PointMapFast<T> implements Map<Point, T> {
         return this.numberToPointMap.delete(pointToFastKey(point))
     }
 
-    forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: any): void {
+    // eslint-disable-next-line
+    forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: unknown): void {
         this.numberToPointMap.forEach(
-            (value, key, map) => {
+            (value, key) => {
                 callbackfn(value, keyToFastPoint(key), this)
             }
         )
@@ -223,9 +228,11 @@ class PointMapFast<T> implements Map<Point, T> {
     [Symbol.iterator](): IterableIterator<[Point, T]> {
         return this.entries()
     }
+
     entries(): IterableIterator<[Point, T]> {
         return new PointEntryFastIterator(this.numberToPointMap.entries())
     }
+
     keys(): IterableIterator<Point> {
         return new PointFastIterator(this.numberToPointMap.keys())
     }

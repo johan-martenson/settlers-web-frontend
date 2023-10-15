@@ -1,13 +1,15 @@
 import React, { Component } from 'react'
 import MenuSectionLabel from './menu_section_label'
 
-interface MenuProps { }
+interface MenuProps {
+    children?: React.ReactNode
+}
 
 interface MenuState { }
 
 class Menu extends Component<MenuProps, MenuState> {
 
-    render() {
+    render(): JSX.Element {
         return (
             <div className="Menu">
                 {this.props.children}
@@ -20,13 +22,14 @@ interface MenuSectionProps {
     selected?: boolean
     className?: string
     label?: string
+    children?: React.ReactNode
 }
 
 interface MenuSectionState { }
 
 class MenuSection extends Component<MenuSectionProps, MenuSectionState> {
 
-    render() {
+    render(): JSX.Element {
         let className = "MenuSectionContent"
 
         if (this.props.selected && this.props.selected) {

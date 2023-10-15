@@ -7,7 +7,7 @@ interface MenuButtonProps {
 interface MenuButtonState { }
 
 class MenuButton extends Component<MenuButtonProps, MenuButtonState> {
-    render() {
+    render(): JSX.Element {
         return (
             <div className="MenuButton"
                 onClick={

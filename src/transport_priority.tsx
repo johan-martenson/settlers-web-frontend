@@ -24,7 +24,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         this.state = {}
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
         const currentPriority = await getTransportPriorityForPlayer(this.props.gameId, this.props.playerId)
 
         console.log(currentPriority)
@@ -36,7 +36,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         this.setState({ selected: material })
     }
 
-    render() {
+    render(): JSX.Element {
         const selectedMaterial = this.state.selected
 
         return (
@@ -83,7 +83,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         }
 
         if (isTool(selectedMaterial)) {
-            let updatedPriority = Object.assign([], this.state.priority)
+            const updatedPriority = Object.assign([], this.state.priority)
 
             for (const tool of TOOLS) {
                 await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, tool, currentPriority + 1)
@@ -101,7 +101,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
 
             await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, selectedMaterial, currentPriority + 1)
 
-            let updatedPriority = Object.assign([], this.state.priority)
+            const updatedPriority = Object.assign([], this.state.priority)
 
             delete updatedPriority[currentPriority]
 
@@ -124,7 +124,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         }
 
         if (isTool(selectedMaterial)) {
-            let updatedPriority = Object.assign([], this.state.priority)
+            const updatedPriority = Object.assign([], this.state.priority)
 
             for (const tool of TOOLS) {
                 console.log("Changing priority for " + tool)
@@ -144,7 +144,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
 
             await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, selectedMaterial, currentPriority - 1)
 
-            let updatedPriority = Object.assign([], this.state.priority)
+            const updatedPriority = Object.assign([], this.state.priority)
 
             delete updatedPriority[currentPriority]
 

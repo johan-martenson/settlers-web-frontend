@@ -30,11 +30,12 @@ class OptionMenu extends Component<OptionMenuProps, OptionMenuState> {
         this.props.onClose()
     }
 
+    // eslint-disable-next-line
     adjustSpeed(speed: number): void {
         //FIXME: actually adjust the speed
     }
 
-    render() {
+    render(): JSX.Element {
         return (
             <Dialog heading="Options" onCloseDialog={this.onClose.bind(this)}>
                 <DialogSection label="Zoom level">

@@ -11,13 +11,14 @@ interface DialogProps {
     className?: string
     id?: string
     floating?: boolean
+    children?: React.ReactNode
 }
 
 interface DialogState { }
 
 class Dialog extends Component<DialogProps, DialogState> {
 
-    render() {
+    render(): JSX.Element {
 
         let className = "Dialog"
 
@@ -59,12 +60,13 @@ class Dialog extends Component<DialogProps, DialogState> {
 
 interface DialogSectionProps {
     label?: string
+    children?: React.ReactNode
 }
 
 interface DialogSectionState { }
 
 class DialogSection extends Component<DialogSectionProps, DialogSectionState> {
-    render() {
+    render(): JSX.Element {
         return (
             <div className="DialogSection">
                 {this.props.label && <MenuSectionLabel label={this.props.label} />}

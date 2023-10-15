@@ -70,7 +70,7 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
         )
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div>

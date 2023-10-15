@@ -11,6 +11,7 @@ interface ButtonProps {
     imageLabel?: string
     disabled?: boolean
     autoFocus?: true
+    children?: React.ReactNode
     onButtonClicked: (() => void)
 }
 
@@ -19,7 +20,7 @@ interface ButtonState { }
 class Button extends Component<ButtonProps, ButtonState> {
     private selfButtonRef = React.createRef<HTMLDivElement>()
 
-    componentDidMount() {
+    componentDidMount(): void {
 
         if (this.props.autoFocus && this.selfButtonRef && this.selfButtonRef.current) {
             this.selfButtonRef.current.focus()
@@ -38,7 +39,7 @@ class Button extends Component<ButtonProps, ButtonState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
         let className = "Button"
 
         if (this.props.selected && this.props.selected) {

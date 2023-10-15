@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, Nation, NationSmallCaps, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'
@@ -7,6 +7,8 @@ import { shadowFragmentShader, textureAndLightingFragmentShader, textureAndLight
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
 import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, FlagAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, HouseImageAtlasHandler, intToVegetationColor, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, vegetationToInt, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
+
+export const DEFAULT_SCALE = 35.0
 
 export interface ScreenPoint {
     x: number
@@ -39,6 +41,7 @@ interface GameCanvasProps {
     newRoad?: Point[]
     showAvailableConstruction: boolean
     showHouseTitles: boolean
+    showFpsCounter?: boolean
 
     width: number
     height: number
@@ -54,13 +57,20 @@ interface GameCanvasState {
 
 const ANIMATION_PERIOD = 100
 
+const MOUSE_STYLES = new Map<CursorState, string>()
+
+MOUSE_STYLES.set('NOTHING', 'default')
+MOUSE_STYLES.set('DRAGGING', 'move')
+MOUSE_STYLES.set('BUILDING_ROAD', "url(assets/ui-elements/building-road.png), pointer")
+
 let newRoadCurrentLength = 0
+
+// eslint-disable-next-line
 let logOnce = true
 let timer: ReturnType<typeof setTimeout>
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
 const currentPlayerNation: Nation = "ROMANS"
-const currentPlayerNationSmallCaps: NationSmallCaps = "romans"
 
 const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
 
@@ -97,7 +107,7 @@ vegetationToTextureMapping.set(8, { below: [1, 3, 1.5, 2, 2, 3].map(v => v * 48 
 vegetationToTextureMapping.set(9, { below: [2, 3, 2.5, 2, 3, 3].map(v => v * 48 / 256), downRight: [2, 2, 2.5, 3, 3, 2].map(v => v * 48 / 256) }) // Meadow 2
 vegetationToTextureMapping.set(10, { below: [146, 142, 146, 98, 190, 98].map(v => v / 256), downRight: [146, 142, 190, 142, 190, 98].map(v => v / 256) }) // Meadow 3
 vegetationToTextureMapping.set(11, { below: [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256), downRight: [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256) }) // Mountain 2
-vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256), downRight: [2, 1, 2.5, 3, 2, 1].map(v => v * 48 / 256) }) // Mountain 3
+vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256), downRight: [2, 1, 2.5, 2, 3, 1].map(v => v * 48 / 256) }) // Mountain 3
 vegetationToTextureMapping.set(13, { below: [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256), downRight: [3, 1, 3.5, 2, 4, 1].map(v => v * 48 / 256) }) // Mountain 4
 vegetationToTextureMapping.set(14, { below: [2, 190, 2, 146, 45, 146].map(v => v / 256), downRight: [2, 190, 45, 146, 45, 190].map(v => v / 256) }) // Steppe
 vegetationToTextureMapping.set(15, { below: [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256), downRight: [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256) }) // Flower meadow
@@ -174,7 +184,7 @@ const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-car
 const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo", 10)
 const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
 
-const flagAnimations = new FlagAnimation("assets/", 10)
+const flagAnimations = new FlagAnimation("assets/", 2)
 
 interface RenderInformation {
     coordinates: number[]
@@ -253,10 +263,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
+
         if (prevProps.cursorState !== this.props.cursorState && this?.normalCanvasRef?.current) {
 
             if (this.props.cursorState === 'DRAGGING') {
-                this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/dragging.png), pointer"
+                //this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/dragging.png), pointer"
+                this.normalCanvasRef.current.style.cursor = 'move'
             } else if (this.props.cursorState === 'BUILDING_ROAD') {
                 this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
             } else {
@@ -265,8 +277,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
+    // eslint-disable-next-line
     shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState): boolean {
-        return this.props.onKeyDown !== nextProps.onKeyDown
+        return this.props.onKeyDown !== nextProps.onKeyDown ||
+            this.props.cursorState !== nextProps.cursorState ||
+            this.props?.selectedPoint?.x !== nextProps?.selectedPoint?.x ||
+            this.props?.selectedPoint?.y !== nextProps?.selectedPoint?.y
     }
 
     updateRoadDrawingBuffers(): void {
@@ -275,11 +291,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
             this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
 
-            console.log("Updating")
-
             this.roadRenderInformation = this.prepareToRenderRoads(monitor.roads.values())
-
-            console.log(this.roadRenderInformation)
 
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.coordinates), this.gl.STATIC_DRAW)
@@ -289,10 +301,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.textureMapping), this.gl.STATIC_DRAW)
+        } else {
+            console.error("Failed to update road drawing buffers. At least one input is undefined")
         }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         /* Load animations */
         const fileLoading = []
@@ -305,7 +319,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             fileLoading.push(animal.load())
         }
 
-        const allFilesToWaitFor = fileLoading.concat([
+        const allThingsToWaitFor = fileLoading.concat([
             treeAnimations.load(),
             flagAnimations.load(),
             houses.load(),
@@ -327,15 +341,34 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             decorationsImageAtlasHandler.load()
         ])
 
-        await Promise.all(allFilesToWaitFor)
+        const monitorLoadingPromise = monitor.getLoadingPromise()
+
+        if (monitorLoadingPromise !== undefined) {
+            allThingsToWaitFor.push(monitorLoadingPromise)
+        }
+
+        await Promise.all(allThingsToWaitFor)
 
         console.log("Download image atlases done")
 
+
+        /*
+           Update the calculated normals -- avoid the race condition by doing this after subscription is established.
+           This must be performed before subscribing for road changes
+        */
+        if (monitor.isGameDataAvailable() && this.normals.size === 0) {
+            console.log("Game data available and no normals. Calculating before setting up listeners")
+
+            this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+        }
+
         /* Subscribe for new discovered points */
+        // eslint-disable-next-line
         listenToDiscoveredPoints((points) => {
 
             // Update the calculated normals
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+            console.log("New discovered points - calculated normals")
 
             // Update the map rendering buffers
             if (this.gl && this.groundRenderProgram) {
@@ -353,16 +386,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
+                } else {
+                    console.error("At least one render buffer was undefined")
                 }
+            } else {
+                console.error("Gl or ground render pgrogram is undefined")
             }
         })
+
+        console.log("Subscribed to changes in discovered points")
 
         /* Subscribe for added and removed roads */
         listenToRoads(this.updateRoadDrawingBuffers)
 
+        console.log("Subscribed to changes in roads")
+
         /* Put together the render information from the discovered tiles */
         this.mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-
 
         /*  Initialize webgl2 */
         if (this.normalCanvasRef?.current) {
@@ -373,8 +413,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (gl) {
 
                 // Make textures for the image atlases
-                workers.forEach((animation, workerType) => animation.makeTexture(gl))
-                animals.forEach((animation, animalType) => animation.makeTexture(gl))
+                for (const animation of workers.values()) {
+                    animation.makeTexture(gl)
+                }
+
+                for (const animation of animals.values()) {
+                    animation.makeTexture(gl)
+                }
 
                 treeAnimations.makeTexture(gl)
                 flagAnimations.makeTexture(gl)
@@ -469,7 +514,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     this.gl = gl
                 } else {
-                    console.log("Failed to get prog")
+                    console.error("Failed to create terrain rendering gl program")
                 }
 
                 // Setup the program to render images
@@ -527,6 +572,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Configure how the attribute gets data
                     gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, gl.FLOAT, false, 0, 0)
+                } else {
+                    console.error("Failed to create image rendering gl program")
                 }
 
                 // Setup the program to render shadows
@@ -586,12 +633,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
                 }
             } else {
-                console.log(gl)
+                console.error("Failed to create shadow rendering gl program")
             }
 
         } else {
-            console.log("No canvasRef.current")
+            console.error("No canvasRef.current")
         }
+
+        /* Prepare to draw roads */
+        this.updateRoadDrawingBuffers()
 
         /* Create the rendering thread */
         this.renderGame()
@@ -600,6 +650,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     renderGame(): void {
 
         const duration = new Duration("GameRender::renderGame")
+
+        // Only draw if the game data is available
+        if (!monitor.isGameDataAvailable()) {
+            return
+        }
 
         // Handle the animation counter
         const now = performance.now()
@@ -651,14 +706,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.gl?.viewport(0, 0, width, height)
 
         /* Clear the drawing list */
-        let toDrawNormal: ToDraw[] = []
+        const toDrawNormal: ToDraw[] = []
         const shadowsToDraw: ToDraw[] = []
 
 
         /* Clear the overlay - make it fully transparent */
         overlayCtx.clearRect(0, 0, width, height)
-
-        const scaleY = this.props.scale * 0.5
 
         let oncePerNewSelectionPoint = false
 
@@ -752,8 +805,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // mode, offset (nr vertices), count (nr vertices)
                     gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 2)
+                } else {
+                    console.error("Map render information was missing when trying to draw the terrain")
                 }
+            } else {
+                console.error("Buffers were undefined when trying to draw the terrain")
             }
+        } else {
+            console.error("Did not draw the terrain layer")
         }
 
         duration.after("draw terrain")
@@ -905,18 +964,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.uniform1i(this.uSampler, 1)
 
             gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 2)
+        } else {
+            console.error("Missing information to draw roads")
         }
 
         duration.after("draw roads")
 
 
-        let ctx = overlayCtx
+        const ctx = overlayCtx
 
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
         /* Collect borders to draw */
-        for (const [playerId, borderForPlayer] of monitor.border) {
-
+        for (const borderForPlayer of monitor.border.values()) {
             borderForPlayer.points.forEach(borderPoint => {
 
                 if (borderPoint.x < minXInGame || borderPoint.x > maxXInGame || borderPoint.y < minYInGame || borderPoint.y > maxYInGame) {
@@ -1637,7 +1697,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     toDrawNormal.push({
                         source: cargoDrawInfo,
-                        gamePoint: { x: flag.x - 0.5, y: flag.y - 0.5 * i + 0.1 },
+                        gamePoint: { x: flag.x - 0.5, y: flag.y - 0.1 * i + 0.1 },
                         depth: flag.y
                     })
                 }
@@ -1651,7 +1711,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
-                            gamePoint: { x: flag.x + 0.08, y: flag.y - 0.2 * (i - 4) + 0.3 },
+                            gamePoint: { x: flag.x + 0.08, y: flag.y - 0.1 * (i - 4) + 0.3 },
                             depth: flag.y
                         })
                     }
@@ -1666,12 +1726,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
-                            gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.2 * (i - 4) + 0.1 },
+                            gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.1 },
                             depth: flag.y
                         })
                     }
                 }
             }
+
+            flagCount = flagCount + 1
         }
 
         duration.after("collect flags")
@@ -1891,7 +1953,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Handle the hover layer
-        let toDrawHover: ToDraw[] = []
+        const toDrawHover: ToDraw[] = []
 
         /* Draw possible road connections */
         if (this.props.possibleRoadConnections) {
@@ -1911,7 +1973,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             this.props.possibleRoadConnections.forEach(
-                (point, _index) => {
+                (point) => {
 
                     const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
 
@@ -2086,7 +2148,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw house titles */
         if (this.props.showHouseTitles) {
 
-            ctx.font = "bold 10px sans-serif"
+            ctx.font = "bold 12px sans-serif"
             ctx.strokeStyle = 'black'
             ctx.fillStyle = 'yellow'
 
@@ -2098,8 +2160,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const screenPoint = this.gamePointToScreenPoint(house)
 
-                screenPoint.x -= 0.8 * this.props.scale // 30
-                screenPoint.y -= 1 * scaleY // 15
+                const houseDrawInformation = houses.getDrawingInformationForHouseReady(currentPlayerNation, house.type)
+
+                let heightOffset = 0
+
+                if (houseDrawInformation) {
+                    heightOffset = houseDrawInformation[0].offsetY * this.props.scale / DEFAULT_SCALE
+                }
 
                 let houseTitle = camelCaseToWords(house.type)
 
@@ -2108,6 +2175,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else if (house.productivity !== undefined) {
                     houseTitle = houseTitle + " (" + house.productivity + "%)"
                 }
+
+                const widthOffset = ctx.measureText(houseTitle).width / 2
+
+                screenPoint.x -= widthOffset
+                screenPoint.y -= heightOffset
 
                 ctx.strokeText(houseTitle, screenPoint.x, screenPoint.y - 5)
                 ctx.fillText(houseTitle, screenPoint.x, screenPoint.y - 5)
@@ -2127,7 +2199,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw the FPS counter */
         const timestamp = getTimestamp()
 
-        if (this.previousTimestamp) {
+        if (this.props.showFpsCounter && this.previousTimestamp) {
             const fps = getLatestValueForVariable("GameRender::renderGame.total")
 
             ctx.fillStyle = 'white'
@@ -2249,7 +2321,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <>
@@ -2257,6 +2329,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     className="GameCanvas"
                     onKeyDown={this.props.onKeyDown}
                     onClick={this.onClickOrDoubleClick}
+                    style={{ cursor: MOUSE_STYLES.get(this.props.cursorState) }}
 
                     ref={this.overlayCanvasRef}
                     onMouseMove={
@@ -2472,7 +2545,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         // Calculate the normal for each point
-        for (let point of monitor.discoveredPoints) {
+        for (const point of monitor.discoveredPoints) {
             const normals = [
                 straightBelowNormals.get(getPointUpLeft(point)),
                 downRightNormals.get(getPointUpLeft(point)),
@@ -2483,19 +2556,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             ]
 
             // Calculate the combined normal as the average of the normal for the surrounding triangles
-            let vectors: Vector[] = []
+            const vectors: Vector[] = []
 
-            for (let normal of normals) {
+            for (const normal of normals) {
                 if (normal) {
                     vectors.push(normal)
                 }
             }
 
-            const combinedVector = vectors.reduce(sumVectors)
+            if (vectors.length > 0) {
+                const combinedVector = vectors.reduce(sumVectors)
 
-            const normalized = normalize(combinedVector)
+                const normalized = normalize(combinedVector)
 
-            this.normals.set(point, normalized)
+                this.normals.set(point, normalized)
+            } else {
+                this.normals.set(point, { x: 0, y: 0, z: 1 })
+            }
         }
     }
 
@@ -2504,9 +2581,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         console.log("Prepare to render roads")
 
         // Create the render information for the roads
-        let coordinatesList: number[] = []
-        let normalsList: number[] = []
-        let textureMappinglist: number[] = []
+        const coordinatesList: number[] = []
+        const normalsList: number[] = []
+        const textureMappinglist: number[] = []
 
         for (const road of roads) {
 

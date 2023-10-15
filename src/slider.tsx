@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { MenuSection } from './menu'
 
-let immediateState = {
+const immediateState = {
     dragging: false,
     clickOffset: 0
 }
@@ -37,7 +37,7 @@ class Slider extends Component<SliderProps, SliderState> {
         })
     }
 
-    componentDidMount() {
+    componentDidMount(): void {
 
         const scale = this.scaleRef.current
 
@@ -62,7 +62,7 @@ class Slider extends Component<SliderProps, SliderState> {
         indicator.focus()
     }
 
-    render() {
+    render(): JSX.Element {
         const percentage = (this.state.value - this.props.min) / (this.props.max - this.props.min)
 
         return (

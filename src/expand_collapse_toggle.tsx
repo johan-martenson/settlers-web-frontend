@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import './expand_collapse_toggle.css'
-import { isContext2D } from './utils'
+import { Button } from '@fluentui/react-components'
+import { ChevronUp24Filled, ChevronDown24Filled } from '@fluentui/react-icons'
 
 interface ExpandCollapseToggleProps {
     expanded?: boolean
@@ -13,8 +14,6 @@ interface ExpandCollapseToggleState {
 }
 
 class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCollapseToggleState> {
-
-    private selfRef = React.createRef<HTMLCanvasElement>()
 
     constructor(props: ExpandCollapseToggleProps) {
         super(props)
@@ -34,68 +33,21 @@ class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCo
         this.setState({ expanded: !this.state.expanded })
     }
 
-    componentDidMount() {
-        this.componentDidUpdate()
-    }
+    render(): JSX.Element {
 
-    componentDidUpdate() {
-
-        if (!this.selfRef.current) {
-            console.log("ERROR: no self ref")
-            return
+        if (this.props.inverted) {
+            if (this.state.expanded) {
+                return (<Button icon={<ChevronUp24Filled onClick={this.onClick.bind(this)} /> } appearance='transparent' />)
+            } else {
+                return (<Button icon={<ChevronDown24Filled onClick={this.onClick.bind(this)} /> } appearance='transparent' />)
+            }
         }
 
-        const ctx = this.selfRef.current.getContext("2d")
-
-        if (!ctx || !isContext2D(ctx)) {
-            console.log("ERROR: No or invalid context")
-            console.log(ctx)
-            return
-        }
-
-        /* Clear the screen */
-        ctx.clearRect(0, 0, 20, 20)
-
-        if ((this.state.expanded && !this.props.inverted) || !this.state.expanded && this.props.inverted) {
-
-            ctx.save()
-
-            ctx.lineWidth = 3
-            ctx.strokeStyle = 'black'
-            ctx.beginPath()
-            ctx.moveTo(0, 10)
-            ctx.lineTo(10, 0)
-            ctx.lineTo(20, 10)
-            ctx.stroke()
-
-            ctx.restore()
-
+        if (this.state.expanded) {
+            return (<Button icon={<ChevronDown24Filled onClick={this.onClick.bind(this)} /> } appearance='transparent' />)
         } else {
-
-            ctx.save()
-
-            ctx.lineWidth = 3
-            ctx.strokeStyle = 'black'
-            ctx.beginPath()
-            ctx.moveTo(0, 0)
-            ctx.lineTo(10, 10)
-            ctx.lineTo(20, 0)
-            ctx.stroke()
-
-            ctx.restore()
+            return (<Button icon={<ChevronUp24Filled onClick={this.onClick.bind(this)} /> } appearance='transparent' />)
         }
-    }
-
-    render() {
-        return (
-            <canvas
-                width={20}
-                height={20}
-                className="ExpandCollapseToggle"
-                onClick={this.onClick.bind(this)}
-                ref={this.selfRef}
-            />
-        )
     }
 }
 

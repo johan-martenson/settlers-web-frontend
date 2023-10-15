@@ -25,7 +25,7 @@ class SelectableButtonRow extends Component<SelectableButtonRowProps, Selectable
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
         let className = "SelectableButtonRowContainer"
 

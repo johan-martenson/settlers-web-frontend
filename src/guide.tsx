@@ -25,7 +25,7 @@ class Guide extends Component<GuideProps, GuideState> {
         this.state = { page: 0 }
     }
 
-    render() {
+    render(): JSX.Element {
         console.log("Rendering guide")
 
         const page: PageType = HELP_PAGES[this.state.page]
@@ -70,7 +70,7 @@ interface PageState { }
 
 class Page extends Component<PageProps, PageState> {
 
-    render() {
+    render(): JSX.Element {
 
         return (
             <div className="Page">

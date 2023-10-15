@@ -1,7 +1,5 @@
-import { dir } from 'console'
-import { Dir } from 'fs'
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getHousesForPlayer, getInformationOnPoint, HouseInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeFlag, removeHouse, removeRoad, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
-import { monitor } from './monitor'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getInformationOnPoint, getTerrainForMap, HouseInformation, MapInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeHouse, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
+import { Monitor, monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -258,19 +256,25 @@ function arrayToRgbStyle(rgb: number[]): string {
 
 function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boolean {
 
+    let found = false
+
     for (const road of roads.values()) {
+
+        if (road.id === 'LOCAL') {
+            continue
+        }
+
         road.points.forEach(
             roadPoint => {
 
                 if (point.x === roadPoint.x && point.y === roadPoint.y) {
-
-                    return true
+                    found = true
                 }
             }
         )
     }
 
-    return false
+    return found
 }
 
 async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
@@ -280,9 +284,24 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, play
     if (pointInformation.is === "building" && pointInformation.buildingId) {
         await removeHouse(pointInformation.buildingId, playerId, gameId)
     } else if (pointInformation.is === "flag" && pointInformation.flagId) {
-        await monitor.removeFlagSnappy(pointInformation.flagId, gameId, playerId)
+        monitor.removeFlag(pointInformation.flagId)
     } else if (pointInformation.is === "road" && pointInformation.roadId) {
-        await monitor.removeRoadSnappy(pointInformation.roadId, gameId, playerId)
+        monitor.removeRoad(pointInformation.roadId)
+    }
+}
+
+async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: Monitor): Promise<void> {
+
+    const pointInformation = monitor.getInformationOnPointLocal(point)
+
+    console.log({ title: "Remove house/flag/road via websocket", localPointInformation: pointInformation })
+
+    if (pointInformation.is === "building" && pointInformation.buildingId) {
+        monitor.removeBuilding(pointInformation.buildingId)
+    } else if (pointInformation.is === "flag" && pointInformation.flagId) {
+        monitor.removeFlag(pointInformation.flagId)
+    } else if (pointInformation.is === "road" && pointInformation.roadId) {
+        monitor.removeRoad(pointInformation.roadId)
     }
 }
 
@@ -299,7 +318,8 @@ function getTimestamp(): number {
 
 function loadImageNg(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
-        let image = new Image()
+        const image = new Image()
+
         image.onload = () => resolve(image)
         image.onerror = reject
         image.src = src
@@ -402,6 +422,11 @@ class AnimalAnimation {
     }
 }
 
+export interface Dimension {
+    width: number
+    height: number
+}
+
 class WorkerAnimation {
     private imageAtlasHandler: WorkerImageAtlasHandler
 
@@ -436,6 +461,10 @@ class WorkerAnimation {
 
     getImageAtlasHandler(): WorkerImageAtlasHandler {
         return this.imageAtlasHandler
+    }
+
+    getSize(nation: Nation, direction: Direction): Dimension {
+        return this.imageAtlasHandler.getSize(nation, direction)
     }
 }
 
@@ -612,6 +641,10 @@ class WorkerImageAtlasHandler {
 
     async load(): Promise<void> {
 
+        if (this.image) {
+            return
+        }
+
         // Get the image atlas information
         const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
         const imageAtlasInfo = await response.json()
@@ -637,7 +670,7 @@ class WorkerImageAtlasHandler {
         }
 
         // Shadows are common for all nations
-        let shadowImages = this.imageAtlasInfo.common.shadowImages[direction]
+        const shadowImages = this.imageAtlasInfo.common.shadowImages[direction]
 
         let images
 
@@ -762,6 +795,24 @@ class WorkerImageAtlasHandler {
         }
 
         return undefined
+    }
+
+    getSize(nation: Nation, direction: Direction): Dimension {
+        const drawingInfo = this.getDrawingInformationForWorker(nation, direction, 0, 0)
+
+        if (drawingInfo) {
+
+            return {
+                width: drawingInfo[0].width,
+                height: drawingInfo[0].height
+            }
+
+        } else {
+            return {
+                width: 0,
+                height: 0
+            }
+        }
     }
 }
 
@@ -2100,18 +2151,6 @@ function getHouseSize(house: HouseInformation): Size {
     return 'LARGE'
 }
 
-function nationLowerCaseToAllCaps(nationSmall: NationSmallCaps): Nation {
-    if (nationSmall === 'romans') {
-        return 'ROMANS'
-    } else if (nationSmall === 'africans') {
-        return 'AFRICANS'
-    } else if (nationSmall === 'japanese') {
-        return 'JAPANESE'
-    } else {
-        return 'VIKINGS'
-    }
-}
-
 function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType: number): WebGLShader | null {
     const compiledShader = gl.createShader(shaderType)
 
@@ -2146,6 +2185,7 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     } else {
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
     }
+
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)
@@ -2154,6 +2194,8 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     return texture
 }
@@ -2189,6 +2231,103 @@ function materialToAllUpperCase(materialLowerCase: Material): MaterialAllUpperCa
     return undefined
 }
 
+function pointStringToPoint(pointString: string): Point {
+    const indexOfComma = pointString.indexOf(',')
+
+    const x = pointString.substring(0, indexOfComma)
+    const y = pointString.substring(indexOfComma + 1, pointString.length)
+
+    console.log(x)
+    console.log(y)
+
+    return { x: parseInt(x), y: parseInt(y) }
+}
+
+async function makeImageFromMap(map: MapInformation): Promise<HTMLImageElement | undefined> {
+
+    const terrainInformation = await getTerrainForMap(map.id)
+
+    const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
+
+    const offscreenCanvas = document.createElement('canvas')
+    offscreenCanvas.width = map.width * 2
+    offscreenCanvas.height = map.height
+
+    const ctx = offscreenCanvas.getContext("2d", { alpha: false })
+
+    if (!ctx) {
+        return undefined
+    }
+
+    const waterIntValue0 = vegetationToInt.get("W1")
+    const waterIntValue1 = vegetationToInt.get("W2")
+    const waterIntValue2 = vegetationToInt.get("B")
+
+    if (waterIntValue0 !== undefined && waterIntValue1 !== undefined && waterIntValue2 !== undefined) {
+        const waterColor = intToVegetationColor.get(waterIntValue0)
+
+        if (waterColor) {
+            ctx.fillStyle = arrayToRgbStyle(waterColor)
+        } else {
+            ctx.fillStyle = "gray"
+        }
+    }
+
+    ctx.rect(0, 0, map.width * 2, map.height)
+
+    ctx.fill()
+
+    terrain.forEach(pointTerrainInformation => {
+
+        const point = pointTerrainInformation.point
+
+        if (point.x % 4 === 0 && point.y % 4 === 0) {
+
+            const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
+            const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
+
+            // Use height - y to translate between context 2d coordinate system where (0, 0) is upper left
+            // and the settlers game point where (0, 0) is bottom left
+            if (colorStraightBelow &&
+                pointTerrainInformation.below !== waterIntValue0 &&
+                pointTerrainInformation.below !== waterIntValue1 &&
+                pointTerrainInformation.below !== waterIntValue2) {
+                ctx.beginPath()
+                ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
+                ctx.rect(point.x, map.height - point.y, 4, 4)
+                ctx.fill()
+            }
+
+            if (colorBelowToTheRight &&
+                pointTerrainInformation.downRight !== waterIntValue0 &&
+                pointTerrainInformation.downRight !== waterIntValue1 &&
+                pointTerrainInformation.downRight !== waterIntValue2) {
+                ctx.beginPath()
+                ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
+                ctx.rect(point.x + 4, map.height - point.y, 4, 4)
+                ctx.fill()
+            }
+        }
+    }
+    )
+
+    /* Draw the starting points */
+    ctx.fillStyle = 'yellow'
+    map.startingPoints.forEach(point => {
+        ctx.beginPath()
+        ctx.arc(point.x, map.height - point.y, 3, 0, 2 * Math.PI)
+        ctx.fill()
+    }
+    )
+
+    //return ctx.getImageData(0, 0, map.width * 2, map.height)
+    //return offscreenCanvas
+    const image = new Image()
+
+    image.src = offscreenCanvas.toDataURL()
+
+    return image
+}
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
@@ -2233,5 +2372,8 @@ export {
     makeTextureFromImage,
     resizeCanvasToDisplaySize,
     materialToAllUpperCase,
-    ShipImageAtlasHandler
+    ShipImageAtlasHandler,
+    removeHouseOrFlagOrRoadAtPointWebsocket,
+    pointStringToPoint,
+    makeImageFromMap
 }

@@ -1,8 +1,8 @@
 import React, { Component } from 'react'
-import TypeControl from './type_control'
+import { TypeControl, Command } from './type_control'
 
 interface TypeControlDemoProps {
-    commands: Map<string, (() => void)>
+    commands: Map<string, Command>
 }
 
 interface TypeControlDemoState { }
@@ -33,7 +33,7 @@ class TypeControlDemo extends Component<TypeControlDemoProps, TypeControlDemoSta
         return (
             <div onKeyPress={this.onKeyPress.bind(this)} onKeyDown={this.onKeyDown.bind(this)} tabIndex={1}>
                 Some filler stuff
-                <TypeControl commands={this.props.commands} ref={this.typeControlRef}/>
+                <TypeControl commands={this.props.commands} ref={this.typeControlRef} selectedPoint={{x: 10, y: 12}} playerId={'2'} gameId={'3'}/>
             </div>
         )
     }

@@ -1,0 +1,31 @@
+#center-on-screen {
+    /*background-color: white;*/
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    top: 0px;
+    left: 0px;
+    height: 100vh;
+}
+
+#set-player-name-dialog {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 2px;
+    width: 15em;
+}
+
+#worker-animation {
+    position: absolute;
+    right: 50px;
+    bottom: 50px;
+}
+
+#label-and-input {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+}

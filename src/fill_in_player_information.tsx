@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
-import Button from './button'
-import { Dialog } from './dialog'
+import { Label, Input, Button } from "@fluentui/react-components";
 import { do_self_test } from './self_test'
+import { WorkerIcon } from './icon'
+import './fill_in_player_information.css'
 
 export interface EnteredPlayerInformation {
     name: string
@@ -46,7 +47,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         }
     }
 
-    componentDidMount() {
+    componentDidMount(): void {
 
         /* Try to pre-populate the screen with the most recent player */
         const lastPlayerName = localStorage.getItem("mostRecentPlayer")
@@ -83,38 +84,52 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
         }
     }
 
-    render() {
+    render(): JSX.Element {
+        const storedName = localStorage.getItem("mostRecentPlayer")
+        const defaultName = (storedName) ? storedName : ""
+
         return (
-            <Dialog heading="Enter player information" noCloseButton={true}>
-                <div>Name:
-                    <input type="text" placeholder="Name" ref={this.nameFieldRef}
-                        onChange={
-                            (e: React.FormEvent<HTMLInputElement>) => {
-                                this.onInformationEntered()
-                            }
-                        }
+            <>
+                <div id="center-on-screen">
+                    <div id="set-player-name-dialog">
 
-                        onKeyDown={
-                            (e: React.KeyboardEvent) => {
-                                if (e.keyCode === 13) {
+                        <div id="label-and-input">
+                            <Label>Name</Label>
+                            <Input type="text" ref={this.nameFieldRef}
+                                onChange={
 
-                                    if (this.state.userNameEntered) {
-                                        this.onPlayerInformationDone()
+                                    // eslint-disable-next-line
+                                    (event: React.FormEvent<HTMLInputElement>) => {
+                                        this.onInformationEntered()
                                     }
                                 }
-                            }
-                        }
-                    />
-                </div>
 
-                <Button label="Enter lobby"
-                    onButtonClicked={this.onPlayerInformationDone.bind(this)}
-                    disabled={!this.state.userNameEntered}
-                />
-            </Dialog>
+                                onKeyDown={
+                                    (event: React.KeyboardEvent) => {
+                                        if (event.code === 'Enter') {
+                                            if (this.state.userNameEntered) {
+                                                this.onPlayerInformationDone()
+                                            }
+                                        }
+                                    }
+                                }
+                                defaultValue={defaultName}
+                            />
+                        </div>
+                        <Button
+                            onClick={this.onPlayerInformationDone.bind(this)}
+                            disabled={!this.nameFieldRef.current?.value}
+                            appearance='primary'
+
+                        >Go</Button>
+                    </div>
+                </div>
+                <div id="worker-animation">
+                    <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                </div>
+            </>
         )
     }
 }
 
 export { FillInPlayerInformation }
-

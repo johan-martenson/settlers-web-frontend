@@ -16,7 +16,7 @@ class Checkbox extends Component<CheckboxProps, CheckboxState> {
         }
     }
 
-    render() {
+    render(): JSX.Element {
         return (
             <input type="checkbox" onChange={this.onChange.bind(this)} ref={this.checkboxRef} />
         )

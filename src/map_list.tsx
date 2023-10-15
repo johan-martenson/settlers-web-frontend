@@ -19,7 +19,7 @@ class MapList extends Component<MapListProps, MapListState> {
         this.state = { maps: [] }
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         const maps = await getMaps()
 
@@ -34,14 +34,14 @@ class MapList extends Component<MapListProps, MapListState> {
         this.props.onMapSelected(map)
     }
 
-    render() {
+    render(): JSX.Element {
         return (
-            <div className="MapList">
+            <div className="map-list">
                 {this.state.maps.map(
                     (map, index) => {
 
                         return (
-                            <div key={index} className="MapListItem">
+                            <div key={index} >
                                 <MapInformationCard map={map} onMapSelected={this.onMapSelected.bind(this)} />
                             </div>
                         )

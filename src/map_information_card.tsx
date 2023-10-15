@@ -1,223 +1,11 @@
-import React, { Component } from 'react'
-import { getTerrainForMap, MapInformation, MapId, TerrainAtPoint } from './api'
-import Button from './button'
-import Card from './card'
-import ExpandCollapseToggle from './expand_collapse_toggle'
-import { intToVegetationColor } from './game_render'
-import './map_information_card.css'
-import RawRow from './raw_row'
-import { terrainInformationToTerrainAtPointList, isContext2D, vegetationToInt, arrayToRgbStyle } from './utils'
+import React, { Component } from 'react';
+import { MapInformation, MapId, TerrainAtPoint } from './api';
+import { Button, Text, Caption1 } from "@fluentui/react-components";
+import { Card, CardHeader } from "@fluentui/react-components";
+import './map_information_card.css';
+import { makeImageFromMap } from './utils';
 
-interface MapThumbnailProps {
-    map: MapInformation
-    className?: string
-    terrain?: TerrainAtPoint[]
-}
-
-interface MapThumbnailState {
-    cachedMapId?: MapId
-    terrain?: TerrainAtPoint[]
-    image?: ImageData
-}
-
-class MapThumbnail extends Component<MapThumbnailProps, MapThumbnailState> {
-
-    private selfRef = React.createRef<HTMLCanvasElement>()
-
-    constructor(props: MapThumbnailProps) {
-        super(props)
-
-        this.state = { terrain: this.props.terrain ? this.props.terrain : undefined }
-    }
-
-    async componentDidMount() {
-
-        let terrain = this.state.terrain
-
-        /* Get the terrain */
-        if (!terrain) {
-            const terrainInformation = await getTerrainForMap(this.props.map.id)
-
-            terrain = terrainInformationToTerrainAtPointList(terrainInformation)
-        }
-
-        const offscreenCanvas = document.createElement('canvas')
-        offscreenCanvas.width = this.props.map.width * 2
-        offscreenCanvas.height = this.props.map.height
-
-        const ctx = offscreenCanvas.getContext("2d", { alpha: false })
-
-        if (ctx) {
-            this.setState(
-                {
-                    image: this.renderMap(ctx, terrain),
-                    cachedMapId: this.props.map.id,
-                    terrain: terrain
-                }
-            )
-        }
-    }
-
-    async componentDidUpdate() {
-
-        if (!this.selfRef.current) {
-            console.log("ERROR: no self ref")
-            return
-        }
-
-        const ctx = this.selfRef.current.getContext("2d")
-
-        if (!ctx || !isContext2D(ctx)) {
-            console.log("ERROR: No or invalid context")
-            console.log(ctx)
-            return
-        }
-
-        console.log("Drawing map thumbnail")
-
-        if (this.state.cachedMapId !== this.props.map.id) {
-
-            const terrainInformation = await getTerrainForMap(this.props.map.id)
-
-            const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
-
-            const offscreenCanvas = document.createElement('canvas')
-            offscreenCanvas.width = this.props.map.width * 2
-            offscreenCanvas.height = this.props.map.height
-
-            const ctx = offscreenCanvas.getContext("2d", { alpha: false })
-
-            if (ctx) {
-                this.setState(
-                    {
-                        image: this.renderMap(ctx, terrain),
-                        cachedMapId: this.props.map.id,
-                        terrain: terrain
-                    }
-                )
-            }
-        }
-
-        if (this.state.image) {
-            ctx.putImageData(this.state.image, 0, 0)
-        }
-    }
-
-    private renderMap(ctx: CanvasRenderingContext2D, terrain: TerrainAtPoint[]) {
-
-        const waterIntValue0 = vegetationToInt.get("W1")
-        const waterIntValue1 = vegetationToInt.get("W2")
-        const waterIntValue2 = vegetationToInt.get("B")
-
-        if (waterIntValue0 !== undefined && waterIntValue1 !== undefined && waterIntValue2 !== undefined) {
-            const waterColor = intToVegetationColor.get(waterIntValue0)
-
-            if (waterColor) {
-                ctx.fillStyle = arrayToRgbStyle(waterColor)
-            } else {
-                ctx.fillStyle = "gray"
-            }
-        }
-
-        ctx.rect(0, 0, this.props.map.width * 2, this.props.map.height)
-
-        ctx.fill()
-
-        terrain.forEach(pointTerrainInformation => {
-
-            const point = pointTerrainInformation.point
-
-            if (point.x % 4 === 0 && point.y % 4 === 0) {
-
-                const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
-                const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
-
-                if (colorStraightBelow &&
-                    pointTerrainInformation.below !== waterIntValue0 &&
-                    pointTerrainInformation.below !== waterIntValue1 &&
-                    pointTerrainInformation.below !== waterIntValue2) {
-                    ctx.beginPath()
-                    ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
-                    ctx.rect(point.x, point.y, 4, 4)
-                    ctx.fill()
-                }
-
-                if (colorBelowToTheRight &&
-                    pointTerrainInformation.downRight !== waterIntValue0 &&
-                    pointTerrainInformation.downRight !== waterIntValue1 &&
-                    pointTerrainInformation.downRight !== waterIntValue2) {
-                    ctx.beginPath()
-                    ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
-                    ctx.rect(point.x + 4, point.y, 4, 4)
-                    ctx.fill()
-                }
-            }
-        }
-        )
-
-        /* Draw the starting points */
-        ctx.fillStyle = 'yellow'
-        this.props.map.startingPoints.forEach(point => {
-            ctx.beginPath()
-            ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI)
-            ctx.fill()
-        }
-        )
-
-        return ctx.getImageData(0, 0, this.props.map.width * 2, this.props.map.height)
-    }
-
-    private renderMapHighResolution(ctx: CanvasRenderingContext2D, terrain: TerrainAtPoint[]) {
-
-        terrain.forEach(pointTerrainInformation => {
-
-            const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
-            const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
-            const point = pointTerrainInformation.point
-
-            if (colorStraightBelow) {
-                ctx.beginPath()
-                ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
-                ctx.rect(point.x, point.y, 1, 1)
-                ctx.fill()
-            }
-
-            if (colorBelowToTheRight) {
-                ctx.beginPath()
-                ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
-                ctx.rect(point.x + 1, point.y, 1, 1)
-                ctx.fill()
-            }
-        }
-        )
-
-        /* Draw the starting points */
-        ctx.fillStyle = 'yellow'
-        this.props.map.startingPoints.forEach(point => {
-            ctx.beginPath()
-            ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI)
-            ctx.fill()
-        }
-        )
-
-        return ctx.getImageData(0, 0, this.props.map.width * 2, this.props.map.height)
-    }
-
-    render() {
-
-        let className = "MapThumbnail"
-
-        if (this.props.className) {
-            className = className + " " + this.props.className
-        }
-
-        return (
-            <div className={className}>
-                <canvas width={this.props.map.width * 2} height={this.props.map.height} ref={this.selfRef} />
-            </div>
-        )
-    }
-}
+const cachedMapImages = new Map<MapId, HTMLImageElement>()
 
 interface MapInformationCardProps {
     map: MapInformation
@@ -229,7 +17,7 @@ interface MapInformationCardProps {
 interface MapInformationCardState {
     expanded: boolean
     terrain?: TerrainAtPoint[]
-    cachedThumbnails: Map<MapId, JSX.Element>
+    mapImage?: HTMLImageElement
 }
 
 class MapInformationCard extends Component<MapInformationCardProps, MapInformationCardState> {
@@ -239,51 +27,51 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
 
         this.state = {
             expanded: this.props.expanded ? this.props.expanded : false,
-            cachedThumbnails: new Map()
         }
     }
 
-    async componentDidMount() {
-        this.cacheThumbnail()
+    async componentDidMount(): Promise<void> {
+        console.log("Component did mount")
+
+        const mapImage = await makeImageFromMap(this.props.map)
+
+        if (!mapImage) {
+            console.log("No image!")
+
+            return
+        }
+
+        console.log("Got map image")
+        console.log(mapImage)
+
+        cachedMapImages.set(this.props.map.id, mapImage)
+
+        this.setState({ mapImage })
     }
 
-    async componentDidUpdate() {
-        this.cacheThumbnail()
-    }
+    async componentDidUpdate(): Promise<void> {
+        const mapImage = cachedMapImages.get(this.props.map.id)
 
-    cacheThumbnail(): void {
-        let thumbnail = this.state.cachedThumbnails.get(this.props.map.id)
+        if (mapImage) {
+            this.setState({ mapImage })
+        } else {
+            const mapImage = await makeImageFromMap(this.props.map)
 
-        if (this.state.expanded && !thumbnail) {
-            thumbnail = <MapThumbnail map={this.props.map} />
+            if (!mapImage) {
+                return
+            }
 
-            this.setState(
-                {
-                    cachedThumbnails: (new Map(this.state.cachedThumbnails)).set(this.props.map.id, thumbnail)
-                }
-            )
+            this.setState({ mapImage })
+
+            cachedMapImages.set(this.props.map.id, mapImage)
         }
     }
 
     shouldComponentUpdate(nextProps: MapInformationCardProps, nextState: MapInformationCardState): boolean {
-
-        if (this.props.map.id !== nextProps.map.id) {
-            return true
-        }
-
-        if (this.props.onMapSelected !== nextProps.onMapSelected) {
-            return true
-        }
-
-        if (this.state.expanded !== nextState.expanded) {
-            return true
-        }
-
-        if (this.state.cachedThumbnails.size !== nextState.cachedThumbnails.size) {
-            return true
-        }
-
-        return false
+        return this.props.map.id !== nextProps.map.id ||
+            this.props.onMapSelected !== nextProps.onMapSelected ||
+            this.state.expanded !== nextState.expanded ||
+            this.state.mapImage !== nextState.mapImage
     }
 
     onMapSelected(): void {
@@ -293,58 +81,36 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
         }
     }
 
-    render() {
+    render(): JSX.Element {
+        console.log(this.state.mapImage)
 
-        let thumbnail = this.state.cachedThumbnails.get(this.props.map.id)
-
-        let controls = true
-
-        if (this.props.controls === false) {
-            controls = false
+        if (this.props.onMapSelected) {
+            return (
+                <Card>
+                    <CardHeader
+                        image={<img src={(this.state.mapImage) ? this.state.mapImage.src : ""} />}
+                        header={<Text weight="semibold">{this.props.map.title}</Text>}
+                        description={
+                            <Caption1>{this.props.map.maxPlayers} players, {this.props.map.width}x{this.props.map.height}, by {this.props.map.author}</Caption1>
+                        }
+                        action={ <Button onClick={this.onMapSelected.bind(this)}>Select</Button> }
+                    />
+                </Card>
+            )
+        } else {
+            return (
+                <Card>
+                    <CardHeader
+                        image={<img src={(this.state.mapImage) ? this.state.mapImage.src : ""} />}
+                        header={<Text weight="semibold">{this.props.map.title}</Text>}
+                        description={
+                            <Caption1>{this.props.map.maxPlayers} players, {this.props.map.width}x{this.props.map.height}, by {this.props.map.author}</Caption1>
+                        }
+                    />
+                </Card>
+            )
         }
 
-        if (!thumbnail) {
-            thumbnail = <div>Loading...</div>
-        }
-
-        return (
-            <Card>
-                <div className="MapCardTop">
-
-                    {!this.state.expanded &&
-                        <div className="MapCardTitle">{this.props.map.title}</div>
-                    }
-
-                    {this.state.expanded &&
-                        <div className="MapCardTitle">
-                            <strong>{this.props.map.title}</strong>
-                        </div>
-                    }
-
-                    {controls &&
-                        <div className="ExpandAndSelectButtons">
-                            <Button onButtonClicked={() => this.onMapSelected()}>Select</Button>
-                            <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
-                        </div>
-                    }
-                </div>
-
-                <div style={{ display: this.state.expanded ? undefined : "none" }}>
-                    <RawRow>
-                        <div className="MapCardAttributes">
-                            <div className="MapCardAttribute">Title: {this.props.map.title}</div>
-                            <div className="MapCardAttribute">Author: {this.props.map.author}</div>
-                            <div className="MapCardAttribute">Dimensions: {this.props.map.width}x{this.props.map.height}</div>
-                            <div className="MapCardAttribute">Max players: {this.props.map.maxPlayers}</div>
-                        </div>
-
-                        {this.state.expanded && thumbnail}
-
-                    </RawRow>
-                </div>
-
-            </Card>
-        )
     }
 }
 

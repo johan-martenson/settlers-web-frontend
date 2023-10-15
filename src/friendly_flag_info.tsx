@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { callGeologist, FlagInformation, GameId, PlayerId, sendScout } from './api'
+import { FlagInformation, GameId, PlayerId } from './api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_flag_info.css'
@@ -16,7 +16,7 @@ interface FriendlyFlagInfoState { }
 
 class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfoState> {
 
-    render() {
+    render(): JSX.Element {
         return (
             <Dialog heading="Flag" onCloseDialog={this.props.closeDialog} floating>
 
@@ -34,7 +34,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                     async () => {
                                         console.log("Removing flag")
 
-                                        await monitor.removeFlagSnappy(this.props.flag.id, this.props.gameId, this.props.playerId)
+                                        monitor.removeFlag(this.props.flag.id)
 
                                         this.props.closeDialog()
                                     }
@@ -64,7 +64,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                     async () => {
                                         console.info("Calling for geologist")
 
-                                        await callGeologist(this.props.flag, this.props.gameId, this.props.playerId)
+                                        monitor.callGeologist(this.props.flag)
 
                                         this.props.closeDialog()
                                     }
@@ -79,7 +79,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                     async () => {
                                         console.info("Sending scout")
 
-                                        await sendScout(this.props.flag, this.props.gameId, this.props.playerId)
+                                        monitor.callScout(this.props.flag)
 
                                         this.props.closeDialog()
                                     }

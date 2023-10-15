@@ -3,13 +3,14 @@ import './card.css'
 
 interface CardProps {
     className?: string
+    children?: React.ReactNode
 }
 
 interface CardState { }
 
 class Card extends Component<CardProps, CardState> {
 
-    render() {
+    render(): JSX.Element {
 
         let className = "Card"
 

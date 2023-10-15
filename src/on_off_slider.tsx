@@ -19,7 +19,7 @@ class OnOffSlider extends Component<OnOffSliderProps, OnOffSliderState> {
         this.state = { value: props.initialValue }
     }
 
-    render() {
+    render(): JSX.Element {
         let markerClassName = "OnOffMarker"
         let className = "OnOffContainer Row"
 

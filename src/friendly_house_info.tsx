@@ -29,7 +29,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
         this.state = {}
     }
 
-    async componentDidMount() {
+    async componentDidMount(): Promise<void> {
 
         listenToHouse(this.props.house.id, this.onHouseUpdated.bind(this))
 
@@ -44,16 +44,16 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
         this.setState({ updatedHouse: house })
     }
 
-    componentWillUnmount() {
+    componentWillUnmount(): void {
 
         if (this.periodicUpdates) {
             clearInterval(this.periodicUpdates)
         }
     }
 
-    render() {
+    render(): JSX.Element {
 
-        let soldiers: (SoldierType | null)[] = []
+        const soldiers: (SoldierType | null)[] = []
 
         if (this.props.house.soldiers && this.props.house.maxSoldiers) {
             soldiers.push(...this.props.house.soldiers)
@@ -65,8 +65,8 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
         const house = this.state.updatedHouse ? this.state.updatedHouse : this.props.house
 
-        let needs: HouseResources = {}
-        let has: HouseResources = {}
+        const needs: HouseResources = {}
+        const has: HouseResources = {}
 
         Object.entries(house.resources).forEach(
             ([material, hasAndNeeds]) => {
@@ -86,7 +86,7 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
         let hasAmountCoin: number = 0
         let needsAmountCoin: number = 0
 
-        let coinResources = house.resources.coin
+        const coinResources = house.resources.coin
 
         if (coinResources) {
             hasAmountCoin = coinResources.has

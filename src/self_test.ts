@@ -12,7 +12,7 @@ function testPointSet(): void {
 
     /* Test that the set is empty initially */
     if (pointSet.size() === 0) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -21,7 +21,7 @@ function testPointSet(): void {
     const point0 = { x: 2, y: 3 }
 
     if (!pointSet.has(point0)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -30,14 +30,14 @@ function testPointSet(): void {
     pointSet.add(point0)
 
     if (pointSet.has(point0)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the set is not empty now */
     if (pointSet.size() === 1) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -47,14 +47,14 @@ function testPointSet(): void {
     pointSet.add(point0Synonym)
 
     if (pointSet.has(point0)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the size is still 1 */
     if (pointSet.size() === 1) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -63,7 +63,7 @@ function testPointSet(): void {
     const point1 = { x: 3, y: 3 }
 
     if (!pointSet.has(point1)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -71,21 +71,21 @@ function testPointSet(): void {
     pointSet.add(point1)
 
     if (pointSet.has(point1)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the first point is still in the set */
     if (pointSet.has(point0)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the size is 2 */
     if (pointSet.size() === 2) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -97,31 +97,31 @@ function testPointSet(): void {
     }
 
     if (seen.find(p => p.x === point0.x && p.y === point0.y) && seen.find(p => p.x === point1.x && p.y === point1.y)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.log("error OK")
     }
 
     if (seen.length === 2) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.log("error OK")
     }
 
     /* Test iteration with forEach */
     seen = []
-    pointSet.forEach((v, index) => {
+    pointSet.forEach((v) => {
         seen.push(v)
     })
 
     if (seen.find(p => p.x === point0.x && p.y === point0.y) && seen.find(p => p.x === point1.x && p.y === point1.y)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.log("error OK")
     }
 
     if (seen.length === 2) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.log("error OK")
     }
@@ -130,14 +130,14 @@ function testPointSet(): void {
     pointSet.delete(point0)
 
     if (!pointSet.has(point0)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the set is not empty */
     if (pointSet.size() === 1) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -147,14 +147,14 @@ function testPointSet(): void {
     pointSet.delete(point1Synonym)
 
     if (!pointSet.has(point1)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the set is not empty now */
     if (pointSet.size() === 0) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -169,13 +169,24 @@ function testPointSet(): void {
 
     /* Verify that the new point set contains both points */
     if (pointSetFromRegularSet.has(point0)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     if (pointSetFromRegularSet.has(point1)) {
-        console.info("OK")
+        //console.info("OK")
+    } else {
+        console.error("NOT OK")
+    }
+
+    /* Verify that the set can be cleared */
+    pointSetFromRegularSet.clear()
+
+    if (pointSetFromRegularSet.size() === 0 &&
+        !pointSetFromRegularSet.has(point0) &&
+        !pointSetFromRegularSet.has(point1)) {
+            //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -189,7 +200,7 @@ function testPointMap(): void {
 
     /* Test that the map is empty before any items are added */
     if (pointMap.size === 0) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -200,13 +211,13 @@ function testPointMap(): void {
 
     /* Verify that the points are not in the map before they are added */
     if (!pointMap.has(point0)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     if (!pointMap.has(point1)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -216,13 +227,13 @@ function testPointMap(): void {
 
     /* Test that the points have the correct values */
     if (pointMap.get(point0) === "my string") {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     if (pointMap.get(point1) === "another string") {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -232,56 +243,56 @@ function testPointMap(): void {
     const point1Synonym = { x: 2, y: 5 }
 
     if (pointMap.get(point0Synonym) === "my string") {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     if (pointMap.get(point1Synonym) === "another string") {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the size of the map is 2 */
     if (pointMap.size === 2) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Test iteration through the keys */
-    let seenKeys: Array<Point> = []
+    const seenKeys: Array<Point> = []
     for (const key of pointMap.keys()) {
         seenKeys.push(key)
     }
 
     if (seenKeys.find(p => p.x === point0.x && p.y === point0.y) && seenKeys.find(p => p.x === point1.x && p.y === point1.y)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     if (seenKeys.length === 2) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Test iteration through the values */
-    let seenValues: Array<string> = []
+    const seenValues: Array<string> = []
     for (const value of pointMap.values()) {
         seenValues.push(value)
     }
 
     if (seenValues.find(v => v === "my string" ) && seenValues.find(v => v === "another string")) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     if (seenKeys.length === 2) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -302,7 +313,7 @@ function testPointMap(): void {
     }
 
     if (foundPoint0 === 1 && foundPoint1 === 1 && other === 0) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -323,7 +334,7 @@ function testPointMap(): void {
     }
 
     if (foundPoint0 === 1 && foundPoint1 === 1 && other === 0) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -332,7 +343,7 @@ function testPointMap(): void {
     pointMap.set(point0Synonym, "my third string")
 
     if (pointMap.get(point0) === "my third string") {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
@@ -342,33 +353,33 @@ function testPointMap(): void {
 
     /* Verify that the point is removed */
     if (pointMap.get(point0) === undefined) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     if (!pointMap.has(point0)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the size of the map is 1 */
     if (pointMap.size === 1) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     /* Verify that the second point is still in the map */
     if (pointMap.get(point1) === "another string") {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }
 
     if (pointMap.has(point1)) {
-        console.info("OK")
+        //console.info("OK")
     } else {
         console.error("NOT OK")
     }

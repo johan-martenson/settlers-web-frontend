@@ -362,15 +362,15 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .attr("class", "line") // Assign a class for styling 
                 .attr("d", lines[i]) // 11. Calls the line generator 
                 .on("mouseover",
-                    () => {
-                        d3.select(d3.event.target)
+                    (event) => {
+                        d3.select(event.target)
                             .attr("stroke-width", 4)
                             .attr("stroke", "orange")
                     }
                 )
                 .on("mouseout",
-                    () => {
-                        d3.select(d3.event.target)
+                    (event) => {
+                        d3.select(event.target)
                             .attr("stroke-width", 2)
                             .attr("stroke", colors[i])
                     }
@@ -403,9 +403,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 })
                 .attr("r", 5)
                 .on("mouseover",
-                    (d, measurementIndex) => {
+                    (event, d) => {
 
-                        const dotElement = d3.select(d3.event.target)
+                        const dotElement = d3.select(event.target)
 
                         dotElement
                             .attr("fill", "orange")
@@ -424,18 +424,18 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
                         statisticsSvg
                             .append("text")
-                            .attr("id", "textlabel" + i + "-" + measurementIndex)
+                            .attr("id", "textlabel-landstatistics-tooltip")
                             .attr("x", + xScaled + 20)
                             .attr("y", + yScaled + 20)
                             .text(d.values[i])
                     })
                 .on("mouseout",
-                    (d, measurementIndex) => {
-                        d3.select(d3.event.target)
+                    (event, d) => {
+                        d3.select(event.target)
                             .attr("fill", colors[i])
                             .attr("r", 5)
 
-                        d3.select("#textlabel" + i + "-" + measurementIndex)
+                        d3.select("#textlabel-landstatistics-tooltip")
                             .remove()
                     })
         }
@@ -572,15 +572,15 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .attr("class", "line") // Assign a class for styling 
                 .attr("d", lines[i]) // 11. Calls the line generator 
                 .on("mouseover",
-                    () => {
-                        d3.select(d3.event.target)
+                    (event) => {
+                        d3.select(event.target)
                             .attr("stroke-width", 4)
                             .attr("stroke", "orange")
                     }
                 )
                 .on("mouseout",
-                    () => {
-                        d3.select(d3.event.target)
+                    (event) => {
+                        d3.select(event.target)
                             .attr("stroke-width", 2)
                             .attr("stroke", colors[i])
                     }
@@ -613,9 +613,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 })
                 .attr("r", 5)
                 .on("mouseover",
-                    (d, measurementIndex) => {
+                    (event, d) => {
 
-                        const dotElement = d3.select(d3.event.target)
+                        const dotElement = d3.select(event.target)
 
                         dotElement
                             .attr("fill", "orange")
@@ -634,18 +634,18 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
                         statisticsSvg
                             .append("text")
-                            .attr("id", "textlabel" + i + "-" + measurementIndex)
+                            .attr("id", "textlabel-statistics-tooltip")
                             .attr("x", xScaled + 20)
                             .attr("y", yScaled + 20)
                             .text(d.values[i])
                     })
                 .on("mouseout",
-                    (d, measurementIndex) => {
-                        d3.select(d3.event.target)
+                    (event, d) => {
+                        d3.select(event.target)
                             .attr("fill", colors[i])
                             .attr("r", 5)
 
-                        d3.select("#textlabel" + i + "-" + measurementIndex)
+                        d3.select("#textlabel-statistics-tooltip")
                             .remove()
                     })
         }

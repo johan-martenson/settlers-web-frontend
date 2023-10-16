@@ -20,7 +20,7 @@ import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
-const MAX_SCALE = 80
+const MAX_SCALE = 50
 const MIN_SCALE = 20
 
 const LONGEST_TICK_LENGTH = 500
@@ -91,6 +91,8 @@ interface AppState {
     showHelp?: boolean
     showStatistics?: boolean
     showMenu: boolean
+    isMusicPlayerVisible: boolean
+    isTypingControllerVisible: boolean
 
     showTitles: boolean
     showAvailableConstruction: boolean
@@ -166,7 +168,9 @@ class App extends Component<AppProps, AppState> {
             showTitles: true,
             showSetTransportPriority: false,
             cursorState: 'NOTHING',
-            showFpsCounter: false
+            showFpsCounter: false,
+            isMusicPlayerVisible: true,
+            isTypingControllerVisible: true
         }
 
         /* Set up type control commands */
@@ -309,7 +313,7 @@ class App extends Component<AppProps, AppState> {
             filter: undefined
         })
         this.commands.set("Menu", {
-            action: () => this.setState({ showMenu: true }),
+            action: () => this.showMenu.bind(this)(),
             filter: undefined
         })
     }
@@ -1047,6 +1051,11 @@ class App extends Component<AppProps, AppState> {
                     onSetTransportPriority={() => this.setState({ showSetTransportPriority: true })}
                     isOpen={this.state.showMenu}
                     onClose={() => this.setState({ showMenu: false })}
+                    onSetMusicPlayerVisible={(visible: boolean) => this.setState({ isMusicPlayerVisible: visible })}
+                    isMusicPlayerVisible={this.state.isMusicPlayerVisible}
+                    isTypingControllerVisible={this.state.isTypingControllerVisible}
+                    onSetTypingControllerVisible={(visible: boolean) => this.setState({ isTypingControllerVisible: visible })}
+                    defaultZoom={DEFAULT_SCALE}
                 />
 
                 {this.state.showFriendlyHouseInfo &&
@@ -1103,12 +1112,14 @@ class App extends Component<AppProps, AppState> {
                     />
                 }
 
-                <TypeControl commands={this.commands}
-                    ref={this.typeControlRef}
-                    selectedPoint={this.state.selected}
-                    gameId={this.props.gameId}
-                    playerId={this.props.selfPlayerId}
-                />
+                {this.state.isTypingControllerVisible &&
+                    <TypeControl commands={this.commands}
+                        ref={this.typeControlRef}
+                        selectedPoint={this.state.selected}
+                        gameId={this.props.gameId}
+                        playerId={this.props.selfPlayerId}
+                    />
+                }
 
                 <GameMessagesViewer gameId={this.props.gameId}
                     playerId={this.props.selfPlayerId}
@@ -1116,7 +1127,9 @@ class App extends Component<AppProps, AppState> {
                     onGoToPoint={this.goToPoint.bind(this)}
                 />
 
-                <MusicPlayer />
+                {this.state.isMusicPlayerVisible &&
+                    <MusicPlayer />
+                }
 
             </div>
         )

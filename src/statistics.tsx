@@ -4,6 +4,7 @@ import { GameId, GameStatistics, getGameStatistics, getLandStatistics, LandDataP
 import { Dialog } from './dialog'
 import SelectableButtonRow from './selectable_button_row'
 import "./statistics.css"
+import { makeStyles, shorthands } from '@fluentui/react-components'
 
 interface StatisticsProps {
     onClose: (() => void)
@@ -16,6 +17,17 @@ interface StatisticsState {
     drawnStatistics: boolean
     state: "PRODUCTION" | "LAND"
 }
+
+const useStyles = makeStyles({
+    root: {
+      alignItems: "flex-start",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-start",
+      ...shorthands.padding("50px", "20px"),
+      rowGap: "20px",
+    },
+  })
 
 function maxTime(data: Measurement[]): number {
     let maxNumber = 0
@@ -47,6 +59,7 @@ function maxValue(data: Measurement[]): number {
 class Statistics extends Component<StatisticsProps, StatisticsState> {
 
     private statisticsContainerRef = React.createRef<SVGSVGElement>()
+    private statisticsParentRef = React.createRef<HTMLDivElement>()
 
     constructor(props: StatisticsProps) {
         super(props)
@@ -63,13 +76,18 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
     }
 
     async componentDidUpdate(): Promise<void> {
-        if (!this.state.drawnStatistics && this.statisticsContainerRef && this.statisticsContainerRef.current) {
+
+        if (!this.statisticsParentRef?.current || !this.statisticsContainerRef?.current) {
+
+        }
+
+        if (!this.state.drawnStatistics && this.statisticsContainerRef?.current && this.statisticsParentRef?.current) {
             if (this.state.state === "PRODUCTION" && this.state.productionStatistics) {
-                this.drawProductionStatistics(this.statisticsContainerRef.current, this.state.productionStatistics)
+                this.drawProductionStatistics(this.statisticsContainerRef.current, this.statisticsParentRef.current, this.state.productionStatistics)
 
                 this.setState({ drawnStatistics: true })
-            } else if (this.state.state === "LAND" && this.state.landStatistics) {
-                this.drawLandStatistics(this.statisticsContainerRef.current, this.state.landStatistics)
+            } else if (this.state.state === "LAND" && this.state.landStatistics && this.statisticsParentRef?.current) {
+                this.drawLandStatistics(this.statisticsContainerRef.current, this.statisticsParentRef.current, this.state.landStatistics)
 
                 this.setState({ drawnStatistics: true })
             }
@@ -88,9 +106,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             gameStatistics = this.state.productionStatistics
         }
 
-        if (this.statisticsContainerRef && this.statisticsContainerRef.current) {
+        if (this.statisticsContainerRef?.current && this.statisticsParentRef?.current) {
 
-            this.drawProductionStatistics(this.statisticsContainerRef.current, gameStatistics)
+            this.drawProductionStatistics(this.statisticsContainerRef.current, this.statisticsParentRef.current, gameStatistics)
             drawn = true
         }
 
@@ -152,6 +170,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
     render(): JSX.Element {
         const titleLabel = "Statistics"
 
+        const styles = useStyles();
+
         const statisticsChoices = new Map<string, string>()
 
         statisticsChoices.set("production", "Production Statistics")
@@ -167,13 +187,14 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         }
 
         return (
-            <Dialog heading={titleLabel} onCloseDialog={this.onClose.bind(this)} floating >
+            <Dialog heading={titleLabel} onCloseDialog={() => this.props.onClose()} floating >
                 <>
+
                     <SelectableButtonRow values={statisticsChoices} onSelected={(value) => { this.setStatisticsMode(value) }}
-                        initialValue={this.state.state.toLowerCase()}
+                        initialValue={"Land"}
                     />
 
-                    <div>
+                    <div ref={this.statisticsParentRef}>
                         <svg className="StatisticsContainer" ref={this.statisticsContainerRef} />
                     </div>
 
@@ -188,7 +209,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
                             {this.state.productionStatistics &&
                                 <SelectableButtonRow values={materialChoices}
-                                    initialValue={"" + this.state.materialToShow}
+                                    initialValue={"0"}
                                     onSelected={
                                         (value) => {
 
@@ -212,7 +233,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         this.props.onClose()
     }
 
-    drawLandStatistics(statisticsSvgElement: SVGSVGElement, landStatisticsWithGaps: LandStatistics): void {
+    drawLandStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, landStatisticsWithGaps: LandStatistics): void {
 
         /*  Complement the reported land metrics */
         const landStatistics: LandDataPoint[] = []
@@ -246,8 +267,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const lastDataPoint = landStatistics[landStatistics.length - 1]
 
         /* Define the full dimensions of the graph window */
-        const fullHeight = 600
-        const fullWidth = 600
+        const fullHeight = parent.clientHeight
+        const fullWidth = parent.clientWidth
 
         /* Set the margins */
         const margin = { top: 20, right: 20, bottom: 20, left: 20 }
@@ -460,16 +481,22 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         return resultArray
     }
 
-    drawProductionStatistics(statisticsSvgElement: SVGSVGElement, gameStatistics: GameStatistics): void {
+    drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, gameStatistics: GameStatistics): void {
 
         /* Get the right material statistics to graph */
+        console.log(gameStatistics)
+        console.log(this.state.materialToShow)
+        console.log(gameStatistics.materialStatistics[this.state.materialToShow])
         const resourceStatisticsFull = gameStatistics.materialStatistics[this.state.materialToShow].materialStatistics
 
         const resourceStatistics = this.reduceDataArrayIfNeeded(resourceStatisticsFull, 30)
 
         /* Define the full dimensions of the graph window */
-        const fullHeight = 600
-        const fullWidth = 600
+        //const fullHeight = 600
+        //const fullWidth = 600
+
+        const fullHeight = parent.clientHeight
+        const fullWidth = parent.clientWidth
 
         /* Set the margins */
         const margin = { top: 20, right: 20, bottom: 20, left: 20 }

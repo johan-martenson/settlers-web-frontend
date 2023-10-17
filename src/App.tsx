@@ -1040,10 +1040,10 @@ class App extends Component<AppProps, AppState> {
                     currentZoom={this.state.scale}
                     minZoom={MIN_SCALE}
                     maxZoom={MAX_SCALE}
-                    adjustSpeed={this.onSpeedSliderChange.bind(this)}
+                    onSetSpeed={this.onSpeedSliderChange.bind(this)}
                     gameId={this.props.gameId}
-                    setShowTitles={this.setShowTitles.bind(this)}
-                    currentShowTitles={this.state.showTitles}
+                    onSetTitlesVisible={this.setShowTitles.bind(this)}
+                    areTitlesVisible={this.state.showTitles}
                     onLeaveGame={this.props.onLeaveGame}
                     currentSpeed={0}
                     onStatistics={() => this.setState({ showStatistics: true })}
@@ -1056,6 +1056,8 @@ class App extends Component<AppProps, AppState> {
                     isTypingControllerVisible={this.state.isTypingControllerVisible}
                     onSetTypingControllerVisible={(visible: boolean) => this.setState({ isTypingControllerVisible: visible })}
                     defaultZoom={DEFAULT_SCALE}
+                    isAvailableConstructionVisible={this.state.showAvailableConstruction}
+                    onSetAvailableConstructionVisible={(visible: boolean) => this.setState({ showAvailableConstruction: visible })}
                 />
 
                 {this.state.showFriendlyHouseInfo &&

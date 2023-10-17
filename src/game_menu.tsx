@@ -1,9 +1,8 @@
-import React, { ChangeEvent, Component } from 'react';
+import React, { ChangeEvent, Component, Ref } from 'react';
 import { GameId, PlayerId, PlayerInformation } from './api';
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable';
 import { Button, Divider, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData } from '@fluentui/react-components';
 import { Dismiss24Regular } from '@fluentui/react-icons';
-import SelectPlayer from './select_player';
 import './game_menu.css'
 
 interface GameMenuProps {
@@ -12,17 +11,18 @@ interface GameMenuProps {
     maxZoom: number
     minZoom: number
     currentZoom: number
-    currentShowTitles: boolean
+    areTitlesVisible: boolean
     currentSpeed: number
     isOpen: boolean
     isMusicPlayerVisible: boolean
     isTypingControllerVisible: boolean
+    isAvailableConstructionVisible: boolean
     defaultZoom: number
 
     onChangedZoom: ((scale: number) => void)
     onPlayerSelected: ((player: PlayerInformation) => void)
-    adjustSpeed: ((speed: number) => void)
-    setShowTitles: ((showTitles: boolean) => void)
+    onSetSpeed: ((speed: number) => void)
+    onSetTitlesVisible: ((showTitles: boolean) => void)
     onLeaveGame: (() => void)
     onStatistics: (() => void)
     onHelp: (() => void)
@@ -30,11 +30,13 @@ interface GameMenuProps {
     onClose: (() => void)
     onSetMusicPlayerVisible: ((visible: boolean) => void)
     onSetTypingControllerVisible: ((visible: boolean) => void)
+    onSetAvailableConstructionVisible: ((visible: boolean) => void)
 }
 interface GameMenuState {
 }
 
 class GameMenu extends Component<GameMenuProps, GameMenuState> {
+    zoomSliderRef = React.createRef<HTMLInputElement>()
 
     constructor(props: GameMenuProps) {
         super(props);
@@ -45,8 +47,6 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
     }
 
     render(): JSX.Element {
-
-        console.log(this.props)
 
         return (
             <Drawer
@@ -77,24 +77,34 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                                 defaultValue={this.props.currentZoom}
                                 step={1}
                                 onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => this.props.onChangedZoom(data.value)}
+                                ref={this.zoomSliderRef}
+
                             />
                             <Button onClick={(ev) => {
                                 this.props.onChangedZoom(this.props.defaultZoom)
+
                                 // TODO: adjust the scale slider as well
+                                console.log(this.zoomSliderRef?.current)
+                                console.log(this.zoomSliderRef?.current?.value)
+
+                                if (this.zoomSliderRef?.current) {
+                                    this.zoomSliderRef.current.value = "" + this.props.defaultZoom
+                                    console.log(this.zoomSliderRef?.current?.value)
+                                }
                             }} >Reset</Button>
-                        </Field>
-                        <Field label='Show house titles'>
-                            <Switch
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.setShowTitles(data.checked)}
-                                defaultChecked={this.props.currentShowTitles} />
                         </Field>
                         <Field label='Set game speed'>
                             <Slider max={10}
                                 min={1}
                                 defaultValue={this.props.currentSpeed}
                                 step={1}
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => this.props.adjustSpeed(data.value)}
+                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => this.props.onSetSpeed(data.value)}
                             />
+                        </Field>
+                        <Field label='Show house titles'>
+                            <Switch
+                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.onSetTitlesVisible(data.checked)}
+                                defaultChecked={this.props.areTitlesVisible} />
                         </Field>
 
                         <Field label='Show music player'>
@@ -108,6 +118,12 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                             <Switch
                                 onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.onSetTypingControllerVisible(data.checked)}
                                 defaultChecked={this.props.isTypingControllerVisible}
+                            />
+                        </Field>
+                        <Field label="Show available construction">
+                            <Switch
+                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.onSetAvailableConstructionVisible(data.checked)}
+                                defaultChecked={this.props.isAvailableConstructionVisible}
                             />
                         </Field>
 

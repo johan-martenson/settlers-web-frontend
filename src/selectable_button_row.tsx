@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import Button from './button'
+import { ToggleButton } from '@fluentui/react-components'
 import './selectable_button_row.css'
 
 interface SelectableButtonRowProps {
@@ -41,28 +41,28 @@ class SelectableButtonRow extends Component<SelectableButtonRowProps, Selectable
 
                         if (this.state.selected && key === this.state.selected) {
                             return (
-                                <Button label={value}
+                                <ToggleButton
                                     key={index}
-                                    selected={true}
-                                    onButtonClicked={
+                                    checked={true}
+                                    onClick={
                                         () => {
                                             this.setState({ selected: key })
                                             this.props.onSelected(key)
                                         }
                                     }
-                                />
+                                >{value}</ToggleButton>
                             )
                         } else {
                             return (
-                                <Button label={value}
+                                <ToggleButton
                                     key={index}
-                                    onButtonClicked={
+                                    onClick={
                                         () => {
                                             this.setState({ selected: key })
                                             this.props.onSelected(key)
                                         }
                                     }
-                                />
+                                >{value}</ToggleButton>
                             )
                         }
                     }

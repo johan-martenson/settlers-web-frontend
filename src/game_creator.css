@@ -3,18 +3,13 @@
     width: 100vw;
 }
 
-.SetGameNameLabel {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    align-items: flex-end;
-}
-
 .create-game-columns {
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: flex-start;
     align-items: flex-start;
+    gap: 20px;
+    padding: 20px;
 
     height: 90%;
     width: 100%;
@@ -32,7 +27,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 30%;
+    width: 10%;
 }
 
 .map-column {
@@ -40,11 +35,6 @@
     flex-direction: column;
     gap: 10px;
     width: 30%;
-}
-
-.SmallMapSelection {
-    height: 40vh;
-    overflow-y: auto;
 }
 
 .start-or-cancel {
@@ -62,4 +52,12 @@
 
 #select-map {
     padding: 20px 20px 20px 20px;
+}
+
+.set-game-name-label {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
 }

@@ -5,6 +5,7 @@ import './map_list.css'
 
 interface MapListProps {
     onMapSelected: ((map: MapInformation) => void)
+    defaultSelect?: boolean
 }
 
 interface MapListState {
@@ -22,6 +23,10 @@ class MapList extends Component<MapListProps, MapListState> {
     async componentDidMount(): Promise<void> {
 
         const maps = await getMaps()
+
+        if (this.props.defaultSelect) {
+            this.props.onMapSelected(maps[0])
+        }
 
         this.setState(
             {

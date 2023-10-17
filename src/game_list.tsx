@@ -86,7 +86,7 @@ class GameList extends Component<GameListProps, GameListState> {
                                                 <MenuPopover>
                                                     <MenuList>
                                                         <MenuItem onClick={() => console.log("Clicked view " + game.id)}>View</MenuItem>
-                                                        {game.status === 'NOT_STARTED' &&
+                                                        {game.status === 'NOT_STARTED' && game.othersCanJoin &&
                                                             <MenuItem onClick={() => this.props.onJoinGame(game)} >Join</MenuItem>
                                                         }
                                                         {game.status === 'STARTED' &&

@@ -212,17 +212,17 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         this.props.onClose()
     }
 
-    drawLandStatistics(statisticsSvgElement: SVGSVGElement, landStatistics: LandStatistics): void {
+    drawLandStatistics(statisticsSvgElement: SVGSVGElement, landStatisticsWithGaps: LandStatistics): void {
 
         /*  Complement the reported land metrics */
-        const augmentedLandStatistics: LandDataPoint[] = []
+        const landStatistics: LandDataPoint[] = []
 
         let previousMeasurement = undefined
-        for (let i = 0; i < landStatistics.landStatistics.length; i++) {
-            const measurement = landStatistics.landStatistics[i]
+        for (let i = 0; i < landStatisticsWithGaps.landStatistics.length; i++) {
+            const measurement = landStatisticsWithGaps.landStatistics[i]
 
             if (previousMeasurement) {
-                augmentedLandStatistics.push(
+                landStatistics.push(
                     {
                         time: measurement.time,
                         values: previousMeasurement.values
@@ -230,17 +230,20 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 )
             }
 
-            augmentedLandStatistics.push(measurement)
+            landStatistics.push(measurement)
 
             previousMeasurement = measurement
         }
 
-        augmentedLandStatistics.push(
+        landStatistics.push(
             {
-                time: landStatistics.currentTime,
-                values: landStatistics.landStatistics[landStatistics.landStatistics.length - 1].values
+                time: landStatisticsWithGaps.currentTime,
+                values: landStatisticsWithGaps.landStatistics[landStatisticsWithGaps.landStatistics.length - 1].values
             }
         )
+
+        const firstDataPoint = landStatistics[0]
+        const lastDataPoint = landStatistics[landStatistics.length - 1]
 
         /* Define the full dimensions of the graph window */
         const fullHeight = 600
@@ -256,9 +259,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         /* Calculate the max range of both axis and the min time value */
         let maxTimeCalculated = 0
         let maxValueCalculated = 0
-        let minTimeCalculated = landStatistics.landStatistics[0].time
+        let minTimeCalculated = firstDataPoint.time
 
-        landStatistics.landStatistics.forEach(
+        landStatisticsWithGaps.landStatistics.forEach(
             (measurement: LandDataPoint) => {
                 maxTimeCalculated = Math.max(maxTimeCalculated, measurement.time)
                 minTimeCalculated = Math.min(minTimeCalculated, measurement.time)
@@ -287,7 +290,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const lines: d3.Line<LandDataPoint>[] = []
 
         // eslint-disable-next-line
-        for (const i in landStatistics.players) {
+        for (const i in landStatisticsWithGaps.players) {
 
             lines.push(
                 d3.line<LandDataPoint>()
@@ -332,9 +335,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         /* Add the x axis */
-        /*        statisticsSvg.append("g")
-                    .attr("transform", "translate(0, " + height + ")")
-                    .call(xAxis)*/
+        statisticsSvg.append("g")
+            .attr("transform", "translate(0, " + height + ")")
+            .call(xAxis)
 
         /* Add the y axis */
         statisticsSvg.append("g")
@@ -342,8 +345,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         /* Instantiate the lines */
         // eslint-disable-next-line
-        for (const i in landStatistics.players) {
-            lines[i](augmentedLandStatistics)
+        for (const i in landStatisticsWithGaps.players) {
+            lines[i](landStatistics)
         }
 
         /* FIXME: for now use a fixed set of colors instead of the right colors for each player */
@@ -351,14 +354,14 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         /* Add the lines */
         // eslint-disable-next-line
-        for (const i in landStatistics.players) {
+        for (const i in landStatisticsWithGaps.players) {
             statisticsSvg.append("path")
                 .attr("fill", "none")
                 .attr("stroke", colors[i])
                 .attr("stroke-width", 2)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round")
-                .datum(augmentedLandStatistics) // 10. Binds data to the line 
+                .datum(landStatistics) // 10. Binds data to the line 
                 .attr("class", "line") // Assign a class for styling 
                 .attr("d", lines[i]) // 11. Calls the line generator 
                 .on("mouseover",
@@ -377,7 +380,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 )
 
             statisticsSvg.selectAll(".dot" + i)
-                .data(augmentedLandStatistics)
+                .data(landStatistics)
                 .enter().append("circle") // Uses the enter().append() method
                 .attr("fill", colors[i])
                 .attr("class", "dot") // Assign a class for styling

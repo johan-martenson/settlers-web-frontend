@@ -39,6 +39,8 @@ class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
                             this.props.onMapSelected(map)
                         }
                     }
+
+                    defaultSelect
                 />
             </div>
         )

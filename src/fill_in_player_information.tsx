@@ -114,8 +114,10 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                                     }
                                 }
                                 defaultValue={defaultName}
+                                autoFocus
                             />
                         </div>
+
                         <Button
                             onClick={this.onPlayerInformationDone.bind(this)}
                             disabled={!this.nameFieldRef.current?.value}

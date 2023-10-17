@@ -64,12 +64,20 @@ class Player extends Component<PlayerProps, PlayerState> {
 
         console.log(this.props.player.type)
 
+        const nationPrettyString = this.props.player.nation.charAt(0).toUpperCase() + this.props.player.nation.slice(1).toLowerCase()
+
         return (
-                <Card>
-                    <CardHeader
-                    header={<Text weight="semibold">{this.props.player.name} {this.props.player.type === "COMPUTER" && "(computer)"}</Text>}
+            <Card>
+                <CardHeader
+                    header={<Text weight="semibold">
+                        {this.props.player.name} {this.props.player.type === "COMPUTER" && "(computer)"}
+                        {this.props.isSelf && "(me)"}
+                    </Text>}
                     description={
-                        <Caption1>{this.props.player.nation}, {this.props.player.type === "COMPUTER" && "(computer)"}</Caption1>
+                        <Caption1>
+                            {nationPrettyString}, {this.props.player.type === "COMPUTER" && "computer player"}
+                            {this.props.isSelf && "me"}
+                        </Caption1>
                     }
                     action={
                         <Button
@@ -90,8 +98,8 @@ class Player extends Component<PlayerProps, PlayerState> {
                     {!this.props.isSelf && this.props.onPlayerRemoved && this.state.expanded &&
                         <Button onClick={this.props.onPlayerRemoved} >Remove</Button>
                     }
-</p>
-                </Card>
+                </p>
+            </Card>
         )
     }
 }

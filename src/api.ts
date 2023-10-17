@@ -281,6 +281,7 @@ export interface GameInformation {
     status: "STARTED" | "NOT_STARTED"
     name: string
     map: MapInformation
+    othersCanJoin: boolean
 }
 
 export interface MapInformation {
@@ -837,6 +838,19 @@ async function createGame(name: string, mapId: MapId | undefined, players: Playe
             },
             body: JSON.stringify(gameBody)
         })
+
+    return await response.json()
+}
+
+async function setOthersCanJoinGame(gameId: GameId, canJoin: "CAN_JOIN" | "CANNOT_JOIN"): Promise<GameInformation> {
+    const response = await fetch("/settlers/api/games/" + gameId,
+    {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({othersCanJoin: canJoin === "CAN_JOIN"})
+    })
 
     return await response.json()
 }
@@ -1429,6 +1443,7 @@ export {
     signToColor, pauseProductionForHouse, resumeProductionForHouse, isTool, printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage,
     addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame,
     createRoadWithFlag,
+    setOthersCanJoinGame,
     VEGETATION_INTEGERS
 }
 

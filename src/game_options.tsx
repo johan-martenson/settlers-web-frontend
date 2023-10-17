@@ -1,6 +1,6 @@
 import React, { ChangeEvent, Component } from 'react';
 import './game_options.css';
-import { Switch, Select, SelectOnChangeData, Subtitle1, Field } from "@fluentui/react-components";
+import { Switch, Select, SelectOnChangeData, Subtitle1, Field, SwitchOnChangeData } from "@fluentui/react-components";
 
 import { ResourceLevel } from './api';
 
@@ -40,11 +40,14 @@ class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
         return (
             <div className="settings">
                 <Subtitle1 as="h4" block>Settings</Subtitle1>
-                <Field orientation='horizontal' label="Allow others to join?">
-                    <Switch defaultChecked={true} onChange={(value) => console.log(value)} />
+                <Field label="Allow others to join?">
+                    <Switch
+                        defaultChecked={true}
+                        onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.setOthersCanJoin(data.checked)}
+                    />
                 </Field>
 
-                <Field orientation='horizontal' label="Initial resources">
+                <Field label="Initial resources">
                     <Select
                         className="ResourceButtons"
                         onChange={

@@ -1,5 +1,5 @@
 import React, { Component, createRef } from 'react'
-import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel, PlayerInformation, getMaps } from './api'
+import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel, PlayerInformation, getMaps, setOthersCanJoinGame } from './api'
 import { Input, Button, Subtitle1, Field } from "@fluentui/react-components";
 
 import './game_creator.css'
@@ -108,7 +108,13 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
     // eslint-disable-next-line
     async setOthersCanJoin(othersCanJoin: boolean): Promise<void> {
+        if (!this.state.game) {
+            console.error("No game created!")
 
+            return
+        }
+
+        setOthersCanJoinGame(this.state.game.id, (othersCanJoin) ? "CAN_JOIN" : "CANNOT_JOIN")
     }
 
     async setAvailableResources(level: ResourceLevel): Promise<void> {
@@ -162,6 +168,8 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
         /* Find the self player id */
         const selfPlayer = game.players[0]
 
+        console.error(selfPlayer)
+
         /* Show the game creation panels */
         this.setState(
             {
@@ -186,9 +194,9 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
                 {this.state.state === "GET_NAME_FOR_GAME" &&
                     <div>
 
-                        <div className="SetGameNameLabel">
+                        <div className="set-game-name-label">
 
-                            <Field label={"Enter a name for the game"} >
+                            <Field label={"Enter a name for the game"} style={{flex: "1 0 100%"}}>
                                 <Input type="text" placeholder="Name..."
                                     ref={this.titleFieldRef}
                                     onChange={
@@ -226,18 +234,19 @@ class GameCreator extends Component<GameCreatorProps, GameCreatorState> {
 
                 {this.state.state === "CREATE_GAME" && this.state.game && this.state.selfPlayer &&
                     <div className="game-creation-screen">
-                        <Subtitle1 as="h1">Create Game</Subtitle1>
+
                         <div className="create-game-columns">
+
+                            <div className='options-column'>
+                                <GameOptions setAvailableResources={this.setAvailableResources.bind(this)} setOthersCanJoin={this.setOthersCanJoin.bind(this)} />
+                            </div>
+
                             <div className='players-column'>
                                 <ManagePlayers gameId={this.state.game.id}
                                     selfPlayer={this.state.selfPlayer}
                                     defaultComputerPlayers={1}
                                     maxPlayers={10}
                                 />
-                            </div>
-
-                            <div className='options-column'>
-                                <GameOptions setAvailableResources={this.setAvailableResources.bind(this)} setOthersCanJoin={this.setOthersCanJoin.bind(this)} />
                             </div>
 
                             <div className='map-column'>

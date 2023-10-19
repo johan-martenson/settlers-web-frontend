@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
-import { MapInformation, MapId, TerrainAtPoint } from './api';
-import { Button, Text, Caption1 } from "@fluentui/react-components";
-import { Card, CardHeader } from "@fluentui/react-components";
-import './map_information_card.css';
-import { makeImageFromMap } from './utils';
+import React, { Component } from 'react'
+import { MapInformation, MapId, TerrainAtPoint } from './api/types'
+import { Button, Text, Caption1 } from "@fluentui/react-components"
+import { Card, CardHeader } from "@fluentui/react-components"
+import './map_information_card.css'
+import { makeImageFromMap } from './utils'
 
 const cachedMapImages = new Map<MapId, HTMLImageElement>()
 

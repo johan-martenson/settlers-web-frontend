@@ -1,4 +1,5 @@
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getInformationOnPoint, getTerrainForMap, HouseInformation, MapInformation, MaterialAllUpperCase, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeHouse, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
+import { getInformationOnPoint, getTerrainForMap,  removeHouse } from './api'
+import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, FlagType, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation } from './api/types'
 import { Monitor, monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()

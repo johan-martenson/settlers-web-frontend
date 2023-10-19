@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api'
+import { Direction, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api/types'
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './monitor'

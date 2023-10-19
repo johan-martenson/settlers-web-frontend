@@ -1,6 +1,6 @@
 import React, { Component, ReactNode } from 'react'
 import { texturedImageVertexShaderPixelPerfectStraightCoordinates, textureFragmentShader } from './shaders'
-import { Direction, Nation, WorkerType } from './api'
+import { Direction, Nation, WorkerType } from './api/types'
 import { workers } from './assets'
 import { Dimension, WorkerAnimation, makeShader, resizeCanvasToDisplaySize } from './utils'
 import { DEFAULT_SCALE } from './game_render'

@@ -1,9 +1,10 @@
 import React, { Component } from 'react'
-import { GameId, PlayerId, setTransportPriorityForMaterial, MaterialAllUpperCase, isToolUpperCase, TOOLS_UPPER_CASE } from './api'
+import { setTransportPriorityForMaterial, isToolUpperCase } from './api'
 import { Dialog } from './dialog'
 import { getTransportPriorityForPlayer } from './api'
 import Button from './button'
 import './transport_priority.css'
+import { GameId, PlayerId, MaterialAllUpperCase, TOOLS_UPPER_CASE } from './api/types'
 
 interface SetTransportPriorityProps {
     onClose: (() => void)

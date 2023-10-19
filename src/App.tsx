@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, FlagInformation, GameId, getInformationOnPoint, getPlayers, HouseId, HouseInformation, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, PlayerInformation, Point, PointInformation, setSpeed, SMALL_HOUSES, upgradeMilitaryBuilding } from './api'
+import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, getInformationOnPoint, getPlayers, setSpeed, upgradeMilitaryBuilding } from './api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import EnemyHouseInfo from './enemy_house_info'
@@ -17,6 +17,7 @@ import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import { TypeControl, Command } from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
+import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation } from './api/types'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 

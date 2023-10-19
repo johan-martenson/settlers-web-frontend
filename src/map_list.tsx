@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
-import { getMaps, MapInformation } from './api'
+import { getMaps } from './api'
 import MapInformationCard from './map_information_card'
 import './map_list.css'
+import { MapInformation } from './api/types'
 
 interface MapListProps {
     onMapSelected: ((map: MapInformation) => void)

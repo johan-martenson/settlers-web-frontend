@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { addHumanPlayerToGame, GameId, GameInformation, getGameInformation, getPlayers, PlayerId } from './api'
+import { addHumanPlayerToGame, getGameInformation, getPlayers } from './api'
 import App from './App'
 import { Button } from "@fluentui/react-components";
 import { EnteredPlayerInformation } from './fill_in_player_information'
@@ -7,6 +7,7 @@ import { GameCreator } from './game_creator'
 import GameList from './game_list'
 import './lobby.css'
 import { WorkerIcon } from './icon';
+import { GameId, PlayerId, GameInformation } from './api/types';
 
 type LobbyStates = "LIST_GAMES" | "CREATE_GAME" | "PLAY_GAME" | "WAIT_FOR_GAME"
 

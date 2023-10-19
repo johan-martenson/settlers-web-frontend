@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
-import { GameId, HouseInformation, PlayerId, MaterialAllUpperCase, isMaterialUpperCase } from './api'
+import { isMaterialUpperCase } from './api'
 import './headquarter_info.css'
 import Button from './button'
+import { HouseInformation, GameId, PlayerId, MaterialAllUpperCase } from './api/types'
 
 interface HeadquarterInfoProps {
     house: HouseInformation

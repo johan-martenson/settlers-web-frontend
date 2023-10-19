@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, isEvacuated, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse, isMaterialUpperCase, MaterialAllUpperCase } from './api'
+import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, getHouseInformation, getSoldierDisplayName, houseIsReady, isEvacuated, isMilitaryBuilding, removeHouse, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse, isMaterialUpperCase } from './api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_house_info.css'
@@ -7,6 +7,7 @@ import HeadquarterInfo from './headquarter_info'
 import { houseImageMap } from './images'
 import { forceUpdateOfHouse, listenToHouse } from './monitor'
 import ProgressBar from './progress_bar'
+import { HouseInformation, GameId, PlayerId, SoldierType, MaterialAllUpperCase } from './api/types'
 
 interface FriendlyHouseInfoProps {
     house: HouseInformation

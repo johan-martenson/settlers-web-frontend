@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
-import { GameInformation, getGames } from './api'
-import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton } from "@fluentui/react-components";
+import { getGames } from './api'
+import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton } from "@fluentui/react-components"
 import {
     TableBody,
     TableCell,
@@ -8,8 +8,9 @@ import {
     Table,
     TableHeader,
     TableHeaderCell
-} from "@fluentui/react-components";
+} from "@fluentui/react-components"
 import './game_list.css'
+import { GameInformation } from './api/types'
 
 const statusToText = {
     STARTED: 'Started',

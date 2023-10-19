@@ -3,9 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'
 import { Lobby } from './lobby'
-import { GameId, PlayerId, getPlayers } from './api'
+import { getPlayers } from './api'
 import App from './App'
 import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/react-components';
+import { GameId, PlayerId } from './api/types'
 
 
 interface GameInitProps { }

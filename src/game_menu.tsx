@@ -1,8 +1,8 @@
-import React, { ChangeEvent, Component, Ref } from 'react';
-import { GameId, PlayerId, PlayerInformation } from './api';
-import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable';
-import { Button, Divider, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData } from '@fluentui/react-components';
-import { Dismiss24Regular } from '@fluentui/react-icons';
+import React, { ChangeEvent, Component } from 'react'
+import { GameId, PlayerId, PlayerInformation } from './api/types'
+import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
+import { Button, Divider, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData } from '@fluentui/react-components'
+import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
 
 interface GameMenuProps {

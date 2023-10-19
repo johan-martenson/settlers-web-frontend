@@ -1,13 +1,13 @@
 import React, { Component, createRef } from 'react'
-import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel, PlayerInformation, getMaps, setOthersCanJoinGame } from './api'
-import { Input, Button, Field } from "@fluentui/react-components";
-
+import { createGame, deleteGame, setMapForGame, startGame, setResourceLevelForGame, getMaps, setOthersCanJoinGame } from './api'
+import { Input, Button, Field } from "@fluentui/react-components"
 import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
 import './game_creator.css'
 import ManagePlayers from './manage_players'
-import { WorkerIcon } from './icon';
+import { WorkerIcon } from './icon'
+import { GameId, PlayerId, MapInformation, GameInformation, PlayerInformation, ResourceLevel } from './api/types'
 
 interface SelfPlayer {
     name: string

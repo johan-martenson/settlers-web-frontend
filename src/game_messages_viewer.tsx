@@ -1,11 +1,12 @@
 import React, { Component } from 'react'
-import { GameId, GameMessage, getMessagesForPlayer, HouseId, isBuildingCapturedMessage, isBuildingLostMessage, isGeologistFindMessage, isMilitaryBuildingCausedLostLandMessage, isMilitaryBuildingOccupiedMessage, isMilitaryBuildingReadyMessage, isNoMoreResourcesMessage, isStoreHouseIsReadyMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isUnderAttackMessage, PlayerId, Point } from './api'
+import { getMessagesForPlayer, isBuildingCapturedMessage, isBuildingLostMessage, isGeologistFindMessage, isMilitaryBuildingCausedLostLandMessage, isMilitaryBuildingOccupiedMessage, isMilitaryBuildingReadyMessage, isNoMoreResourcesMessage, isStoreHouseIsReadyMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isUnderAttackMessage } from './api'
 import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import './game_messages_viewer.css'
 import { listenToMessages } from './monitor'
 import { play } from './sound_effects'
 import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
+import { GameId, PlayerId, HouseId, Point, GameMessage } from './api/types'
 
 interface GameMessagesViewerProps {
     gameId: GameId

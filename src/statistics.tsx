@@ -1,9 +1,10 @@
 import * as d3 from 'd3'
 import React, { Component } from 'react'
-import { GameId, ProductionStatistics, getGameStatistics, getLandStatistics, LandDataPoint, LandStatistics, MATERIALS_UPPER_CASE, Measurement, MaterialAllUpperCase, isMaterialUpperCase } from './api'
+import { getGameStatistics, getLandStatistics, isMaterialUpperCase } from './api'
 import { Dialog } from './dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
+import { GameId, ProductionStatistics, LandStatistics, MaterialAllUpperCase, MATERIALS_UPPER_CASE, LandDataPoint, Measurement } from './api/types'
 
 interface StatisticsProps {
     onClose: (() => void)

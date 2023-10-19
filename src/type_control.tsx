@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
-import { GameId, PlayerId, Point, PointInformation, getInformationOnPoint } from './api'
+import { getInformationOnPoint } from './api'
+import { PointInformation, Point, GameId, PlayerId } from './api/types'
 
 export interface Command {
     action: (() => void)

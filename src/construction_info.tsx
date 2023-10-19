@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api'
+import { GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api/types'
 import Button from './button'
 import './construction_info.css'
 import { Dialog, DialogSection } from './dialog'

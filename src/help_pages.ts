@@ -1,4 +1,4 @@
-import { AnyBuilding } from './api'
+import { AnyBuilding } from './api/types'
 
 type PictureType = AnyBuilding | string
 

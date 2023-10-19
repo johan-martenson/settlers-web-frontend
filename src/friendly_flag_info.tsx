@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { FlagInformation, GameId, PlayerId } from './api'
+import { FlagInformation, GameId, PlayerId } from './api/types'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_flag_info.css'

@@ -1,5 +1,5 @@
 import { WorkerAnimation } from "./utils"
-import { WorkerType } from "./api"
+import { WorkerType } from "./api/types"
 
 export const workers = new Map<WorkerType, WorkerAnimation>()
 

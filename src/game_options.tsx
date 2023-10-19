@@ -1,8 +1,7 @@
-import React, { ChangeEvent, Component } from 'react';
-import './game_options.css';
-import { Switch, Select, SelectOnChangeData, Subtitle1, Field, SwitchOnChangeData } from "@fluentui/react-components";
-
-import { ResourceLevel } from './api';
+import React, { ChangeEvent, Component } from 'react'
+import './game_options.css'
+import { Switch, Select, SelectOnChangeData, Subtitle1, Field, SwitchOnChangeData } from "@fluentui/react-components"
+import { ResourceLevel } from './api/types'
 
 interface GameOptionsProps {
     setAvailableResources: ((level: ResourceLevel) => void)

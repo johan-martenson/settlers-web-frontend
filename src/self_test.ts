@@ -1,5 +1,5 @@
 import { PointSetFast, PointMapFast } from './util_types'
-import { Point } from './api'
+import { Point } from './api/types'
 
 function do_self_test(): void {
     testPointSet()

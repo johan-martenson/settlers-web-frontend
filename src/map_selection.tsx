@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { MapInformation } from './api'
+import { MapInformation } from './api/types'
 import { MapList } from './map_list'
 import './map_selection.css'
 import { Subtitle1 } from '@fluentui/react-components'

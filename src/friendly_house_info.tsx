@@ -1,11 +1,11 @@
 import React, { Component } from 'react'
-import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, getHouseInformation, getSoldierDisplayName, houseIsReady, isEvacuated, isMilitaryBuilding, removeHouse, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse, isMaterialUpperCase } from './api'
+import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, getHouseInformation, getSoldierDisplayName, houseIsReady, isEvacuated, isMilitaryBuilding, removeHouse, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse, isMaterialUpperCase } from './api/rest-api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_house_info.css'
 import HeadquarterInfo from './headquarter_info'
 import { houseImageMap } from './images'
-import { forceUpdateOfHouse, listenToHouse } from './monitor'
+import { forceUpdateOfHouse, listenToHouse } from './api/ws-api'
 import ProgressBar from './progress_bar'
 import { HouseInformation, GameId, PlayerId, SoldierType, MaterialAllUpperCase } from './api/types'
 

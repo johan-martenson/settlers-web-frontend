@@ -1,6 +1,6 @@
 import * as d3 from 'd3'
 import React, { Component } from 'react'
-import { getGameStatistics, getLandStatistics, isMaterialUpperCase } from './api'
+import { getGameStatistics, getLandStatistics, isMaterialUpperCase } from './api/rest-api'
 import { Dialog } from './dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'

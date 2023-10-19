@@ -1,6 +1,6 @@
-import { getInformationOnPoint, getTerrainForMap,  removeHouse } from './api'
+import { getInformationOnPoint, getTerrainForMap,  removeHouse } from './api/rest-api'
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, FlagType, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation } from './api/types'
-import { Monitor, monitor } from './monitor'
+import { Monitor, monitor } from './api/ws-api'
 
 const vegetationToInt = new Map<Vegetation, number>()
 

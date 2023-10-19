@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { getGames } from './api'
+import { getGames } from './api/rest-api'
 import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton } from "@fluentui/react-components"
 import {
     TableBody,

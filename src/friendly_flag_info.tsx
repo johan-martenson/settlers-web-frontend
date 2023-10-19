@@ -3,7 +3,7 @@ import { FlagInformation, GameId, PlayerId } from './api/types'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_flag_info.css'
-import { monitor } from './monitor'
+import { monitor } from './api/ws-api'
 
 interface FriendlyFlagInfoProps {
     closeDialog: (() => void)

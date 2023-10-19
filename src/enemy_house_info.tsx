@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { attackBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isMilitaryBuilding } from './api'
+import { attackBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isMilitaryBuilding } from './api/rest-api'
 import Button from './button'
 import { Dialog } from './dialog'
 import { houseImageMap } from './images'

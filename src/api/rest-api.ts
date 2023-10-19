@@ -1,5 +1,5 @@
-import { MaterialAllUpperCase, ToolAllUpperCase, TOOLS_UPPER_CASE_STRING, WildAnimalInformation, MATERIALS_UPPER_CASE_AS_STRING, SoldierType, GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, WILD_ANIMAL_TYPES, Player } from './api/types'
-import { PointMapFast } from './util_types'
+import { MaterialAllUpperCase, ToolAllUpperCase, TOOLS_UPPER_CASE_STRING, WildAnimalInformation, MATERIALS_UPPER_CASE_AS_STRING, SoldierType, GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, WILD_ANIMAL_TYPES, Player } from './types'
+import { PointMapFast } from '../util_types'
 
 function isToolUpperCase(material: MaterialAllUpperCase): material is ToolAllUpperCase {
     return TOOLS_UPPER_CASE_STRING.has(material)

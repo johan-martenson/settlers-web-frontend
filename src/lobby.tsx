@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { addHumanPlayerToGame, getGameInformation, getPlayers } from './api'
+import { addHumanPlayerToGame, getGameInformation, getPlayers } from './api/rest-api'
 import App from './App'
 import { Button } from "@fluentui/react-components"
 import { EnteredPlayerInformation } from './fill_in_player_information'

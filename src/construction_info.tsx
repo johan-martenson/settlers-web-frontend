@@ -4,7 +4,7 @@ import Button from './button'
 import './construction_info.css'
 import { Dialog, DialogSection } from './dialog'
 import { houseImageMap } from './images'
-import { monitor } from './monitor'
+import { monitor } from './api/ws-api'
 import SelectableButtonRow from './selectable_button_row'
 import { camelCaseToWords } from './utils'
 

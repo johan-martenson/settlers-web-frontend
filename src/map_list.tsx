@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { getMaps } from './api'
+import { getMaps } from './api/rest-api'
 import MapInformationCard from './map_information_card'
 import './map_list.css'
 import { MapInformation } from './api/types'

@@ -1,5 +1,5 @@
 import React, { Component, createRef } from 'react'
-import { createGame, deleteGame, setMapForGame, startGame, setResourceLevelForGame, getMaps, setOthersCanJoinGame } from './api'
+import { createGame, deleteGame, setMapForGame, startGame, setResourceLevelForGame, getMaps, setOthersCanJoinGame } from './api/rest-api'
 import { Input, Button, Field } from "@fluentui/react-components"
 import './game_creator.css'
 import GameOptions from './game_options'

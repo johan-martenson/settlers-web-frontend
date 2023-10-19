@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { Button, Subtitle1 } from "@fluentui/react-components"
 import { Player } from './player'
 import './manage_players.css'
-import { addComputerPlayerToGame, getPlayers, updatePlayer, removePlayerFromGame } from './api'
+import { addComputerPlayerToGame, getPlayers, updatePlayer, removePlayerFromGame } from './api/rest-api'
 import { PlayerType, PlayerInformation, GameId } from './api/types'
 
 export interface PlayerCandidateType {

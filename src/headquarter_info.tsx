@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { isMaterialUpperCase } from './api'
+import { isMaterialUpperCase } from './api/rest-api'
 import './headquarter_info.css'
 import Button from './button'
 import { HouseInformation, GameId, PlayerId, MaterialAllUpperCase } from './api/types'

@@ -5,9 +5,8 @@ import './index.css'
 import { Lobby } from './lobby'
 import { getPlayers } from './api'
 import App from './App'
-import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/react-components';
+import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/react-components'
 import { GameId, PlayerId } from './api/types'
-
 
 interface GameInitProps { }
 interface GameInitState {

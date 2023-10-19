@@ -1,8 +1,8 @@
-import React, { Component, createRef } from 'react';
-import { Text, CardHeader, Caption1, Card, Button } from "@fluentui/react-components";
-import './player.css';
-import { PlayerInformation } from './api/types';
-import { MoreHorizontal20Regular } from "@fluentui/react-icons";
+import React, { Component, createRef } from 'react'
+import { Text, CardHeader, Caption1, Card, Button } from "@fluentui/react-components"
+import './player.css'
+import { PlayerInformation } from './api/types'
+import { MoreHorizontal20Regular } from "@fluentui/react-icons"
 
 
 interface PlayerState {

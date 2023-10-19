@@ -531,7 +531,7 @@ class App extends Component<AppProps, AppState> {
                 // Do nothing. The purpose is to make it possible to drag the screen with the right mouse button
 
                 e.preventDefault()
-            }, false);
+            }, false)
         }
 
         await this.monitoringPromise

@@ -1,8 +1,8 @@
-import React, { Component } from 'react';
-import { Button } from '@fluentui/react-components';
-import ExpandCollapseToggle from './expand_collapse_toggle';
-import './music_player.css';
-import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons';
+import React, { Component } from 'react'
+import { Button } from '@fluentui/react-components'
+import ExpandCollapseToggle from './expand_collapse_toggle'
+import './music_player.css'
+import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons'
 
 interface MusicPlayerProps { }
 
@@ -23,7 +23,7 @@ class MusicPlayer extends Component<MusicPlayerProps, MusicPlayerState> {
     private audioInstances: HTMLAudioElement[]
 
     constructor(props: MusicPlayerProps) {
-        super(props);
+        super(props)
 
         this.audioInstances = []
 
@@ -144,8 +144,8 @@ class MusicPlayer extends Component<MusicPlayerProps, MusicPlayerState> {
                     </>
                 }
             </div>
-        );
+        )
     }
 }
 
-export default MusicPlayer;
+export default MusicPlayer

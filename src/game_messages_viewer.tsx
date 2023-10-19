@@ -26,7 +26,7 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
     private periodicUpdates: NodeJS.Timeout | undefined
 
     constructor(props: GameMessagesViewerProps) {
-        super(props);
+        super(props)
 
         this.state = {
             expanded: false,
@@ -196,8 +196,8 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                     </div>
                 }
             </div>
-        );
+        )
     }
 }
 
-export default GameMessagesViewer;
+export default GameMessagesViewer

@@ -9,29 +9,29 @@ interface GameOptionsProps {
 }
 interface GameOptionsState { }
 
-const OPTIONS = new Map<ResourceLevel, string>();
+const OPTIONS = new Map<ResourceLevel, string>()
 
-OPTIONS.set("LOW", "Sparse");
-OPTIONS.set("MEDIUM", "Medium");
-OPTIONS.set("HIGH", "Plenty");
+OPTIONS.set("LOW", "Sparse")
+OPTIONS.set("MEDIUM", "Medium")
+OPTIONS.set("HIGH", "Plenty")
 
 class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
 
     allowOthersToJoin(allow: boolean): void {
 
         if (allow) {
-            console.log("Ok, others can join");
+            console.log("Ok, others can join")
         } else {
-            console.log("Others cannot join");
+            console.log("Others cannot join")
         }
 
-        this.props.setOthersCanJoin(allow);
+        this.props.setOthersCanJoin(allow)
     }
 
     setAvailableResources(level: "LOW" | "MEDIUM" | "HIGH"): void {
-        console.log("Play with resources set to " + level);
+        console.log("Play with resources set to " + level)
 
-        this.props.setAvailableResources(level);
+        this.props.setAvailableResources(level)
     }
 
     render(): JSX.Element {
@@ -57,11 +57,11 @@ class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
 
                                 // FIXME: change SelectableButtonRow to be parameterized so the callback can be more specific in types
                                 if (value === "Low") {
-                                    this.setAvailableResources("LOW");
+                                    this.setAvailableResources("LOW")
                                 } else if (value === "Medium") {
-                                    this.setAvailableResources("MEDIUM");
+                                    this.setAvailableResources("MEDIUM")
                                 } else {
-                                    this.setAvailableResources("HIGH");
+                                    this.setAvailableResources("HIGH")
                                 }
                             }
                         }
@@ -73,8 +73,8 @@ class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
 
                 </Field>
             </div>
-        );
+        )
     }
 }
 
-export default GameOptions;
+export default GameOptions

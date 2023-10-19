@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Label, Input, Button } from "@fluentui/react-components";
+import { Label, Input, Button } from "@fluentui/react-components"
 import { do_self_test } from './self_test'
 import { WorkerIcon } from './icon'
 import './fill_in_player_information.css'

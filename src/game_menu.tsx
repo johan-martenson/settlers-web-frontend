@@ -39,11 +39,11 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
     zoomSliderRef = React.createRef<HTMLInputElement>()
 
     constructor(props: GameMenuProps) {
-        super(props);
+        super(props)
 
         this.state = {
             isOpen: false
-        };
+        }
     }
 
     render(): JSX.Element {
@@ -159,4 +159,4 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
     }
 }
 
-export default GameMenu;
+export default GameMenu

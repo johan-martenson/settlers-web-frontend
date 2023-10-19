@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
-import { Button, Subtitle1 } from "@fluentui/react-components";
-import { Player } from './player';
-import './manage_players.css';
-import { addComputerPlayerToGame, getPlayers, updatePlayer, removePlayerFromGame } from './api';
-import { PlayerType, PlayerInformation, GameId } from './api/types';
+import React, { Component } from 'react'
+import { Button, Subtitle1 } from "@fluentui/react-components"
+import { Player } from './player'
+import './manage_players.css'
+import { addComputerPlayerToGame, getPlayers, updatePlayer, removePlayerFromGame } from './api'
+import { PlayerType, PlayerInformation, GameId } from './api/types'
 
 export interface PlayerCandidateType {
     name: string
@@ -72,16 +72,16 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
         console.log("Add computer player")
 
-        let nextPlayer = undefined;
+        let nextPlayer = undefined
 
         // Find next computer player
         for (let i = 0; i < this.props.maxPlayers; i++) {
             if (this.state.players.find(player => player.name === 'Computer Player ' + i) === undefined) {
                 console.log("Did not find Computer Player " + i)
 
-                nextPlayer = i;
+                nextPlayer = i
 
-                break;
+                break
             }
 
             console.log("Did find Computer Player " + i)
@@ -90,7 +90,7 @@ class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
         console.log("Next player is: " + nextPlayer)
 
         if (nextPlayer === undefined) {
-            return;
+            return
         }
 
         const aiPlayer: PlayerCandidateType = {

@@ -2175,11 +2175,11 @@ function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType
 
 function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement, flipYAxis: "FLIP_Y" | "NO_FLIP_Y" = "NO_FLIP_Y"): WebGLTexture | null {
 
-    const texture = gl.createTexture();
-    const level = 0;
-    const internalFormat = gl.RGBA;
-    const srcFormat = gl.RGBA;
-    const srcType = gl.UNSIGNED_BYTE;
+    const texture = gl.createTexture()
+    const level = 0
+    const internalFormat = gl.RGBA
+    const srcFormat = gl.RGBA
+    const srcType = gl.UNSIGNED_BYTE
 
     if (flipYAxis === "FLIP_Y") {
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
@@ -2195,8 +2195,8 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
     return texture
 }

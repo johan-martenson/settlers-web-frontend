@@ -1,6 +1,6 @@
 import React, { Component, createRef } from 'react'
 import { createGame, deleteGame, GameId, GameInformation, MapInformation, PlayerId, setMapForGame, startGame, setResourceLevelForGame, ResourceLevel, PlayerInformation, getMaps, setOthersCanJoinGame } from './api'
-import { Input, Button, Subtitle1, Field } from "@fluentui/react-components";
+import { Input, Button, Field } from "@fluentui/react-components";
 
 import './game_creator.css'
 import GameOptions from './game_options'

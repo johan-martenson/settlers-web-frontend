@@ -1,4 +1,4 @@
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getInformationOnPoint, getTerrainForMap, HouseInformation, MapInformation, Material, MaterialAllUpperCase, MATERIALS_UPPER_CASE_AS_STRING, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeHouse, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, GameId, getInformationOnPoint, getTerrainForMap, HouseInformation, MapInformation, MaterialAllUpperCase, MEDIUM_HOUSES, Nation, NationSmallCaps, PlayerId, Point, removeHouse, RoadId, RoadInformation, ShipConstructionProgress, SignTypes, Size, SMALL_HOUSES, StoneAmount, StoneType, TerrainAtPoint, TerrainInformation, TreeSize, TreeType, Vegetation, WorkerAction } from './api'
 import { Monitor, monitor } from './monitor'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -1262,8 +1262,8 @@ class FlagImageAtlasHandler {
 }
 
 interface CargoInformation {
-    generic: Record<Material, OneImageInformation>
-    nationSpecific: Record<Nation, Record<Material, OneImageInformation>>
+    generic: Record<MaterialAllUpperCase, OneImageInformation>
+    nationSpecific: Record<Nation, Record<MaterialAllUpperCase, OneImageInformation>>
 }
 
 class CargoImageAtlasHandler {
@@ -1297,7 +1297,7 @@ class CargoImageAtlasHandler {
         }
     }
 
-    getDrawingInformation(nation: Nation, material: Material): DrawingInformation | undefined {
+    getDrawingInformation(nation: Nation, material: MaterialAllUpperCase): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -2217,20 +2217,6 @@ function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement): boolean {
     return needResize
 }
 
-function isMaterialAllUpperCase(possibleMaterialUpperCase: string): possibleMaterialUpperCase is MaterialAllUpperCase {
-    return MATERIALS_UPPER_CASE_AS_STRING.has(possibleMaterialUpperCase)
-}
-
-function materialToAllUpperCase(materialLowerCase: Material): MaterialAllUpperCase | undefined {
-    const possibleMaterialUpperCase = materialLowerCase.toLocaleUpperCase()
-
-    if (isMaterialAllUpperCase(possibleMaterialUpperCase)) {
-        return possibleMaterialUpperCase
-    }
-
-    return undefined
-}
-
 function pointStringToPoint(pointString: string): Point {
     const indexOfComma = pointString.indexOf(',')
 
@@ -2371,7 +2357,6 @@ export {
     makeShader,
     makeTextureFromImage,
     resizeCanvasToDisplaySize,
-    materialToAllUpperCase,
     ShipImageAtlasHandler,
     removeHouseOrFlagOrRoadAtPointWebsocket,
     pointStringToPoint,

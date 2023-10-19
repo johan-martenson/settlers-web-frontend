@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Material, GameId, HouseInformation, PlayerId, isMaterial } from './api'
+import { GameId, HouseInformation, PlayerId, MaterialAllUpperCase, isMaterialUpperCase } from './api'
 import './headquarter_info.css'
 import Button from './button'
 
@@ -26,14 +26,14 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
         }
     }
 
-    calculateInventory(house: HouseInformation): Map<Material, number> {
-        const inventory: Map<Material, number> = new Map()
+    calculateInventory(house: HouseInformation): Map<MaterialAllUpperCase, number> {
+        const inventory: Map<MaterialAllUpperCase, number> = new Map()
 
         Object.entries(house.resources).forEach(
             ([material, hasAndNeeds]) => {
                 const hasAmount = hasAndNeeds.has
 
-                if (!isMaterial(material)) {
+                if (!isMaterialUpperCase(material)) {
                     return
                 }
 

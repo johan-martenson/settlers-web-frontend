@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { GameId, PlayerId, Material, setTransportPriorityForMaterial, TOOLS, isTool } from './api'
+import { GameId, PlayerId, setTransportPriorityForMaterial, MaterialAllUpperCase, isToolUpperCase, TOOLS_UPPER_CASE } from './api'
 import { Dialog } from './dialog'
 import { getTransportPriorityForPlayer } from './api'
 import Button from './button'
@@ -12,8 +12,8 @@ interface SetTransportPriorityProps {
 }
 
 interface SetTransportPriorityState {
-    priority?: Material[]
-    selected?: Material
+    priority?: MaterialAllUpperCase[]
+    selected?: MaterialAllUpperCase
 }
 
 class SetTransportPriority extends Component<SetTransportPriorityProps, SetTransportPriorityState> {
@@ -32,7 +32,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         this.setState({ priority: currentPriority })
     }
 
-    onSelect(material: Material): void {
+    onSelect(material: MaterialAllUpperCase): void {
         this.setState({ selected: material })
     }
 
@@ -70,7 +70,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
 
     }
 
-    async decreasePriority(selectedMaterial: Material): Promise<void> {
+    async decreasePriority(selectedMaterial: MaterialAllUpperCase): Promise<void> {
 
         if (!this.state.priority) {
             return
@@ -82,10 +82,10 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
             return
         }
 
-        if (isTool(selectedMaterial)) {
+        if (isToolUpperCase(selectedMaterial)) {
             const updatedPriority = Object.assign([], this.state.priority)
 
-            for (const tool of TOOLS) {
+            for (const tool of TOOLS_UPPER_CASE) {
                 await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, tool, currentPriority + 1)
 
                 delete updatedPriority[currentPriority]
@@ -111,7 +111,7 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
         }
     }
 
-    async increasePriority(selectedMaterial: Material): Promise<void> {
+    async increasePriority(selectedMaterial: MaterialAllUpperCase): Promise<void> {
 
         if (!this.state.priority) {
             return
@@ -123,10 +123,10 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
             return
         }
 
-        if (isTool(selectedMaterial)) {
+        if (isToolUpperCase(selectedMaterial)) {
             const updatedPriority = Object.assign([], this.state.priority)
 
-            for (const tool of TOOLS) {
+            for (const tool of TOOLS_UPPER_CASE) {
                 console.log("Changing priority for " + tool)
 
                 await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, tool, currentPriority - 1)

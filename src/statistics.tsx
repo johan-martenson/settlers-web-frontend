@@ -1,72 +1,36 @@
 import * as d3 from 'd3'
 import React, { Component } from 'react'
-import { GameId, GameStatistics, getGameStatistics, getLandStatistics, LandDataPoint, LandStatistics, Measurement } from './api'
+import { GameId, ProductionStatistics, getGameStatistics, getLandStatistics, LandDataPoint, LandStatistics, MATERIALS_UPPER_CASE, Measurement, MaterialAllUpperCase, isMaterialUpperCase } from './api'
 import { Dialog } from './dialog'
-import SelectableButtonRow from './selectable_button_row'
 import "./statistics.css"
-import { makeStyles, shorthands } from '@fluentui/react-components'
+import { SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 
 interface StatisticsProps {
     onClose: (() => void)
     gameId: GameId
 }
 interface StatisticsState {
-    productionStatistics?: GameStatistics
+    productionStatistics?: ProductionStatistics
     landStatistics?: LandStatistics
-    materialToShow: number
+    materialToShow: MaterialAllUpperCase
     drawnStatistics: boolean
     state: "PRODUCTION" | "LAND"
 }
 
-const useStyles = makeStyles({
-    root: {
-      alignItems: "flex-start",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "flex-start",
-      ...shorthands.padding("50px", "20px"),
-      rowGap: "20px",
-    },
-  })
-
-function maxTime(data: Measurement[]): number {
-    let maxNumber = 0
-
-    for (const measurement of data) {
-        if (measurement.time > maxNumber) {
-            maxNumber = measurement.time
-        }
-    }
-
-    return maxNumber
-}
-
-function maxValue(data: Measurement[]): number {
-    let maxValue = 0
-
-    for (const measurement of data) {
-
-        for (const value of measurement.values) {
-            if (value > maxValue) {
-                maxValue = value
-            }
-        }
-    }
-
-    return maxValue
-}
-
 class Statistics extends Component<StatisticsProps, StatisticsState> {
 
-    private statisticsContainerRef = React.createRef<SVGSVGElement>()
-    private statisticsParentRef = React.createRef<HTMLDivElement>()
+    private landStatsContainerRef = React.createRef<SVGSVGElement>()
+    private landStatsParentRef = React.createRef<HTMLDivElement>()
+
+    private productionStatsContainerRef = React.createRef<SVGSVGElement>()
+    private productionStatsParentRef = React.createRef<HTMLDivElement>()
 
     constructor(props: StatisticsProps) {
         super(props)
 
         this.state = {
             drawnStatistics: false,
-            materialToShow: 0,
+            materialToShow: "PLANK",
             state: "PRODUCTION"
         }
     }
@@ -76,154 +40,97 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
     }
 
     async componentDidUpdate(): Promise<void> {
-
-        if (!this.statisticsParentRef?.current || !this.statisticsContainerRef?.current) {
-
-        }
-
-        if (!this.state.drawnStatistics && this.statisticsContainerRef?.current && this.statisticsParentRef?.current) {
-            if (this.state.state === "PRODUCTION" && this.state.productionStatistics) {
-                this.drawProductionStatistics(this.statisticsContainerRef.current, this.statisticsParentRef.current, this.state.productionStatistics)
-
-                this.setState({ drawnStatistics: true })
-            } else if (this.state.state === "LAND" && this.state.landStatistics && this.statisticsParentRef?.current) {
-                this.drawLandStatistics(this.statisticsContainerRef.current, this.statisticsParentRef.current, this.state.landStatistics)
-
-                this.setState({ drawnStatistics: true })
-            }
-        }
+        this.updateStatistics()
     }
 
     async componentDidMount(): Promise<void> {
 
-        let drawn = false
-        let gameStatistics
+        this.updateStatistics()
 
-        if (!this.state.productionStatistics) {
-            gameStatistics = await getGameStatistics(this.props.gameId)
-
-        } else {
-            gameStatistics = this.state.productionStatistics
-        }
-
-        if (this.statisticsContainerRef?.current && this.statisticsParentRef?.current) {
-
-            this.drawProductionStatistics(this.statisticsContainerRef.current, this.statisticsParentRef.current, gameStatistics)
-            drawn = true
-        }
-
-        this.setState({ productionStatistics: gameStatistics, drawnStatistics: drawn })
-
-        setTimeout(
+        /*setTimeout(
             async () => {
                 await this.updateStatistics()
             },
             5000
-        )
+        )*/
     }
 
     async updateStatistics(): Promise<void> {
-        const gameStatistics = await getGameStatistics(this.props.gameId)
 
-        this.setState(
+        const productionStats = await getGameStatistics(this.props.gameId)
+        const landStats = await getLandStatistics(this.props.gameId)
+
+        if (!this.landStatsContainerRef?.current || !this.landStatsParentRef?.current) {
+            console.error("Missing land stats reference")
+
+            return
+        }
+
+        if (!this.productionStatsContainerRef?.current || !this.productionStatsParentRef?.current) {
+            console.error("Missing production stats reference")
+
+            return
+        }
+
+        this.drawProductionStatistics(this.productionStatsContainerRef.current, this.productionStatsParentRef.current, productionStats, this.state.materialToShow)
+
+        this.drawLandStatistics(this.landStatsContainerRef.current, this.landStatsParentRef.current, landStats)
+
+        //this.setState({ productionStatistics: gameStatistics, drawnStatistics: drawn })
+
+        /*this.setState(
             {
                 productionStatistics: gameStatistics,
                 drawnStatistics: false
             }
-        )
+        )*/
 
-        setTimeout(
+        /*setTimeout(
             async () => {
                 await this.updateStatistics()
             },
             5000
-        )
-    }
-
-    async setStatisticsMode(mode: string): Promise<void> {
-
-        if (mode === "production" && this.state.state !== "PRODUCTION") {
-
-            const productionStatistics = await getGameStatistics(this.props.gameId)
-
-            this.setState(
-                {
-                    drawnStatistics: false,
-                    state: "PRODUCTION",
-                    productionStatistics: productionStatistics
-                }
-            )
-        } else if (mode === "land" && this.state.state !== "LAND") {
-
-            const landStatistics = await getLandStatistics(this.props.gameId)
-
-            this.setState(
-                {
-                    drawnStatistics: false,
-                    state: "LAND",
-                    landStatistics: landStatistics
-                }
-            )
-        }
+        )*/
     }
 
     render(): JSX.Element {
         const titleLabel = "Statistics"
 
-        const styles = useStyles();
-
-        const statisticsChoices = new Map<string, string>()
-
-        statisticsChoices.set("production", "Production Statistics")
-        statisticsChoices.set("land", "Land")
-
-        const materialChoices = new Map<string, string>()
-        if (this.state.productionStatistics) {
-            this.state.productionStatistics.materialStatistics.forEach(
-                (materialStatistics, index) => {
-                    materialChoices.set("" + index, materialStatistics.material)
-                }
-            )
-        }
-
         return (
             <Dialog heading={titleLabel} onCloseDialog={() => this.props.onClose()} floating >
                 <>
+                    <TabList onTabSelect={
+                        (event: SelectTabEvent, data: SelectTabData) => {
+                            this.setState({ state: (data.value === "LAND") ? "LAND" : "PRODUCTION" })
+                        }
+                    } >
+                        <Tab value={"PRODUCTION"}>Production</Tab>
+                        <Tab value={"LAND"}>Land</Tab>
+                    </TabList>
 
-                    <SelectableButtonRow values={statisticsChoices} onSelected={(value) => { this.setStatisticsMode(value) }}
-                        initialValue={"Land"}
-                    />
-
-                    <div ref={this.statisticsParentRef}>
-                        <svg className="StatisticsContainer" ref={this.statisticsContainerRef} />
+                    <div ref={this.landStatsParentRef}>
+                        <svg id="land-stats-svg"
+                            ref={this.landStatsContainerRef}
+                            visibility={(this.state.state === 'LAND') ? 'visible' : 'hidden'} />
                     </div>
 
-                    {this.state.state === "LAND" &&
-                        <>
+                    <div ref={this.productionStatsParentRef}>
+                        <svg id="production-stats-svg"
+                            ref={this.productionStatsContainerRef}
+                            visibility={(this.state.state === 'PRODUCTION') ? 'visible' : 'hidden'}
+                        />
+                    </div>
 
-                        </>
-                    }
-
-                    {this.state.state === "PRODUCTION" &&
-                        <>
-
-                            {this.state.productionStatistics &&
-                                <SelectableButtonRow values={materialChoices}
-                                    initialValue={"0"}
-                                    onSelected={
-                                        (value) => {
-
-                                            this.setState(
-                                                {
-                                                    materialToShow: Number(value),
-                                                    drawnStatistics: false
-                                                }
-                                            )
-                                        }
-                                    } />
+                    <TabList style={{ flexWrap: "wrap" }}
+                        onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
+                            if (isMaterialUpperCase(data.value)) {
+                                this.setState({ materialToShow: data.value })
                             }
-                        </>
-                    }
+                        }
+                        }
+                    >
+                        {[...MATERIALS_UPPER_CASE].map(material => <Tab value={material} key={material} >{material}</Tab>)}
+                    </TabList>
                 </>
             </Dialog>
         )
@@ -264,7 +171,6 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         )
 
         const firstDataPoint = landStatistics[0]
-        const lastDataPoint = landStatistics[landStatistics.length - 1]
 
         /* Define the full dimensions of the graph window */
         const fullHeight = parent.clientHeight
@@ -346,7 +252,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const statisticsSvg = d3.select(statisticsSvgElement)
 
         /* Clear the svg to remove previous elements */
-        d3.selectAll("svg > *").remove()
+        d3.selectAll("#land-stats-svg > *").remove()
 
         /* Set the dimensions */
         statisticsSvg
@@ -454,6 +360,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                             .text(d.values[i])
                     })
                 .on("mouseout",
+
+                    // eslint-disable-next-line
                     (event, d) => {
                         d3.select(event.target)
                             .attr("fill", colors[i])
@@ -481,20 +389,23 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         return resultArray
     }
 
-    drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, gameStatistics: GameStatistics): void {
+    drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, productionStats: ProductionStatistics, material: MaterialAllUpperCase): void {
 
         /* Get the right material statistics to graph */
-        console.log(gameStatistics)
-        console.log(this.state.materialToShow)
-        console.log(gameStatistics.materialStatistics[this.state.materialToShow])
-        const resourceStatisticsFull = gameStatistics.materialStatistics[this.state.materialToShow].materialStatistics
+        const resourceStatisticsFull = productionStats.materialStatistics[material]
 
-        const resourceStatistics = this.reduceDataArrayIfNeeded(resourceStatisticsFull, 30)
+        let resourceStatistics: Measurement[]
+
+        if (resourceStatisticsFull) {
+            resourceStatistics = (resourceStatisticsFull.length > 30) ? this.reduceDataArrayIfNeeded(resourceStatisticsFull, 30) : resourceStatisticsFull
+        } else {
+            resourceStatistics = [{
+                time: 0,
+                values: new Array<number>(productionStats.players.length).fill(0)
+            }]
+        }
 
         /* Define the full dimensions of the graph window */
-        //const fullHeight = 600
-        //const fullWidth = 600
-
         const fullHeight = parent.clientHeight
         const fullWidth = parent.clientWidth
 
@@ -506,16 +417,23 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const width = fullWidth - margin.top - margin.bottom
 
         /* Calculate the max range of the axis */
-        const maxTimeCalculated = maxTime(resourceStatistics)
-        const maxValueCalculated = maxValue(resourceStatistics)
+        let maxTime = 0
+        let maxValue = 0
+
+        resourceStatistics.forEach(measurement => {
+            console.log(measurement)
+
+            maxTime = measurement.time
+            measurement.values.forEach(value => maxValue = Math.max(maxValue, value))
+        })
 
         /* Create each axis */
         const xScale = d3.scaleLinear()
-            .domain([0, maxTimeCalculated]).nice()
+            .domain([0, maxTime]).nice()
             .range([margin.left, width - margin.right])
 
         const yScale = d3.scaleLinear()
-            .domain([0, maxValueCalculated]).nice()
+            .domain([0, maxValue]).nice()
             .range([height - margin.bottom, margin.top])
 
         // eslint-disable-next-line
@@ -527,7 +445,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const lines: d3.Line<LandDataPoint>[] = []
 
         // eslint-disable-next-line
-        for (const i in gameStatistics.players) {
+        for (const i in productionStats.players) {
 
             lines.push(
                 d3.line<Measurement>()
@@ -562,7 +480,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const statisticsSvg = d3.select(statisticsSvgElement)
 
         /* Clear the svg to remove previous elements */
-        d3.selectAll("svg > *").remove()
+        d3.selectAll("#production-stats-svg > *").remove()
 
         /* Set the dimensions */
         statisticsSvg
@@ -572,9 +490,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         /* Add the x axis */
-        /*statisticsSvg.append("g")
+        statisticsSvg.append("g")
             .attr("transform", "translate(0, " + height + ")")
-            .call(xAxis)*/
+            .call(xAxis)
 
         /* Add the y axis */
         statisticsSvg.append("g")
@@ -582,7 +500,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         /* Instantiate the lines */
         // eslint-disable-next-line
-        for (const i in gameStatistics.players) {
+        for (const i in productionStats.players) {
             lines[i](resourceStatistics)
         }
 
@@ -591,7 +509,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         /* Add the lines */
         // eslint-disable-next-line
-        for (const i in gameStatistics.players) {
+        for (const i in productionStats.players) {
             statisticsSvg.append("path")
                 .attr("fill", "none")
                 .attr("stroke", colors[i])
@@ -670,6 +588,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                             .text(d.values[i])
                     })
                 .on("mouseout",
+
+                    // eslint-disable-next-line
                     (event, d) => {
                         d3.select(event.target)
                             .attr("fill", colors[i])

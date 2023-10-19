@@ -20,16 +20,24 @@ export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
 
 export type TransportCategories = 'food' | 'weapons' | 'tools' | 'iron' | 'iron_bar' | 'coal' | 'gold' | 'plank' | 'wood' | 'stone' | 'coin' | 'wheat' | 'water' | 'pig' | 'flour'
 
-export type MaterialAllUpperCase = "GOLD" | "IRON" | "COAL" | "STONE" | "WATER" | "WOOD" | "PLANK" | "BREAD" | "FISH" | "MEAT" | "SHIELD" | "SWORD" | "BEER" | "COIN" | "METALWORKER" | "WHEAT" | "SHIPWRIGHT" | ToolAllUpperCase
+export type MaterialAllUpperCase = "GOLD" | "IRON" | "COAL" | "STONE" | "WATER" | "WOOD" | "PLANK" | "BREAD" | "FISH" | "MEAT" | "SHIELD" | "SWORD" | "BEER" | "COIN" | "METALWORKER" | "WHEAT" | "SHIPWRIGHT" | ToolAllUpperCase | MaterialWorkerUpperCase
+export const WORKER_MATERIALS_UPPER_CASE = new Set<MaterialWorkerUpperCase>(['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METAL_WORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'SAWMILL_WORKER', 'SCOUT', 'STONEMASON', 'STORAGE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL', 'BUILDER', 'PLANER', 'SHIPWRIGHT'])
 
 export const MATERIALS_UPPER_CASE = new Set<MaterialAllUpperCase>(["GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
-export const MATERIALS_UPPER_CASE_AS_STRING = new Set<string>(["GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
+WORKER_MATERIALS_UPPER_CASE.forEach(workerMaterial => MATERIALS_UPPER_CASE.add(workerMaterial))
 
-export type Material = "gold" | "iron" | "coal" | "stone" | "water" | "wood" | "plank" | "bread" | "fish" | "meat" | "shield" | "sword" | "beer" | "coin" | "metalworker" | "wheat" | "shipwright" | Tool
+export const MATERIALS_UPPER_CASE_AS_STRING = new Set<string>(["GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
+WORKER_MATERIALS_UPPER_CASE.forEach(workerMaterial => MATERIALS_UPPER_CASE_AS_STRING.add(workerMaterial))
 
 export type ToolAllUpperCase = 'AXE' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
 export type Tool = 'axe' | 'shovel' | 'pick_axe' | 'fishing_rod' | 'bow' | 'saw' | 'cleaver' | 'rolling_pin' | 'crucible' | 'tongs' | 'scythe'
+
 export const TOOLS: Set<Tool> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
+export const TOOLS_AS_STRING: Set<string> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
+export const TOOLS_UPPER_CASE: Set<ToolAllUpperCase> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
+export const TOOLS_UPPER_CASE_STRING: Set<string> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
+
+export type MaterialWorkerUpperCase = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER' | 'COURIER' | 'DONKEY_BREEDER' | 'DONKEY' | 'FARMER' | 'FISHERMAN' | 'FORESTER' | 'GEOLOGIST' | 'HUNTER' | 'IRON_FOUNDER' | 'METAL_WORKER' | 'MILLER' | 'MINER' | 'MINTER' | 'PIG_BREEDER' | 'SAWMILL_WORKER' | 'SCOUT' | 'STONEMASON' | 'STORAGE_WORKER' | 'WELL_WORKER' | 'WOODCUTTER_WORKER' | 'PRIVATE' | 'PRIVATE_FIRST_CLASS' | 'SERGEANT' | 'OFFICER' | 'GENERAL' | 'BUILDER' | 'PLANER' | 'SHIPWRIGHT'
 
 export type NationSmallCaps = 'romans' | 'africans' | 'japanese' | 'vikings'
 export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
@@ -44,18 +52,10 @@ export type CropGrowth = 'JUST_PLANTED' | 'SMALL' | 'ALMOST_GROWN' | 'FULL_GROWN
 
 export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST_FULL' | 'FULL'
 
-function isTool(material: Material): material is Tool {
-    return material === 'axe' ||
-        material === 'shovel' ||
-        material === 'pick_axe' ||
-        material === 'fishing_rod' ||
-        material === 'bow' ||
-        material === 'saw' ||
-        material === 'cleaver' ||
-        material === 'rolling_pin' ||
-        material === 'crucible' ||
-        material === 'tongs' ||
-        material === 'scythe'
+export type HouseResources = {[key in MaterialAllUpperCase]?: HouseResourceItem}
+
+function isToolUpperCase(material: MaterialAllUpperCase): material is ToolAllUpperCase {
+    return TOOLS_UPPER_CASE_STRING.has(material)
 }
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
@@ -151,48 +151,11 @@ export function isWildAnimal(animal: unknown): animal is WildAnimalInformation {
         WILD_ANIMAL_TYPES.findIndex((type) => type === animal.type) !== -1
 }
 
-export function isMaterial(material: string): material is Material {
-    return material === "gold" ||
-        material === "iron" ||
-        material === "coal" ||
-        material === "stone" ||
-        material === "water" ||
-        material === "plank" ||
-        material === "coin" ||
-        material === "private" ||
-        material === "woodcutter_worker" ||
-        material === "donkey" ||
-        material === "butcher" ||
-        material === "miner" ||
-        material === "forester" ||
-        material === "armorer" ||
-        material === "iron_bar" ||
-        material === "geologist" ||
-        material === "hunter" ||
-        material === "brewer" ||
-        material === "pig_breeder" ||
-        material === "bread" ||
-        material === "storage_worker" ||
-        material === "baker" ||
-        material === "stonemason" ||
-        material === "sawmill_worker" ||
-        material === "miller" ||
-        material === "minter" ||
-        material === "iron_founder" ||
-        material === "fish" ||
-        material === "well_worker" ||
-        material === "donkey_breeder" ||
-        material === "fisherman" ||
-        material === "scout" ||
-        material === "meat" ||
-        material === "farmer" ||
-        material === "courier" ||
-        material === "wood" ||
-        material === "metalworker" ||
-        material === "wheat" ||
-        material === "flour" ||
-        material === "builder" ||
-        material === "shipwright"
+export function isMaterialUpperCase(material: unknown): material is MaterialAllUpperCase {
+    return material !== null &&
+        material !== undefined &&
+        typeof material === 'string' &&
+        MATERIALS_UPPER_CASE_AS_STRING.has(material)
 }
 
 interface Player {
@@ -462,37 +425,6 @@ function getSoldierDisplayName(soldierType: SoldierType): string {
     }
 }
 
-export interface HouseResources {
-    wood?: HouseResourceItem
-    plank?: HouseResourceItem
-    stone?: HouseResourceItem
-    iron?: HouseResourceItem
-    gold?: HouseResourceItem
-    coal?: HouseResourceItem
-    coin?: HouseResourceItem
-    shield?: HouseResourceItem
-    sword?: HouseResourceItem
-    beer?: HouseResourceItem
-    water?: HouseResourceItem
-    bread?: HouseResourceItem
-    fish?: HouseResourceItem
-    meat?: HouseResourceItem
-    metalworker?: HouseResourceItem
-    axe?: HouseResourceItem
-    shovel?: HouseResourceItem
-    pick_axe?: HouseResourceItem
-    fishing_rod?: HouseResourceItem
-    bow?: HouseResourceItem
-    saw?: HouseResourceItem
-    cleaver?: HouseResourceItem
-    rolling_pin?: HouseResourceItem
-    crucible?: HouseResourceItem
-    tongs?: HouseResourceItem
-    scythe?: HouseResourceItem
-    wheat?: HouseResourceItem
-    shipwright?: HouseResourceItem
-}
-
 interface HouseResourceItem {
     has: number
     totalNeeded?: number
@@ -504,13 +436,12 @@ export interface HouseInformation extends Point {
     id: HouseId
     playerId: PlayerId
     type: AnyBuilding
-    inventory: Map<string, number>
     evacuated: boolean
     soldiers?: SoldierType[]
     maxSoldiers?: number
     constructionProgress?: number
-    resources: HouseResources
-    produces?: Material
+    resources: {[key in MaterialAllUpperCase]: HouseResourceItem}
+    produces?: MaterialAllUpperCase
     promotionsEnabled: boolean
     productionEnabled: boolean
     state: HouseState
@@ -523,7 +454,7 @@ export interface FlagInformation extends Point {
     id: FlagId
     playerId: PlayerId
     type: FlagType
-    stackedCargo?: Material[]
+    stackedCargo?: MaterialAllUpperCase[]
 }
 
 export interface BorderInformation {
@@ -564,20 +495,14 @@ export interface Measurement {
     values: number[]
 }
 
-export interface MaterialStatistics {
-    material: Material
-    materialStatistics: Measurement[]
-
-}
-
 export interface PlayerInformationLight {
     name: string
     color: string
 }
 
-export interface GameStatistics {
+export interface ProductionStatistics {
     players: PlayerInformationLight[]
-    materialStatistics: MaterialStatistics[]
+    materialStatistics: { [key in MaterialAllUpperCase]: Measurement[] }
 }
 
 export interface LandDataPoint {
@@ -591,7 +516,7 @@ export interface LandStatistics {
     landStatistics: LandDataPoint[]
 }
 
-export type TransportPriorityInformation = Material[]
+export type TransportPriorityInformation = MaterialAllUpperCase[]
 
 /*
 * [
@@ -719,7 +644,7 @@ async function getLandStatistics(gameId: GameId): Promise<LandStatistics> {
     return await response.json()
 }
 
-async function getGameStatistics(gameId: GameId): Promise<GameStatistics> {
+async function getGameStatistics(gameId: GameId): Promise<ProductionStatistics> {
     const response = await fetch("/settlers/api/games/" + gameId + "/statistics/production", { method: 'get' })
 
     const data = await response.json()
@@ -844,13 +769,13 @@ async function createGame(name: string, mapId: MapId | undefined, players: Playe
 
 async function setOthersCanJoinGame(gameId: GameId, canJoin: "CAN_JOIN" | "CANNOT_JOIN"): Promise<GameInformation> {
     const response = await fetch("/settlers/api/games/" + gameId,
-    {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({othersCanJoin: canJoin === "CAN_JOIN"})
-    })
+        {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ othersCanJoin: canJoin === "CAN_JOIN" })
+        })
 
     return await response.json()
 }
@@ -1044,7 +969,7 @@ async function createRoad(points: Point[], gameId: GameId, playerId: PlayerId): 
     return await response.json()
 }
 
-interface FlagAndRoadInformation extends RoadInformation{
+interface FlagAndRoadInformation extends RoadInformation {
     flag: FlagInformation
 }
 
@@ -1096,7 +1021,7 @@ async function getTransportPriorityForPlayer(gameId: GameId, playerId: PlayerId)
     return await response.json()
 }
 
-async function setTransportPriorityForMaterial(gameId: GameId, playerId: PlayerId, material: Material, priority: number): Promise<void> {
+async function setTransportPriorityForMaterial(gameId: GameId, playerId: PlayerId, material: MaterialAllUpperCase, priority: number): Promise<void> {
     console.log("Setting new priority for: " + material + " to " + priority)
 
     await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/transportPriority",
@@ -1417,20 +1342,6 @@ function houseIsOccupied(house: HouseInformation): boolean {
     return house.state === "OCCUPIED"
 }
 
-const materialToColor = new Map<Material, string>()
-
-materialToColor.set("gold", "yellow")
-materialToColor.set("iron", "red")
-materialToColor.set("coal", "black")
-materialToColor.set("stone", "white")
-materialToColor.set("water", "blue")
-materialToColor.set("wood", "DarkGoldenRod")
-materialToColor.set("plank", "BurlyWood")
-materialToColor.set("coin", "yellow")
-materialToColor.set("meat", "red")
-materialToColor.set("wheat", "orange")
-materialToColor.set("water", "blue")
-
 const signToColor = new Map<SignTypes, string>()
 
 signToColor.set("iron", "red")
@@ -1440,10 +1351,47 @@ signToColor.set("stone", "white")
 signToColor.set("water", "blue")
 
 export {
-    signToColor, pauseProductionForHouse, resumeProductionForHouse, isTool, printTimestamp, setTransportPriorityForMaterial, getTransportPriorityForPlayer, canBeUpgraded, upgradeMilitaryBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isMilitaryBuildingCausedLostLandMessage,
-    addHumanPlayerToGame, isStoreHouseIsReadyMessage, isBuildingCapturedMessage, isBuildingLostMessage, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, getMessagesForPlayer, enablePromotionsForHouse, disablePromotionsForHouse, evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse, canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer, findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation, removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint, getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag, materialToColor, attackBuilding, getGames, getMaps, createGame, deleteGame, startGame, setMapForGame, addComputerPlayerToGame,
+    signToColor,
+    pauseProductionForHouse,
+    resumeProductionForHouse,
+    printTimestamp,
+    setTransportPriorityForMaterial,
+    getTransportPriorityForPlayer,
+    canBeUpgraded,
+    upgradeMilitaryBuilding,
+    getHouseInformationWithAttackPossibility,
+    houseIsOccupied,
+    isTreeConservationProgramActivatedMessage,
+    isTreeConservationProgramDeactivatedMessage,
+    isMilitaryBuildingCausedLostLandMessage,
+    addHumanPlayerToGame,
+    isStoreHouseIsReadyMessage,
+    isBuildingCapturedMessage,
+    isBuildingLostMessage,
+    isMilitaryBuildingOccupiedMessage,
+    isNoMoreResourcesMessage,
+    isMilitaryBuildingReadyMessage,
+    isUnderAttackMessage,
+    isGeologistFindMessage,
+    getMessagesForPlayer,
+    enablePromotionsForHouse,
+    disablePromotionsForHouse,
+    evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse,
+    canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer,
+    findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation,
+    removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint,
+    getViewForPlayer, createBuilding, createFlag, createRoad, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, removeFlag,
+    attackBuilding,
+    getGames,
+    getMaps,
+    createGame,
+    deleteGame,
+    startGame,
+    setMapForGame,
+    addComputerPlayerToGame,
     createRoadWithFlag,
     setOthersCanJoinGame,
+    isToolUpperCase,
     VEGETATION_INTEGERS
 }
 

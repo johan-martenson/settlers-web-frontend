@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, HouseResources, isEvacuated, isMaterial, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse } from './api'
+import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, GameId, getHouseInformation, getSoldierDisplayName, HouseInformation, houseIsReady, isEvacuated, isMilitaryBuilding, PlayerId, removeHouse, SoldierType, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse, isMaterialUpperCase, MaterialAllUpperCase } from './api'
 import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_house_info.css'
@@ -65,28 +65,28 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
         const house = this.state.updatedHouse ? this.state.updatedHouse : this.props.house
 
-        const needs: HouseResources = {}
-        const has: HouseResources = {}
+        const needs = new Map<MaterialAllUpperCase, number>()
+        const has = new Map<MaterialAllUpperCase, number>()
 
         Object.entries(house.resources).forEach(
             ([material, hasAndNeeds]) => {
 
-                if (!isMaterial(material)) {
+                if (!isMaterialUpperCase(material)) {
                     throw new Error("Not a material: " + material)
                 }
 
-                if (hasAndNeeds.needs || hasAndNeeds.needs === 0) {
-                    needs[material] = hasAndNeeds.needs
+                if (hasAndNeeds.totalNeeded || hasAndNeeds.totalNeeded === 0) {
+                    needs.set(material, hasAndNeeds.totalNeeded)
                 }
 
-                has[material] = hasAndNeeds.has
+                has.set(material, hasAndNeeds.has)
             }
         )
 
         let hasAmountCoin: number = 0
         let needsAmountCoin: number = 0
 
-        const coinResources = house.resources.coin
+        const coinResources = house.resources.COIN
 
         if (coinResources) {
             hasAmountCoin = coinResources.has

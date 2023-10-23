@@ -1,12 +1,12 @@
 import React, { Component } from 'react'
 import { GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api/types'
-import Button from './button'
 import './construction_info.css'
 import { Dialog, DialogSection } from './dialog'
 import { houseImageMap } from './images'
 import { monitor } from './api/ws-api'
 import SelectableButtonRow from './selectable_button_row'
 import { camelCaseToWords } from './utils'
+import { Button } from '@fluentui/react-components'
 
 interface ConstructionInfoProps {
     selected?: "Buildings" | "FlagsAndRoads"
@@ -165,22 +165,18 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                         <DialogSection>
                             <div className="DialogSection">
 
-                                <Button className="ConstructionItem"
-                                    label="Raise flag"
-                                    image="flag.png"
-                                    imageLabel="Flag"
-                                    onButtonClicked={
+                                <Button
+                                    icon="flag.png"
+                                    onClick={
                                         () => {
                                             console.info("Raising flag")
                                             monitor.placeFlag(this.props.point)
                                         }
                                     }
-                                />
+                                >Raise flag</Button>
                                 <Button className="ConstructionItem"
-                                    label="Raise flag"
-                                    image="flag.png"
-                                    imageLabel="Flag"
-                                    onButtonClicked={
+                                    icon="flag.png"
+                                    onClick={
                                         () => {
                                             console.info("Raising flag")
                                             monitor.placeFlag(this.props.point)
@@ -188,14 +184,12 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                             this.props.closeDialog()
                                         }
                                     }
-                                />
+                                >Raise flag</Button>
 
                                 {this.canBuildRoad() &&
-                                    <Button className="ConstructionItem"
-                                        label="Build road"
-                                        image="road-1.png"
-                                        imageLabel="Road"
-                                        onButtonClicked={
+                                    <Button
+                                        icon="road-1.png"
+                                        onClick={
                                             () => {
                                                 console.info("Starting to build road")
 
@@ -204,15 +198,13 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 this.props.closeDialog()
                                             }
                                         }
-                                    />
+                                    >Build road</Button>
                                 }
 
                                 {this.canRemoveRoad() &&
-                                    <Button className="ConstructionItem"
-                                        label="Dig up road"
-                                        image="scissor.png"
-                                        imageLabel="Scissor"
-                                        onButtonClicked={
+                                    <Button
+                                        icon="scissor.png"
+                                        onClick={
                                             async () => {
                                                 console.info("Starting to dig up road")
 
@@ -225,7 +217,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 this.props.closeDialog()
                                             }
                                         }
-                                    />
+                                    >Dig up road</Button>
                                 }
                             </div>
                         </DialogSection>
@@ -258,10 +250,8 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                         return (
                                             <Button className="ConstructionItem"
                                                 key={index}
-                                                label={camelCaseToWords(house)}
-                                                image={houseImageMap.get(house)}
-                                                imageLabel="House"
-                                                onButtonClicked={
+                                                icon={<img src={houseImageMap.get(house)} />}
+                                                onClick={
                                                     async () => {
                                                         console.info("Creating house")
                                                         monitor.placeHouse(house, this.props.point)
@@ -269,7 +259,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                         this.props.closeDialog()
                                                     }
                                                 }
-                                            />
+                                            >{camelCaseToWords(house)}</Button>
                                         )
                                     })
                                 }
@@ -287,11 +277,9 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 
                                         return (
                                             <Button className="ConstructionItem"
-                                                label={camelCaseToWords(house)}
-                                                image={houseImageMap.get(house)}
-                                                imageLabel="House"
+                                                icon={<img src={houseImageMap.get(house)} />}
                                                 key={index}
-                                                onButtonClicked={
+                                                onClick={
                                                     async () => {
                                                         console.info("Creating house")
                                                         monitor.placeHouse(house, this.props.point)
@@ -299,7 +287,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                         this.props.closeDialog()
                                                     }
                                                 }
-                                            />
+                                            >{camelCaseToWords(house)}</Button>
                                         )
                                     })
                                 }
@@ -321,11 +309,9 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 
                                             return (
                                                 <Button className="ConstructionItem"
-                                                    label={camelCaseToWords(house)}
-                                                    image={houseImageMap.get(house)}
-                                                    imageLabel={house}
+                                                    icon={<img src={houseImageMap.get(house)} />}
                                                     key={index}
-                                                    onButtonClicked={
+                                                    onClick={
                                                         async () => {
                                                             console.info("Creating house")
                                                             monitor.placeHouse(house, this.props.point)
@@ -333,7 +319,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                             this.props.closeDialog()
                                                         }
                                                     }
-                                                />
+                                                >{camelCaseToWords(house)}</Button>
                                             )
                                         }
                                     })

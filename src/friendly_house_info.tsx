@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { canBeEvacuated, canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, getHouseInformation, getSoldierDisplayName, houseIsReady, isEvacuated, isMilitaryBuilding, removeHouse, upgradeMilitaryBuilding, pauseProductionForHouse, resumeProductionForHouse, isMaterialUpperCase } from './api/rest-api'
-import Button from './button'
+import { Button } from '@fluentui/react-components'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_house_info.css'
 import HeadquarterInfo from './headquarter_info'
@@ -175,8 +175,8 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
 
                     {isMilitaryBuilding(house) && houseIsReady(house) && needsAmountCoin !== 0 &&
                         <div>Gold:
-                                {Array.from({ length: hasAmountCoin || 0 }, () => 1).map(
-                            (value, index) => <span className="coin" key={index} />)
+                            {Array.from({ length: hasAmountCoin || 0 }, () => 1).map(
+                                (value, index) => <span className="coin" key={index} />)
                             }
                             {Array.from({ length: needsAmountCoin }, () => 2).map(
                                 (value, index) => <span className="coin-missing" key={index} />)
@@ -191,47 +191,47 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                 <div className="HouseActions">
 
                     {houseIsReady(house) && !isMilitaryBuilding(house) && house.produces && house.productionEnabled &&
-                        <Button label="Pause production" onButtonClicked={
+                        <Button onClick={
                             async () => {
                                 await pauseProductionForHouse(this.props.gameId, this.props.playerId, house.id)
                             }
-                        } />
+                        } >Pause production</Button>
                     }
 
                     {houseIsReady(house) && !isMilitaryBuilding(house) && house.produces && !house.productionEnabled &&
-                        <Button label="Resume production" onButtonClicked={
+                        <Button onClick={
                             async () => {
                                 await resumeProductionForHouse(this.props.gameId, this.props.playerId, house.id)
                             }
-                        } />
+                        } >Resume production</Button>
                     }
 
                     {isMilitaryBuilding(house) && houseIsReady(house) && house.promotionsEnabled &&
-                        <Button label="Disable promotions"
-                            onButtonClicked={
+                        <Button
+                            onClick={
                                 async () => {
                                     const updatedHouseInformation = await disablePromotionsForHouse(this.props.gameId, this.props.playerId, house.id)
 
                                     this.setState({ updatedHouse: updatedHouseInformation })
                                 }
                             }
-                        />
+                        >Disable promotions</Button>
                     }
 
                     {isMilitaryBuilding(house) && houseIsReady(house) && !house.promotionsEnabled &&
-                        <Button label="Enable promotions"
-                            onButtonClicked={
+                        <Button
+                            onClick={
                                 async () => {
                                     const updatedHouseInformation = await enablePromotionsForHouse(this.props.gameId, this.props.playerId, house.id)
 
                                     this.setState({ updatedHouse: updatedHouseInformation })
                                 }
                             }
-                        />
+                        >Enable promotions</Button>
                     }
 
                     {canBeEvacuated(house) && isEvacuated(house) &&
-                        <Button label="Cancel evacuation" onButtonClicked={
+                        <Button onClick={
                             async () => {
                                 console.info("Canceling evacuation")
                                 await cancelEvacuationForHouse(this.props.gameId, this.props.playerId, house.id)
@@ -242,11 +242,11 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                                 this.setState({ updatedHouse: updatedHouseInformation })
                             }
                         }
-                        />
+                        >Cancel evacuation</Button>
                     }
 
                     {canBeEvacuated(house) && !isEvacuated(house) &&
-                        <Button label="Evacuate" onButtonClicked={
+                        <Button onClick={
                             async () => {
                                 await evacuateHouse(this.props.gameId, this.props.playerId, house.id)
 
@@ -257,27 +257,27 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                                 this.setState({ updatedHouse: updatedHouseInformation })
                             }
                         }
-                        />
+                        >Evacuate</Button>
                     }
 
                     {canBeUpgraded(house) && !house.upgrading &&
-                        <Button onButtonClicked={() => upgradeMilitaryBuilding(this.props.gameId, this.props.playerId, house.id)} label="Upgrade" />
+                        <Button onClick={() => upgradeMilitaryBuilding(this.props.gameId, this.props.playerId, house.id)} >Upgrade</Button>
                     }
 
                     {(house.type !== "Headquarter") &&
-                        <Button label="Destroy" onButtonClicked={
+                        <Button onClick={
                             async () => {
                                 await removeHouse(house.id, this.props.playerId, this.props.gameId)
 
                                 this.props.closeDialog()
                             }
                         }
-                        />
+                        >Destroy</Button>
                     }
 
                 </div>
 
-            </Dialog >
+            </Dialog>
         )
     }
 }

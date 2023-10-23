@@ -1,1 +1,9 @@
+#stats-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
 
+#stats-parent {
+    flex: 1 0 40%;
+}

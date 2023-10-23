@@ -1,10 +1,10 @@
 import React, { Component } from 'react'
 import { AnyBuilding } from './api/types'
-import Button from './button'
 import { Dialog } from './dialog'
 import { HELP_PAGES, PageType } from './help_pages'
 import { houseImageMap } from './images'
 import './guide.css'
+import { Button } from '@fluentui/react-components'
 
 interface GuideProps {
     onClose: (() => void)
@@ -37,23 +37,23 @@ class Guide extends Component<GuideProps, GuideState> {
 
                 <div>
                     {this.state.page > 0 &&
-                        <Button label="Previous" className="GuidePrevious"
-                            onButtonClicked={
+                        <Button
+                            onClick={
                                 () => {
                                     this.setState({ page: this.state.page - 1 })
                                 }
                             }
-                        />
+                        >Previous</Button>
                     }
 
                     {this.state.page < HELP_PAGES.length - 1 &&
-                        <Button label="Next" className="GuideNext"
-                            onButtonClicked={
+                        <Button
+                            onClick={
                                 () => {
                                     this.setState({ page: this.state.page + 1 })
                                 }
                             }
-                        />
+                        >Next</Button>
                     }
                 </div>
 

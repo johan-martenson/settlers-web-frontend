@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
 import { attackBuilding, getHouseInformationWithAttackPossibility, houseIsOccupied, isMilitaryBuilding } from './api/rest-api'
-import Button from './button'
 import { Dialog } from './dialog'
 import { houseImageMap } from './images'
 import { HouseInformation, GameId, PlayerId } from './api/types'
+import { Button } from '@fluentui/react-components'
 
 interface EnemyHouseInfoProps {
     house: HouseInformation
@@ -49,8 +49,8 @@ class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState>
                 {isMilitaryBuilding(this.props.house) && houseIsOccupied(this.props.house) &&
                     <>
                         {this.state.attackPossible &&
-                            < Button label="Attack"
-                                onButtonClicked={
+                            <Button
+                                onClick={
                                     async () => {
 
                                         //FIXME: make it possible to choose the number of attackers
@@ -59,7 +59,7 @@ class EnemyHouseInfo extends Component<EnemyHouseInfoProps, EnemyHouseInfoState>
                                         this.props.closeDialog()
                                     }
                                 }
-                            />
+                            >Attack</Button>
                         }
 
                         {!this.state.attackPossible &&

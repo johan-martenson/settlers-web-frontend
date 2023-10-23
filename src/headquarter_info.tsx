@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { isMaterialUpperCase } from './api/rest-api'
 import './headquarter_info.css'
-import Button from './button'
+import { Button } from '@fluentui/react-components'
 import { HouseInformation, GameId, PlayerId, MaterialAllUpperCase } from './api/types'
 
 interface HeadquarterInfoProps {
@@ -82,25 +82,25 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
                 </div>
 
                 {this.state.page > 0 &&
-                    <Button label="Previous" onButtonClicked={
+                    <Button onClick={
                         () => {
                             this.setState({
                                 page: this.state.page - 1
                             })
                         }
                     }
-                    />
+                    >Previous</Button>
                 }
 
                 {(this.state.page + 1) * this.state.itemsPerPage < inventory.size &&
-                    <Button label="Next" onButtonClicked={
+                    <Button onClick={
                         () => {
                             this.setState({
                                 page: this.state.page + 1
                             })
                         }
                     }
-                    />
+                    >Next</Button>
                 }
             </div>
         )

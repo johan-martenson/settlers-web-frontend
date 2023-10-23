@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import Button from './button'
+import { Button } from '@fluentui/react-components'
 import './dialog.css'
 import MenuSectionLabel from './menu_section_label'
 
@@ -20,18 +20,7 @@ class Dialog extends Component<DialogProps, DialogState> {
 
     render(): JSX.Element {
 
-        let className = "Dialog"
-
-        if (this.props.floating) {
-            className = className + " FloatingWindow"
-        } else {
-            className = className + " NonfloatingWindow"
-        }
-
-        if (this.props.className) {
-            className = className + " " + this.props.className
-        }
-
+        const className = (this.props.floating) ? "Dialog FloatingWindow" : "Dialog NonfloatingWindow" + ((this.props.className) ? this.props.className : "")
         const closeLabel = this.props.closeLabel ? this.props.closeLabel : "Close"
 
         return (
@@ -44,14 +33,14 @@ class Dialog extends Component<DialogProps, DialogState> {
                 {this.props.children}
 
                 {!this.props.noCloseButton &&
-                    <Button className="DialogCloseButton" label={closeLabel} onButtonClicked={
+                    <Button onClick={
                         () => {
                             if (this.props.onCloseDialog) {
                                 this.props.onCloseDialog()
                             }
                         }
                     }
-                    />
+                    >{closeLabel}</Button>
                 }
             </div>
         )

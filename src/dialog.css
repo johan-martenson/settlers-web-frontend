@@ -60,9 +60,3 @@
     display: flex;
     justify-content: center;
 }
-
-.DialogCloseButton {
-    margin-top: auto;
-    margin-right: auto;
-    margin-left: auto;
-}

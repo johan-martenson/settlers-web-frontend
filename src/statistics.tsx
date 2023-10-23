@@ -3,7 +3,7 @@ import React, { Component } from 'react'
 import { getGameStatistics, getLandStatistics, isMaterialUpperCase } from './api/rest-api'
 import { Dialog } from './dialog'
 import "./statistics.css"
-import { SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
+import { Dropdown, Option, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { GameId, ProductionStatistics, LandStatistics, MaterialAllUpperCase, MATERIALS_UPPER_CASE, LandDataPoint, Measurement } from './api/types'
 
 interface StatisticsProps {
@@ -21,10 +21,9 @@ interface StatisticsState {
 class Statistics extends Component<StatisticsProps, StatisticsState> {
 
     private landStatsContainerRef = React.createRef<SVGSVGElement>()
-    private landStatsParentRef = React.createRef<HTMLDivElement>()
+    private statsParentRef = React.createRef<HTMLDivElement>()
 
     private productionStatsContainerRef = React.createRef<SVGSVGElement>()
-    private productionStatsParentRef = React.createRef<HTMLDivElement>()
 
     constructor(props: StatisticsProps) {
         super(props)
@@ -61,21 +60,21 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const productionStats = await getGameStatistics(this.props.gameId)
         const landStats = await getLandStatistics(this.props.gameId)
 
-        if (!this.landStatsContainerRef?.current || !this.landStatsParentRef?.current) {
+        if (!this.landStatsContainerRef?.current || !this.statsParentRef?.current) {
             console.error("Missing land stats reference")
 
             return
         }
 
-        if (!this.productionStatsContainerRef?.current || !this.productionStatsParentRef?.current) {
+        if (!this.productionStatsContainerRef?.current) {
             console.error("Missing production stats reference")
 
             return
         }
 
-        this.drawProductionStatistics(this.productionStatsContainerRef.current, this.productionStatsParentRef.current, productionStats, this.state.materialToShow)
+        this.drawProductionStatistics(this.productionStatsContainerRef.current, this.statsParentRef.current, productionStats, this.state.materialToShow)
 
-        this.drawLandStatistics(this.landStatsContainerRef.current, this.landStatsParentRef.current, landStats)
+        this.drawLandStatistics(this.landStatsContainerRef.current, this.statsParentRef.current, landStats)
 
         //this.setState({ productionStatistics: gameStatistics, drawnStatistics: drawn })
 
@@ -99,7 +98,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         return (
             <Dialog heading={titleLabel} onCloseDialog={() => this.props.onClose()} floating >
-                <>
+                <div id="stats-page">
                     <TabList onTabSelect={
                         (event: SelectTabEvent, data: SelectTabData) => {
                             this.setState({ state: (data.value === "LAND") ? "LAND" : "PRODUCTION" })
@@ -109,30 +108,28 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                         <Tab value={"LAND"}>Land</Tab>
                     </TabList>
 
-                    <div ref={this.landStatsParentRef}>
+                    <div ref={this.statsParentRef} id="stats-parent">
                         <svg id="land-stats-svg"
                             ref={this.landStatsContainerRef}
-                            visibility={(this.state.state === 'LAND') ? 'visible' : 'hidden'} />
-                    </div>
+                            display={(this.state.state === 'LAND') ? 'block' : 'none'} />
 
-                    <div ref={this.productionStatsParentRef}>
                         <svg id="production-stats-svg"
                             ref={this.productionStatsContainerRef}
-                            visibility={(this.state.state === 'PRODUCTION') ? 'visible' : 'hidden'}
+                            display={(this.state.state === 'PRODUCTION') ? 'block' : 'none'}
                         />
                     </div>
 
-                    <TabList style={{ flexWrap: "wrap" }}
-                        onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
-                            if (isMaterialUpperCase(data.value)) {
-                                this.setState({ materialToShow: data.value })
-                            }
+                    <Dropdown onOptionSelect={(event: any, data: any) => {
+                        console.log(event)
+                        console.log(data)
+
+                        if (isMaterialUpperCase(data.optionValue)) {
+                            this.setState({ materialToShow: data.optionValue })
                         }
-                        }
-                    >
-                        {[...MATERIALS_UPPER_CASE].map(material => <Tab value={material} key={material} >{material}</Tab>)}
-                    </TabList>
-                </>
+                    }}>
+                        {[...MATERIALS_UPPER_CASE].map(material => <Option key={material} >{material}</Option>)}
+                    </Dropdown>
+                </div>
             </Dialog>
         )
     }
@@ -422,11 +419,11 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         let maxValue = 0
 
         resourceStatistics.forEach(measurement => {
-            console.log(measurement)
-
             maxTime = measurement.time
             measurement.values.forEach(value => maxValue = Math.max(maxValue, value))
         })
+
+        maxValue = Math.max(maxValue, 10)
 
         /* Create each axis */
         const xScale = d3.scaleLinear()
@@ -436,6 +433,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const yScale = d3.scaleLinear()
             .domain([0, maxValue]).nice()
             .range([height - margin.bottom, margin.top])
+            //.range([height, 0])
 
         // eslint-disable-next-line
         const xAxis = d3.axisBottom(xScale)
@@ -492,11 +490,12 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         /* Add the x axis */
         statisticsSvg.append("g")
-            .attr("transform", "translate(0, " + height + ")")
+            .attr("transform", "translate(0, " + (height - margin.top) + ")")
             .call(xAxis)
 
         /* Add the y axis */
         statisticsSvg.append("g")
+            .attr("transform", `translate(30, 0)`)
             .call(yAxis)
 
         /* Instantiate the lines */

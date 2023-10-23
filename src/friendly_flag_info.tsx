@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
 import { FlagInformation, GameId, PlayerId } from './api/types'
-import Button from './button'
 import { Dialog, DialogSection } from './dialog'
 import './friendly_flag_info.css'
 import { monitor } from './api/ws-api'
+import { Button } from '@fluentui/react-components'
 
 interface FriendlyFlagInfoProps {
     closeDialog: (() => void)
@@ -26,11 +26,9 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
 
                         <div className="ButtonRow">
 
-                            <Button className="ConstructionItem"
-                                label="Remove"
-                                image="flag.png"
-                                imageLabel="Flag"
-                                onButtonClicked={
+                            <Button
+                                icon="flag.png"
+                                onClick={
                                     async () => {
                                         console.log("Removing flag")
 
@@ -39,13 +37,11 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                         this.props.closeDialog()
                                     }
                                 }
-                            />
+                            >Remove</Button>
 
-                            <Button className="ConstructionItem"
-                                label="Build road"
-                                image="road-1.png"
-                                imageLabel="Road"
-                                onButtonClicked={
+                            <Button
+                                icon="road-1.png"
+                                onClick={
                                     () => {
                                         console.info("Starting to build road")
 
@@ -54,13 +50,11 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                         this.props.closeDialog()
                                     }
                                 }
-                            />
+                            >Build road</Button>
 
-                            <Button className="ConstructionItem"
-                                label="Call geologist"
-                                image="pickaxe2.png"
-                                imageLabel="Geologist"
-                                onButtonClicked={
+                            <Button
+                                icon="pickaxe2.png"
+                                onClick={
                                     async () => {
                                         console.info("Calling for geologist")
 
@@ -69,13 +63,11 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                         this.props.closeDialog()
                                     }
                                 }
-                            />
+                            >Call geologist</Button>
 
-                            <Button className="ConstructionItem"
-                                label="Send scout"
-                                image="magnifier2.png"
-                                imageLabel="Scout"
-                                onButtonClicked={
+                            <Button
+                                icon="magnifier2.png"
+                                onClick={
                                     async () => {
                                         console.info("Sending scout")
 
@@ -84,7 +76,7 @@ class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfo
                                         this.props.closeDialog()
                                     }
                                 }
-                            />
+                            >Send scout</Button>
                         </div>
 
                         {this.props.flag.stackedCargo && this.props.flag.stackedCargo.map(

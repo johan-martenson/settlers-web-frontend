@@ -2,9 +2,9 @@ import React, { Component } from 'react'
 import { setTransportPriorityForMaterial, isToolUpperCase } from './api/rest-api'
 import { Dialog } from './dialog'
 import { getTransportPriorityForPlayer } from './api/rest-api'
-import Button from './button'
 import './transport_priority.css'
 import { GameId, PlayerId, MaterialAllUpperCase, TOOLS_UPPER_CASE } from './api/types'
+import { Button } from '@fluentui/react-components'
 
 interface SetTransportPriorityProps {
     onClose: (() => void)
@@ -47,10 +47,10 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
                         {this.state.priority && this.state.priority.map(
                             (material, index) => {
                                 if (this.state.selected && this.state.selected === material) {
-                                    return <Button key={index} onButtonClicked={() => this.onSelect(material)} selected label={material} />
+                                    return <Button key={index} onClick={() => this.onSelect(material)} appearance='primary'>{material}</Button>
                                 }
 
-                                return <Button key={index} onButtonClicked={() => this.onSelect(material)} label={material} />
+                                return <Button key={index} onClick={() => this.onSelect(material)}>{material}</Button>
                             }
 
                         )
@@ -60,8 +60,8 @@ class SetTransportPriority extends Component<SetTransportPriorityProps, SetTrans
                     <div>
                         {selectedMaterial &&
                             <>
-                                <Button label="Up" onButtonClicked={() => this.increasePriority(selectedMaterial)} />
-                                <Button label="Down" onButtonClicked={() => this.decreasePriority(selectedMaterial)} />
+                                <Button onClick={() => this.increasePriority(selectedMaterial)} >Up</Button>
+                                <Button onClick={() => this.decreasePriority(selectedMaterial)} >Down</Button>
                             </>
                         }
                     </div>

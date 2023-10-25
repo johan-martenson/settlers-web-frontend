@@ -4,8 +4,15 @@
     align-items: flex-start;
 }
 
-.HouseConstructionButtons {
+.house-construction-buttons {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+    justify-content: space-between;
+    align-content: flex-start;
+}
+
+.house-construction-button {
+    display: flex;
+    flex-direction: column;
 }

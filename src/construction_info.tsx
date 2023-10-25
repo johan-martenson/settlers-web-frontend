@@ -243,14 +243,13 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 
                     {this.state.selected === "Buildings" && this.state.buildingSizeSelected === "small" &&
                         <DialogSection>
-                            <div className="HouseConstructionButtons">
+                            <div className="house-construction-buttons">
                                 {SMALL_HOUSES.map(
                                     (house, index) => {
 
                                         return (
                                             <Button className="ConstructionItem"
                                                 key={index}
-                                                icon={<img src={houseImageMap.get(house)} />}
                                                 onClick={
                                                     async () => {
                                                         console.info("Creating house")
@@ -259,7 +258,20 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                         this.props.closeDialog()
                                                     }
                                                 }
-                                            >{camelCaseToWords(house)}</Button>
+                                            >
+                                                <div className='house-construction-button'>
+                                                    <img src={houseImageMap.get(house)}
+                                                        onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                                                            console.log([event, event.target])
+                                                            const img = event.target as HTMLImageElement
+
+                                                            img.width = img.naturalWidth
+                                                            img.height = img.naturalHeight
+                                                        }
+                                                        }
+                                                    />{camelCaseToWords(house)}
+                                                </div>
+                                            </Button>
                                         )
                                     })
                                 }
@@ -271,13 +283,12 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                         this.canBuildMediumHouse() &&
                         this.state.buildingSizeSelected === "medium" &&
                         <DialogSection>
-                            <div className="HouseConstructionButtons">
+                            <div className="house-construction-buttons">
                                 {MEDIUM_HOUSES.map(
                                     (house, index) => {
 
                                         return (
                                             <Button className="ConstructionItem"
-                                                icon={<img src={houseImageMap.get(house)} />}
                                                 key={index}
                                                 onClick={
                                                     async () => {
@@ -287,7 +298,17 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                         this.props.closeDialog()
                                                     }
                                                 }
-                                            >{camelCaseToWords(house)}</Button>
+                                            >
+                                                <img src={houseImageMap.get(house)}
+                                                    onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                                                        console.log([event, event.target])
+                                                        const img = event.target as HTMLImageElement
+
+                                                        img.width = img.naturalWidth
+                                                        img.height = img.naturalHeight
+                                                    }
+                                                    }
+                                                />{camelCaseToWords(house)}</Button>
                                         )
                                     })
                                 }
@@ -299,7 +320,7 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                         this.canBuildLargeHouse() &&
                         this.state.buildingSizeSelected === "large" &&
                         <DialogSection>
-                            <div className="HouseConstructionButtons">
+                            <div className="house-construction-buttons">
                                 {LARGE_HOUSES.map(
                                     (house, index) => {
 
@@ -309,7 +330,6 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 
                                             return (
                                                 <Button className="ConstructionItem"
-                                                    icon={<img src={houseImageMap.get(house)} />}
                                                     key={index}
                                                     onClick={
                                                         async () => {
@@ -319,7 +339,17 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                             this.props.closeDialog()
                                                         }
                                                     }
-                                                >{camelCaseToWords(house)}</Button>
+                                                >
+                                                    <img src={houseImageMap.get(house)}
+                                                        onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                                                            console.log([event, event.target])
+                                                            const img = event.target as HTMLImageElement
+
+                                                            img.width = img.naturalWidth
+                                                            img.height = img.naturalHeight
+                                                        }
+                                                        }
+                                                    />{camelCaseToWords(house)}</Button>
                                             )
                                         }
                                     })

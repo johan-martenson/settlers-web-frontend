@@ -81,7 +81,7 @@ interface AppState {
     gameWidth: number
     gameHeight: number
 
-    player: PlayerId
+    player?: PlayerInformation
 
     activeMenu?: Menu
 
@@ -164,7 +164,6 @@ class App extends Component<AppProps, AppState> {
             scale: DEFAULT_SCALE,
             gameWidth: 0,
             gameHeight: 0,
-            player: props.selfPlayerId,
             showMenu: false,
             showTitles: true,
             showSetTransportPriority: false,
@@ -368,26 +367,6 @@ class App extends Component<AppProps, AppState> {
         })
     }
 
-    onPlayerSelected(player: PlayerInformation): void {
-        console.info("Selected player " + JSON.stringify(player))
-
-        const scaleY = this.state.scale
-
-        let newTranslateX = this.state.translateX
-        let newTranslateY = this.state.translateY
-
-        if (player.centerPoint) {
-            newTranslateX = (globalSyncState.width / 2) - player.centerPoint.x * this.state.scale
-            newTranslateY = (globalSyncState.height / 2) + player.centerPoint.y * scaleY - globalSyncState.height
-        }
-
-        this.setState({
-            translateX: newTranslateX,
-            translateY: newTranslateY,
-            player: player.id
-        })
-    }
-
     closeFriendlyHouseInfo(): void {
         console.info("Closing friendly house info")
 
@@ -536,6 +515,9 @@ class App extends Component<AppProps, AppState> {
 
         await this.monitoringPromise
 
+        // Store information about the player
+        this.setState({player: monitor.players.get(this.props.selfPlayerId)})
+
         if (this.selfNameRef.current) {
 
             // Store the width and height of the canvas when it's been rendered
@@ -652,7 +634,7 @@ class App extends Component<AppProps, AppState> {
                 console.info("Continuing road building with extended road segment")
 
                 /* Get the available connections from the added point */
-                const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player)
+                const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.props.selfPlayerId)
 
                 console.log("Possible new road direct adjacent road connections: " + JSON.stringify(pointInformation.possibleRoadConnections))
 
@@ -733,7 +715,7 @@ class App extends Component<AppProps, AppState> {
             console.info("Clicked house " + JSON.stringify(house))
 
             /* Show friendly house info for own house */
-            if (house.playerId === this.state.player) {
+            if (house.playerId === this.props.selfPlayerId) {
                 console.info("Friendly house")
 
                 this.setState({
@@ -761,7 +743,7 @@ class App extends Component<AppProps, AppState> {
             console.info("Clicked flag")
 
             /* Show friendly flag dialog */
-            if (flag.playerId === this.state.player) {
+            if (flag.playerId === this.props.selfPlayerId) {
                 console.info("Friendly flag")
 
                 this.setState(
@@ -777,7 +759,7 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Ask the server for what can be done on the spot */
-        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player)
+        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.props.selfPlayerId)
 
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
@@ -864,7 +846,7 @@ class App extends Component<AppProps, AppState> {
         console.info("Start new road construction at: " + JSON.stringify({ x: point.x, y: point.y }))
 
         /* Get the possible connections from the server and draw them */
-        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.state.player)
+        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.props.selfPlayerId)
 
         this.setState(
             {
@@ -1035,8 +1017,7 @@ class App extends Component<AppProps, AppState> {
                 <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
 
                 <GameMenu
-                    currentPlayerId={this.state.player}
-                    onPlayerSelected={this.onPlayerSelected.bind(this)}
+                    currentPlayerId={this.props.selfPlayerId}
                     onChangedZoom={this.zoom.bind(this)}
                     currentZoom={this.state.scale}
                     minZoom={MIN_SCALE}
@@ -1065,7 +1046,7 @@ class App extends Component<AppProps, AppState> {
                     <FriendlyHouseInfo
                         house={this.state.showFriendlyHouseInfo.house}
                         gameId={this.props.gameId}
-                        playerId={this.state.player}
+                        playerId={this.props.selfPlayerId}
                         closeDialog={this.closeActiveMenu.bind(this)}
                     />
                 }
@@ -1075,7 +1056,7 @@ class App extends Component<AppProps, AppState> {
                         flag={this.state.showFriendlyFlagInfo.flag}
                         closeDialog={this.closeActiveMenu.bind(this)}
                         startNewRoad={this.startNewRoad.bind(this)}
-                        playerId={this.state.player}
+                        playerId={this.props.selfPlayerId}
                         gameId={this.props.gameId}
                     />
                 }
@@ -1084,7 +1065,7 @@ class App extends Component<AppProps, AppState> {
                     <EnemyHouseInfo
                         house={this.state.showEnemyHouseInfo.house}
                         closeDialog={this.closeActiveMenu.bind(this)}
-                        playerId={this.state.player}
+                        playerId={this.props.selfPlayerId}
                         gameId={this.props.gameId}
                     />
                 }
@@ -1096,9 +1077,10 @@ class App extends Component<AppProps, AppState> {
                 {this.state.showConstructionInfo &&
                     <ConstructionInfo point={this.state.showConstructionInfo}
                         closeDialog={this.closeActiveMenu.bind(this)}
-                        playerId={this.state.player}
+                        playerId={this.props.selfPlayerId}
                         startNewRoad={this.startNewRoad.bind(this)}
                         gameId={this.props.gameId}
+                        nation={(this.state.player) ? this.state.player.nation : "ROMANS"}
                     />
                 }
 

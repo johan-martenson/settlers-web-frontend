@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from 'react'
 import { texturedImageVertexShaderPixelPerfectStraightCoordinates, textureFragmentShader } from './shaders'
-import { Direction, Nation, WorkerType } from './api/types'
-import { workers } from './assets'
+import { AnyBuilding, Direction, Nation, WorkerType } from './api/types'
+import { houses, workers } from './assets'
 import { Dimension, WorkerAnimation, makeShader, resizeCanvasToDisplaySize } from './utils'
 import { DEFAULT_SCALE } from './game_render'
 import './icon.css'
@@ -279,7 +279,7 @@ class WorkerIcon extends Component<WorkerIconProps, WorkerIconState> {
     render(): ReactNode {
         return (
             <div>
-                <canvas className="WorkerIconCanvas"
+                <canvas className="worker-icon-canvas"
                     ref={this.workerIconCanvasRef}
                     style={{ width: this.state.size.width * this.state.scale, height: this.state.size.height * this.state.scale }} />
             </div>
@@ -287,6 +287,30 @@ class WorkerIcon extends Component<WorkerIconProps, WorkerIconState> {
     }
 }
 
+interface HouseProps {
+    nation: Nation
+    houseType: AnyBuilding
+    scale?: number
+}
+
+const HouseIcon = (houseProps: HouseProps) => {
+    const url = houses.getUrlForIndividualBuilding(houseProps.nation, houseProps.houseType)
+    const scale = (houseProps.scale !== undefined) ? houseProps.scale : 1.0
+
+    return (<div className="house-icon">
+        <img
+        src={url}
+        onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+            const img = event.target as HTMLImageElement
+
+            img.width = img.naturalWidth * scale
+            img.height = img.naturalHeight * scale
+        }}
+        />
+        </div>)
+}
+
 export {
-    WorkerIcon
+    WorkerIcon,
+    HouseIcon
 }

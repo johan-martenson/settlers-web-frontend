@@ -1,5 +1,5 @@
 import React, { ChangeEvent, Component } from 'react'
-import { GameId, PlayerId, PlayerInformation } from './api/types'
+import { GameId, PlayerId } from './api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
 import { Button, Divider, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
@@ -20,7 +20,6 @@ interface GameMenuProps {
     defaultZoom: number
 
     onChangedZoom: ((scale: number) => void)
-    onPlayerSelected: ((player: PlayerInformation) => void)
     onSetSpeed: ((speed: number) => void)
     onSetTitlesVisible: ((showTitles: boolean) => void)
     onLeaveGame: (() => void)
@@ -80,7 +79,7 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                                 ref={this.zoomSliderRef}
 
                             />
-                            <Button onClick={(ev) => {
+                            <Button onClick={() => {
                                 this.props.onChangedZoom(this.props.defaultZoom)
 
                                 // TODO: adjust the scale slider as well

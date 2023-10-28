@@ -1,7 +1,7 @@
-import { WorkerAnimation } from "./utils"
+import { HouseImageAtlasHandler, WorkerAnimation } from "./utils"
 import { WorkerType } from "./api/types"
 
-export const workers = new Map<WorkerType, WorkerAnimation>()
+const workers = new Map<WorkerType, WorkerAnimation>()
 
 workers.set("Farmer", new WorkerAnimation("assets/", "farmer", 10))
 workers.set("Fisherman", new WorkerAnimation("assets/", "fisher", 10))
@@ -34,3 +34,10 @@ workers.set("Sergeant", new WorkerAnimation("assets/", "sergeant", 10))
 workers.set("Officer", new WorkerAnimation("assets/", "officer", 10))
 workers.set("General", new WorkerAnimation("assets/", "general", 10))
 workers.set("Geologist", new WorkerAnimation("assets/", "geologist", 10))
+
+const houses = new HouseImageAtlasHandler("assets/")
+
+export {
+    workers,
+    houses
+}

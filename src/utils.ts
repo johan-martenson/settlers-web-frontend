@@ -954,6 +954,10 @@ class HouseImageAtlasHandler {
                 texture: this.texture
             }]
     }
+
+    getUrlForIndividualBuilding(nation: Nation, houseType: AnyBuilding): string {
+        return "assets/" + nation + "/" + houseType + ".png"
+    }
 }
 
 interface OneImageInformation {

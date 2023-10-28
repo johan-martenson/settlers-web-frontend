@@ -2,7 +2,6 @@ import { action } from '@storybook/addon-actions';
 import { storiesOf } from '@storybook/react';
 import React from 'react';
 import Button from '../button';
-import Card from '../card';
 import MapInformationCard from '../map_information_card';
 import OnOffSlider from '../on_off_slider';
 import { Player } from '../player';

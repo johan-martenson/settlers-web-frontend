@@ -1,18 +1,18 @@
 import React, { Component } from 'react'
-import { GameId, LARGE_HOUSES, MEDIUM_HOUSES, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api/types'
+import { GameId, LARGE_HOUSES, MEDIUM_HOUSES, Nation, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api/types'
 import './construction_info.css'
 import { Dialog, DialogSection } from './dialog'
-import { houseImageMap } from './images'
 import { monitor } from './api/ws-api'
-import SelectableButtonRow from './selectable_button_row'
 import { camelCaseToWords } from './utils'
-import { Button } from '@fluentui/react-components'
+import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
+import { HouseIcon } from './icon'
 
 interface ConstructionInfoProps {
     selected?: "Buildings" | "FlagsAndRoads"
     point: PointInformation
     gameId: GameId
     playerId: PlayerId
+    nation: Nation
     closeDialog: (() => void)
     startNewRoad: ((point: Point) => void)
 }
@@ -125,11 +125,9 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
         }
 
         const houseOptions = new Map()
-        let houseInitialSelection
 
         if (this.canBuildSmallHouse()) {
             houseOptions.set("small", "Small")
-            houseInitialSelection = "small"
         }
 
         if (this.canBuildMediumHouse()) {
@@ -144,22 +142,23 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
             <Dialog id="ConstructionInfo" className="ConstructionInfoWindow" heading="Construction" onCloseDialog={this.props.closeDialog} floating={true}>
 
                 <>
-
-                    <SelectableButtonRow values={constructionOptions}
-                        initialValue={constructionInitialSelection}
-                        onSelected={
-                            (value) => {
+                    <TabList
+                        defaultSelectedValue={constructionInitialSelection}
+                        onTabSelect={
+                            (event: SelectTabEvent, data: SelectTabData) => {
+                                const value = data.value
 
                                 if (value === "Buildings" || value === "FlagsAndRoads") {
-                                    this.setState(
-                                        {
-                                            selected: value
-                                        }
-                                    )
+                                    this.setState({ selected: value })
                                 }
                             }
                         }
-                    />
+                    >
+                        {Array.from(constructionOptions.entries(), ([key, value], index) => {
+                            return <Tab value={key} key={index}>{value}</Tab>
+                        }
+                        )}
+                    </TabList>
 
                     {this.state.selected === "FlagsAndRoads" &&
                         <DialogSection>
@@ -224,21 +223,27 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                     }
 
                     {this.state.selected === "Buildings" &&
-                        <SelectableButtonRow values={houseOptions}
-                            initialValue={houseInitialSelection}
-                            onSelected={
-                                (value) => {
-
-                                    if (value === "small" || value === "medium" || value === "large") {
-                                        this.setState(
-                                            {
-                                                buildingSizeSelected: value
-                                            }
-                                        )
-                                    }
+                        <TabList
+                        defaultSelectedValue={"small"}
+                        onTabSelect={
+                            (event: SelectTabEvent, data: SelectTabData) => {
+                                const value = data.value
+                                if (value === "small" || value === "medium" || value === "large") {
+                                    this.setState(
+                                        {
+                                            buildingSizeSelected: value
+                                        }
+                                    )
                                 }
                             }
-                        />
+                        }>
+                            {Array.from(houseOptions.entries(),
+                                ([key, value], index) => {
+                                    return <Tab value={key} key={index}>{value}</Tab>
+                                }
+
+                            )}
+                        </TabList>
                     }
 
                     {this.state.selected === "Buildings" && this.state.buildingSizeSelected === "small" &&
@@ -260,16 +265,8 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 }
                                             >
                                                 <div className='house-construction-button'>
-                                                    <img src={houseImageMap.get(house)}
-                                                        onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                                            console.log([event, event.target])
-                                                            const img = event.target as HTMLImageElement
-
-                                                            img.width = img.naturalWidth
-                                                            img.height = img.naturalHeight
-                                                        }
-                                                        }
-                                                    />{camelCaseToWords(house)}
+                                                    <HouseIcon nation={this.props.nation} houseType={house} />
+                                                    {camelCaseToWords(house)}
                                                 </div>
                                             </Button>
                                         )
@@ -299,16 +296,11 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                     }
                                                 }
                                             >
-                                                <img src={houseImageMap.get(house)}
-                                                    onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                                        console.log([event, event.target])
-                                                        const img = event.target as HTMLImageElement
-
-                                                        img.width = img.naturalWidth
-                                                        img.height = img.naturalHeight
-                                                    }
-                                                    }
-                                                />{camelCaseToWords(house)}</Button>
+                                                <div className='house-construction-button'>
+                                                    <HouseIcon nation={this.props.nation} houseType={house} />
+                                                    {camelCaseToWords(house)}
+                                                </div>
+                                            </Button>
                                         )
                                     })
                                 }
@@ -340,16 +332,11 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                         }
                                                     }
                                                 >
-                                                    <img src={houseImageMap.get(house)}
-                                                        onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                                            console.log([event, event.target])
-                                                            const img = event.target as HTMLImageElement
-
-                                                            img.width = img.naturalWidth
-                                                            img.height = img.naturalHeight
-                                                        }
-                                                        }
-                                                    />{camelCaseToWords(house)}</Button>
+                                                    <div className='house-construction-button'>
+                                                        <HouseIcon nation={this.props.nation} houseType={house} />
+                                                        {camelCaseToWords(house)}
+                                                    </div>
+                                                </Button>
                                             )
                                         }
                                     })

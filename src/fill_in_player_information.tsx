@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { Label, Input, Button } from "@fluentui/react-components"
 import { do_self_test } from './self_test'
-import { WorkerIcon } from './icon'
+import { HouseIcon, WorkerIcon } from './icon'
 import './fill_in_player_information.css'
 
 export interface EnteredPlayerInformation {
@@ -122,12 +122,15 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                             onClick={this.onPlayerInformationDone.bind(this)}
                             disabled={!this.nameFieldRef.current?.value}
                             appearance='primary'
-
                         >Go</Button>
                     </div>
                 </div>
                 <div id="worker-animation">
                     <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                </div>
+
+                <div id="house-icon">
+                    <HouseIcon nation="ROMANS" houseType='Fortress' scale={2}/>
                 </div>
             </>
         )

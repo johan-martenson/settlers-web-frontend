@@ -2,3 +2,11 @@
     width: 20px;
     height: 60px;
 }
+
+.inventory-icon-tooltip {
+    position: absolute;
+    background-color: darkgray;
+    color: black;
+    padding: 4px;
+    border: 1px solid black;
+}

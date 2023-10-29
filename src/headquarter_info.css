@@ -1,12 +1,15 @@
-.InventoryList {
-    display: flex;
-    flex-direction: column;
-}
-
-.InventoryLabelValuePair {
+.inventory-list {
     display: flex;
     flex-direction: row;
-    justify-content: space-between
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.inventory-material-amount-pair {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: 30px;
 }
 
 .InventoryLabelValuePair :hover {

@@ -2,7 +2,8 @@ import React, { Component } from 'react'
 import { isMaterialUpperCase } from './api/rest-api'
 import './headquarter_info.css'
 import { Button } from '@fluentui/react-components'
-import { HouseInformation, GameId, PlayerId, MaterialAllUpperCase } from './api/types'
+import { HouseInformation, GameId, PlayerId, MaterialAllUpperCase, MATERIALS_UPPER_CASE_AS_STRING } from './api/types'
+import { InventoryIcon } from './icon'
 
 interface HeadquarterInfoProps {
     house: HouseInformation
@@ -28,23 +29,28 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
     }
 
     calculateInventory(house: HouseInformation): Map<MaterialAllUpperCase, number> {
-        const inventory: Map<MaterialAllUpperCase, number> = new Map()
+        const inventory = new Map<MaterialAllUpperCase, number>()
 
-        Object.entries(house.resources).forEach(
-            ([material, hasAndNeeds]) => {
-                const hasAmount = hasAndNeeds.has
+        MATERIALS_UPPER_CASE_AS_STRING.forEach(material => {
 
-                if (!isMaterialUpperCase(material)) {
-                    return
-                }
+            if (!isMaterialUpperCase(material)) {
+                console.error("Is not material: " + material)
 
-                if (hasAmount) {
-                    inventory.set(material, hasAmount)
-                } else {
-                    inventory.set(material, 0)
-                }
+                return
             }
-        )
+
+            let hasAmount = 0
+
+            if (house.resources[material]) {
+                hasAmount = house.resources[material].has
+            }
+
+            if (hasAmount) {
+                inventory.set(material, hasAmount)
+            } else {
+                inventory.set(material, 0)
+            }
+        })
 
         return inventory
     }
@@ -55,53 +61,29 @@ class HeadquarterInfo extends Component<HeadquarterInfoProps, HeadquarterInfoSta
         const inventoryItems = []
 
         let index = 0
-        for (const [material, amount] of inventory) {
+        for (const material of inventory.keys()) {
+            const amount = inventory.get(material)
 
-            index = index + 1
-
-            if (index < this.state.page * this.state.itemsPerPage) {
-                continue
-            }
-
-            if (index > (this.state.page + 1) * this.state.itemsPerPage) {
+            if (material === 'WELL_WORKER' || material === 'STORAGE_WORKER') {
                 continue
             }
 
             inventoryItems.push(
-                <div className="InventoryLabelValuePair" key={index} >
-                    <div className="InventoryLabel">{material.replace(/_/g, ' ')}</div>
-                    <div className="InventoryValue">{amount}</div>
+                <div className="inventory-material-amount-pair" key={index} >
+                    <InventoryIcon nation='ROMANS' material={material} scale={1} label={material.toLowerCase()} />
+                    {amount}
                 </div>
             )
+
+            index += 1
         }
 
         return (
             <div>
-                <div className="InventoryList">
+                <div className="inventory-list">
                     {inventoryItems}
                 </div>
 
-                {this.state.page > 0 &&
-                    <Button onClick={
-                        () => {
-                            this.setState({
-                                page: this.state.page - 1
-                            })
-                        }
-                    }
-                    >Previous</Button>
-                }
-
-                {(this.state.page + 1) * this.state.itemsPerPage < inventory.size &&
-                    <Button onClick={
-                        () => {
-                            this.setState({
-                                page: this.state.page + 1
-                            })
-                        }
-                    }
-                    >Next</Button>
-                }
             </div>
         )
     }

@@ -26,11 +26,13 @@ class Dialog extends Component<DialogProps, DialogState> {
         return (
             <div className={className} id={this.props.id}>
 
-                {this.props.heading &&
-                    <h1>{this.props.heading}</h1>
-                }
+                <div>
+                    {this.props.heading &&
+                        <h1>{this.props.heading}</h1>
+                    }
 
-                {this.props.children}
+                    {this.props.children}
+                </div>
 
                 {!this.props.noCloseButton &&
                     <Button onClick={

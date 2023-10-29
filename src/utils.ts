@@ -960,7 +960,7 @@ class HouseImageAtlasHandler {
     }
 }
 
-interface OneImageInformation {
+export interface OneImageInformation {
     x: number
     y: number
     width: number

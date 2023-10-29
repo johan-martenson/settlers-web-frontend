@@ -8,6 +8,7 @@ import { houseImageMap } from './images'
 import { forceUpdateOfHouse, listenToHouse } from './api/ws-api'
 import ProgressBar from './progress_bar'
 import { HouseInformation, GameId, PlayerId, SoldierType, MaterialAllUpperCase } from './api/types'
+import { InventoryIcon, WorkerIcon } from './icon'
 
 interface FriendlyHouseInfoProps {
     house: HouseInformation
@@ -158,13 +159,14 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
                         </>
                     }
 
-                    {house.produces && <div>Produces: {house.produces}</div>}
+                    {house.produces && <div>Produces: <InventoryIcon nation={"ROMANS"} material={house.produces} /></div>}
 
                     {isMilitaryBuilding(house) && houseIsReady(house) &&
                         <div>Soldiers: {soldiers.map(
                             (soldier, index) => {
                                 if (soldier) {
-                                    return <div key={index}>{getSoldierDisplayName(soldier)}</div>
+                                    //return <div key={index}>{getSoldierDisplayName(soldier)}</div>
+                                    return <InventoryIcon material={rankToMaterial(soldier)} nation="ROMANS" />
                                 } else {
                                     return <div key={index}>Empty</div>
                                 }
@@ -280,6 +282,24 @@ class FriendlyHouseInfo extends Component<FriendlyHouseInfoProps, FriendlyHouseI
             </Dialog>
         )
     }
+}
+
+function rankToMaterial(rank: SoldierType): MaterialAllUpperCase {
+    if (rank === 'PRIVATE_RANK') {
+        return 'PRIVATE'
+    } else if (rank === 'PRIVATE_FIRST_CLASS_RANK') {
+        return 'PRIVATE_FIRST_CLASS'
+    } else if (rank === 'SERGEANT_RANK') {
+        return 'SERGEANT'
+    } else if (rank === 'OFFICER_RANK') {
+        return 'OFFICER'
+    } else if (rank === 'GENERAL_RANK') {
+        return 'GENERAL'
+    }
+
+    console.error("Can't translate rank to material! Rank was: " + rank)
+
+    return 'STONE'
 }
 
 export default FriendlyHouseInfo

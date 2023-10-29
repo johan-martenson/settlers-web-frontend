@@ -1,7 +1,7 @@
-import React, { Component, ReactNode } from 'react'
+import React, { Component, MouseEventHandler, ReactNode, useState } from 'react'
 import { texturedImageVertexShaderPixelPerfectStraightCoordinates, textureFragmentShader } from './shaders'
-import { AnyBuilding, Direction, Nation, WorkerType } from './api/types'
-import { houses, workers } from './assets'
+import { AnyBuilding, Direction, MaterialAllUpperCase, Nation, WorkerType } from './api/types'
+import { houses, materialImageAtlasHandler, workers } from './assets'
 import { Dimension, WorkerAnimation, makeShader, resizeCanvasToDisplaySize } from './utils'
 import { DEFAULT_SCALE } from './game_render'
 import './icon.css'
@@ -299,18 +299,66 @@ const HouseIcon = (houseProps: HouseProps) => {
 
     return (<div className="house-icon">
         <img
-        src={url}
-        onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-            const img = event.target as HTMLImageElement
+            src={url}
+            onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                const img = event.target as HTMLImageElement
 
-            img.width = img.naturalWidth * scale
-            img.height = img.naturalHeight * scale
-        }}
+                img.width = img.naturalWidth * scale
+                img.height = img.naturalHeight * scale
+            }}
         />
-        </div>)
+    </div>)
+}
+
+interface InventoryIconProps {
+    nation: Nation
+    material: MaterialAllUpperCase
+    label?: string
+    scale?: number
+}
+
+const InventoryIcon = (inventoryIconProps: InventoryIconProps) => {
+    const url = materialImageAtlasHandler.getInventoryIconUrl(inventoryIconProps.nation, inventoryIconProps.material)
+    const material = inventoryIconProps.material
+    const scale = (inventoryIconProps?.scale !== undefined) ? inventoryIconProps.scale : 1.0
+
+    const [showLabel, setShowLabel] = useState(false)
+    const [labelPosition, setLabelPosition] = useState({ x: 0, y: 0 })
+
+    return (<span className="inventory-icon"
+        onMouseEnter={(event: React.MouseEvent<HTMLDivElement>) => {
+            setShowLabel(true)
+
+            setLabelPosition({ x: event.currentTarget.offsetLeft, y: event.currentTarget.offsetTop - 20 })
+        }}
+        onMouseLeave={() => setShowLabel(false)}
+    >
+        <img
+            src={url}
+            onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                const img = event.target as HTMLImageElement
+
+                img.width = img.naturalWidth * scale
+                img.height = img.naturalHeight * scale
+            }}
+        />
+
+        {inventoryIconProps.label && showLabel &&
+            <div
+                className="inventory-icon-tooltip"
+                style={{
+                    left: labelPosition.x,
+                    top: labelPosition.y
+                }}
+            >
+                {inventoryIconProps.label}
+            </div>
+        }
+    </span>)
 }
 
 export {
     WorkerIcon,
-    HouseIcon
+    HouseIcon,
+    InventoryIcon
 }

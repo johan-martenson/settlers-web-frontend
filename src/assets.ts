@@ -1,5 +1,5 @@
 import { HouseImageAtlasHandler, WorkerAnimation } from "./utils"
-import { WorkerType } from "./api/types"
+import { MaterialAllUpperCase, Nation, WorkerType } from "./api/types"
 
 const workers = new Map<WorkerType, WorkerAnimation>()
 
@@ -35,9 +35,30 @@ workers.set("Officer", new WorkerAnimation("assets/", "officer", 10))
 workers.set("General", new WorkerAnimation("assets/", "general", 10))
 workers.set("Geologist", new WorkerAnimation("assets/", "geologist", 10))
 
+
+class MaterialImageAtlasHandler {
+    private pathPrefix: string
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    getInventoryIconUrl(nation: Nation, material: MaterialAllUpperCase): string {
+
+        if (material === "SHIELD") {
+            return this.pathPrefix + "/inventory-icons/" + nation + "/" + material + ".png"
+        }
+
+        return this.pathPrefix + "/inventory-icons/" + material + ".png"
+    }
+}
+
+
 const houses = new HouseImageAtlasHandler("assets/")
+const materialImageAtlasHandler = new MaterialImageAtlasHandler("assets/")
 
 export {
     workers,
-    houses
+    houses,
+    materialImageAtlasHandler
 }

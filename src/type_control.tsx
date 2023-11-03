@@ -3,10 +3,12 @@ import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import { getInformationOnPoint } from './api/rest-api'
 import { PointInformation, Point, GameId, PlayerId } from './api/types'
+import { Button } from '@fluentui/react-components'
 
 export interface Command {
     action: (() => void)
-    filter: ((selectedPointInformation: PointInformation) => boolean) | undefined
+    filter?: ((selectedPointInformation: PointInformation) => boolean) | undefined
+    icon?: React.ReactNode
 }
 
 interface TypeControlProps {
@@ -145,10 +147,21 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
             })
         }
 
-        let className = "Input"
+        let className = "no-input"
 
-        if (this.state.input.length > 0 && !hasMatch) {
-            className = "InputWithNoMatches"
+        if (this.state.input.length > 0) {
+
+            if (hasMatch) {
+                className = "input-with-matches"
+            } else {
+                className = "input-with-no-matches"
+            }
+        }
+
+        if (this.state.expanded) {
+            className += " expanded"
+        } else {
+            className += " closed"
         }
 
         return (
@@ -156,6 +169,8 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
                 <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
                 <div className={className}>{this.state.input}</div>
+
+                <div className="container-alternatives">
 
                 {Array.from(this.props.commands.entries()).map(
                     ([commandName, command], index) => {
@@ -169,17 +184,20 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                         if (show && inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)) {
 
                             return (
-                                <div key={index} className="Alternative" onClick={() => this.commandChosen(commandName)}>
+                                <div key={index} className="alternative" onClick={() => this.commandChosen(commandName)} >
+                                    <span>
                                     <span className="MatchingPart">{commandName.substring(0, this.state.input.length)}</span>
                                     <span className="RemainingPart">{commandName.substring(this.state.input.length, commandName.length)}</span>
+                                    </span>
+                                    {command.icon}
                                 </div>
                             )
                         } else if (show) {
 
                             if (this.state.expanded) {
                                 return (
-                                    <div key={index} className="Alternative" onClick={() => this.commandChosen(commandName)}>
-                                        {commandName}
+                                    <div key={index} className="alternative" onClick={() => this.commandChosen(commandName)} >
+                                        {commandName} {command.icon}
                                     </div>
                                 )
                             }
@@ -189,6 +207,7 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
                     }
                 )
                 }
+                </div>
 
             </div>
         )

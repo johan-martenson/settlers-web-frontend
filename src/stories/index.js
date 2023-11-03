@@ -27,17 +27,6 @@ storiesOf('Card', module)
     <Card>Some text <Button onButtonClicked={action('clicked')}>Click</Button></Card>
   ));
 
-storiesOf('OnOffSlider', module)
-  .add('On', () => (
-    <OnOffSlider initialValue={true} onValueChange={action('changed value')} />
-  ))
-  .add('Off', () => (
-    <OnOffSlider initialValue={false} onValueChange={action('changed value')} />
-  ))
-  .add('Default', () => (
-    <OnOffSlider onValueChange={action('changed value')} />
-  ))
-
 const player = {
   type: 'HUMAN',
   name: 'Eric'

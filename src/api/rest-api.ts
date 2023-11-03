@@ -86,30 +86,37 @@ export interface TreeConservationProgramDeactivatedMessage extends GameMessage {
 
 export interface MilitaryBuildingCausedLostLandMessage extends GameMessage {
     houseId: HouseId
+    houseType: AnyBuilding
 }
 
 export interface MilitaryBuildingReadyMessage extends GameMessage {
     houseId: HouseId
+    houseType: AnyBuilding
 }
 
 export interface NoMoreResourcesMessage extends GameMessage {
     houseId: HouseId
+    houseType: AnyBuilding
 }
 
 export interface MilitaryBuildingOccupiedMessage extends GameMessage {
     houseId: HouseId
+    houseType: AnyBuilding
 }
 
 export interface UnderAttackMessage extends GameMessage {
     houseId: HouseId
+    houseType: AnyBuilding
 }
 
 export interface BuildingLostMessage extends GameMessage {
     houseId: HouseId
+    houseType: AnyBuilding
 }
 
 export interface BuildingCapturedMessage extends GameMessage {
     houseId: HouseId
+    houseType: AnyBuilding
 }
 
 export interface GeologistFindMessage extends GameMessage {
@@ -119,6 +126,7 @@ export interface GeologistFindMessage extends GameMessage {
 
 export interface StoreHouseIsReadyMessage extends GameMessage {
     houseId: HouseId
+    houseType: AnyBuilding
 }
 
 function printTimestamp(message: string): void {

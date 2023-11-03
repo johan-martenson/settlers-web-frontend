@@ -1,9 +1,10 @@
 import React, { ChangeEvent, Component } from 'react'
 import { GameId, PlayerId } from './api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
-import { Button, Divider, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData } from '@fluentui/react-components'
+import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
+import { DEFAULT_SCALE } from './game_render'
 
 interface GameMenuProps {
     gameId: GameId
@@ -32,15 +33,16 @@ interface GameMenuProps {
     onSetAvailableConstructionVisible: ((visible: boolean) => void)
 }
 interface GameMenuState {
+    zoom: number
+    isOpen: boolean
 }
 
 class GameMenu extends Component<GameMenuProps, GameMenuState> {
-    zoomSliderRef = React.createRef<HTMLInputElement>()
-
     constructor(props: GameMenuProps) {
         super(props)
 
         this.state = {
+            zoom: DEFAULT_SCALE,
             isOpen: false
         }
     }
@@ -73,32 +75,32 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                         <Field label='Zoom'>
                             <Slider max={this.props.maxZoom}
                                 min={this.props.minZoom}
-                                defaultValue={this.props.currentZoom}
+                                value={this.state.zoom}
                                 step={1}
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => this.props.onChangedZoom(data.value)}
-                                ref={this.zoomSliderRef}
+                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                                    this.props.onChangedZoom(data.value)
 
+                                    this.setState({ zoom: data.value })
+                                }}
                             />
                             <Button onClick={() => {
                                 this.props.onChangedZoom(this.props.defaultZoom)
 
-                                // TODO: adjust the scale slider as well
-                                console.log(this.zoomSliderRef?.current)
-                                console.log(this.zoomSliderRef?.current?.value)
-
-                                if (this.zoomSliderRef?.current) {
-                                    this.zoomSliderRef.current.value = "" + this.props.defaultZoom
-                                    console.log(this.zoomSliderRef?.current?.value)
-                                }
+                                this.setState({ zoom: DEFAULT_SCALE })
                             }} >Reset</Button>
                         </Field>
                         <Field label='Set game speed'>
-                            <Slider max={10}
-                                min={1}
-                                defaultValue={this.props.currentSpeed}
-                                step={1}
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => this.props.onSetSpeed(data.value)}
-                            />
+                            <Dropdown defaultValue={"Normal"} onOptionSelect={(event: any, data: any) => console.log("Select new game speed: " + data.optionValue)}>
+                                <Option>
+                                    Fast
+                                </Option>
+                                <Option>
+                                    Normal
+                                </Option>
+                                <Option>
+                                    Slow
+                                </Option>
+                            </Dropdown>
                         </Field>
                         <Field label='Show house titles'>
                             <Switch

@@ -126,11 +126,11 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                     </div>
                 </div>
                 <div id="worker-animation">
-                    <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                <WorkerIcon worker='General' animate nation='ROMANS' direction={'WEST'} scale={3} />
                 </div>
 
                 <div id="house-icon">
-                    <HouseIcon nation="ROMANS" houseType='Fortress' scale={2}/>
+                    false && <HouseIcon nation="ROMANS" houseType='Fortress' scale={2}/>
                 </div>
             </>
         )

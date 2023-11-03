@@ -6,11 +6,13 @@ import './game_messages_viewer.css'
 import { listenToMessages } from './api/ws-api'
 import { play } from './sound_effects'
 import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
-import { GameId, PlayerId, HouseId, Point, GameMessage } from './api/types'
+import { GameId, PlayerId, HouseId, Point, GameMessage, Nation } from './api/types'
+import { HouseIcon, WorkerIcon } from './icon'
 
 interface GameMessagesViewerProps {
     gameId: GameId
     playerId: PlayerId
+    nation: Nation
 
     onGoToHouse: ((houseId: HouseId) => void)
     onGoToPoint: ((point: Point) => void)
@@ -83,6 +85,7 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                     <div className="game-message" key={index}>
                                         {isMilitaryBuildingOccupiedMessage(message) &&
                                             <>
+                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
                                                 Military building occupied
                                                 <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
                                                     icon={<ArrowStepInRight24Regular />}
@@ -91,9 +94,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             </>
                                         }
 
-                                        {
-                                            isNoMoreResourcesMessage(message) &&
+                                        {isNoMoreResourcesMessage(message) &&
                                             <>
+                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
                                                 No more resources
                                                 <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
                                                     appearance='transparent'
@@ -101,9 +104,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             </>
                                         }
 
-                                        {
-                                            isMilitaryBuildingReadyMessage(message) &&
+                                        {isMilitaryBuildingReadyMessage(message) &&
                                             <>
+                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
                                                 Military building is ready
                                                 <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
                                                     appearance='transparent'
@@ -111,18 +114,18 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             </>
                                         }
 
-                                        {
-                                            isUnderAttackMessage(message) &&
+                                        {isUnderAttackMessage(message) &&
                                             <>
+                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
                                                 We&apos;re under attack!
                                                 <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
                                                     appearance='transparent'
                                                     icon={<ArrowStepInRight24Regular />} />
                                             </>
                                         }
-                                        {
-                                            isGeologistFindMessage(message) &&
+                                        {isGeologistFindMessage(message) &&
                                             <>
+                                                <WorkerIcon worker='Geologist' nation={this.props.nation} scale={0.5} />
                                                 Geologist has found {message.material.toLowerCase()}!
                                                 <Button onClick={() => { this.props.onGoToPoint(message.point) }}
                                                     appearance='transparent'
@@ -130,9 +133,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             </>
                                         }
 
-                                        {
-                                            isBuildingLostMessage(message) &&
+                                        {isBuildingLostMessage(message) &&
                                             <>
+                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
                                                 Building lost to enemy
                                                 <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
                                                     appearance='transparent'
@@ -140,9 +143,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             </>
                                         }
 
-                                        {
-                                            isBuildingCapturedMessage(message) &&
+                                        {isBuildingCapturedMessage(message) &&
                                             <>
+                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
                                                 Building captured
                                                 <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
                                                     appearance='transparent'
@@ -150,9 +153,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             </>
                                         }
 
-                                        {
-                                            isStoreHouseIsReadyMessage(message) &&
+                                        {isStoreHouseIsReadyMessage(message) &&
                                             <>
+                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
                                                 A store house is ready
                                                 <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
                                                     appearance='transparent'
@@ -160,9 +163,9 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             </>
                                         }
 
-                                        {
-                                            isMilitaryBuildingCausedLostLandMessage(message) &&
+                                        {isMilitaryBuildingCausedLostLandMessage(message) &&
                                             <>
+                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
                                                 This building has caused you to lose land
                                                 <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
                                                     appearance='transparent'
@@ -170,15 +173,13 @@ class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessages
                                             </>
                                         }
 
-                                        {
-                                            isTreeConservationProgramActivatedMessage(message) &&
+                                        {isTreeConservationProgramActivatedMessage(message) &&
                                             <>
                                                 The tree conservation program has been activated. Only Woodcutters, Sawmills, and Forester huts will get planks.
                                             </>
                                         }
 
-                                        {
-                                            isTreeConservationProgramDeactivatedMessage(message) &&
+                                        {isTreeConservationProgramDeactivatedMessage(message) &&
                                             <>
                                                 The tree conservation program has been deactivated.
                                             </>

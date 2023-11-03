@@ -1,7 +1,7 @@
 import { getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, printTimestamp } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType } from './types'
 
 const messageListeners: ((messages: GameMessage[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
@@ -110,6 +110,9 @@ export interface Monitor {
     callGeologist: ((point: Point) => void)
     placeLocalRoad: ((points: Point[]) => void)
     getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
+    setReservedSoldiers: ((rank: SoldierType, amount: number) => void)
+    addDetailedMonitoring: ((houseId: HouseId) => void)
+    removeDetailedMonitoring: ((houseId: HouseId) => void)
 
     killWebsocket: (() => void)
 }
@@ -163,6 +166,9 @@ const monitor: Monitor = {
     callGeologist: callGeologistWebsocket,
     placeLocalRoad: placeLocalRoad,
     getInformationOnPoints: getInformationOnPoints,
+    setReservedSoldiers: setReservedSoldiers,
+    addDetailedMonitoring: addDetailedMonitoring,
+    removeDetailedMonitoring: removeDetailedMonitoring,
 
     killWebsocket: killWebsocket
 }
@@ -1552,6 +1558,36 @@ async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<Poi
             }
         }, 5)
     })
+}
+
+function setReservedSoldiers(rank: SoldierType, amount: number): void {
+
+    console.log("Set number of reserved soldiers for " + rank + " to: " + amount)
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_RESERVED_IN_HEADQUARTERS',
+            [rank]: amount
+        }
+    ))
+}
+
+function addDetailedMonitoring(houseId: HouseId): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'START_DETAILED_MONITORING',
+            buildingId: houseId
+        }
+    ))
+}
+
+function removeDetailedMonitoring(houseId: HouseId): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'STOP_DETAILED_MONITORING',
+            buildingId: houseId
+        }
+    ))
 }
 
 function getRequestId(): number {

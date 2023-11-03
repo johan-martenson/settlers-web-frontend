@@ -1,5 +1,5 @@
-import { HouseImageAtlasHandler, WorkerAnimation } from "./utils"
-import { MaterialAllUpperCase, Nation, WorkerType } from "./api/types"
+import { Dimension, DrawingInformation, HouseImageAtlasHandler, ImageSeriesInformation, WorkerAnimation, loadImageNg, makeTextureFromImage } from "./utils"
+import { FlagType, MaterialAllUpperCase, Nation, NationSmallCaps, WorkerType } from "./api/types"
 
 const workers = new Map<WorkerType, WorkerAnimation>()
 
@@ -54,11 +54,131 @@ class MaterialImageAtlasHandler {
 }
 
 
+
+class FlagImageAtlasHandler {
+    private pathPrefix: string
+    private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, Record<'images' | 'shadows', ImageSeriesInformation>>>
+    private image?: HTMLImageElement
+    private texture?: WebGLTexture | null
+
+    constructor(prefix: string) {
+        this.pathPrefix = prefix
+    }
+
+    async load(): Promise<void> {
+
+        if (this.image && this.imageAtlasInfo) {
+            return
+        }
+
+        // Get the image atlas information
+        const response = await fetch(this.pathPrefix + "image-atlas-flags.json")
+        const imageAtlasInfo = await response.json()
+
+        this.imageAtlasInfo = imageAtlasInfo
+
+        // Download the actual image atlas
+        this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
+    }
+
+    makeTexture(gl: WebGL2RenderingContext): void {
+
+        if (this.image && !this.texture) {
+            this.texture = makeTextureFromImage(gl, this.image)
+        } else {
+            console.error("Failed to make the texture because image is null | undefined")
+        }
+    }
+
+    getDrawingInformationFor(nation: NationSmallCaps, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const images = this.imageAtlasInfo[nation][flagType].images
+        const shadowImages = this.imageAtlasInfo[nation][flagType].shadows
+
+        const frameIndex = animationCounter % images.nrImages
+
+        return [
+            {
+                sourceX: images.startX + frameIndex * images.width,
+                sourceY: images.startY,
+                width: images.width,
+                height: images.height,
+                offsetX: images.offsetX,
+                offsetY: images.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImages.startX + frameIndex * shadowImages.width,
+                sourceY: shadowImages.startY,
+                width: shadowImages.width,
+                height: shadowImages.height,
+                offsetX: shadowImages.offsetX,
+                offsetY: shadowImages.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
+    }
+
+    getSize(nation: Nation, flagType: FlagType): Dimension | undefined {
+
+        const drawingInfo = this.getDrawingInformationFor("romans", flagType, 0)
+
+        if (drawingInfo) {
+
+            return {
+                width: drawingInfo[0].width,
+                height: drawingInfo[0].height
+            }
+
+        }
+
+        return undefined
+    }
+}
+
+
+class FlagAnimation {
+    private imageAtlasHandler: FlagImageAtlasHandler
+    private speedAdjust: number
+
+    constructor(prefix: string, speedAdjust: number) {
+        this.imageAtlasHandler = new FlagImageAtlasHandler(prefix)
+        this.speedAdjust = speedAdjust
+    }
+
+    async load(): Promise<void> {
+        await this.imageAtlasHandler.load()
+    }
+
+    makeTexture(gl: WebGL2RenderingContext): void {
+        this.imageAtlasHandler.makeTexture(gl)
+    }
+
+    getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
+        return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
+    }
+
+    getSize(nation: Nation, flagType: FlagType): Dimension | undefined {
+        return this.imageAtlasHandler.getSize(nation, flagType)
+    }
+}
+
+
 const houses = new HouseImageAtlasHandler("assets/")
 const materialImageAtlasHandler = new MaterialImageAtlasHandler("assets/")
+const flagAnimations = new FlagAnimation("assets/", 2)
+
 
 export {
     workers,
     houses,
-    materialImageAtlasHandler
+    materialImageAtlasHandler,
+    FlagImageAtlasHandler,
+    FlagAnimation,
+    flagAnimations
 }

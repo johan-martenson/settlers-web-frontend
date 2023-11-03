@@ -1,5 +1,5 @@
 import { getInformationOnPoint, getTerrainForMap,  removeHouse } from './api/rest-api'
-import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, FlagType, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation } from './api/types'
+import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation } from './api/types'
 import { Monitor, monitor } from './api/ws-api'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -327,28 +327,6 @@ function loadImageNg(src: string): Promise<HTMLImageElement> {
     })
 }
 
-class FlagAnimation {
-    private imageAtlasHandler: FlagImageAtlasHandler
-    private speedAdjust: number
-
-    constructor(prefix: string, speedAdjust: number) {
-        this.imageAtlasHandler = new FlagImageAtlasHandler(prefix)
-        this.speedAdjust = speedAdjust
-    }
-
-    async load(): Promise<void> {
-        await this.imageAtlasHandler.load()
-    }
-
-    makeTexture(gl: WebGL2RenderingContext): void {
-        this.imageAtlasHandler.makeTexture(gl)
-    }
-
-    getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
-    }
-}
-
 class TreeAnimation {
     private imageAtlasHandler: TreeImageAtlasHandler
     private speedAdjust: number
@@ -464,12 +442,12 @@ class WorkerAnimation {
         return this.imageAtlasHandler
     }
 
-    getSize(nation: Nation, direction: Direction): Dimension {
+    getSize(nation: Nation, direction: Direction): Dimension | undefined {
         return this.imageAtlasHandler.getSize(nation, direction)
     }
 }
 
-interface ImageSeriesInformation {
+export interface ImageSeriesInformation {
     height: number
     width: number
     nrImages: number
@@ -798,7 +776,7 @@ class WorkerImageAtlasHandler {
         return undefined
     }
 
-    getSize(nation: Nation, direction: Direction): Dimension {
+    getSize(nation: Nation, direction: Direction): Dimension | undefined {
         const drawingInfo = this.getDrawingInformationForWorker(nation, direction, 0, 0)
 
         if (drawingInfo) {
@@ -808,12 +786,9 @@ class WorkerImageAtlasHandler {
                 height: drawingInfo[0].height
             }
 
-        } else {
-            return {
-                width: 0,
-                height: 0
-            }
         }
+
+        return undefined
     }
 }
 
@@ -1197,72 +1172,6 @@ class FireImageAtlasHandler {
             image: this.image,
             texture: this.texture
         }
-    }
-}
-
-class FlagImageAtlasHandler {
-    private pathPrefix: string
-    private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, Record<'images' | 'shadows', ImageSeriesInformation>>>
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
-
-    constructor(prefix: string) {
-        this.pathPrefix = prefix
-    }
-
-    async load(): Promise<void> {
-
-        // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-flags.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
-
-        // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
-    }
-
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
-    }
-
-    getDrawingInformationFor(nation: NationSmallCaps, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
-        if (this.imageAtlasInfo === undefined || this.image === undefined) {
-            return undefined
-        }
-
-        const images = this.imageAtlasInfo[nation][flagType].images
-        const shadowImages = this.imageAtlasInfo[nation][flagType].shadows
-
-        const frameIndex = animationCounter % images.nrImages
-
-        return [
-            {
-                sourceX: images.startX + frameIndex * images.width,
-                sourceY: images.startY,
-                width: images.width,
-                height: images.height,
-                offsetX: images.offsetX,
-                offsetY: images.offsetY,
-                image: this.image,
-                texture: this.texture
-            },
-            {
-                sourceX: shadowImages.startX + frameIndex * shadowImages.width,
-                sourceY: shadowImages.startY,
-                width: shadowImages.width,
-                height: shadowImages.height,
-                offsetX: shadowImages.offsetX,
-                offsetY: shadowImages.offsetY,
-                image: this.image,
-                texture: this.texture
-            }
-        ]
     }
 }
 
@@ -2348,7 +2257,6 @@ export {
     WorkerAnimation,
     AnimalAnimation,
     TreeAnimation,
-    FlagAnimation,
     FireAnimation,
     HouseImageAtlasHandler,
     SignImageAtlasHandler,

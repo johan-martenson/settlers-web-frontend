@@ -54,7 +54,7 @@ export type CropGrowth = 'JUST_PLANTED' | 'SMALL' | 'ALMOST_GROWN' | 'FULL_GROWN
 
 export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST_FULL' | 'FULL'
 
-export type HouseResources = {[key in MaterialAllUpperCase]?: HouseResourceItem}
+export type HouseResources = { [key in MaterialAllUpperCase]?: HouseResourceItem }
 
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
@@ -388,11 +388,11 @@ export interface ShipInformation extends Point {
 }
 
 export type SoldierType = "PRIVATE_RANK" | "PRIVATE_FIRST_CLASS_RANK" | "SERGEANT_RANK" | "OFFICER_RANK" | "GENERAL_RANK"
-
+const SOLDIER_TYPES: SoldierType[] = ["PRIVATE_RANK", "PRIVATE_FIRST_CLASS_RANK", "SERGEANT_RANK", "OFFICER_RANK", "GENERAL_RANK"]
 
 interface HouseResourceItem {
     has: number
-    totalNeeded?: number
+    canHold?: number
 }
 
 type HouseState = "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED" | "PLANNED"
@@ -405,7 +405,7 @@ export interface HouseInformation extends Point {
     soldiers?: SoldierType[]
     maxSoldiers?: number
     constructionProgress?: number
-    resources: {[key in MaterialAllUpperCase]: HouseResourceItem}
+    resources: { [key in MaterialAllUpperCase]: HouseResourceItem }
     produces?: MaterialAllUpperCase
     promotionsEnabled: boolean
     productionEnabled: boolean
@@ -413,6 +413,10 @@ export interface HouseInformation extends Point {
     maxAttackers?: number
     productivity?: number
     upgrading?: boolean
+}
+
+export interface HeadquarterInformation extends HouseInformation {
+    reserved: { [key in SoldierType]: number }
 }
 
 export interface FlagInformation extends Point {
@@ -490,10 +494,35 @@ export interface GameMessage {
     type: GameMessageType
 }
 
+function isHeadquarterInformation(houseInformation: HouseInformation): houseInformation is HeadquarterInformation {
+    return 'reserved' in houseInformation
+}
+
+function rankToMaterial(rank: SoldierType): MaterialAllUpperCase {
+    if (rank === 'PRIVATE_RANK') {
+        return 'PRIVATE'
+    } else if (rank === 'PRIVATE_FIRST_CLASS_RANK') {
+        return 'PRIVATE_FIRST_CLASS'
+    } else if (rank === 'SERGEANT_RANK') {
+        return 'SERGEANT'
+    } else if (rank === 'OFFICER_RANK') {
+        return 'OFFICER'
+    } else if (rank === 'GENERAL_RANK') {
+        return 'GENERAL'
+    }
+
+    console.error("Can't translate rank to material! Rank was: " + rank)
+
+    return 'STONE'
+}
+
 export {
+    isHeadquarterInformation,
+    rankToMaterial,
     WILD_ANIMAL_TYPES,
     SMALL_HOUSES,
     MEDIUM_HOUSES,
     LARGE_HOUSES,
-    VEGETATION_INTEGERS
+    VEGETATION_INTEGERS,
+    SOLDIER_TYPES
 }

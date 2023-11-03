@@ -1,9 +1,19 @@
-.InputWithNoMatches {
+.input-with-no-matches {
     color: red;
+    min-width: 10em;
+}
+
+.input-with-matches {
+    min-width: 10em;
 }
 
 .MatchingPart {
     font-weight: bold;
+}
+
+.expanded {
+    overflow-y: scroll;
+    max-height: 70vh;
 }
 
 .type-control {
@@ -15,13 +25,26 @@
     color: black;
     border-radius: 0.5rem;
     padding: 0.7rem;
+    max-height: 75vh;
 }
 
-.Alternative {
+.alternative {
     text-align: left;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
 }
 
-.Alternative:hover {
+.alternative:hover {
     background-color: lightblue;
     cursor: pointer;
+}
+
+.container-alternatives {
+    overflow: scroll;
+    max-height: 70vh;
+    gap: 5px;
+    display: flex;
+    flex-direction: column;
 }

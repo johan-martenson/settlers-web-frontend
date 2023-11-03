@@ -80,7 +80,6 @@ h1 {
 .MenuButton {
     display: inline-block;
     cursor: pointer;
-    background-color: white;
     position: absolute;
     left: 1rem;
     top: 1rem;

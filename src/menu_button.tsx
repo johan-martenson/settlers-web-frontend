@@ -1,34 +1,29 @@
-import React, { Component } from 'react'
+import React from 'react'
+import { CalendarAgenda28Filled } from "@fluentui/react-icons"
 
 interface MenuButtonProps {
     onMenuButtonClicked: (() => void)
 }
 
-interface MenuButtonState { }
-
-class MenuButton extends Component<MenuButtonProps, MenuButtonState> {
-    render(): JSX.Element {
-        return (
-            <div className="MenuButton"
-                onClick={
-                    (event) => {
-                        this.props.onMenuButtonClicked()
-                        event.stopPropagation()
-                    }
+const MenuButton = ({ onMenuButtonClicked }: MenuButtonProps) => {
+    return (
+        <div className="MenuButton"
+            onClick={
+                (event) => {
+                    onMenuButtonClicked()
+                    event.stopPropagation()
                 }
-                onTouchStart={
-                    (event) => {
-                        this.props.onMenuButtonClicked()
-                        event.stopPropagation()
-                    }
+            }
+            onTouchStart={
+                (event) => {
+                    onMenuButtonClicked()
+                    event.stopPropagation()
                 }
-            >
-                <div className="MenuButtonBar" />
-                <div className="MenuButtonBar" />
-                <div className="MenuButtonBar" />
-            </div>
-        )
-    }
+            }
+        >
+            <CalendarAgenda28Filled />
+        </div>
+    )
 }
 
 export default MenuButton

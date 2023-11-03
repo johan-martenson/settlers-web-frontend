@@ -79,7 +79,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
                             <Button onClick={this.createNewGame.bind(this)} autoFocus appearance='primary'>Create new game</Button>
                         </div>
                         <div id="worker-animation">
-                            <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                            <WorkerIcon worker='General' animate={true} nation='ROMANS' direction={'WEST'} scale={3} />
                         </div>
 
                     </>
@@ -95,7 +95,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
                             }
                         />
                         <div id="worker-animation">
-                            <WorkerIcon worker='General' animate={true} nationality='ROMANS' direction={'WEST'} scale={3} />
+                            <WorkerIcon worker='General' animate={true} nation='ROMANS' direction={'WEST'} scale={3} />
                         </div>
 
                     </>

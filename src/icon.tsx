@@ -1,6 +1,6 @@
 import React, { Component, ReactNode } from 'react'
 import { texturedImageVertexShaderPixelPerfectStraightCoordinates, textureFragmentShader } from './shaders'
-import { AnyBuilding, Direction, FlagType, MaterialAllUpperCase, Nation, WorkerType } from './api/types'
+import { AnyBuilding, Direction, FlagType, MaterialAllUpperCase, Nation, TransportCategoriesUpperCase as TransportCategoryUpperCase, WorkerType } from './api/types'
 import { FlagAnimation, houses, materialImageAtlasHandler, workers } from './assets'
 import { Dimension, WorkerAnimation, makeShader, resizeCanvasToDisplaySize } from './utils'
 import { DEFAULT_SCALE } from './game_render'
@@ -299,6 +299,7 @@ const HouseIcon = ({ nation, houseType, scale }: HouseProps) => {
     </span>)
 }
 
+
 interface InventoryIconProps {
     nation: Nation
     material: MaterialAllUpperCase
@@ -328,8 +329,6 @@ const InventoryIcon = (props: InventoryIconProps) => {
 
     </div>)
 }
-
-
 
 
 interface FlagIconProps {

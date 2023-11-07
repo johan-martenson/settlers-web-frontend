@@ -1095,7 +1095,9 @@ class App extends Component<AppProps, AppState> {
                 }
 
                 {this.state.showSetTransportPriority &&
-                    <SetTransportPriority onClose={() => this.setState({ showSetTransportPriority: false })}
+                    <SetTransportPriority
+                        onClose={() => this.setState({ showSetTransportPriority: false })}
+                        nation={this.state.player?.nation ?? 'ROMANS'}
                         gameId={this.props.gameId}
                         playerId={this.props.selfPlayerId}
                     />

@@ -1,159 +1,114 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import { setTransportPriorityForMaterial } from './api/rest-api'
 import { Dialog } from './dialog'
-import { getTransportPriorityForPlayer } from './api/rest-api'
 import './transport_priority.css'
-import { GameId, PlayerId, MaterialAllUpperCase, TOOLS_UPPER_CASE, isToolUpperCase } from './api/types'
-import { Button } from '@fluentui/react-components'
+import { GameId, PlayerId, MaterialAllUpperCase, Nation, TransportCategoriesUpperCase, TRANSPORT_CATEGORIES_UPPER_CASE } from './api/types'
+import { Tooltip } from '@fluentui/react-components'
+import { InventoryIcon } from './icon'
+import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
 
 interface SetTransportPriorityProps {
-    onClose: (() => void)
     gameId: GameId
     playerId: PlayerId
+    nation: Nation
+
+    onClose: (() => void)
 }
 
-interface SetTransportPriorityState {
-    priority?: MaterialAllUpperCase[]
-    selected?: MaterialAllUpperCase
-}
+const CATEGORY_MATERIALS_MAP = new Map<TransportCategoriesUpperCase, MaterialAllUpperCase[]>()
 
-class SetTransportPriority extends Component<SetTransportPriorityProps, SetTransportPriorityState> {
+CATEGORY_MATERIALS_MAP.set('FOOD', ['BREAD', 'MEAT', 'FISH'])
+CATEGORY_MATERIALS_MAP.set('WEAPONS', ['SWORD', 'SHIELD'])
+CATEGORY_MATERIALS_MAP.set('TOOLS', ['METALWORKER'])
+CATEGORY_MATERIALS_MAP.set('IRON', ['IRON'])
+CATEGORY_MATERIALS_MAP.set('IRON_BAR', ['IRON_BAR'])
+CATEGORY_MATERIALS_MAP.set('COAL', ['COAL'])
+CATEGORY_MATERIALS_MAP.set('GOLD', ['GOLD'])
+CATEGORY_MATERIALS_MAP.set('PLANK', ['PLANK'])
+CATEGORY_MATERIALS_MAP.set('WOOD', ['WOOD'])
+CATEGORY_MATERIALS_MAP.set('STONE', ['STONE'])
+CATEGORY_MATERIALS_MAP.set('COIN', ['COIN'])
+CATEGORY_MATERIALS_MAP.set('WHEAT', ['WHEAT'])
+CATEGORY_MATERIALS_MAP.set('WATER', ['WATER'])
+CATEGORY_MATERIALS_MAP.set('PIG', ['PIG'])
+CATEGORY_MATERIALS_MAP.set('FLOUR', ['FLOUR'])
 
-    constructor(props: SetTransportPriorityProps) {
-        super(props)
+const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTransportPriorityProps) => {
+    const [selected, setSelected] = useState<TransportCategoriesUpperCase>('PLANK')
+    const [priority, setPriority] = useState<TransportCategoriesUpperCase[]>(Array.from(TRANSPORT_CATEGORIES_UPPER_CASE))
 
-        this.state = {}
-    }
+    async function increasePriority(category: TransportCategoriesUpperCase): Promise<void> {
+        let currentPriority = priority.findIndex(e => e === category)
 
-    async componentDidMount(): Promise<void> {
-        const currentPriority = await getTransportPriorityForPlayer(this.props.gameId, this.props.playerId)
-
-        console.log(currentPriority)
-
-        this.setState({ priority: currentPriority })
-    }
-
-    onSelect(material: MaterialAllUpperCase): void {
-        this.setState({ selected: material })
-    }
-
-    render(): JSX.Element {
-        const selectedMaterial = this.state.selected
-
-        return (
-            <Dialog heading="Transport priority" floating onCloseDialog={this.props.onClose}>
-                <div className="TransportContainer">
-                    <div>
-                        {this.state.priority && this.state.priority.map(
-                            (material, index) => {
-                                if (this.state.selected && this.state.selected === material) {
-                                    return <Button key={index} onClick={() => this.onSelect(material)} appearance='primary'>{material}</Button>
-                                }
-
-                                return <Button key={index} onClick={() => this.onSelect(material)}>{material}</Button>
-                            }
-
-                        )
-                        }
-                    </div>
-
-                    <div>
-                        {selectedMaterial &&
-                            <>
-                                <Button onClick={() => this.increasePriority(selectedMaterial)} >Up</Button>
-                                <Button onClick={() => this.decreasePriority(selectedMaterial)} >Down</Button>
-                            </>
-                        }
-                    </div>
-
-                </div>
-            </Dialog>)
-
-    }
-
-    async decreasePriority(selectedMaterial: MaterialAllUpperCase): Promise<void> {
-
-        if (!this.state.priority) {
-            return
-        }
-
-        let currentPriority = this.state.priority.findIndex((e) => e === selectedMaterial)
-
-        if (currentPriority >= 28) {
-            return
-        }
-
-        if (isToolUpperCase(selectedMaterial)) {
-            const updatedPriority = Object.assign([], this.state.priority)
-
-            for (const tool of TOOLS_UPPER_CASE) {
-                await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, tool, currentPriority + 1)
-
-                delete updatedPriority[currentPriority]
-
-                updatedPriority.splice(currentPriority + 2, 0, tool)
-
-                currentPriority = currentPriority + 1
-            }
-
-            this.setState({ priority: updatedPriority })
-
-        } else {
-
-            await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, selectedMaterial, currentPriority + 1)
-
-            const updatedPriority = Object.assign([], this.state.priority)
-
-            delete updatedPriority[currentPriority]
-
-            updatedPriority.splice(currentPriority + 2, 0, selectedMaterial)
-
-            this.setState({ priority: updatedPriority })
-        }
-    }
-
-    async increasePriority(selectedMaterial: MaterialAllUpperCase): Promise<void> {
-
-        if (!this.state.priority) {
-            return
-        }
-
-        let currentPriority = this.state.priority.findIndex((e) => e === selectedMaterial)
+        console.log("Current priority for " + category + ": " + currentPriority)
 
         if (currentPriority <= 0) {
             return
         }
 
-        if (isToolUpperCase(selectedMaterial)) {
-            const updatedPriority = Object.assign([], this.state.priority)
+        const updatedPriority = Object.assign([], priority)
 
-            for (const tool of TOOLS_UPPER_CASE) {
-                console.log("Changing priority for " + tool)
+        await setTransportPriorityForMaterial(gameId, playerId, category, currentPriority - 1)
 
-                await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, tool, currentPriority - 1)
+        delete updatedPriority[currentPriority]
 
-                delete updatedPriority[currentPriority]
+        updatedPriority.splice(currentPriority - 1, 0, category)
 
-                updatedPriority.splice(currentPriority - 1, 0, tool)
-
-                currentPriority = currentPriority + 1
-            }
-
-            this.setState({ priority: updatedPriority })
-
-        } else {
-
-            await setTransportPriorityForMaterial(this.props.gameId, this.props.playerId, selectedMaterial, currentPriority - 1)
-
-            const updatedPriority = Object.assign([], this.state.priority)
-
-            delete updatedPriority[currentPriority]
-
-            updatedPriority.splice(currentPriority - 1, 0, selectedMaterial)
-
-            this.setState({ priority: updatedPriority })
-        }
+        setPriority(updatedPriority)
     }
+
+    async function decreasePriority(category: TransportCategoriesUpperCase): Promise<void> {
+        let currentPriority = priority.findIndex(e => e === category)
+
+        console.log("Current priority for " + category + ": " + currentPriority)
+
+        if (currentPriority == TRANSPORT_CATEGORIES_UPPER_CASE.size) {
+            return
+        }
+
+        const updatedPriority = Object.assign([], priority)
+
+        await setTransportPriorityForMaterial(gameId, playerId, category, currentPriority + 1)
+
+        delete updatedPriority[currentPriority]
+
+        updatedPriority.splice(currentPriority + 2, 0, category)
+
+        setPriority(updatedPriority)
+    }
+
+    return (
+        <Dialog heading="Transport priority" floating onCloseDialog={() => onClose()}>
+            <div className='transport-priority-list'>
+                {priority.map(
+                    (category, index) => {
+                        const icon = <Tooltip content={category} relationship={'label'} withArrow>
+                            <div style={{ display: 'inline' }} onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                                if (e.code === 'ArrowUp') {
+                                    increasePriority(selected)
+                                } else if (e.code === 'ArrowDown') {
+                                    decreasePriority(selected)
+                                }
+                            }}
+                                tabIndex={-1}
+                            >{CATEGORY_MATERIALS_MAP.get(category)?.map(material =>
+                                <InventoryIcon material={material} nation={nation} inline key={material} />
+                            )}
+                            </div>
+                        </Tooltip>
+
+                        if (selected === category) {
+                            return <div key={category}>{icon}<ArrowSortUp24Filled
+                                onClick={async () => increasePriority(selected)} />
+                                <ArrowSortDown24Filled onClick={async () => decreasePriority(selected)} /></div>
+                        }
+
+                        return <div onClick={() => setSelected(category)} key={index}>{icon}</div>
+                    }
+                )
+                }
+            </div>
+        </Dialog >)
 }
 
 export { SetTransportPriority }

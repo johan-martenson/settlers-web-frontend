@@ -53,8 +53,6 @@ class MaterialImageAtlasHandler {
     }
 }
 
-
-
 class FlagImageAtlasHandler {
     private pathPrefix: string
     private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, Record<'images' | 'shadows', ImageSeriesInformation>>>

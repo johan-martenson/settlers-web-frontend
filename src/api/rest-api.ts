@@ -1,4 +1,4 @@
-import { MaterialAllUpperCase, GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, Player } from './types'
+import { MaterialAllUpperCase, GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, Player, TransportCategoriesUpperCase } from './types'
 import { PointMapFast } from '../util_types'
 
 function printTimestamp(message: string): void {
@@ -397,8 +397,8 @@ async function getTransportPriorityForPlayer(gameId: GameId, playerId: PlayerId)
     return await response.json()
 }
 
-async function setTransportPriorityForMaterial(gameId: GameId, playerId: PlayerId, material: MaterialAllUpperCase, priority: number): Promise<void> {
-    console.log("Setting new priority for: " + material + " to " + priority)
+async function setTransportPriorityForMaterial(gameId: GameId, playerId: PlayerId, category: TransportCategoriesUpperCase, priority: number): Promise<void> {
+    console.log("Setting new priority for: " + category + " to " + priority)
 
     await fetch("/settlers/api/games/" + gameId + "/players/" + playerId + "/transportPriority",
         {
@@ -408,7 +408,7 @@ async function setTransportPriorityForMaterial(gameId: GameId, playerId: PlayerI
             },
             body: JSON.stringify(
                 {
-                    material: material,
+                    material: category,
                     priority: priority
                 }
             )

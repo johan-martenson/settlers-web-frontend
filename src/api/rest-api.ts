@@ -1,133 +1,5 @@
-import { MaterialAllUpperCase, ToolAllUpperCase, TOOLS_UPPER_CASE_STRING, WildAnimalInformation, MATERIALS_UPPER_CASE_AS_STRING, SoldierType, GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, WILD_ANIMAL_TYPES, Player } from './types'
+import { MaterialAllUpperCase, GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, Player } from './types'
 import { PointMapFast } from '../util_types'
-
-function isToolUpperCase(material: MaterialAllUpperCase): material is ToolAllUpperCase {
-    return TOOLS_UPPER_CASE_STRING.has(material)
-}
-
-
-export function isWildAnimal(animal: unknown): animal is WildAnimalInformation {
-    return animal !== null &&
-        typeof animal === 'object' &&
-        'type' in animal &&
-        typeof animal.type === 'string' &&
-        WILD_ANIMAL_TYPES.findIndex(type => type === animal.type) !== -1
-}
-
-export function isMaterialUpperCase(material: unknown): material is MaterialAllUpperCase {
-    return material !== null &&
-        material !== undefined &&
-        typeof material === 'string' &&
-        MATERIALS_UPPER_CASE_AS_STRING.has(material)
-}
-
-function getSoldierDisplayName(soldierType: SoldierType): string {
-
-    if (soldierType === "PRIVATE_RANK") {
-        return "Private"
-    } else if (soldierType === "PRIVATE_FIRST_CLASS_RANK") {
-        return "Private first class"
-    } else if (soldierType === "SERGEANT_RANK") {
-        return "Sergeant"
-    } else if (soldierType === "OFFICER_RANK") {
-        return "Officer"
-    } else {
-        return "General"
-    }
-}
-
-function isMilitaryBuildingCausedLostLandMessage(message: GameMessage): message is MilitaryBuildingCausedLostLandMessage {
-    return message.type === 'MILITARY_BUILDING_CAUSED_LOST_LAND'
-}
-
-function isTreeConservationProgramActivatedMessage(message: GameMessage): message is TreeConservationProgramActivatedMessage {
-    return message.type === 'TREE_CONSERVATION_PROGRAM_ACTIVATED'
-}
-
-function isTreeConservationProgramDeactivatedMessage(message: GameMessage): message is TreeConservationProgramDeactivatedMessage {
-    return message.type === 'TREE_CONSERVATION_PROGRAM_DEACTIVATED'
-}
-
-function isMilitaryBuildingReadyMessage(message: GameMessage): message is MilitaryBuildingReadyMessage {
-    return message.type === "MILITARY_BUILDING_READY"
-}
-
-function isNoMoreResourcesMessage(message: GameMessage): message is NoMoreResourcesMessage {
-    return message.type === "NO_MORE_RESOURCES"
-}
-
-function isMilitaryBuildingOccupiedMessage(message: GameMessage): message is MilitaryBuildingOccupiedMessage {
-    return message.type === "MILITARY_BUILDING_OCCUPIED"
-}
-
-function isUnderAttackMessage(message: GameMessage): message is UnderAttackMessage {
-    return message.type === "UNDER_ATTACK"
-}
-
-function isGeologistFindMessage(message: GameMessage): message is GeologistFindMessage {
-    return message.type === "GEOLOGIST_FIND"
-}
-
-function isBuildingLostMessage(message: GameMessage): message is BuildingLostMessage {
-    return message.type === "BUILDING_LOST"
-}
-
-function isBuildingCapturedMessage(message: GameMessage): message is BuildingCapturedMessage {
-    return message.type === "BUILDING_CAPTURED"
-}
-
-function isStoreHouseIsReadyMessage(message: GameMessage): message is StoreHouseIsReadyMessage {
-    return message.type === 'STORE_HOUSE_IS_READY'
-}
-
-export interface TreeConservationProgramActivatedMessage extends GameMessage { }
-
-export interface TreeConservationProgramDeactivatedMessage extends GameMessage { }
-
-export interface MilitaryBuildingCausedLostLandMessage extends GameMessage {
-    houseId: HouseId
-    houseType: AnyBuilding
-}
-
-export interface MilitaryBuildingReadyMessage extends GameMessage {
-    houseId: HouseId
-    houseType: AnyBuilding
-}
-
-export interface NoMoreResourcesMessage extends GameMessage {
-    houseId: HouseId
-    houseType: AnyBuilding
-}
-
-export interface MilitaryBuildingOccupiedMessage extends GameMessage {
-    houseId: HouseId
-    houseType: AnyBuilding
-}
-
-export interface UnderAttackMessage extends GameMessage {
-    houseId: HouseId
-    houseType: AnyBuilding
-}
-
-export interface BuildingLostMessage extends GameMessage {
-    houseId: HouseId
-    houseType: AnyBuilding
-}
-
-export interface BuildingCapturedMessage extends GameMessage {
-    houseId: HouseId
-    houseType: AnyBuilding
-}
-
-export interface GeologistFindMessage extends GameMessage {
-    point: Point
-    material: "IRON" | "WATER" | "COAL" | "STONE" | "GOLD"
-}
-
-export interface StoreHouseIsReadyMessage extends GameMessage {
-    houseId: HouseId
-    houseType: AnyBuilding
-}
 
 function printTimestamp(message: string): void {
     const date = new Date()
@@ -865,26 +737,40 @@ export {
     upgradeMilitaryBuilding,
     getHouseInformationWithAttackPossibility,
     houseIsOccupied,
-    isTreeConservationProgramActivatedMessage,
-    isTreeConservationProgramDeactivatedMessage,
-    isMilitaryBuildingCausedLostLandMessage,
     addHumanPlayerToGame,
-    isStoreHouseIsReadyMessage,
-    isBuildingCapturedMessage,
-    isBuildingLostMessage,
-    isMilitaryBuildingOccupiedMessage,
-    isNoMoreResourcesMessage,
-    isMilitaryBuildingReadyMessage,
-    isUnderAttackMessage,
-    isGeologistFindMessage,
     getMessagesForPlayer,
     enablePromotionsForHouse,
     disablePromotionsForHouse,
-    evacuateHouseOnPoint, removeRoad, getSoldierDisplayName, houseIsReady, isMilitaryBuilding, cancelEvacuationForHouse, isEvacuated, evacuateHouse,
-    canBeEvacuated, getLandStatistics, getGameStatistics, removePlayerFromGame, updatePlayer,
-    findPossibleNewRoad, getHousesForPlayer, setResourceLevelForGame, getGameInformation,
-    removeHouse, setSpeed, sendScout, callGeologist, getTerrain, getTerrainForMap, getHouseInformation, getPlayers, getInformationOnPoint,
-    getViewForPlayer, createBuilding, createFlag, createRoad, removeFlag,
+    evacuateHouseOnPoint,
+    removeRoad,
+    houseIsReady,
+    isMilitaryBuilding,
+    cancelEvacuationForHouse,
+    isEvacuated,
+    evacuateHouse,
+    canBeEvacuated,
+    getLandStatistics,
+    getGameStatistics,
+    removePlayerFromGame,
+    updatePlayer,
+    findPossibleNewRoad,
+    getHousesForPlayer,
+    setResourceLevelForGame,
+    getGameInformation,
+    removeHouse,
+    setSpeed,
+    sendScout,
+    callGeologist,
+    getTerrain,
+    getTerrainForMap,
+    getHouseInformation,
+    getPlayers,
+    getInformationOnPoint,
+    getViewForPlayer,
+    createBuilding,
+    createFlag,
+    createRoad,
+    removeFlag,
     attackBuilding,
     getGames,
     getMaps,
@@ -894,7 +780,6 @@ export {
     setMapForGame,
     addComputerPlayerToGame,
     createRoadWithFlag,
-    setOthersCanJoinGame,
-    isToolUpperCase
+    setOthersCanJoinGame
 }
 

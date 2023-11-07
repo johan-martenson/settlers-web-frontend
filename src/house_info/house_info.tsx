@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { Button } from "@fluentui/react-components"
-import { GameId, HouseInformation, Nation, PlayerId } from "../api/types"
+import { Button, Field, Tooltip } from "@fluentui/react-components"
+import { GameId, HouseInformation, Nation, PlayerId, isMaterialUpperCase } from "../api/types"
 import { HouseIcon, InventoryIcon } from "../icon"
 import './house_info.css'
 import { HeadquarterInfo } from "./headquarter"
-import { attackBuilding, getHouseInformationWithAttackPossibility, houseIsReady, isMaterialUpperCase, isMilitaryBuilding, pauseProductionForHouse, removeHouse, resumeProductionForHouse } from "../api/rest-api"
+import { attackBuilding, houseIsReady, isMilitaryBuilding, pauseProductionForHouse, removeHouse, resumeProductionForHouse } from "../api/rest-api"
 import { MilitaryBuilding } from "./military_building"
 import { listenToHouse, monitor } from '../api/ws-api'
 
@@ -116,6 +116,7 @@ const EnemyHouseInfo = ({ house, nation, onClose }: EnemyHouseInfoProps) => {
             <h1>Enemy building: {house.type}</h1>
 
             <HouseIcon houseType={house.type} nation={nation} />
+
             <Button onClick={onClose} >Close</Button>
         </div>
     )
@@ -132,24 +133,9 @@ interface MilitaryEnemyHouseInfoProps {
 
 const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }: MilitaryEnemyHouseInfoProps) => {
 
-    const [availableAttackers, setAvailableAttackers] = useState<number>(0)
     const [chosenAttackers, setChosenAttackers] = useState<number>(0)
 
-    useEffect(() => {
-        (async () => {
-            const houseAttackInformation = await getHouseInformationWithAttackPossibility(
-                house.id,
-                gameId,
-                house.playerId,
-                selfPlayerId
-            )
-
-            setAvailableAttackers(houseAttackInformation.maxAttackers ?? 0)
-
-            // TODO: run periodically, add cleanup, add dependency
-
-        })()
-    }, [])
+    const availableAttackers = house.availableAttackers ?? 0
 
     return (
         <div className="house-info">
@@ -158,17 +144,18 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }
 
             <HouseIcon houseType={house.type} nation={nation} />
 
-            {availableAttackers === 0 && <div>No attack possible</div>}
+            {house.availableAttackers === 0 && <div>No attack possible</div>}
 
-            {availableAttackers !== 0 &&
+            {house.availableAttackers !== 0 &&
                 <div>
                     Attack
-                    <div>Attackers: ({chosenAttackers}/{availableAttackers})</div>
+                    <div>Attackers: ({chosenAttackers}/{house.availableAttackers})</div>
                     <Button onClick={() => setChosenAttackers(Math.max(chosenAttackers - 1, 0))}>Fewer</Button>
                     <Button onClick={() => setChosenAttackers(Math.min(chosenAttackers + 1, availableAttackers))}>More</Button>
                     <Button onClick={() => attackBuilding(house, chosenAttackers, gameId, selfPlayerId)}>Attack</Button>
                 </div>
             }
+
             <Button onClick={onClose} >Close</Button>
         </div>
     )
@@ -187,9 +174,41 @@ const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: Unfin
     return (
         <div className="house-info">
 
-            <h1>{house.type} under construction</h1>
+            <h1>{house.type}</h1>
 
             <HouseIcon houseType={house.type} nation={nation} />
+
+            <div>Under construction ...</div>
+
+            {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined).length > 0 &&
+                <Field label="Resources">
+                    <div>
+                        {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined)
+                            .map(material => {
+
+                                if (isMaterialUpperCase(material)) {
+                                    const has = house.resources[material].has ?? 0
+                                    const canHold = house.resources[material].canHold ?? 0
+                                    const gap = Math.max(canHold - has, 0)
+
+                                    return <div key={material}>
+                                        {Array.from({ length: has }, () => 1).map(
+                                            (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                                <span><InventoryIcon material={material} nation={nation} key={index} inline /></span>
+                                            </Tooltip>
+                                        )}
+                                        {Array.from({ length: gap }, () => 1).map(
+                                            (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                                <span><InventoryIcon material={material} nation={nation} key={index} inline missing /></span>
+                                            </Tooltip>
+                                        )}
+                                    </div>
+                                }
+                            })
+                        }
+                    </div>
+                </Field>
+            }
 
             <Button onClick={() => {
                 removeHouse(house.id, playerId, gameId)
@@ -228,57 +247,48 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
                 {!house.productionEnabled && <div>Production disabled</div>}
 
                 {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined).length > 0 &&
-                    <div>Needs:
-                        {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined)
-                            .map(material => {
+                    <Field label="Resources">
+                        <div>
+                            {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined)
+                                .map(material => {
 
-                                if (isMaterialUpperCase(material)) {
-                                    const has = house.resources[material].has ?? 0
-                                    const canHold = house.resources[material].canHold ?? 0
-                                    const gap = Math.max(canHold - has, 0)
+                                    if (isMaterialUpperCase(material)) {
+                                        const has = house.resources[material].has ?? 0
+                                        const canHold = house.resources[material].canHold ?? 0
+                                        const gap = Math.max(canHold - has, 0)
 
-                                    return <>
-                                        {Array.from({ length: gap }, () => 1).map(
-                                            (value, index) => <InventoryIcon material={material} nation={nation} key={index} inline />)
-                                        }
-                                    </>
-                                }
-                            })
-                        }
-                    </div>
+                                        return <div key={material}>
+                                            {Array.from({ length: has }, () => 1).map(
+                                                (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                                    <span><InventoryIcon material={material} nation={nation} key={index} inline /></span>
+                                                </Tooltip>
+                                            )}
+                                            {Array.from({ length: gap }, () => 1).map(
+                                                (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                                    <span><InventoryIcon material={material} nation={nation} key={index} inline missing /></span>
+                                                </Tooltip>
+                                            )}
+                                        </div>
+                                    }
+                                })
+                            }
+                        </div>
+                    </Field>
                 }
-
-                {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].has !== undefined).length > 0 &&
-                    <div> Has:
-                        {Object.keys(house.resources).filter(material => isMaterialUpperCase(material))
-                            .map(material => {
-
-                                if (isMaterialUpperCase(material)) {
-                                    return <>
-                                        {Array.from({ length: house.resources[material].has ?? 0 }, () => 1).map(
-                                            (value, index) => <InventoryIcon material={material} nation={nation} key={index} inline />)
-                                        }
-                                    </>
-                                }
-                            })
-                        }
-                    </div>
-                }
-
 
                 {producedMaterial &&
-                    <div>Produces: <InventoryIcon material={producedMaterial} nation={nation} inline /></div>
+                    <div>Produces: <Tooltip content={producedMaterial} relationship='label' withArrow >
+                        <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
+                    </Tooltip></div>
                 }
 
             </div>
 
-            {
-                house.productionEnabled &&
+            {house.productionEnabled &&
                 <Button onClick={() => pauseProductionForHouse(gameId, playerId, house.id)} >Pause production</Button>
             }
 
-            {
-                !house.productionEnabled &&
+            {!house.productionEnabled &&
                 <Button onClick={() => resumeProductionForHouse(gameId, playerId, house.id)} >Resume production</Button>
             }
 
@@ -288,6 +298,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
                 onClose()
             }}
             >Destroy</Button>
+
             <Button onClick={() => { onClose() }} >Close</Button>
         </div >
     )

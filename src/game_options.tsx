@@ -1,4 +1,4 @@
-import React, { ChangeEvent, Component } from 'react'
+import React, { ChangeEvent } from 'react'
 import './game_options.css'
 import { Switch, Select, SelectOnChangeData, Subtitle1, Field, SwitchOnChangeData } from "@fluentui/react-components"
 import { ResourceLevel } from './api/types'
@@ -7,7 +7,6 @@ interface GameOptionsProps {
     setAvailableResources: ((level: ResourceLevel) => void)
     setOthersCanJoin: ((otherCanJoin: boolean) => void)
 }
-interface GameOptionsState { }
 
 const OPTIONS = new Map<ResourceLevel, string>()
 
@@ -15,66 +14,48 @@ OPTIONS.set("LOW", "Sparse")
 OPTIONS.set("MEDIUM", "Medium")
 OPTIONS.set("HIGH", "Plenty")
 
-class GameOptions extends Component<GameOptionsProps, GameOptionsState> {
+const GameOptions = ({ setAvailableResources, setOthersCanJoin }: GameOptionsProps) => {
 
-    allowOthersToJoin(allow: boolean): void {
+    return (
+        <div className="settings">
 
-        if (allow) {
-            console.log("Ok, others can join")
-        } else {
-            console.log("Others cannot join")
-        }
+            <Subtitle1 as="h4" block>Settings</Subtitle1>
 
-        this.props.setOthersCanJoin(allow)
-    }
+            <Field label="Allow others to join?">
+                <Switch
+                    defaultChecked={true}
+                    onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => setOthersCanJoin(data.checked)}
+                />
+            </Field>
 
-    setAvailableResources(level: "LOW" | "MEDIUM" | "HIGH"): void {
-        console.log("Play with resources set to " + level)
+            <Field label="Initial resources">
+                <Select
+                    className="ResourceButtons"
+                    onChange={
+                        (ev: ChangeEvent<HTMLSelectElement>, data: SelectOnChangeData) => {
+                            const value = data.value
 
-        this.props.setAvailableResources(level)
-    }
+                            console.log(data)
 
-    render(): JSX.Element {
-
-        return (
-            <div className="settings">
-                <Subtitle1 as="h4" block>Settings</Subtitle1>
-                <Field label="Allow others to join?">
-                    <Switch
-                        defaultChecked={true}
-                        onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.setOthersCanJoin(data.checked)}
-                    />
-                </Field>
-
-                <Field label="Initial resources">
-                    <Select
-                        className="ResourceButtons"
-                        onChange={
-                            (ev: ChangeEvent<HTMLSelectElement>, data: SelectOnChangeData) => {
-                                const value = data.value
-
-                                console.log(data)
-
-                                // FIXME: change SelectableButtonRow to be parameterized so the callback can be more specific in types
-                                if (value === "Low") {
-                                    this.setAvailableResources("LOW")
-                                } else if (value === "Medium") {
-                                    this.setAvailableResources("MEDIUM")
-                                } else {
-                                    this.setAvailableResources("HIGH")
-                                }
+                            // FIXME: change SelectableButtonRow to be parameterized so the callback can be more specific in types
+                            if (value === "Low") {
+                                setAvailableResources("LOW")
+                            } else if (value === "Medium") {
+                                setAvailableResources("MEDIUM")
+                            } else {
+                                setAvailableResources("HIGH")
                             }
                         }
-                    >
-                        <option>High</option>
-                        <option>Medium</option>
-                        <option>Low</option>
-                    </Select>
+                    }
+                >
+                    <option>High</option>
+                    <option>Medium</option>
+                    <option>Low</option>
+                </Select>
 
-                </Field>
-            </div>
-        )
-    }
+            </Field>
+        </div>
+    )
 }
 
 export default GameOptions

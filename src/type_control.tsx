@@ -3,7 +3,6 @@ import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import { getInformationOnPoint } from './api/rest-api'
 import { PointInformation, Point, GameId, PlayerId } from './api/types'
-import { Button } from '@fluentui/react-components'
 
 export interface Command {
     action: (() => void)

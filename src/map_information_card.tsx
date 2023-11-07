@@ -31,8 +31,6 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
     }
 
     async componentDidMount(): Promise<void> {
-        console.log("Component did mount")
-
         const mapImage = await makeImageFromMap(this.props.map)
 
         if (!mapImage) {
@@ -40,9 +38,6 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
 
             return
         }
-
-        console.log("Got map image")
-        console.log(mapImage)
 
         cachedMapImages.set(this.props.map.id, mapImage)
 
@@ -82,8 +77,6 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
     }
 
     render(): JSX.Element {
-        console.log(this.state.mapImage)
-
         if (this.props.onMapSelected) {
             return (
                 <Card>

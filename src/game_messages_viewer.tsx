@@ -1,16 +1,13 @@
-import React, { Component } from 'react'
-import { getMessagesForPlayer, isBuildingCapturedMessage, isBuildingLostMessage, isGeologistFindMessage, isMilitaryBuildingCausedLostLandMessage, isMilitaryBuildingOccupiedMessage, isMilitaryBuildingReadyMessage, isNoMoreResourcesMessage, isStoreHouseIsReadyMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, isUnderAttackMessage } from './api/rest-api'
+import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import './game_messages_viewer.css'
-import { listenToMessages } from './api/ws-api'
-import { play } from './sound_effects'
+import { listenToMessages, monitor, stopListeningToMessages } from './api/ws-api'
 import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
-import { GameId, PlayerId, HouseId, Point, GameMessage, Nation } from './api/types'
+import { PlayerId, HouseId, Point, GameMessage, Nation, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, isBuildingLostMessage, isBuildingCapturedMessage, isStoreHouseIsReadyMessage, isMilitaryBuildingCausedLostLandMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, GameMessageId } from './api/types'
 import { HouseIcon, WorkerIcon } from './icon'
 
 interface GameMessagesViewerProps {
-    gameId: GameId
     playerId: PlayerId
     nation: Nation
 
@@ -18,187 +15,162 @@ interface GameMessagesViewerProps {
     onGoToPoint: ((point: Point) => void)
 }
 
-interface GameMessagesViewerState {
-    expanded: boolean
-    messages: GameMessage[]
-}
+const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
 
-class GameMessagesViewer extends Component<GameMessagesViewerProps, GameMessagesViewerState> {
+    const [expanded, setExpanded] = useState<boolean>(false)
+    const [messages, setMessages] = useState<GameMessage[]>(Array.from(monitor.messages.values()))
+    const [recentlyDeleted, setRecentlyDelected] = useState<Set<GameMessageId>>(new Set<GameMessageId>())
 
-    private periodicUpdates: NodeJS.Timeout | undefined
+    function removeMessage(message: GameMessage) {
+        monitor.removeMessage(message.id)
 
-    constructor(props: GameMessagesViewerProps) {
-        super(props)
+        recentlyDeleted.add(message.id)
+    }
 
-        this.state = {
-            expanded: false,
-            messages: []
+    useEffect(() => {
+
+        const messageReceiver = (receivedMessages: GameMessage[], removedMessages: GameMessageId[]) => {
+
+            setMessages(Array.from(monitor.messages.values()))
+
+            removedMessages.forEach(messageId => recentlyDeleted.delete(messageId))
         }
-    }
 
-    newMessages(messages: GameMessage[]): void {
-        this.setState({ messages: this.state.messages.concat(messages) })
+        // Subscribe to received messages
+        listenToMessages(messageReceiver)
 
-        play('NEW-MESSAGE')
-    }
+        return () => stopListeningToMessages(messageReceiver)
+    }, [playerId])
 
-    async componentDidMount(): Promise<void> {
-        const messages = await getMessagesForPlayer(this.props.gameId, this.props.playerId)
+    return (
+        <div className="game-messages">
 
-        this.setState({ messages: messages })
+            <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} />
+            <div> <b>Messages</b></div>
 
-        listenToMessages(this.newMessages.bind(this))
-    }
+            {expanded &&
+                <div className="game-message-list">
 
-    componentWillUnmount(): void {
-        if (this.periodicUpdates) {
-            clearInterval(this.periodicUpdates)
-        }
-    }
+                    {messages.filter(message => !recentlyDeleted.has(message.id)).map(
+                        (message, index) => {
 
-    shouldComponentUpdate(nextProps: GameMessagesViewerProps, nextState: GameMessagesViewerState): boolean {
-        return nextState.messages.length !== this.state.messages.length ||
-            nextState.expanded !== this.state.expanded ||
-            nextProps.gameId !== this.props.gameId ||
-            nextProps.playerId !== this.props.playerId
-    }
+                            return (
+                                <div className="game-message" key={index}>
+                                    {isMilitaryBuildingOccupiedMessage(message) &&
+                                        <>
+                                            <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
+                                            Military building occupied
+                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                                icon={<ArrowStepInRight24Regular />}
+                                                appearance='transparent'
+                                            />
+                                        </>
+                                    }
 
-    onClearAll(): void {
-        this.setState({ messages: [] })
-    }
+                                    {isNoMoreResourcesMessage(message) &&
+                                        <>
+                                            <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
+                                            No more resources
+                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
 
-    render(): JSX.Element {
+                                    {isMilitaryBuildingReadyMessage(message) &&
+                                        <>
+                                            <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
+                                            Military building is ready
+                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
 
-        return (
-            <div className="game-messages">
+                                    {isUnderAttackMessage(message) &&
+                                        <>
+                                            <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
+                                            We&apos;re under attack!
+                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
+                                    {isGeologistFindMessage(message) &&
+                                        <>
+                                            <WorkerIcon worker='Geologist' nation={nation} scale={0.5} />
+                                            Geologist has found {message.material.toLowerCase()}!
+                                            <Button onClick={() => { onGoToPoint(message.point) }}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
 
-                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
-                <div> <b>Messages</b></div>
+                                    {isBuildingLostMessage(message) &&
+                                        <>
+                                            <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
+                                            Building lost to enemy
+                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
 
-                {this.state.expanded &&
-                    <div className="game-message-list">
+                                    {isBuildingCapturedMessage(message) &&
+                                        <>
+                                            <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
+                                            Building captured
+                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
 
-                        {this.state.messages.map(
-                            (message, index) => {
+                                    {isStoreHouseIsReadyMessage(message) &&
+                                        <>
+                                            <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
+                                            A store house is ready
+                                            <Button onClick={() => onGoToHouse(message.houseId)}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
 
-                                return (
-                                    <div className="game-message" key={index}>
-                                        {isMilitaryBuildingOccupiedMessage(message) &&
-                                            <>
-                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
-                                                Military building occupied
-                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
-                                                    icon={<ArrowStepInRight24Regular />}
-                                                    appearance='transparent'
-                                                />
-                                            </>
-                                        }
+                                    {isMilitaryBuildingCausedLostLandMessage(message) &&
+                                        <>
+                                            <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
+                                            This building has caused you to lose land
+                                            <Button onClick={() => onGoToHouse(message.houseId)}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
 
-                                        {isNoMoreResourcesMessage(message) &&
-                                            <>
-                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
-                                                No more resources
-                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
-                                                    appearance='transparent'
-                                                    icon={<ArrowStepInRight24Regular />} />
-                                            </>
-                                        }
+                                    {isTreeConservationProgramActivatedMessage(message) &&
+                                        <>
+                                            The tree conservation program has been activated. Only Woodcutters, Sawmills, and Forester huts will get planks.
+                                        </>
+                                    }
 
-                                        {isMilitaryBuildingReadyMessage(message) &&
-                                            <>
-                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
-                                                Military building is ready
-                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
-                                                    appearance='transparent'
-                                                    icon={<ArrowStepInRight24Regular />} />
-                                            </>
-                                        }
-
-                                        {isUnderAttackMessage(message) &&
-                                            <>
-                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
-                                                We&apos;re under attack!
-                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
-                                                    appearance='transparent'
-                                                    icon={<ArrowStepInRight24Regular />} />
-                                            </>
-                                        }
-                                        {isGeologistFindMessage(message) &&
-                                            <>
-                                                <WorkerIcon worker='Geologist' nation={this.props.nation} scale={0.5} />
-                                                Geologist has found {message.material.toLowerCase()}!
-                                                <Button onClick={() => { this.props.onGoToPoint(message.point) }}
-                                                    appearance='transparent'
-                                                    icon={<ArrowStepInRight24Regular />} />
-                                            </>
-                                        }
-
-                                        {isBuildingLostMessage(message) &&
-                                            <>
-                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
-                                                Building lost to enemy
-                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
-                                                    appearance='transparent'
-                                                    icon={<ArrowStepInRight24Regular />} />
-                                            </>
-                                        }
-
-                                        {isBuildingCapturedMessage(message) &&
-                                            <>
-                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
-                                                Building captured
-                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
-                                                    appearance='transparent'
-                                                    icon={<ArrowStepInRight24Regular />} />
-                                            </>
-                                        }
-
-                                        {isStoreHouseIsReadyMessage(message) &&
-                                            <>
-                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
-                                                A store house is ready
-                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
-                                                    appearance='transparent'
-                                                    icon={<ArrowStepInRight24Regular />} />
-                                            </>
-                                        }
-
-                                        {isMilitaryBuildingCausedLostLandMessage(message) &&
-                                            <>
-                                                <HouseIcon houseType={message.houseType} nation={this.props.nation} scale={0.5} />
-                                                This building has caused you to lose land
-                                                <Button onClick={() => { this.props.onGoToHouse(message.houseId) }}
-                                                    appearance='transparent'
-                                                    icon={<ArrowStepInRight24Regular />} />
-                                            </>
-                                        }
-
-                                        {isTreeConservationProgramActivatedMessage(message) &&
-                                            <>
-                                                The tree conservation program has been activated. Only Woodcutters, Sawmills, and Forester huts will get planks.
-                                            </>
-                                        }
-
-                                        {isTreeConservationProgramDeactivatedMessage(message) &&
-                                            <>
-                                                The tree conservation program has been deactivated.
-                                            </>
-                                        }
-                                        <Button icon={<Delete24Filled />}
-                                            onClick={() => this.setState({ messages: this.state.messages.filter(m => m !== message) })}
-                                            appearance='transparent' />
-                                    </div>
-                                )
-                            }
-                        )
+                                    {isTreeConservationProgramDeactivatedMessage(message) &&
+                                        <>
+                                            The tree conservation program has been deactivated.
+                                        </>
+                                    }
+                                    <Button icon={<Delete24Filled />}
+                                        onClick={() => removeMessage(message)}
+                                        appearance='transparent' />
+                                </div>
+                            )
                         }
-                        <Button onClick={this.onClearAll.bind(this)} >Clear all</Button>
+                    )
+                    }
+                    <Button onClick={() => messages.forEach(message => removeMessage(message))} >Clear all</Button>
 
-                    </div>
-                }
-            </div>
-        )
-    }
+                </div>
+            }
+        </div>
+    )
 }
 
 export default GameMessagesViewer

@@ -1,9 +1,9 @@
-import { getHouseInformation, getMessagesForPlayer, getPlayers, getTerrain, getViewForPlayer, printTimestamp } from './rest-api'
+import { getHouseInformation, getPlayers, getTerrain, getViewForPlayer, printTimestamp } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId } from './types'
 
-const messageListeners: ((messages: GameMessage[]) => void)[] = []
+const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
 const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
 const roadListeners: (() => void)[] = []
@@ -75,7 +75,7 @@ export interface Monitor {
     signs: Map<SignId, SignInformation>
     players: Map<PlayerId, PlayerInformation>
     availableConstruction: PointMapFast<AvailableConstruction[]>
-    messages: GameMessage[]
+    messages: Map<GameMessageId, GameMessage>
     allTiles: PointMapFast<TerrainAtPoint>
     discoveredBelowTiles: Set<TileBelow>
     discoveredDownRightTiles: Set<TileDownRight>
@@ -113,6 +113,7 @@ export interface Monitor {
     setReservedSoldiers: ((rank: SoldierType, amount: number) => void)
     addDetailedMonitoring: ((houseId: HouseId) => void)
     removeDetailedMonitoring: ((houseId: HouseId) => void)
+    removeMessage: ((messageId: GameMessageId) => void)
 
     killWebsocket: (() => void)
 }
@@ -131,7 +132,7 @@ const monitor: Monitor = {
     signs: new Map<SignId, SignInformation>(),
     players: new Map<PlayerId, PlayerInformation>(),
     availableConstruction: new PointMapFast<AvailableConstruction[]>(),
-    messages: [],
+    messages: new Map<GameMessageId, GameMessage>(),
     allTiles: new PointMapFast<TerrainAtPoint>(),
     discoveredBelowTiles: new Set<TileBelow>(),
     discoveredDownRightTiles: new Set<TileDownRight>(),
@@ -169,6 +170,7 @@ const monitor: Monitor = {
     setReservedSoldiers: setReservedSoldiers,
     addDetailedMonitoring: addDetailedMonitoring,
     removeDetailedMonitoring: removeDetailedMonitoring,
+    removeMessage: removeMessage,
 
     killWebsocket: killWebsocket
 }
@@ -238,6 +240,7 @@ interface ChangesMessage {
     removedWildAnimals?: WildAnimalId[]
     removedDecorations?: Point[]
     newDecorations?: PointAndDecoration[]
+    removedMessages?: GameMessageId[]
 }
 
 interface FullSyncMessage {
@@ -329,21 +332,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
     /* Get the list of players */
     const players = await getPlayers(gameId)
 
-    for (const player of players) {
-
-        /* Get any messages for the player */
-        const messages = await getMessagesForPlayer(gameId, playerId)
-
-        /* Store the player */
-        monitor.players.set(player.id, player)
-
-        /* Store the messages */
-        if (messages) {
-            monitor.messages = messages
-        } else {
-            monitor.messages = []
-        }
-    }
+    players.forEach(player => monitor.players.set(player.id, player))
 
     /* Get the messages */
 
@@ -414,6 +403,12 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
     /* Finally notify the listeners, after all data has been stored */
     discoveredPointListeners.forEach(listener => listener(monitor.discoveredPoints))
     roadListeners.forEach(roadListener => roadListener())
+
+    if (view.messages) {
+        view.messages.forEach(message => monitor.messages.set(message.id, message))
+
+        messageListeners.forEach(messageListener => messageListener(view.messages, []))
+    }
 
     /* Subscribe to changes */
     const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
@@ -784,18 +779,6 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     }
 
     if (message.changedBuildings) {
-        const houseIdsToRemove = []
-
-        for (const house of message.changedBuildings) {
-            for (const oldHouse of monitor.houses.values()) {
-                if (house.x === oldHouse.x && house.y === oldHouse.y) {
-                    houseIdsToRemove.push(oldHouse.id)
-                }
-            }
-        }
-
-        houseIdsToRemove.forEach(id => monitor.houses.delete(id))
-
         message.changedBuildings.forEach(house => monitor.houses.set(house.id, house))
     }
 
@@ -873,12 +856,23 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
         discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
     }
 
+    let receivedMessages: GameMessage[] = []
+    let removedMessages: GameMessageId[] = []
+
     if (message.newMessages) {
-        monitor.messages = monitor.messages.concat(message.newMessages)
+        message.newMessages.forEach(message => monitor.messages.set(message.id, message))
 
-        const newMessages = message.newMessages
+        receivedMessages = message.newMessages
+    }
 
-        messageListeners.forEach(listener => listener(newMessages))
+    if (message.removedMessages) {
+        message.removedMessages.forEach(messageId => monitor.messages.delete(messageId))
+
+        removedMessages = message.removedMessages
+    }
+
+    if (receivedMessages.length !== 0 || removedMessages.length !== 0) {
+        messageListeners.forEach(listener => listener(receivedMessages, removedMessages))
     }
 
     if (message.newRoads !== undefined || message.removedRoads !== undefined) {
@@ -1152,8 +1146,14 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     }
 }
 
-function listenToMessages(messageListenerFn: (messages: GameMessage[]) => void): void {
-    messageListeners.push(messageListenerFn)
+function listenToMessages(messageListener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void): void {
+    messageListeners.push(messageListener)
+}
+
+function stopListeningToMessages(messageListenerFn: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void): void {
+    const index = messageListeners.indexOf(messageListenerFn)
+
+    delete messageListeners[index]
 }
 
 function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformation) => void): void {
@@ -1250,7 +1250,7 @@ function serverSentTreeToLocal(serverTree: TreeInformation): TreeInformationLoca
 }
 
 function placeLocalRoad(points: Point[]): void {
-    monitor.roads.set('LOCAL', { id: 'LOCAL', points })
+    monitor.roads.set('LOCAL', { id: 'LOCAL', points, type: 'NORMAL' })
 }
 
 function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
@@ -1590,6 +1590,15 @@ function removeDetailedMonitoring(houseId: HouseId): void {
     ))
 }
 
+function removeMessage(messageId: GameMessageId): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'REMOVE_MESSAGE',
+            messageId
+        }
+    ))
+}
+
 function getRequestId(): number {
     nextRequestId += 1
 
@@ -1610,5 +1619,6 @@ export {
     startMonitoringGame,
     placeBuildingWebsocket,
     placeFlagWebsocket,
+    stopListeningToMessages,
     monitor
 }

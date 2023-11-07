@@ -305,15 +305,17 @@ interface InventoryIconProps {
     label?: string
     scale?: number
     inline?: boolean
+    missing?: boolean
 }
 
-const InventoryIcon = (inventoryIconProps: InventoryIconProps) => {
-    const url = materialImageAtlasHandler.getInventoryIconUrl(inventoryIconProps.nation, inventoryIconProps.material)
-    const scale = (inventoryIconProps?.scale !== undefined) ? inventoryIconProps.scale : 1.0
+const InventoryIcon = (props: InventoryIconProps) => {
+    const url = materialImageAtlasHandler.getInventoryIconUrl(props.nation, props.material)
+    const scale = (props?.scale !== undefined) ? props.scale : 1.0
 
-    const displayStile = (inventoryIconProps.inline) ? 'inline' : 'block'
+    const displayStile = (props.inline) ? 'inline' : 'block'
+    const transparency = (props.missing) ? '0.5' : '1.0'
 
-    return (<div className="inventory-icon" style={{ display: displayStile }} >
+    return (<div className="inventory-icon" style={{ display: displayStile, opacity: transparency }} >
         <img
             src={url}
             onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {

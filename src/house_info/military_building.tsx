@@ -1,6 +1,6 @@
 import React from 'react'
-import { Button } from "@fluentui/react-components"
-import { GameId, HouseInformation, Nation, PlayerId, SoldierType, rankToMaterial } from "../api/types"
+import { Button, Field, Tooltip } from "@fluentui/react-components"
+import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterialUpperCase, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon } from "../icon"
 import './house_info.css'
 import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, upgradeMilitaryBuilding } from "../api/rest-api"
@@ -27,6 +27,9 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
 
     const hasCoins = house.resources?.COIN?.has ?? 0
     const canHoldCoins = house.resources?.COIN?.canHold ?? 0
+    const gapCoins = canHoldCoins - hasCoins
+
+    // TODO: show resources when upgrading. Show text "is upgrading..."
 
     return (
         <div className="house-info">
@@ -35,25 +38,80 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
 
             <HouseIcon houseType={house.type} nation={nation} />
 
-            <div>Soldiers: {soldiers.map(
-                (soldier, index) => {
-                    if (soldier) {
-                        return <InventoryIcon material={rankToMaterial(soldier)} nation={nation} key={index} inline />
-                    } else {
-                        return <div key={index}>Empty</div>
-                    }
-                }
-            )}
-            </div>
+            {house.upgrading && <div>Upgrading ...</div>}
 
-            <div>Gold:
-                {Array.from({ length: hasCoins }, () => 1).map(
-                    (value, index) => <span className="coin" key={index} />)
-                }
-                {Array.from({ length: canHoldCoins }, () => 2).map(
-                    (value, index) => <span className="coin-missing" key={index} />)
-                }
-            </div>
+            {house.upgrading &&
+                Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined).length > 0 &&
+                <Field label="Resources">
+                    <div>
+                        {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined)
+                            .map(material => {
+
+                                if (isMaterialUpperCase(material)) {
+                                    const has = house.resources[material].has ?? 0
+                                    const canHold = house.resources[material].canHold ?? 0
+                                    const gap = Math.max(canHold - has, 0)
+
+                                    return <div key={material}>
+                                        {Array.from({ length: has }, () => 1).map(
+                                            (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                                <span><InventoryIcon material={material} nation={nation} inline /></span>
+                                            </Tooltip>
+                                        )}
+                                        {Array.from({ length: gap }, () => 1).map(
+                                            (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                                <span><InventoryIcon material={material} nation={nation} inline missing /></span>
+                                            </Tooltip>
+                                        )}
+                                    </div>
+                                }
+                            })
+                        }
+                    </div>
+                </Field>
+            }
+
+            <Field label="Soldiers" >
+                <div>
+                    {soldiers.map(
+                        (rank, index) => {
+                            if (rank) {
+                                const soldierDisplayName = getSoldierDisplayName(rank)
+                                const soldierMaterial = rankToMaterial(rank)
+
+                                console.log(soldierDisplayName)
+
+                                return (
+                                    <Tooltip content={soldierDisplayName} relationship='label' withArrow key={index} >
+                                        <div style={{display: 'inline'}}><InventoryIcon material={soldierMaterial} nation={nation} key={index} inline /></div>
+                                    </Tooltip>
+                                )
+                            } else {
+                                return (
+                                    <Tooltip content="Open space for additional soldier" relationship='label' withArrow key={index} >
+                                        <InventoryIcon material={'PRIVATE'} nation={nation} key={index} inline missing />
+                                    </Tooltip>
+                                )
+                            }
+                        }
+                    )}
+                </div>
+            </Field>
+
+            <Field label="Coins">
+                <div>
+                    {Array.from({ length: hasCoins }, () => 1).map(
+                        (value, index) => <Tooltip content="Coin" relationship={'label'} withArrow key={index}>
+                            <span><InventoryIcon material={'COIN'} nation={nation} inline /></span>
+                        </Tooltip>
+                    )}
+                    {Array.from({ length: gapCoins }, () => 1).map(
+                        (value, index) => <Tooltip content="Coin" relationship={'label'} withArrow key={index}>
+                            <span><InventoryIcon material={'COIN'} nation={nation} inline missing /></span>
+                        </Tooltip>
+                    )}
+                </div>
+            </Field>
 
             {house.promotionsEnabled &&
                 <Button onClick={() => { disablePromotionsForHouse(gameId, playerId, house.id) }} >Disable promotions</Button>

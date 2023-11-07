@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from "@fluentui/react-components"
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
-import { HouseInformation, MATERIALS_UPPER_CASE, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from "../api/types"
+import { HouseInformation, MATERIALS_UPPER_CASE, Nation, SOLDIER_TYPES, getSoldierDisplayName, isHeadquarterInformation, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon } from "../icon"
 import './house_info.css'
 import { useState } from "react"
@@ -42,7 +42,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
                 <Tab value='RESERVED'>Military</Tab>
             </TabList>
 
-            {panel == 'INVENTORY' &&
+            {panel === 'INVENTORY' &&
                 <div className="headquarter-inventory">
                     {Array.from(MATERIALS_UPPER_CASE).filter(material => material !== 'STORAGE_WORKER' && material !== 'WELL_WORKER').map(material => {
                         const amount = house.resources[material]?.has ?? 0
@@ -59,22 +59,23 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
                 </div>
             }
 
-            {panel == 'RESERVED' &&
+            {panel === 'RESERVED' &&
                 <div className='headquarter-reserved-soldiers'>
                     {SOLDIER_TYPES.map(rank => {
                         if (isHeadquarterInformation(house)) {
-
                             const hosted = (house.soldiers) ? house.soldiers.filter(soldier => soldier === rank).length : 0
+                            const soldierDisplayName = getSoldierDisplayName(rank)
 
                             return (
                                 <div className='headquarter-inventory-item' key={rank} style={{ display: "block" }}>
-                                    ({hosted} / {house.reserved[rank]}) <InventoryIcon material={rankToMaterial(rank)} nation={nation} inline />
+                                    ({hosted} / {house.reserved[rank]}) <Tooltip content={soldierDisplayName} relationship='label' withArrow key={rank}>
+                                        <div style={{ display: "inline" }}><InventoryIcon material={rankToMaterial(rank)} nation={nation} inline /></div>
+                                    </Tooltip>
                                     <Subtract16Filled onClick={() => house.reserved[rank] !== 0 && monitor.setReservedSoldiers(rank, house.reserved[rank] - 1)} />
                                     <Add16Filled onClick={() => house.reserved[rank] !== 100 && monitor.setReservedSoldiers(rank, house.reserved[rank] + 1)} />
                                 </div>
                             )
                         }
-
                     })}
                 </div>
             }

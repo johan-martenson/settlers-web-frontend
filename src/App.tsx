@@ -1110,7 +1110,7 @@ class App extends Component<AppProps, AppState> {
                     />
                 }
 
-                <GameMessagesViewer gameId={this.props.gameId}
+                <GameMessagesViewer
                     playerId={this.props.selfPlayerId}
                     nation={this.state.player?.nation ?? 'ROMANS'}
                     onGoToHouse={this.goToHouse.bind(this)}

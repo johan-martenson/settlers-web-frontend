@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
-import { setTransportPriorityForMaterial, isToolUpperCase } from './api/rest-api'
+import { setTransportPriorityForMaterial } from './api/rest-api'
 import { Dialog } from './dialog'
 import { getTransportPriorityForPlayer } from './api/rest-api'
 import './transport_priority.css'
-import { GameId, PlayerId, MaterialAllUpperCase, TOOLS_UPPER_CASE } from './api/types'
+import { GameId, PlayerId, MaterialAllUpperCase, TOOLS_UPPER_CASE, isToolUpperCase } from './api/types'
 import { Button } from '@fluentui/react-components'
 
 interface SetTransportPriorityProps {

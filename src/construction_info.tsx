@@ -5,7 +5,7 @@ import { Dialog, DialogSection } from './dialog'
 import { monitor } from './api/ws-api'
 import { camelCaseToWords } from './utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { HouseIcon } from './icon'
+import { FlagIcon, HouseIcon } from './icon'
 
 interface ConstructionInfoProps {
     selected?: "Buildings" | "FlagsAndRoads"
@@ -165,16 +165,6 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                             <div className="DialogSection">
 
                                 <Button
-                                    icon="flag.png"
-                                    onClick={
-                                        () => {
-                                            console.info("Raising flag")
-                                            monitor.placeFlag(this.props.point)
-                                        }
-                                    }
-                                >Raise flag</Button>
-                                <Button className="ConstructionItem"
-                                    icon="flag.png"
                                     onClick={
                                         () => {
                                             console.info("Raising flag")
@@ -183,7 +173,10 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                             this.props.closeDialog()
                                         }
                                     }
-                                >Raise flag</Button>
+                                >
+                                    <FlagIcon type='NORMAL' nation='ROMANS' />
+                                    Raise flag
+                                </Button>
 
                                 {this.canBuildRoad() &&
                                     <Button
@@ -224,19 +217,19 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
 
                     {this.state.selected === "Buildings" &&
                         <TabList
-                        defaultSelectedValue={"small"}
-                        onTabSelect={
-                            (event: SelectTabEvent, data: SelectTabData) => {
-                                const value = data.value
-                                if (value === "small" || value === "medium" || value === "large") {
-                                    this.setState(
-                                        {
-                                            buildingSizeSelected: value
-                                        }
-                                    )
+                            defaultSelectedValue={"small"}
+                            onTabSelect={
+                                (event: SelectTabEvent, data: SelectTabData) => {
+                                    const value = data.value
+                                    if (value === "small" || value === "medium" || value === "large") {
+                                        this.setState(
+                                            {
+                                                buildingSizeSelected: value
+                                            }
+                                        )
+                                    }
                                 }
-                            }
-                        }>
+                            }>
                             {Array.from(houseOptions.entries(),
                                 ([key, value], index) => {
                                     return <Tab value={key} key={index}>{value}</Tab>

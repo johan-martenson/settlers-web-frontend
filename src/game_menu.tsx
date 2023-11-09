@@ -143,7 +143,7 @@ class GameMenu extends Component<GameMenuProps, GameMenuState> {
                         }
                         >Set transport priority</Button>
                         <Button onClick={() => {
-                            this.props.onHelp
+                            this.props.onHelp()
 
                             this.props.onClose()
                         }

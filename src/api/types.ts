@@ -95,6 +95,22 @@ const SMALL_HOUSES: SmallBuilding[] = [
     "LookoutTower"
 ]
 
+const SMALL_HOUSES_AS_STRINGS: string[] = [
+    "ForesterHut",
+    "Woodcutter",
+    "Well",
+    "Quarry",
+    "Barracks",
+    "GuardHouse",
+    "HunterHut",
+    "Fishery",
+    "GoldMine",
+    "IronMine",
+    "CoalMine",
+    "GraniteMine",
+    "LookoutTower"
+]
+
 export type MediumBuilding = "Sawmill" |
     "Bakery" |
     "WatchTower" |
@@ -125,9 +141,32 @@ const MEDIUM_HOUSES: MediumBuilding[] = [
     "Storehouse"
 ]
 
+const MEDIUM_HOUSES_AS_STRINGS: string[] = [
+    "Sawmill",
+    "Bakery",
+    "WatchTower",
+    "Mill",
+    "SlaughterHouse",
+    "Catapult",
+    "Mint",
+    "Brewery",
+    "Armory",
+    "IronSmelter",
+    "Metalworks",
+    "Shipyard",
+    "Storehouse"
+]
 export type LargeBuilding = "Headquarter" | "Farm" | "PigFarm" | "DonkeyFarm" | "Fortress" | "Harbor"
 
 const LARGE_HOUSES: LargeBuilding[] = [
+    "Headquarter",
+    "Farm",
+    "PigFarm",
+    "DonkeyFarm",
+    "Fortress"
+]
+
+const LARGE_HOUSES_AS_STRINGS: string[] = [
     "Headquarter",
     "Farm",
     "PigFarm",
@@ -653,6 +692,10 @@ function isStoreHouseIsReadyMessage(message: GameMessage): message is StoreHouse
     return message.type === 'STORE_HOUSE_IS_READY'
 }
 
+function isBuilding(aString: string): aString is AnyBuilding {
+    return SMALL_HOUSES_AS_STRINGS.includes(aString) || MEDIUM_HOUSES_AS_STRINGS.includes(aString) || LARGE_HOUSES_AS_STRINGS.includes(aString)
+}
+
 export {
     isHeadquarterInformation,
     rankToMaterial,
@@ -671,6 +714,7 @@ export {
     isBuildingCapturedMessage,
     isStoreHouseIsReadyMessage,
     getSoldierDisplayName,
+    isBuilding,
     WILD_ANIMAL_TYPES,
     SMALL_HOUSES,
     MEDIUM_HOUSES,

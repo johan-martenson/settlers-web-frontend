@@ -1,6 +1,6 @@
-import React, { Component } from 'react'
+import React, { useEffect, useState } from 'react'
 import { getGames } from './api/rest-api'
-import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton } from "@fluentui/react-components"
+import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton, Skeleton, SkeletonItem } from "@fluentui/react-components"
 import {
     TableBody,
     TableCell,
@@ -27,90 +27,85 @@ const columns = [
 ]
 
 interface GameListProps {
-    hideStarted: boolean
     onJoinGame: ((game: GameInformation) => void)
     onObserveGame: ((game: GameInformation) => void)
 }
 
-interface GameListState {
-    games?: GameInformation[]
-}
+const GameList = ({ onJoinGame, onObserveGame }: GameListProps) => {
+    const [games, setGames] = useState<GameInformation[] | undefined>()
 
-class GameList extends Component<GameListProps, GameListState> {
+    useEffect(
+        () => {
+            (async () => {
+                while (!games) {
+                    try {
+                        const updatedGames = await getGames()
+                        setGames(updatedGames)
+                    } catch (error) {
+                        await new Promise(r => setTimeout(r, 2000))
+                    }
+                }
+            })().then()
 
-    constructor(props: GameListProps) {
-        super(props)
+            return () => { }
+        }, [])
 
-        this.state = {}
-    }
-
-    async componentDidMount(): Promise<void> {
-
-        const games = await getGames()
-
-        this.setState(
-            {
-                games: games,
-            }
-        )
-    }
-
-    render(): JSX.Element {
-        return (
-            <>
-                {this.state.games &&
-                    <div className='games-list'>
-                        <Table size="small">
-                            <TableHeader>
-                                <TableRow>
-                                    {columns.map(column => (
-                                        <TableHeaderCell key={column.columnKey}>
-                                            {column.label}
-                                        </TableHeaderCell>
-                                    ))}
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody>
-                                {this.state.games?.map(game => (
-                                    <TableRow key={game.id}>
-                                        <TableCell>{game.name}</TableCell>
-                                        <TableCell>{(game?.map) ? game.map.title : '-'}</TableCell>
-                                        <TableCell>{game.players.length}</TableCell>
-                                        <TableCell>{(game?.map) ? game.map.maxPlayers : '-'}</TableCell>
-                                        <TableCell>{statusToText[game.status]}</TableCell>
-                                        <TableCell>
-                                            <Menu>
-                                                <MenuTrigger disableButtonEnhancement>
-                                                    <MenuButton>Actions</MenuButton>
-                                                </MenuTrigger>
-                                                <MenuPopover>
-                                                    <MenuList>
-                                                        <MenuItem onClick={() => console.log("Clicked view " + game.id)}>View</MenuItem>
-                                                        {game.status === 'NOT_STARTED' && game.othersCanJoin &&
-                                                            <MenuItem onClick={() => this.props.onJoinGame(game)} >Join</MenuItem>
-                                                        }
-                                                        {game.status === 'STARTED' &&
-                                                            <MenuItem onClick={() => this.props.onObserveGame(game)} >Spectate</MenuItem>
-                                                        }
-                                                    </MenuList>
-                                                </MenuPopover>
-                                            </Menu>
-                                        </TableCell>
-                                    </TableRow>
+    return (
+        <>
+            {games &&
+                <div className='games-list'>
+                    <Table size="small">
+                        <TableHeader>
+                            <TableRow>
+                                {columns.map(column => (
+                                    <TableHeaderCell key={column.columnKey}>
+                                        {column.label}
+                                    </TableHeaderCell>
                                 ))}
+                            </TableRow>
+                        </TableHeader>
 
-                            </TableBody>
-                        </Table>
-                    </div>
-                }
-                {
-                    !this.state.games &&
-                    function () { return (<div>Loading...</div>) }()
-                }
-            </>
-        )
-    }
+                        <TableBody>
+                            {games.map(game => (
+                                <TableRow key={game.id}>
+                                    <TableCell>{game.name}</TableCell>
+                                    <TableCell>{(game?.map) ? game.map.title : '-'}</TableCell>
+                                    <TableCell>{game.players.length}</TableCell>
+                                    <TableCell>{(game?.map) ? game.map.maxPlayers : '-'}</TableCell>
+                                    <TableCell>{statusToText[game.status]}</TableCell>
+                                    <TableCell>
+                                        <Menu>
+                                            <MenuTrigger disableButtonEnhancement>
+                                                <MenuButton>Actions</MenuButton>
+                                            </MenuTrigger>
+                                            <MenuPopover>
+                                                <MenuList>
+                                                    <MenuItem onClick={() => console.log("Clicked view " + game.id)}>View</MenuItem>
+                                                    {game.status === 'NOT_STARTED' && game.othersCanJoin &&
+                                                        <MenuItem onClick={() => onJoinGame(game)} >Join</MenuItem>
+                                                    }
+                                                    {game.status === 'STARTED' &&
+                                                        <MenuItem onClick={() => onObserveGame(game)} >Spectate</MenuItem>
+                                                    }
+                                                </MenuList>
+                                            </MenuPopover>
+                                        </Menu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+
+                        </TableBody>
+                    </Table>
+                </div>
+            }
+
+            {!games &&
+                <Skeleton className="loader-skeleton">
+                    <SkeletonItem />
+                </Skeleton>
+            }
+        </>
+    )
 }
 
 export default GameList

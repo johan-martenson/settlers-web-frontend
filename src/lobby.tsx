@@ -75,7 +75,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
                 {this.state.state === "LIST_GAMES" &&
                     <>
                         <div id="list-games-or-create-new">
-                            <GameList hideStarted={true} onJoinGame={this.onJoinGame.bind(this)} onObserveGame={this.onObserveGame.bind(this)} />
+                            <GameList onJoinGame={this.onJoinGame.bind(this)} onObserveGame={this.onObserveGame.bind(this)} />
                             <Button onClick={this.createNewGame.bind(this)} autoFocus appearance='primary'>Create new game</Button>
                         </div>
                         <div id="worker-animation">

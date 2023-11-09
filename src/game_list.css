@@ -23,3 +23,7 @@
     height: 60vh;
     overflow-y: scroll;
 }
+
+.loader-skeleton {
+    width: 60vw;
+}

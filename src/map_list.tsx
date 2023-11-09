@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { useEffect, useState } from 'react'
 import { getMaps } from './api/rest-api'
 import MapInformationCard from './map_information_card'
 import './map_list.css'
@@ -9,54 +9,36 @@ interface MapListProps {
     defaultSelect?: boolean
 }
 
-interface MapListState {
-    maps: MapInformation[]
-}
+const MapList = ({ defaultSelect, onMapSelected }: MapListProps) => {
+    const [maps, setMaps] = useState<MapInformation[]>([])
 
-class MapList extends Component<MapListProps, MapListState> {
+    useEffect(
+        () => {
+            (async () => {
 
-    constructor(props: MapListProps) {
-        super(props)
+                const maps = await getMaps()
 
-        this.state = { maps: [] }
-    }
+                defaultSelect && onMapSelected(maps[0])
 
-    async componentDidMount(): Promise<void> {
+                setMaps(maps)
+            })().then()
+        }, [])
 
-        const maps = await getMaps()
+    return (
+        <div className="map-list">
+            {maps.map(
+                (map, index) => {
 
-        if (this.props.defaultSelect) {
-            this.props.onMapSelected(maps[0])
-        }
-
-        this.setState(
-            {
-                maps: maps,
-            }
-        )
-    }
-
-    onMapSelected(map: MapInformation): void {
-        this.props.onMapSelected(map)
-    }
-
-    render(): JSX.Element {
-        return (
-            <div className="map-list">
-                {this.state.maps.map(
-                    (map, index) => {
-
-                        return (
-                            <div key={index} >
-                                <MapInformationCard map={map} onMapSelected={this.onMapSelected.bind(this)} />
-                            </div>
-                        )
-                    }
-                )
+                    return (
+                        <div key={index} >
+                            <MapInformationCard map={map} onMapSelected={() => onMapSelected(map)} />
+                        </div>
+                    )
                 }
-            </div>
-        )
-    }
+            )
+            }
+        </div>
+    )
 }
 
 export { MapList }

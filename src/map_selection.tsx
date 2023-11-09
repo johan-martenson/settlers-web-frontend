@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import { MapInformation } from './api/types'
 import { MapList } from './map_list'
 import './map_selection.css'
@@ -10,41 +10,30 @@ interface MapSelectionProps {
     className?: string
 }
 
-interface MapSelectionState {
-    map?: MapInformation
-}
+const MapSelection = ({ onMapSelected }: MapSelectionProps) => {
 
-class MapSelection extends Component<MapSelectionProps, MapSelectionState> {
+    const [map, setMap] = useState<MapInformation | undefined>()
 
-    constructor(props: MapSelectionProps) {
-        super(props)
+    return (
+        <div className="select-map">
+            <Subtitle1 as="h4" block>Select map</Subtitle1>
 
-        this.state = {}
-    }
+            {map &&
+                <MapInformationCard map={map} expanded={true} controls={false} />
+            }
 
-    render(): JSX.Element {
-
-        return (
-            <div className="select-map">
-                <Subtitle1 as="h4" block>Select map</Subtitle1>
-
-                {this.state.map &&
-                    <MapInformationCard map={this.state.map} expanded={true} controls={false} />
+            <MapList
+                onMapSelected={
+                    (selectedMap) => {
+                        setMap(selectedMap)
+                        onMapSelected(selectedMap)
+                    }
                 }
 
-                <MapList
-                    onMapSelected={
-                        (map) => {
-                            this.setState({ map: map })
-                            this.props.onMapSelected(map)
-                        }
-                    }
-
-                    defaultSelect
-                />
-            </div>
-        )
-    }
+                defaultSelect
+            />
+        </div>
+    )
 }
 
 export default MapSelection

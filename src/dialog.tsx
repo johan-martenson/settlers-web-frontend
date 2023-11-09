@@ -1,7 +1,6 @@
 import React, { Component } from 'react'
 import { Button } from '@fluentui/react-components'
 import './dialog.css'
-import MenuSectionLabel from './menu_section_label'
 
 interface DialogProps {
     closeLabel?: string
@@ -60,7 +59,7 @@ class DialogSection extends Component<DialogSectionProps, DialogSectionState> {
     render(): JSX.Element {
         return (
             <div className="DialogSection">
-                {this.props.label && <MenuSectionLabel label={this.props.label} />}
+                {this.props.label && <div className="MenuSectionLabel" >{this.props.label}</div>}
                 {this.props.children}
             </div>
         )

@@ -1,9 +1,9 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import { Button, Subtitle1 } from "@fluentui/react-components"
 import { Player } from './player'
 import './manage_players.css'
 import { addComputerPlayerToGame, getPlayers, updatePlayer, removePlayerFromGame } from './api/rest-api'
-import { PlayerType, PlayerInformation, GameId } from './api/types'
+import { PlayerType, PlayerInformation, GameId, Nation } from './api/types'
 
 export interface PlayerCandidateType {
     name: string
@@ -12,12 +12,6 @@ export interface PlayerCandidateType {
 }
 
 const PLAYER_COLORS = [
-    /*    "Yellow",
-        "Red",
-        "Blue",
-        "Green",
-        "Black",
-        "White"*/
     "#AABBCC",
     "#BBCCAA",
     "#CCAABB"
@@ -32,150 +26,97 @@ interface ManagePlayersProps {
     onPlayerRemoved?: ((player: PlayerInformation) => void)
 }
 
-interface ManagePlayersState {
-    players: PlayerInformation[]
-}
+const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlayerAdded }: ManagePlayersProps) => {
+    const [players, setPlayers] = useState<PlayerInformation[]>([selfPlayer])
 
-class ManagePlayers extends Component<ManagePlayersProps, ManagePlayersState> {
 
-    constructor(props: ManagePlayersProps) {
-        super(props)
+    async function onPlayerUpdated(name: string, nation: Nation, index: number): Promise<void> {
 
-        const players = [this.props.selfPlayer]
+        const playerToUpdate = players[index]
+        await updatePlayer(gameId, playerToUpdate.id, name, nation, playerToUpdate.color)
 
-        this.state = { players: players }
+        const updatedPlayers = await getPlayers(gameId)
+        setPlayers(updatedPlayers)
     }
 
-    async componentDidMount(): Promise<void> {
+    async function removePlayer(player: PlayerInformation): Promise<void> {
 
-        const addedPlayers: PlayerInformation[] = []
+        await removePlayerFromGame(gameId, player.id)
 
-        console.info("Adding default computer players")
+        const updatedPlayers = await getPlayers(gameId)
+        setPlayers(updatedPlayers)
 
-        for (let i = 0; i < this.props.defaultComputerPlayers; i++) {
-            console.info("Adding computer player " + i)
-            const addedPlayer = await addComputerPlayerToGame(this.props.gameId, "Computer Player " + i, PLAYER_COLORS[i], 'ROMANS')
-
-            console.info(addedPlayer)
-
-            addedPlayers.push(addedPlayer)
-
-            if (this.props.onPlayerAdded) {
-                this.props.onPlayerAdded(addedPlayer)
-            }
-        }
-
-        this.setState({ players: this.state.players.concat(addedPlayers) })
+        onPlayerRemoved && onPlayerRemoved(player)
     }
 
-    async addComputerPlayer(): Promise<void> {
-
-        console.log("Add computer player")
+    async function addComputerPlayer(): Promise<void> {
 
         let nextPlayer = undefined
 
-        // Find next computer player
-        for (let i = 0; i < this.props.maxPlayers; i++) {
-            if (this.state.players.find(player => player.name === 'Computer Player ' + i) === undefined) {
-                console.log("Did not find Computer Player " + i)
-
+        for (let i = 0; i < maxPlayers; i++) {
+            if (players.find(player => player.name === 'Computer Player ' + i) === undefined) {
                 nextPlayer = i
 
                 break
             }
-
-            console.log("Did find Computer Player " + i)
         }
-
-        console.log("Next player is: " + nextPlayer)
 
         if (nextPlayer === undefined) {
             return
         }
 
-        const aiPlayer: PlayerCandidateType = {
+        const newComputerPlayer: PlayerCandidateType = {
             name: "Computer Player " + nextPlayer,
             type: "COMPUTER",
             color: "#777777"
         }
 
-        const addedPlayer = await addComputerPlayerToGame(this.props.gameId, aiPlayer.name, aiPlayer.color, 'ROMANS')
+        const addedPlayer = await addComputerPlayerToGame(gameId, newComputerPlayer.name, newComputerPlayer.color, 'ROMANS')
 
-        this.setState(
-            {
-                players: this.state.players.concat([addedPlayer])
-            }
-        )
+        const updatedPlayers = await getPlayers(gameId)
+        setPlayers(updatedPlayers)
 
-        if (this.props.onPlayerAdded) {
-            this.props.onPlayerAdded(addedPlayer)
-        }
+        onPlayerAdded && onPlayerAdded(addedPlayer)
     }
 
-    async onNameChanged(name: string, index: number): Promise<void> {
+    return (
+        <div className="player-list">
 
-        const playerToUpdate = this.state.players[index]
+            <Subtitle1 as="h4" block>Players</Subtitle1>
 
-        await updatePlayer(this.props.gameId, playerToUpdate.id, name, this.state.players[index].color)
+            {players.map(
+                (player, index) => {
+                    return (
+                        <div key={index}>
 
-        const players = await getPlayers(this.props.gameId)
-
-        this.setState({ players: players })
-
-        console.log("Name changed to " + name)
-        console.log(index)
-    }
-
-    async removePlayer(player: PlayerInformation): Promise<void> {
-
-        await removePlayerFromGame(this.props.gameId, player.id)
-
-        const players = await getPlayers(this.props.gameId)
-
-        this.setState({ players: players })
-
-        if (this.props.onPlayerRemoved) {
-            this.props.onPlayerRemoved(player)
-        }
-    }
-
-    render(): JSX.Element {
-
-        return (
-            <div className="player-list">
-                <Subtitle1 as="h4" block>Players</Subtitle1>
-                {this.state.players.map(
-                    (player, index) => {
-                        return (
-                            <div key={index}>
-
-                                {player.id === this.props.selfPlayer.id &&
-                                    <Player key={index} isSelf={true}
-                                        onNameChanged={
-                                            (name: string) => {
-                                                this.onNameChanged(name, index)
-                                            }
+                            {player.id === selfPlayer.id &&
+                                <Player key={index} isSelf={true}
+                                    onPlayerUpdated={
+                                        (name: string, nation: Nation) => {
+                                            onPlayerUpdated(name, nation, index)
                                         }
-                                        player={player} />
-                                }
+                                    }
+                                    player={player}
+                                />
+                            }
 
-                                {player.id !== this.props.selfPlayer.id &&
-                                    <Player key={index} player={player}
-                                        onNameChanged={
-                                            (name: string) => {
-                                                this.onNameChanged(name, index)
-                                            }
+                            {player.id !== selfPlayer.id &&
+                                <Player key={index} player={player}
+                                    onPlayerUpdated={
+                                        (name: string, nation: Nation) => {
+                                            onPlayerUpdated(name, nation, index)
                                         }
-                                        onPlayerRemoved={() => { this.removePlayer(player) }} />
-                                }
-                            </div>
-                        )
-                    }
-                )}
-                <Button onClick={this.addComputerPlayer.bind(this)} >Add computer player</Button>
-            </div>
-        )
-    }
+                                    }
+                                    onPlayerRemoved={() => { removePlayer(player) }}
+                                />
+                            }
+                        </div>
+                    )
+                }
+            )}
+            <Button onClick={() => addComputerPlayer()} >Add computer player</Button>
+        </div>
+    )
 }
 
 export default ManagePlayers

@@ -1,4 +1,4 @@
-import { MaterialAllUpperCase, GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, Player, TransportCategoriesUpperCase } from './types'
+import { GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, Player, TransportCategoriesUpperCase } from './types'
 import { PointMapFast } from '../util_types'
 
 function printTimestamp(message: string): void {
@@ -69,7 +69,7 @@ async function addComputerPlayerToGame(gameId: GameId, name: string, color: stri
     return await response.json()
 }
 
-async function updatePlayer(gameId: GameId, playerId: PlayerId, name: string, color: string): Promise<PlayerInformation> {
+async function updatePlayer(gameId: GameId, playerId: PlayerId, name: string, nation: Nation, color: string): Promise<PlayerInformation> {
     const response = await fetch("/settlers/api/games/" + gameId + "/players/" + playerId,
         {
             method: 'PATCH',
@@ -78,8 +78,9 @@ async function updatePlayer(gameId: GameId, playerId: PlayerId, name: string, co
             },
             body: JSON.stringify(
                 {
-                    name: name,
-                    color: color
+                    name,
+                    nation,
+                    color
                 }
             )
         }

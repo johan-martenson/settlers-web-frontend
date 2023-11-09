@@ -130,7 +130,7 @@ class FillInPlayerInformation extends Component<FillInPlayerInformationProps, Fi
                 </div>
 
                 <div id="house-icon">
-                    false && <HouseIcon nation="ROMANS" houseType='Fortress' scale={2}/>
+                    <HouseIcon nation="ROMANS" houseType='Fortress' scale={2}/>
                 </div>
             </>
         )

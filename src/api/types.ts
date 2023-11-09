@@ -48,6 +48,8 @@ export type MaterialWorkerUpperCase = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER'
 export type NationSmallCaps = 'romans' | 'africans' | 'japanese' | 'vikings'
 export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
 
+export const NATIONS = new Set(['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS'])
+
 export type Direction = "EAST" | "SOUTH_EAST" | "SOUTH_WEST" | "WEST" | "NORTH_WEST" | "NORTH_EAST"
 
 export type StoneType = 'TYPE_1' | 'TYPE_2'

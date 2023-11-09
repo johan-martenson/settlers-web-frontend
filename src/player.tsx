@@ -1,107 +1,108 @@
-import React, { Component, createRef } from 'react'
-import { Text, CardHeader, Caption1, Card, Button } from "@fluentui/react-components"
+import React, { ChangeEvent, useState } from 'react'
+import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Field, Dropdown, Option, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem } from "@fluentui/react-components"
 import './player.css'
-import { PlayerInformation } from './api/types'
+import { NATIONS, Nation, PlayerInformation } from './api/types'
 import { MoreHorizontal20Regular } from "@fluentui/react-icons"
-
-
-interface PlayerState {
-    name: string
-    isSelf: boolean
-    expanded: boolean
-    nameField: HTMLInputElement | null
-}
 
 interface PlayerProps {
     isSelf?: boolean
     player: PlayerInformation
     onPlayerRemoved?: (() => void)
-    onNameChanged?: ((name: string) => void)
+    onPlayerUpdated?: ((name: string, nation: Nation) => void)
 }
 
-class Player extends Component<PlayerProps, PlayerState> {
+const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProps) => {
 
-    private nameFieldRef = createRef<HTMLInputElement>()
+    const [editName, setEditName] = useState<string | undefined>()
+    const [editNation, setEditNation] = useState<Nation | undefined>()
+    const [isEditing, setIsEditing] = useState<boolean>(false)
 
-    constructor(props: PlayerProps) {
-        super(props)
+    const nationPrettyString = player.nation.charAt(0).toUpperCase() + player.nation.slice(1).toLowerCase()
 
-        let isSelf = false
+    function updatePlayer(): void {
+        if (!onPlayerUpdated) {
+            console.log("No player updated callback provided")
 
-        if (props.isSelf) {
-            isSelf = true
-        }
-
-        this.state = {
-            name: props.player.name,
-            isSelf: isSelf,
-            nameField: null,
-            expanded: false
-        }
-    }
-
-    changeName(): void {
-
-        console.log("CHANGING NAME")
-
-        if (!this.props.onNameChanged) {
-            console.log("No callback setup")
             return
         }
 
-        const nameField = this.nameFieldRef.current
+        const updatedName = editName ?? player.name
+        const updatedNation = editNation ?? player.nation
 
-        if (!nameField || nameField.value === "") {
-            console.log("No value to read")
-            return
-        }
-
-        console.log("Calling callback")
-        this.props.onNameChanged(nameField.value)
+        onPlayerUpdated(updatedName, updatedNation)
     }
 
-    render(): JSX.Element {
+    return (
+        <Card>
+            <CardHeader
+                header={(isEditing) ?
+                    <div>
+                        <Field label="Set name">
+                            <Input
+                                type="text"
+                                className="SetNameField"
+                                placeholder={player.name}
+                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setEditName(data.value)}
+                                onKeyDown={(ev: React.KeyboardEvent<HTMLInputElement>) => {
+                                    if (ev.key === 'Enter') {
+                                        updatePlayer()
 
-        console.log(this.props.player.type)
+                                        setEditName(undefined)
+                                        setEditNation(undefined)
 
-        const nationPrettyString = this.props.player.nation.charAt(0).toUpperCase() + this.props.player.nation.slice(1).toLowerCase()
+                                        setIsEditing(false)
+                                    }
+                                }} />
+                        </Field>
 
-        return (
-            <Card>
-                <CardHeader
-                    header={<Text weight="semibold">
-                        {this.props.player.name} {this.props.player.type === "COMPUTER" && "(computer)"}
-                        {this.props.isSelf && "(me)"}
+                        <Field label="Set nation">
+                            <Dropdown defaultValue={'ROMANS'} onOptionSelect={(a: any, b: any) => setEditNation(b.optionValue)}>
+                                {Array.from(NATIONS).map(nation => { return <Option key={nation}>{nation}</Option> })}
+                            </Dropdown>
+                        </Field>
+                        <Button onClick={() => {
+                            updatePlayer()
+
+                            setEditName(undefined)
+                            setEditNation(undefined)
+
+                            setIsEditing(false)
+                        }} >Ok</Button>
+
+                    </div>
+                    :
+                    <Text weight="semibold">
+                        {player.name} {player.type === "COMPUTER" && "(computer)"}
+                        {isSelf && "(me)"}
                     </Text>}
-                    description={
-                        <Caption1>
-                            {nationPrettyString}, {this.props.player.type === "COMPUTER" && "computer player"}
-                            {this.props.isSelf && "me"}
-                        </Caption1>
-                    }
-                    action={
+                description={
+                    <Caption1>
+                        {nationPrettyString}, {player.type === "COMPUTER" && "computer player"}
+                        {isSelf && "me"}
+                    </Caption1>
+                }
+                action={<Menu>
+                    <MenuTrigger disableButtonEnhancement>
                         <Button
                             appearance="transparent"
                             icon={<MoreHorizontal20Regular />}
                             aria-label="More options"
-                        />}
-                />
-                <p>
-                    {this.props.player.type === "COMPUTER" && this.state.expanded &&
-                        <div className="SetName">
-                            <div className="SetNameLabel">Change name:</div>
-                            <input type="text" className="SetNameField" placeholder="Name" ref={this.nameFieldRef} />
-                            <Button onClick={this.changeName.bind(this)} >Ok</Button>
-                        </div>
-                    }
+                        />
+                    </MenuTrigger>
 
-                    {!this.props.isSelf && this.props.onPlayerRemoved && this.state.expanded &&
-                        <Button onClick={this.props.onPlayerRemoved} >Remove</Button>
-                    }
-                </p>
-            </Card>
-        )
-    }
+                    <MenuPopover>
+                        <MenuList>
+                            <MenuItem onClick={() => setIsEditing(true)}>Edit</MenuItem>
+                            <MenuItem onClick={() => onPlayerRemoved && onPlayerRemoved()}>Remove</MenuItem>
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
+                }
+            />
+            <p>
+            </p>
+        </Card>
+    )
 }
 
 export { Player }

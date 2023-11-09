@@ -158,7 +158,11 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
                                     <Button icon={<Delete24Filled />}
-                                        onClick={() => removeMessage(message)}
+                                        onClick={() => {
+                                            removeMessage(message)
+
+                                            setRecentlyDelected(recentlyDeleted.add(message.id))
+                                        }}
                                         appearance='transparent' />
                                 </div>
                             )

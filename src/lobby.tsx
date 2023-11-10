@@ -2,7 +2,6 @@ import React, { Component } from 'react'
 import { addHumanPlayerToGame, getGameInformation, getPlayers } from './api/rest-api'
 import App from './App'
 import { Button } from "@fluentui/react-components"
-import { EnteredPlayerInformation } from './fill_in_player_information'
 import { GameCreator } from './game_creator'
 import GameList from './game_list'
 import './lobby.css'
@@ -19,7 +18,7 @@ interface LobbyState {
 }
 
 interface LobbyProps {
-    player: EnteredPlayerInformation
+    playerName: string
 }
 
 class Lobby extends Component<LobbyProps, LobbyState> {
@@ -65,7 +64,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
 
                 {this.state.state === "CREATE_GAME" &&
                     <GameCreator
-                        playerName={this.props.player.name}
+                        playerName={this.props.playerName}
                         onCreateGameDone={this.onCreateGameDone.bind(this)}
                         onGameCreateCanceled={this.onGameCreateCanceled.bind(this)}
                         onGameStarted={this.onGameStarted.bind(this)}
@@ -122,10 +121,10 @@ class Lobby extends Component<LobbyProps, LobbyState> {
 
     async onJoinGame(game: GameInformation): Promise<void> {
 
-        console.log("Joining game " + game.id + " as player " + JSON.stringify(this.props.player))
+        console.log("Joining game " + game.id + " as player " + JSON.stringify(this.props.playerName))
 
         try {
-            const player = await addHumanPlayerToGame(game.id, this.props.player.name, "#123456", "ROMANS")
+            const player = await addHumanPlayerToGame(game.id, this.props.playerName, "#123456", "ROMANS")
             console.log("Added player to game " + JSON.stringify(player))
 
             const players = await getPlayers(game.id)

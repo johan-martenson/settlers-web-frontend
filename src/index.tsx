@@ -1,6 +1,6 @@
 import React, { Component, PropsWithChildren } from 'react'
 import { createRoot } from 'react-dom/client'
-import { EnteredPlayerInformation, FillInPlayerInformation } from './fill_in_player_information'
+import { FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'
 import { Lobby } from './lobby'
 import { getPlayers } from './api/rest-api'
@@ -11,7 +11,7 @@ import { GameId, PlayerId } from './api/types'
 interface GameInitProps { }
 interface GameInitState {
     state: "ENTER_PLAYER_INFORMATION" | "LOBBY" | "PLAY_GAME"
-    player?: EnteredPlayerInformation
+    player?: string
     gameId?: GameId
     selfPlayerId?: PlayerId
 }
@@ -49,13 +49,13 @@ class GameInit extends Component<GameInitProps, GameInitState> {
         }
     }
 
-    onPlayerInformationDone(player: EnteredPlayerInformation): void {
+    onPlayerInformationDone(name: string): void {
 
-        console.log("Player entering lobby: " + JSON.stringify(player))
+        console.log("Player entering lobby: " + name)
 
         this.setState(
             {
-                player: player,
+                player: name,
                 state: "LOBBY"
             }
         )
@@ -72,7 +72,7 @@ class GameInit extends Component<GameInitProps, GameInitState> {
                 }
 
                 {this.state.state === "LOBBY" && this.state.player &&
-                    <Lobby player={this.state.player} />
+                    <Lobby playerName={this.state.player} />
                 }
 
                 {this.state.state === "PLAY_GAME" && this.state.gameId && this.state.selfPlayerId &&

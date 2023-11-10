@@ -1,5 +1,5 @@
 import { getInformationOnPoint, getTerrainForMap,  removeHouse } from './api/rest-api'
-import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation } from './api/types'
+import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation } from './api/types'
 import { Monitor, monitor } from './api/ws-api'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -2228,6 +2228,68 @@ async function makeImageFromMap(map: MapInformation): Promise<HTMLImageElement |
 
     return image
 }
+
+
+function canRemoveRoad(point: PointInformation): boolean {
+    if (point.is === "road") {
+        return true
+    }
+
+    return false
+}
+
+function canRaiseFlag(point: PointInformation): boolean {
+    if (point.canBuild.find(x => x === "flag")) {
+        return true
+    }
+
+    return false
+}
+
+function canBuildHouse(point: PointInformation): boolean {
+    if (canBuildSmallHouse(point) || canBuildMediumHouse(point) || canBuildLargeHouse(point)) {
+        return true
+    }
+
+    return false
+}
+
+function canBuildLargeHouse(point: PointInformation): boolean {
+    if (point.canBuild.find(x => x === "large")) {
+        return true
+    }
+
+    return false
+}
+
+function canBuildMediumHouse(point: PointInformation): boolean {
+    if (point.canBuild.find(x => x === "medium")) {
+        return true
+    }
+
+    return false
+}
+
+function canBuildSmallHouse(point: PointInformation): boolean {
+    if (point.canBuild.find(x => x === "small")) {
+        return true
+    }
+
+    return false
+}
+
+function canBuildMine(point: PointInformation): boolean {
+    if (point.canBuild.find(x => x === "mine")) {
+        return true
+    }
+
+    return false
+}
+
+function canBuildRoad(point: PointInformation): boolean {
+    return point.is === "flag"
+}
+
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
@@ -2273,5 +2335,13 @@ export {
     ShipImageAtlasHandler,
     removeHouseOrFlagOrRoadAtPointWebsocket,
     pointStringToPoint,
-    makeImageFromMap
+    makeImageFromMap,
+    canRemoveRoad,
+    canRaiseFlag,
+    canBuildHouse,
+    canBuildLargeHouse,
+    canBuildMediumHouse,
+    canBuildSmallHouse,
+    canBuildMine,
+    canBuildRoad
 }

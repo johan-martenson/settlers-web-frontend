@@ -58,7 +58,11 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
                     </div>
 
                     <Button
-                        onClick={() => onPlayerInformationDone(userName ?? defaultUserName ?? "")}
+                        onClick={() => {
+                            localStorage.setItem("mostRecentPlayer", userName ?? defaultUserName ?? "")
+
+                            onPlayerInformationDone(userName ?? defaultUserName ?? "")
+                        }}
                         disabled={!userName || userName === ""}
                         appearance='primary'
                     >Go</Button>

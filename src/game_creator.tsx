@@ -13,7 +13,6 @@ interface GameCreatorProps {
     playerName: string
     onGameStarted: ((gameId: GameId, selfPlayerId: PlayerId) => void)
     onGameCreateCanceled: (() => void)
-    onCreateGameDone: (() => void)
 }
 
 const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCreatorProps) => {
@@ -87,10 +86,6 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
                 }
             ])
 
-            /* Find the self player id */
-            const selfPlayer = game.players[0]
-
-            /* Show the game creation panels */
             setGame(game)
             setMap(defaultMap)
             setSelfPlayer(game.players[0])
@@ -109,8 +104,8 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
 
                         <Field label={"Enter a name for the game"} style={{ flex: "1 0 100%" }}>
                             <Input type="text" placeholder="Name..."
+                                autoFocus
                                 onChange={
-
                                     // eslint-disable-next-line
                                     (event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
                                         setTitle(data.value)

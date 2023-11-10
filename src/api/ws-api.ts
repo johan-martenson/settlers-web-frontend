@@ -7,6 +7,7 @@ const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: Game
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
 const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
 const roadListeners: (() => void)[] = []
+const availableConstructionListeners = new PointMapFast<((availableConstruction: AvailableConstruction[]) => void)[]>()
 
 interface FlagListener {
     onUpdate: ((flag: FlagInformation) => void)
@@ -123,6 +124,8 @@ export interface Monitor {
     removeMessage: ((messageId: GameMessageId) => void)
     listenToFlag: ((flagId: FlagId, listener: FlagListener) => void)
     stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
+    listenToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
+    stopListeningToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
 
     killWebsocket: (() => void)
 }
@@ -182,6 +185,8 @@ const monitor: Monitor = {
     removeMessage: removeMessage,
     listenToFlag: listenToFlag,
     stopListeningToFlag: stopListeningToFlag,
+    listenToAvailableConstruction: listenToAvailableConstruction,
+    stopListeningToAvailableConstruction: stopListeningToAvailableConstruction,
 
     killWebsocket: killWebsocket
 }
@@ -871,6 +876,8 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
             } else {
                 monitor.availableConstruction.set(point, change.available)
             }
+
+            availableConstructionListeners.get(point)?.forEach(listener => listener(change.available))
         }
     }
 
@@ -1639,6 +1646,26 @@ function listenToFlag(flagId: FlagId, listener: FlagListener): void {
 
 function stopListeningToFlag(flagId: FlagId, listener: FlagListener): void {
     const listeners = flagListeners.get(flagId)
+
+    if (listeners) {
+        const index = listeners.indexOf(listener)
+
+        if (index > -1) {
+            delete listeners[index]
+        }
+    }
+}
+
+function listenToAvailableConstruction(point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)): void {
+    if (availableConstructionListeners.has(point)) {
+        availableConstructionListeners.set(point, [])
+    }
+
+    availableConstructionListeners.get(point)?.push(listener)
+}
+
+function stopListeningToAvailableConstruction(point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) {
+    const listeners = availableConstructionListeners.get(point)
 
     if (listeners) {
         const index = listeners.indexOf(listener)

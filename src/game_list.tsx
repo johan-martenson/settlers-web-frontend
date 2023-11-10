@@ -10,7 +10,7 @@ import {
     TableHeaderCell
 } from "@fluentui/react-components"
 import './game_list.css'
-import { GameInformation } from './api/types'
+import { GameId, GameInformation } from './api/types'
 
 const statusToText = {
     STARTED: 'Started',
@@ -27,11 +27,10 @@ const columns = [
 ]
 
 interface GameListProps {
-    onJoinGame: ((game: GameInformation) => void)
-    onObserveGame: ((game: GameInformation) => void)
+    onJoinGame: ((gameId: GameId) => void)
 }
 
-const GameList = ({ onJoinGame, onObserveGame }: GameListProps) => {
+const GameList = ({ onJoinGame }: GameListProps) => {
     const [games, setGames] = useState<GameInformation[] | undefined>()
 
     useEffect(
@@ -82,10 +81,7 @@ const GameList = ({ onJoinGame, onObserveGame }: GameListProps) => {
                                                 <MenuList>
                                                     <MenuItem onClick={() => console.log("Clicked view " + game.id)}>View</MenuItem>
                                                     {game.status === 'NOT_STARTED' && game.othersCanJoin &&
-                                                        <MenuItem onClick={() => onJoinGame(game)} >Join</MenuItem>
-                                                    }
-                                                    {game.status === 'STARTED' &&
-                                                        <MenuItem onClick={() => onObserveGame(game)} >Spectate</MenuItem>
+                                                        <MenuItem onClick={() => onJoinGame(game.id)} >Join</MenuItem>
                                                     }
                                                 </MenuList>
                                             </MenuPopover>

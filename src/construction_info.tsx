@@ -1,249 +1,235 @@
-import React, { Component } from 'react'
-import { GameId, LARGE_HOUSES, MEDIUM_HOUSES, Nation, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api/types'
+import React, { useEffect, useState } from 'react'
+import { AvailableConstruction, GameId, LARGE_HOUSES, MEDIUM_HOUSES, Nation, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api/types'
 import './construction_info.css'
 import { Dialog, DialogSection } from './dialog'
 import { monitor } from './api/ws-api'
-import { camelCaseToWords } from './utils'
+import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag, canRemoveRoad } from './utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon } from './icon'
 
 interface ConstructionInfoProps {
-    selected?: "Buildings" | "FlagsAndRoads"
     point: PointInformation
-    gameId: GameId
-    playerId: PlayerId
     nation: Nation
-    closeDialog: (() => void)
-    startNewRoad: ((point: Point) => void)
+    onClose: (() => void)
+    onStartNewRoad: ((point: Point) => void)
 }
 
-interface ConstructionInfoState {
-    selected: "Buildings" | "FlagsAndRoads"
-    buildingSizeSelected: "small" | "medium" | "large"
-}
+const ConstructionInfo = (props: ConstructionInfoProps) => {
 
-class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfoState> {
+    const nation = props.nation
+    const onStartNewRoad = props.onStartNewRoad
+    const onClose = props.onClose
 
-    constructor(props: ConstructionInfoProps) {
-        super(props)
+    const [point, setPoint] = useState<PointInformation>(props.point)
+    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads'>()
+    const [buildingSizeSelected, setBuildingSizeSelected] = useState<'small' | 'medium' | 'large'>()
 
-        /* Determine which panel to show - buildings or flags and roads */
-        let selected: "Buildings" | "FlagsAndRoads"
+    const constructionOptions = new Map()
+    const constructionInitialSelection = canBuildHouse(point) ? "Buildings" : "FlagsAndRoads"
 
-        if (props.selected) {
-            selected = props.selected
-        } else if (this.canBuildHouse() || this.canBuildMine()) {
-            selected = "Buildings"
-        } else {
-            selected = "FlagsAndRoads"
-        }
+    useEffect(
+        () => {
+            const listener = (availableConstruction: AvailableConstruction[]) => {
+                const updatedPoint: PointInformation = {
+                    ...point,
+                    canBuild: availableConstruction,
+                }
 
-        /* In the case of buildings, start by showing small buildings */
-        this.state = {
-            selected: selected,
-            buildingSizeSelected: "small"
-        }
+                setPoint(updatedPoint)
+            }
+
+            monitor.listenToAvailableConstruction(point, listener)
+
+            return () => monitor.stopListeningToAvailableConstruction(point, listener)
+        }, [])
+
+    if (canBuildHouse(point)) {
+        constructionOptions.set("Buildings", "Buildings")
     }
 
-    canRemoveRoad(): boolean {
-        if (this.props.point.is === "road") {
-            return true
-        }
-
-        return false
+    if (canRaiseFlag(point) || canRemoveRoad(point)) {
+        constructionOptions.set("FlagsAndRoads", "Flags and roads")
     }
 
-    canRaiseFlag(): boolean {
-        if (this.props.point.canBuild.find(x => x === "flag")) {
-            return true
-        }
+    const houseOptions = new Map()
 
-        return false
+    if (canBuildSmallHouse(point)) {
+        houseOptions.set("small", "Small")
     }
 
-    canBuildHouse(): boolean {
-        if (this.canBuildSmallHouse() || this.canBuildMediumHouse() || this.canBuildLargeHouse()) {
-            return true
-        }
-
-        return false
+    if (canBuildMediumHouse(point)) {
+        houseOptions.set("medium", "Medium")
     }
 
-    canBuildLargeHouse(): boolean {
-        if (this.props.point.canBuild.find(x => x === "large")) {
-            return true
-        }
-
-        return false
+    if (canBuildLargeHouse(point)) {
+        houseOptions.set("large", "Large")
     }
 
-    canBuildMediumHouse(): boolean {
-        if (this.props.point.canBuild.find(x => x === "medium")) {
-            return true
-        }
+    return (
+        <Dialog id="ConstructionInfo" className="ConstructionInfoWindow" heading="Construction" onCloseDialog={onClose} floating={true}>
 
-        return false
-    }
+            <>
+                <TabList
+                    defaultSelectedValue={constructionInitialSelection}
+                    onTabSelect={
+                        (event: SelectTabEvent, data: SelectTabData) => {
+                            const value = data.value
 
-    canBuildSmallHouse(): boolean {
-        if (this.props.point.canBuild.find(x => x === "small")) {
-            return true
-        }
+                            if (value === "Buildings" || value === "FlagsAndRoads") {
+                                setSelected(value)
+                            }
+                        }
+                    }
+                >
+                    {Array.from(constructionOptions.entries(), ([key, value], index) => {
+                        return <Tab value={key} key={index}>{value}</Tab>
+                    }
+                    )}
+                </TabList>
 
-        return false
-    }
+                {selected === "FlagsAndRoads" &&
+                    <DialogSection>
+                        <div className="DialogSection">
 
-    canBuildMine(): boolean {
-        if (this.props.point.canBuild.find(x => x === "mine")) {
-            return true
-        }
+                            <Button
+                                onClick={
+                                    () => {
+                                        console.info("Raising flag")
+                                        monitor.placeFlag(point)
 
-        return false
-    }
+                                        onClose()
+                                    }
+                                }
+                            >
+                                <FlagIcon type='NORMAL' nation={nation} />
+                                Raise flag
+                            </Button>
 
-    canBuildRoad(): boolean {
-        return this.props.point.is === "flag"
-    }
+                            {canBuildRoad(point) &&
+                                <Button
+                                    icon="road-1.png"
+                                    onClick={
+                                        () => {
+                                            console.info("Starting to build road")
 
-    // eslint-disable-next-line
-    shouldComponentUpdate(nextProps: ConstructionInfoProps, nextState: ConstructionInfoState): boolean {
-        return nextState.selected !== this.state.selected ||
-            nextState.buildingSizeSelected !== this.state.buildingSizeSelected
-    }
+                                            onStartNewRoad(point)
 
-    render(): JSX.Element {
+                                            onClose()
+                                        }
+                                    }
+                                >Build road</Button>
+                            }
 
-        const constructionOptions = new Map()
-        const constructionInitialSelection = this.canBuildHouse() ? "Buildings" : "FlagsAndRoads"
+                            {canRemoveRoad(point) &&
+                                <Button
+                                    icon="scissor.png"
+                                    onClick={
+                                        async () => {
+                                            if (point.roadId) {
+                                                monitor.removeRoad(point.roadId)
 
-        if (this.canBuildHouse()) {
-            constructionOptions.set("Buildings", "Buildings")
-        }
+                                                onClose()
+                                            }
+                                        }
+                                    }
+                                >Dig up road</Button>
+                            }
+                        </div>
+                    </DialogSection>
+                }
 
-        if (this.canRaiseFlag() || this.canRemoveRoad()) {
-            constructionOptions.set("FlagsAndRoads", "Flags and roads")
-        }
-
-        const houseOptions = new Map()
-
-        if (this.canBuildSmallHouse()) {
-            houseOptions.set("small", "Small")
-        }
-
-        if (this.canBuildMediumHouse()) {
-            houseOptions.set("medium", "Medium")
-        }
-
-        if (this.canBuildLargeHouse()) {
-            houseOptions.set("large", "Large")
-        }
-
-        return (
-            <Dialog id="ConstructionInfo" className="ConstructionInfoWindow" heading="Construction" onCloseDialog={this.props.closeDialog} floating={true}>
-
-                <>
+                {selected === "Buildings" &&
                     <TabList
-                        defaultSelectedValue={constructionInitialSelection}
+                        defaultSelectedValue={"small"}
                         onTabSelect={
                             (event: SelectTabEvent, data: SelectTabData) => {
                                 const value = data.value
-
-                                if (value === "Buildings" || value === "FlagsAndRoads") {
-                                    this.setState({ selected: value })
+                                if (value === "small" || value === "medium" || value === "large") {
+                                    setBuildingSizeSelected(value)
                                 }
                             }
-                        }
-                    >
-                        {Array.from(constructionOptions.entries(), ([key, value], index) => {
-                            return <Tab value={key} key={index}>{value}</Tab>
-                        }
+                        }>
+                        {Array.from(houseOptions.entries(),
+                            ([key, value], index) => {
+                                return <Tab value={key} key={index}>{value}</Tab>
+                            }
                         )}
                     </TabList>
+                }
 
-                    {this.state.selected === "FlagsAndRoads" &&
-                        <DialogSection>
-                            <div className="DialogSection">
+                {selected === "Buildings" && buildingSizeSelected === "small" &&
+                    <DialogSection>
+                        <div className="house-construction-buttons">
+                            {SMALL_HOUSES.map(
+                                (house, index) => {
 
-                                <Button
-                                    onClick={
-                                        () => {
-                                            console.info("Raising flag")
-                                            monitor.placeFlag(this.props.point)
+                                    return (
+                                        <Button className="ConstructionItem"
+                                            key={index}
+                                            onClick={
+                                                async () => {
+                                                    console.info("Creating house")
+                                                    monitor.placeHouse(house, point)
 
-                                            this.props.closeDialog()
-                                        }
-                                    }
-                                >
-                                    <FlagIcon type='NORMAL' nation='ROMANS' />
-                                    Raise flag
-                                </Button>
-
-                                {this.canBuildRoad() &&
-                                    <Button
-                                        icon="road-1.png"
-                                        onClick={
-                                            () => {
-                                                console.info("Starting to build road")
-
-                                                this.props.startNewRoad(this.props.point)
-
-                                                this.props.closeDialog()
-                                            }
-                                        }
-                                    >Build road</Button>
-                                }
-
-                                {this.canRemoveRoad() &&
-                                    <Button
-                                        icon="scissor.png"
-                                        onClick={
-                                            async () => {
-                                                console.info("Starting to dig up road")
-
-                                                if (!this.props.point.roadId) {
-                                                    return
+                                                    onClose()
                                                 }
-
-                                                monitor.removeRoad(this.props.point.roadId)
-
-                                                this.props.closeDialog()
                                             }
-                                        }
-                                    >Dig up road</Button>
-                                }
-                            </div>
-                        </DialogSection>
-                    }
+                                        >
+                                            <div className='house-construction-button'>
+                                                <HouseIcon nation={nation} houseType={house} />
+                                                {camelCaseToWords(house)}
+                                            </div>
+                                        </Button>
+                                    )
+                                })
+                            }
+                        </div>
+                    </DialogSection>
+                }
 
-                    {this.state.selected === "Buildings" &&
-                        <TabList
-                            defaultSelectedValue={"small"}
-                            onTabSelect={
-                                (event: SelectTabEvent, data: SelectTabData) => {
-                                    const value = data.value
-                                    if (value === "small" || value === "medium" || value === "large") {
-                                        this.setState(
-                                            {
-                                                buildingSizeSelected: value
+                {selected === "Buildings" &&
+                    canBuildMediumHouse(point) &&
+                    buildingSizeSelected === "medium" &&
+                    <DialogSection>
+                        <div className="house-construction-buttons">
+                            {MEDIUM_HOUSES.map(
+                                (house, index) => {
+
+                                    return (
+                                        <Button className="ConstructionItem"
+                                            key={index}
+                                            onClick={
+                                                async () => {
+                                                    console.info("Creating house")
+                                                    monitor.placeHouse(house, point)
+
+                                                    onClose()
+                                                }
                                             }
-                                        )
-                                    }
-                                }
-                            }>
-                            {Array.from(houseOptions.entries(),
-                                ([key, value], index) => {
-                                    return <Tab value={key} key={index}>{value}</Tab>
-                                }
+                                        >
+                                            <div className='house-construction-button'>
+                                                <HouseIcon nation={nation} houseType={house} />
+                                                {camelCaseToWords(house)}
+                                            </div>
+                                        </Button>
+                                    )
+                                })
+                            }
+                        </div>
+                    </DialogSection>
+                }
 
-                            )}
-                        </TabList>
-                    }
+                {selected === "Buildings" &&
+                    canBuildLargeHouse(point) &&
+                    buildingSizeSelected === "large" &&
+                    <DialogSection>
+                        <div className="house-construction-buttons">
+                            {LARGE_HOUSES.map(
+                                (house, index) => {
 
-                    {this.state.selected === "Buildings" && this.state.buildingSizeSelected === "small" &&
-                        <DialogSection>
-                            <div className="house-construction-buttons">
-                                {SMALL_HOUSES.map(
-                                    (house, index) => {
+                                    if (house === "Headquarter") {
+                                        return <></>
+                                    } else {
 
                                         return (
                                             <Button className="ConstructionItem"
@@ -251,96 +237,27 @@ class ConstructionInfo extends Component<ConstructionInfoProps, ConstructionInfo
                                                 onClick={
                                                     async () => {
                                                         console.info("Creating house")
-                                                        monitor.placeHouse(house, this.props.point)
+                                                        monitor.placeHouse(house, point)
 
-                                                        this.props.closeDialog()
+                                                        onClose()
                                                     }
                                                 }
                                             >
                                                 <div className='house-construction-button'>
-                                                    <HouseIcon nation={this.props.nation} houseType={house} />
+                                                    <HouseIcon nation={nation} houseType={house} />
                                                     {camelCaseToWords(house)}
                                                 </div>
                                             </Button>
                                         )
-                                    })
-                                }
-                            </div>
-                        </DialogSection>
-                    }
-
-                    {this.state.selected === "Buildings" &&
-                        this.canBuildMediumHouse() &&
-                        this.state.buildingSizeSelected === "medium" &&
-                        <DialogSection>
-                            <div className="house-construction-buttons">
-                                {MEDIUM_HOUSES.map(
-                                    (house, index) => {
-
-                                        return (
-                                            <Button className="ConstructionItem"
-                                                key={index}
-                                                onClick={
-                                                    async () => {
-                                                        console.info("Creating house")
-                                                        monitor.placeHouse(house, this.props.point)
-
-                                                        this.props.closeDialog()
-                                                    }
-                                                }
-                                            >
-                                                <div className='house-construction-button'>
-                                                    <HouseIcon nation={this.props.nation} houseType={house} />
-                                                    {camelCaseToWords(house)}
-                                                </div>
-                                            </Button>
-                                        )
-                                    })
-                                }
-                            </div>
-                        </DialogSection>
-                    }
-
-                    {this.state.selected === "Buildings" &&
-                        this.canBuildLargeHouse() &&
-                        this.state.buildingSizeSelected === "large" &&
-                        <DialogSection>
-                            <div className="house-construction-buttons">
-                                {LARGE_HOUSES.map(
-                                    (house, index) => {
-
-                                        if (house === "Headquarter") {
-                                            return <></>
-                                        } else {
-
-                                            return (
-                                                <Button className="ConstructionItem"
-                                                    key={index}
-                                                    onClick={
-                                                        async () => {
-                                                            console.info("Creating house")
-                                                            monitor.placeHouse(house, this.props.point)
-
-                                                            this.props.closeDialog()
-                                                        }
-                                                    }
-                                                >
-                                                    <div className='house-construction-button'>
-                                                        <HouseIcon nation={this.props.nation} houseType={house} />
-                                                        {camelCaseToWords(house)}
-                                                    </div>
-                                                </Button>
-                                            )
-                                        }
-                                    })
-                                }
-                            </div>
-                        </DialogSection>
-                    }
-                </>
-            </Dialog>
-        )
-    }
+                                    }
+                                })
+                            }
+                        </div>
+                    </DialogSection>
+                }
+            </>
+        </Dialog>
+    )
 }
 
 export { ConstructionInfo }

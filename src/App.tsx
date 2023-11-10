@@ -1079,10 +1079,8 @@ class App extends Component<AppProps, AppState> {
 
                 {this.state.showConstructionInfo &&
                     <ConstructionInfo point={this.state.showConstructionInfo}
-                        closeDialog={this.closeActiveMenu.bind(this)}
-                        playerId={this.props.selfPlayerId}
-                        startNewRoad={this.startNewRoad.bind(this)}
-                        gameId={this.props.gameId}
+                        onClose={this.closeActiveMenu.bind(this)}
+                        onStartNewRoad={this.startNewRoad.bind(this)}
                         nation={(this.state.player) ? this.state.player.nation : "ROMANS"}
                     />
                 }

@@ -8,6 +8,13 @@ const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new 
 const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
 const roadListeners: (() => void)[] = []
 
+interface FlagListener {
+    onUpdate: ((flag: FlagInformation) => void)
+    onRemove: (() => void)
+}
+
+const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[]>()
+
 let loadingPromise: Promise<void> | undefined = undefined
 let websocket: WebSocket | undefined = undefined
 
@@ -111,9 +118,11 @@ export interface Monitor {
     placeLocalRoad: ((points: Point[]) => void)
     getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
     setReservedSoldiers: ((rank: SoldierType, amount: number) => void)
-    addDetailedMonitoring: ((houseId: HouseId) => void)
+    addDetailedMonitoring: ((id: HouseId | FlagId) => void)
     removeDetailedMonitoring: ((houseId: HouseId) => void)
     removeMessage: ((messageId: GameMessageId) => void)
+    listenToFlag: ((flagId: FlagId, listener: FlagListener) => void)
+    stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
 
     killWebsocket: (() => void)
 }
@@ -171,6 +180,8 @@ const monitor: Monitor = {
     addDetailedMonitoring: addDetailedMonitoring,
     removeDetailedMonitoring: removeDetailedMonitoring,
     removeMessage: removeMessage,
+    listenToFlag: listenToFlag,
+    stopListeningToFlag: stopListeningToFlag,
 
     killWebsocket: killWebsocket
 }
@@ -673,7 +684,11 @@ function receivedFullSyncMessage(message: FullSyncMessage): void {
 
     message.houses.forEach(house => monitor.houses.set(house.id, house))
 
-    message.flags.forEach(flag => monitor.flags.set(flag.id, flag))
+    message.flags.forEach(flag => {
+        monitor.flags.set(flag.id, flag)
+        flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
+    })
+
 
     message.roads.forEach(road => monitor.roads.set(road.id, road))
 
@@ -787,9 +802,18 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     message.newDecorations?.forEach(pointAndDecoration => monitor.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
     message.removedDecorations?.forEach(point => monitor.decorations.delete(point))
 
-    message.newFlags?.forEach(flag => monitor.flags.set(flag.id, flag))
-    message.changedFlags?.forEach(flag => monitor.flags.set(flag.id, flag))
-    message.removedFlags?.forEach(id => monitor.flags.delete(id))
+    message.newFlags?.forEach(flag => {
+        monitor.flags.set(flag.id, flag)
+        flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
+    })
+    message.changedFlags?.forEach(flag => {
+        monitor.flags.set(flag.id, flag)
+        flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
+    })
+    message.removedFlags?.forEach(id => {
+        monitor.flags.delete(id)
+        flagListeners.get(id)?.forEach(listener => listener.onRemove())
+    })
 
     message.newRoads?.forEach(road => monitor.roads.set(road.id, road))
     message.removedRoads?.forEach(id => monitor.roads.delete(id))
@@ -1572,11 +1596,11 @@ function setReservedSoldiers(rank: SoldierType, amount: number): void {
     ))
 }
 
-function addDetailedMonitoring(houseId: HouseId): void {
+function addDetailedMonitoring(id: HouseId | FlagId): void {
     websocket?.send(JSON.stringify(
         {
             command: 'START_DETAILED_MONITORING',
-            buildingId: houseId
+            id: id
         }
     ))
 }
@@ -1603,6 +1627,26 @@ function getRequestId(): number {
     nextRequestId += 1
 
     return nextRequestId - 1
+}
+
+function listenToFlag(flagId: FlagId, listener: FlagListener): void {
+    if (!flagListeners.has(flagId)) {
+        flagListeners.set(flagId, [])
+    }
+
+    flagListeners.get(flagId)?.push(listener)
+}
+
+function stopListeningToFlag(flagId: FlagId, listener: FlagListener): void {
+    const listeners = flagListeners.get(flagId)
+
+    if (listeners) {
+        const index = listeners.indexOf(listener)
+
+        if (index > -1) {
+            delete listeners[index]
+        }
+    }
 }
 
 function killWebsocket(): void {

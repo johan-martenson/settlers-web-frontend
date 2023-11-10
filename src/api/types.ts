@@ -470,6 +470,7 @@ export interface FlagInformation extends Point {
     playerId: PlayerId
     type: FlagType
     stackedCargo?: MaterialAllUpperCase[]
+    nation: Nation
 }
 
 export interface BorderInformation {

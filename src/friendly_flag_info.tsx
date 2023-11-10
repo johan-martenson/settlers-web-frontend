@@ -1,95 +1,113 @@
-import React, { Component } from 'react'
-import { FlagInformation, GameId, PlayerId } from './api/types'
-import { Dialog, DialogSection } from './dialog'
+import React, { useEffect, useState } from 'react'
+import { FlagInformation, Nation } from './api/types'
 import './friendly_flag_info.css'
 import { monitor } from './api/ws-api'
-import { Button } from '@fluentui/react-components'
+import { Button, Field } from '@fluentui/react-components'
+import { FlagIcon, InventoryIcon } from './icon'
 
 interface FriendlyFlagInfoProps {
-    closeDialog: (() => void)
     flag: FlagInformation
-    gameId: GameId
-    playerId: PlayerId
-    startNewRoad: ((flag: FlagInformation) => void)
+    nation: Nation
+    onStartNewRoad: ((flag: FlagInformation) => void)
+    onClose: (() => void)
 }
-interface FriendlyFlagInfoState { }
 
-class FriendlyFlagInfo extends Component<FriendlyFlagInfoProps, FriendlyFlagInfoState> {
+const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
 
-    render(): JSX.Element {
-        return (
-            <Dialog heading="Flag" onCloseDialog={this.props.closeDialog} floating>
+    const nation = props.nation
 
-                <DialogSection>
+    const onClose = props.onClose
+    const onStartNewRoad = props.onStartNewRoad
 
-                    <div className="FlagInformation">
+    const [flag, setFlag] = useState<FlagInformation>(props.flag)
 
-                        <div className="ButtonRow">
+    useEffect(
+        () => {
+            const listener = {
+                onUpdate: (updatedFlag: FlagInformation) => setFlag(updatedFlag),
+                onRemove: () => onClose()
+            }
 
-                            <Button
-                                icon="flag.png"
-                                onClick={
-                                    async () => {
-                                        console.log("Removing flag")
+            monitor.listenToFlag(flag.id, listener)
 
-                                        monitor.removeFlag(this.props.flag.id)
+            return () => { monitor.stopListeningToFlag(flag.id, listener) }
+        }, [])
 
-                                        this.props.closeDialog()
-                                    }
-                                }
-                            >Remove</Button>
+    return (
+        <div className='friendly-flag-info'>
+            <h1>Flag</h1>
 
-                            <Button
-                                icon="road-1.png"
-                                onClick={
-                                    () => {
-                                        console.info("Starting to build road")
+            <div className="flag-information">
 
-                                        this.props.startNewRoad(this.props.flag)
+                <FlagIcon type={flag.type} nation={flag.nation} />
 
-                                        this.props.closeDialog()
-                                    }
-                                }
-                            >Build road</Button>
+                <div className="button-row">
 
-                            <Button
-                                icon="pickaxe2.png"
-                                onClick={
-                                    async () => {
-                                        console.info("Calling for geologist")
+                    <Button
+                        onClick={
+                            async () => {
+                                monitor.removeFlag(flag.id)
 
-                                        monitor.callGeologist(this.props.flag)
-
-                                        this.props.closeDialog()
-                                    }
-                                }
-                            >Call geologist</Button>
-
-                            <Button
-                                icon="magnifier2.png"
-                                onClick={
-                                    async () => {
-                                        console.info("Sending scout")
-
-                                        monitor.callScout(this.props.flag)
-
-                                        this.props.closeDialog()
-                                    }
-                                }
-                            >Send scout</Button>
-                        </div>
-
-                        {this.props.flag.stackedCargo && this.props.flag.stackedCargo.map(
-                            (material, index) => {
-                                return <div key={index}>{material}</div>
+                                onClose()
                             }
-                        )}
-                    </div>
-                </DialogSection>
+                        }
+                    >Remove</Button>
 
-            </Dialog>
-        )
-    }
+                    <Button
+                        onClick={
+                            () => {
+                                onStartNewRoad(flag)
+
+                                onClose()
+                            }
+                        }
+                    >Build road</Button>
+
+                    <Button
+                        onClick={
+                            async () => {
+                                monitor.callGeologist(flag)
+
+                                onClose()
+                            }
+                        }
+                    >
+                        <div className='friendly-flag-info-button-icon-and-label'>
+                            <InventoryIcon material='GEOLOGIST' nation={nation} />
+                            Call geologist
+                        </div>
+                    </Button>
+
+                    <Button
+                        onClick={
+                            async () => {
+                                monitor.callScout(flag)
+
+                                onClose()
+                            }
+                        }
+                    >
+                        <div className='friendly-flag-info-button-icon-and-label'>
+                            <InventoryIcon material='SCOUT' nation={nation} />
+                            Send scout
+                        </div>
+                    </Button>
+                </div>
+
+                {flag.stackedCargo &&
+                    <div className='friendly-flag-info-stacked-cargo'>
+                        <Field label='Cargo waiting'>
+                            <div className='friendly-flag-info-cargo-list'>
+                                {flag.stackedCargo.map(material => <InventoryIcon material={material} key={material} nation={nation} inline />)}
+                            </div>
+                        </Field>
+                    </div>
+                }
+            </div>
+            <Button onClick={() => onClose()}>Close</Button>
+
+        </div>
+    )
 }
 
 export default FriendlyFlagInfo

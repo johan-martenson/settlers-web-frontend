@@ -65,7 +65,7 @@ class Lobby extends Component<LobbyProps, LobbyState> {
 
                 {this.state.state === "CREATE_GAME" &&
                     <GameCreator
-                        selfPlayer={this.props.player}
+                        playerName={this.props.player.name}
                         onCreateGameDone={this.onCreateGameDone.bind(this)}
                         onGameCreateCanceled={this.onGameCreateCanceled.bind(this)}
                         onGameStarted={this.onGameStarted.bind(this)}

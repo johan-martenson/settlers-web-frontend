@@ -1,4 +1,4 @@
-import React, { ChangeEvent, Component } from 'react'
+import React, { ChangeEvent, useState } from 'react'
 import { GameId, PlayerId } from './api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
 import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option } from '@fluentui/react-components'
@@ -32,132 +32,100 @@ interface GameMenuProps {
     onSetTypingControllerVisible: ((visible: boolean) => void)
     onSetAvailableConstructionVisible: ((visible: boolean) => void)
 }
-interface GameMenuState {
-    zoom: number
-    isOpen: boolean
-}
 
-class GameMenu extends Component<GameMenuProps, GameMenuState> {
-    constructor(props: GameMenuProps) {
-        super(props)
+const GameMenu = (
+    { minZoom, maxZoom, isOpen, defaultZoom, areTitlesVisible, isMusicPlayerVisible, isTypingControllerVisible, isAvailableConstructionVisible,
+        onClose, onChangedZoom, onSetTitlesVisible, onSetMusicPlayerVisible, onSetTypingControllerVisible, onSetAvailableConstructionVisible, onLeaveGame, onStatistics,
+        onHelp, onSetTransportPriority }: GameMenuProps
+) => {
+    const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
 
-        this.state = {
-            zoom: DEFAULT_SCALE,
-            isOpen: false
-        }
-    }
+    return (
+        <Drawer type='overlay' separator open={isOpen} onOpenChange={() => onClose()}>
+            <DrawerHeader>
 
-    render(): JSX.Element {
+                <DrawerHeaderTitle action={<Button appearance="subtle" aria-label="Close" icon={<Dismiss24Regular />} onClick={() => onClose()} />} >
+                    Menu
+                </DrawerHeaderTitle>
+            </DrawerHeader>
+            <DrawerBody>
+                <div className='menu'>
+                    <Field label='Zoom'>
+                        <Slider max={maxZoom}
+                            min={minZoom}
+                            value={zoom}
+                            step={1}
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                                onChangedZoom(data.value)
 
-        return (
-            <Drawer
-                type='overlay'
-                separator
-                open={this.props.isOpen}
-                onOpenChange={() => this.props.onClose()}>
-                <DrawerHeader>
-
-                    <DrawerHeaderTitle
-                        action={
-                            <Button
-                                appearance="subtle"
-                                aria-label="Close"
-                                icon={<Dismiss24Regular />}
-                                onClick={() => this.props.onClose()}
-                            />
-                        }
-                    >
-                        Menu
-                    </DrawerHeaderTitle>
-                </DrawerHeader>
-                <DrawerBody>
-                    <div className='menu'>
-                        <Field label='Zoom'>
-                            <Slider max={this.props.maxZoom}
-                                min={this.props.minZoom}
-                                value={this.state.zoom}
-                                step={1}
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
-                                    this.props.onChangedZoom(data.value)
-
-                                    this.setState({ zoom: data.value })
-                                }}
-                            />
-                            <Button onClick={() => {
-                                this.props.onChangedZoom(this.props.defaultZoom)
-
-                                this.setState({ zoom: DEFAULT_SCALE })
-                            }} >Reset</Button>
-                        </Field>
-                        <Field label='Set game speed'>
-                            <Dropdown defaultValue={"Normal"} onOptionSelect={(event: any, data: any) => console.log("Select new game speed: " + data.optionValue)}>
-                                <Option>
-                                    Fast
-                                </Option>
-                                <Option>
-                                    Normal
-                                </Option>
-                                <Option>
-                                    Slow
-                                </Option>
-                            </Dropdown>
-                        </Field>
-                        <Field label='Show house titles'>
-                            <Switch
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.onSetTitlesVisible(data.checked)}
-                                defaultChecked={this.props.areTitlesVisible} />
-                        </Field>
-
-                        <Field label='Show music player'>
-                            <Switch
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.onSetMusicPlayerVisible(data.checked)}
-                                defaultChecked={this.props.isMusicPlayerVisible}
-                            />
-                        </Field>
-
-                        <Field label='Show typing controller'>
-                            <Switch
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.onSetTypingControllerVisible(data.checked)}
-                                defaultChecked={this.props.isTypingControllerVisible}
-                            />
-                        </Field>
-                        <Field label="Show available construction">
-                            <Switch
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => this.props.onSetAvailableConstructionVisible(data.checked)}
-                                defaultChecked={this.props.isAvailableConstructionVisible}
-                            />
-                        </Field>
-
+                                setZoom(data.value)
+                            }}
+                        />
                         <Button onClick={() => {
-                            this.props.onStatistics()
+                            onChangedZoom(defaultZoom)
 
-                            this.props.onClose()
-                        }
-                        }
-                        >Statistics</Button>
-                        <Button onClick={() => {
-                            this.props.onSetTransportPriority()
+                            setZoom(DEFAULT_SCALE)
+                        }} >Reset</Button>
+                    </Field>
+                    <Field label='Set game speed'>
+                        <Dropdown defaultValue={"Normal"} onOptionSelect={(event: any, data: any) => console.log("Select new game speed: " + data.optionValue)}>
+                            <Option>Fast</Option>
+                            <Option>Normal</Option>
+                            <Option>Slow</Option>
+                        </Dropdown>
+                    </Field>
+                    <Field label='Show house titles'>
+                        <Switch
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetTitlesVisible(data.checked)}
+                            defaultChecked={areTitlesVisible} />
+                    </Field>
 
-                            this.props.onClose()
-                        }
-                        }
-                        >Set transport priority</Button>
-                        <Button onClick={() => {
-                            this.props.onHelp()
+                    <Field label='Show music player'>
+                        <Switch
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetMusicPlayerVisible(data.checked)}
+                            defaultChecked={isMusicPlayerVisible}
+                        />
+                    </Field>
 
-                            this.props.onClose()
-                        }
-                        }
-                        >Help</Button>
+                    <Field label='Show typing controller'>
+                        <Switch
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetTypingControllerVisible(data.checked)}
+                            defaultChecked={isTypingControllerVisible}
+                        />
+                    </Field>
+                    <Field label="Show available construction">
+                        <Switch
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAvailableConstructionVisible(data.checked)}
+                            defaultChecked={isAvailableConstructionVisible}
+                        />
+                    </Field>
 
-                        <Divider />
+                    <Button onClick={() => {
+                        onStatistics()
 
-                        <Button onClick={this.props.onLeaveGame} >Leave game</Button>
-                    </div>
-                </DrawerBody>
-            </Drawer>
-        )
-    }
+                        onClose()
+                    }}
+                    >Statistics</Button>
+                    <Button onClick={() => {
+                        onSetTransportPriority()
+
+                        onClose()
+                    }}
+                    >Set transport priority</Button>
+                    <Button onClick={() => {
+                        onHelp()
+
+                        onClose()
+                    }}
+                    >Help</Button>
+
+                    <Divider />
+
+                    <Button onClick={() => onLeaveGame()} >Leave game</Button>
+                </div>
+            </DrawerBody>
+        </Drawer>
+    )
 }
 
 export default GameMenu

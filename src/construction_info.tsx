@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { AvailableConstruction, GameId, LARGE_HOUSES, MEDIUM_HOUSES, Nation, PlayerId, Point, PointInformation, SMALL_HOUSES } from './api/types'
+import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES } from './api/types'
 import './construction_info.css'
 import { Dialog, DialogSection } from './dialog'
 import { monitor } from './api/ws-api'

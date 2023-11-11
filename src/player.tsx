@@ -36,11 +36,10 @@ const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProp
         <Card>
             <CardHeader
                 header={(isEditing) ?
-                    <div>
+                    <div className='player-edit'>
                         <Field label="Set name">
                             <Input
                                 type="text"
-                                className="SetNameField"
                                 placeholder={player.name}
                                 onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setEditName(data.value)}
                                 onKeyDown={(ev: React.KeyboardEvent<HTMLInputElement>) => {
@@ -75,7 +74,7 @@ const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProp
                         {player.name} {player.type === "COMPUTER" && "(computer)"}
                         {isSelf && "(me)"}
                     </Text>}
-                description={
+                description={isEditing ? <></> :
                     <Caption1>
                         {nationPrettyString}, {player.type === "COMPUTER" && "computer player"}
                         {isSelf && "me"}

@@ -1,31 +1,5 @@
-.SetName {
+.player-edit {
     display: flex;
-    flex-direction: row;
-}
-
-.PlayerNameLabel {
-    text-align: left;
-}
-
-.SetNameLabel {
-    width: 10em;
-    text-align: left;
-}
-
-.SetNameField {
-    margin-right: var(--button-margin);
-    vertical-align: middle;
-    width: 7em;
-}
-
-.SetNameButton {
-    margin-right: var(--button-margin);
-    vertical-align: middle;
-    width: 3em;
-}
-
-.PlayerTop {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
 }

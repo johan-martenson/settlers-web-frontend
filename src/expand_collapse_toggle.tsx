@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import './expand_collapse_toggle.css'
 import { Button } from '@fluentui/react-components'
 import { ChevronUp24Filled, ChevronDown24Filled } from '@fluentui/react-icons'
@@ -9,45 +9,32 @@ interface ExpandCollapseToggleProps {
     onExpand: (() => void)
     onCollapse: (() => void)
 }
-interface ExpandCollapseToggleState {
-    expanded: boolean
-}
 
-class ExpandCollapseToggle extends Component<ExpandCollapseToggleProps, ExpandCollapseToggleState> {
+const ExpandCollapseToggle = ({ inverted, onCollapse, onExpand }: ExpandCollapseToggleProps) => {
+    const [expanded, setExpanded] = useState<boolean>(false)
 
-    constructor(props: ExpandCollapseToggleProps) {
-        super(props)
+    function onClick(): void {
+        if (expanded) {
+            onCollapse()
+        } else {
+            onExpand()
+        }
 
-        this.state = {
-            expanded: this.props.expanded ? true : false
+        setExpanded(!expanded)
+    }
+
+    if (inverted) {
+        if (expanded) {
+            return (<Button icon={<ChevronUp24Filled onClick={onClick} />} appearance='transparent' />)
+        } else {
+            return (<Button icon={<ChevronDown24Filled onClick={onClick} />} appearance='transparent' />)
         }
     }
 
-    onClick(): void {
-        if (this.state.expanded) {
-            this.props.onCollapse()
-        } else {
-            this.props.onExpand()
-        }
-
-        this.setState({ expanded: !this.state.expanded })
-    }
-
-    render(): JSX.Element {
-
-        if (this.props.inverted) {
-            if (this.state.expanded) {
-                return (<Button icon={<ChevronUp24Filled onClick={this.onClick.bind(this)} /> } appearance='transparent' />)
-            } else {
-                return (<Button icon={<ChevronDown24Filled onClick={this.onClick.bind(this)} /> } appearance='transparent' />)
-            }
-        }
-
-        if (this.state.expanded) {
-            return (<Button icon={<ChevronDown24Filled onClick={this.onClick.bind(this)} /> } appearance='transparent' />)
-        } else {
-            return (<Button icon={<ChevronUp24Filled onClick={this.onClick.bind(this)} /> } appearance='transparent' />)
-        }
+    if (expanded) {
+        return (<Button icon={<ChevronDown24Filled onClick={onClick} />} appearance='transparent' />)
+    } else {
+        return (<Button icon={<ChevronUp24Filled onClick={onClick} />} appearance='transparent' />)
     }
 }
 

@@ -31,7 +31,7 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
     }
 
     async componentDidMount(): Promise<void> {
-        const mapImage = await makeImageFromMap(this.props.map)
+        const mapImage = await makeImageFromMap(this.props.map, 4, 2)
 
         if (!mapImage) {
             console.log("No image!")
@@ -50,7 +50,7 @@ class MapInformationCard extends Component<MapInformationCardProps, MapInformati
         if (mapImage) {
             this.setState({ mapImage })
         } else {
-            const mapImage = await makeImageFromMap(this.props.map)
+            const mapImage = await makeImageFromMap(this.props.map, 4, 2)
 
             if (!mapImage) {
                 return

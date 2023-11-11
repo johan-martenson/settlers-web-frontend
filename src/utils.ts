@@ -33,29 +33,29 @@ export type RgbColorArray = [number, number, number]
 
 const intToVegetationColor = new Map<number, RgbColorArray>()
 
-intToVegetationColor.set(0, [0, 120, 0])       // Savannah
+intToVegetationColor.set(0, [50, 82, 56])       // Savannah
 intToVegetationColor.set(1, [140, 140, 140])   // Mountain 1
 intToVegetationColor.set(2, [220, 220, 220])   // Snow
 intToVegetationColor.set(3, [0, 110, 0])       // Swamp
 intToVegetationColor.set(4, [110, 0, 110])     // Desert 1
-intToVegetationColor.set(5, [0, 0, 220])       // Water
-intToVegetationColor.set(6, [0, 0, 220])       // Buildable water
+intToVegetationColor.set(5, [56, 62, 140])       // Water
+intToVegetationColor.set(6, [56, 62, 140])       // Buildable water
 intToVegetationColor.set(7, [110, 0, 110])     // Desert 2
-intToVegetationColor.set(8, [0, 110, 0])       // Meadow 1
-intToVegetationColor.set(9, [0, 110, 0])       // Meadow 2
-intToVegetationColor.set(10, [0, 110, 0])      // Meadow 3
+intToVegetationColor.set(8, [50, 82, 56])       // Meadow 1
+intToVegetationColor.set(9, [50, 82, 56])       // Meadow 2
+intToVegetationColor.set(10, [50, 82, 56])      // Meadow 3
 intToVegetationColor.set(11, [140, 140, 140])  // Mountain 2
 intToVegetationColor.set(12, [140, 140, 140])  // Mountain 3
 intToVegetationColor.set(13, [140, 140, 140])  // Mountain 4
 intToVegetationColor.set(14, [110, 0, 110])    // Steppe
-intToVegetationColor.set(15, [0, 110, 0])      // Flower meadow
-intToVegetationColor.set(16, [220, 0, 0])      // Lava 1
-intToVegetationColor.set(17, [140, 140, 140])  // Magenta
-intToVegetationColor.set(18, [230, 110, 0])    // Mountain meadow
-intToVegetationColor.set(19, [0, 0, 220])      // Water 2
-intToVegetationColor.set(20, [220, 0, 0])      // Lava 2
-intToVegetationColor.set(21, [220, 0, 0])      // Lava 3
-intToVegetationColor.set(22, [220, 0, 0])      // Lava 4
+intToVegetationColor.set(15, [50, 82, 56])      // Flower meadow
+intToVegetationColor.set(16, [110, 57, 48])      // Lava 1
+intToVegetationColor.set(17, [99, 61, 99])  // Magenta
+intToVegetationColor.set(18, [50, 82, 56])    // Mountain meadow
+intToVegetationColor.set(19, [56, 62, 140])      // Water 2
+intToVegetationColor.set(20, [110, 57, 48])      // Lava 2
+intToVegetationColor.set(21, [110, 57, 48])      // Lava 3
+intToVegetationColor.set(22, [110, 57, 48])      // Lava 4
 intToVegetationColor.set(23, [140, 140, 140])  // Buildable mountain
 
 // FIXME: make a proper implementation
@@ -2143,15 +2143,15 @@ function pointStringToPoint(pointString: string): Point {
     return { x: parseInt(x), y: parseInt(y) }
 }
 
-async function makeImageFromMap(map: MapInformation): Promise<HTMLImageElement | undefined> {
+async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSize: number): Promise<HTMLImageElement | undefined> {
 
     const terrainInformation = await getTerrainForMap(map.id)
 
     const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
 
     const offscreenCanvas = document.createElement('canvas')
-    offscreenCanvas.width = map.width * 2
-    offscreenCanvas.height = map.height
+    offscreenCanvas.width = map.width * 2 * blockSize / scaleDown
+    offscreenCanvas.height = map.height * blockSize / scaleDown
 
     const ctx = offscreenCanvas.getContext("2d", { alpha: false })
 
@@ -2173,7 +2173,7 @@ async function makeImageFromMap(map: MapInformation): Promise<HTMLImageElement |
         }
     }
 
-    ctx.rect(0, 0, map.width * 2, map.height)
+    ctx.rect(0, 0, map.width * 2 * blockSize / scaleDown, map.height * blockSize / scaleDown)
 
     ctx.fill()
 
@@ -2181,7 +2181,7 @@ async function makeImageFromMap(map: MapInformation): Promise<HTMLImageElement |
 
         const point = pointTerrainInformation.point
 
-        if (point.x % 4 === 0 && point.y % 4 === 0) {
+        if (point.x % scaleDown === 0 && point.y % scaleDown === 0) {
 
             const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
             const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
@@ -2194,7 +2194,7 @@ async function makeImageFromMap(map: MapInformation): Promise<HTMLImageElement |
                 pointTerrainInformation.below !== waterIntValue2) {
                 ctx.beginPath()
                 ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
-                ctx.rect(point.x, map.height - point.y, 4, 4)
+                ctx.rect(point.x * blockSize / scaleDown, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
                 ctx.fill()
             }
 
@@ -2204,7 +2204,7 @@ async function makeImageFromMap(map: MapInformation): Promise<HTMLImageElement |
                 pointTerrainInformation.downRight !== waterIntValue2) {
                 ctx.beginPath()
                 ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
-                ctx.rect(point.x + 4, map.height - point.y, 4, 4)
+                ctx.rect((point.x * blockSize / scaleDown) + blockSize, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
                 ctx.fill()
             }
         }
@@ -2215,7 +2215,7 @@ async function makeImageFromMap(map: MapInformation): Promise<HTMLImageElement |
     ctx.fillStyle = 'yellow'
     map.startingPoints.forEach(point => {
         ctx.beginPath()
-        ctx.arc(point.x, map.height - point.y, 3, 0, 2 * Math.PI)
+        ctx.arc(point.x * blockSize / scaleDown, (map.height - point.y) * blockSize / scaleDown, 3, 0, 2 * Math.PI)
         ctx.fill()
     }
     )

@@ -40,21 +40,6 @@ h1 {
     text-align: center;
 }
 
-.Button {
-    cursor: pointer;
-    margin: var(--button-margin);
-    padding: var(--button-padding);
-    text-align: center;
-    border-radius: var(--button-rounded-corner);
-    background-color: var(--button-color);
-    color: white;
-}
-
-.Button:hover {
-    background-color: var(--hover-color);
-    border-radius: var(--button-rounded-corner);
-}
-
 .Disabled {
     color: var(--disabled-color) !important;
 }
@@ -93,98 +78,6 @@ h1 {
     height: 0.2rem;
     background-color: var(--button-color);
     margin: 0.4rem 0;
-}
-
-.MenuSectionLabel {
-    text-align: left;
-    width: 100%;
-    margin-bottom: 0;
-}
-
-.MenuSectionContent {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-.Menu * {
-    margin: 1em auto;
-    padding: 5px;
-}
-
-.Selected {
-    background-color: var(--selected-color);
-    color: whitesmoke;
-}
-
-.MediumIcon {
-    width: 100px;
-}
-
-.SmallIcon {
-    width: 50px;
-}
-
-.ConstructionItem {
-    float: left;
-}
-
-.Choice {
-    margin-right: var(--button-margin);
-}
-
-.Choice:hover {
-    cursor: pointer;
-    background-color: var(--hover-color);
-    border-radius: var(--button-rounded-corner);
-}
-
-.Slider {
-    display: flex;
-}
-
-.Slider .SliderScale {
-    width: 100%;
-    position: relative;
-    margin: 0;
-    background-color: lightgray;
-}
-
-.Slider .SliderLessLabel {
-    display: inline-block;
-    margin-right: 0.5rem;
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-.Slider .SliderMoreLabel {
-    display: inline-block;
-    margin-left: 0.5rem;
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-.Slider .SliderIndicator {
-    position: absolute;
-    top: 0;
-    background-color: var(--selected-color);
-    width: 2rem;
-    height: 100%;
-    border-radius: 0.2rem;
-    margin: 0;
-    transform: translateX(-0.25rem)
-}
-
-.Slider .SliderIndicator:hover {
-    background-color: var(--hover-color);
-    cursor: pointer;
-}
-
-.Slider .SliderLessLabel:hover {
-    cursor: pointer;
-}
-
-.Slider .SliderMoreLabel:hover {
-    cursor: pointer;
 }
 
 .App {

@@ -11,11 +11,16 @@ interface AudioAtlasSongs {
     title: string
 }
 
+interface SongAndTitle {
+    title: string
+    song: HTMLAudioElement
+}
+
 const MusicPlayer = ({ }: MusicPlayerProps) => {
 
     const [expanded, setExpanded] = useState<boolean>(false)
     const [playing, setPlaying] = useState<boolean>(false)
-    const [songs, setSongs] = useState<HTMLAudioElement[]>([])
+    const [songs, setSongs] = useState<SongAndTitle[]>([])
     const [currentSong, setCurrentSong] = useState<number>(0)
 
     useEffect(() => {
@@ -24,7 +29,7 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
 
             const audioAtlasSongs: AudioAtlasSongs[] = await result.json()
 
-            const newSongs = audioAtlasSongs?.map(song => new Audio(song.path))
+            const newSongs = audioAtlasSongs?.map(newSong => { return { title: newSong.title, song: new Audio(newSong.path) } })
 
             setSongs(newSongs)
         })().then()
@@ -34,7 +39,7 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
 
     function pause() {
         if (songs) {
-            songs[currentSong].pause()
+            songs[currentSong].song.pause()
 
             setPlaying(false)
         }
@@ -42,8 +47,8 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
 
     function resume() {
         if (songs) {
-            songs[currentSong].onended = () => { next() }
-            songs[currentSong].play()
+            songs[currentSong].song.onended = () => { next() }
+            songs[currentSong].song.play()
 
             setPlaying(true)
         }
@@ -51,15 +56,15 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
 
     function next() {
         if (playing) {
-            songs[currentSong].pause()
+            songs[currentSong].song.pause()
         }
 
         const newSong = (currentSong < songs.length - 1) ? currentSong + 1 : 0
 
         if (playing) {
-            songs[newSong].currentTime = 0
-            songs[newSong].onended = () => { next() }
-            songs[newSong].play()
+            songs[newSong].song.currentTime = 0
+            songs[newSong].song.onended = () => { next() }
+            songs[newSong].song.play()
         }
 
         setCurrentSong(newSong)
@@ -67,12 +72,12 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
 
     function play(index: number): void {
         if (playing) {
-            songs[currentSong].pause()
+            songs[currentSong].song.pause()
         }
 
-        songs[index].currentTime = 0
-        songs[index].onended = () => { next() }
-        songs[index].play()
+        songs[index].song.currentTime = 0
+        songs[index].song.onended = () => { next() }
+        songs[index].song.play()
 
         setPlaying(true)
         setCurrentSong(index)
@@ -107,7 +112,6 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
                         {songs &&
                             songs.map(
                                 (song, index) => {
-
                                     return (
                                         <div className={(index === currentSong) ? "PlayingSongItem" : "SongItem"}
                                             key={index}

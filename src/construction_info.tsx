@@ -21,8 +21,8 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
     const onClose = props.onClose
 
     const [point, setPoint] = useState<PointInformation>(props.point)
-    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads'>()
-    const [buildingSizeSelected, setBuildingSizeSelected] = useState<'small' | 'medium' | 'large'>()
+    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads' )
+    const [buildingSizeSelected, setBuildingSizeSelected] = useState<'small' | 'medium' | 'large'>('small')
 
     const constructionOptions = new Map()
     const constructionInitialSelection = canBuildHouse(point) ? "Buildings" : "FlagsAndRoads"
@@ -41,7 +41,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
             monitor.listenToAvailableConstruction(point, listener)
 
             return () => monitor.stopListeningToAvailableConstruction(point, listener)
-        }, [])
+        }, [point])
 
     if (canBuildHouse(point)) {
         constructionOptions.set("Buildings", "Buildings")
@@ -151,7 +151,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                         }>
                         {Array.from(houseOptions.entries(),
                             ([key, value], index) => {
-                                return <Tab value={key} key={index}>{value}</Tab>
+                                return <Tab value={key} key={value}>{value}</Tab>
                             }
                         )}
                     </TabList>
@@ -165,7 +165,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
 
                                     return (
                                         <Button className="ConstructionItem"
-                                            key={index}
+                                            key={house}
                                             onClick={
                                                 async () => {
                                                     console.info("Creating house")
@@ -197,7 +197,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
 
                                     return (
                                         <Button className="ConstructionItem"
-                                            key={index}
+                                            key={house}
                                             onClick={
                                                 async () => {
                                                     console.info("Creating house")
@@ -224,33 +224,25 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                     buildingSizeSelected === "large" &&
                     <DialogSection>
                         <div className="house-construction-buttons">
-                            {LARGE_HOUSES.map(
-                                (house, index) => {
+                            {LARGE_HOUSES.filter(house => house !== 'Headquarter').map(
+                                (house, index) =>
+                                    <Button className="ConstructionItem"
+                                        key={house}
+                                        onClick={
+                                            async () => {
+                                                console.info("Creating house")
+                                                monitor.placeHouse(house, point)
 
-                                    if (house === "Headquarter") {
-                                        return <></>
-                                    } else {
-
-                                        return (
-                                            <Button className="ConstructionItem"
-                                                key={index}
-                                                onClick={
-                                                    async () => {
-                                                        console.info("Creating house")
-                                                        monitor.placeHouse(house, point)
-
-                                                        onClose()
-                                                    }
-                                                }
-                                            >
-                                                <div className='house-construction-button'>
-                                                    <HouseIcon nation={nation} houseType={house} />
-                                                    {camelCaseToWords(house)}
-                                                </div>
-                                            </Button>
-                                        )
-                                    }
-                                })
+                                                onClose()
+                                            }
+                                        }
+                                    >
+                                        <div className='house-construction-button'>
+                                            <HouseIcon nation={nation} houseType={house} />
+                                            {camelCaseToWords(house)}
+                                        </div>
+                                    </Button>
+                            )
                             }
                         </div>
                     </DialogSection>

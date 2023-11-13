@@ -663,7 +663,7 @@ class WorkerImageAtlasHandler {
             return undefined
         }
 
-        const frameIndex = (animationCounter + offset) % images.nrImages
+        const frameIndex = (animationCounter + Math.round(offset)) % images.nrImages
 
         return [
             {
@@ -762,7 +762,7 @@ class WorkerImageAtlasHandler {
             const cargoImages = this.imageAtlasInfo.common.cargoImages[material][direction]
 
             return {
-                sourceX: cargoImages.startX + ((animationIndex + offset) % cargoImages.nrImages) * cargoImages.width,
+                sourceX: cargoImages.startX + ((animationIndex + Math.round(offset)) % cargoImages.nrImages) * cargoImages.width,
                 sourceY: cargoImages.startY,
                 width: cargoImages.width,
                 height: cargoImages.height,

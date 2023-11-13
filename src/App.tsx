@@ -22,8 +22,8 @@ import { HouseInfo } from './house_info/house_info'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
-const MAX_SCALE = 50
-const MIN_SCALE = 20
+const MAX_SCALE = 70
+const MIN_SCALE = 10
 
 const LONGEST_TICK_LENGTH = 500
 

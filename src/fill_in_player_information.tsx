@@ -8,19 +8,14 @@ interface FillInPlayerInformationProps {
     onPlayerInformationDone: ((name: string) => void)
 }
 
+const defaultUserName = localStorage.getItem("mostRecentPlayer") ?? ""
+
 const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInformationProps) => {
-    const [defaultUserName, setDefaultUserName] = useState<string>()
-    const [userName, setUserName] = useState<string>()
+    const [userName, setUserName] = useState<string>(defaultUserName)
 
     useEffect(
         () => {
             do_self_test()
-
-            const lastPlayerName = localStorage.getItem("mostRecentPlayer")
-
-            if (lastPlayerName) {
-                setDefaultUserName(lastPlayerName)
-            }
 
             return () => { }
         }, [])
@@ -59,9 +54,9 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
 
                     <Button
                         onClick={() => {
-                            localStorage.setItem("mostRecentPlayer", userName ?? defaultUserName ?? "")
+                            localStorage.setItem("mostRecentPlayer", userName)
 
-                            onPlayerInformationDone(userName ?? defaultUserName ?? "")
+                            onPlayerInformationDone(userName)
                         }}
                         disabled={!userName || userName === ""}
                         appearance='primary'

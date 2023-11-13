@@ -51,54 +51,65 @@ const GameList = ({ onJoinGame }: GameListProps) => {
 
     return (
         <>
-            {games &&
-                <div className='games-list'>
-                    <Table size="small">
-                        <TableHeader>
-                            <TableRow>
-                                {columns.map(column => (
-                                    <TableHeaderCell key={column.columnKey}>
-                                        {column.label}
-                                    </TableHeaderCell>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-
-                        <TableBody>
-                            {games.map(game => (
-                                <TableRow key={game.id}>
-                                    <TableCell>{game.name}</TableCell>
-                                    <TableCell>{(game?.map) ? game.map.title : '-'}</TableCell>
-                                    <TableCell>{game.players.length}</TableCell>
-                                    <TableCell>{(game?.map) ? game.map.maxPlayers : '-'}</TableCell>
-                                    <TableCell>{statusToText[game.status]}</TableCell>
-                                    <TableCell>
-                                        <Menu>
-                                            <MenuTrigger disableButtonEnhancement>
-                                                <MenuButton>Actions</MenuButton>
-                                            </MenuTrigger>
-                                            <MenuPopover>
-                                                <MenuList>
-                                                    <MenuItem onClick={() => console.log("Clicked view " + game.id)}>View</MenuItem>
-                                                    {game.status === 'NOT_STARTED' && game.othersCanJoin &&
-                                                        <MenuItem onClick={() => onJoinGame(game.id)} >Join</MenuItem>
-                                                    }
-                                                </MenuList>
-                                            </MenuPopover>
-                                        </Menu>
-                                    </TableCell>
-                                </TableRow>
+            {<div className='games-list'>
+                <Table size="small">
+                    <TableHeader>
+                        <TableRow>
+                            {columns.map(column => (
+                                <TableHeaderCell key={column.columnKey}>
+                                    {column.label}
+                                </TableHeaderCell>
                             ))}
+                        </TableRow>
+                    </TableHeader>
 
-                        </TableBody>
-                    </Table>
-                </div>
-            }
+                    <TableBody>
+                        {games && games.map(game => (
+                            <TableRow key={game.id}>
+                                <TableCell>{game.name}</TableCell>
+                                <TableCell>{(game?.map) ? game.map.title : '-'}</TableCell>
+                                <TableCell>{game.players.length}</TableCell>
+                                <TableCell>{(game?.map) ? game.map.maxPlayers : '-'}</TableCell>
+                                <TableCell>{statusToText[game.status]}</TableCell>
+                                <TableCell>
+                                    <Menu>
+                                        <MenuTrigger disableButtonEnhancement>
+                                            <MenuButton>Actions</MenuButton>
+                                        </MenuTrigger>
+                                        <MenuPopover>
+                                            <MenuList>
+                                                <MenuItem onClick={() => console.log("Clicked view " + game.id)}>View</MenuItem>
+                                                {game.status === 'NOT_STARTED' && game.othersCanJoin &&
+                                                    <MenuItem onClick={() => onJoinGame(game.id)} >Join</MenuItem>
+                                                }
+                                                {game.players.filter(player => player.type === 'HUMAN')
+                                                    .map(player => <MenuItem
+                                                        key={game.id}
+                                                        onClick={() => window.location.href = "?gameId=" + game.id + "&playerId=" + player.id}
+                                                    >Play as {player.name}</MenuItem>)}
+                                            </MenuList>
+                                        </MenuPopover>
+                                    </Menu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
 
-            {!games &&
-                <Skeleton className="loader-skeleton">
-                    <SkeletonItem />
-                </Skeleton>
+                        {!games &&
+                            <>
+                                {[0, 1, 2, 3, 4].map(i => <TableRow key={i}>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                </TableRow>)}
+                            </>
+                        }
+
+                    </TableBody>
+                </Table>
+            </div>
             }
         </>
     )

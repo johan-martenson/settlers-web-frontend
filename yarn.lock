@@ -1633,10 +1633,10 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-components@^9.38.0":
-  version "9.38.0"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-components/-/react-components-9.38.0.tgz#ddef21b491fbd149b2e4eb4d93442168052daed1"
-  integrity sha512-lDmoYefKSeXjORmO8cvKlDQOkWDfKEuOrMSDci6orxgWnGrIONh6mDmHg7C+2H8DeIWBiK7Bigd75BAWt6TNQA==
+"@fluentui/react-components@^9.39.0":
+  version "9.39.0"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-components/-/react-components-9.39.0.tgz#56ad02f3bb320c920632c01e4fd60d12dbe75e7e"
+  integrity sha512-48mAff13sFfcYD6s4g6au4fne0cMtRIl4G7v9YIUuMrqutzaRLj6hG+Mx2Yd61rpozO9VJSgdL+FD/jJeA6N5A==
   dependencies:
     "@fluentui/react-accordion" "^9.3.27"
     "@fluentui/react-alert" "9.0.0-beta.91"
@@ -1648,7 +1648,7 @@
     "@fluentui/react-combobox" "^9.5.29"
     "@fluentui/react-dialog" "^9.8.4"
     "@fluentui/react-divider" "^9.2.49"
-    "@fluentui/react-drawer" "9.0.0"
+    "@fluentui/react-drawer" "^9.0.0"
     "@fluentui/react-field" "^9.1.41"
     "@fluentui/react-image" "^9.1.46"
     "@fluentui/react-infobutton" "9.0.0-beta.75"
@@ -1656,9 +1656,9 @@
     "@fluentui/react-input" "^9.4.51"
     "@fluentui/react-label" "^9.1.49"
     "@fluentui/react-link" "^9.1.33"
-    "@fluentui/react-menu" "^9.12.31"
+    "@fluentui/react-menu" "^9.12.32"
     "@fluentui/react-message-bar" "^9.0.5"
-    "@fluentui/react-overflow" "^9.0.43"
+    "@fluentui/react-overflow" "^9.1.0"
     "@fluentui/react-persona" "^9.2.55"
     "@fluentui/react-popover" "^9.8.20"
     "@fluentui/react-portal" "^9.4.0"
@@ -1685,7 +1685,7 @@
     "@fluentui/react-tooltip" "^9.3.21"
     "@fluentui/react-tree" "^9.4.12"
     "@fluentui/react-utilities" "^9.15.2"
-    "@fluentui/react-virtualizer" "9.0.0-alpha.56"
+    "@fluentui/react-virtualizer" "9.0.0-alpha.57"
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
@@ -1728,7 +1728,7 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-drawer@9.0.0":
+"@fluentui/react-drawer@^9.0.0":
   version "9.0.0"
   resolved "https://registry.yarnpkg.com/@fluentui/react-drawer/-/react-drawer-9.0.0.tgz#787246d6fc4e76c8674b55385bacbf2b52b9174d"
   integrity sha512-HWXtBwFQsDklhDiS3O5h2OokJ3B/kKMOXPHE8/vjELK4TsUDaV9gkr2IEHIlhx1OR7oo+N5wKmsbp+B7FNFspA==
@@ -1855,10 +1855,10 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-menu@^9.12.31":
-  version "9.12.31"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-menu/-/react-menu-9.12.31.tgz#9b02b4fc4acb18c17cec0f2401111c2cf9958e2a"
-  integrity sha512-PiWj4w9KnUU6nD+XAqDZR5a+6VquxbyL/Z6vEH+3MfU1769dR2mj68dKfLBZWmQKteSWJvqx4ZBR1KZwsYcccA==
+"@fluentui/react-menu@^9.12.32":
+  version "9.12.32"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-menu/-/react-menu-9.12.32.tgz#dc1d42fa9d8c5db98007854d12dfcd8dc3644041"
+  integrity sha512-w9VbE5vqCyO0HylrmOzrTFWwn1ZA3lYGhjpQgx7+ywJOAG7+gaUQJ/ofD/psrplCNTMzqpOOU6EJIv9syhx1pA==
   dependencies:
     "@fluentui/keyboard-keys" "^9.0.7"
     "@fluentui/react-aria" "^9.3.44"
@@ -1901,10 +1901,10 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-overflow@^9.0.43":
-  version "9.0.43"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-overflow/-/react-overflow-9.0.43.tgz#2a3c0950d491fa39e4f63bd89025d2d793b2bc43"
-  integrity sha512-YQDar2pw3WKpgK+gYg16l6Lsfz7HF4YLckOFlT4AujhrpdN6vEwDfw9Afj8/kSvJy5iGs0rqw8s4KokRWZArxA==
+"@fluentui/react-overflow@^9.1.0":
+  version "9.1.0"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-overflow/-/react-overflow-9.1.0.tgz#5d9cae4554cc30dd5c3130753dcc1d4305ca0e6a"
+  integrity sha512-VrHP4OIPIJWw4RNnVQ9KyHOcHM9L6ymaeXozHc88SM5luSU3fcbRaL9N2iLYROEU/61DIi15/Zf/4fwbY33Fig==
   dependencies:
     "@fluentui/priority-overflow" "^9.1.9"
     "@fluentui/react-context-selector" "^9.1.42"
@@ -2282,10 +2282,10 @@
     "@fluentui/keyboard-keys" "^9.0.7"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-virtualizer@9.0.0-alpha.56":
-  version "9.0.0-alpha.56"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-virtualizer/-/react-virtualizer-9.0.0-alpha.56.tgz#3d1f949ddba322b36a2321c99ea4c8dc7bd61485"
-  integrity sha512-IrJKFrpPO/uLA9dVUuzUEQ5LPHtlOHhykOKiGWWWUXsjJUSekTU17PL45fylaJmwsn4bDtWIFSNBW0FSQQrkLg==
+"@fluentui/react-virtualizer@9.0.0-alpha.57":
+  version "9.0.0-alpha.57"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-virtualizer/-/react-virtualizer-9.0.0-alpha.57.tgz#a85e722b7f0323c7426ffae0f547d072c58411df"
+  integrity sha512-ujfepYy71Lx4X3NTtEPAIYg3SEBI6WTxBV81mhFDAqNxBjhTgkPZHDYwXEGmo/Q5j9fUbIBHD9GBDmtsmimbRw==
   dependencies:
     "@fluentui/react-jsx-runtime" "^9.0.19"
     "@fluentui/react-shared-contexts" "^9.12.0"

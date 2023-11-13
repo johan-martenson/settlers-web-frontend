@@ -111,7 +111,6 @@ class App extends Component<AppProps, AppState> {
 
     private keyHandlers: Map<number, (() => void)> = new Map()
     private selfNameRef = React.createRef<HTMLDivElement>()
-    private typeControlRef = React.createRef<TypeControl>()
     private readonly commands: Map<string, Command>
     monitoringPromise: Promise<void>
 
@@ -133,7 +132,6 @@ class App extends Component<AppProps, AppState> {
         this.onTouchCancel = this.onTouchCancel.bind(this)
 
         this.onKeyDown = this.onKeyDown.bind(this)
-        this.onKeyPress = this.onKeyPress.bind(this)
 
         this.toggleDetails = this.toggleDetails.bind(this)
 
@@ -813,8 +811,10 @@ class App extends Component<AppProps, AppState> {
                 this.setState({ newRoad: undefined, possibleRoadConnections: [] })
 
                 /* Otherwise, send the escape to the type controller */
-            } else if (this.typeControlRef && this.typeControlRef.current) {
-                this.typeControlRef.current.onKeyDown(event)
+            } else {
+                const keyEvent = new CustomEvent("key", {detail: {key: event.key}})
+
+                document.dispatchEvent(keyEvent)
             }
 
         } else if (event.key === " ") {
@@ -834,21 +834,9 @@ class App extends Component<AppProps, AppState> {
         } else if (event.key === "M") {
             this.showMenu()
         } else {
-            if (this.typeControlRef && this.typeControlRef.current) {
-                this.typeControlRef.current.onKeyDown(event)
-            }
-        }
-    }
+            const keyEvent = new CustomEvent("key", {detail: {key: event.key}})
 
-    onKeyPress(event: React.KeyboardEvent<HTMLDivElement>): void {
-
-        /* Filter out input that should not result in type control */
-        if (event.key === "+" || event.key === "-") {
-            return
-        }
-
-        if (this.typeControlRef && this.typeControlRef.current) {
-            this.typeControlRef.current.onKeyPress(event)
+            document.dispatchEvent(keyEvent)
         }
     }
 
@@ -1000,7 +988,6 @@ class App extends Component<AppProps, AppState> {
                 onMouseUp={this.onMouseUp}
                 onMouseLeave={this.onMouseLeave}
                 onKeyDown={this.onKeyDown}
-                onKeyPress={this.onKeyPress}
                 onTouchStart={this.onTouchStart}
                 onTouchMove={this.onTouchMove}
                 onTouchEnd={this.onTouchEnd}
@@ -1102,7 +1089,6 @@ class App extends Component<AppProps, AppState> {
 
                 {this.state.isTypingControllerVisible &&
                     <TypeControl commands={this.commands}
-                        ref={this.typeControlRef}
                         selectedPoint={this.state.selected}
                         gameId={this.props.gameId}
                         playerId={this.props.selfPlayerId}

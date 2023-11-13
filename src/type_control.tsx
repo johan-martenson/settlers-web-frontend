@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { useEffect, useReducer, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import { getInformationOnPoint } from './api/rest-api'
@@ -17,185 +17,204 @@ interface TypeControlProps {
     playerId: PlayerId
 }
 
-interface TypeControlState {
-    input: string
-    expanded: boolean
-    selectedPointInformation: PointInformation | undefined
+interface TypeControlKey {
+    key: string
 }
 
-class TypeControl extends Component<TypeControlProps, TypeControlState> {
+function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeControlKey> {
+    return event !== null &&
+        event !== undefined &&
+        typeof event == 'object' &&
+        'detail' in event &&
+        typeof event.detail === 'object' &&
+        event.detail !== null &&
+        'key' in event.detail
+}
 
-    constructor(props: TypeControlProps) {
-        super(props)
+interface InputAction {
+    type: 'set' | 'add' | 'run'
+    payload: string
+}
 
-        this.state = {
-            input: "",
-            expanded: false,
-            selectedPointInformation: undefined
+interface InputState {
+    input: string
+}
+
+/**
+ * Note: the TypeControl component is written as a functional component and uses a complex way to
+ *       handle the input string state. The component needs to get new keys from a listener and
+ *       append them to the input state. The listener is set up using useEffect and the callback
+ *       is passed in. When this is done, the state of input is frozen in the closure and it never
+ *       changes. If input is instead put as an explicit dependency, the right value will be used
+ *       but instead the subscription will be unsubscribed and re-registered each time a key is typed.
+ * 
+ *       To work around this, useReducer is used. It lets the closure which doesn't see the current
+ *       input value send a request to update the value to a reducer which can see and change the
+ *       current value.
+ *
+ */
+const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlProps) => {
+    const [expanded, setExpanded] = useState<boolean>()
+    const [selectedPointInformation, setSelectedPointInformation] = useState<PointInformation>()
+    const [inputState, dispatchInput] = useReducer(reducer, { input: "" })
+
+    useEffect(
+        () => {
+            (async () => {
+                const updatedPointInformation = await getInformationOnPoint(selectedPoint, gameId, playerId)
+
+                setSelectedPointInformation(updatedPointInformation)
+            })().then()
+
+            return () => { }
+        }, [selectedPoint])
+
+    function setInput(input: string) {
+        dispatchInput({ type: 'set', payload: input })
+    }
+
+    function addToInput(toAdd: string) {
+        dispatchInput({ type: 'add', payload: toAdd })
+    }
+
+    useEffect(
+        () => {
+
+            // eslint-disable-next-line
+            document.addEventListener("key", listener)
+
+            return () => document.removeEventListener("key", listener)
+        }, [])
+
+    function reducer(state: InputState, action: InputAction): InputState {
+        switch (action.type) {
+            case "set":
+                return { input: action.payload }
+            case "add":
+                return { input: state.input + action.payload }
+            case "run":
+                let commandHit = undefined
+
+                for (const command of Array.from(commands.keys())) {
+                    if (command.toLowerCase().startsWith(state.input.toLowerCase())) {
+                        commandHit = command
+
+                        break
+                    }
+                }
+
+                /* Run the command */
+                if (commandHit) {
+                    commandChosen(commandHit)
+                } else {
+                    console.log("Can't find command matching: " + state.input)
+                }
+
+                return { input: '' }
         }
     }
 
-    // eslint-disable-next-line
-    async componentDidUpdate(prevProps: Readonly<TypeControlProps>, prevState: Readonly<TypeControlState>, snapshot?: unknown): Promise<void> {
-        if (prevProps.selectedPoint !== this.props.selectedPoint) {
-            const pointInformation = await getInformationOnPoint(this.props.selectedPoint, this.props.gameId, this.props.playerId)
+    function listener(event: any) {
+        if (isTypingControlKeyEvent(event)) {
+            const key = event.detail.key
 
-            this.setState({selectedPointInformation: pointInformation})
+            if (key === "Escape") {
+                setInput("")
+            } else if (key === "Enter") {
+                dispatchInput({ type: 'run', payload: "none" })
+            } else if (key === "Backspace") {
+                setInput(input.substring(0, input.length - 1))
+            } else if (key.length === 1) {
+                if (key !== " ") {
+                    addToInput(key)
+                }
+            }
         }
     }
 
-    commandChosen(commandName: string): void {
+    function commandChosen(commandName: string): void {
 
         /* Run the command */
-        console.log("Command: " + commandName + " (" + this.state.input + ")")
+        console.log("Command: " + commandName)
 
-        const command = this.props.commands.get(commandName)
+        const command = commands.get(commandName)
 
         if (command) {
             command.action()
         }
-
-        /* Clear the input */
-        this.setState(
-            {
-                input: ""
-            }
-        )
     }
 
-    onKeyDown(event: React.KeyboardEvent): void {
+    const input = inputState.input
 
-        /* Clear the command if escape is pressed */
-        if (event.key === "Escape") {
-            this.setState(
-                {
-                    input: ""
-                }
-            )
+    let hasMatch = false
+    const inputToMatch = input.toLowerCase()
 
-        /* Run the command if enter is pressed */
-        } else if (event.key === "Enter") {
-
-            /* Do nothing if there is nothing typed */
-            if (!this.state.input || this.state.input === "") {
-                return
+    if (input.length > 0) {
+        commands.forEach((fn, command) => {
+            if (command.toLowerCase().startsWith(inputToMatch)) {
+                hasMatch = true
             }
-
-            /* Find the matching command */
-            let commandHit
-
-            for (const command of Array.from(this.props.commands.keys())) {
-                if (command.toLowerCase().startsWith(this.state.input.toLowerCase())) {
-                    commandHit = command
-
-                    break
-                }
-            }
-
-            /* Run the command */
-            if (commandHit) {
-                this.commandChosen(commandHit)
-            } else {
-                console.log("Can't find command matching: " + this.state.input)
-            }
-
-            /* Remove the last entered character if backspace is pressed */
-        } else if (event.key === "Backspace") {
-            this.setState(
-                {
-                    input: this.state.input.substring(0, this.state.input.length - 1)
-                }
-            )
-        }
+        })
     }
 
-    onKeyPress(event: React.KeyboardEvent<HTMLDivElement>): void {
+    let className = "no-input"
 
-        /* Filter enter presses (they are handled by onKeyDown) */
-        if (event.key === "Enter") {
-            return
-        }
-
-        /* Filter initial space */
-        if (this.state.input === "" && event.key === " ") {
-            return
-        }
-
-        const input = this.state.input + event.key
-
-        console.log("Input: " + input)
-
-        this.setState(
-            {
-                input: input
-            }
-        )
-    }
-
-    render(): JSX.Element {
-
-        let hasMatch = false
-        const inputToMatch = this.state.input.toLowerCase()
-
-        if (this.state.input.length > 0) {
-            this.props.commands.forEach((fn, command) => {
-
-                if (command.toLowerCase().startsWith(inputToMatch)) {
-                    hasMatch = true
-                }
-            })
-        }
-
-        let className = "no-input"
-
-        if (this.state.input.length > 0) {
-
-            if (hasMatch) {
-                className = "input-with-matches"
-            } else {
-                className = "input-with-no-matches"
-            }
-        }
-
-        if (this.state.expanded) {
-            className += " expanded"
+    if (input.length > 0) {
+        if (hasMatch) {
+            className = "input-with-matches"
         } else {
-            className += " closed"
+            className = "input-with-no-matches"
         }
+    }
 
-        return (
-            <div className="type-control">
+    if (expanded) {
+        className += " expanded"
+    } else {
+        className += " closed"
+    }
 
-                <ExpandCollapseToggle onExpand={() => this.setState({ expanded: true })} onCollapse={() => this.setState({ expanded: false })} />
-                <div className={className}>{this.state.input}</div>
+    return (
+        <div className="type-control">
 
-                <div className="container-alternatives">
+            <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} />
+            <div className={className}>{input}</div>
 
-                {Array.from(this.props.commands.entries()).map(
+            <div className="container-alternatives">
+
+                {Array.from(commands.entries()).map(
                     ([commandName, command], index) => {
-
                         let show = true
 
-                        if (command.filter && this.state.selectedPointInformation) {
-                            show = command.filter(this.state.selectedPointInformation)
+                        if (command.filter && selectedPointInformation) {
+                            try {
+                                show = command.filter(selectedPointInformation)
+                            } catch (error) {
+                                show = false
+                            }
                         }
 
                         if (show && inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)) {
 
                             return (
-                                <div key={index} className="alternative" onClick={() => this.commandChosen(commandName)} >
+                                <div key={index} className="alternative" onClick={() => {
+                                    commandChosen(commandName)
+                                    setInput("")
+                                }} >
                                     <span>
-                                    <span className="MatchingPart">{commandName.substring(0, this.state.input.length)}</span>
-                                    <span className="RemainingPart">{commandName.substring(this.state.input.length, commandName.length)}</span>
+                                        <span className="MatchingPart">{commandName.substring(0, input.length)}</span>
+                                        <span className="RemainingPart">{commandName.substring(input.length, commandName.length)}</span>
                                     </span>
                                     {command.icon}
                                 </div>
                             )
                         } else if (show) {
 
-                            if (this.state.expanded) {
+                            if (expanded) {
                                 return (
-                                    <div key={index} className="alternative" onClick={() => this.commandChosen(commandName)} >
+                                    <div key={index} className="alternative" onClick={() => {
+                                        commandChosen(commandName)
+                                        setInput("")
+                                    }} >
                                         {commandName} {command.icon}
                                     </div>
                                 )
@@ -204,13 +223,10 @@ class TypeControl extends Component<TypeControlProps, TypeControlState> {
 
                         return null
                     }
-                )
-                }
-                </div>
-
+                )}
             </div>
-        )
-    }
+        </div>
+    )
 }
 
 export { TypeControl }

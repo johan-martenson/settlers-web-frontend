@@ -8,7 +8,6 @@ interface TypeControlDemoProps {
 interface TypeControlDemoState { }
 
 class TypeControlDemo extends Component<TypeControlDemoProps, TypeControlDemoState> {
-    typeControlRef = React.createRef<TypeControl>()
 
     constructor(props: TypeControlDemoProps) {
         super(props)
@@ -17,23 +16,22 @@ class TypeControlDemo extends Component<TypeControlDemoProps, TypeControlDemoSta
     onKeyPress(event: React.KeyboardEvent<HTMLDivElement>) {
         console.log("ON KEY PRESS")
         console.log(event.key)
+        const keyEvent = new CustomEvent("key", {detail: {key: event.key}})
 
-        if (this.typeControlRef && this.typeControlRef.current) {
-            this.typeControlRef.current.onKeyPress(event)
-        }
+        document.dispatchEvent(keyEvent)
     }
 
     onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-        if (this.typeControlRef && this.typeControlRef.current) {
-            this.typeControlRef.current.onKeyDown(event)
-        }
+        const keyEvent = new CustomEvent("key", {detail: {key: event.key}})
+
+        document.dispatchEvent(keyEvent)
     }
 
     render() {
         return (
             <div onKeyPress={this.onKeyPress.bind(this)} onKeyDown={this.onKeyDown.bind(this)} tabIndex={1}>
                 Some filler stuff
-                <TypeControl commands={this.props.commands} ref={this.typeControlRef} selectedPoint={{x: 10, y: 12}} playerId={'2'} gameId={'3'}/>
+                <TypeControl commands={this.props.commands} selectedPoint={{x: 10, y: 12}} playerId={'2'} gameId={'3'}/>
             </div>
         )
     }

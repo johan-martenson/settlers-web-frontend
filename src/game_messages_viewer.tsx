@@ -60,7 +60,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Military building occupied
-                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                            <Button onClick={() => onGoToPoint(message.point)}
                                                 icon={<ArrowStepInRight24Regular />}
                                                 appearance='transparent'
                                             />
@@ -71,7 +71,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             No more resources
-                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                            <Button onClick={() => onGoToPoint(message.point)}
                                                 appearance='transparent'
                                                 icon={<ArrowStepInRight24Regular />} />
                                         </>
@@ -81,7 +81,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Military building is ready
-                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                            <Button onClick={() => onGoToPoint(message.point)}
                                                 appearance='transparent'
                                                 icon={<ArrowStepInRight24Regular />} />
                                         </>
@@ -91,7 +91,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             We&apos;re under attack!
-                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                            <Button onClick={() => onGoToPoint(message.point)}
                                                 appearance='transparent'
                                                 icon={<ArrowStepInRight24Regular />} />
                                         </>
@@ -100,7 +100,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         <>
                                             <WorkerIcon worker='Geologist' nation={nation} scale={0.5} />
                                             Geologist has found {message.material.toLowerCase()}!
-                                            <Button onClick={() => { onGoToPoint(message.point) }}
+                                            <Button onClick={() => onGoToPoint(message.point)}
                                                 appearance='transparent'
                                                 icon={<ArrowStepInRight24Regular />} />
                                         </>
@@ -110,7 +110,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Building lost to enemy
-                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                            <Button onClick={() => onGoToPoint(message.point)}
                                                 appearance='transparent'
                                                 icon={<ArrowStepInRight24Regular />} />
                                         </>
@@ -120,7 +120,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Building captured
-                                            <Button onClick={() => { onGoToHouse(message.houseId) }}
+                                            <Button onClick={() => { onGoToPoint(message.point) }}
                                                 appearance='transparent'
                                                 icon={<ArrowStepInRight24Regular />} />
                                         </>
@@ -140,7 +140,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             This building has caused you to lose land
-                                            <Button onClick={() => onGoToHouse(message.houseId)}
+                                            <Button onClick={() => onGoToPoint(message.point)}
                                                 appearance='transparent'
                                                 icon={<ArrowStepInRight24Regular />} />
                                         </>

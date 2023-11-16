@@ -1420,7 +1420,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             })
                         }
                     }
-                } else if (worker.type === "Courier") {
+                } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
 
                     let image
 
@@ -1471,34 +1471,32 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (worker.cargo) {
 
-                    if (worker.cargo) {
-                        if (worker.type === 'Courier' && worker.cargo) {
-                            let cargoDrawInfo
+                    if (worker.type === 'Courier' || worker.type === 'StorageWorker') {
+                        let cargoDrawInfo
 
-                            if (worker?.bodyType === 'FAT') {
-                                cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
-                            } else {
-                                cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
-                            }
+                        if (worker?.bodyType === 'FAT') {
+                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                        } else {
+                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                        }
 
+                        toDrawNormal.push({
+                            source: cargoDrawInfo,
+                            gamePoint: interpolatedGamePoint,
+                            depth: interpolatedGamePoint.y
+                        })
+                    } else {
+                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+
+                        if (cargo) {
                             toDrawNormal.push({
-                                source: cargoDrawInfo,
+                                source: cargo,
                                 gamePoint: interpolatedGamePoint,
                                 depth: interpolatedGamePoint.y
                             })
-                        } else {
-
-                            const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
-
-                            if (cargo) {
-                                toDrawNormal.push({
-                                    source: cargo,
-                                    gamePoint: interpolatedGamePoint,
-                                    depth: interpolatedGamePoint.y
-                                })
-                            }
                         }
                     }
+
                 }
             } else {
 
@@ -1522,7 +1520,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             depth: worker.y
                         })
                     }
-                } else if (worker.type === "Courier") {
+                } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
 
                     let didDrawAnimation = false
 
@@ -1625,34 +1623,32 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (worker.cargo) {
 
-                    if (worker.cargo) {
-                        if (worker.type === 'Courier' && worker.cargo) {
-                            let cargoDrawInfo
+                    if (worker.type === 'Courier' || worker.type === 'StorageWorker') {
+                        let cargoDrawInfo
 
-                            if (worker?.bodyType === 'FAT') {
-                                cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
-                            } else {
-                                cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
-                            }
+                        if (worker?.bodyType === 'FAT') {
+                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                        } else {
+                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                        }
 
+                        toDrawNormal.push({
+                            source: cargoDrawInfo,
+                            gamePoint: worker,
+                            depth: worker.y
+                        })
+                    } else {
+                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+
+                        if (cargo) {
                             toDrawNormal.push({
-                                source: cargoDrawInfo,
+                                source: cargo,
                                 gamePoint: worker,
                                 depth: worker.y
                             })
-                        } else {
-
-                            const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
-
-                            if (cargo) {
-                                toDrawNormal.push({
-                                    source: cargo,
-                                    gamePoint: worker,
-                                    depth: worker.y
-                                })
-                            }
                         }
                     }
+
                 }
             }
         }
@@ -1694,7 +1690,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     toDrawNormal.push({
                         source: cargoDrawInfo,
-                        gamePoint: { x: flag.x - 0.5, y: flag.y - 0.1 * i + 0.1 },
+                        gamePoint: { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 },
                         depth: flag.y
                     })
                 }
@@ -1708,7 +1704,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
-                            gamePoint: { x: flag.x + 0.08, y: flag.y - 0.1 * (i - 4) + 0.3 },
+                            gamePoint: { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 },
                             depth: flag.y
                         })
                     }
@@ -1723,7 +1719,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
-                            gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.1 },
+                            gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 },
                             depth: flag.y
                         })
                     }
@@ -2764,5 +2760,5 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 }
 
-export { GameCanvas}
+export { GameCanvas }
 

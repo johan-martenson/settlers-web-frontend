@@ -1,13 +1,25 @@
-import { getHouseInformation, getPlayers, getTerrain, getViewForPlayer, printTimestamp } from './rest-api'
+import { getHouseInformation, getPlayers, getTerrain, getViewForPlayer } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId } from './types'
+
+interface ActionListener {
+    actionStarted: ((id: string, point: Point, action: WorkerAction) => void)
+    actionEnded: ((id: string, point: Point, action: WorkerAction) => void)
+}
+
+interface HouseBurningListener {
+    houseStartedToBurn: ((id: string, point: Point) => void)
+    houseStoppedBurning: ((id: string, point: Point) => void)
+}
 
 const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)[] = []
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
 const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
 const roadListeners: (() => void)[] = []
 const availableConstructionListeners = new PointMapFast<((availableConstruction: AvailableConstruction[]) => void)[]>()
+const actionListeners: ActionListener[] = []
+const houseBurningListeners: HouseBurningListener[] = []
 
 interface FlagListener {
     onUpdate: ((flag: FlagInformation) => void)
@@ -126,6 +138,9 @@ export interface Monitor {
     stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
     listenToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
     stopListeningToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
+    listenToActions: ((listener: ActionListener) => void)
+    listenToBurningHouses: ((listener: HouseBurningListener) => void)
+    listenToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
 
     killWebsocket: (() => void)
 }
@@ -187,6 +202,9 @@ const monitor: Monitor = {
     stopListeningToFlag: stopListeningToFlag,
     listenToAvailableConstruction: listenToAvailableConstruction,
     stopListeningToAvailableConstruction: stopListeningToAvailableConstruction,
+    listenToActions: listenToActions,
+    listenToBurningHouses: listenToBurningHouses,
+    listenToMessages: listenToMessages,
 
     killWebsocket: killWebsocket
 }
@@ -761,6 +779,14 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     }
 
     if (message.workersWithNewTargets) {
+        message.workersWithNewTargets.forEach(worker => {
+            const monitoredWorker = monitor.workers.get(worker.id)
+
+            if (monitoredWorker && monitoredWorker.action) {
+                actionListeners.forEach(listener => monitoredWorker.action && listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, monitoredWorker.action))
+            }
+        })
+
         syncWorkersWithNewTargets(message.workersWithNewTargets)
     }
 
@@ -777,6 +803,10 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
                 worker.action = workerWithNewAction.startedAction
                 worker.actionAnimationIndex = 0
             }
+
+            message.workersWithStartedActions?.forEach(worker => {
+                actionListeners.forEach(listener => listener.actionStarted(worker.id, { x: worker.x, y: worker.y }, worker.startedAction ?? ""))
+            })
         })
     }
 
@@ -788,18 +818,20 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
 
     message.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
 
-    if (message.newBuildings) {
-        printTimestamp("About to add new houses")
-    }
-
     message.newBuildings?.forEach((house) => monitor.houses.set(house.id, house))
 
-    if (message.newBuildings) {
-        printTimestamp("Added new houses")
-    }
-
     if (message.changedBuildings) {
-        message.changedBuildings.forEach(house => monitor.houses.set(house.id, house))
+        message.changedBuildings.forEach(house => {
+            const oldHouse = monitor.houses.get(house.id)
+
+            if (oldHouse && oldHouse.state !== 'BURNING' && house.state === 'BURNING') {
+                houseBurningListeners.forEach(listener => listener.houseStartedToBurn(house.id, house))
+            } else if (oldHouse && oldHouse.state === 'BURNING' && house.state !== 'BURNING') {
+                houseBurningListeners.forEach(listener => listener.houseStoppedBurning(house.id, house))
+            }
+
+            monitor.houses.set(house.id, house)
+        })
     }
 
     message.removedBuildings?.forEach(id => monitor.houses.delete(id))
@@ -1583,7 +1615,7 @@ async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<Poi
 
                 const map = new PointMapFast<PointInformation>()
 
-                reply.pointsWithInformation.forEach(pointInformation => map.set({x: pointInformation.x, y: pointInformation.y}, pointInformation))
+                reply.pointsWithInformation.forEach(pointInformation => map.set({ x: pointInformation.x, y: pointInformation.y }, pointInformation))
 
                 result(map)
             }
@@ -1674,6 +1706,14 @@ function stopListeningToAvailableConstruction(point: Point, listener: ((availabl
             delete listeners[index]
         }
     }
+}
+
+function listenToActions(listener: ActionListener) {
+    actionListeners.push(listener)
+}
+
+function listenToBurningHouses(listener: HouseBurningListener) {
+    houseBurningListeners.push(listener)
 }
 
 function killWebsocket(): void {

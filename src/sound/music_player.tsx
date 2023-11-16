@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
-import ExpandCollapseToggle from './expand_collapse_toggle'
+import ExpandCollapseToggle from '../expand_collapse_toggle'
 import './music_player.css'
 import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons'
-
-interface MusicPlayerProps { }
 
 interface AudioAtlasSongs {
     path: string
@@ -16,7 +14,11 @@ interface SongAndTitle {
     song: HTMLAudioElement
 }
 
-const MusicPlayer = ({ }: MusicPlayerProps) => {
+interface MusicPlayerProps {
+    volume: number
+}
+
+const MusicPlayer = ({ volume }: MusicPlayerProps) => {
 
     const [expanded, setExpanded] = useState<boolean>(false)
     const [playing, setPlaying] = useState<boolean>(false)
@@ -37,6 +39,14 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
         return () => { }
     }, [])
 
+    useEffect(() => {
+        if (songs !== undefined && currentSong !== undefined && songs[currentSong] !== undefined) {
+            songs[currentSong].song.volume = volume
+        }
+
+        return () => { }
+    }, [songs, currentSong, volume])
+
     function pause() {
         if (songs) {
             songs[currentSong].song.pause()
@@ -47,6 +57,7 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
 
     function resume() {
         if (songs) {
+            songs[currentSong].song.volume = volume
             songs[currentSong].song.onended = () => { next() }
             songs[currentSong].song.play()
 
@@ -62,6 +73,7 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
         const newSong = (currentSong < songs.length - 1) ? currentSong + 1 : 0
 
         if (playing) {
+            songs[currentSong].song.volume = volume
             songs[newSong].song.currentTime = 0
             songs[newSong].song.onended = () => { next() }
             songs[newSong].song.play()
@@ -75,6 +87,9 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
             songs[currentSong].song.pause()
         }
 
+        console.log(songs[index].song.volume)
+
+        songs[index].song.volume = volume
         songs[index].song.currentTime = 0
         songs[index].song.onended = () => { next() }
         songs[index].song.play()
@@ -85,8 +100,6 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
 
     return (
         <div className="music-player">
-
-            <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} inverted />
             <div> <b>Music</b></div>
 
             {playing && songs && expanded &&
@@ -117,7 +130,7 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
                                             key={index}
                                             onClick={() => { play(index) }}
                                         >
-                                            {song.title}
+                                            <div>{song.title}</div><div>{secondsToString(song.song.duration)}</div>
                                         </div>
                                     )
                                 }
@@ -126,8 +139,17 @@ const MusicPlayer = ({ }: MusicPlayerProps) => {
                     </div>
                 </>
             }
+
+            <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} inverted />
         </div>
     )
+}
+
+function secondsToString(seconds: number): string {
+    const minutes = Math.floor(seconds / 60.0)
+    const secondsDisplay = (seconds - minutes * 60).toFixed(0)
+
+    return `${minutes}:${secondsDisplay}`
 }
 
 export default MusicPlayer

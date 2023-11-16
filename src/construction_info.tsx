@@ -150,7 +150,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                             }
                         }>
                         {Array.from(houseOptions.entries(),
-                            ([key, value], index) => {
+                            ([key, value]) => {
                                 return <Tab value={key} key={value}>{value}</Tab>
                             }
                         )}
@@ -161,7 +161,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                     <DialogSection>
                         <div className="house-construction-buttons">
                             {SMALL_HOUSES.map(
-                                (house, index) => {
+                                (house) => {
 
                                     return (
                                         <Button className="ConstructionItem"
@@ -193,7 +193,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                     <DialogSection>
                         <div className="house-construction-buttons">
                             {MEDIUM_HOUSES.map(
-                                (house, index) => {
+                                (house) => {
 
                                     return (
                                         <Button className="ConstructionItem"
@@ -225,7 +225,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                     <DialogSection>
                         <div className="house-construction-buttons">
                             {LARGE_HOUSES.filter(house => house !== 'Headquarter').map(
-                                (house, index) =>
+                                (house) =>
                                     <Button className="ConstructionItem"
                                         key={house}
                                         onClick={

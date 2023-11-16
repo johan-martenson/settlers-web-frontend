@@ -9,7 +9,7 @@ import { CursorState, DEFAULT_SCALE, GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
 import { getHeadquarterForPlayer, monitor, startMonitoringGame } from './api/ws-api'
-import MusicPlayer from './music_player'
+import MusicPlayer from './sound/music_player'
 import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
@@ -19,6 +19,7 @@ import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInform
 import { Dismiss24Filled, CalendarAgenda24Regular, TextBulletListSquare24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon } from './icon'
 import { HouseInfo } from './house_info/house_info'
+import { startEffects } from './sound/sound_effects'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
@@ -26,6 +27,8 @@ const MAX_SCALE = 70
 const MIN_SCALE = 10
 
 const LONGEST_TICK_LENGTH = 500
+
+export const DEFAULT_VOLUME = 0.5
 
 const globalSyncState = {
     mouseDown: false,
@@ -105,6 +108,8 @@ interface AppState {
     cursorState: CursorState
 
     showFpsCounter: boolean
+
+    musicVolume: number
 }
 
 class App extends Component<AppProps, AppState> {
@@ -169,7 +174,8 @@ class App extends Component<AppProps, AppState> {
             cursorState: 'NOTHING',
             showFpsCounter: false,
             isMusicPlayerVisible: true,
-            isTypingControllerVisible: true
+            isTypingControllerVisible: true,
+            musicVolume: 1
         }
 
         /* Set up type control commands */
@@ -518,7 +524,6 @@ class App extends Component<AppProps, AppState> {
             document.addEventListener('contextmenu', function (e) {
 
                 // Do nothing. The purpose is to make it possible to drag the screen with the right mouse button
-
                 e.preventDefault()
             }, false)
         }
@@ -562,6 +567,9 @@ class App extends Component<AppProps, AppState> {
                 }
             }
         )
+
+        /* Start running sound effects */
+        startEffects()
     }
 
     async onPointClicked(point: Point): Promise<void> {
@@ -1039,6 +1047,7 @@ class App extends Component<AppProps, AppState> {
                     defaultZoom={DEFAULT_SCALE}
                     isAvailableConstructionVisible={this.state.showAvailableConstruction}
                     onSetAvailableConstructionVisible={(visible: boolean) => this.setState({ showAvailableConstruction: visible })}
+                    onSetMusicVolume={(volume: number) => this.setState({musicVolume: volume})}
                 />
 
                 {this.state.showFriendlyHouseInfo &&
@@ -1073,8 +1082,10 @@ class App extends Component<AppProps, AppState> {
                 }
 
                 {this.state.showStatistics &&
-                    <Statistics onClose={() => this.setState({ showStatistics: false })}
+                    <Statistics
+                        onClose={() => this.setState({ showStatistics: false })}
                         gameId={this.props.gameId}
+                        nation={this.state.player?.nation ?? 'ROMANS'}
                     />
                 }
 
@@ -1103,7 +1114,7 @@ class App extends Component<AppProps, AppState> {
                 />
 
                 {this.state.isMusicPlayerVisible &&
-                    <MusicPlayer />
+                    <MusicPlayer volume={this.state.musicVolume}/>
                 }
 
             </div>

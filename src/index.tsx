@@ -112,5 +112,5 @@ const useStyles = makeStyles({
 function AppWrapper({ children }: PropsWithChildren) {
     const className = useStyles()
 
-    return (<StrictMode><div className={className.wrapper}>{children}</div></StrictMode>)
+    return (<div className={className.wrapper}>{children}</div>)
 }

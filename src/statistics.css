@@ -7,3 +7,10 @@
 #stats-parent {
     flex: 1 0 40%;
 }
+
+.select-materials {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+}

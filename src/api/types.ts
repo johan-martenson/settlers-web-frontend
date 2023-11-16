@@ -351,14 +351,28 @@ export type WorkerAction = 'PLANTING_TREE' |
     'INVESTIGATING' |
     'PLANTING_WHEAT' |
     'HARVESTING' |
-    'LOWERING_FISHING_ROD' |
+    'LOWER_FISHING_ROD' |
     'PULL_UP_FISHING_ROD' |
     'CHEW_GUM' |
     'READ_NEWSPAPER' |
     'TOUCH_NOSE' |
-    'JUMP_SKIP_ROPE'
+    'JUMP_SKIP_ROPE' |
+    'HAMMERING_HOUSE_HIGH_AND_LOW' |
+    'PLANTING_TREE' |
+    'BAKING' |
+    'DIGGING_AND_STOMPING' |
+    'DRINKING_BEER' |
+    'INSPECTING_HOUSE_CONSTRUCTION' |
+    'PICKING_UP_MEAT' |
+    'SAWING' |
+    'SHOOTING' |
+    'SIT_DOWN' |
+    'ATTACK' |
+    'DEFEND' |
+    'DIE' |
+    'GET_HIT'
 
-export type DecorationType = 'BROWN_MUSHROOM' |
+    export type DecorationType = 'BROWN_MUSHROOM' |
     'MINI_BROWN_MUSHROOM' |
     'TOADSTOOL' |
     'MINI_STONE' |
@@ -550,36 +564,43 @@ export interface TreeConservationProgramDeactivatedMessage extends GameMessage {
 export interface MilitaryBuildingCausedLostLandMessage extends GameMessage {
     houseId: HouseId
     houseType: AnyBuilding
+    point: Point
 }
 
 export interface MilitaryBuildingReadyMessage extends GameMessage {
     houseId: HouseId
     houseType: AnyBuilding
+    point: Point
 }
 
 export interface NoMoreResourcesMessage extends GameMessage {
     houseId: HouseId
     houseType: AnyBuilding
+    point: Point
 }
 
 export interface MilitaryBuildingOccupiedMessage extends GameMessage {
     houseId: HouseId
     houseType: AnyBuilding
+    point: Point
 }
 
 export interface UnderAttackMessage extends GameMessage {
     houseId: HouseId
     houseType: AnyBuilding
+    point: Point
 }
 
 export interface BuildingLostMessage extends GameMessage {
     houseId: HouseId
     houseType: AnyBuilding
+    point: Point
 }
 
 export interface BuildingCapturedMessage extends GameMessage {
     houseId: HouseId
     houseType: AnyBuilding
+    point: Point
 }
 
 export interface GeologistFindMessage extends GameMessage {
@@ -590,6 +611,7 @@ export interface GeologistFindMessage extends GameMessage {
 export interface StoreHouseIsReadyMessage extends GameMessage {
     houseId: HouseId
     houseType: AnyBuilding
+    point: Point
 }
 
 function isHeadquarterInformation(houseInformation: HouseInformation): houseInformation is HeadquarterInformation {

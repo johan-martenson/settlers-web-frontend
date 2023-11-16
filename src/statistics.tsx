@@ -3,13 +3,16 @@ import React, { Component } from 'react'
 import { getGameStatistics, getLandStatistics } from './api/rest-api'
 import { Dialog } from './dialog'
 import "./statistics.css"
-import { Dropdown, Option, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { GameId, ProductionStatistics, LandStatistics, MaterialAllUpperCase, MATERIALS_UPPER_CASE, LandDataPoint, Measurement, isMaterialUpperCase } from './api/types'
+import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
+import { GameId, ProductionStatistics, LandStatistics, MaterialAllUpperCase, MATERIALS_UPPER_CASE, LandDataPoint, Measurement, Nation } from './api/types'
+import { InventoryIcon } from './icon'
 
 interface StatisticsProps {
     onClose: (() => void)
     gameId: GameId
+    nation: Nation
 }
+
 interface StatisticsState {
     productionStatistics?: ProductionStatistics
     landStatistics?: LandStatistics
@@ -119,16 +122,14 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                         />
                     </div>
 
-                    <Dropdown onOptionSelect={(event: any, data: any) => {
-                        console.log(event)
-                        console.log(data)
-
-                        if (isMaterialUpperCase(data.optionValue)) {
-                            this.setState({ materialToShow: data.optionValue })
-                        }
-                    }}>
-                        {[...MATERIALS_UPPER_CASE].map(material => <Option key={material} >{material}</Option>)}
-                    </Dropdown>
+                    <div className='select-materials'>
+                        {[...MATERIALS_UPPER_CASE].filter(material => material !== 'WELL_WORKER' && material !== 'STORAGE_WORKER')
+                            .map(material => <div onClick={() => this.setState({ materialToShow: material })} key={material}>
+                                <Tooltip content={material.toLocaleLowerCase()} relationship={'label'}>
+                                    <div><InventoryIcon nation={this.props.nation} material={material} missing={material !== this.state.materialToShow} /></div>
+                                </Tooltip>
+                            </div>)}
+                    </div>
                 </div>
             </Dialog>
         )
@@ -433,7 +434,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const yScale = d3.scaleLinear()
             .domain([0, maxValue]).nice()
             .range([height - margin.bottom, margin.top])
-            //.range([height, 0])
+        //.range([height, 0])
 
         // eslint-disable-next-line
         const xAxis = d3.axisBottom(xScale)
@@ -489,9 +490,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         /* Add the x axis */
-        statisticsSvg.append("g")
+        /*statisticsSvg.append("g")
             .attr("transform", "translate(0, " + (height - margin.top) + ")")
-            .call(xAxis)
+            .call(xAxis)*/
 
         /* Add the y axis */
         statisticsSvg.append("g")
@@ -513,7 +514,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             statisticsSvg.append("path")
                 .attr("fill", "none")
                 .attr("stroke", colors[i])
-                .attr("stroke-width", 2)
+                .attr("stroke-width", 4)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round")
                 .datum(resourceStatistics) // 10. Binds data to the line 
@@ -522,21 +523,19 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .on("mouseover",
                     (event) => {
                         d3.select(event.target)
-                            .attr("stroke-width", 4)
                             .attr("stroke", "orange")
                     }
                 )
                 .on("mouseout",
                     (event) => {
                         d3.select(event.target)
-                            .attr("stroke-width", 2)
                             .attr("stroke", colors[i])
                     }
                 )
 
             statisticsSvg.selectAll(".dot" + i)
                 .data(resourceStatistics)
-                .enter().append("circle") // Uses the enter().append() method
+                .enter().append("circle")
                 .attr("fill", colors[i])
                 .attr("class", "dot") // Assign a class for styling
 
@@ -567,7 +566,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
                         dotElement
                             .attr("fill", "orange")
-                            .attr("r", 10)
+                            .attr("r", 5)
 
                         let xScaled = xScale(d.time)
                         let yScaled = yScale(d.values[i])

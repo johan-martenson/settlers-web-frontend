@@ -5,6 +5,8 @@ import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, S
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
 import { DEFAULT_SCALE } from './game_render'
+import { setSoundEffectsVolume } from './sound/sound_effects'
+import { DEFAULT_VOLUME } from './App'
 
 interface GameMenuProps {
     gameId: GameId
@@ -31,12 +33,13 @@ interface GameMenuProps {
     onSetMusicPlayerVisible: ((visible: boolean) => void)
     onSetTypingControllerVisible: ((visible: boolean) => void)
     onSetAvailableConstructionVisible: ((visible: boolean) => void)
+    onSetMusicVolume: ((volume: number) => void)
 }
 
 const GameMenu = (
     { minZoom, maxZoom, isOpen, defaultZoom, areTitlesVisible, isMusicPlayerVisible, isTypingControllerVisible, isAvailableConstructionVisible,
         onClose, onChangedZoom, onSetTitlesVisible, onSetMusicPlayerVisible, onSetTypingControllerVisible, onSetAvailableConstructionVisible, onLeaveGame, onStatistics,
-        onHelp, onSetTransportPriority }: GameMenuProps
+        onHelp, onSetTransportPriority, onSetMusicVolume }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
 
@@ -118,6 +121,28 @@ const GameMenu = (
                         onClose()
                     }}
                     >Help</Button>
+
+                    <Field label="Sound effects volume">
+                        <Slider
+                            min={0.0}
+                            max={1.0}
+                            step={0.1}
+                            defaultValue={DEFAULT_VOLUME}
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                                setSoundEffectsVolume(data.value)
+                            }} />
+                    </Field>
+
+                    <Field label="Music volume">
+                        <Slider
+                            min={0.0}
+                            max={1.0}
+                            step={0.1}
+                            defaultValue={DEFAULT_VOLUME}
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                                onSetMusicVolume(data.value)
+                            }} />
+                    </Field>
 
                     <Divider />
 

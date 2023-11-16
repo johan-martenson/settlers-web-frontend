@@ -313,10 +313,10 @@ const InventoryIcon = (props: InventoryIconProps) => {
     const url = materialImageAtlasHandler.getInventoryIconUrl(props.nation, props.material)
     const scale = (props?.scale !== undefined) ? props.scale : 1.0
 
-    const displayStile = (props.inline) ? 'inline' : 'block'
+    const displayStyle = (props.inline) ? 'inline' : 'block'
     const transparency = (props.missing) ? '0.5' : '1.0'
 
-    return (<div className="inventory-icon" style={{ display: displayStile, opacity: transparency }} >
+    return (<div className="inventory-icon" style={{ display: displayStyle, opacity: transparency }} >
         <img
             src={url}
             onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {

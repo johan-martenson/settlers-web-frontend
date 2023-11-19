@@ -23,7 +23,7 @@
     flex-direction: row;
     flex-wrap: wrap;
     gap: 15px;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 .headquarter-reserved-soldiers {

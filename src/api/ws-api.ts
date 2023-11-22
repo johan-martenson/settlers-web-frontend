@@ -785,7 +785,11 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
             const monitoredWorker = monitor.workers.get(worker.id)
 
             if (monitoredWorker && monitoredWorker.action) {
-                actionListeners.forEach(listener => monitoredWorker.action && listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, monitoredWorker.action))
+                actionListeners.forEach(listener => {
+                    if (monitoredWorker.action) {
+                        monitoredWorker.action && listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, monitoredWorker.action)
+                    }
+                })
             }
         })
 
@@ -798,6 +802,12 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
             const worker = monitor.workers.get(workerWithNewAction.id)
 
             if (worker) {
+                actionListeners.forEach(listener => {
+                    if (worker.action) {
+                        listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, worker.action)
+                    }
+                })
+
                 worker.x = workerWithNewAction.x
                 worker.y = workerWithNewAction.y
                 worker.plannedPath = undefined
@@ -816,7 +826,19 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
         syncNewOrUpdatedWildAnimals(message.wildAnimalsWithNewTargets)
     }
 
-    message.removedWorkers?.forEach(id => monitor.workers.delete(id))
+    message.removedWorkers?.forEach(id => {
+        const worker = monitor.workers.get(id)
+
+        if (worker?.action) {
+            actionListeners.forEach(listener => {
+                if (worker.action) {
+                    listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, worker.action)
+                }
+            })
+        }
+
+        monitor.workers.delete(id)
+    })
 
     message.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
 

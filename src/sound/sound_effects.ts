@@ -135,11 +135,11 @@ function startEffects() {
         () => {
 
             // 1) Go through each ongoing actions
-            ongoingEffects.forEach((ongoingEffect) => {
+            ongoingEffects.forEach((ongoingEffect, id) => {
                 const soundEffect = SOUND_EFFECTS.get(ongoingEffect.action)
 
-            // 2) Determine based on the timing of the action if it's time to make the sound
-            if (soundEffect &&
+                // 2) Determine based on the timing of the action if it's time to make the sound
+                if (soundEffect &&
                     ongoingEffect.index === soundEffect.start &&
                     ongoingEffect.point.x > visibility.left &&
                     ongoingEffect.point.x < visibility.right &&
@@ -148,11 +148,16 @@ function startEffects() {
                     ongoingEffect.playing = play(soundEffect.audio, soundEffect.type === 'LOOPING')
                 }
 
-            // 3) Step index
-            ongoingEffect.index += 1
+                // 3) Step index
+                ongoingEffect.index += 1
 
                 if (soundEffect && ongoingEffect.index === soundEffect.animationLength) {
-                    ongoingEffect.index = 0
+
+                    if (soundEffect.type === 'ONCE') {
+                        ongoingEffects.delete(id)
+                    } else {
+                        ongoingEffect.index = 0
+                    }
                 }
             })
         }, 300)

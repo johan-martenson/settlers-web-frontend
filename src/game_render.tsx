@@ -2588,13 +2588,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    Array.prototype.push.apply(
-                        textureMappinglist,
-                        [
-                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
-                        ]
-                    )
+                    if (road.type === 'NORMAL') {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                            ]
+                        )
+                    } else {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                1.0, 0.059
+                            ]
+                        )
+                    }
 
                     // Handle road up-right
                 } else if (previous.x < point.x && previous.y < point.y) {
@@ -2617,13 +2631,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    Array.prototype.push.apply(
-                        textureMappinglist,
-                        [
-                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
-                        ]
-                    )
+                    if (road.type === 'NORMAL') {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                            ]
+                        )
+                    } else {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                1.0, 0.059
+                            ]
+                        )
+                    }
 
                     // Handle road down-right
                 } else if (previous.x < point.x && previous.y > point.y) {
@@ -2646,13 +2674,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    Array.prototype.push.apply(
-                        textureMappinglist,
-                        [
-                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
-                        ]
-                    )
+                    if (road.type === 'NORMAL') {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                            ]
+                        )
+                    } else {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                1.0, 0.059
+                            ]
+                        )
+                    }
 
                     // Handle road up-left
                 } else if (previous.x > point.x && previous.y < point.y) {
@@ -2675,13 +2717,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    Array.prototype.push.apply(
-                        textureMappinglist,
-                        [
-                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
-                        ]
-                    )
+                    if (road.type === 'NORMAL') {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                            ]
+                        )
+                    } else {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                1.0, 0.059
+                            ]
+                        )
+                    }
 
                     // Handle road down-left
                 } else if (previous.x > point.x && previous.y > point.y) {
@@ -2704,13 +2760,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    Array.prototype.push.apply(
-                        textureMappinglist,
-                        [
-                            0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                            0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
-                        ]
-                    )
+                    if (road.type === 'NORMAL') {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
+                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                            ]
+                        )
+                    } else {
+                        Array.prototype.push.apply(
+                            textureMappinglist,
+                            [
+                                0.75, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                0.75, 0.059,
+                                1.0, 0.118,
+                                1.0, 0.059
+                            ]
+                        )
+                    }
                 }
 
                 previous = point

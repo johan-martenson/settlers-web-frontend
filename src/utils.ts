@@ -1,6 +1,7 @@
 import { getInformationOnPoint, getTerrainForMap,  removeHouse } from './api/rest-api'
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation } from './api/types'
 import { Monitor, monitor } from './api/ws-api'
+import { ScreenPoint } from './game_render'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -435,7 +436,7 @@ class WorkerAnimation {
     }
 
     getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForCargo(direction, material, animationIndex, offset)
+        return this.imageAtlasHandler.getDrawingInformationForCargo(direction, material, animationIndex, Math.floor(offset))
     }
 
     getImageAtlasHandler(): WorkerImageAtlasHandler {
@@ -2290,6 +2291,50 @@ function canBuildRoad(point: PointInformation): boolean {
     return point.is === "flag"
 }
 
+
+function screenPointToGamePoint(screenPoint: ScreenPoint, translateX: number, translateY: number, scale: number, screenHeight: number): Point {
+
+    const gameX = (screenPoint.x - translateX) / scale
+    const gameY = (screenHeight - screenPoint.y + translateY) / (scale)
+
+    let roundedGameX = Math.round(gameX)
+    let roundedGameY = Math.round(gameY)
+
+    const faultX = gameX - roundedGameX
+    const faultY = gameY - roundedGameY
+
+    /* Call the handler directly if both points are odd or even */
+    if ((roundedGameX + roundedGameY) % 2 !== 0) {
+
+        /* Find the closest valid point (odd-odd, or even-even) */
+        if (Math.abs(faultX) > Math.abs(faultY)) {
+
+            if (faultX > 0) {
+                roundedGameX++
+            } else {
+                roundedGameX--
+            }
+        } else if (Math.abs(faultX) < Math.abs(faultY)) {
+            if (faultY > 0) {
+                roundedGameY++
+            } else {
+                roundedGameY--
+            }
+        } else {
+            roundedGameX++
+        }
+    }
+
+    return { x: roundedGameX, y: roundedGameY }
+}
+
+function gamePointToScreenPoint(gamePoint: Point, translateX: number, translateY: number, scale: number, screenHeight: number): ScreenPoint {
+    return {
+        x: gamePoint.x * scale + translateX,
+        y: screenHeight - gamePoint.y * scale + translateY
+    }
+}
+
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
@@ -2343,5 +2388,7 @@ export {
     canBuildMediumHouse,
     canBuildSmallHouse,
     canBuildMine,
-    canBuildRoad
+    canBuildRoad,
+    screenPointToGamePoint,
+    gamePointToScreenPoint
 }

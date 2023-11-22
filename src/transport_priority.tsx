@@ -32,13 +32,14 @@ CATEGORY_MATERIALS_MAP.set('WHEAT', ['WHEAT'])
 CATEGORY_MATERIALS_MAP.set('WATER', ['WATER'])
 CATEGORY_MATERIALS_MAP.set('PIG', ['PIG'])
 CATEGORY_MATERIALS_MAP.set('FLOUR', ['FLOUR'])
+CATEGORY_MATERIALS_MAP.set('BOAT', ['BOAT'])
 
 const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTransportPriorityProps) => {
     const [selected, setSelected] = useState<TransportCategoriesUpperCase>('PLANK')
     const [priority, setPriority] = useState<TransportCategoriesUpperCase[]>(Array.from(TRANSPORT_CATEGORIES_UPPER_CASE))
 
     async function increasePriority(category: TransportCategoriesUpperCase): Promise<void> {
-        let currentPriority = priority.findIndex(e => e === category)
+        const currentPriority = priority.findIndex(e => e === category)
 
         console.log("Current priority for " + category + ": " + currentPriority)
 
@@ -58,7 +59,7 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTranspor
     }
 
     async function decreasePriority(category: TransportCategoriesUpperCase): Promise<void> {
-        let currentPriority = priority.findIndex(e => e === category)
+        const currentPriority = priority.findIndex(e => e === category)
 
         console.log("Current priority for " + category + ": " + currentPriority)
 

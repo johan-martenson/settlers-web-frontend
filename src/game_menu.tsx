@@ -5,7 +5,7 @@ import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, S
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
 import { DEFAULT_SCALE } from './game_render'
-import { setSoundEffectsVolume } from './sound/sound_effects'
+import { sfx } from './sound/sound_effects'
 import { DEFAULT_VOLUME } from './App'
 
 interface GameMenuProps {
@@ -129,7 +129,7 @@ const GameMenu = (
                             step={0.1}
                             defaultValue={DEFAULT_VOLUME}
                             onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
-                                setSoundEffectsVolume(data.value)
+                                sfx.setSoundEffectsVolume(data.value)
                             }} />
                     </Field>
 

@@ -1,0 +1,23 @@
+1. Bug where expanding the border doesn't update the available construction properly. Flags closest to the old border remained Flags
+2. Fog of war
+3. Animation of houses
+4. More sounds
+5. Planer
+6. Attacking - animation of fights
+7. Attacking - weak or strong attackers
+8. Military settings - weak/strong in center, closer to the edge, and at the edge
+9. More music player controls - loop song, loop all, shuffle
+10. Change WorkerIcon to use Canvas2d instead of webgl
+11. Shift rendering slightly based on height
+12. Make materials visible when donkeys carry
+13. Make main roads render with different road texture
+14. In-game chat
+15. Finish making all react components into functional components
+16. Fix statistics components
+17. Divide src into sub-folders better. prepare-game, play-game?
+
+
+Done
+====
+
+1. Limit sounds to objects visible on the screen (first impl., seems like objects aren't properly removed when actions are finished)

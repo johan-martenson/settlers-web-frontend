@@ -14,12 +14,12 @@ import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import { TypeControl, Command } from './type_control'
-import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
+import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket, screenPointToGamePoint } from './utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation } from './api/types'
 import { Dismiss24Filled, CalendarAgenda24Regular, TextBulletListSquare24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon } from './icon'
 import { HouseInfo } from './house_info/house_info'
-import { startEffects } from './sound/sound_effects'
+import { sfx } from './sound/sound_effects'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
@@ -518,6 +518,15 @@ class App extends Component<AppProps, AppState> {
         globalSyncState.mouseMoving = false
     }
 
+    componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>, snapshot?: any): void {
+        if (prevState.translateX !== this.state.translateX || prevState.translateY !== this.state.translateY) {
+            const upperLeftGamePoint = screenPointToGamePoint({x: 0, y: 0}, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
+            const lowerRightGamePoint = screenPointToGamePoint({x: globalSyncState.width, y: globalSyncState.height}, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
+
+            sfx.setVisibleOnScreen(upperLeftGamePoint.x, lowerRightGamePoint.x, upperLeftGamePoint.y, lowerRightGamePoint.y)
+        }
+    }
+
     async componentDidMount(): Promise<void> {
 
         if (document.addEventListener) {
@@ -569,7 +578,7 @@ class App extends Component<AppProps, AppState> {
         )
 
         /* Start running sound effects */
-        startEffects()
+        sfx.startEffects()
     }
 
     async onPointClicked(point: Point): Promise<void> {

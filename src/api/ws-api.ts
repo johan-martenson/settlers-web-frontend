@@ -3,6 +3,8 @@ import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getP
 import { PointMapFast, PointSetFast } from '../util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId } from './types'
 
+const GAME_TICK_LENGTH = 200;
+
 interface ActionListener {
     actionStarted: ((id: string, point: Point, action: WorkerAction) => void)
     actionEnded: ((id: string, point: Point, action: WorkerAction) => void)
@@ -477,7 +479,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
             }
 
             /* Take a step forward */
-            worker.percentageTraveled = worker.percentageTraveled + 2.5
+            worker.percentageTraveled = worker.percentageTraveled + 5
 
             /* Worker is at an exact point */
             if (worker.percentageTraveled === 100) {
@@ -524,7 +526,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
                 continue
             }
 
-            wildAnimal.percentageTraveled = wildAnimal.percentageTraveled + 2.5
+            wildAnimal.percentageTraveled = wildAnimal.percentageTraveled + 5
 
             /* Get the next point */
             const next = wildAnimal.path[0]
@@ -556,7 +558,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
                 wildAnimal.betweenPoints = true
             }
         }
-    }, 100)
+    }, GAME_TICK_LENGTH / 2)
 
     // Similarly, grow the crops locally to avoid the need for the server to send messages when crops change growth state
     setInterval(async () => {

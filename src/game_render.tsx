@@ -5,7 +5,7 @@ import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './api/ws-api'
 import { shadowFragmentShader, textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShaderPixelPerfect, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, WorkerAnimation } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, WorkerAnimation } from './utils'
 import { PointMapFast } from './util_types'
 import { flagAnimations, houses } from './assets'
 
@@ -1475,9 +1475,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         let cargoDrawInfo
 
                         if (worker?.bodyType === 'FAT') {
-                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
                         } else {
-                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
                         }
 
                         toDrawNormal.push({
@@ -1486,7 +1486,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             depth: interpolatedGamePoint.y
                         })
                     } else {
-                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
 
                         if (cargo) {
                             toDrawNormal.push({
@@ -1603,7 +1603,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
 
                     if (!didDrawAnimation) {
-                        const animationImage = workers.get(worker.type)?.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
+                        const animationImage = workers.get(worker.type)?.getAnimationFrame(worker.direction, 0, worker.percentageTraveled / 10)
 
                         if (animationImage) {
                             toDrawNormal.push({
@@ -1627,9 +1627,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         let cargoDrawInfo
 
                         if (worker?.bodyType === 'FAT') {
-                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
                         } else {
-                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
                         }
 
                         toDrawNormal.push({
@@ -1638,7 +1638,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             depth: worker.y
                         })
                     } else {
-                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled)
+                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
 
                         if (cargo) {
                             toDrawNormal.push({
@@ -2212,46 +2212,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {
-        return {
-            x: gamePoint.x * this.props.scale + this.props.translateX,
-            y: this.props.screenHeight - gamePoint.y * this.props.scale + this.props.translateY
-        }
+        return gamePointToScreenPoint(gamePoint, this.props.translateX, this.props.translateY, this.props.scale, this.props.screenHeight)
     }
 
     screenPointToGamePoint(screenPoint: ScreenPoint): Point {
-
-        const gameX = (screenPoint.x - this.props.translateX) / this.props.scale
-        const gameY = (this.props.screenHeight - screenPoint.y + this.props.translateY) / (this.props.scale)
-
-        let roundedGameX = Math.round(gameX)
-        let roundedGameY = Math.round(gameY)
-
-        const faultX = gameX - roundedGameX
-        const faultY = gameY - roundedGameY
-
-        /* Call the handler directly if both points are odd or even */
-        if ((roundedGameX + roundedGameY) % 2 !== 0) {
-
-            /* Find the closest valid point (odd-odd, or even-even) */
-            if (Math.abs(faultX) > Math.abs(faultY)) {
-
-                if (faultX > 0) {
-                    roundedGameX++
-                } else {
-                    roundedGameX--
-                }
-            } else if (Math.abs(faultX) < Math.abs(faultY)) {
-                if (faultY > 0) {
-                    roundedGameY++
-                } else {
-                    roundedGameY--
-                }
-            } else {
-                roundedGameX++
-            }
-        }
-
-        return { x: roundedGameX, y: roundedGameY }
+        return screenPointToGamePoint(screenPoint, this.props.translateX, this.props.translateY, this.props.scale, this.props.screenHeight)
     }
 
     async onClickOrDoubleClick(event: React.MouseEvent): Promise<void> {

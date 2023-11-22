@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button } from '@fluentui/react-components'
+import { Button, ToggleButton } from '@fluentui/react-components'
 import ExpandCollapseToggle from '../expand_collapse_toggle'
 import './music_player.css'
 import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons'
@@ -18,12 +18,15 @@ interface MusicPlayerProps {
     volume: number
 }
 
+type Mode = 'LOOP_SONG' | 'LOOP_LIST' | 'SHUFFLE_LIST'
+
 const MusicPlayer = ({ volume }: MusicPlayerProps) => {
 
     const [expanded, setExpanded] = useState<boolean>(false)
     const [playing, setPlaying] = useState<boolean>(false)
     const [songs, setSongs] = useState<SongAndTitle[]>([])
     const [currentSong, setCurrentSong] = useState<number>(0)
+    const [mode, setMode] = useState<Mode>('LOOP_LIST')
 
     useEffect(() => {
         (async () => {
@@ -47,51 +50,63 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
         return () => { }
     }, [songs, currentSong, volume])
 
-    function pause() {
+    useEffect(() => {
+        if (songs && currentSong) {
+            songs[currentSong].song.onended = () => next(currentSong, mode, songs, volume)
+        }
+
+        return () => { }
+    }, [mode, currentSong, songs, volume])
+
+    function pause(songToPause: number, songs: SongAndTitle[]) {
         if (songs) {
-            songs[currentSong].song.pause()
+            songs[songToPause].song.pause()
 
             setPlaying(false)
         }
     }
 
-    function resume() {
+    function resume(songToResume: number, mode: Mode, songs: SongAndTitle[], volume: number) {
         if (songs) {
-            songs[currentSong].song.volume = volume
-            songs[currentSong].song.onended = () => { next() }
-            songs[currentSong].song.play()
+            songs[songToResume].song.volume = volume
+            songs[songToResume].song.onended = () => { next(songToResume, mode, songs, volume) }
+            songs[songToResume].song.play()
 
             setPlaying(true)
         }
     }
 
-    function next() {
-        if (playing) {
-            songs[currentSong].song.pause()
+    function next(previous: number, mode: Mode, songs: SongAndTitle[], volume: number) {
+        songs[previous].song.pause()
+
+        let newSong = previous
+
+        if (mode === 'LOOP_LIST') {
+            newSong = (previous < songs.length - 1) ? previous + 1 : 0
+        } else if (mode === 'SHUFFLE_LIST') {
+            newSong = Math.floor(Math.random() * songs.length)
+
+            if (newSong === previous) {
+                newSong = (newSong < songs.length) ? newSong : 0
+            }
         }
 
-        const newSong = (currentSong < songs.length - 1) ? currentSong + 1 : 0
-
         if (playing) {
-            songs[currentSong].song.volume = volume
+            songs[newSong].song.volume = volume
             songs[newSong].song.currentTime = 0
-            songs[newSong].song.onended = () => { next() }
+            songs[newSong].song.onended = () => { next(newSong, mode, songs, volume) }
             songs[newSong].song.play()
         }
 
         setCurrentSong(newSong)
     }
 
-    function play(index: number): void {
-        if (playing) {
-            songs[currentSong].song.pause()
-        }
-
-        console.log(songs[index].song.volume)
+    function play(index: number, songs: SongAndTitle[], volume: number): void {
+        songs[currentSong].song.pause()
 
         songs[index].song.volume = volume
         songs[index].song.currentTime = 0
-        songs[index].song.onended = () => { next() }
+        songs[index].song.onended = () => { next(index, mode, songs, volume) }
         songs[index].song.play()
 
         setPlaying(true)
@@ -110,14 +125,14 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
                 <>
                     <div>
                         {playing &&
-                            <span><Button onClick={() => pause()} icon={<Pause24Filled />} appearance='transparent' /></span>
+                            <span><Button onClick={() => pause(currentSong, songs)} icon={<Pause24Filled />} appearance='transparent' /></span>
                         }
 
                         {!playing &&
-                            <span><Button onClick={() => resume()} icon={<Play24Filled />} appearance='transparent' /></span>
+                            <span><Button onClick={() => resume(currentSong, mode, songs, volume)} icon={<Play24Filled />} appearance='transparent' /></span>
                         }
 
-                        <span><Button onClick={() => next()} icon={<FastForward24Filled />} appearance='transparent' /></span>
+                        <span><Button onClick={() => next(currentSong, mode, songs, volume)} icon={<FastForward24Filled />} appearance='transparent' /></span>
                     </div>
 
                     <div id="SongList">
@@ -126,9 +141,10 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
                             songs.map(
                                 (song, index) => {
                                     return (
-                                        <div className={(index === currentSong) ? "PlayingSongItem" : "SongItem"}
+                                        <div
+                                            className={(index === currentSong) ? "PlayingSongItem" : "SongItem"}
                                             key={index}
-                                            onClick={() => { play(index) }}
+                                            onClick={() => { play(index, songs, volume) }}
                                         >
                                             <div>{song.title}</div><div>{secondsToString(song.song.duration)}</div>
                                         </div>
@@ -137,6 +153,9 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
                             )
                         }
                     </div>
+                    <ToggleButton checked={mode === 'LOOP_SONG'} onClick={() => setMode('LOOP_SONG')}>Loop song</ToggleButton>
+                    <ToggleButton checked={mode === 'LOOP_LIST'} onClick={() => setMode('LOOP_LIST')}>Loop list</ToggleButton>
+                    <ToggleButton checked={mode === 'SHUFFLE_LIST'} onClick={() => setMode('SHUFFLE_LIST')}>Shuffle</ToggleButton>
                 </>
             }
 

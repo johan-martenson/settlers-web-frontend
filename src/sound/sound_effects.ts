@@ -12,6 +12,29 @@ export type SoundEffect = 'NEW-MESSAGE' |
     'GEOLOGIST_FINDING' |
     'GEOLOGIST_DIGGING'
 
+interface Sfx {
+    play: ((name: SoundEffect, loop: boolean) => Sound | undefined)
+    startEffects: (() => void)
+    setSoundEffectsVolume: ((volume: number) => void)
+    setVisibleOnScreen: ((left: number, right: number, top: number, bottom: number) => void)
+}
+
+const sfx: Sfx = {
+    play: play,
+    startEffects: startEffects,
+    setSoundEffectsVolume: setSoundEffectsVolume,
+    setVisibleOnScreen: setVisibleOnScreen
+}
+
+interface Visibility {
+    left: number
+    right: number
+    top: number
+    bottom: number
+}
+
+let visibility: Visibility = { left: 0, right: 0, top: 0, bottom: 0 }
+
 const soundInstances = new Map<SoundEffect, Sound>()
 
 soundInstances.set("NEW-MESSAGE", new Sound("assets/audio/new-message.wave"))
@@ -73,17 +96,19 @@ function startEffects() {
 
     volume = DEFAULT_VOLUME
 
+    // Load each sound
     soundInstances.forEach((sound, title) => {
         sound.load()
     })
 
+    // Listen to events to start/stop sound effects
     monitor.listenToActions({
         actionStarted: (id: string, point: Point, action: WorkerAction) => {
-            console.log(action)
-
             ongoingEffects.set(id, { id, point, action, index: 0 })
         },
         actionEnded: (id: string, point: Point, action: string) => {
+            ongoingEffects.get(id)?.playing?.stop()
+
             ongoingEffects.delete(id)
         }
     })
@@ -110,19 +135,21 @@ function startEffects() {
         () => {
 
             // 1) Go through each ongoing actions
-            // 2) Step index
-            // 3) Determine based on the timing of the action if it's time to make the sound
-
             ongoingEffects.forEach((ongoingEffect) => {
                 const soundEffect = SOUND_EFFECTS.get(ongoingEffect.action)
 
-                if (soundEffect && ongoingEffect.index === soundEffect.start) {
-                    console.log(soundEffect.audio)
-
+            // 2) Determine based on the timing of the action if it's time to make the sound
+            if (soundEffect &&
+                    ongoingEffect.index === soundEffect.start &&
+                    ongoingEffect.point.x > visibility.left &&
+                    ongoingEffect.point.x < visibility.right &&
+                    ongoingEffect.point.y < visibility.top &&
+                    ongoingEffect.point.y > visibility.bottom) {
                     ongoingEffect.playing = play(soundEffect.audio, soundEffect.type === 'LOOPING')
                 }
 
-                ongoingEffect.index += 1
+            // 3) Step index
+            ongoingEffect.index += 1
 
                 if (soundEffect && ongoingEffect.index === soundEffect.animationLength) {
                     ongoingEffect.index = 0
@@ -132,15 +159,18 @@ function startEffects() {
 }
 
 function setSoundEffectsVolume(newVolume: number) {
-    console.log("Set sound effects volume to " + newVolume)
-
     volume = newVolume
 
     soundInstances.forEach(soundInstance => soundInstance.setVolume(newVolume))
 }
 
-export {
-    play,
-    startEffects,
-    setSoundEffectsVolume
+function setVisibleOnScreen(left: number, right: number, top: number, bottom: number): void {
+    visibility = {
+        left,
+        right,
+        top,
+        bottom
+    }
 }
+
+export { sfx }

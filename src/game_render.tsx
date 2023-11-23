@@ -1648,7 +1648,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             })
                         }
                     }
-
                 }
             }
         }
@@ -1664,7 +1663,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            const flagDrawInfo = flagAnimations.getAnimationFrame("romans", flag.type, this.animationIndex, flagCount)
+            const flagDrawInfo = flagAnimations.getAnimationFrame(flag.nation, flag.type, this.animationIndex, flagCount)
 
             if (flagDrawInfo) {
                 toDrawNormal.push({

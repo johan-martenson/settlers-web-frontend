@@ -765,12 +765,6 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     // Confirm local removals if they are part of the message
     message.removedFlags?.forEach(removedFlagId => monitor.localRemovedFlags.delete(removedFlagId))
 
-    // Debug message to troubleshoot roads that disappear for no reason
-    if (message.newRoads || message.removedRoads) {
-        console.log("Message with roads")
-        console.log(message)
-    }
-
     // Digest all changes from the message
     message.newDiscoveredLand?.forEach(point => monitor.discoveredPoints.add(point))
 

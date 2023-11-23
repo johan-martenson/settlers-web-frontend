@@ -791,6 +791,10 @@ class WorkerImageAtlasHandler {
 
         return undefined
     }
+
+    getSourceImage() {
+        return this.image
+    }
 }
 
 interface HouseImageAtlasInformation {

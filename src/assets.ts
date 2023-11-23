@@ -55,7 +55,7 @@ class MaterialImageAtlasHandler {
 
 class FlagImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<NationSmallCaps, Record<FlagType, Record<'images' | 'shadows', ImageSeriesInformation>>>
+    private imageAtlasInfo?: Record<Nation, Record<FlagType, Record<'images' | 'shadows', ImageSeriesInformation>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -88,7 +88,7 @@ class FlagImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(nation: NationSmallCaps, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
+    getDrawingInformationFor(nation: Nation, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -124,7 +124,7 @@ class FlagImageAtlasHandler {
 
     getSize(nation: Nation, flagType: FlagType): Dimension | undefined {
 
-        const drawingInfo = this.getDrawingInformationFor("romans", flagType, 0)
+        const drawingInfo = this.getDrawingInformationFor(nation, flagType, 0)
 
         if (drawingInfo) {
 
@@ -136,6 +136,10 @@ class FlagImageAtlasHandler {
         }
 
         return undefined
+    }
+
+    getImage(): HTMLImageElement | undefined {
+        return this.image
     }
 }
 
@@ -157,12 +161,16 @@ class FlagAnimation {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(nation: NationSmallCaps, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
+    getAnimationFrame(nation: Nation, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
 
     getSize(nation: Nation, flagType: FlagType): Dimension | undefined {
         return this.imageAtlasHandler.getSize(nation, flagType)
+    }
+
+    getImageAtlasHandler(): FlagImageAtlasHandler {
+        return this.imageAtlasHandler
     }
 }
 

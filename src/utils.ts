@@ -400,6 +400,10 @@ class AnimalAnimation {
     getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getDrawingInformationFor(direction, Math.floor((animationIndex + percentageTraveled) / this.speedAdjust))
     }
+
+    getImageAtlasHandler(): AnimalImageAtlasHandler {
+        return this.imageAtlasHandler
+    }
 }
 
 export interface Dimension {
@@ -1935,6 +1939,8 @@ class CropImageAtlasHandler {
 interface AnimalImageAtlasFormat {
     images: Record<Direction, ImageSeriesInformation>
     shadowImages?: Record<Direction, OneImageInformation>
+    cargos?: Record<MaterialAllUpperCase, OneImageInformation>
+    nationSpecific?: Record<Nation, Record<MaterialAllUpperCase, OneImageInformation>>
 }
 
 const ANIMAL_FALLBACK_DIRECTION = new Map<Direction, Direction>()
@@ -1977,6 +1983,48 @@ class AnimalImageAtlasHandler {
         } else {
             console.error("Failed to make the texture because image is null|undefined")
         }
+    }
+
+    getDrawingInformationForCargo(material: MaterialAllUpperCase, nation: Nation): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        if (this.imageAtlasInfo.cargos) {
+            const cargoImage = this.imageAtlasInfo.cargos[material]
+
+            if (cargoImage) {
+                return {
+                    sourceX: cargoImage.x,
+                    sourceY: cargoImage.y,
+                    width: cargoImage.width,
+                    height: cargoImage.height,
+                    offsetX: cargoImage.offsetX,
+                    offsetY: cargoImage.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            }
+        }
+
+        if (this.imageAtlasInfo.nationSpecific) {
+            const cargoImage = this.imageAtlasInfo.nationSpecific[nation][material]
+
+            if (cargoImage) {
+                return {
+                    sourceX: cargoImage.x,
+                    sourceY: cargoImage.y,
+                    width: cargoImage.width,
+                    height: cargoImage.height,
+                    offsetX: cargoImage.offsetX,
+                    offsetY: cargoImage.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            }
+        }
+
+        return undefined
     }
 
     getDrawingInformationFor(direction: Direction, animationCounter: number): DrawingInformation[] | undefined {
@@ -2339,6 +2387,17 @@ function gamePointToScreenPoint(gamePoint: Point, translateX: number, translateY
     }
 }
 
+function surroundingPoints(point: Point) {
+    return [
+        { x: point.x - 2, y: point.y },
+        { x: point.x - 1, y: point.y + 1 },
+        { x: point.x + 1, y: point.y + 1 },
+        { x: point.x + 2, y: point.y },
+        { x: point.x + 1, y: point.y - 1 },
+        { x: point.x - 1, y: point.y - 1 }
+    ]
+}
+
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
@@ -2394,5 +2453,6 @@ export {
     canBuildMine,
     canBuildRoad,
     screenPointToGamePoint,
-    gamePointToScreenPoint
+    gamePointToScreenPoint,
+    surroundingPoints
 }

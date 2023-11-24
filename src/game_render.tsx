@@ -3,10 +3,10 @@ import { Direction, Nation, Point, RoadInformation, VegetationIntegers, VEGETATI
 import { Duration } from './duration'
 import './game_render.css'
 import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './api/ws-api'
-import { shadowFragmentShader, textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShaderPixelPerfect, textureFragmentShader } from './shaders'
+import { fogOfWarFragmentShader, fogOfWarVertexShader, shadowFragmentShader, textureAndLightingFragmentShader, textureAndLightingVertexShader, texturedImageVertexShaderPixelPerfect, textureFragmentShader } from './shaders'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, TreeAnimation, UiElementsImageAtlasHandler, Vector, WorkerAnimation } from './utils'
-import { PointMapFast } from './util_types'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, UiElementsImageAtlasHandler, Vector, WorkerAnimation } from './utils'
+import { PointMapFast, PointSetFast } from './util_types'
 import { flagAnimations, houses } from './assets'
 
 export const DEFAULT_SCALE = 35.0
@@ -17,6 +17,11 @@ export interface ScreenPoint {
 }
 
 export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD'
+
+interface TrianglesAtPoint {
+    belowVisible: boolean
+    downRightVisible: boolean
+}
 
 interface ToDraw {
     source: DrawingInformation | undefined
@@ -218,18 +223,37 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private uSampler?: WebGLUniformLocation | null
     private uScreenWidth?: WebGLUniformLocation | null
     private uScreenHeight?: WebGLUniformLocation | null
+
     private coordAttributeLocation?: number
     private normalAttributeLocation?: number
     private textureMappingAttributeLocation?: number
+
+    private fogOfWarCoordAttributeLocation?: number
+    private fogOfWarIntensityAttributeLocation?: number
+    private fogOfWarScaleUniformLocation?: WebGLUniformLocation | null
+    private fogOfWarOffsetUniformLocation?: WebGLUniformLocation | null
+    private fogOfWarScreenHeightUniformLocation?: WebGLUniformLocation | null
+    private fogOfWarScreenWidthUniformLocation?: WebGLUniformLocation | null
+
     private groundRenderProgram: WebGLProgram | null
     private drawImageProgram: WebGLProgram | null
     private drawShadowProgram: WebGLProgram | null
+    private fogOfWarRenderProgram: WebGLProgram | null
+
     private drawImagePositionLocation?: number
     private drawImageTexcoordLocation?: number
+
     private drawImageTexCoordBuffer?: WebGLBuffer | null
     private drawImagePositionBuffer?: WebGLBuffer | null
     private drawShadowTexCoordBuffer?: WebGLBuffer | null
     private drawShadowPositionBuffer?: WebGLBuffer | null
+    private fogOfWarCoordBuffer?: WebGLBuffer | null
+    private fogOfWarIntensityBuffer?: WebGLBuffer | null
+
+    private fogOfWarCoordinates: number[] = []
+    private fogOfWarIntensities: number[] = []
+
+    private allPointsVisibilityTracking = new PointMapFast<TrianglesAtPoint>()
 
 
     constructor(props: GameCanvasProps) {
@@ -257,10 +281,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.previous = performance.now()
         this.overshoot = 0
+
+        // Start tracking visible triangles
+        monitor.allTiles.forEach(tile => this.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
     }
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
-
         if (prevProps.cursorState !== this.props.cursorState && this?.normalCanvasRef?.current) {
 
             if (this.props.cursorState === 'DRAGGING') {
@@ -301,6 +327,82 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         } else {
             console.error("Failed to update road drawing buffers. At least one input is undefined")
         }
+    }
+
+    updateFogOfWarRendering() {
+        const triangles = getTrianglesAffectedByFogOfWar(monitor.discoveredPoints, monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+
+        this.fogOfWarCoordinates = []
+        this.fogOfWarIntensities = []
+
+        triangles.forEach(triangle => {
+            this.fogOfWarCoordinates.push(triangle[0].point.x)
+            this.fogOfWarCoordinates.push(triangle[0].point.y)
+
+            this.fogOfWarCoordinates.push(triangle[1].point.x)
+            this.fogOfWarCoordinates.push(triangle[1].point.y)
+
+            this.fogOfWarCoordinates.push(triangle[2].point.x)
+            this.fogOfWarCoordinates.push(triangle[2].point.y)
+
+            this.fogOfWarIntensities.push(triangle[0].intensity)
+            this.fogOfWarIntensities.push(triangle[1].intensity)
+            this.fogOfWarIntensities.push(triangle[2].intensity)
+        })
+
+        // Add triangles to draw black
+        monitor.discoveredBelowTiles.forEach(discoveredBelow => {
+            const below = this.allPointsVisibilityTracking.get(discoveredBelow.pointAbove)
+
+            if (below) {
+                below.belowVisible = true
+            }
+        })
+
+        monitor.discoveredDownRightTiles.forEach(discoveredDownRight => {
+            const downRight = this.allPointsVisibilityTracking.get(discoveredDownRight.pointLeft)
+
+            if (downRight) {
+                downRight.downRightVisible = true
+            }
+        })
+
+        this.allPointsVisibilityTracking.forEach((trianglesAtPoint, point) => {
+            const downLeft = getPointDownLeft(point)
+            const downRight = getPointDownRight(point)
+            const right = getPointRight(point)
+
+            if (!trianglesAtPoint.belowVisible) {
+
+                this.fogOfWarCoordinates.push(point.x)
+                this.fogOfWarCoordinates.push(point.y)
+
+                this.fogOfWarCoordinates.push(downLeft.x)
+                this.fogOfWarCoordinates.push(downLeft.y)
+
+                this.fogOfWarCoordinates.push(downRight.x)
+                this.fogOfWarCoordinates.push(downRight.y)
+
+                this.fogOfWarIntensities.push(0)
+                this.fogOfWarIntensities.push(0)
+                this.fogOfWarIntensities.push(0)
+            }
+
+            if (!trianglesAtPoint.downRightVisible) {
+                this.fogOfWarCoordinates.push(point.x)
+                this.fogOfWarCoordinates.push(point.y)
+
+                this.fogOfWarCoordinates.push(right.x)
+                this.fogOfWarCoordinates.push(right.y)
+
+                this.fogOfWarCoordinates.push(downRight.x)
+                this.fogOfWarCoordinates.push(downRight.y)
+
+                this.fogOfWarIntensities.push(0)
+                this.fogOfWarIntensities.push(0)
+                this.fogOfWarIntensities.push(0)
+            }
+        })
     }
 
     async componentDidMount(): Promise<void> {
@@ -349,6 +451,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         console.log("Download image atlases done")
 
 
+        // Start tracking visible triangles
+        if (this.allPointsVisibilityTracking.size === 0) {
+            monitor.allTiles.forEach(tile => this.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
+        }
+
+        this.updateFogOfWarRendering()
+
         /*
            Update the calculated normals -- avoid the race condition by doing this after subscription is established.
            This must be performed before subscribing for road changes
@@ -389,6 +498,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             } else {
                 console.error("Gl or ground render pgrogram is undefined")
             }
+
+            // Update fog of war rendering
+            this.updateFogOfWarRendering()
         })
 
         console.log("Subscribed to changes in discovered points")
@@ -444,11 +556,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const drawImageVertexShader = makeShader(gl, texturedImageVertexShaderPixelPerfect, gl.VERTEX_SHADER)
                 const drawImageFragmentShader = makeShader(gl, textureFragmentShader, gl.FRAGMENT_SHADER)
                 const drawShadowFragmentShader = makeShader(gl, shadowFragmentShader, gl.FRAGMENT_SHADER)
+                const drawFogOfWarVertexShader = makeShader(gl, fogOfWarVertexShader, gl.VERTEX_SHADER)
+                const drawFogOfWarFragmentShader = makeShader(gl, fogOfWarFragmentShader, gl.FRAGMENT_SHADER)
 
                 // Create the programs
                 this.groundRenderProgram = gl.createProgram()
                 this.drawImageProgram = gl.createProgram()
                 this.drawShadowProgram = gl.createProgram()
+                this.fogOfWarRenderProgram = gl.createProgram()
 
                 // Setup the program to render the ground
                 if (this.groundRenderProgram && lightingVertexShader && lightingFragmentShader) {
@@ -573,6 +688,41 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     console.error("Failed to create image rendering gl program")
                 }
 
+                // Setup the program to render the fog of war
+                if (this.fogOfWarRenderProgram && drawFogOfWarFragmentShader && drawFogOfWarVertexShader) {
+                    gl.attachShader(this.fogOfWarRenderProgram, drawFogOfWarVertexShader)
+                    gl.attachShader(this.fogOfWarRenderProgram, drawFogOfWarFragmentShader)
+
+                    gl.linkProgram(this.fogOfWarRenderProgram)
+                    gl.useProgram(this.fogOfWarRenderProgram)
+
+                    // Get attribute locations
+                    this.fogOfWarCoordAttributeLocation = gl.getAttribLocation(this.fogOfWarRenderProgram, "a_coordinates")
+                    this.fogOfWarIntensityAttributeLocation = gl.getAttribLocation(this.fogOfWarRenderProgram, "a_intensity")
+                    this.fogOfWarScaleUniformLocation = gl.getUniformLocation(this.fogOfWarRenderProgram, "u_scale")
+                    this.fogOfWarOffsetUniformLocation = gl.getUniformLocation(this.fogOfWarRenderProgram, "u_offset")
+                    this.fogOfWarScreenHeightUniformLocation = gl.getUniformLocation(this.fogOfWarRenderProgram, "u_screen_height")
+                    this.fogOfWarScreenWidthUniformLocation = gl.getUniformLocation(this.fogOfWarRenderProgram, "u_screen_width")
+
+                    // Create the coordinate buffer
+                    this.fogOfWarCoordBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
+
+                    // Create the intensity buffer
+                    this.fogOfWarIntensityBuffer = gl.createBuffer()
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarIntensityBuffer)
+
+                    // Turn on the coordinate attribute and configure it
+                    gl.enableVertexAttribArray(this.fogOfWarCoordAttributeLocation)
+
+                    gl.vertexAttribPointer(this.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+
+                    // Turn on the intensity attribute and configure it
+                    gl.enableVertexAttribArray(this.fogOfWarIntensityAttributeLocation)
+
+                    gl.vertexAttribPointer(this.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
+                }
+
                 // Setup the program to render shadows
                 if (this.drawShadowProgram && drawImageVertexShader && drawShadowFragmentShader) {
                     gl.attachShader(this.drawShadowProgram, drawImageVertexShader)
@@ -645,7 +795,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     renderGame(): void {
-
         const duration = new Duration("GameRender::renderGame")
 
         // Only draw if the game data is available
@@ -876,9 +1025,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Draw decorations objects
             decorationsToDraw.forEach(draw => {
-
                 if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
-
                     if (this.gl && this.drawImageProgram && draw.gamePoint) {
 
                         this.gl.activeTexture(this.gl.TEXTURE3)
@@ -975,7 +1122,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Collect borders to draw */
         for (const borderForPlayer of monitor.border.values()) {
             borderForPlayer.points.forEach(borderPoint => {
-
                 if (borderPoint.x < minXInGame || borderPoint.x > maxXInGame || borderPoint.y < minYInGame || borderPoint.y > maxYInGame) {
                     return
                 }
@@ -995,7 +1141,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Collect the houses */
         for (const house of monitor.houses.values()) {
-
             if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                 continue
             }
@@ -1037,7 +1182,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     depth: house.y
                 })
             } else if (house.state === "UNFINISHED") {
-
                 const houseDrawInformation = houses.getDrawingInformationForHouseUnderConstruction(currentPlayerNation, house.type)
 
                 if (houseDrawInformation) {
@@ -1078,7 +1222,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Collect the trees */
         let treeIndex = 0
         for (const tree of monitor.visibleTrees.values()) {
-
             if (tree.x + 1 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
                 continue
             }
@@ -1127,7 +1270,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Collect the crops */
         for (const crop of monitor.crops.values()) {
-
             if (crop.x < minXInGame || crop.x > maxXInGame || crop.y < minYInGame || crop.y > maxYInGame) {
                 continue
             }
@@ -1155,7 +1297,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Collect the signs */
         for (const sign of monitor.signs.values()) {
-
             if (sign.x < minXInGame || sign.x > maxXInGame || sign.y < minYInGame || sign.y > maxYInGame) {
                 continue
             }
@@ -1169,7 +1310,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             if (signDrawInfo) {
-
                 toDrawNormal.push({
                     source: signDrawInfo[0],
                     gamePoint: sign,
@@ -1189,7 +1329,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Collect the stones */
         for (const stone of monitor.stones) {
-
             if (stone.x + 1 < minXInGame || stone.x - 1 > maxXInGame || stone.y + 1 < minYInGame || stone.y - 1 > maxYInGame) {
                 continue
             }
@@ -1218,7 +1357,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Collect wild animals */
         for (const animal of monitor.wildAnimals.values()) {
             if (animal.previous && animal.next) {
-
                 if (animal.previous.x < minXInGame || animal.previous.x > maxXInGame || animal.previous.y < minYInGame || animal.previous.y > maxYInGame) {
                     continue
                 }
@@ -1252,7 +1390,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 }
             } else {
-
                 if (animal.x < minXInGame || animal.x > maxXInGame || animal.y < minYInGame || animal.y > maxYInGame) {
                     continue
                 }
@@ -1308,7 +1445,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // If worker is moving and not at a fixed point
             if (ship.previous && ship.next) {
-
                 if (ship.previous.x < minXInGame || ship.previous.x > maxXInGame || ship.previous.y < minYInGame || ship.previous.y > maxYInGame) {
                     continue
                 }
@@ -1347,7 +1483,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
             } else {
-
                 if (ship.x < minXInGame || ship.x > maxXInGame || ship.y < minYInGame || ship.y > maxYInGame) {
                     continue
                 }
@@ -1388,7 +1523,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // If worker is moving and not at a fixed point
             if (worker.betweenPoints && worker.previous !== undefined && worker.next) {
-
                 if (worker.previous.x < minXInGame || worker.previous.x > maxXInGame || worker.previous.y < minYInGame || worker.previous.y > maxYInGame) {
                     continue
                 }
@@ -1420,8 +1554,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             })
                         }
                     }
-                } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
 
+                    if (worker.cargo) {
+                        const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, 'ROMANS')
+
+                        if (cargoImage) {
+                            toDrawNormal.push({
+                                source: cargoImage,
+                                gamePoint: interpolatedGamePoint,
+                                depth: interpolatedGamePoint.y - 1
+                            })
+                        }
+                    }
+                } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
                     let image
 
                     if (worker.cargo) {
@@ -1470,7 +1615,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-
                     if (worker.type === 'Courier' || worker.type === 'StorageWorker') {
                         let cargoDrawInfo
 
@@ -1499,7 +1643,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 }
             } else {
-
                 if (worker.x < minXInGame || worker.x > maxXInGame || worker.y < minYInGame || worker.y > maxYInGame) {
                     continue
                 }
@@ -1520,12 +1663,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             depth: worker.y
                         })
                     }
-                } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
 
+
+                    if (worker.cargo) {
+                        const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, 'ROMANS')
+
+                        if (cargoImage) {
+                            toDrawNormal.push({
+                                source: cargoImage,
+                                gamePoint: worker,
+                                depth: worker.y - 1
+                            })
+                        }
+                    }
+                } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
                     let didDrawAnimation = false
 
                     if (worker.action && worker.actionAnimationIndex !== undefined) {
-
                         if (worker.bodyType === 'FAT') {
                             const animationImage = fatCarrierNoCargo.getActionAnimation(worker.direction, worker.action, worker.actionAnimationIndex)
 
@@ -1585,7 +1739,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         }
                     }
                 } else {
-
                     let didDrawAnimation = false
 
                     if (worker.action && worker.actionAnimationIndex !== undefined) {
@@ -1622,7 +1775,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-
                     if (worker.type === 'Courier' || worker.type === 'StorageWorker') {
                         let cargoDrawInfo
 
@@ -1658,7 +1810,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Collect flags */
         let flagCount = 0
         for (const flag of monitor.flags.values()) {
-
             if (flag.x < minXInGame || flag.x > maxXInGame || flag.y < minYInGame || flag.y > maxYInGame) {
                 continue
             }
@@ -1680,9 +1831,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             if (flag.stackedCargo) {
-
                 for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
-
                     const cargo = flag.stackedCargo[i]
 
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
@@ -1696,7 +1845,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (flag.stackedCargo.length > 3) {
                     for (let i = 3; i < Math.min(flag.stackedCargo.length, 6); i++) {
-
                         const cargo = flag.stackedCargo[i]
 
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
@@ -1711,7 +1859,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 if (flag.stackedCargo.length > 6) {
                     for (let i = 6; i < flag.stackedCargo.length; i++) {
-
                         const cargo = flag.stackedCargo[i]
 
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
@@ -1733,9 +1880,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Collect available construction */
         if (this.props.showAvailableConstruction) {
-
             for (const [gamePoint, available] of monitor.availableConstruction.entries()) {
-
                 if (available.length === 0) {
                     continue
                 }
@@ -1745,7 +1890,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (available.includes("large")) {
-
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
 
                     toDrawNormal.push({
@@ -1754,7 +1898,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: gamePoint.y
                     })
                 } else if (available.includes("medium")) {
-
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
 
                     toDrawNormal.push({
@@ -1763,7 +1906,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: gamePoint.y
                     })
                 } else if (available.includes("small")) {
-
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
 
                     toDrawNormal.push({
@@ -1772,7 +1914,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: gamePoint.y
                     })
                 } else if (available.includes("mine")) {
-
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
 
                     toDrawNormal.push({
@@ -1781,7 +1922,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: gamePoint.y
                     })
                 } else if (available.includes("flag")) {
-
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
 
                     toDrawNormal.push({
@@ -1842,9 +1982,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Draw all shadows
             shadowsToDraw.forEach(shadow => {
-
                 if (shadow.gamePoint !== undefined && shadow.source && shadow.source.texture !== undefined) {
-
                     if (this.gl && this.drawShadowProgram && shadow.gamePoint) {
 
                         this.gl.activeTexture(this.gl.TEXTURE3)
@@ -1912,9 +2050,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Draw normal objects
             sortedToDrawList.forEach(draw => {
-
                 if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
-
                     if (this.gl && this.drawImageProgram && draw.gamePoint) {
 
                         this.gl.activeTexture(this.gl.TEXTURE3)
@@ -1949,9 +2085,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw possible road connections */
         if (this.props.possibleRoadConnections) {
-
             if (this.props.newRoad !== undefined) {
-
                 const center = this.props.newRoad[this.props.newRoad.length - 1]
 
                 // Draw the starting point
@@ -1966,7 +2100,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             this.props.possibleRoadConnections.forEach(
                 (point) => {
-
                     const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
 
                     toDrawHover.push({
@@ -1997,11 +2130,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw the hover point */
         if (this.state.hoverPoint && this.state.hoverPoint.y > 0) {
-
             const availableConstructionAtHoverPoint = monitor.availableConstruction.get(this.state.hoverPoint)
 
             if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
-
                 if (availableConstructionAtHoverPoint.includes("large")) {
 
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
@@ -2012,7 +2143,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: this.state.hoverPoint.y
                     })
                 } else if (availableConstructionAtHoverPoint.includes("medium")) {
-
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
 
                     toDrawHover.push({
@@ -2021,7 +2151,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: this.state.hoverPoint.y
                     })
                 } else if (availableConstructionAtHoverPoint.includes("small")) {
-
                     const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
 
                     toDrawHover.push({
@@ -2030,7 +2159,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: this.state.hoverPoint.y
                     })
                 } else if (availableConstructionAtHoverPoint.includes("mine")) {
-
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
 
                     toDrawHover.push({
@@ -2039,7 +2167,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         depth: this.state.hoverPoint.y
                     })
                 } else if (availableConstructionAtHoverPoint.includes("flag")) {
-
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
 
                     toDrawHover.push({
@@ -2049,7 +2176,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     })
                 }
             } else {
-
                 const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
 
                 toDrawHover.push({
@@ -2181,6 +2307,62 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         duration.after("draw house titles")
 
 
+        // Fill in the buffers to draw fog of war
+        if (this.gl && this.fogOfWarCoordBuffer && this.fogOfWarIntensityBuffer) {
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.fogOfWarCoordinates), this.gl.STATIC_DRAW)
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.fogOfWarIntensityBuffer)
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.fogOfWarIntensities), this.gl.STATIC_DRAW)
+        }
+
+        /* Draw the fog of war layer */
+        if (this.gl && this.fogOfWarRenderProgram &&
+            this.fogOfWarScreenWidthUniformLocation !== undefined &&
+            this.fogOfWarScreenHeightUniformLocation !== undefined &&
+            this.fogOfWarScaleUniformLocation !== undefined &&
+            this.fogOfWarOffsetUniformLocation !== undefined &&
+            this.fogOfWarCoordAttributeLocation !== undefined &&
+            this.fogOfWarIntensityAttributeLocation !== undefined) {
+
+            const gl = this.gl
+
+            gl.useProgram(this.fogOfWarRenderProgram)
+
+            gl.enable(gl.BLEND)
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+
+            // Set screen width and height
+            gl.uniform1f(this.fogOfWarScreenWidthUniformLocation, width)
+            gl.uniform1f(this.fogOfWarScreenHeightUniformLocation, height)
+
+            // Set the current values for the scale and the offset
+            gl.uniform2f(this.fogOfWarScaleUniformLocation, this.props.scale, this.props.scale)
+            gl.uniform2f(this.fogOfWarOffsetUniformLocation, this.props.translateX, this.props.translateY)
+
+            // Fill the screen with black color
+            gl.clearColor(0.0, 0.0, 0.0, 1.0)
+            //gl.clear(gl.COLOR_BUFFER_BIT)
+
+            // Draw the fog of war as a set of shaded triangles
+            if (this.fogOfWarCoordBuffer !== undefined && this.fogOfWarIntensityBuffer !== undefined) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
+                gl.vertexAttribPointer(this.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(this.fogOfWarCoordAttributeLocation)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarIntensityBuffer)
+                gl.vertexAttribPointer(this.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(this.fogOfWarIntensityAttributeLocation)
+
+                // mode, offset (nr vertices), count (nr vertices)
+                gl.drawArrays(gl.TRIANGLES, 0, this.fogOfWarCoordinates.length / 2)
+            } else {
+                console.error("Buffers were undefined when trying to draw the fog of war")
+            }
+        } else {
+            console.error("Did not draw the fog of war layer")
+        }
+
         duration.reportStats()
 
         /* List counters if the rendering time exceeded the previous maximum */
@@ -2245,8 +2427,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     async onClick(event: React.MouseEvent): Promise<void> {
-
-        /* Convert to game coordinates */
         if (this.overlayCanvasRef.current) {
             const rect = event.currentTarget.getBoundingClientRect()
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
@@ -2259,14 +2439,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     onDoubleClick(event: React.MouseEvent): void {
-
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
             console.error("Received invalid double click event")
 
             return
         }
 
-        /* Convert to game coordinates */
         if (this.overlayCanvasRef.current) {
             const rect = event.currentTarget.getBoundingClientRect()
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
@@ -2316,7 +2494,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 />
 
                 <canvas ref={this.normalCanvasRef} className="TerrainCanvas" />
-
             </>
         )
     }
@@ -2538,9 +2715,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         console.log("Prepare to render roads")
 
         // Create the render information for the roads
-        const coordinatesList: number[] = []
-        const normalsList: number[] = []
-        const textureMappinglist: number[] = []
+        const coordinates: number[] = []
+        const normals: number[] = []
+        const textureMapping: number[] = []
 
         for (const road of roads) {
 
@@ -2570,14 +2747,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (previous.y === point.y) {
 
                     Array.prototype.push.apply(
-                        coordinatesList,
+                        coordinates,
                         [
                             previous.x, previous.y, previous.x, previous.y + 0.4, point.x, point.y,
                             previous.x, previous.y + 0.4, point.x, point.y, point.x, point.y + 0.4
                         ]
                     )
 
-                    Array.prototype.push.apply(normalsList,
+                    Array.prototype.push.apply(normals,
                         [
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
@@ -2589,15 +2766,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (road.type === 'NORMAL') {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
-                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                                0.75, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                1.0, 1 - 1.0
                             ]
                         )
                     } else {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
                                 0.75, 0.118,
                                 0.75, 0.059,
@@ -2613,14 +2794,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else if (previous.x < point.x && previous.y < point.y) {
 
                     Array.prototype.push.apply(
-                        coordinatesList,
+                        coordinates,
                         [
                             previous.x + 0.2, previous.y, previous.x - 0.2, previous.y + 0.4, point.x, point.y,
                             previous.x - 0.2, previous.y + 0.4, point.x, point.y, point.x - 0.2, point.y + 0.4
                         ]
                     )
 
-                    Array.prototype.push.apply(normalsList,
+                    Array.prototype.push.apply(normals,
                         [
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
@@ -2632,15 +2813,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (road.type === 'NORMAL') {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
-                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                                0.75, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                1.0, 1 - 1.0
                             ]
                         )
                     } else {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
                                 0.75, 0.118,
                                 0.75, 0.059,
@@ -2656,14 +2841,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else if (previous.x < point.x && previous.y > point.y) {
 
                     Array.prototype.push.apply(
-                        coordinatesList,
+                        coordinates,
                         [
                             previous.x - 0.2, previous.y, previous.x + 0.2, previous.y + 0.4, point.x, point.y,
                             previous.x + 0.2, previous.y + 0.4, point.x, point.y, point.x + 0.2, point.y + 0.4
                         ]
                     )
 
-                    Array.prototype.push.apply(normalsList,
+                    Array.prototype.push.apply(normals,
                         [
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
@@ -2675,15 +2860,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (road.type === 'NORMAL') {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
-                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                                0.75, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                1.0, 1 - 1.0
                             ]
                         )
                     } else {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
                                 0.75, 0.118,
                                 0.75, 0.059,
@@ -2699,14 +2888,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else if (previous.x > point.x && previous.y < point.y) {
 
                     Array.prototype.push.apply(
-                        coordinatesList,
+                        coordinates,
                         [
                             previous.x - 0.2, previous.y, previous.x + 0.2, previous.y + 0.4, point.x, point.y,
                             previous.x + 0.2, previous.y + 0.4, point.x, point.y, point.x + 0.2, point.y + 0.4
                         ]
                     )
 
-                    Array.prototype.push.apply(normalsList,
+                    Array.prototype.push.apply(normals,
                         [
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
@@ -2718,15 +2907,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (road.type === 'NORMAL') {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
-                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                                0.75, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                1.0, 1 - 1.0
                             ]
                         )
                     } else {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
                                 0.75, 0.118,
                                 0.75, 0.059,
@@ -2742,14 +2935,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 } else if (previous.x > point.x && previous.y > point.y) {
 
                     Array.prototype.push.apply(
-                        coordinatesList,
+                        coordinates,
                         [
                             previous.x + 0.2, previous.y, previous.x - 0.2, previous.y + 0.4, point.x, point.y,
                             previous.x - 0.2, previous.y + 0.4, point.x, point.y, point.x - 0.2, point.y + 0.4
                         ]
                     )
 
-                    Array.prototype.push.apply(normalsList,
+                    Array.prototype.push.apply(normals,
                         [
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
                             normalPrevious.x, normalPrevious.y, normalPrevious.z,
@@ -2761,15 +2954,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (road.type === 'NORMAL') {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
-                                0.75, 1 - 0.941, 0.75, 1 - 1.0, 1.0, 1 - 0.941,
-                                0.75, 1 - 1.0, 1.0, 1 - 0.941, 1.0, 1 - 1.0
+                                0.75, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                0.75, 1 - 1.0,
+                                1.0, 1 - 0.941,
+                                1.0, 1 - 1.0
                             ]
                         )
                     } else {
                         Array.prototype.push.apply(
-                            textureMappinglist,
+                            textureMapping,
                             [
                                 0.75, 0.118,
                                 0.75, 0.059,
@@ -2787,12 +2984,70 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         return {
-            coordinates: coordinatesList,
-            normals: normalsList,
-            textureMapping: textureMappinglist
+            coordinates,
+            normals,
+            textureMapping
         }
     }
 }
+
+function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
+    const surrounding = surroundingPoints(point)
+
+    // TODO: filter points outside of the map
+    let foundInside = surrounding.filter(neighbor => discovered.has(neighbor)).length > 0
+    let foundOutside = surrounding.filter(neighbor => !discovered.has(neighbor)).length > 0
+
+    return foundInside && foundOutside
+}
+
+interface ShadedPoint {
+    point: Point
+    intensity: number
+}
+
+function getTrianglesAffectedByFogOfWar(discovered: PointSetFast, tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>) {
+    let triangles: ShadedPoint[][] = []
+
+    tilesBelow.forEach(tileBelow => {
+        const up = tileBelow.pointAbove
+        const right = getPointDownRight(tileBelow.pointAbove)
+        const left = getPointDownLeft(tileBelow.pointAbove)
+
+        const isUpOnEdge = isOnEdgeOfDiscovery(up, discovered)
+        const isRightOnEdge = isOnEdgeOfDiscovery(right, discovered)
+        const isLeftOnEdge = isOnEdgeOfDiscovery(left, discovered)
+
+        if (isUpOnEdge || isRightOnEdge || isLeftOnEdge) {
+            triangles.push([
+                { point: up, intensity: isUpOnEdge ? 0 : 1 },
+                { point: right, intensity: isRightOnEdge ? 0 : 1 },
+                { point: left, intensity: isLeftOnEdge ? 0 : 1 }
+            ])
+        }
+    })
+
+    tilesDownRight.forEach(tileDownRight => {
+        const left = tileDownRight.pointLeft
+        const right = getPointRight(tileDownRight.pointLeft)
+        const down = getPointDownRight(tileDownRight.pointLeft)
+
+        const isLeftOnEdge = isOnEdgeOfDiscovery(left, discovered)
+        const isRightOnEdge = isOnEdgeOfDiscovery(right, discovered)
+        const isDownOnEdge = isOnEdgeOfDiscovery(down, discovered)
+
+        if (isLeftOnEdge || isRightOnEdge || isDownOnEdge) {
+            triangles.push([
+                { point: left, intensity: isLeftOnEdge ? 0 : 1 },
+                { point: right, intensity: isRightOnEdge ? 0 : 1 },
+                { point: down, intensity: isDownOnEdge ? 0 : 1 }
+            ])
+        }
+    })
+
+    return triangles
+}
+
 
 export { GameCanvas }
 

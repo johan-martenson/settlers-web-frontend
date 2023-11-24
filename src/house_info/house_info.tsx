@@ -39,7 +39,7 @@ const HouseInfo = (props: HouseInfoProps) => {
         return () => monitor.removeDetailedMonitoring(house.id)
 
         // Only change detailed monitoring if the house id changes
-    }, [house.id])
+    }, [house])
 
     return (
         <>
@@ -265,7 +265,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
                                             )}
                                             {Array.from({ length: gap }, () => 1).map(
                                                 (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
-                                                    <span><InventoryIcon material={material} nation={nation} key={index} inline missing /></span>
+                                                    <span><InventoryIcon material={material} nation={nation} key={index + 10} inline missing /></span>
                                                 </Tooltip>
                                             )}
                                         </div>

@@ -153,9 +153,9 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
                             )
                         }
                     </div>
-                    <ToggleButton checked={mode === 'LOOP_SONG'} onClick={() => setMode('LOOP_SONG')}>Loop song</ToggleButton>
-                    <ToggleButton checked={mode === 'LOOP_LIST'} onClick={() => setMode('LOOP_LIST')}>Loop list</ToggleButton>
-                    <ToggleButton checked={mode === 'SHUFFLE_LIST'} onClick={() => setMode('SHUFFLE_LIST')}>Shuffle</ToggleButton>
+                    <Button appearance={mode === 'LOOP_SONG' ? 'secondary' : 'transparent'} onClick={() => setMode('LOOP_SONG')}>Loop song</Button>
+                    <Button appearance={mode === 'LOOP_LIST' ? 'secondary' : 'transparent'} onClick={() => setMode('LOOP_LIST')}>Loop list</Button>
+                    <Button appearance={mode === 'SHUFFLE_LIST' ? 'secondary' : 'transparent'} onClick={() => setMode('SHUFFLE_LIST')}>Shuffle</Button>
                 </>
             }
 

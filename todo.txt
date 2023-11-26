@@ -13,6 +13,8 @@
 13. Fix statistics components
 14. Divide src into sub-folders better. prepare-game, play-game, shaders?
 15. Animation when trees fall
+16. Quota handling for wheat, planks, and water (and iron?). Quota handling for workers that deliver directly to consumers
+17. Remove "visibleTrees" handling now that fog of war is implemented
 
 
 Done

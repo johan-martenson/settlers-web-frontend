@@ -300,9 +300,13 @@ async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: Mo
 
     if (pointInformation.is === "building" && pointInformation.buildingId) {
         monitor.removeBuilding(pointInformation.buildingId)
-    } else if (pointInformation.is === "flag" && pointInformation.flagId) {
+    }
+
+    if (pointInformation.flagId !== undefined) {
         monitor.removeFlag(pointInformation.flagId)
-    } else if (pointInformation.is === "road" && pointInformation.roadId) {
+    }
+
+    if (pointInformation.roadId !== undefined) {
         monitor.removeRoad(pointInformation.roadId)
     }
 }

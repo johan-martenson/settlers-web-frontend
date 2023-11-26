@@ -53,8 +53,29 @@ interface PointsInformationMessage extends ReplyMessage {
     pointsWithInformation: PointInformation[]
 }
 
+interface CoalQuotasMessage extends ReplyMessage {
+    mint: number
+    armory: number
+    ironSmelter: number
+}
+
+interface FoodQuotasMessage extends ReplyMessage {
+    ironMine: number
+    coalMine: number
+    goldMine: number
+    graniteMine: number
+}
+
 function isInformationOnPointsMessage(message: ReplyMessage): message is PointsInformationMessage {
     return 'pointsWithInformation' in message
+}
+
+function isCoalQuotasMessage(message: ReplyMessage): message is CoalQuotasMessage {
+    return 'mint' in message && 'armory' in message && 'ironSmelter' in message
+}
+
+function isFoodQuotasMessage(message: ReplyMessage): message is FoodQuotasMessage {
+    return 'ironMine' in message && 'goldMine' in message && 'coalMine' in message && 'graniteMine' in message
 }
 
 const replies: Map<RequestId, ReplyMessage> = new Map()
@@ -143,6 +164,10 @@ export interface Monitor {
     listenToActions: ((listener: ActionListener) => void)
     listenToBurningHouses: ((listener: HouseBurningListener) => void)
     listenToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
+    setCoalQuotas: ((mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void)
+    getCoalQuotas: (() => Promise<CoalQuotas>)
+    setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
+    getFoodQuotas: (() => Promise<FoodQuotas>)
 
     killWebsocket: (() => void)
 }
@@ -207,6 +232,10 @@ const monitor: Monitor = {
     listenToActions: listenToActions,
     listenToBurningHouses: listenToBurningHouses,
     listenToMessages: listenToMessages,
+    setCoalQuotas: setCoalQuotas,
+    getCoalQuotas: getCoalQuotas,
+    setFoodQuotas: setFoodQuotas,
+    getFoodQuotas: getFoodQuotas,
 
     killWebsocket: killWebsocket
 }
@@ -1737,6 +1766,115 @@ function listenToBurningHouses(listener: HouseBurningListener) {
 function killWebsocket(): void {
     websocket?.close()
 }
+
+function setCoalQuotas(mintAmount: number, armoryAmount: number, ironSmelterAmount: number): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_COAL_QUOTAS',
+            mint: mintAmount,
+            armory: armoryAmount,
+            ironSmelter: ironSmelterAmount
+        }
+    ))
+}
+
+interface CoalQuotas {
+    mint: number
+    armory: number
+    ironSmelter: number
+}
+
+interface FoodQuotas {
+    ironMine: number
+    coalMine: number
+    goldMine: number
+    graniteMine: number
+}
+
+function getFoodQuotas(): Promise<FoodQuotas> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_FOOD_QUOTAS',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            console.log({
+                title: "Looking for replies for request",
+                requestId,
+                reply
+            })
+
+            if (!reply) {
+                return
+            }
+
+            if (isFoodQuotasMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply)
+            }
+        }, 5)
+    })
+}
+
+function getCoalQuotas(): Promise<CoalQuotas> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_COAL_QUOTAS',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            console.log({
+                title: "Looking for replies for request",
+                requestId,
+                reply
+            })
+
+            if (!reply) {
+                return
+            }
+
+            if (isCoalQuotasMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply)
+            }
+        }, 5)
+    })
+}
+
+function setFoodQuotas(ironMineAmount: number, coalMineAmount: number, goldMineAmount: number, graniteMineAmount: number) {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_FOOD_QUOTAS',
+            ironMine: ironMineAmount,
+            coalMine: coalMineAmount,
+            goldMine: goldMineAmount,
+            graniteMine: graniteMineAmount
+        }
+    ))
+}
+
 
 export {
     listenToDiscoveredPoints,

@@ -20,6 +20,7 @@ import { Dismiss24Filled, CalendarAgenda24Regular, TextBulletListSquare24Regular
 import { FlagIcon, HouseIcon } from './icon'
 import { HouseInfo } from './house_info/house_info'
 import { sfx } from './sound/sound_effects'
+import { Quotas } from './quotas'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
@@ -95,6 +96,7 @@ interface AppState {
     showEnemyHouseInfo?: ShowEnemyHouseInfo
     showHelp?: boolean
     showStatistics?: boolean
+    showQuotas?: boolean
     showMenu: boolean
     isMusicPlayerVisible: boolean
     isTypingControllerVisible: boolean
@@ -332,6 +334,11 @@ class App extends Component<AppProps, AppState> {
             },
             icon: <CalendarAgenda24Regular />
         })
+        this.commands.set("Quotas", {
+            action: () => {
+                this.setState({ showQuotas: true })
+            }
+        })
     }
 
     toggleDetails(): void {
@@ -520,8 +527,8 @@ class App extends Component<AppProps, AppState> {
 
     componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>, snapshot?: any): void {
         if (prevState.translateX !== this.state.translateX || prevState.translateY !== this.state.translateY) {
-            const upperLeftGamePoint = screenPointToGamePoint({x: 0, y: 0}, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
-            const lowerRightGamePoint = screenPointToGamePoint({x: globalSyncState.width, y: globalSyncState.height}, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
+            const upperLeftGamePoint = screenPointToGamePoint({ x: 0, y: 0 }, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
+            const lowerRightGamePoint = screenPointToGamePoint({ x: globalSyncState.width, y: globalSyncState.height }, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
 
             sfx.setVisibleOnScreen(upperLeftGamePoint.x, lowerRightGamePoint.x, upperLeftGamePoint.y, lowerRightGamePoint.y)
         }
@@ -829,7 +836,7 @@ class App extends Component<AppProps, AppState> {
 
                 /* Otherwise, send the escape to the type controller */
             } else {
-                const keyEvent = new CustomEvent("key", {detail: {key: event.key}})
+                const keyEvent = new CustomEvent("key", { detail: { key: event.key } })
 
                 document.dispatchEvent(keyEvent)
             }
@@ -851,7 +858,7 @@ class App extends Component<AppProps, AppState> {
         } else if (event.key === "M") {
             this.showMenu()
         } else {
-            const keyEvent = new CustomEvent("key", {detail: {key: event.key}})
+            const keyEvent = new CustomEvent("key", { detail: { key: event.key } })
 
             document.dispatchEvent(keyEvent)
         }
@@ -1056,7 +1063,7 @@ class App extends Component<AppProps, AppState> {
                     defaultZoom={DEFAULT_SCALE}
                     isAvailableConstructionVisible={this.state.showAvailableConstruction}
                     onSetAvailableConstructionVisible={(visible: boolean) => this.setState({ showAvailableConstruction: visible })}
-                    onSetMusicVolume={(volume: number) => this.setState({musicVolume: volume})}
+                    onSetMusicVolume={(volume: number) => this.setState({ musicVolume: volume })}
                 />
 
                 {this.state.showFriendlyHouseInfo &&
@@ -1098,6 +1105,13 @@ class App extends Component<AppProps, AppState> {
                     />
                 }
 
+                {this.state.showQuotas &&
+                    <Quotas
+                        nation={this.state.player?.nation ?? 'ROMANS'}
+                        onClose={() => this.setState({ showQuotas: false })}
+                    />
+                }
+
                 {this.state.showSetTransportPriority &&
                     <SetTransportPriority
                         onClose={() => this.setState({ showSetTransportPriority: false })}
@@ -1123,7 +1137,7 @@ class App extends Component<AppProps, AppState> {
                 />
 
                 {this.state.isMusicPlayerVisible &&
-                    <MusicPlayer volume={this.state.musicVolume}/>
+                    <MusicPlayer volume={this.state.musicVolume} />
                 }
 
             </div>

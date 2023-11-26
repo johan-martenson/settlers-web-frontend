@@ -1221,7 +1221,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Collect the trees */
         let treeIndex = 0
-        for (const tree of monitor.visibleTrees.values()) {
+        for (const tree of monitor.trees.values()) {
             if (tree.x + 1 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
                 continue
             }

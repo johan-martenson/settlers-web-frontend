@@ -125,7 +125,6 @@ export interface Monitor {
     pointsWithBelowTileDiscovered: PointSetFast
     pointsWithDownRightTileDiscovered: PointSetFast
     deadTrees: PointSetFast
-    visibleTrees: Map<TreeId, TreeInformationLocal>
     wildAnimals: Map<WildAnimalId, WildAnimalInformation>
     decorations: PointMapFast<Decoration>
 
@@ -193,7 +192,6 @@ const monitor: Monitor = {
     pointsWithBelowTileDiscovered: new PointSetFast(),
     pointsWithDownRightTileDiscovered: new PointSetFast(),
     deadTrees: new PointSetFast(),
-    visibleTrees: new Map<TreeId, TreeInformationLocal>(),
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
     decorations: new PointMapFast<Decoration>(),
 
@@ -448,9 +446,6 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
         )
     }
 
-    /* Populate visible trees */
-    populateVisibleTrees()
-
     /* Store the full terrain */
     const terrain = await getTerrain(gameId)
 
@@ -611,29 +606,15 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
     // Also grow the trees locally to minimize the need for messages from the backend
     setInterval(async () => {
         monitor.trees.forEach((tree, treeId) => {
-            const visibleTree = monitor.visibleTrees.get(treeId)
-
             if (tree.size !== 'FULL_GROWN') {
                 tree.growth = tree.growth + 1
 
                 if (tree.growth >= 10 && tree.growth < 20) {
                     tree.size = 'SMALL'
-
-                    if (visibleTree) {
-                        visibleTree.size = 'SMALL'
-                    }
                 } else if (tree.growth >= 20 && tree.growth < 30) {
                     tree.size = 'MEDIUM'
-
-                    if (visibleTree) {
-                        visibleTree.size = 'MEDIUM'
-                    }
                 } else if (tree.growth >= 30) {
                     tree.size = 'FULL_GROWN'
-
-                    if (visibleTree) {
-                        visibleTree.size = 'FULL_GROWN'
-                    }
                 }
             }
         })
@@ -772,9 +753,6 @@ function receivedFullSyncMessage(message: FullSyncMessage): void {
         )
     }
 
-    /* Populate visible trees */
-    populateVisibleTrees()
-
     /* Store the discovered tiles */
     storeDiscoveredTiles(monitor.discoveredPoints)
 
@@ -798,8 +776,6 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     message.newDiscoveredLand?.forEach(point => monitor.discoveredPoints.add(point))
 
     if (message.newDiscoveredLand) {
-        populateVisibleTrees()
-
         storeDiscoveredTiles(message.newDiscoveredLand)
     }
 
@@ -902,24 +878,8 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     message.newRoads?.forEach(road => monitor.roads.set(road.id, road))
     message.removedRoads?.forEach(id => monitor.roads.delete(id))
 
-    message.newTrees?.forEach(tree => {
-        monitor.trees.set(tree.id, serverSentTreeToLocal(tree))
-
-        // TODO: use populateVisibleTrees instead
-
-        if (monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) &&
-            monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) &&
-            monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) &&
-            monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) &&
-            monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) &&
-            monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })) {
-            monitor.visibleTrees.set(tree.id, serverSentTreeToLocal(tree))
-        }
-    })
-    message.removedTrees?.forEach(treeId => {
-        monitor.trees.delete(treeId)
-        monitor.visibleTrees.delete(treeId)
-    })
+    message.newTrees?.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
+    message.removedTrees?.forEach(treeId => monitor.trees.delete(treeId))
 
     message.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
     message.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
@@ -995,24 +955,6 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
 
     if (message.changedBuildings) {
         notifyHouseListeners(message.changedBuildings)
-    }
-}
-
-function populateVisibleTrees(): void {
-    for (const [id, tree] of monitor.trees) {
-
-        if (
-            !monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y - 1 }) ||
-            !monitor.discoveredPoints.has({ x: tree.x - 1, y: tree.y + 1 }) ||
-            !monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y - 1 }) ||
-            !monitor.discoveredPoints.has({ x: tree.x + 1, y: tree.y + 1 }) ||
-            !monitor.discoveredPoints.has({ x: tree.x - 2, y: tree.y }) ||
-            !monitor.discoveredPoints.has({ x: tree.x + 2, y: tree.y })
-        ) {
-            continue
-        }
-
-        monitor.visibleTrees.set(id, tree)
     }
 }
 

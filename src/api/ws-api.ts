@@ -66,6 +66,13 @@ interface FoodQuotasMessage extends ReplyMessage {
     graniteMine: number
 }
 
+interface WheatQuotasMessage extends ReplyMessage {
+    donkeyFarm: number
+    pigFarm: number
+    mill: number
+    brewery: number
+}
+
 function isInformationOnPointsMessage(message: ReplyMessage): message is PointsInformationMessage {
     return 'pointsWithInformation' in message
 }
@@ -76,6 +83,10 @@ function isCoalQuotasMessage(message: ReplyMessage): message is CoalQuotasMessag
 
 function isFoodQuotasMessage(message: ReplyMessage): message is FoodQuotasMessage {
     return 'ironMine' in message && 'goldMine' in message && 'coalMine' in message && 'graniteMine' in message
+}
+
+function isWheatQuotasMessage(message: ReplyMessage): message is WheatQuotasMessage {
+    return 'donkeyFarm' in message && 'pigFarm' in message && 'mill' in message && 'brewery' in message
 }
 
 const replies: Map<RequestId, ReplyMessage> = new Map()
@@ -167,6 +178,8 @@ export interface Monitor {
     getCoalQuotas: (() => Promise<CoalQuotas>)
     setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
     getFoodQuotas: (() => Promise<FoodQuotas>)
+    setWheatQuotas: ((donkeyFarm: number, pigFarm: number, mill: number, brewery: number) => void)
+    getWheatQuotas: (() => Promise<WheatQuotas>)
 
     killWebsocket: (() => void)
 }
@@ -234,6 +247,8 @@ const monitor: Monitor = {
     getCoalQuotas: getCoalQuotas,
     setFoodQuotas: setFoodQuotas,
     getFoodQuotas: getFoodQuotas,
+    setWheatQuotas: setWheatQuotas,
+    getWheatQuotas: getWheatQuotas,
 
     killWebsocket: killWebsocket
 }
@@ -1733,6 +1748,13 @@ interface FoodQuotas {
     graniteMine: number
 }
 
+interface WheatQuotas {
+    donkeyFarm: number
+    pigFarm: number
+    mill: number
+    brewery: number
+}
+
 function getFoodQuotas(): Promise<FoodQuotas> {
     const requestId = getRequestId()
 
@@ -1759,6 +1781,53 @@ function getFoodQuotas(): Promise<FoodQuotas> {
             }
 
             if (isFoodQuotasMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply)
+            }
+        }, 5)
+    })
+}
+function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number) {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_WHEAT_QUOTAS',
+            donkeyFarm,
+            pigFarm,
+            mill,
+            brewery
+        }
+    ))
+
+}
+function getWheatQuotas(): Promise<WheatQuotas> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_WHEAT_QUOTAS',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            console.log({
+                title: "Looking for replies for request",
+                requestId,
+                reply
+            })
+
+            if (!reply) {
+                return
+            }
+
+            if (isWheatQuotasMessage(reply)) {
                 replies.delete(requestId)
 
                 clearInterval(timer)

@@ -42,6 +42,8 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     const [pigFarmWheatAmount, setPigFarmWheatAmount] = useState<number>(5)
     const [constructionAmount, setConstructionAmount] = useState<number>(5)
     const [boatsAndShipsAmount, setBoatsAndShipsAmount] = useState<number>(5)
+    const [breweryWaterAmount, setBreweryWaterAmount] = useState<number>(5)
+    const [breweryWheatAmount, setBreweryWheatAmount] = useState<number>(5)
 
     useEffect(() => {
         (async () => {
@@ -69,6 +71,19 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     }, [])
 
     useEffect(() => {
+        (async () => {
+            const wheatQuotas = await monitor.getWheatQuotas()
+
+            setPigFarmWheatAmount(wheatQuotas.pigFarm)
+            setDonkeyFarmWheatAmount(wheatQuotas.donkeyFarm)
+            setMillAmount(wheatQuotas.mill)
+            setBreweryWheatAmount(wheatQuotas.brewery)
+        })().then()
+
+        return () => { }
+    }, [])
+
+    useEffect(() => {
         monitor.setCoalQuotas(mintAmount, armoryAmount, ironSmelterAmount)
 
         return () => { }
@@ -90,6 +105,10 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
         console.log("Should set wheat consumption: ", { millAmount, donkeyFarmWheatAmount, pigFarmWheatAmount })
 
     }, [millAmount, donkeyFarmWheatAmount, pigFarmWheatAmount])
+
+    useEffect(() => {
+        monitor.setWheatQuotas(donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount)
+    }, [donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount])
 
     return (
         <div className="quotas-window">
@@ -218,6 +237,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
 
             {materialToManage === 'WATER' &&
                 <>
+                    <div>(not implemented yet)</div>
                     <Field label="Bakery">
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Bakery" nation={nation} />
@@ -245,6 +265,16 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                                 <Subtract16Filled onClick={() => setPigFarmWaterAmount((previous) => previous - 1)} />
                                 <AmountBar amount={pigFarmWaterAmount} max={10} />
                                 <Add16Filled onClick={() => setPigFarmWaterAmount((previous) => previous + 1)} />
+                            </div>
+                        </div>
+                    </Field>
+                    <Field label="Brewery">
+                        <div className="quota-for-house" >
+                            <HouseIcon houseType="Brewery" nation={nation} />
+                            <div className="quota">
+                                <Subtract16Filled onClick={() => setBreweryWaterAmount((previous) => previous - 1)} />
+                                <AmountBar amount={breweryWaterAmount} max={10} />
+                                <Add16Filled onClick={() => setBreweryWaterAmount((previous) => previous + 1)} />
                             </div>
                         </div>
                     </Field>
@@ -279,7 +309,6 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
 
             {materialToManage === 'WHEAT' &&
                 <>
-                    <div>(not implemented yet)</div>
                     <Field label="Mill">
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Mill" nation={nation} />
@@ -307,6 +336,16 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                                 <Subtract16Filled onClick={() => setPigFarmWheatAmount((previous) => previous - 1)} />
                                 <AmountBar amount={pigFarmWheatAmount} max={10} />
                                 <Add16Filled onClick={() => setPigFarmWheatAmount((previous) => previous + 1)} />
+                            </div>
+                        </div>
+                    </Field>
+                    <Field label="Brewery">
+                        <div className="quota-for-house" >
+                            <HouseIcon houseType="Brewery" nation={nation} />
+                            <div className="quota">
+                                <Subtract16Filled onClick={() => setBreweryWheatAmount((previous) => previous - 1)} />
+                                <AmountBar amount={breweryWheatAmount} max={10} />
+                                <Add16Filled onClick={() => setBreweryWheatAmount((previous) => previous + 1)} />
                             </div>
                         </div>
                     </Field>

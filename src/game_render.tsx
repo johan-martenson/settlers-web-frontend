@@ -2995,8 +2995,8 @@ function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
     const surrounding = surroundingPoints(point)
 
     // TODO: filter points outside of the map
-    let foundInside = surrounding.filter(neighbor => discovered.has(neighbor)).length > 0
-    let foundOutside = surrounding.filter(neighbor => !discovered.has(neighbor)).length > 0
+    const foundInside = surrounding.filter(neighbor => discovered.has(neighbor)).length > 0
+    const foundOutside = surrounding.filter(neighbor => !discovered.has(neighbor)).length > 0
 
     return foundInside && foundOutside
 }
@@ -3007,7 +3007,7 @@ interface ShadedPoint {
 }
 
 function getTrianglesAffectedByFogOfWar(discovered: PointSetFast, tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>) {
-    let triangles: ShadedPoint[][] = []
+    const triangles: ShadedPoint[][] = []
 
     tilesBelow.forEach(tileBelow => {
         const up = tileBelow.pointAbove

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
-import { HouseIcon, InventoryIcon } from "./icon"
+import React, { useEffect, useState } from "react"
+import { HouseIcon } from "./icon"
 import './quotas.css'
 import { Button, Field, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components"
 import { Nation } from "./api/types"
@@ -26,9 +26,9 @@ interface QuotasProps {
 }
 
 const Quotas = ({ nation, onClose }: QuotasProps) => {
-    const [materialToManage, setMaterialToManage] = useState<'COAL' | 'WHEAT' | 'WATER' | 'PLANK' | 'FOOD'>('COAL')
+    const [materialToManage, setMaterialToManage] = useState<'COAL' | 'WHEAT' | 'WATER' | 'PLANK' | 'FOOD' | 'IRON_BAR'>('COAL')
     const [mintAmount, setMintAmount] = useState<number>(5)
-    const [armoryAmount, setArmoryAmount] = useState<number>(5)
+    const [armoryCoalAmount, setArmoryCoalAmount] = useState<number>(5)
     const [ironSmelterAmount, setIronSmelterAmount] = useState<number>(5)
     const [ironMineAmount, setIronMineAmount] = useState<number>(5)
     const [coalMineAmount, setCoalMineAmount] = useState<number>(5)
@@ -44,13 +44,15 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     const [boatsAndShipsAmount, setBoatsAndShipsAmount] = useState<number>(5)
     const [breweryWaterAmount, setBreweryWaterAmount] = useState<number>(5)
     const [breweryWheatAmount, setBreweryWheatAmount] = useState<number>(5)
+    const [metalworksIronBarAmount, setMetalworksIronBarAmount] = useState<number>(5)
+    const [armoryIronBarAmount, setArmoryIronBarAmount] = useState<number>(5)
 
     useEffect(() => {
         (async () => {
             const coalQuotas = await monitor.getCoalQuotas()
 
             setMintAmount(coalQuotas.mint)
-            setArmoryAmount(coalQuotas.armory)
+            setArmoryCoalAmount(coalQuotas.armory)
             setIronSmelterAmount(coalQuotas.ironSmelter)
         })().then()
 
@@ -95,16 +97,25 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     }, [])
 
     useEffect(() => {
+        (async () => {
+            const ironBarQuotas = await monitor.getIronBarQuotas()
+
+            setArmoryIronBarAmount(ironBarQuotas.armory)
+            setMetalworksIronBarAmount(ironBarQuotas.metalworks)
+        })().then()
+    }, [])
+
+    useEffect(() => {
         monitor.setWaterQuotas(bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount)
 
         return () => {}
     }, [bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount])
 
     useEffect(() => {
-        monitor.setCoalQuotas(mintAmount, armoryAmount, ironSmelterAmount)
+        monitor.setCoalQuotas(mintAmount, armoryCoalAmount, ironSmelterAmount)
 
         return () => { }
-    }, [mintAmount, armoryAmount, ironSmelterAmount])
+    }, [mintAmount, armoryCoalAmount, ironSmelterAmount])
 
     useEffect(() => {
         monitor.setFoodQuotas(ironMineAmount, coalMineAmount, goldMineAmount, graniteMineAmount)
@@ -113,19 +124,16 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     }, [ironMineAmount, coalMineAmount, goldMineAmount, graniteMineAmount])
 
     useEffect(() => {
-        console.log("Should set water consumption: ", { bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount })
-
-        return () => { }
-    }, [bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount])
-
-    useEffect(() => {
-        console.log("Should set wheat consumption: ", { millAmount, donkeyFarmWheatAmount, pigFarmWheatAmount })
-
-    }, [millAmount, donkeyFarmWheatAmount, pigFarmWheatAmount])
-
-    useEffect(() => {
         monitor.setWheatQuotas(donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount)
+
+        return () => {}
     }, [donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount])
+
+    useEffect(() => {
+        monitor.setIronBarQuotas(armoryIronBarAmount, metalworksIronBarAmount)
+
+        return () => {}
+    }, [armoryIronBarAmount, metalworksIronBarAmount])
 
     return (
         <div className="quotas-window">
@@ -148,6 +156,8 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             setMaterialToManage('PLANK')
                         } else if (value === 'FOOD') {
                             setMaterialToManage('FOOD')
+                        } else if (value === 'IRON_BAR') {
+                            setMaterialToManage('IRON_BAR')
                         }
                     }
                 }
@@ -157,6 +167,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                 <Tab value={'WATER'}>Water</Tab>
                 <Tab value={'PLANK'}>Plank</Tab>
                 <Tab value={'FOOD'}>Food</Tab>
+                <Tab value={'IRON_BAR'}>Iron bars</Tab>
             </TabList>
 
             {materialToManage === 'COAL' &&
@@ -178,9 +189,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <HouseIcon houseType="Armory" nation={nation} />
 
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setArmoryAmount((previous) => previous - 1)} />
-                                <AmountBar amount={armoryAmount} max={10} />
-                                <Add16Filled onClick={() => setArmoryAmount((previous) => previous + 1)} />
+                                <Subtract16Filled onClick={() => setArmoryCoalAmount((previous) => previous - 1)} />
+                                <AmountBar amount={armoryCoalAmount} max={10} />
+                                <Add16Filled onClick={() => setArmoryCoalAmount((previous) => previous + 1)} />
                             </div>
                         </div>
                     </Field>
@@ -368,6 +379,30 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                 </>
             }
 
+            {materialToManage === 'IRON_BAR' &&
+                <>
+                    <Field label="Armory">
+                        <div className="quota-for-house" >
+                            <HouseIcon houseType="Armory" nation={nation} />
+                            <div className="quota">
+                                <Subtract16Filled onClick={() => setArmoryIronBarAmount((previous) => previous - 1)} />
+                                <AmountBar amount={armoryIronBarAmount} max={10} />
+                                <Add16Filled onClick={() => setArmoryIronBarAmount((previous) => previous + 1)} />
+                            </div>
+                        </div>
+                    </Field>
+                    <Field label="Metalworks">
+                        <div className="quota-for-house" >
+                            <HouseIcon houseType="Metalworks" nation={nation} />
+                            <div className="quota">
+                                <Subtract16Filled onClick={() => setMetalworksIronBarAmount((previous) => previous - 1)} />
+                                <AmountBar amount={metalworksIronBarAmount} max={10} />
+                                <Add16Filled onClick={() => setMetalworksIronBarAmount((previous) => previous + 1)} />
+                            </div>
+                        </div>
+                    </Field>
+                </>
+            }
             <Button onClick={() => onClose()} >Close</Button>
         </div>
     )

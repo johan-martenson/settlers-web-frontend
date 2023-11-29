@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { AnyBuilding, Direction, FlagType, MaterialAllUpperCase, Nation, WorkerType } from './api/types'
 import { FlagAnimation, flagAnimations, houses, materialImageAtlasHandler, workers } from './assets'
-import { Dimension, WorkerAnimation, makeShader, resizeCanvasToDisplaySize } from './utils'
+import { Dimension, WorkerAnimation, resizeCanvasToDisplaySize } from './utils'
 import './icon.css'
 
 interface WorkerIconProps {
@@ -121,6 +121,7 @@ interface HouseProps {
     nation: Nation
     houseType: AnyBuilding
     scale?: number
+    inline?: boolean
 }
 
 const HouseIcon = ({ nation, houseType, scale }: HouseProps) => {

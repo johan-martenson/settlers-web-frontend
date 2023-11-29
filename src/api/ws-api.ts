@@ -80,6 +80,11 @@ interface WaterQuotasMessage extends ReplyMessage {
     brewery: number
 }
 
+interface IronBarQuotasMessage extends ReplyMessage {
+    armory: number
+    metalworks: number
+}
+
 function isInformationOnPointsMessage(message: ReplyMessage): message is PointsInformationMessage {
     return 'pointsWithInformation' in message
 }
@@ -98,6 +103,10 @@ function isWheatQuotasMessage(message: ReplyMessage): message is WheatQuotasMess
 
 function isWaterQuotasMessage(message: ReplyMessage): message is WaterQuotasMessage {
     return 'bakery' in message && 'donkeyFarm' in message && 'pigFarm' in message && 'brewery' in message
+}
+
+function isIronBarQuotasMessage(message: ReplyMessage): message is IronBarQuotasMessage {
+    return 'armory' in message && 'metalworks' in message
 }
 
 const replies: Map<RequestId, ReplyMessage> = new Map()
@@ -193,6 +202,8 @@ export interface Monitor {
     getWheatQuotas: (() => Promise<WheatQuotas>)
     setWaterQuotas: ((bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) => void)
     getWaterQuotas: (() => Promise<WaterQuotas>)
+    setIronBarQuotas: ((armory: number, metalworks: number) => void)
+    getIronBarQuotas: (() => Promise<IronBarQuotas>)
 
     killWebsocket: (() => void)
 }
@@ -264,6 +275,8 @@ const monitor: Monitor = {
     getWheatQuotas: getWheatQuotas,
     setWaterQuotas: setWaterQuotas,
     getWaterQuotas: getWaterQuotas,
+    setIronBarQuotas: setIronBarQuotas,
+    getIronBarQuotas: getIronBarQuotas,
 
     killWebsocket: killWebsocket
 }
@@ -635,7 +648,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     // Also grow the trees locally to minimize the need for messages from the backend
     setInterval(async () => {
-        monitor.trees.forEach((tree, treeId) => {
+        monitor.trees.forEach((tree) => {
             if (tree.size !== 'FULL_GROWN') {
                 tree.growth = tree.growth + 1
 
@@ -1777,6 +1790,11 @@ interface WaterQuotas {
     brewery: number
 }
 
+interface IronBarQuotas {
+    armory: number
+    metalworks: number
+}
+
 function getFoodQuotas(): Promise<FoodQuotas> {
     const requestId = getRequestId()
 
@@ -1863,6 +1881,8 @@ function getWheatQuotas(): Promise<WheatQuotas> {
 function getWaterQuotas(): Promise<WaterQuotas> {
     const requestId = getRequestId()
 
+    console.log("Get water quotas. Request id: " + requestId)
+
     websocket?.send(JSON.stringify(
         {
             command: 'GET_WATER_QUOTAS',
@@ -1932,6 +1952,42 @@ function getCoalQuotas(): Promise<CoalQuotas> {
     })
 }
 
+function getIronBarQuotas(): Promise<IronBarQuotas> {
+    const requestId = getRequestId()
+
+    console.log("Get iron bar quotas. Request id: " + requestId)
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_IRON_BAR_QUOTAS',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            console.log(reply)
+
+            if (!reply) {
+                return
+            }
+
+            console.log(isIronBarQuotasMessage(reply))
+
+            if (isIronBarQuotasMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply)
+            }
+        })
+    })
+}
+
 function setFoodQuotas(ironMineAmount: number, coalMineAmount: number, goldMineAmount: number, graniteMineAmount: number) {
     websocket?.send(JSON.stringify(
         {
@@ -1952,6 +2008,16 @@ function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, bre
             donkeyFarm,
             pigFarm,
             brewery
+        }
+    ))
+}
+
+function setIronBarQuotas(armory: number, metalworks: number) {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_IRON_BAR_QUOTAS',
+            armory,
+            metalworks
         }
     ))
 }

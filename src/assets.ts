@@ -1,5 +1,5 @@
 import { Dimension, DrawingInformation, HouseImageAtlasHandler, ImageSeriesInformation, WorkerAnimation, loadImageNg, makeTextureFromImage } from "./utils"
-import { FlagType, MaterialAllUpperCase, Nation, NationSmallCaps, WorkerType } from "./api/types"
+import { FlagType, MaterialAllUpperCase, Nation, WorkerType } from "./api/types"
 
 const workers = new Map<WorkerType, WorkerAnimation>()
 

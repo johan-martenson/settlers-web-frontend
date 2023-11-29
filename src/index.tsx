@@ -1,4 +1,4 @@
-import React, { Component, PropsWithChildren, StrictMode } from 'react'
+import React, { Component, PropsWithChildren } from 'react'
 import { createRoot } from 'react-dom/client'
 import { FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'

@@ -84,6 +84,23 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     }, [])
 
     useEffect(() => {
+        (async () => {
+            const waterQuotas = await monitor.getWaterQuotas()
+
+            setBakeryAmount(waterQuotas.bakery)
+            setDonkeyFarmWaterAmount(waterQuotas.donkeyFarm)
+            setPigFarmWaterAmount(waterQuotas.pigFarm)
+            setBreweryWaterAmount(waterQuotas.brewery)
+        })().then()
+    }, [])
+
+    useEffect(() => {
+        monitor.setWaterQuotas(bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount)
+
+        return () => {}
+    }, [bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount])
+
+    useEffect(() => {
         monitor.setCoalQuotas(mintAmount, armoryAmount, ironSmelterAmount)
 
         return () => { }
@@ -237,7 +254,6 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
 
             {materialToManage === 'WATER' &&
                 <>
-                    <div>(not implemented yet)</div>
                     <Field label="Bakery">
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Bakery" nation={nation} />

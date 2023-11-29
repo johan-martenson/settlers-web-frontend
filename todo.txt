@@ -1,19 +1,19 @@
-1. Bug where expanding the border doesn't update the available construction properly. Flags closest to the old border remained Flags. Diagonal down-right
-2. Animation of houses
-3. More sounds
-4. Planer
-5. Attacking - animation of fights
-6. Attacking - weak or strong attackers
-7. Defending - many/few defenders. Weak/strong defenders
-8. Military settings - weak/strong in center, closer to the edge, and at the edge
-9. Shift rendering slightly based on height
-10. Make materials visible when donkeys carry
-11. In-game chat
-12. Finish making all react components into functional components
-13. Fix statistics components
-14. Divide src into sub-folders better. prepare-game, play-game, shaders?
-15. Animation when trees fall
-16. Quota handling for wheat, planks, and water (and iron?). Quota handling for workers that deliver directly to consumers
+1. Animation of houses
+2. More sounds
+3. Planer
+4. Attacking - animation of fights
+5. Attacking - weak or strong attackers
+6. Defending - many/few defenders. Weak/strong defenders
+7. Military settings - weak/strong in center, closer to the edge, and at the edge
+8. Shift rendering slightly based on height
+9. Make materials visible when donkeys carry
+10. In-game chat
+11. Finish making all react components into functional components
+12. Fix statistics components
+13. Divide src into sub-folders better. prepare-game, play-game, shaders?
+14. Animation when trees fall
+15. Quota handling for planks, iron bars, and water. Quota handling for workers that deliver directly to consumers
+16. Add the propeller to the mill
 
 
 Done
@@ -25,3 +25,4 @@ Done
 4. Make main roads render with different road texture
 5. Change WorkerIcon to use Canvas2d instead of webgl
 6. Remove "visibleTrees" handling now that fog of war is implemented
+1. Bug where expanding the border doesn't update the available construction properly. Flags closest to the old border remained Flags. Diagonal down-right

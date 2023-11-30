@@ -1,7 +1,7 @@
 import { getHouseInformation, getPlayers, getTerrain, getViewForPlayer } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId } from './types'
 
 const GAME_TICK_LENGTH = 200;
 
@@ -143,7 +143,7 @@ export interface Monitor {
     roads: Map<RoadId, RoadInformation>
     border: Map<PlayerId, MonitoredBorderForPlayer>
     trees: Map<TreeId, TreeInformationLocal>
-    stones: PointSetFast
+    stones: Map<StoneId, StoneInformation>
     crops: Map<CropId, CropInformationLocal>
     discoveredPoints: PointSetFast
     signs: Map<SignId, SignInformation>
@@ -216,7 +216,7 @@ const monitor: Monitor = {
     roads: new Map<RoadId, RoadInformation>(),
     border: new Map<PlayerId, MonitoredBorderForPlayer>(),
     trees: new Map<TreeId, TreeInformationLocal>(),
-    stones: new PointSetFast(),
+    stones: new Map<StoneId, StoneInformation>(),
     crops: new Map<CropId, CropInformationLocal>(),
     discoveredPoints: new PointSetFast(),
     signs: new Map<SignId, SignInformation>(),
@@ -331,8 +331,8 @@ interface ChangesMessage {
     changedBorders?: BorderChange[]
     newTrees?: TreeInformation[]
     removedTrees?: TreeId[]
-    newStones?: Point[]
-    removedStones?: Point[]
+    newStones?: StoneInformation[]
+    removedStones?: StoneId[]
     newCrops?: CropInformation[]
     harvestedCrops?: CropId[]
     removedCrops?: CropId[]
@@ -449,7 +449,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     view.signs.forEach(sign => monitor.signs.set(sign.id, sign))
 
-    view.stones.forEach(stone => monitor.stones.add(stone))
+    view.stones.forEach(stone => monitor.stones.set(stone.id, stone))
 
     view.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
 
@@ -752,7 +752,7 @@ function receivedFullSyncMessage(message: FullSyncMessage): void {
 
     message.signs.forEach(sign => monitor.signs.set(sign.id, sign))
 
-    message.stones.forEach(stone => monitor.stones.add(stone))
+    message.stones.forEach(stone => monitor.stones.set(stone.id, stone))
 
     message.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
 
@@ -927,8 +927,8 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     message.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
     message.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
 
-    message.newStones?.forEach(stone => monitor.stones.add(stone))
-    message.removedStones?.forEach(stone => monitor.stones.delete(stone))
+    message.newStones?.forEach(stone => monitor.stones.set(stone.id, stone))
+    message.removedStones?.forEach(stoneId => monitor.stones.delete(stoneId))
 
     if (message.changedBorders) {
         syncChangedBorders(message.changedBorders)
@@ -1810,12 +1810,6 @@ function getFoodQuotas(): Promise<FoodQuotas> {
         const timer = setInterval(() => {
             const reply = replies.get(requestId)
 
-            console.log({
-                title: "Looking for replies for request",
-                requestId,
-                reply
-            })
-
             if (!reply) {
                 return
             }
@@ -1857,12 +1851,6 @@ function getWheatQuotas(): Promise<WheatQuotas> {
         const timer = setInterval(() => {
             const reply = replies.get(requestId)
 
-            console.log({
-                title: "Looking for replies for request",
-                requestId,
-                reply
-            })
-
             if (!reply) {
                 return
             }
@@ -1895,12 +1883,6 @@ function getWaterQuotas(): Promise<WaterQuotas> {
         const timer = setInterval(() => {
             const reply = replies.get(requestId)
 
-            console.log({
-                title: "Looking for replies for request",
-                requestId,
-                reply
-            })
-
             if (!reply) {
                 return
             }
@@ -1930,12 +1912,6 @@ function getCoalQuotas(): Promise<CoalQuotas> {
     return new Promise((result, reject) => {
         const timer = setInterval(() => {
             const reply = replies.get(requestId)
-
-            console.log({
-                title: "Looking for replies for request",
-                requestId,
-                reply
-            })
 
             if (!reply) {
                 return
@@ -1969,13 +1945,9 @@ function getIronBarQuotas(): Promise<IronBarQuotas> {
         const timer = setInterval(() => {
             const reply = replies.get(requestId)
 
-            console.log(reply)
-
             if (!reply) {
                 return
             }
-
-            console.log(isIronBarQuotasMessage(reply))
 
             if (isIronBarQuotasMessage(reply)) {
                 replies.delete(requestId)

@@ -14,6 +14,7 @@ export type WildAnimalId = string
 export type CropId = string
 export type ShipId = string
 export type GameMessageId = string
+export type StoneId = string
 
 export type ShipConstructionProgress = 'JUST_STARTED' | 'HALF_WAY' | 'ALMOST_DONE' | 'READY'
 
@@ -52,7 +53,7 @@ export const NATIONS = new Set(['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS'])
 
 export type Direction = "EAST" | "SOUTH_EAST" | "SOUTH_WEST" | "WEST" | "NORTH_WEST" | "NORTH_EAST"
 
-export type StoneType = 'TYPE_1' | 'TYPE_2'
+export type StoneType = 'STONE_1' | 'STONE_2'
 
 export type CropType = 'TYPE_1' | 'TYPE_2'
 
@@ -307,7 +308,10 @@ export interface SignInformation extends Point {
     amount?: Size
 }
 
-export interface StoneInformation extends Point { }
+export interface StoneInformation extends Point {
+    id: StoneId
+    type: StoneType
+}
 
 export type WorkerType = "Armorer" |
     "Baker" | "Brewer" |

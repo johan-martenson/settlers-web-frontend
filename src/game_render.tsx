@@ -1330,13 +1330,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Collect the stones */
-        for (const stone of monitor.stones) {
+        for (const [stoneId, stone] of monitor.stones) {
             if (stone.x + 1 < minXInGame || stone.x - 1 > maxXInGame || stone.y + 1 < minYInGame || stone.y - 1 > maxYInGame) {
                 continue
             }
 
             // TODO: pick the right type and size of stone
-            const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor('TYPE_2', 'MIDDLE')
+            const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor(stone.type, 'MIDDLE')
 
             if (stoneDrawInfo) {
                 toDrawNormal.push({

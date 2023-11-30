@@ -108,7 +108,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     useEffect(() => {
         monitor.setWaterQuotas(bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount)
 
-        return () => {}
+        return () => { }
     }, [bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount])
 
     useEffect(() => {
@@ -126,13 +126,13 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     useEffect(() => {
         monitor.setWheatQuotas(donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount)
 
-        return () => {}
+        return () => { }
     }, [donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount])
 
     useEffect(() => {
         monitor.setIronBarQuotas(armoryIronBarAmount, metalworksIronBarAmount)
 
-        return () => {}
+        return () => { }
     }, [armoryIronBarAmount, metalworksIronBarAmount])
 
     return (
@@ -177,9 +177,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <HouseIcon houseType="Mint" nation={nation} />
 
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setMintAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setMintAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={mintAmount} max={10} />
-                                <Add16Filled onClick={() => setMintAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setMintAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -189,9 +189,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <HouseIcon houseType="Armory" nation={nation} />
 
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setArmoryCoalAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setArmoryCoalAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={armoryCoalAmount} max={10} />
-                                <Add16Filled onClick={() => setArmoryCoalAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setArmoryCoalAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -201,9 +201,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <HouseIcon houseType="IronSmelter" nation={nation} />
 
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setIronSmelterAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setIronSmelterAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={ironSmelterAmount} max={10} />
-                                <Add16Filled onClick={() => setIronSmelterAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setIronSmelterAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -218,9 +218,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <HouseIcon houseType="IronMine" nation={nation} />
 
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setIronMineAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setIronMineAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={ironMineAmount} max={10} />
-                                <Add16Filled onClick={() => setIronMineAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setIronMineAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -230,9 +230,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <HouseIcon houseType="CoalMine" nation={nation} />
 
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setCoalMineAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setCoalMineAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={coalMineAmount} max={10} />
-                                <Add16Filled onClick={() => setCoalMineAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setCoalMineAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -242,9 +242,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <HouseIcon houseType="GoldMine" nation={nation} />
 
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setGoldMineAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setGoldMineAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={goldMineAmount} max={10} />
-                                <Add16Filled onClick={() => setGoldMineAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setGoldMineAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -254,9 +254,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <HouseIcon houseType="GraniteMine" nation={nation} />
 
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setGraniteMineAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setGraniteMineAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={graniteMineAmount} max={10} />
-                                <Add16Filled onClick={() => setGraniteMineAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setGraniteMineAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -269,9 +269,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Bakery" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setBakeryAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setBakeryAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={bakeryAmount} max={10} />
-                                <Add16Filled onClick={() => setBakeryAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setBakeryAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -279,9 +279,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="DonkeyFarm" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setDonkeyFarmWaterAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setDonkeyFarmWaterAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={donkeyFarmWaterAmount} max={10} />
-                                <Add16Filled onClick={() => setDonkeyFarmWaterAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setDonkeyFarmWaterAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -289,9 +289,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Mint" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setPigFarmWaterAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setPigFarmWaterAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={pigFarmWaterAmount} max={10} />
-                                <Add16Filled onClick={() => setPigFarmWaterAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setPigFarmWaterAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -299,9 +299,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Brewery" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setBreweryWaterAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setBreweryWaterAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={breweryWaterAmount} max={10} />
-                                <Add16Filled onClick={() => setBreweryWaterAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setBreweryWaterAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -315,9 +315,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <div>Construction</div>
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setConstructionAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setConstructionAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={constructionAmount} max={10} />
-                                <Add16Filled onClick={() => setConstructionAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setConstructionAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -325,9 +325,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <div>Boats and ships</div>
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setBoatsAndShipsAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setBoatsAndShipsAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={boatsAndShipsAmount} max={10} />
-                                <Add16Filled onClick={() => setBoatsAndShipsAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setBoatsAndShipsAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -340,9 +340,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Mill" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setMillAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setMillAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={millAmount} max={10} />
-                                <Add16Filled onClick={() => setMillAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setMillAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -350,9 +350,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="DonkeyFarm" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setDonkeyFarmWheatAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setDonkeyFarmWheatAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={donkeyFarmWheatAmount} max={10} />
-                                <Add16Filled onClick={() => setDonkeyFarmWheatAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setDonkeyFarmWheatAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -360,9 +360,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Mint" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setPigFarmWheatAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setPigFarmWheatAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={pigFarmWheatAmount} max={10} />
-                                <Add16Filled onClick={() => setPigFarmWheatAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setPigFarmWheatAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -370,9 +370,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Brewery" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setBreweryWheatAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setBreweryWheatAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={breweryWheatAmount} max={10} />
-                                <Add16Filled onClick={() => setBreweryWheatAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setBreweryWheatAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -385,9 +385,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Armory" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setArmoryIronBarAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setArmoryIronBarAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={armoryIronBarAmount} max={10} />
-                                <Add16Filled onClick={() => setArmoryIronBarAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setArmoryIronBarAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>
@@ -395,9 +395,9 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                         <div className="quota-for-house" >
                             <HouseIcon houseType="Metalworks" nation={nation} />
                             <div className="quota">
-                                <Subtract16Filled onClick={() => setMetalworksIronBarAmount((previous) => previous - 1)} />
+                                <Subtract16Filled onClick={() => setMetalworksIronBarAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={metalworksIronBarAmount} max={10} />
-                                <Add16Filled onClick={() => setMetalworksIronBarAmount((previous) => previous + 1)} />
+                                <Add16Filled onClick={() => setMetalworksIronBarAmount((previous) => Math.min(10, previous - 1))} />
                             </div>
                         </div>
                     </Field>

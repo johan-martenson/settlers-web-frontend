@@ -14,6 +14,7 @@
 14. Animation when trees fall
 15. Quota handling for planks. Quota handling for workers that deliver directly to consumers
 16. Add the propeller to the mill
+17. Gradually draw finished building on top of the under construction-image
 
 
 Done

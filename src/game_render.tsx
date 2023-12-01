@@ -1336,7 +1336,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             // TODO: pick the right type and size of stone
-            const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor(stone.type, 'MIDDLE')
+            const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor(stone.type, stone.amount)
 
             if (stoneDrawInfo) {
                 toDrawNormal.push({

@@ -311,6 +311,7 @@ export interface SignInformation extends Point {
 export interface StoneInformation extends Point {
     id: StoneId
     type: StoneType
+    amount: StoneAmount
 }
 
 export type WorkerType = "Armorer" |

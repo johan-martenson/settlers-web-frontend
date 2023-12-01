@@ -2384,10 +2384,15 @@ function screenPointToGamePoint(screenPoint: ScreenPoint, translateX: number, tr
     return { x: roundedGameX, y: roundedGameY }
 }
 
-function gamePointToScreenPoint(gamePoint: Point, translateX: number, translateY: number, scale: number, screenHeight: number): ScreenPoint {
+function gamePointToScreenPoint(gamePoint: Point, height: number, translateX: number, translateY: number, scale: number, screenHeight: number, heightAdjust: number, standardHeight: number): ScreenPoint {
+    const adjustedPoint = {
+        x: gamePoint.x + ((height - standardHeight) / heightAdjust),
+        y: gamePoint.y + ((height - standardHeight) / heightAdjust)
+    }
+
     return {
-        x: gamePoint.x * scale + translateX,
-        y: screenHeight - gamePoint.y * scale + translateY
+        x: adjustedPoint.x * scale + translateX,
+        y: screenHeight - adjustedPoint.y * scale + translateY
     }
 }
 

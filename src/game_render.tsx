@@ -13,6 +13,7 @@ import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from
 
 export const DEFAULT_SCALE = 35.0
 export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
+export const STANDARD_HEIGHT = 10.0
 
 export interface ScreenPoint {
     x: number
@@ -28,14 +29,14 @@ interface TrianglesAtPoint {
 
 interface ToDraw {
     source: DrawingInformation | undefined
-    depth: number
     gamePoint: Point
+    height?: number
 }
 
 interface MapRenderInformation {
-    coordinates: number[] //x, y
-    normals: number[] //x, y, z
-    textureMapping: number[] //u, v
+    coordinates: number[]
+    normals: number[]
+    textureMapping: number[]
 }
 
 interface GameCanvasProps {
@@ -62,6 +63,17 @@ interface GameCanvasProps {
 
 interface GameCanvasState {
     hoverPoint?: Point
+}
+
+interface BelowAndDownRight {
+    below: number[]
+    downRight: number[]
+}
+
+interface RenderInformation {
+    coordinates: number[]
+    normals: number[]
+    textureMapping: number[]
 }
 
 const ANIMATION_PERIOD = 100
@@ -96,11 +108,6 @@ const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler("assets/")
 const borderImageAtlasHandler = new BorderImageAtlasHandler("assets/")
 
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
-
-interface BelowAndDownRight {
-    below: number[]
-    downRight: number[]
-}
 
 const vegetationToTextureMapping: Map<VegetationIntegers, BelowAndDownRight> = new Map()
 
@@ -191,17 +198,11 @@ const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-car
 const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo", 10)
 const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
 
-interface RenderInformation {
-    coordinates: number[]
-    normals: number[]
-    textureMapping: number[]
-}
-
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     private normalCanvasRef = React.createRef<HTMLCanvasElement>()
     private overlayCanvasRef = React.createRef<HTMLCanvasElement>()
-    private lightVector: Vector
+    private lightVector: number[]
     private debuggedPoint: Point | undefined
     private previousTimestamp?: number
     private previous: number
@@ -211,15 +212,23 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private mapRenderInformation?: MapRenderInformation
     private gl?: WebGL2RenderingContext
 
+    // Map of the normal for each point on the map
+    private normals: PointMapFast<Vector>
+
+    // Buffers for drawing the terrain
     private terrainCoordinatesBuffer?: WebGLBuffer | null
     private terrainNormalsBuffer?: WebGLBuffer | null
     private terrainTextureMappingBuffer?: WebGLBuffer | null
 
+    // Buffers for drawing the roads
     private roadCoordinatesBuffer?: WebGLBuffer | null
     private roadNormalsBuffer?: WebGLBuffer | null
     private roadTextureMappingBuffer?: WebGLBuffer | null
     private roadRenderInformation?: RenderInformation
-    private normals: PointMapFast<Vector>
+
+    // Define the program to draw things on the ground (terrain, roads)
+    private drawGroundProgram: WebGLProgram | null
+
     private drawGroundLightVectorUniformLocation?: WebGLUniformLocation | null
     private drawGroundScaleUniformLocation?: WebGLUniformLocation | null
     private drawGroundOffsetUniformLocation?: WebGLUniformLocation | null
@@ -232,35 +241,44 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private drawGroundNormalAttributeLocation?: number
     private drawGroundTextureMappingAttributeLocation?: number
 
+    // Define the fog of war drawing program
+    private fogOfWarRenderProgram: WebGLProgram | null
+
     private fogOfWarCoordAttributeLocation?: number
     private fogOfWarIntensityAttributeLocation?: number
+
     private fogOfWarScaleUniformLocation?: WebGLUniformLocation | null
     private fogOfWarOffsetUniformLocation?: WebGLUniformLocation | null
     private fogOfWarScreenHeightUniformLocation?: WebGLUniformLocation | null
     private fogOfWarScreenWidthUniformLocation?: WebGLUniformLocation | null
 
-    private drawShadowHeightAdjustmentUniformLocation?: WebGLUniformLocation | null
-    private drawShadowHeightUniformLocation?: WebGLUniformLocation | null
-
-    private drawGroundProgram: WebGLProgram | null
-    private drawImageProgram: WebGLProgram | null
-    private drawShadowProgram: WebGLProgram | null
-    private fogOfWarRenderProgram: WebGLProgram | null
-
-    private drawImagePositionLocation?: number
-    private drawImageTexcoordLocation?: number
-    private drawImageHeightAdjustmentLocation?: WebGLUniformLocation | null
-    private drawImageHeightLocation?: WebGLUniformLocation | null
-
-    private drawImageTexCoordBuffer?: WebGLBuffer | null
-    private drawImagePositionBuffer?: WebGLBuffer | null
-    private drawShadowTexCoordBuffer?: WebGLBuffer | null
-    private drawShadowPositionBuffer?: WebGLBuffer | null
+    // Buffers for drawing the fog of war
     private fogOfWarCoordBuffer?: WebGLBuffer | null
     private fogOfWarIntensityBuffer?: WebGLBuffer | null
 
     private fogOfWarCoordinates: number[] = []
     private fogOfWarIntensities: number[] = []
+
+    // Define the webgl program to draw shadows (it shares buffers with the draw images program)
+    private drawShadowProgram: WebGLProgram | null
+
+    private drawShadowHeightAdjustmentUniformLocation?: WebGLUniformLocation | null
+    private drawShadowHeightUniformLocation?: WebGLUniformLocation | null
+
+    // Define the webgl draw image program
+    private drawImageProgram: WebGLProgram | null
+
+    private drawImagePositionLocation?: number
+    private drawImageTexcoordLocation?: number
+
+    private drawImageHeightAdjustmentLocation?: WebGLUniformLocation | null
+    private drawImageHeightLocation?: WebGLUniformLocation | null
+
+    // The buffers used by the draw image program. They are static and the content is set through uniforms
+    private drawImageTexCoordBuffer?: WebGLBuffer | null
+    private drawImagePositionBuffer?: WebGLBuffer | null
+    private drawShadowTexCoordBuffer?: WebGLBuffer | null
+    private drawShadowPositionBuffer?: WebGLBuffer | null
 
     private allPointsVisibilityTracking = new PointMapFast<TrianglesAtPoint>()
 
@@ -278,7 +296,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.normals = new PointMapFast()
 
         /* Define the light vector */
-        this.lightVector = normalize({ x: 1, y: 1, z: -1 })
+        const lightVector = { x: 1, y: 1, z: -1 }
+        this.lightVector = [lightVector.x, lightVector.y, lightVector.z]
 
         addVariableIfAbsent("fps")
 
@@ -299,7 +318,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (prevProps.cursorState !== this.props.cursorState && this?.normalCanvasRef?.current) {
 
             if (this.props.cursorState === 'DRAGGING') {
-                //this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/dragging.png), pointer"
                 this.normalCanvasRef.current.style.cursor = 'move'
             } else if (this.props.cursorState === 'BUILDING_ROAD') {
                 this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
@@ -382,7 +400,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const right = getPointRight(point)
 
             if (!trianglesAtPoint.belowVisible) {
-
                 this.fogOfWarCoordinates.push(point.x)
                 this.fogOfWarCoordinates.push(point.y)
 
@@ -479,7 +496,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Subscribe for new discovered points */
         // eslint-disable-next-line
-        listenToDiscoveredPoints((points) => {
+        listenToDiscoveredPoints(points => {
 
             // Update the calculated normals
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
@@ -934,29 +951,20 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             gl.useProgram(this.drawGroundProgram)
 
+            // Configure the drawing context
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
-            // Set screen width and height
+            // Set the constants
             gl.uniform1f(this.drawGroundScreenWidthUniformLocation, width)
             gl.uniform1f(this.drawGroundScreenHeightUniformLocation, height)
-
-            // Set the light vector
-            const lightVector = [1, 1, -1]
-            gl.uniform3fv(this.drawGroundLightVectorUniformLocation, lightVector)
-
-            // Set the current values for the scale, offset and the sampler
+            gl.uniform3fv(this.drawGroundLightVectorUniformLocation, this.lightVector)
             gl.uniform2f(this.drawGroundScaleUniformLocation, this.props.scale, this.props.scale)
             gl.uniform2f(this.drawGroundOffsetUniformLocation, this.props.translateX, this.props.translateY)
-
-            // Set the height adjustment
             gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+            gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
 
-            // Fill the screen with black color
-            gl.clearColor(0.0, 0.0, 0.0, 1.0)
-            gl.clear(gl.COLOR_BUFFER_BIT)
-
-            // Draw each terrain
+            // Set up the buffers
             gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
             gl.vertexAttribPointer(this.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
             gl.enableVertexAttribArray(this.drawGroundCoordAttributeLocation)
@@ -969,9 +977,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.vertexAttribPointer(this.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
             gl.enableVertexAttribArray(this.drawGroundTextureMappingAttributeLocation)
 
-            gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
+            // Fill the screen with black color
+            gl.clearColor(0.0, 0.0, 0.0, 1.0)
+            gl.clear(gl.COLOR_BUFFER_BIT)
 
-            // mode, offset (nr vertices), count (nr vertices)
+            // Draw the triangles: mode, offset (nr vertices), count (nr vertices)
             gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 3)
         } else {
             console.error("Did not draw the terrain layer")
@@ -990,13 +1000,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 decorationsToDraw.push({
                     source: image[0],
                     gamePoint: decoration,
-                    depth: decoration.y
                 })
 
                 shadowsToDraw.push({
                     source: image[1],
                     gamePoint: decoration,
-                    depth: decoration.y
                 })
             } else if (oncePerNewSelectionPoint) {
                 console.log({ title: 'No image!', decoration: decoration })
@@ -1004,7 +1012,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         })
 
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (this.gl && this.drawImageProgram) {
+        if (this.gl &&
+            this.drawImageProgram &&
+            this.drawImagePositionBuffer &&
+            this.drawImageTexCoordBuffer &&
+            this.drawImageHeightAdjustmentLocation &&
+            this.drawImageHeightLocation) {
+
             this.gl.useProgram(this.drawImageProgram)
 
             this.gl.viewport(0, 0, width, height)
@@ -1017,17 +1031,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
             const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
 
-            if (this.drawImagePositionBuffer) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-                this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(drawImagePositionLocation)
-            }
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+            this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+            this.gl.enableVertexAttribArray(drawImagePositionLocation)
 
-            if (this.drawImageTexCoordBuffer) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-                this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-            }
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+            this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+            this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
 
             // Re-assign the uniform locations
             const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
@@ -1039,43 +1049,31 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
             const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
 
+            const gl = this.gl
+
             // Draw decorations objects
-            decorationsToDraw.forEach(draw => {
-                if (draw.gamePoint !== undefined &&
-                    draw.source &&
-                    draw.source.texture !== undefined &&
-                    this.gl &&
-                    this.drawImageProgram &&
-                    this.drawImageHeightAdjustmentLocation &&
-                    this.drawImageHeightLocation) {
+            for (const draw of decorationsToDraw) {
+                if (draw?.source?.texture !== undefined) {
 
-                    this.gl.activeTexture(this.gl.TEXTURE3)
-                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+                    gl.activeTexture(gl.TEXTURE3)
+                    gl.bindTexture(gl.TEXTURE_2D, draw.source.texture)
 
-                    // Tell the fragment shader what texture to use
-                    this.gl.uniform1i(drawImageTextureLocation, 3)
-
-                    // Tell the vertex shader where to draw
-                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-
-                    // Tell the vertex shader how to draw
-                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-
-                    // Tell the vertex shader what parts of the source image to draw
-                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-
-                    // Tell the vertex shader how to do height adjustment
-                    this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
-                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+                    // Set the constants
+                    gl.uniform1i(drawImageTextureLocation, 3)
+                    gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                    gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                    gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                    gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                    gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                    gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                    gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+                    gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
 
                     // Draw the quad (2 triangles = 6 vertices)
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                    gl.drawArrays(gl.TRIANGLES, 0, 6)
                 }
-            })
+            }
         }
 
         duration.after("drawing decorations")
@@ -1157,7 +1155,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: borderPointInfo,
                     gamePoint: borderPoint,
-                    depth: borderPoint.y
                 })
             })
         }
@@ -1177,7 +1174,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: plannedDrawInformation,
                     gamePoint: house,
-                    depth: house.y
                 })
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
@@ -1188,13 +1184,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: fireDrawInformation[0],
                         gamePoint: house,
-                        depth: house.y
                     })
 
                     shadowsToDraw.push({
                         source: fireDrawInformation[1],
                         gamePoint: house,
-                        depth: house.y
                     })
                 }
             } else if (house.state === 'DESTROYED') {
@@ -1205,7 +1199,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: fireDrawInformation,
                     gamePoint: house,
-                    depth: house.y
                 })
             } else if (house.state === "UNFINISHED") {
                 const houseDrawInformation = houses.getDrawingInformationForHouseUnderConstruction(currentPlayerNation, house.type)
@@ -1214,13 +1207,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: houseDrawInformation[0],
                         gamePoint: house,
-                        depth: house.y
                     })
 
                     shadowsToDraw.push({
                         source: houseDrawInformation[1],
                         gamePoint: house,
-                        depth: house.y
                     })
                 }
             } else {
@@ -1230,13 +1221,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: houseDrawInformation[0],
                         gamePoint: house,
-                        depth: house.y
                     })
 
                     shadowsToDraw.push({
                         source: houseDrawInformation[1],
                         gamePoint: house,
-                        depth: house.y
                     })
                 }
             }
@@ -1261,13 +1250,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: treeDrawInfo[0],
                         gamePoint: tree,
-                        depth: tree.y
                     })
 
                     shadowsToDraw.push({
                         source: treeDrawInfo[1],
                         gamePoint: tree,
-                        depth: tree.y
                     })
                 }
             } else {
@@ -1277,13 +1264,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: treeDrawInfo[0],
                         gamePoint: tree,
-                        depth: tree.y
                     })
 
                     shadowsToDraw.push({
                         source: treeDrawInfo[1],
                         gamePoint: tree,
-                        depth: tree.y
                     })
                 }
             }
@@ -1307,13 +1292,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: cropDrawInfo[0],
                     gamePoint: crop,
-                    depth: crop.y
                 })
 
                 shadowsToDraw.push({
                     source: cropDrawInfo[1],
                     gamePoint: crop,
-                    depth: crop.y
                 })
             }
         }
@@ -1339,13 +1322,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 toDrawNormal.push({
                     source: signDrawInfo[0],
                     gamePoint: sign,
-                    depth: sign.y
                 })
 
                 shadowsToDraw.push({
                     source: signDrawInfo[1],
                     gamePoint: sign,
-                    depth: sign.y
                 })
             }
         }
@@ -1365,14 +1346,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (stoneDrawInfo) {
                 toDrawNormal.push({
                     source: stoneDrawInfo[0],
-                    gamePoint: stone,
-                    depth: stone.y
+                    gamePoint: stone
                 })
 
                 shadowsToDraw.push({
                     source: stoneDrawInfo[1],
-                    gamePoint: stone,
-                    depth: stone.y
+                    gamePoint: stone
                 })
             }
         }
@@ -1382,6 +1361,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Collect wild animals */
         for (const animal of monitor.wildAnimals.values()) {
+
+            // Animal is walking between fixed points
             if (animal.previous && animal.next) {
                 if (animal.previous.x < minXInGame || animal.previous.x > maxXInGame || animal.previous.y < minYInGame || animal.previous.y > maxYInGame) {
                     continue
@@ -1396,6 +1377,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     y: animal.previous.y + (animal.next.y - animal.previous.y) * (animal.percentageTraveled / 100)
                 }
 
+                const interpolatedHeight = interpolateHeight(animal.previous, animal.next, animal.percentageTraveled / 100)
+
                 const direction = getDirectionForWalkingWorker(animal.next, animal.previous)
 
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
@@ -1404,17 +1387,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: animationImage[0],
                         gamePoint: interpolatedGamePoint,
-                        depth: interpolatedGamePoint.y
+                        height: interpolatedHeight
                     })
 
                     if (animationImage.length > 1) {
                         shadowsToDraw.push({
                             source: animationImage[1],
                             gamePoint: interpolatedGamePoint,
-                            depth: interpolatedGamePoint.y
+                            height: interpolatedHeight
                         })
                     }
                 }
+
+            // Animal is standing at a fixed point
             } else {
                 if (animal.x < minXInGame || animal.x > maxXInGame || animal.y < minYInGame || animal.y > maxYInGame) {
                     continue
@@ -1428,15 +1413,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (animationImage) {
                         toDrawNormal.push({
                             source: animationImage[0],
-                            gamePoint: animal,
-                            depth: animal.y
+                            gamePoint: animal
                         })
 
                         if (animationImage.length > 1) {
                             shadowsToDraw.push({
                                 source: animationImage[1],
-                                gamePoint: animal,
-                                depth: animal.y
+                                gamePoint: animal
                             })
                         }
                     }
@@ -1447,15 +1430,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (animationImage) {
                         toDrawNormal.push({
                             source: animationImage[0],
-                            gamePoint: animal,
-                            depth: animal.y
+                            gamePoint: animal
                         })
 
                         if (animationImage.length > 1) {
                             shadowsToDraw.push({
                                 source: animationImage[1],
-                                gamePoint: animal,
-                                depth: animal.y
+                                gamePoint: animal
                             })
                         }
                     }
@@ -1469,7 +1450,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Collect ships */
         for (const ship of monitor.ships.values()) {
 
-            // If worker is moving and not at a fixed point
+            // ship is moving and not at a fixed point
             if (ship.previous && ship.next) {
                 if (ship.previous.x < minXInGame || ship.previous.x > maxXInGame || ship.previous.y < minYInGame || ship.previous.y > maxYInGame) {
                     continue
@@ -1483,6 +1464,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     x: ship.previous.x + (ship.next.x - ship.previous.x) * (ship.percentageTraveled / 100),
                     y: ship.previous.y + (ship.next.y - ship.previous.y) * (ship.percentageTraveled / 100)
                 }
+
+                const interpolatedHeight = interpolateHeight(ship.previous, ship.next, ship.percentageTraveled / 100)
 
                 const direction = getDirectionForWalkingWorker(ship.next, ship.previous)
 
@@ -1498,16 +1481,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: shipImage[0],
                         gamePoint: interpolatedGamePoint,
-                        depth: interpolatedGamePoint.y
+                        height: interpolatedHeight
                     })
 
                     shadowsToDraw.push({
                         source: shipImage[1],
                         gamePoint: interpolatedGamePoint,
-                        depth: interpolatedGamePoint.y
+                        height: interpolatedHeight
                     })
                 }
 
+            // Ship is at a fixed point
             } else {
                 if (ship.x < minXInGame || ship.x > maxXInGame || ship.y < minYInGame || ship.y > maxYInGame) {
                     continue
@@ -1530,14 +1514,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (shipImage) {
                     toDrawNormal.push({
                         source: shipImage[0],
-                        gamePoint: ship,
-                        depth: ship.y
+                        gamePoint: ship
                     })
 
                     shadowsToDraw.push({
                         source: shipImage[1],
-                        gamePoint: ship,
-                        depth: ship.y
+                        gamePoint: ship
                     })
                 }
             }
@@ -1547,7 +1529,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Collect workers */
         for (const worker of monitor.workers.values()) {
 
-            // If worker is moving and not at a fixed point
+            // Worker is moving and not at a fixed point
             if (worker.betweenPoints && worker.previous !== undefined && worker.next) {
                 if (worker.previous.x < minXInGame || worker.previous.x > maxXInGame || worker.previous.y < minYInGame || worker.previous.y > maxYInGame) {
                     continue
@@ -1562,6 +1544,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     y: worker.previous.y + (worker.next.y - worker.previous.y) * (worker.percentageTraveled / 100)
                 }
 
+                const interpolatedHeight = interpolateHeight(worker.previous, worker.next, worker.percentageTraveled / 100)
+
                 if (worker.type === "Donkey") {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, this.animationIndex, worker.percentageTraveled)
 
@@ -1569,14 +1553,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: donkeyImage[0],
                             gamePoint: interpolatedGamePoint,
-                            depth: interpolatedGamePoint.y
+                            height: interpolatedHeight
                         })
 
                         if (donkeyImage.length > 1) {
                             shadowsToDraw.push({
                                 source: donkeyImage[1],
                                 gamePoint: interpolatedGamePoint,
-                                depth: interpolatedGamePoint.y
+                                height: interpolatedGamePoint.y
                             })
                         }
                     }
@@ -1588,7 +1572,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             toDrawNormal.push({
                                 source: cargoImage,
                                 gamePoint: interpolatedGamePoint,
-                                depth: interpolatedGamePoint.y - 1
+                                height: interpolatedHeight
                             })
                         }
                     }
@@ -1613,13 +1597,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: image[0],
                             gamePoint: interpolatedGamePoint,
-                            depth: interpolatedGamePoint.y
+                            height: interpolatedHeight
                         })
 
                         shadowsToDraw.push({
                             source: image[1],
                             gamePoint: interpolatedGamePoint,
-                            depth: interpolatedGamePoint.y
+                            height: interpolatedHeight
                         })
                     }
                 } else {
@@ -1629,13 +1613,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: animationImage[0],
                             gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y },
-                            depth: interpolatedGamePoint.y
+                            height: interpolatedHeight
                         })
 
                         shadowsToDraw.push({
                             source: animationImage[1],
                             gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y },
-                            depth: interpolatedGamePoint.y
+                            height: interpolatedHeight
                         })
                     }
                 }
@@ -1653,7 +1637,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             gamePoint: interpolatedGamePoint,
-                            depth: interpolatedGamePoint.y
+                            height: interpolatedHeight
                         })
                     } else {
                         const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
@@ -1662,7 +1646,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             toDrawNormal.push({
                                 source: cargo,
                                 gamePoint: interpolatedGamePoint,
-                                depth: interpolatedGamePoint.y
+                                height: interpolatedHeight
                             })
                         }
                     }
@@ -1679,14 +1663,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     if (donkeyImage) {
                         toDrawNormal.push({
                             source: donkeyImage[0],
-                            gamePoint: worker,
-                            depth: worker.y
+                            gamePoint: worker
                         })
 
                         shadowsToDraw.push({
                             source: donkeyImage[1],
-                            gamePoint: worker,
-                            depth: worker.y
+                            gamePoint: worker
                         })
                     }
 
@@ -1697,8 +1679,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         if (cargoImage) {
                             toDrawNormal.push({
                                 source: cargoImage,
-                                gamePoint: worker,
-                                depth: worker.y - 1
+                                gamePoint: worker
                             })
                         }
                     }
@@ -1714,8 +1695,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                                 toDrawNormal.push({
                                     source: animationImage,
-                                    gamePoint: { x: worker.x, y: worker.y },
-                                    depth: worker.y
+                                    gamePoint: { x: worker.x, y: worker.y }
                                 })
                             }
                         } else {
@@ -1726,8 +1706,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                                 toDrawNormal.push({
                                     source: animationImage,
-                                    gamePoint: { x: worker.x, y: worker.y },
-                                    depth: worker.y
+                                    gamePoint: { x: worker.x, y: worker.y }
                                 })
                             }
                         }
@@ -1753,14 +1732,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         if (image) {
                             toDrawNormal.push({
                                 source: image[0],
-                                gamePoint: worker,
-                                depth: worker.y
+                                gamePoint: worker
                             })
 
                             shadowsToDraw.push({
                                 source: image[1],
-                                gamePoint: worker,
-                                depth: worker.y
+                                gamePoint: worker
                             })
                         }
                     }
@@ -1775,8 +1752,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                             toDrawNormal.push({
                                 source: animationImage,
-                                gamePoint: { x: worker.x, y: worker.y },
-                                depth: worker.y
+                                gamePoint: { x: worker.x, y: worker.y }
                             })
                         }
                     }
@@ -1787,14 +1763,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         if (animationImage) {
                             toDrawNormal.push({
                                 source: animationImage[0],
-                                gamePoint: { x: worker.x, y: worker.y },
-                                depth: worker.y
+                                gamePoint: { x: worker.x, y: worker.y }
                             })
 
                             shadowsToDraw.push({
                                 source: animationImage[1],
-                                gamePoint: { x: worker.x, y: worker.y },
-                                depth: worker.y
+                                gamePoint: { x: worker.x, y: worker.y }
                             })
                         }
                     }
@@ -1812,8 +1786,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
-                            gamePoint: worker,
-                            depth: worker.y
+                            gamePoint: worker
                         })
                     } else {
                         const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
@@ -1821,8 +1794,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         if (cargo) {
                             toDrawNormal.push({
                                 source: cargo,
-                                gamePoint: worker,
-                                depth: worker.y
+                                gamePoint: worker
                             })
                         }
                     }
@@ -1845,14 +1817,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (flagDrawInfo) {
                 toDrawNormal.push({
                     source: flagDrawInfo[0],
-                    gamePoint: flag,
-                    depth: flag.y
+                    gamePoint: flag
                 })
 
                 shadowsToDraw.push({
                     source: flagDrawInfo[1],
-                    gamePoint: flag,
-                    depth: flag.y
+                    gamePoint: flag
                 })
             }
 
@@ -1865,7 +1835,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: cargoDrawInfo,
                         gamePoint: { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 },
-                        depth: flag.y
+                        height: monitor.allTiles.get(flag)?.height ?? 0
                     })
                 }
 
@@ -1878,7 +1848,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             gamePoint: { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 },
-                            depth: flag.y
+                            height: monitor.allTiles.get(flag)?.height ?? 0
                         })
                     }
                 }
@@ -1892,7 +1862,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 },
-                            depth: flag.y
+                            height: monitor.allTiles.get(flag)?.height ?? 0
                         })
                     }
                 }
@@ -1920,40 +1890,35 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     toDrawNormal.push({
                         source: largeHouseAvailableInfo,
-                        gamePoint,
-                        depth: gamePoint.y
+                        gamePoint
                     })
                 } else if (available.includes("medium")) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
 
                     toDrawNormal.push({
                         source: mediumHouseAvailableInfo,
-                        gamePoint,
-                        depth: gamePoint.y
+                        gamePoint
                     })
                 } else if (available.includes("small")) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
 
                     toDrawNormal.push({
                         source: mediumHouseAvailableInfo,
-                        gamePoint,
-                        depth: gamePoint.y
+                        gamePoint
                     })
                 } else if (available.includes("mine")) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
 
                     toDrawNormal.push({
                         source: mineAvailableInfo,
-                        gamePoint,
-                        depth: gamePoint.y
+                        gamePoint
                     })
                 } else if (available.includes("flag")) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
 
                     toDrawNormal.push({
                         source: flagAvailableInfo,
-                        gamePoint,
-                        depth: gamePoint.y
+                        gamePoint
                     })
                 }
             }
@@ -1965,12 +1930,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         // Sort the toDrawList so it first draws things further away
         const sortedToDrawList = toDrawNormal.sort((draw1, draw2) => {
-            return draw2.depth - draw1.depth
+            return draw2.gamePoint.y - draw1.gamePoint.y
         })
 
 
         // Set up webgl2 with the right shaders to prepare for drawing shadows
-        if (this.gl && this.drawShadowProgram) {
+        if (this.gl && this.drawShadowProgram &&
+            this.drawImagePositionBuffer &&
+            this.drawImageTexCoordBuffer) {
             this.gl.useProgram(this.drawShadowProgram)
 
             this.gl.viewport(0, 0, width, height)
@@ -1984,18 +1951,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const drawImagePositionLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_position")
             const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_texcoord")
 
-            if (this.drawImagePositionBuffer) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-                this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(drawImagePositionLocation)
-            }
-
-            if (this.drawImageTexCoordBuffer) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-                this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-            }
-
             // Re-assign the uniform locations
             const drawImageTextureLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_texture")
             const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_game_point")
@@ -2005,6 +1960,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_coordinate")
             const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_dimensions")
             const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_dimensions")
+
+            // Set the buffers
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+            this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+            this.gl.enableVertexAttribArray(drawImagePositionLocation)
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+            this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+            this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
 
             // Draw all shadows
             shadowsToDraw.forEach(shadow => {
@@ -2016,30 +1980,26 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     this.drawShadowProgram &&
                     this.drawShadowHeightUniformLocation !== undefined) {
 
+                    // Set the texture
                     this.gl.activeTexture(this.gl.TEXTURE3)
                     this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
 
-                    // Tell the fragment shader what texture to use
+                    // Set the constants
                     this.gl.uniform1i(drawImageTextureLocation, 3)
-
-                    // Tell the vertex shader where to draw
                     this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
                     this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
-
-                    // Tell the vertex shader how to draw
                     this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
                     this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
                     this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-
-                    // Tell the vertex shader what parts of the source image to draw
                     this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
                     this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
-
-                    // Tell the vertex shader how much to adjust for the height
                     this.gl.uniform1f(this.drawShadowHeightAdjustmentUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
 
-                    // Tell the vertex shader about the depth of the image
-                    this.gl.uniform1f(this.drawShadowHeightUniformLocation, monitor.allTiles.get(shadow.gamePoint)?.height ?? 0)
+                    if (shadow.height !== undefined) {
+                        this.gl.uniform1f(this.drawShadowHeightUniformLocation, shadow.height)
+                    } else {
+                        this.gl.uniform1f(this.drawShadowHeightUniformLocation, monitor.allTiles.get(shadow.gamePoint)?.height ?? 0)
+                    }
 
                     // Draw the quad (2 triangles = 6 vertices)
                     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
@@ -2115,7 +2075,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Tell the vertex shader how to do height adjustment
                     this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
-                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+
+                    if (draw.height !== undefined) {
+                        this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
+                    } else {
+                        this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+                    }
 
                     // Draw the quad (2 triangles = 6 vertices)
                     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
@@ -2137,8 +2102,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 toDrawHover.push({
                     source: startPointInfo,
-                    gamePoint: center,
-                    depth: center.y
+                    gamePoint: center
                 })
             }
 
@@ -2148,8 +2112,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     toDrawHover.push({
                         source: startPointInfo,
-                        gamePoint: point,
-                        depth: point.y
+                        gamePoint: point
                     })
                 }
             )
@@ -2164,8 +2127,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             toDrawHover.push({
                 source: selectedPointDrawInfo,
-                gamePoint: this.props.selectedPoint,
-                depth: this.props.selectedPoint.y
+                gamePoint: this.props.selectedPoint
             })
         }
 
@@ -2183,40 +2145,35 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     toDrawHover.push({
                         source: largeHouseAvailableInfo,
-                        gamePoint: this.state.hoverPoint,
-                        depth: this.state.hoverPoint.y
+                        gamePoint: this.state.hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("medium")) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
 
                     toDrawHover.push({
                         source: mediumHouseAvailableInfo,
-                        gamePoint: this.state.hoverPoint,
-                        depth: this.state.hoverPoint.y
+                        gamePoint: this.state.hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("small")) {
                     const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
 
                     toDrawHover.push({
                         source: smallHouseAvailableInfo,
-                        gamePoint: this.state.hoverPoint,
-                        depth: this.state.hoverPoint.y
+                        gamePoint: this.state.hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("mine")) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
 
                     toDrawHover.push({
                         source: mineAvailableInfo,
-                        gamePoint: this.state.hoverPoint,
-                        depth: this.state.hoverPoint.y
+                        gamePoint: this.state.hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("flag")) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
 
                     toDrawHover.push({
                         source: flagAvailableInfo,
-                        gamePoint: this.state.hoverPoint,
-                        depth: this.state.hoverPoint.y
+                        gamePoint: this.state.hoverPoint
                     })
                 }
             } else {
@@ -2224,8 +2181,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 toDrawHover.push({
                     source: hoverPointDrawInfo,
-                    gamePoint: this.state.hoverPoint,
-                    depth: this.state.hoverPoint.y
+                    gamePoint: this.state.hoverPoint
                 })
             }
         }
@@ -2301,7 +2257,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Tell the vertex shader to do how much height adjustment
                     this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
-                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+
+                    if (draw.height !== undefined) {
+                        this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
+                    } else {
+                        this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+                    }
 
                     // Draw the quad (2 triangles = 6 vertices)
                     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
@@ -2444,7 +2405,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {
-        return gamePointToScreenPoint(gamePoint, this.props.translateX, this.props.translateY, this.props.scale, this.props.screenHeight)
+        const height = monitor.allTiles.get(gamePoint)?.height ?? 0
+
+        return gamePointToScreenPoint(
+            gamePoint,
+            height,
+            this.props.translateX,
+            this.props.translateY,
+            this.props.scale,
+            this.props.screenHeight,
+            DEFAULT_HEIGHT_ADJUSTMENT,
+            STANDARD_HEIGHT
+        )
     }
 
     screenPointToGamePoint(screenPoint: ScreenPoint): Point {
@@ -3129,6 +3101,12 @@ function getTrianglesAffectedByFogOfWar(discovered: PointSetFast, tilesBelow: Se
     return triangles
 }
 
+function interpolateHeight(previous: Point, next: Point, progress: number): number {
+    const previousHeight = monitor.allTiles.get(previous)?.height ?? 0
+    const nextHeight = monitor.allTiles.get(next)?.height ?? 0
+
+    return previousHeight + (nextHeight - previousHeight) * progress
+}
 
 export { GameCanvas }
 

@@ -192,14 +192,12 @@ const FlagIcon = (props: FlagIconProps) => {
 
     // Load image to draw from
     useEffect(() => {
-        const animationHandler = flagAnimations
-
-        if (animationHandler) {
+        if (flagAnimations) {
             (async () => {
-                await animationHandler.load()
+                await flagAnimations.load()
 
                 // Read the source image data, convert it to a bitmap, and store it
-                const image = animationHandler?.getImageAtlasHandler().getImage()
+                const image = flagAnimations?.getImageAtlasHandler().getImage()
 
                 if (image) {
                     const imageBitmap = await createImageBitmap(image)
@@ -209,9 +207,9 @@ const FlagIcon = (props: FlagIconProps) => {
                     console.error("No image")
                 }
             })().then(() => {
-                setAnimationHandler(animationHandler)
+                setAnimationHandler(flagAnimations)
 
-                const dimension = animationHandler.getSize(nation, type)
+                const dimension = flagAnimations.getSize(nation, type)
 
                 if (dimension) {
                     setDimension(dimension)
@@ -252,13 +250,6 @@ const FlagIcon = (props: FlagIconProps) => {
 
                 return
             }
-            resizeCanvasToDisplaySize(canvas)
-
-            const width = canvas.width
-            const height = canvas.height
-
-            // Clear the background
-            context.clearRect(0, 0, width, height)
 
             // Read the source image data
             const drawArray = animationHandler?.getAnimationFrame(nation, type, animationIndex, 0)
@@ -271,6 +262,17 @@ const FlagIcon = (props: FlagIconProps) => {
 
             const draw = drawArray[0]
 
+            const width = draw.width * scale
+            const height = draw.height * scale
+
+            canvas.width = width
+            canvas.height = height
+
+            console.log(["While drawing", {width, height}])
+
+            // Clear the background
+            context.clearRect(0, 0, width, height)
+
             // Write the image data
             if (sourceImage) {
                 context.drawImage(sourceImage, draw.sourceX, draw.sourceY, draw.width, draw.height, 0, 0, width, height)
@@ -278,6 +280,8 @@ const FlagIcon = (props: FlagIconProps) => {
         })().then()
 
     }, [animationIndex, animate, type, nation, scale, animationHandler, sourceImage])
+
+    console.log("Width: " + (dimension.width * scale) + ", height: " + (dimension.height * scale))
 
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }

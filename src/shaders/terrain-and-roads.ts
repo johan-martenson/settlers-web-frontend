@@ -1,11 +1,10 @@
-
 /**
  * Takes coordinates in game form as input, together with normals and texture mapping
  * 
  * Provides brightness for linear interpolation (gouraud shading) to the fragment shader
  */
-const textureAndLightingVertexShader = `#version 300 es
-in vec2 a_coords;   // game coordinate (x, y)
+const textureAndLightingVertexShader = /*glsl*/`#version 300 es
+in vec3 a_coords;   // game coordinate (x, y)
 in vec3 a_normal;
 in vec2 a_texture_mapping;
 
@@ -14,30 +13,36 @@ uniform vec2 u_scale;
 uniform vec2 u_offset;
 uniform float u_screen_height;
 uniform float u_screen_width;
+uniform float u_height_adjust;
 
 // This is output for the fragment shader - values are interpolated for each pixel
 out highp vec2 vTextureCoord;
 out float v_brightness;
 
 vec2 vertex;
-vec2 temp;
+vec2 adjusted_coord;
+
+#define STANDARD_HEIGHT 10.0
 
 void main (void) {
 
-    // Calculate the on-screen coordinates
-    //vertex = a_coords * u_scale + u_offset;
-    vertex.x = (((a_coords.x * u_scale.x + u_offset.x) / u_screen_width) * 2.0) - 1.0;
-    vertex.y = (((a_coords.y * u_scale.y - u_offset.y) / u_screen_height) * 2.0) - 1.0;
+    // Adjust the the coordinate so that higher points are drawn slightly farther away, and lower points slightly closer
+    adjusted_coord.x = a_coords.x + ((a_coords.z - STANDARD_HEIGHT) / u_height_adjust);
+    adjusted_coord.y = a_coords.y + ((a_coords.z - STANDARD_HEIGHT) / u_height_adjust);
 
-    //vertex[1] = 1.0 - vertex[1];
+
+    // Calculate the on-screen coordinates -- vertex = a_coords * u_scale + u_offset
+    vertex.x = (((adjusted_coord.x * u_scale.x + u_offset.x) / u_screen_width) * 2.0) - 1.0;
+    vertex.y = (((adjusted_coord.y * u_scale.y - u_offset.y) / u_screen_height) * 2.0) - 1.0;
+
 
     // Calculate the lighting
-    v_brightness = dot(a_normal, u_light_vector) * -1.0 / 4.0;
-    //v_brightness = 0.0;
+    v_brightness = (dot(a_normal, u_light_vector) * -1.0 / 3.0) - 0.1;
+
 
     // Texture and verticies have different coordinate spaces, we do this to invert Y axis
-    //vTextureCoord = -vertex;
     vTextureCoord = a_texture_mapping;
+
 
     // Setting vertex position for shape assembler 
     //   -- 0.0 is a Z coordinate
@@ -46,7 +51,7 @@ void main (void) {
 }
 `
 
-const textureAndLightingFragmentShader = `#version 300 es
+const textureAndLightingFragmentShader = /*glsl*/`#version 300 es
 precision highp float;
 
 in highp vec2 vTextureCoord;

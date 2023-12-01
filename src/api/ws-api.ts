@@ -158,7 +158,6 @@ export interface Monitor {
     deadTrees: PointSetFast
     wildAnimals: Map<WildAnimalId, WildAnimalInformation>
     decorations: PointMapFast<Decoration>
-
     localRemovedFlags: Map<FlagId, FlagInformation>
     localRemovedRoads: Map<RoadId, RoadInformation>
 
@@ -494,7 +493,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     const terrainPointList = terrainInformationToTerrainAtPointList(terrain)
 
-    terrainPointList.forEach(terrainAtPoint => { monitor.allTiles.set(terrainAtPoint.point, terrainAtPoint) })
+    terrainPointList.forEach(terrainAtPoint => monitor.allTiles.set(terrainAtPoint.point, terrainAtPoint))
 
     /* Store the discovered tiles */
     storeDiscoveredTiles(monitor.discoveredPoints)
@@ -627,9 +626,9 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
         }
     }, GAME_TICK_LENGTH / 2)
 
-    // Similarly, grow the crops locally to avoid the need for the server to send messages when crops change growth state
-    setInterval(async () => {
-        for (const crop of monitor.crops.values()) {
+    // Grow the crops locally to avoid the need for the server to send messages when crops change growth state
+    setInterval(() => {
+        monitor.crops.forEach(crop => {
             if (crop.state !== 'FULL_GROWN' && crop.state !== 'HARVESTED') {
                 crop.growth = crop.growth + 1
 
@@ -641,14 +640,12 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
                     crop.state = 'FULL_GROWN'
                 }
             }
-        }
+        })
+    }, GAME_TICK_LENGTH * 10)
 
-        // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
-    }, 2000)
-
-    // Also grow the trees locally to minimize the need for messages from the backend
-    setInterval(async () => {
-        monitor.trees.forEach((tree) => {
+    // Grow the trees locally to minimize the need for messages from the backend
+    setInterval(() => {
+        monitor.trees.forEach(tree => {
             if (tree.size !== 'FULL_GROWN') {
                 tree.growth = tree.growth + 1
 
@@ -661,11 +658,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
                 }
             }
         })
-
-        // In-game steps are 200 which requires 100ms sleep. Reduce to 10 steps which requires 2000ms sleep
-    }, 2000)
-
-    console.info(websocket)
+    }, GAME_TICK_LENGTH * 10)
 }
 
 function websocketError(error: unknown): void {
@@ -700,9 +693,9 @@ function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent
                     }))
                 }
             }
-            websocket.onclose = (e) => websocketDisconnected(gameId, playerId, e)
-            websocket.onerror = (e) => websocketError(e)
-            websocket.onmessage = (message) => websocketMessageReceived(message)
+            websocket.onclose = e => websocketDisconnected(gameId, playerId, e)
+            websocket.onerror = e => websocketError(e)
+            websocket.onmessage = message => websocketMessageReceived(message)
         }, 1000)
     }
 }

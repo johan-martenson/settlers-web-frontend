@@ -12,6 +12,7 @@ import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderP
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
 
 export const DEFAULT_SCALE = 35.0
+export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
 
 export interface ScreenPoint {
     x: number
@@ -219,16 +220,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private roadTextureMappingBuffer?: WebGLBuffer | null
     private roadRenderInformation?: RenderInformation
     private normals: PointMapFast<Vector>
-    private uLightVector?: WebGLUniformLocation | null
-    private uScale?: WebGLUniformLocation | null
-    private uOffset?: WebGLUniformLocation | null
-    private uSampler?: WebGLUniformLocation | null
-    private uScreenWidth?: WebGLUniformLocation | null
-    private uScreenHeight?: WebGLUniformLocation | null
+    private drawGroundLightVectorUniformLocation?: WebGLUniformLocation | null
+    private drawGroundScaleUniformLocation?: WebGLUniformLocation | null
+    private drawGroundOffsetUniformLocation?: WebGLUniformLocation | null
+    private drawGroundHeightAdjustUniformLocation?: WebGLUniformLocation | null
+    private drawGroundSamplerUniformLocation?: WebGLUniformLocation | null
+    private drawGroundScreenWidthUniformLocation?: WebGLUniformLocation | null
+    private drawGroundScreenHeightUniformLocation?: WebGLUniformLocation | null
 
-    private coordAttributeLocation?: number
-    private normalAttributeLocation?: number
-    private textureMappingAttributeLocation?: number
+    private drawGroundCoordAttributeLocation?: number
+    private drawGroundNormalAttributeLocation?: number
+    private drawGroundTextureMappingAttributeLocation?: number
 
     private fogOfWarCoordAttributeLocation?: number
     private fogOfWarIntensityAttributeLocation?: number
@@ -237,13 +239,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private fogOfWarScreenHeightUniformLocation?: WebGLUniformLocation | null
     private fogOfWarScreenWidthUniformLocation?: WebGLUniformLocation | null
 
-    private groundRenderProgram: WebGLProgram | null
+    private drawShadowHeightAdjustmentUniformLocation?: WebGLUniformLocation | null
+    private drawShadowHeightUniformLocation?: WebGLUniformLocation | null
+
+    private drawGroundProgram: WebGLProgram | null
     private drawImageProgram: WebGLProgram | null
     private drawShadowProgram: WebGLProgram | null
     private fogOfWarRenderProgram: WebGLProgram | null
 
     private drawImagePositionLocation?: number
     private drawImageTexcoordLocation?: number
+    private drawImageHeightAdjustmentLocation?: WebGLUniformLocation | null
+    private drawImageHeightLocation?: WebGLUniformLocation | null
 
     private drawImageTexCoordBuffer?: WebGLBuffer | null
     private drawImagePositionBuffer?: WebGLBuffer | null
@@ -277,7 +284,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         this.state = {}
 
-        this.groundRenderProgram = null
+        this.drawGroundProgram = null
         this.drawImageProgram = null
         this.drawShadowProgram = null
 
@@ -313,7 +320,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     updateRoadDrawingBuffers(): void {
         console.log("Should update road drawing buffers")
 
-        if (this.gl !== undefined && this.groundRenderProgram !== undefined &&
+        if (this.gl !== undefined && this.drawGroundProgram !== undefined &&
             this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
 
             this.roadRenderInformation = this.prepareToRenderRoads(monitor.roads.values())
@@ -479,7 +486,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             console.log("New discovered points - calculated normals")
 
             // Update the map rendering buffers
-            if (this.gl && this.groundRenderProgram) {
+            if (this.gl && this.drawGroundProgram) {
                 if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
 
                     const mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
@@ -562,31 +569,32 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const drawFogOfWarFragmentShader = makeShader(gl, fogOfWarFragmentShader, gl.FRAGMENT_SHADER)
 
                 // Create the programs
-                this.groundRenderProgram = gl.createProgram()
+                this.drawGroundProgram = gl.createProgram()
                 this.drawImageProgram = gl.createProgram()
                 this.drawShadowProgram = gl.createProgram()
                 this.fogOfWarRenderProgram = gl.createProgram()
 
                 // Setup the program to render the ground
-                if (this.groundRenderProgram && lightingVertexShader && lightingFragmentShader) {
-                    gl.attachShader(this.groundRenderProgram, lightingVertexShader)
-                    gl.attachShader(this.groundRenderProgram, lightingFragmentShader)
-                    gl.linkProgram(this.groundRenderProgram)
-                    gl.useProgram(this.groundRenderProgram)
+                if (this.drawGroundProgram && lightingVertexShader && lightingFragmentShader) {
+                    gl.attachShader(this.drawGroundProgram, lightingVertexShader)
+                    gl.attachShader(this.drawGroundProgram, lightingFragmentShader)
+                    gl.linkProgram(this.drawGroundProgram)
+                    gl.useProgram(this.drawGroundProgram)
                     gl.viewport(0, 0, canvas.width, canvas.height)
 
                     const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 
                     // Get handles
-                    this.uLightVector = gl.getUniformLocation(this.groundRenderProgram, "u_light_vector")
-                    this.uScale = gl.getUniformLocation(this.groundRenderProgram, "u_scale")
-                    this.uOffset = gl.getUniformLocation(this.groundRenderProgram, "u_offset")
-                    this.uSampler = gl.getUniformLocation(this.groundRenderProgram, 'u_sampler')
-                    this.uScreenWidth = gl.getUniformLocation(this.groundRenderProgram, "u_screen_width")
-                    this.uScreenHeight = gl.getUniformLocation(this.groundRenderProgram, "u_screen_height")
-                    this.coordAttributeLocation = gl.getAttribLocation(this.groundRenderProgram, "a_coords")
-                    this.normalAttributeLocation = gl.getAttribLocation(this.groundRenderProgram, "a_normal")
-                    this.textureMappingAttributeLocation = gl.getAttribLocation(this.groundRenderProgram, "a_texture_mapping")
+                    this.drawGroundLightVectorUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_light_vector")
+                    this.drawGroundScaleUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_scale")
+                    this.drawGroundOffsetUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_offset")
+                    this.drawGroundHeightAdjustUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_height_adjust")
+                    this.drawGroundSamplerUniformLocation = gl.getUniformLocation(this.drawGroundProgram, 'u_sampler')
+                    this.drawGroundScreenWidthUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_screen_width")
+                    this.drawGroundScreenHeightUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_screen_height")
+                    this.drawGroundCoordAttributeLocation = gl.getAttribLocation(this.drawGroundProgram, "a_coords")
+                    this.drawGroundNormalAttributeLocation = gl.getAttribLocation(this.drawGroundProgram, "a_normal")
+                    this.drawGroundTextureMappingAttributeLocation = gl.getAttribLocation(this.drawGroundProgram, "a_texture_mapping")
 
                     // Set up the buffer attributes
                     this.terrainCoordinatesBuffer = gl.createBuffer()
@@ -641,9 +649,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     gl.viewport(0, 0, canvas.width, canvas.height)
 
-                    // Get attribute locations
+                    // Get attribute and uniform locations
                     this.drawImagePositionLocation = gl.getAttribLocation(this.drawImageProgram, "a_position")
                     this.drawImageTexcoordLocation = gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
+                    this.drawImageHeightAdjustmentLocation = gl.getUniformLocation(this.drawImageProgram, "u_height_adjust")
+                    this.drawImageHeightLocation = gl.getUniformLocation(this.drawImageProgram, "u_height")
 
                     // Create the position buffer
                     this.drawImagePositionBuffer = gl.createBuffer()
@@ -735,9 +745,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     gl.viewport(0, 0, canvas.width, canvas.height)
 
-                    // Get attribute locations
+                    // Get attribute and uniform locations
                     const positionLocation = gl.getAttribLocation(this.drawShadowProgram, "a_position")
                     const texcoordLocation = gl.getAttribLocation(this.drawShadowProgram, "a_texcoord")
+                    this.drawShadowHeightAdjustmentUniformLocation = gl.getUniformLocation(this.drawShadowProgram, "u_height_adjust")
+                    this.drawShadowHeightUniformLocation = gl.getUniformLocation(this.drawShadowProgram, "u_height")
 
                     // Create the position buffer
                     this.drawShadowPositionBuffer = gl.createBuffer()
@@ -900,65 +912,67 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the terrain layer */
-        if (this.gl && this.groundRenderProgram && this.mapRenderInformation &&
-            this.uScreenWidth !== undefined &&
-            this.uScreenHeight !== undefined &&
-            this.uLightVector !== undefined &&
-            this.uScale !== undefined &&
-            this.uOffset !== undefined &&
-            this.coordAttributeLocation !== undefined &&
-            this.normalAttributeLocation !== undefined &&
-            this.textureMappingAttributeLocation !== undefined &&
-            this.uSampler !== undefined) {
+        if (this.gl &&
+            this.drawGroundProgram &&
+            this.mapRenderInformation &&
+            this.drawGroundScreenWidthUniformLocation !== undefined &&
+            this.drawGroundScreenHeightUniformLocation !== undefined &&
+            this.drawGroundLightVectorUniformLocation !== undefined &&
+            this.drawGroundScaleUniformLocation !== undefined &&
+            this.drawGroundOffsetUniformLocation !== undefined &&
+            this.drawGroundCoordAttributeLocation !== undefined &&
+            this.drawGroundNormalAttributeLocation !== undefined &&
+            this.drawGroundTextureMappingAttributeLocation !== undefined &&
+            this.drawGroundSamplerUniformLocation !== undefined &&
+            this.drawGroundHeightAdjustUniformLocation !== undefined &&
+            this.terrainCoordinatesBuffer !== undefined &&
+            this.terrainNormalsBuffer !== undefined &&
+            this.terrainTextureMappingBuffer !== undefined &&
+            this.mapRenderInformation) {
 
             const gl = this.gl
 
-            gl.useProgram(this.groundRenderProgram)
+            gl.useProgram(this.drawGroundProgram)
 
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
             // Set screen width and height
-            gl.uniform1f(this.uScreenWidth, width)
-            gl.uniform1f(this.uScreenHeight, height)
+            gl.uniform1f(this.drawGroundScreenWidthUniformLocation, width)
+            gl.uniform1f(this.drawGroundScreenHeightUniformLocation, height)
 
             // Set the light vector
-            const lightVector = [-1, 1, -1]
-            gl.uniform3fv(this.uLightVector, lightVector)
+            const lightVector = [1, 1, -1]
+            gl.uniform3fv(this.drawGroundLightVectorUniformLocation, lightVector)
 
             // Set the current values for the scale, offset and the sampler
-            gl.uniform2f(this.uScale, this.props.scale, this.props.scale)
-            gl.uniform2f(this.uOffset, this.props.translateX, this.props.translateY)
+            gl.uniform2f(this.drawGroundScaleUniformLocation, this.props.scale, this.props.scale)
+            gl.uniform2f(this.drawGroundOffsetUniformLocation, this.props.translateX, this.props.translateY)
+
+            // Set the height adjustment
+            gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
 
             // Fill the screen with black color
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
             gl.clear(gl.COLOR_BUFFER_BIT)
 
             // Draw each terrain
-            if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
-                gl.vertexAttribPointer(this.coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(this.coordAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
+            gl.vertexAttribPointer(this.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.drawGroundCoordAttributeLocation)
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
-                gl.vertexAttribPointer(this.normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(this.normalAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
+            gl.vertexAttribPointer(this.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.drawGroundNormalAttributeLocation)
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
-                gl.vertexAttribPointer(this.textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(this.textureMappingAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
+            gl.vertexAttribPointer(this.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.drawGroundTextureMappingAttributeLocation)
 
-                if (this.mapRenderInformation) {
-                    gl.uniform1i(this.uSampler, 1)
+            gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
 
-                    // mode, offset (nr vertices), count (nr vertices)
-                    gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 2)
-                } else {
-                    console.error("Map render information was missing when trying to draw the terrain")
-                }
-            } else {
-                console.error("Buffers were undefined when trying to draw the terrain")
-            }
+            // mode, offset (nr vertices), count (nr vertices)
+            gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 3)
         } else {
             console.error("Did not draw the terrain layer")
         }
@@ -1027,31 +1041,39 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Draw decorations objects
             decorationsToDraw.forEach(draw => {
-                if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
-                    if (this.gl && this.drawImageProgram && draw.gamePoint) {
+                if (draw.gamePoint !== undefined &&
+                    draw.source &&
+                    draw.source.texture !== undefined &&
+                    this.gl &&
+                    this.drawImageProgram &&
+                    this.drawImageHeightAdjustmentLocation &&
+                    this.drawImageHeightLocation) {
 
-                        this.gl.activeTexture(this.gl.TEXTURE3)
-                        this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+                    this.gl.activeTexture(this.gl.TEXTURE3)
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
 
-                        // Tell the fragment shader what texture to use
-                        this.gl.uniform1i(drawImageTextureLocation, 3)
+                    // Tell the fragment shader what texture to use
+                    this.gl.uniform1i(drawImageTextureLocation, 3)
 
-                        // Tell the vertex shader where to draw
-                        this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                        this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                    // Tell the vertex shader where to draw
+                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
 
-                        // Tell the vertex shader how to draw
-                        this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                        this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                        this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                    // Tell the vertex shader how to draw
+                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
 
-                        // Tell the vertex shader what parts of the source image to draw
-                        this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                        this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                    // Tell the vertex shader what parts of the source image to draw
+                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
 
-                        // Draw the quad (2 triangles = 6 vertices)
-                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                    }
+                    // Tell the vertex shader how to do height adjustment
+                    this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+
+                    // Draw the quad (2 triangles = 6 vertices)
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
                 }
             })
         }
@@ -1060,56 +1082,58 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the road layer */
-        if (this.gl && this.groundRenderProgram && this.mapRenderInformation &&
-            this.uScreenWidth !== undefined &&
-            this.uScreenHeight !== undefined &&
-            this.uLightVector !== undefined &&
-            this.uScale !== undefined &&
-            this.uOffset !== undefined &&
-            this.coordAttributeLocation !== undefined &&
-            this.normalAttributeLocation !== undefined &&
-            this.textureMappingAttributeLocation !== undefined &&
-            this.uSampler !== undefined &&
+        if (this.gl && this.drawGroundProgram && this.mapRenderInformation &&
+            this.drawGroundScreenWidthUniformLocation !== undefined &&
+            this.drawGroundScreenHeightUniformLocation !== undefined &&
+            this.drawGroundLightVectorUniformLocation !== undefined &&
+            this.drawGroundScaleUniformLocation !== undefined &&
+            this.drawGroundOffsetUniformLocation !== undefined &&
+            this.drawGroundCoordAttributeLocation !== undefined &&
+            this.drawGroundNormalAttributeLocation !== undefined &&
+            this.drawGroundTextureMappingAttributeLocation !== undefined &&
+            this.drawGroundSamplerUniformLocation !== undefined &&
             this.roadRenderInformation !== undefined &&
             this.roadCoordinatesBuffer !== undefined &&
             this.roadNormalsBuffer !== undefined &&
-            this.roadTextureMappingBuffer !== undefined) {
+            this.roadTextureMappingBuffer !== undefined &&
+            this.drawGroundHeightAdjustUniformLocation !== undefined) {
 
             const gl = this.gl
 
-            gl.useProgram(this.groundRenderProgram)
+            gl.useProgram(this.drawGroundProgram)
 
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
             // Set screen width and height
-            gl.uniform1f(this.uScreenWidth, width)
-            gl.uniform1f(this.uScreenHeight, height)
+            gl.uniform1f(this.drawGroundScreenWidthUniformLocation, width)
+            gl.uniform1f(this.drawGroundScreenHeightUniformLocation, height)
 
             // Set the light vector
             const lightVector = [-1, 1, -1]
-            gl.uniform3fv(this.uLightVector, lightVector)
+            gl.uniform3fv(this.drawGroundLightVectorUniformLocation, lightVector)
 
             // Set the current values for the scale, offset and the sampler
-            gl.uniform2f(this.uScale, this.props.scale, this.props.scale)
-            gl.uniform2f(this.uOffset, this.props.translateX, this.props.translateY)
+            gl.uniform2f(this.drawGroundScaleUniformLocation, this.props.scale, this.props.scale)
+            gl.uniform2f(this.drawGroundOffsetUniformLocation, this.props.translateX, this.props.translateY)
 
             // Draw the roads
             gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
-            gl.vertexAttribPointer(this.coordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.coordAttributeLocation)
+            gl.vertexAttribPointer(this.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.drawGroundCoordAttributeLocation)
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.roadNormalsBuffer)
-            gl.vertexAttribPointer(this.normalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.normalAttributeLocation)
+            gl.vertexAttribPointer(this.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.drawGroundNormalAttributeLocation)
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
-            gl.vertexAttribPointer(this.textureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.textureMappingAttributeLocation)
+            gl.vertexAttribPointer(this.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.drawGroundTextureMappingAttributeLocation)
 
-            gl.uniform1i(this.uSampler, 1)
+            gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
+            gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
 
-            gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 2)
+            gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 3)
         } else {
             console.error("Missing information to draw roads")
         }
@@ -1984,31 +2008,41 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Draw all shadows
             shadowsToDraw.forEach(shadow => {
-                if (shadow.gamePoint !== undefined && shadow.source && shadow.source.texture !== undefined) {
-                    if (this.gl && this.drawShadowProgram && shadow.gamePoint) {
+                if (shadow.gamePoint !== undefined &&
+                    shadow.source &&
+                    shadow.source.texture !== undefined &&
+                    this.drawShadowHeightAdjustmentUniformLocation !== undefined &&
+                    this.gl &&
+                    this.drawShadowProgram &&
+                    this.drawShadowHeightUniformLocation !== undefined) {
 
-                        this.gl.activeTexture(this.gl.TEXTURE3)
-                        this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
+                    this.gl.activeTexture(this.gl.TEXTURE3)
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
 
-                        // Tell the fragment shader what texture to use
-                        this.gl.uniform1i(drawImageTextureLocation, 3)
+                    // Tell the fragment shader what texture to use
+                    this.gl.uniform1i(drawImageTextureLocation, 3)
 
-                        // Tell the vertex shader where to draw
-                        this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
-                        this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
+                    // Tell the vertex shader where to draw
+                    this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
+                    this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
 
-                        // Tell the vertex shader how to draw
-                        this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                        this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                        this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                    // Tell the vertex shader how to draw
+                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
 
-                        // Tell the vertex shader what parts of the source image to draw
-                        this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
-                        this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
+                    // Tell the vertex shader what parts of the source image to draw
+                    this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
+                    this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
 
-                        // Draw the quad (2 triangles = 6 vertices)
-                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                    }
+                    // Tell the vertex shader how much to adjust for the height
+                    this.gl.uniform1f(this.drawShadowHeightAdjustmentUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+
+                    // Tell the vertex shader about the depth of the image
+                    this.gl.uniform1f(this.drawShadowHeightUniformLocation, monitor.allTiles.get(shadow.gamePoint)?.height ?? 0)
+
+                    // Draw the quad (2 triangles = 6 vertices)
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
                 }
             })
         }
@@ -2052,31 +2086,39 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Draw normal objects
             sortedToDrawList.forEach(draw => {
-                if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
-                    if (this.gl && this.drawImageProgram && draw.gamePoint) {
+                if (draw.gamePoint !== undefined &&
+                    draw.source &&
+                    draw.source.texture !== undefined &&
+                    this.gl &&
+                    this.drawImageProgram &&
+                    this.drawImageHeightAdjustmentLocation &&
+                    this.drawImageHeightLocation) {
 
-                        this.gl.activeTexture(this.gl.TEXTURE3)
-                        this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+                    this.gl.activeTexture(this.gl.TEXTURE3)
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
 
-                        // Tell the fragment shader what texture to use
-                        this.gl.uniform1i(drawImageTextureLocation, 3)
+                    // Tell the fragment shader what texture to use
+                    this.gl.uniform1i(drawImageTextureLocation, 3)
 
-                        // Tell the vertex shader where to draw
-                        this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                        this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                    // Tell the vertex shader where to draw
+                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
 
-                        // Tell the vertex shader how to draw
-                        this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                        this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                        this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                    // Tell the vertex shader how to draw
+                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
 
-                        // Tell the vertex shader what parts of the source image to draw
-                        this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                        this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                    // Tell the vertex shader what parts of the source image to draw
+                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
 
-                        // Draw the quad (2 triangles = 6 vertices)
-                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                    }
+                    // Tell the vertex shader how to do height adjustment
+                    this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+
+                    // Draw the quad (2 triangles = 6 vertices)
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
                 }
             })
         }
@@ -2230,32 +2272,39 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             // Go through the images to draw
             toDrawHover.forEach(draw => {
 
-                if (draw.gamePoint !== undefined && draw.source && draw.source.texture !== undefined) {
+                if (draw.gamePoint !== undefined &&
+                    draw.source &&
+                    draw.source.texture !== undefined &&
+                    this.drawImageHeightAdjustmentLocation !== undefined &&
+                    this.drawImageHeightLocation !== undefined &&
+                    this.gl &&
+                    this.drawImageProgram) {
 
-                    if (this.gl && this.drawImageProgram && draw.gamePoint) {
+                    this.gl.activeTexture(this.gl.TEXTURE3)
+                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
 
-                        this.gl.activeTexture(this.gl.TEXTURE3)
-                        this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+                    // Tell the fragment shader what texture to use
+                    this.gl.uniform1i(drawImageTextureLocation, 3)
 
-                        // Tell the fragment shader what texture to use
-                        this.gl.uniform1i(drawImageTextureLocation, 3)
+                    // Tell the vertex shader where to draw
+                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
 
-                        // Tell the vertex shader where to draw
-                        this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                        this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                    // Tell the vertex shader how to scale
+                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
 
-                        // Tell the vertex shader how to scale
-                        this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                        this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                        this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                    // Tell the vertex shader what parts of the source image to draw
+                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
 
-                        // Tell the vertex shader what parts of the source image to draw
-                        this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                        this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                    // Tell the vertex shader to do how much height adjustment
+                    this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
 
-                        // Draw the quad (2 triangles = 6 vertices)
-                        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                    }
+                    // Draw the quad (2 triangles = 6 vertices)
+                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
                 } else if (oncePerNewSelectionPoint) {
                     console.log({ title: "Can't draw", draw })
                 }
@@ -2527,9 +2576,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             Array.prototype.push.apply(
                 coordinates,
                 [
-                    point.x, point.y,
-                    pointDownLeft.x, pointDownLeft.y,
-                    pointDownRight.x, pointDownRight.y,
+                    point.x, point.y, tileBelow.heightAbove,
+                    pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
+                    pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight
                 ])
 
             // Add the normal for each triangle to the normals buffer
@@ -2541,9 +2590,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         normalDownLeft.x, normalDownLeft.y, normalDownLeft.z,
                         normalDownRight.x, normalDownRight.y, normalDownRight.z
                     ])
-            } else {
 
                 // Place dummy normals
+            } else {
                 Array.prototype.push.apply(
                     normals,
                     [
@@ -2553,7 +2602,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     ])
             }
 
-            // Add the texture mapping for the triangles
+            // Add the texture mapping
             //    --  Texture coordinates go from 0, 0 to 1, 1.
             //    --  To map to pixel coordinates:
             //            texcoordX = pixelCoordX / (width  - 1)
@@ -2590,9 +2639,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             Array.prototype.push.apply(
                 coordinates,
                 [
-                    point.x, point.y,
-                    pointDownRight.x, pointDownRight.y,
-                    pointRight.x, pointRight.y,
+                    point.x, point.y, tile.heightLeft,
+                    pointDownRight.x, pointDownRight.y, tile.heightDown,
+                    pointRight.x, pointRight.y, tile.heightRight
                 ]
             )
 
@@ -2747,12 +2796,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 // Handle horizontal roads
                 if (previous.y === point.y) {
+                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
+                    const height1 = monitor.allTiles.get(point)?.height ?? 0
 
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x, previous.y, previous.x, previous.y + 0.4, point.x, point.y,
-                            previous.x, previous.y + 0.4, point.x, point.y, point.x, point.y + 0.4
+                            previous.x, previous.y, height0,
+                            previous.x, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            previous.x, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            point.x, point.y + 0.4, height1
                         ]
                     )
 
@@ -2794,12 +2849,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road up-right
                 } else if (previous.x < point.x && previous.y < point.y) {
+                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
+                    const height1 = monitor.allTiles.get(point)?.height ?? 0
 
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x + 0.2, previous.y, previous.x - 0.2, previous.y + 0.4, point.x, point.y,
-                            previous.x - 0.2, previous.y + 0.4, point.x, point.y, point.x - 0.2, point.y + 0.4
+                            previous.x + 0.2, previous.y, height0,
+                            previous.x - 0.2, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            previous.x - 0.2, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            point.x - 0.2, point.y + 0.4, height1
                         ]
                     )
 
@@ -2841,12 +2902,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road down-right
                 } else if (previous.x < point.x && previous.y > point.y) {
+                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
+                    const height1 = monitor.allTiles.get(point)?.height ?? 0
 
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x - 0.2, previous.y, previous.x + 0.2, previous.y + 0.4, point.x, point.y,
-                            previous.x + 0.2, previous.y + 0.4, point.x, point.y, point.x + 0.2, point.y + 0.4
+                            previous.x - 0.2, previous.y, height0,
+                            previous.x + 0.2, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            previous.x + 0.2, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            point.x + 0.2, point.y + 0.4, height1
                         ]
                     )
 
@@ -2888,12 +2955,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road up-left
                 } else if (previous.x > point.x && previous.y < point.y) {
+                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
+                    const height1 = monitor.allTiles.get(point)?.height ?? 0
 
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x - 0.2, previous.y, previous.x + 0.2, previous.y + 0.4, point.x, point.y,
-                            previous.x + 0.2, previous.y + 0.4, point.x, point.y, point.x + 0.2, point.y + 0.4
+                            previous.x - 0.2, previous.y, height0,
+                            previous.x + 0.2, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            previous.x + 0.2, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            point.x + 0.2, point.y + 0.4, height1
                         ]
                     )
 
@@ -2935,12 +3008,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road down-left
                 } else if (previous.x > point.x && previous.y > point.y) {
+                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
+                    const height1 = monitor.allTiles.get(point)?.height ?? 0
 
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x + 0.2, previous.y, previous.x - 0.2, previous.y + 0.4, point.x, point.y,
-                            previous.x - 0.2, previous.y + 0.4, point.x, point.y, point.x - 0.2, point.y + 0.4
+                            previous.x + 0.2, previous.y, height0,
+                            previous.x - 0.2, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            previous.x - 0.2, previous.y + 0.4, height0,
+                            point.x, point.y, height1,
+                            point.x - 0.2, point.y + 0.4, height1
                         ]
                     )
 

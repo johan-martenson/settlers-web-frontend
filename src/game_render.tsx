@@ -2439,19 +2439,19 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     screenPointToGamePointWithHeightAdjustment(screenPoint: Point): Point {
-        const unadjestedGamePoint = this.screenPointToGamePointNoHeightAdjustment(screenPoint)
+        const unadjustedGamePoint = this.screenPointToGamePointNoHeightAdjustment(screenPoint)
 
         let distance = 2000
         let adjustedGamePoint: Point | undefined
 
         const candidates = [
-            unadjestedGamePoint,
-            getPointDownLeft(unadjestedGamePoint),
-            getPointDownRight(unadjestedGamePoint),
-            getPointLeft(unadjestedGamePoint),
-            getPointRight(unadjestedGamePoint),
-            getPointUpLeft(unadjestedGamePoint),
-            getPointUpRight(unadjestedGamePoint)
+            unadjustedGamePoint,
+            getPointDownLeft(unadjustedGamePoint),
+            getPointDownRight(unadjustedGamePoint),
+            getPointLeft(unadjustedGamePoint),
+            getPointRight(unadjustedGamePoint),
+            getPointUpLeft(unadjustedGamePoint),
+            getPointUpRight(unadjustedGamePoint)
         ]
 
         for (let gamePoint of candidates) {
@@ -2466,7 +2466,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
         }
 
-        return adjustedGamePoint ?? unadjestedGamePoint
+        return adjustedGamePoint ?? unadjustedGamePoint
     }
 
     onDoubleClick(event: React.MouseEvent): void {
@@ -2481,9 +2481,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
             const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
-            const screenPoint = this.screenPointToGamePointNoHeightAdjustment({ x: x, y: y })
+            const gamePoint = this.screenPointToGamePointNoHeightAdjustment({ x: x, y: y })
 
-            this.props.onDoubleClick(screenPoint)
+            this.props.onDoubleClick(gamePoint)
         }
     }
 

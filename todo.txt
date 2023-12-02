@@ -17,6 +17,7 @@
 18. Add remaining gravel after a stone has been fully removed as a decoration
 19. Use different road building icons depending on height difference
 20. Add terrain overlaps to make the nature look smoother. Start with snow.
+21. Add possibility to pause an ongoing game.
 
 
 Done

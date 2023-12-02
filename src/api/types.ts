@@ -286,6 +286,7 @@ export interface MapInformation {
 export interface CropInformation extends Point {
     id: CropId
     state: CropGrowth
+    type: CropType
 }
 
 export interface CropInformationLocal extends CropInformation {

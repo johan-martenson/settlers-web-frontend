@@ -1399,7 +1399,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 }
 
-            // Animal is standing at a fixed point
+                // Animal is standing at a fixed point
             } else {
                 if (animal.x < minXInGame || animal.x > maxXInGame || animal.y < minYInGame || animal.y > maxYInGame) {
                     continue
@@ -1491,7 +1491,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     })
                 }
 
-            // Ship is at a fixed point
+                // Ship is at a fixed point
             } else {
                 if (ship.x < minXInGame || ship.x > maxXInGame || ship.y < minYInGame || ship.y > maxYInGame) {
                     continue
@@ -1830,7 +1830,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
                     const cargo = flag.stackedCargo[i]
 
-                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
+                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
                     toDrawNormal.push({
                         source: cargoDrawInfo,
@@ -1843,7 +1843,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     for (let i = 3; i < Math.min(flag.stackedCargo.length, 6); i++) {
                         const cargo = flag.stackedCargo[i]
 
-                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
@@ -1857,7 +1857,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     for (let i = 6; i < flag.stackedCargo.length; i++) {
                         const cargo = flag.stackedCargo[i]
 
-                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation('ROMANS', cargo) // TODO: use the right nationality
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
                         toDrawNormal.push({
                             source: cargoDrawInfo,
@@ -1937,15 +1937,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Set up webgl2 with the right shaders to prepare for drawing shadows
         if (this.gl && this.drawShadowProgram &&
             this.drawImagePositionBuffer &&
-            this.drawImageTexCoordBuffer) {
+            this.drawImageTexCoordBuffer &&
+            this.drawShadowHeightAdjustmentUniformLocation !== undefined &&
+            this.drawShadowHeightUniformLocation !== undefined) {
+
+            // Use the shadow drawing gl program
             this.gl.useProgram(this.drawShadowProgram)
 
+            // Configure the drawing
             this.gl.viewport(0, 0, width, height)
-
             this.gl.enable(this.gl.BLEND)
             this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
             this.gl.disable(this.gl.DEPTH_TEST)
-
 
             // Re-assign the attribute locations
             const drawImagePositionLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_position")
@@ -1971,68 +1974,65 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
 
             // Draw all shadows
-            shadowsToDraw.forEach(shadow => {
-                if (shadow.gamePoint !== undefined &&
-                    shadow.source &&
-                    shadow.source.texture !== undefined &&
-                    this.drawShadowHeightAdjustmentUniformLocation !== undefined &&
-                    this.gl &&
-                    this.drawShadowProgram &&
-                    this.drawShadowHeightUniformLocation !== undefined) {
-
-                    // Set the texture
-                    this.gl.activeTexture(this.gl.TEXTURE3)
-                    this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
-
-                    // Set the constants
-                    this.gl.uniform1i(drawImageTextureLocation, 3)
-                    this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
-                    this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
-                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-                    this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
-                    this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
-                    this.gl.uniform1f(this.drawShadowHeightAdjustmentUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
-
-                    if (shadow.height !== undefined) {
-                        this.gl.uniform1f(this.drawShadowHeightUniformLocation, shadow.height)
-                    } else {
-                        this.gl.uniform1f(this.drawShadowHeightUniformLocation, monitor.allTiles.get(shadow.gamePoint)?.height ?? 0)
-                    }
-
-                    // Draw the quad (2 triangles = 6 vertices)
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+            for (const shadow of shadowsToDraw) {
+                if (shadow.gamePoint === undefined || shadow.source?.texture === undefined) {
+                    continue
                 }
-            })
+
+                // Set the texture
+                this.gl.activeTexture(this.gl.TEXTURE3)
+                this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
+
+                // Set the constants
+                this.gl.uniform1i(drawImageTextureLocation, 3)
+                this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
+                this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
+                this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
+                this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
+                this.gl.uniform1f(this.drawShadowHeightAdjustmentUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+
+                if (shadow.height !== undefined) {
+                    this.gl.uniform1f(this.drawShadowHeightUniformLocation, shadow.height)
+                } else {
+                    this.gl.uniform1f(this.drawShadowHeightUniformLocation, monitor.allTiles.get(shadow.gamePoint)?.height ?? 0)
+                }
+
+                // Draw the quad (2 triangles = 6 vertices)
+                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+            }
         }
 
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (this.gl && this.drawImageProgram) {
+        if (this.gl &&
+            this.drawImageProgram &&
+            this.drawImageHeightAdjustmentLocation &&
+            this.drawImageHeightLocation &&
+            this.drawImagePositionBuffer &&
+            this.drawImageTexCoordBuffer) {
+
+            // Use the draw image program
             this.gl.useProgram(this.drawImageProgram)
 
+            // Configure the drawing
             this.gl.viewport(0, 0, width, height)
-
             this.gl.enable(this.gl.BLEND)
             this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
             this.gl.disable(this.gl.DEPTH_TEST)
-
 
             // Re-assign the attribute locations
             const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
             const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
 
-            if (this.drawImagePositionBuffer) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-                this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(drawImagePositionLocation)
-            }
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+            this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+            this.gl.enableVertexAttribArray(drawImagePositionLocation)
 
-            if (this.drawImageTexCoordBuffer) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-                this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-            }
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+            this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+            this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
 
             // Re-assign the uniform locations
             const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
@@ -2045,47 +2045,35 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
 
             // Draw normal objects
-            sortedToDrawList.forEach(draw => {
-                if (draw.gamePoint !== undefined &&
-                    draw.source &&
-                    draw.source.texture !== undefined &&
-                    this.gl &&
-                    this.drawImageProgram &&
-                    this.drawImageHeightAdjustmentLocation &&
-                    this.drawImageHeightLocation) {
-
-                    this.gl.activeTexture(this.gl.TEXTURE3)
-                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
-
-                    // Tell the fragment shader what texture to use
-                    this.gl.uniform1i(drawImageTextureLocation, 3)
-
-                    // Tell the vertex shader where to draw
-                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-
-                    // Tell the vertex shader how to draw
-                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-
-                    // Tell the vertex shader what parts of the source image to draw
-                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-
-                    // Tell the vertex shader how to do height adjustment
-                    this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
-
-                    if (draw.height !== undefined) {
-                        this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
-                    } else {
-                        this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
-                    }
-
-                    // Draw the quad (2 triangles = 6 vertices)
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+            for (const draw of sortedToDrawList) {
+                if (draw.gamePoint === undefined || draw.source?.texture === undefined) {
+                    continue
                 }
-            })
+
+                // Set the texture
+                this.gl.activeTexture(this.gl.TEXTURE3)
+                this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+
+                // Set the constants
+                this.gl.uniform1i(drawImageTextureLocation, 3)
+                this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+
+                if (draw.height !== undefined) {
+                    this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
+                } else {
+                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+                }
+
+                // Draw the quad (2 triangles = 6 vertices)
+                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+            }
         }
 
 
@@ -2189,31 +2177,34 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Draw the overlay layer. Assume for now that they don't need sorting
 
         // Set up webgl2 with the right shaders
-        if (this.gl && this.drawImageProgram) {
+        if (this.gl &&
+            this.drawImageProgram &&
+            this.drawImageHeightAdjustmentLocation !== undefined &&
+            this.drawImageHeightLocation !== undefined &&
+            this.drawImagePositionBuffer &&
+            this.drawImageTexCoordBuffer) {
+
+            // Use the draw image program
             this.gl.useProgram(this.drawImageProgram)
 
+            // Configure the drawing
             this.gl.viewport(0, 0, width, height)
-
             this.gl.enable(this.gl.BLEND)
             this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
             this.gl.disable(this.gl.DEPTH_TEST)
-
 
             // Re-assign the attribute locations
             this.drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
             this.drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
 
-            if (this.drawImagePositionBuffer) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-                this.gl.vertexAttribPointer(this.drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(this.drawImagePositionLocation)
-            }
+            // Set the buffers
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
+            this.gl.vertexAttribPointer(this.drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
+            this.gl.enableVertexAttribArray(this.drawImagePositionLocation)
 
-            if (this.drawImageTexCoordBuffer) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-                this.gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-                this.gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
-            }
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
+            this.gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+            this.gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
 
             // Re-assign the uniform locations
             const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
@@ -2226,50 +2217,36 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
 
             // Go through the images to draw
-            toDrawHover.forEach(draw => {
+            for (const draw of toDrawHover) {
 
-                if (draw.gamePoint !== undefined &&
-                    draw.source &&
-                    draw.source.texture !== undefined &&
-                    this.drawImageHeightAdjustmentLocation !== undefined &&
-                    this.drawImageHeightLocation !== undefined &&
-                    this.gl &&
-                    this.drawImageProgram) {
-
-                    this.gl.activeTexture(this.gl.TEXTURE3)
-                    this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
-
-                    // Tell the fragment shader what texture to use
-                    this.gl.uniform1i(drawImageTextureLocation, 3)
-
-                    // Tell the vertex shader where to draw
-                    this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                    this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-
-                    // Tell the vertex shader how to scale
-                    this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
-                    this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
-                    this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-
-                    // Tell the vertex shader what parts of the source image to draw
-                    this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                    this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-
-                    // Tell the vertex shader to do how much height adjustment
-                    this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
-
-                    if (draw.height !== undefined) {
-                        this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
-                    } else {
-                        this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
-                    }
-
-                    // Draw the quad (2 triangles = 6 vertices)
-                    this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
-                } else if (oncePerNewSelectionPoint) {
-                    console.log({ title: "Can't draw", draw })
+                if (draw.gamePoint === undefined || draw.source?.texture === undefined) {
+                    continue
                 }
-            })
+
+                // Set the texture
+                this.gl.activeTexture(this.gl.TEXTURE3)
+                this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+
+                // Set the constants
+                this.gl.uniform1i(drawImageTextureLocation, 3)
+                this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                this.gl.uniform2f(drawImageScreenOffsetLocation, this.props.translateX, this.props.translateY)
+                this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+
+                if (draw.height !== undefined) {
+                    this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
+                } else {
+                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+                }
+
+                // Draw the quad (2 triangles = 6 vertices)
+                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+            }
         }
 
         duration.after("draw normal layer")
@@ -2329,48 +2306,44 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Draw the fog of war layer */
-        if (this.gl && this.fogOfWarRenderProgram &&
+        if (this.gl &&
+            this.fogOfWarRenderProgram &&
             this.fogOfWarScreenWidthUniformLocation !== undefined &&
             this.fogOfWarScreenHeightUniformLocation !== undefined &&
             this.fogOfWarScaleUniformLocation !== undefined &&
             this.fogOfWarOffsetUniformLocation !== undefined &&
             this.fogOfWarCoordAttributeLocation !== undefined &&
-            this.fogOfWarIntensityAttributeLocation !== undefined) {
+            this.fogOfWarIntensityAttributeLocation !== undefined &&
+            this.fogOfWarCoordBuffer !== undefined &&
+            this.fogOfWarIntensityBuffer !== undefined) {
 
             const gl = this.gl
 
+            // Use the fog of war program
             gl.useProgram(this.fogOfWarRenderProgram)
 
+            // Configure drawing
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
-            // Set screen width and height
+            // Set the constants
             gl.uniform1f(this.fogOfWarScreenWidthUniformLocation, width)
             gl.uniform1f(this.fogOfWarScreenHeightUniformLocation, height)
-
-            // Set the current values for the scale and the offset
             gl.uniform2f(this.fogOfWarScaleUniformLocation, this.props.scale, this.props.scale)
             gl.uniform2f(this.fogOfWarOffsetUniformLocation, this.props.translateX, this.props.translateY)
-
-            // Fill the screen with black color
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
-            //gl.clear(gl.COLOR_BUFFER_BIT)
 
-            // Draw the fog of war as a set of shaded triangles
-            if (this.fogOfWarCoordBuffer !== undefined && this.fogOfWarIntensityBuffer !== undefined) {
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
-                gl.vertexAttribPointer(this.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(this.fogOfWarCoordAttributeLocation)
+            // Set the buffers
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
+            gl.vertexAttribPointer(this.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.fogOfWarCoordAttributeLocation)
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarIntensityBuffer)
-                gl.vertexAttribPointer(this.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(this.fogOfWarIntensityAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarIntensityBuffer)
+            gl.vertexAttribPointer(this.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(this.fogOfWarIntensityAttributeLocation)
 
-                // mode, offset (nr vertices), count (nr vertices)
-                gl.drawArrays(gl.TRIANGLES, 0, this.fogOfWarCoordinates.length / 2)
-            } else {
-                console.error("Buffers were undefined when trying to draw the fog of war")
-            }
+            // Draw the triangles -- mode, offset (nr vertices), count (nr vertices)
+            gl.drawArrays(gl.TRIANGLES, 0, this.fogOfWarCoordinates.length / 2)
         } else {
             console.error("Did not draw the fog of war layer")
         }

@@ -877,7 +877,7 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
 
     message.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
 
-    message.newBuildings?.forEach((house) => monitor.houses.set(house.id, house))
+    message.newBuildings?.forEach(house => monitor.houses.set(house.id, house))
 
     if (message.changedBuildings) {
         message.changedBuildings.forEach(house => {
@@ -1314,6 +1314,7 @@ function serverSentCropToLocal(serverCrop: CropInformation): CropInformationLoca
         state: serverCrop.state,
         x: serverCrop.x,
         y: serverCrop.y,
+        type: serverCrop.type,
         growth
     }
 }

@@ -2438,6 +2438,37 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
+    screenPointToGamePointWithHeightAdjustment(screenPoint: Point): Point {
+        const unadjestedGamePoint = this.screenPointToGamePointNoHeightAdjustment(screenPoint)
+
+        let distance = 2000
+        let adjustedGamePoint: Point | undefined
+
+        const candidates = [
+            unadjestedGamePoint,
+            getPointDownLeft(unadjestedGamePoint),
+            getPointDownRight(unadjestedGamePoint),
+            getPointLeft(unadjestedGamePoint),
+            getPointRight(unadjestedGamePoint),
+            getPointUpLeft(unadjestedGamePoint),
+            getPointUpRight(unadjestedGamePoint)
+        ]
+
+        for (let gamePoint of candidates) {
+            const screenPointCandidate = this.gamePointToScreenPoint(gamePoint)
+            const dx = screenPointCandidate.x - screenPoint.x
+            const dy = screenPointCandidate.y - screenPoint.y
+            const candidateDistance = Math.sqrt(dx * dx + dy * dy)
+
+            if (candidateDistance < distance) {
+                distance = candidateDistance
+                adjustedGamePoint = gamePoint
+            }
+        }
+
+        return adjustedGamePoint ?? unadjestedGamePoint
+    }
+
     onDoubleClick(event: React.MouseEvent): void {
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
             console.error("Received invalid double click event")
@@ -2476,32 +2507,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                                 const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
                                 const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
-                                const center = this.screenPointToGamePointNoHeightAdjustment({ x: x, y: y })
-
-                                let distance = 2000
-                                let hoverPoint: Point | undefined
-
-                                const candidates = [
-                                    center,
-                                    getPointDownLeft(center),
-                                    getPointDownRight(center),
-                                    getPointLeft(center),
-                                    getPointRight(center),
-                                    getPointUpLeft(center),
-                                    getPointUpRight(center)
-                                ]
-
-                                for (const gamePoint of candidates.filter(gamePoint => gamePoint !== undefined)) {
-                                    const screenPoint = this.gamePointToScreenPoint(gamePoint)
-                                    const dx = screenPoint.x - x
-                                    const dy = screenPoint.y - y
-                                    const candidateDistance = Math.sqrt(x * x + y * y)
-
-                                    if (candidateDistance < distance) {
-                                        distance = candidateDistance
-                                        hoverPoint = gamePoint
-                                    }
-                                }
+                                const hoverPoint = this.screenPointToGamePointWithHeightAdjustment({ x, y })
 
                                 if (hoverPoint && (!this.state.hoverPoint || this.state.hoverPoint.x !== hoverPoint.x || this.state.hoverPoint.y !== hoverPoint.y)) {
                                     this.setState({ hoverPoint })

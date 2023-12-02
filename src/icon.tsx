@@ -279,8 +279,6 @@ const FlagIcon = (props: FlagIconProps) => {
 
     }, [animationIndex, animate, type, nation, scale, animationHandler, sourceImage])
 
-    console.log("Width: " + (dimension.width * scale) + ", height: " + (dimension.height * scale))
-
     return <canvas
         ref={canvasRef}
         width={dimension.width * scale}

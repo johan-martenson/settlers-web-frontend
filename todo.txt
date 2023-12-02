@@ -5,7 +5,6 @@
 5. Attacking - weak or strong attackers
 6. Defending - many/few defenders. Weak/strong defenders
 7. Military settings - weak/strong in center, closer to the edge, and at the edge
-8. Shift rendering slightly based on height
 9. Make materials visible when donkeys carry
 10. In-game chat
 11. Finish making all react components into functional components
@@ -30,3 +29,4 @@ Done
 5. Change WorkerIcon to use Canvas2d instead of webgl
 6. Remove "visibleTrees" handling now that fog of war is implemented
 1. Bug where expanding the border doesn't update the available construction properly. Flags closest to the old border remained Flags. Diagonal down-right
+8. Shift rendering slightly based on height

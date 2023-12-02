@@ -5,7 +5,7 @@ import { ConstructionInfo } from './construction_info'
 import FriendlyFlagInfo from './friendly_flag_info'
 import GameMenu from './game_menu'
 import GameMessagesViewer from './game_messages_viewer'
-import { CursorState, DEFAULT_SCALE, GameCanvas } from './game_render'
+import { CursorState, DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
 import { getHeadquarterForPlayer, monitor, startMonitoringGame } from './api/ws-api'
@@ -112,6 +112,7 @@ interface AppState {
     showFpsCounter: boolean
 
     musicVolume: number
+    heightAdjust: number
 }
 
 class App extends Component<AppProps, AppState> {
@@ -177,7 +178,8 @@ class App extends Component<AppProps, AppState> {
             showFpsCounter: false,
             isMusicPlayerVisible: true,
             isTypingControllerVisible: true,
-            musicVolume: 1
+            musicVolume: 1,
+            heightAdjust: DEFAULT_HEIGHT_ADJUSTMENT
         }
 
         /* Set up type control commands */
@@ -1035,6 +1037,7 @@ class App extends Component<AppProps, AppState> {
                     width={globalSyncState.width}
                     height={globalSyncState.height}
                     cursorState={this.state.cursorState}
+                    heightAdjust={this.state.heightAdjust}
                 />
 
                 <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
@@ -1064,6 +1067,7 @@ class App extends Component<AppProps, AppState> {
                     isAvailableConstructionVisible={this.state.showAvailableConstruction}
                     onSetAvailableConstructionVisible={(visible: boolean) => this.setState({ showAvailableConstruction: visible })}
                     onSetMusicVolume={(volume: number) => this.setState({ musicVolume: volume })}
+                    onSetHeightAdjust={(heightAdjust: number) => this.setState({ heightAdjust })}
                 />
 
                 {this.state.showFriendlyHouseInfo &&

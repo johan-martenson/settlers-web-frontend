@@ -268,8 +268,6 @@ const FlagIcon = (props: FlagIconProps) => {
             canvas.width = width
             canvas.height = height
 
-            console.log(["While drawing", {width, height}])
-
             // Clear the background
             context.clearRect(0, 0, width, height)
 
@@ -283,7 +281,12 @@ const FlagIcon = (props: FlagIconProps) => {
 
     console.log("Width: " + (dimension.width * scale) + ", height: " + (dimension.height * scale))
 
-    return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
+    return <canvas
+        ref={canvasRef}
+        width={dimension.width * scale}
+        height={dimension.height * scale}
+        style={{ width: dimension.width * scale, height: dimension.height * scale }}
+    />
 }
 
 export {

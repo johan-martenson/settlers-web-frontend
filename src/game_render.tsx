@@ -56,6 +56,8 @@ interface GameCanvasProps {
     width: number
     height: number
 
+    heightAdjust: number
+
     onPointClicked: ((point: Point) => void)
     onDoubleClick: ((point: Point) => void)
     onKeyDown: ((event: React.KeyboardEvent) => void)
@@ -287,7 +289,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         super(props)
 
         this.gamePointToScreenPoint = this.gamePointToScreenPoint.bind(this)
-        this.screenPointToGamePoint = this.screenPointToGamePoint.bind(this)
+        this.screenPointToGamePointNoHeightAdjustment = this.screenPointToGamePointNoHeightAdjustment.bind(this)
         this.onClick = this.onClick.bind(this)
         this.onDoubleClick = this.onDoubleClick.bind(this)
         this.updateRoadDrawingBuffers = this.updateRoadDrawingBuffers.bind(this)
@@ -892,8 +894,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         let oncePerNewSelectionPoint = false
 
-        const upLeft = this.screenPointToGamePoint({ x: 0, y: 0 })
-        const downRight = this.screenPointToGamePoint({ x: width, y: height })
+        const upLeft = this.screenPointToGamePointNoHeightAdjustment({ x: 0, y: 0 })
+        const downRight = this.screenPointToGamePointNoHeightAdjustment({ x: width, y: height })
 
         const minXInGame = upLeft.x
         const maxYInGame = upLeft.y
@@ -961,7 +963,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.uniform3fv(this.drawGroundLightVectorUniformLocation, this.lightVector)
             gl.uniform2f(this.drawGroundScaleUniformLocation, this.props.scale, this.props.scale)
             gl.uniform2f(this.drawGroundOffsetUniformLocation, this.props.translateX, this.props.translateY)
-            gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+            gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, this.props.heightAdjust)
             gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
 
             // Set up the buffers
@@ -1067,7 +1069,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                     gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                     gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                    gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+                    gl.uniform1f(this.drawImageHeightAdjustmentLocation, this.props.heightAdjust)
                     gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
 
                     // Draw the quad (2 triangles = 6 vertices)
@@ -1129,7 +1131,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.enableVertexAttribArray(this.drawGroundTextureMappingAttributeLocation)
 
             gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
-            gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+            gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, this.props.heightAdjust)
 
             gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 3)
         } else {
@@ -1935,7 +1937,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Set up webgl2 with the right shaders to prepare for drawing shadows
-        if (this.gl && this.drawShadowProgram &&
+        if (this.gl &&
+            this.drawShadowProgram &&
             this.drawImagePositionBuffer &&
             this.drawImageTexCoordBuffer &&
             this.drawShadowHeightAdjustmentUniformLocation !== undefined &&
@@ -1992,7 +1995,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
                 this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
-                this.gl.uniform1f(this.drawShadowHeightAdjustmentUniformLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+                this.gl.uniform1f(this.drawShadowHeightAdjustmentUniformLocation, this.props.heightAdjust)
 
                 if (shadow.height !== undefined) {
                     this.gl.uniform1f(this.drawShadowHeightUniformLocation, shadow.height)
@@ -2063,7 +2066,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                 this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+                this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, this.props.heightAdjust)
 
                 if (draw.height !== undefined) {
                     this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
@@ -2236,7 +2239,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                 this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, DEFAULT_HEIGHT_ADJUSTMENT)
+                this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, this.props.heightAdjust)
 
                 if (draw.height !== undefined) {
                     this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
@@ -2387,12 +2390,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             this.props.translateY,
             this.props.scale,
             this.props.screenHeight,
-            DEFAULT_HEIGHT_ADJUSTMENT,
+            this.props.heightAdjust,
+            //DEFAULT_HEIGHT_ADJUSTMENT,
             STANDARD_HEIGHT
         )
     }
 
-    screenPointToGamePoint(screenPoint: ScreenPoint): Point {
+    screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint): Point {
         return screenPointToGamePoint(screenPoint, this.props.translateX, this.props.translateY, this.props.scale, this.props.screenHeight)
     }
 
@@ -2428,7 +2432,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
             const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
-            const gamePoint = this.screenPointToGamePoint({ x: x, y: y })
+            const gamePoint = this.screenPointToGamePointNoHeightAdjustment({ x: x, y: y })
 
             this.props.onPointClicked(gamePoint)
         }
@@ -2446,7 +2450,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
             const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
-            const screenPoint = this.screenPointToGamePoint({ x: x, y: y })
+            const screenPoint = this.screenPointToGamePointNoHeightAdjustment({ x: x, y: y })
 
             this.props.onDoubleClick(screenPoint)
         }
@@ -2472,15 +2476,35 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                                 const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
                                 const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
-                                const hoverPoint = this.screenPointToGamePoint({ x: x, y: y })
+                                const center = this.screenPointToGamePointNoHeightAdjustment({ x: x, y: y })
 
-                                if (!this.state.hoverPoint || this.state.hoverPoint.x !== hoverPoint.x || this.state.hoverPoint.y !== hoverPoint.y) {
+                                let distance = 2000
+                                let hoverPoint: Point | undefined
 
-                                    this.setState(
-                                        {
-                                            hoverPoint: hoverPoint
-                                        }
-                                    )
+                                const candidates = [
+                                    center,
+                                    getPointDownLeft(center),
+                                    getPointDownRight(center),
+                                    getPointLeft(center),
+                                    getPointRight(center),
+                                    getPointUpLeft(center),
+                                    getPointUpRight(center)
+                                ]
+
+                                for (const gamePoint of candidates.filter(gamePoint => gamePoint !== undefined)) {
+                                    const screenPoint = this.gamePointToScreenPoint(gamePoint)
+                                    const dx = screenPoint.x - x
+                                    const dy = screenPoint.y - y
+                                    const candidateDistance = Math.sqrt(x * x + y * y)
+
+                                    if (candidateDistance < distance) {
+                                        distance = candidateDistance
+                                        hoverPoint = gamePoint
+                                    }
+                                }
+
+                                if (hoverPoint && (!this.state.hoverPoint || this.state.hoverPoint.x !== hoverPoint.x || this.state.hoverPoint.y !== hoverPoint.y)) {
+                                    this.setState({ hoverPoint })
                                 }
                             }
 

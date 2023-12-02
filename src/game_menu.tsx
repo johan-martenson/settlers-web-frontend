@@ -4,7 +4,7 @@ import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/r
 import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
-import { DEFAULT_SCALE } from './game_render'
+import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './game_render'
 import { sfx } from './sound/sound_effects'
 import { DEFAULT_VOLUME } from './App'
 
@@ -34,12 +34,13 @@ interface GameMenuProps {
     onSetTypingControllerVisible: ((visible: boolean) => void)
     onSetAvailableConstructionVisible: ((visible: boolean) => void)
     onSetMusicVolume: ((volume: number) => void)
+    onSetHeightAdjust: ((heightAdjust: number) => void)
 }
 
 const GameMenu = (
     { minZoom, maxZoom, isOpen, defaultZoom, areTitlesVisible, isMusicPlayerVisible, isTypingControllerVisible, isAvailableConstructionVisible,
         onClose, onChangedZoom, onSetTitlesVisible, onSetMusicPlayerVisible, onSetTypingControllerVisible, onSetAvailableConstructionVisible, onLeaveGame, onStatistics,
-        onHelp, onSetTransportPriority, onSetMusicVolume }: GameMenuProps
+        onHelp, onSetTransportPriority, onSetMusicVolume, onSetHeightAdjust }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
 
@@ -142,6 +143,18 @@ const GameMenu = (
                             onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
                                 onSetMusicVolume(data.value)
                             }} />
+                    </Field>
+
+                    <Field label="Depth">
+                        <Slider
+                        min={0.0}
+                        max={30}
+                        step={0.5}
+                        defaultValue={DEFAULT_HEIGHT_ADJUSTMENT}
+                        onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                            onSetHeightAdjust(data.value)
+                        }}
+                        />
                     </Field>
 
                     <Divider />

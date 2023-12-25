@@ -1576,10 +1576,10 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-breadcrumb@^9.0.4":
-  version "9.0.4"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-breadcrumb/-/react-breadcrumb-9.0.4.tgz#e8a72052e81445f6b65faa0d84d86632455c1503"
-  integrity sha512-CsaWN8htsGPt3Zg/I2JaEASPET69NVHAUPCzvjy3Yx13taIFJGbsjzyGcY4RYwoqEC8dDczN00E1ulnMUrP5gg==
+"@fluentui/react-breadcrumb@^9.0.5":
+  version "9.0.5"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-breadcrumb/-/react-breadcrumb-9.0.5.tgz#83617eabb506c0f0980f639b986a58ee7ca76169"
+  integrity sha512-esPYKQyvE3JBxhUbqFJNM3HGjf5f3QBFucIaA+QKdfIEiSn2PgE3zsgPGlq536ov8kD7jegjOxvE3NNk9Ybn7w==
   dependencies:
     "@fluentui/react-aria" "^9.6.0"
     "@fluentui/react-button" "^9.3.59"
@@ -1638,10 +1638,10 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-combobox@^9.5.35":
-  version "9.5.35"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-combobox/-/react-combobox-9.5.35.tgz#ce7c3e936aca4c2871efb19b22e2e7447d9baa64"
-  integrity sha512-ss7NByESUxO5j6hlrBvOQQzYl1XRM2OHqXU7cQlVilSPyj9K7kDuBoA3kyid7VA2FTfyQlc2ZbWxyfI0VMcYYg==
+"@fluentui/react-combobox@^9.5.36":
+  version "9.5.36"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-combobox/-/react-combobox-9.5.36.tgz#6c91cc0e92e8e79c5ba88edfd91c09c4f106afd3"
+  integrity sha512-XXZ2tFVTF0VLhnGV/5IM/1HNwxbEFc8JlnGpQ/vTdgEFowrlCUz8XDEYDgyWQyC+knlZIqu14JB/3yJGayNEVQ==
   dependencies:
     "@fluentui/keyboard-keys" "^9.0.7"
     "@fluentui/react-context-selector" "^9.1.44"
@@ -1656,20 +1656,20 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-components@^9.43.2":
-  version "9.43.2"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-components/-/react-components-9.43.2.tgz#6dca9f0733722f275ab615d26388b7b1279dfec4"
-  integrity sha512-Z39YwVxxkzUgiLF0U8S/kjBCtWYLtM0pllUYldPD1GdICla7+nP6xlHe5tTcDGpQOPdYa4BEqvOJzEC7f+ZQSg==
+"@fluentui/react-components@^9.43.3":
+  version "9.43.3"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-components/-/react-components-9.43.3.tgz#3ef5f73c0edf71091e1914cd453398a60d9c50c5"
+  integrity sha512-jtahuLDlhUgv/QwnbOkzOQijs9+kY6BW6NNSF0aL3hjD8zkIB0mnYa9ZsRgv8Iq0T/NK4g/1dyR2rEfNFdYpIA==
   dependencies:
     "@fluentui/react-accordion" "^9.3.32"
     "@fluentui/react-alert" "9.0.0-beta.97"
     "@fluentui/react-avatar" "^9.6.2"
     "@fluentui/react-badge" "^9.2.17"
-    "@fluentui/react-breadcrumb" "^9.0.4"
+    "@fluentui/react-breadcrumb" "^9.0.5"
     "@fluentui/react-button" "^9.3.59"
     "@fluentui/react-card" "^9.0.58"
     "@fluentui/react-checkbox" "^9.2.3"
-    "@fluentui/react-combobox" "^9.5.35"
+    "@fluentui/react-combobox" "^9.5.36"
     "@fluentui/react-dialog" "^9.9.1"
     "@fluentui/react-divider" "^9.2.53"
     "@fluentui/react-drawer" "^9.0.5"

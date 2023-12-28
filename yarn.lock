@@ -6641,10 +6641,10 @@ fsevents@^2.3.2, fsevents@~2.3.2:
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.3.tgz#cac6407785d03675a2a5e1a5305c697b347d90d6"
   integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
-fuite@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/fuite/-/fuite-4.0.0.tgz#569d361c25037d82f2d40eb34299da9a0f4387e6"
-  integrity sha512-QWg3x1QIdnuF9I1JjJiu1FP0nwNUWmOIZdLyTSfWiT74QGbcVl7zInoSO+cxDIZcmuC4H90y/EM9RlmR0/neCg==
+fuite@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/fuite/-/fuite-4.0.1.tgz#be289eca5651abe9ed0ceb9810d6e8e635a6092f"
+  integrity sha512-Z9TG31D+AL1cycmR753/beMkEesbuDpNav1qE9ZvmQa8IvCNbiB9+dpo8m2sLPdZ56nxYlctsx/gxwGDnMVpAQ==
   dependencies:
     as-table "^1.0.55"
     atob "^2.1.2"

@@ -33,8 +33,14 @@ const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[
 let loadingPromise: Promise<void> | undefined = undefined
 let websocket: WebSocket | undefined = undefined
 
+let workerWalkingTimer: undefined | NodeJS.Timeout
+let workerAnimationsTimer: undefined | NodeJS.Timeout
+let cropGrowerTimer: undefined | NodeJS.Timeout
+let treeGrowerTimer: undefined | NodeJS.Timeout
+
 // eslint-disable-next-line
-let gameHasExpired = false
+export type GameState = "STARTED" | "PAUSED" | "EXPIRED"
+let gameState: GameState = "STARTED"
 
 type RequestId = number
 
@@ -186,6 +192,7 @@ export interface Monitor {
     addDetailedMonitoring: ((id: HouseId | FlagId) => void)
     removeDetailedMonitoring: ((houseId: HouseId) => void)
     removeMessage: ((messageId: GameMessageId) => void)
+
     listenToFlag: ((flagId: FlagId, listener: FlagListener) => void)
     stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
     listenToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
@@ -193,6 +200,7 @@ export interface Monitor {
     listenToActions: ((listener: ActionListener) => void)
     listenToBurningHouses: ((listener: HouseBurningListener) => void)
     listenToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
+
     setCoalQuotas: ((mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void)
     getCoalQuotas: (() => Promise<CoalQuotas>)
     setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
@@ -203,6 +211,9 @@ export interface Monitor {
     getWaterQuotas: (() => Promise<WaterQuotas>)
     setIronBarQuotas: ((armory: number, metalworks: number) => void)
     getIronBarQuotas: (() => Promise<IronBarQuotas>)
+
+    pauseGame: (() => void)
+    resumeGame: (() => void)
 
     killWebsocket: (() => void)
 }
@@ -259,6 +270,7 @@ const monitor: Monitor = {
     addDetailedMonitoring: addDetailedMonitoring,
     removeDetailedMonitoring: removeDetailedMonitoring,
     removeMessage: removeMessage,
+
     listenToFlag: listenToFlag,
     stopListeningToFlag: stopListeningToFlag,
     listenToAvailableConstruction: listenToAvailableConstruction,
@@ -266,6 +278,7 @@ const monitor: Monitor = {
     listenToActions: listenToActions,
     listenToBurningHouses: listenToBurningHouses,
     listenToMessages: listenToMessages,
+
     setCoalQuotas: setCoalQuotas,
     getCoalQuotas: getCoalQuotas,
     setFoodQuotas: setFoodQuotas,
@@ -276,6 +289,9 @@ const monitor: Monitor = {
     getWaterQuotas: getWaterQuotas,
     setIronBarQuotas: setIronBarQuotas,
     getIronBarQuotas: getIronBarQuotas,
+
+    pauseGame,
+    resumeGame,
 
     killWebsocket: killWebsocket
 }
@@ -368,6 +384,10 @@ interface FullSyncMessage {
     decorations: Decoration[]
 }
 
+interface PauseResumeMessage {
+    gameState: "PAUSED" | "STARTED"
+}
+
 function isFullSyncMessage(message: unknown): message is FullSyncMessage {
     return message !== null &&
         message !== undefined &&
@@ -389,6 +409,10 @@ function isFullSyncMessage(message: unknown): message is FullSyncMessage {
             'deadTrees' in message ||
             'wildAnimals' in message ||
             'decorations' in message)
+}
+
+function isPauseResumeMessage(message: unknown): message is PauseResumeMessage {
+    return message !== null && message !== null && typeof message === 'object' && 'gameState' in message
 }
 
 function isGameChangesMessage(message: unknown): message is ChangesMessage {
@@ -525,8 +549,14 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     websocket.onmessage = (message) => websocketMessageReceived(message)
 
+    // Start timers to run game some logic locally to minimize the communication with the backend
+    startTimers()
+}
+
+function startTimers() {
+
     // Drive worker animations
-    setInterval(async () => {
+    workerAnimationsTimer = setInterval(async () => {
         for (const worker of monitor.workers.values()) {
             if (worker.action && worker.actionAnimationIndex !== undefined) {
                 worker.actionAnimationIndex = worker.actionAnimationIndex + 1
@@ -535,7 +565,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
     }, 300)
 
     // Move workers locally to reduce the amount of messages from the server
-    setInterval(async () => {
+    workerWalkingTimer = setInterval(async () => {
 
         for (const worker of monitor.workers.values()) {
 
@@ -624,10 +654,11 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
                 wildAnimal.betweenPoints = true
             }
         }
+
     }, GAME_TICK_LENGTH / 2)
 
     // Grow the crops locally to avoid the need for the server to send messages when crops change growth state
-    setInterval(() => {
+    cropGrowerTimer = setInterval(() => {
         monitor.crops.forEach(crop => {
             if (crop.state !== 'FULL_GROWN' && crop.state !== 'HARVESTED') {
                 crop.growth = crop.growth + 1
@@ -644,7 +675,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
     }, GAME_TICK_LENGTH * 10)
 
     // Grow the trees locally to minimize the need for messages from the backend
-    setInterval(() => {
+    treeGrowerTimer = setInterval(() => {
         monitor.trees.forEach(tree => {
             if (tree.size !== 'FULL_GROWN') {
                 tree.growth = tree.growth + 1
@@ -672,7 +703,7 @@ function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent
     if (e.code === 1003) {
         console.error("The game has been removed from the backend")
 
-        gameHasExpired = true
+        gameState = "EXPIRED"
     } else {
 
         setTimeout(() => {
@@ -711,12 +742,39 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
             receivedFullSyncMessage(message)
         } else if (isReplyMessage(message)) {
             replies.set(message.requestId, message)
+        } else if (isPauseResumeMessage(message)) {
+            receivedPauseResumeMessage(message)
         }
     } catch (e) {
         console.error(e)
         console.error(JSON.stringify(e))
         console.info(messageFromServer.data)
     }
+}
+
+function receivedPauseResumeMessage(message: PauseResumeMessage): void {
+    console.log("Pause resume message")
+    console.log(message)
+
+    if (message.gameState === 'PAUSED') {
+        gameState = 'PAUSED'
+
+        stopTimers()
+    } else {
+        gameState = 'STARTED'
+
+        startTimers()
+    }
+}
+
+function stopTimers() {
+    const timers = [workerAnimationsTimer, workerWalkingTimer, cropGrowerTimer, treeGrowerTimer]
+
+    timers.forEach(timer => {
+        if (timer) {
+            clearInterval(timer)
+        }
+    })
 }
 
 function receivedFullSyncMessage(message: FullSyncMessage): void {
@@ -1988,10 +2046,25 @@ function setIronBarQuotas(armory: number, metalworks: number) {
     ))
 }
 
+function pauseGame() {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'PAUSE_GAME'
+        }
+    ))
+}
+
+function resumeGame() {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'RESUME_GAME'
+        }
+    ))
+}
+
 export {
     listenToDiscoveredPoints,
     getHeadquarterForPlayer,
-    forceUpdateOfHouse,
     listenToHouse,
     listenToMessages,
     listenToRoads,

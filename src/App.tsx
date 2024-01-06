@@ -211,8 +211,6 @@ class App extends Component<AppProps, AppState> {
             action: async () => {
                 console.log("Building road")
 
-                // TODO: optimize by introducing a method to get information about two points with one call
-
                 /* Get the possible connections from the server and draw them */
                 const pointDownRight = { x: this.state.selected.x + 1, y: this.state.selected.y - 1 }
                 const pointInformations = await monitor.getInformationOnPoints([this.state.selected, pointDownRight])
@@ -340,6 +338,12 @@ class App extends Component<AppProps, AppState> {
             action: () => {
                 this.setState({ showQuotas: true })
             }
+        })
+        this.commands.set("Pause game", {
+            action: () => monitor.pauseGame()
+        })
+        this.commands.set("Resume game", {
+            action: () => monitor.resumeGame()
         })
     }
 

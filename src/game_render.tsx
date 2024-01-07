@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { Direction, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api/types'
 import { Duration } from './duration'
 import './game_render.css'
-import { listenToDiscoveredPoints, listenToRoads, monitor, TileBelow, TileDownRight } from './api/ws-api'
+import { monitor, TileBelow, TileDownRight } from './api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
 import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, UiElementsImageAtlasHandler, Vector, WorkerAnimation } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
@@ -498,7 +498,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Subscribe for new discovered points */
         // eslint-disable-next-line
-        listenToDiscoveredPoints(points => {
+        monitor.listenToDiscoveredPoints(points => {
 
             // Update the calculated normals
             this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
@@ -534,7 +534,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         console.log("Subscribed to changes in discovered points")
 
         /* Subscribe for added and removed roads */
-        listenToRoads(this.updateRoadDrawingBuffers)
+        monitor.listenToRoads(this.updateRoadDrawingBuffers)
 
         console.log("Subscribed to changes in roads")
 
@@ -1337,12 +1337,11 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Collect the stones */
-        for (const [stoneId, stone] of monitor.stones) {
+        for (const stone of monitor.stones.values()) {
             if (stone.x + 1 < minXInGame || stone.x - 1 > maxXInGame || stone.y + 1 < minYInGame || stone.y - 1 > maxYInGame) {
                 continue
             }
 
-            // TODO: pick the right type and size of stone
             const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor(stone.type, stone.amount)
 
             if (stoneDrawInfo) {
@@ -2454,7 +2453,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             getPointUpRight(unadjustedGamePoint)
         ]
 
-        for (let gamePoint of candidates) {
+        for (const gamePoint of candidates) {
             const screenPointCandidate = this.gamePointToScreenPoint(gamePoint)
             const dx = screenPointCandidate.x - screenPoint.x
             const dy = screenPointCandidate.y - screenPoint.y

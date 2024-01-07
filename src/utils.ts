@@ -1767,6 +1767,10 @@ class StoneImageAtlasHandler {
             return undefined
         }
 
+        if (this.imageAtlasInfo === undefined || this.imageAtlasInfo[stoneType] === undefined || this.imageAtlasInfo[stoneType][amount] === undefined || this.imageAtlasInfo[stoneType][amount].image === undefined) {
+            console.log([this.imageAtlasInfo, stoneType, amount])
+        }
+
         const image = this.imageAtlasInfo[stoneType][amount].image
         const shadowImage = this.imageAtlasInfo[stoneType][amount].shadowImage
 

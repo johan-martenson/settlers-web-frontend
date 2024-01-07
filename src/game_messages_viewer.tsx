@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import './game_messages_viewer.css'
-import { listenToMessages, monitor, stopListeningToMessages } from './api/ws-api'
+import { monitor } from './api/ws-api'
 import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
 import { PlayerId, HouseId, Point, GameMessage, Nation, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, isBuildingLostMessage, isBuildingCapturedMessage, isStoreHouseIsReadyMessage, isMilitaryBuildingCausedLostLandMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, GameMessageId } from './api/types'
 import { HouseIcon, WorkerIcon } from './icon'
@@ -37,9 +37,9 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
         }
 
         // Subscribe to received messages
-        listenToMessages(messageReceiver)
+        monitor.listenToMessages(messageReceiver)
 
-        return () => stopListeningToMessages(messageReceiver)
+        return () => monitor.stopListeningToMessages(messageReceiver)
     }, [playerId])
 
     return (

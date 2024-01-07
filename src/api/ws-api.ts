@@ -1,299 +1,13 @@
-import { getHouseInformation, getPlayers, getTerrain, getViewForPlayer } from './rest-api'
+import { getPlayers, getTerrain, getViewForPlayer } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState } from './types'
 
 const GAME_TICK_LENGTH = 200;
-
-interface ActionListener {
-    actionStarted: ((id: string, point: Point, action: WorkerAction) => void)
-    actionEnded: ((id: string, point: Point, action: WorkerAction) => void)
-}
-
-interface HouseBurningListener {
-    houseStartedToBurn: ((id: string, point: Point) => void)
-    houseStoppedBurning: ((id: string, point: Point) => void)
-}
-
-const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)[] = []
-const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
-const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
-const roadListeners: (() => void)[] = []
-const availableConstructionListeners = new PointMapFast<((availableConstruction: AvailableConstruction[]) => void)[]>()
-const actionListeners: ActionListener[] = []
-const houseBurningListeners: HouseBurningListener[] = []
-
-interface FlagListener {
-    onUpdate: ((flag: FlagInformation) => void)
-    onRemove: (() => void)
-}
-
-const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[]>()
-
-let loadingPromise: Promise<void> | undefined = undefined
-let websocket: WebSocket | undefined = undefined
-
-let workerWalkingTimer: undefined | NodeJS.Timeout
-let workerAnimationsTimer: undefined | NodeJS.Timeout
-let cropGrowerTimer: undefined | NodeJS.Timeout
-let treeGrowerTimer: undefined | NodeJS.Timeout
-
-// eslint-disable-next-line
-export type GameState = "STARTED" | "PAUSED" | "EXPIRED"
-let gameState: GameState = "STARTED"
-
-type RequestId = number
-
-interface ReplyMessage {
-    requestId: RequestId
-}
-
-function isReplyMessage(message: unknown): message is ReplyMessage {
-    return message !== undefined &&
-        message !== null &&
-        typeof message === 'object' &&
-        'requestId' in message
-}
-
-interface PointsInformationMessage extends ReplyMessage {
-    pointsWithInformation: PointInformation[]
-}
-
-interface CoalQuotasMessage extends ReplyMessage {
-    mint: number
-    armory: number
-    ironSmelter: number
-}
-
-interface FoodQuotasMessage extends ReplyMessage {
-    ironMine: number
-    coalMine: number
-    goldMine: number
-    graniteMine: number
-}
-
-interface WheatQuotasMessage extends ReplyMessage {
-    donkeyFarm: number
-    pigFarm: number
-    mill: number
-    brewery: number
-}
-
-interface WaterQuotasMessage extends ReplyMessage {
-    bakery: number
-    donkeyFarm: number
-    pigFarm: number
-    brewery: number
-}
-
-interface IronBarQuotasMessage extends ReplyMessage {
-    armory: number
-    metalworks: number
-}
-
-function isInformationOnPointsMessage(message: ReplyMessage): message is PointsInformationMessage {
-    return 'pointsWithInformation' in message
-}
-
-function isCoalQuotasMessage(message: ReplyMessage): message is CoalQuotasMessage {
-    return 'mint' in message && 'armory' in message && 'ironSmelter' in message
-}
-
-function isFoodQuotasMessage(message: ReplyMessage): message is FoodQuotasMessage {
-    return 'ironMine' in message && 'goldMine' in message && 'coalMine' in message && 'graniteMine' in message
-}
-
-function isWheatQuotasMessage(message: ReplyMessage): message is WheatQuotasMessage {
-    return 'donkeyFarm' in message && 'pigFarm' in message && 'mill' in message && 'brewery' in message
-}
-
-function isWaterQuotasMessage(message: ReplyMessage): message is WaterQuotasMessage {
-    return 'bakery' in message && 'donkeyFarm' in message && 'pigFarm' in message && 'brewery' in message
-}
-
-function isIronBarQuotasMessage(message: ReplyMessage): message is IronBarQuotasMessage {
-    return 'armory' in message && 'metalworks' in message
-}
-
-const replies: Map<RequestId, ReplyMessage> = new Map()
-let nextRequestId = 0
 
 interface MonitoredBorderForPlayer {
     color: string
     points: PointSetFast
-}
-
-export interface TileBelow {
-    pointAbove: Point
-    heightDownLeft: number
-    heightDownRight: number
-    heightAbove: number
-    vegetation: VegetationIntegers
-}
-
-export interface TileDownRight {
-    pointLeft: Point
-    heightLeft: number
-    heightDown: number
-    heightRight: number
-    vegetation: VegetationIntegers
-}
-
-export interface Monitor {
-    gameId?: GameId
-    playerId?: PlayerId
-    workers: Map<WorkerId, WorkerInformation>
-    ships: Map<ShipId, ShipInformation>
-    houses: Map<HouseId, HouseInformation>
-    flags: Map<FlagId, FlagInformation>
-    roads: Map<RoadId, RoadInformation>
-    border: Map<PlayerId, MonitoredBorderForPlayer>
-    trees: Map<TreeId, TreeInformationLocal>
-    stones: Map<StoneId, StoneInformation>
-    crops: Map<CropId, CropInformationLocal>
-    discoveredPoints: PointSetFast
-    signs: Map<SignId, SignInformation>
-    players: Map<PlayerId, PlayerInformation>
-    availableConstruction: PointMapFast<AvailableConstruction[]>
-    messages: Map<GameMessageId, GameMessage>
-    allTiles: PointMapFast<TerrainAtPoint>
-    discoveredBelowTiles: Set<TileBelow>
-    discoveredDownRightTiles: Set<TileDownRight>
-    pointsWithBelowTileDiscovered: PointSetFast
-    pointsWithDownRightTileDiscovered: PointSetFast
-    deadTrees: PointSetFast
-    wildAnimals: Map<WildAnimalId, WildAnimalInformation>
-    decorations: PointMapFast<Decoration>
-    localRemovedFlags: Map<FlagId, FlagInformation>
-    localRemovedRoads: Map<RoadId, RoadInformation>
-
-    placeHouse: ((houseType: AnyBuilding, point: Point) => void)
-    placeRoad: ((points: Point[]) => void)
-    placeFlag: ((point: Point) => void)
-    placeRoadWithFlag: ((point: Point, points: Point[]) => void)
-    removeFlag: ((flagId: FlagId) => void)
-    removeRoad: ((roadId: FlagId) => void)
-    removeBuilding: ((houseId: HouseId) => void)
-    isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
-    removeLocalFlag: ((flagId: FlagId) => void)
-    undoRemoveLocalFlag: ((flagId: FlagId) => void)
-    removeLocalRoad: ((roadId: RoadId) => void)
-    undoRemoveLocalRoad: ((roadId: RoadId) => void)
-    getLoadingPromise: (() => Promise<void> | undefined)
-    isGameDataAvailable: (() => boolean)
-    getInformationOnPointLocal: ((point: Point) => PointInformationLocal)
-    getHouseAtPointLocal: ((point: Point) => HouseInformation | undefined)
-    getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
-    callScout: ((point: Point) => void)
-    callGeologist: ((point: Point) => void)
-    placeLocalRoad: ((points: Point[]) => void)
-    getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
-    setReservedSoldiers: ((rank: SoldierType, amount: number) => void)
-    addDetailedMonitoring: ((id: HouseId | FlagId) => void)
-    removeDetailedMonitoring: ((houseId: HouseId) => void)
-    removeMessage: ((messageId: GameMessageId) => void)
-
-    listenToFlag: ((flagId: FlagId, listener: FlagListener) => void)
-    stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
-    listenToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
-    stopListeningToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
-    listenToActions: ((listener: ActionListener) => void)
-    listenToBurningHouses: ((listener: HouseBurningListener) => void)
-    listenToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
-
-    setCoalQuotas: ((mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void)
-    getCoalQuotas: (() => Promise<CoalQuotas>)
-    setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
-    getFoodQuotas: (() => Promise<FoodQuotas>)
-    setWheatQuotas: ((donkeyFarm: number, pigFarm: number, mill: number, brewery: number) => void)
-    getWheatQuotas: (() => Promise<WheatQuotas>)
-    setWaterQuotas: ((bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) => void)
-    getWaterQuotas: (() => Promise<WaterQuotas>)
-    setIronBarQuotas: ((armory: number, metalworks: number) => void)
-    getIronBarQuotas: (() => Promise<IronBarQuotas>)
-
-    pauseGame: (() => void)
-    resumeGame: (() => void)
-
-    killWebsocket: (() => void)
-}
-
-const monitor: Monitor = {
-    workers: new Map<WorkerId, WorkerInformation>(),
-    ships: new Map<ShipId, ShipInformation>(),
-    houses: new Map<HouseId, HouseInformation>(),
-    flags: new Map<FlagId, FlagInformation>(),
-    roads: new Map<RoadId, RoadInformation>(),
-    border: new Map<PlayerId, MonitoredBorderForPlayer>(),
-    trees: new Map<TreeId, TreeInformationLocal>(),
-    stones: new Map<StoneId, StoneInformation>(),
-    crops: new Map<CropId, CropInformationLocal>(),
-    discoveredPoints: new PointSetFast(),
-    signs: new Map<SignId, SignInformation>(),
-    players: new Map<PlayerId, PlayerInformation>(),
-    availableConstruction: new PointMapFast<AvailableConstruction[]>(),
-    messages: new Map<GameMessageId, GameMessage>(),
-    allTiles: new PointMapFast<TerrainAtPoint>(),
-    discoveredBelowTiles: new Set<TileBelow>(),
-    discoveredDownRightTiles: new Set<TileDownRight>(),
-    pointsWithBelowTileDiscovered: new PointSetFast(),
-    pointsWithDownRightTileDiscovered: new PointSetFast(),
-    deadTrees: new PointSetFast(),
-    wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
-    decorations: new PointMapFast<Decoration>(),
-
-    localRemovedFlags: new Map<FlagId, FlagInformation>(),
-    localRemovedRoads: new Map<RoadId, RoadInformation>(),
-
-    placeHouse: placeBuildingWebsocket,
-    placeRoad: placeRoadWebsocket,
-    placeFlag: placeFlagWebsocket,
-    placeRoadWithFlag: placeRoadWithFlagWebsocket,
-    removeFlag: removeFlagWebsocket,
-    removeRoad: removeRoadWebsocket,
-    removeBuilding: removeBuildingWebsocket,
-    isAvailable: isAvailable,
-    removeLocalFlag: removeLocalFlag,
-    undoRemoveLocalFlag: undoRemoveLocalFlag,
-    removeLocalRoad: removeLocalRoad,
-    undoRemoveLocalRoad: undoRemoveLocalRoad,
-    isGameDataAvailable: isGameDataAvailable,
-    getLoadingPromise: getLoadingPromise,
-    getInformationOnPointLocal: getInformationOnPointLocal,
-    getHouseAtPointLocal: getHouseAtPointLocal,
-    getFlagAtPointLocal: getFlagAtPointLocal,
-    callScout: callScoutWebsocket,
-    callGeologist: callGeologistWebsocket,
-    placeLocalRoad: placeLocalRoad,
-    getInformationOnPoints: getInformationOnPoints,
-    setReservedSoldiers: setReservedSoldiers,
-    addDetailedMonitoring: addDetailedMonitoring,
-    removeDetailedMonitoring: removeDetailedMonitoring,
-    removeMessage: removeMessage,
-
-    listenToFlag: listenToFlag,
-    stopListeningToFlag: stopListeningToFlag,
-    listenToAvailableConstruction: listenToAvailableConstruction,
-    stopListeningToAvailableConstruction: stopListeningToAvailableConstruction,
-    listenToActions: listenToActions,
-    listenToBurningHouses: listenToBurningHouses,
-    listenToMessages: listenToMessages,
-
-    setCoalQuotas: setCoalQuotas,
-    getCoalQuotas: getCoalQuotas,
-    setFoodQuotas: setFoodQuotas,
-    getFoodQuotas: getFoodQuotas,
-    setWheatQuotas: setWheatQuotas,
-    getWheatQuotas: getWheatQuotas,
-    setWaterQuotas: setWaterQuotas,
-    getWaterQuotas: getWaterQuotas,
-    setIronBarQuotas: setIronBarQuotas,
-    getIronBarQuotas: getIronBarQuotas,
-
-    pauseGame,
-    resumeGame,
-
-    killWebsocket: killWebsocket
 }
 
 interface WalkerTargetChange {
@@ -388,6 +102,315 @@ interface PauseResumeMessage {
     gameState: "PAUSED" | "STARTED"
 }
 
+interface ActionListener {
+    actionStarted: ((id: string, point: Point, action: WorkerAction) => void)
+    actionEnded: ((id: string, point: Point, action: WorkerAction) => void)
+}
+
+interface HouseBurningListener {
+    houseStartedToBurn: ((id: string, point: Point) => void)
+    houseStoppedBurning: ((id: string, point: Point) => void)
+}
+
+interface FlagListener {
+    onUpdate: ((flag: FlagInformation) => void)
+    onRemove: (() => void)
+}
+
+interface ReplyMessage {
+    requestId: RequestId
+}
+
+interface PointsInformationMessage extends ReplyMessage {
+    pointsWithInformation: PointInformation[]
+}
+
+interface CoalQuotasMessage extends ReplyMessage {
+    mint: number
+    armory: number
+    ironSmelter: number
+}
+
+interface FoodQuotasMessage extends ReplyMessage {
+    ironMine: number
+    coalMine: number
+    goldMine: number
+    graniteMine: number
+}
+
+interface WheatQuotasMessage extends ReplyMessage {
+    donkeyFarm: number
+    pigFarm: number
+    mill: number
+    brewery: number
+}
+
+interface WaterQuotasMessage extends ReplyMessage {
+    bakery: number
+    donkeyFarm: number
+    pigFarm: number
+    brewery: number
+}
+
+interface IronBarQuotasMessage extends ReplyMessage {
+    armory: number
+    metalworks: number
+}
+
+export interface TileBelow {
+    pointAbove: Point
+    heightDownLeft: number
+    heightDownRight: number
+    heightAbove: number
+    vegetation: VegetationIntegers
+}
+
+export interface TileDownRight {
+    pointLeft: Point
+    heightLeft: number
+    heightDown: number
+    heightRight: number
+    vegetation: VegetationIntegers
+}
+
+export interface Monitor {
+    gameId?: GameId
+    playerId?: PlayerId
+    workers: Map<WorkerId, WorkerInformation>
+    ships: Map<ShipId, ShipInformation>
+    houses: Map<HouseId, HouseInformation>
+    flags: Map<FlagId, FlagInformation>
+    roads: Map<RoadId, RoadInformation>
+    border: Map<PlayerId, MonitoredBorderForPlayer>
+    trees: Map<TreeId, TreeInformationLocal>
+    stones: Map<StoneId, StoneInformation>
+    crops: Map<CropId, CropInformationLocal>
+    discoveredPoints: PointSetFast
+    signs: Map<SignId, SignInformation>
+    players: Map<PlayerId, PlayerInformation>
+    availableConstruction: PointMapFast<AvailableConstruction[]>
+    messages: Map<GameMessageId, GameMessage>
+    allTiles: PointMapFast<TerrainAtPoint>
+    discoveredBelowTiles: Set<TileBelow>
+    discoveredDownRightTiles: Set<TileDownRight>
+    pointsWithBelowTileDiscovered: PointSetFast
+    pointsWithDownRightTileDiscovered: PointSetFast
+    deadTrees: PointSetFast
+    wildAnimals: Map<WildAnimalId, WildAnimalInformation>
+    decorations: PointMapFast<Decoration>
+    localRemovedFlags: Map<FlagId, FlagInformation>
+    localRemovedRoads: Map<RoadId, RoadInformation>
+    gameState: GameState
+
+    placeHouse: ((houseType: AnyBuilding, point: Point) => void)
+    placeRoad: ((points: Point[]) => void)
+    placeFlag: ((point: Point) => void)
+    placeRoadWithFlag: ((point: Point, points: Point[]) => void)
+    placeLocalRoad: ((points: Point[]) => void)
+
+    removeFlag: ((flagId: FlagId) => void)
+    removeRoad: ((roadId: FlagId) => void)
+    removeBuilding: ((houseId: HouseId) => void)
+    removeLocalRoad: ((roadId: RoadId) => void)
+    removeDetailedMonitoring: ((houseId: HouseId) => void)
+    removeMessage: ((messageId: GameMessageId) => void)
+
+    undoRemoveLocalRoad: ((roadId: RoadId) => void)
+
+    isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
+    isGameDataAvailable: (() => boolean)
+
+    getLoadingPromise: (() => Promise<void> | undefined)
+    getInformationOnPointLocal: ((point: Point) => PointInformationLocal)
+    getHouseAtPointLocal: ((point: Point) => HouseInformation | undefined)
+    getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
+    getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
+
+    callScout: ((point: Point) => void)
+    callGeologist: ((point: Point) => void)
+
+    setReservedSoldiers: ((rank: SoldierType, amount: number) => void)
+
+    addDetailedMonitoring: ((id: HouseId | FlagId) => void)
+
+    listenToFlag: ((flagId: FlagId, listener: FlagListener) => void)
+    listenToGameState: ((listener: (gameState: GameState) => void) => void)
+    listenToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
+    listenToActions: ((listener: ActionListener) => void)
+    listenToBurningHouses: ((listener: HouseBurningListener) => void)
+    listenToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
+    listenToDiscoveredPoints: ((listener: ((points: PointSetFast) => void)) => void)
+    listenToRoads: ((listener: (() => void)) => void)
+    listenToHouse: ((houseId: HouseId, houseListenerFn: (house: HouseInformation) => void) => void)
+
+    stopListeningToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
+    stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
+    stopListeningToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
+
+    setCoalQuotas: ((mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void)
+    setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
+    setWheatQuotas: ((donkeyFarm: number, pigFarm: number, mill: number, brewery: number) => void)
+    setWaterQuotas: ((bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) => void)
+    setIronBarQuotas: ((armory: number, metalworks: number) => void)
+
+    getCoalQuotas: (() => Promise<CoalQuotas>)
+    getFoodQuotas: (() => Promise<FoodQuotas>)
+    getWheatQuotas: (() => Promise<WheatQuotas>)
+    getWaterQuotas: (() => Promise<WaterQuotas>)
+    getIronBarQuotas: (() => Promise<IronBarQuotas>)
+
+    pauseGame: (() => void)
+    resumeGame: (() => void)
+
+    killWebsocket: (() => void)
+}
+
+const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)[] = []
+const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
+const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
+const roadListeners: (() => void)[] = []
+const availableConstructionListeners = new PointMapFast<((availableConstruction: AvailableConstruction[]) => void)[]>()
+const actionListeners: ActionListener[] = []
+const houseBurningListeners: HouseBurningListener[] = []
+const gameStateListeners: ((gameState: GameState) => void)[] = []
+
+const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[]>()
+
+let loadingPromise: Promise<void> | undefined = undefined
+let websocket: WebSocket | undefined = undefined
+
+let workerWalkingTimer: undefined | NodeJS.Timeout
+let workerAnimationsTimer: undefined | NodeJS.Timeout
+let cropGrowerTimer: undefined | NodeJS.Timeout
+let treeGrowerTimer: undefined | NodeJS.Timeout
+
+type RequestId = number
+
+function isReplyMessage(message: unknown): message is ReplyMessage {
+    return message !== undefined &&
+        message !== null &&
+        typeof message === 'object' &&
+        'requestId' in message
+}
+
+function isInformationOnPointsMessage(message: ReplyMessage): message is PointsInformationMessage {
+    return 'pointsWithInformation' in message
+}
+
+function isCoalQuotasMessage(message: ReplyMessage): message is CoalQuotasMessage {
+    return 'mint' in message && 'armory' in message && 'ironSmelter' in message
+}
+
+function isFoodQuotasMessage(message: ReplyMessage): message is FoodQuotasMessage {
+    return 'ironMine' in message && 'goldMine' in message && 'coalMine' in message && 'graniteMine' in message
+}
+
+function isWheatQuotasMessage(message: ReplyMessage): message is WheatQuotasMessage {
+    return 'donkeyFarm' in message && 'pigFarm' in message && 'mill' in message && 'brewery' in message
+}
+
+function isWaterQuotasMessage(message: ReplyMessage): message is WaterQuotasMessage {
+    return 'bakery' in message && 'donkeyFarm' in message && 'pigFarm' in message && 'brewery' in message
+}
+
+function isIronBarQuotasMessage(message: ReplyMessage): message is IronBarQuotasMessage {
+    return 'armory' in message && 'metalworks' in message
+}
+
+const replies: Map<RequestId, ReplyMessage> = new Map()
+let nextRequestId = 0
+
+const monitor: Monitor = {
+    workers: new Map<WorkerId, WorkerInformation>(),
+    ships: new Map<ShipId, ShipInformation>(),
+    houses: new Map<HouseId, HouseInformation>(),
+    flags: new Map<FlagId, FlagInformation>(),
+    roads: new Map<RoadId, RoadInformation>(),
+    border: new Map<PlayerId, MonitoredBorderForPlayer>(),
+    trees: new Map<TreeId, TreeInformationLocal>(),
+    stones: new Map<StoneId, StoneInformation>(),
+    crops: new Map<CropId, CropInformationLocal>(),
+    discoveredPoints: new PointSetFast(),
+    signs: new Map<SignId, SignInformation>(),
+    players: new Map<PlayerId, PlayerInformation>(),
+    availableConstruction: new PointMapFast<AvailableConstruction[]>(),
+    messages: new Map<GameMessageId, GameMessage>(),
+    allTiles: new PointMapFast<TerrainAtPoint>(),
+    discoveredBelowTiles: new Set<TileBelow>(),
+    discoveredDownRightTiles: new Set<TileDownRight>(),
+    pointsWithBelowTileDiscovered: new PointSetFast(),
+    pointsWithDownRightTileDiscovered: new PointSetFast(),
+    deadTrees: new PointSetFast(),
+    wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
+    decorations: new PointMapFast<Decoration>(),
+    gameState: 'STARTED',
+
+    localRemovedFlags: new Map<FlagId, FlagInformation>(),
+    localRemovedRoads: new Map<RoadId, RoadInformation>(),
+
+    placeHouse: placeBuildingWebsocket,
+    placeRoad: placeRoadWebsocket,
+    placeFlag: placeFlagWebsocket,
+    placeRoadWithFlag: placeRoadWithFlagWebsocket,
+    placeLocalRoad,
+
+    removeFlag: removeFlagWebsocket,
+    removeRoad: removeRoadWebsocket,
+    removeBuilding: removeBuildingWebsocket,
+    removeLocalRoad,
+    removeMessage,
+
+    undoRemoveLocalRoad,
+
+    isAvailable,
+    isGameDataAvailable,
+    getLoadingPromise,
+    getInformationOnPointLocal,
+    getHouseAtPointLocal,
+    getFlagAtPointLocal,
+    getInformationOnPoints,
+
+    callScout: callScoutWebsocket,
+    callGeologist: callGeologistWebsocket,
+
+    setReservedSoldiers,
+
+    addDetailedMonitoring,
+
+    removeDetailedMonitoring,
+
+    listenToGameState,
+    listenToFlag,
+    listenToAvailableConstruction,
+    listenToActions,
+    listenToBurningHouses,
+    listenToMessages,
+    listenToDiscoveredPoints,
+    listenToRoads,
+    listenToHouse,
+
+    stopListeningToFlag,
+    stopListeningToAvailableConstruction,
+    stopListeningToMessages,
+
+    setCoalQuotas,
+    setFoodQuotas,
+    setWheatQuotas,
+    setWaterQuotas,
+    setIronBarQuotas,
+
+    getFoodQuotas,
+    getWheatQuotas,
+    getWaterQuotas,
+    getIronBarQuotas,
+    getCoalQuotas,
+
+    pauseGame,
+    resumeGame,
+
+    killWebsocket
+}
+
 function isFullSyncMessage(message: unknown): message is FullSyncMessage {
     return message !== null &&
         message !== undefined &&
@@ -467,6 +490,10 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     /* Get initial game data to then continuously monitor */
     const view = await getViewForPlayer(gameId, playerId)
+
+    if (view.gameState === 'PAUSED') {
+        monitor.gameState = 'PAUSED'
+    }
 
     view.availableConstruction.forEach((availableAtPoint, point) => monitor.availableConstruction.set(point, availableAtPoint))
 
@@ -703,7 +730,7 @@ function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent
     if (e.code === 1003) {
         console.error("The game has been removed from the backend")
 
-        gameState = "EXPIRED"
+        monitor.gameState = "EXPIRED"
     } else {
 
         setTimeout(() => {
@@ -753,18 +780,17 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
 }
 
 function receivedPauseResumeMessage(message: PauseResumeMessage): void {
-    console.log("Pause resume message")
-    console.log(message)
-
     if (message.gameState === 'PAUSED') {
-        gameState = 'PAUSED'
+        monitor.gameState = 'PAUSED'
 
         stopTimers()
     } else {
-        gameState = 'STARTED'
+        monitor.gameState = 'STARTED'
 
         startTimers()
     }
+
+    gameStateListeners.forEach(listener => listener(message.gameState))
 }
 
 function stopTimers() {
@@ -1336,16 +1362,6 @@ function notifyHouseListeners(houses: HouseInformation[]): void {
     }
 }
 
-async function forceUpdateOfHouse(houseId: HouseId): Promise<void> {
-    if (monitor.gameId && monitor.playerId) {
-        const house = await getHouseInformation(houseId, monitor.gameId, monitor.playerId)
-
-        monitor.houses.set(house.id, house)
-
-        notifyHouseListeners([house])
-    }
-}
-
 function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefined {
     let headquarter
 
@@ -1412,26 +1428,6 @@ function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
     }
 
     return false
-}
-
-function removeLocalFlag(flagId: FlagId): void {
-    const flag = monitor.flags.get(flagId)
-
-    if (flag !== undefined) {
-        monitor.localRemovedFlags.set(flagId, flag)
-
-        monitor.flags.delete(flagId)
-    }
-}
-
-function undoRemoveLocalFlag(flagId: FlagId): void {
-    const flagToRestore = monitor.localRemovedFlags.get(flagId)
-
-    if (flagToRestore !== undefined) {
-        monitor.flags.set(flagToRestore.id, flagToRestore)
-
-        monitor.localRemovedFlags.delete(flagId)
-    }
 }
 
 function removeLocalRoad(roadId: RoadId): void {
@@ -1796,6 +1792,10 @@ function listenToActions(listener: ActionListener) {
     actionListeners.push(listener)
 }
 
+function listenToGameState(listener: ((gameState: GameState) => void)) {
+    gameStateListeners.push(listener)
+}
+
 function listenToBurningHouses(listener: HouseBurningListener) {
     houseBurningListeners.push(listener)
 }
@@ -2063,14 +2063,7 @@ function resumeGame() {
 }
 
 export {
-    listenToDiscoveredPoints,
     getHeadquarterForPlayer,
-    listenToHouse,
-    listenToMessages,
-    listenToRoads,
     startMonitoringGame,
-    placeBuildingWebsocket,
-    placeFlagWebsocket,
-    stopListeningToMessages,
     monitor
 }

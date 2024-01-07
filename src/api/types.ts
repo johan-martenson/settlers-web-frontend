@@ -504,6 +504,8 @@ export interface Decoration {
     decoration: DecorationType
 }
 
+export type GameState = "STARTED" | "PAUSED" | "EXPIRED"
+
 export interface PlayerViewInformation {
     borders: BorderInformation[]
     houses: HouseInformation[]
@@ -520,6 +522,7 @@ export interface PlayerViewInformation {
     deadTrees: Point[]
     decorations: Decoration[]
     messages: GameMessage[]
+    gameState: GameState
 }
 
 export interface PossibleNewRoadInformation {

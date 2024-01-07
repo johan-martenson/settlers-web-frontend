@@ -7,6 +7,7 @@ import './game_menu.css'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './game_render'
 import { sfx } from './sound/sound_effects'
 import { DEFAULT_VOLUME } from './App'
+import { monitor } from './api/ws-api'
 
 interface GameMenuProps {
     gameId: GameId
@@ -156,6 +157,14 @@ const GameMenu = (
                         }}
                         />
                     </Field>
+
+                    {monitor.gameState === 'STARTED' &&
+                        <Button onClick={() => monitor.pauseGame()} >Pause</Button>
+                    }
+
+                    {monitor.gameState === 'PAUSED' &&
+                        <Button onClick={() => monitor.resumeGame()} >Resume</Button>
+                    }
 
                     <Divider />
 

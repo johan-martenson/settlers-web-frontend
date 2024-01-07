@@ -6,7 +6,7 @@ import './house_info.css'
 import { HeadquarterInfo } from "./headquarter"
 import { attackBuilding, houseIsReady, isMilitaryBuilding, pauseProductionForHouse, removeHouse, resumeProductionForHouse } from "../api/rest-api"
 import { MilitaryBuilding } from "./military_building"
-import { listenToHouse, monitor } from '../api/ws-api'
+import {  monitor } from '../api/ws-api'
 
 interface HouseInfoProps {
     house: HouseInformation
@@ -31,7 +31,7 @@ const HouseInfo = (props: HouseInfoProps) => {
     useEffect(() => {
 
         // Start monitoring when the component is mounted
-        listenToHouse(house.id, (house: HouseInformation) => setHouse(house))
+        monitor.listenToHouse(house.id, (house: HouseInformation) => setHouse(house))
 
         monitor.addDetailedMonitoring(house.id)
 

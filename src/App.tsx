@@ -15,7 +15,7 @@ import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import { TypeControl, Command } from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket, screenPointToGamePoint } from './utils'
-import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation } from './api/types'
+import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState } from './api/types'
 import { Dismiss24Filled, CalendarAgenda24Regular, TextBulletListSquare24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon } from './icon'
 import { HouseInfo } from './house_info/house_info'
@@ -65,6 +65,34 @@ interface ShowEnemyHouseInfo {
     house: HouseInformation
 }
 
+interface PauseSignProps {
+    message: string
+}
+
+const PauseSign = ({message}: PauseSignProps) => {
+
+    return (
+        <div style={{
+            position: "absolute",
+            left: "0",
+            right: "0",
+            top: "50%",
+            fontSize: "5rem",
+            color: "white",
+            height: "auto",
+            lineHeight: "8rem",
+            display: "flex",
+            justifyContent: "center"
+        }}>
+            <div style={{
+                backgroundColor: "black", borderRadius: "5px"
+            }}>
+                {message}
+            </div>
+        </div>
+    )
+}
+
 interface AppProps {
     selfPlayerId: PlayerId
     gameId: GameId
@@ -104,6 +132,7 @@ interface AppState {
     showTitles: boolean
     showAvailableConstruction: boolean
     showSetTransportPriority: boolean
+    gameState: GameState
 
     serverUnreachable?: string
 
@@ -179,7 +208,8 @@ class App extends Component<AppProps, AppState> {
             isMusicPlayerVisible: true,
             isTypingControllerVisible: true,
             musicVolume: 1,
-            heightAdjust: DEFAULT_HEIGHT_ADJUSTMENT
+            heightAdjust: DEFAULT_HEIGHT_ADJUSTMENT,
+            gameState: 'STARTED'
         }
 
         /* Set up type control commands */
@@ -345,6 +375,9 @@ class App extends Component<AppProps, AppState> {
         this.commands.set("Resume game", {
             action: () => monitor.resumeGame()
         })
+
+        // Listen to the game state
+        monitor.listenToGameState((gameState: GameState) => this.setState({gameState}))
     }
 
     toggleDetails(): void {
@@ -531,7 +564,7 @@ class App extends Component<AppProps, AppState> {
         globalSyncState.mouseMoving = false
     }
 
-    componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>, snapshot?: any): void {
+    componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>): void {
         if (prevState.translateX !== this.state.translateX || prevState.translateY !== this.state.translateY) {
             const upperLeftGamePoint = screenPointToGamePoint({ x: 0, y: 0 }, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
             const lowerRightGamePoint = screenPointToGamePoint({ x: globalSyncState.width, y: globalSyncState.height }, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
@@ -1146,6 +1179,10 @@ class App extends Component<AppProps, AppState> {
 
                 {this.state.isMusicPlayerVisible &&
                     <MusicPlayer volume={this.state.musicVolume} />
+                }
+
+                {this.state.gameState === 'PAUSED' &&
+                    <PauseSign message='PAUSED'/>
                 }
 
             </div>

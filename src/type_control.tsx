@@ -92,7 +92,7 @@ const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlP
                 return { input: action.payload }
             case "add":
                 return { input: state.input + action.payload }
-            case "run":
+            case "run": {
                 let commandHit = undefined
 
                 for (const command of Array.from(commands.keys())) {
@@ -111,6 +111,7 @@ const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlP
                 }
 
                 return { input: '' }
+            }
         }
     }
 

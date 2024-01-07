@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useState } from 'react'
 import { GameId, PlayerId } from './api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
-import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option } from '@fluentui/react-components'
+import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option, SelectionEvents, OptionOnSelectData } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './game_render'
@@ -73,7 +73,7 @@ const GameMenu = (
                         }} >Reset</Button>
                     </Field>
                     <Field label='Set game speed'>
-                        <Dropdown defaultValue={"Normal"} onOptionSelect={(event: any, data: any) => console.log("Select new game speed: " + data.optionValue)}>
+                        <Dropdown defaultValue={"Normal"} onOptionSelect={(event: SelectionEvents, data: OptionOnSelectData) => console.log("Select new game speed: " + data.optionValue)}>
                             <Option>Fast</Option>
                             <Option>Normal</Option>
                             <Option>Slow</Option>

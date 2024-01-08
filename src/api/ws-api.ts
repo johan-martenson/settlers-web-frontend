@@ -225,6 +225,7 @@ export interface Monitor {
     getHouseAtPointLocal: ((point: Point) => HouseInformation | undefined)
     getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
     getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
+    getHeight: ((point: Point) => number)
 
     callScout: ((point: Point) => void)
     callGeologist: ((point: Point) => void)
@@ -369,6 +370,7 @@ const monitor: Monitor = {
     getHouseAtPointLocal,
     getFlagAtPointLocal,
     getInformationOnPoints,
+    getHeight,
 
     callScout: callScoutWebsocket,
     callGeologist: callGeologistWebsocket,
@@ -2060,6 +2062,10 @@ function resumeGame() {
             command: 'RESUME_GAME'
         }
     ))
+}
+
+function getHeight(point: Point): number {
+    return monitor.allTiles.get(point)?.height ?? 0
 }
 
 export {

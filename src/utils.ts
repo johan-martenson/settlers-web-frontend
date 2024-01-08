@@ -1341,6 +1341,46 @@ class RoadBuildingImageAtlasHandler {
             texture: this.texture
         }
     }
+
+    getDrawingInformationForConnectionAbove(difference: 'LITTLE' | 'MEDIUM' | 'HIGH'): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const connectionInfo = this.imageAtlasInfo.upwardsConnections[difference]
+
+        return {
+            sourceX: connectionInfo.x,
+            sourceY: connectionInfo.y,
+            width: connectionInfo.width,
+            height: connectionInfo.height,
+            offsetX: connectionInfo.offsetX,
+            offsetY: connectionInfo.offsetY,
+            image: this.image,
+            texture: this.texture
+        }
+
+    }
+
+    getDrawingInformationForConnectionBelow(difference: 'LITTLE' | 'MEDIUM' | 'HIGH'): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const connectionInfo = this.imageAtlasInfo.downwardsConnections[difference]
+
+        return {
+            sourceX: connectionInfo.x,
+            sourceY: connectionInfo.y,
+            width: connectionInfo.width,
+            height: connectionInfo.height,
+            offsetX: connectionInfo.offsetX,
+            offsetY: connectionInfo.offsetY,
+            image: this.image,
+            texture: this.texture
+        }
+
+    }
 }
 
 interface TreeImageAtlasFormat {
@@ -1822,7 +1862,6 @@ class DecorationsImageAtlasHandler {
     }
 
     makeTexture(gl: WebGL2RenderingContext): void {
-
         if (this.image) {
             this.texture = makeTextureFromImage(gl, this.image)
         } else {

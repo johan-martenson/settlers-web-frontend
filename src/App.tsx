@@ -869,11 +869,13 @@ class App extends Component<AppProps, AppState> {
             if (this.state.activeMenu) {
                 this.closeActiveMenu()
 
-                /* Stop building a new road */
+            /* Stop building a new road */
             } else if (this.state.newRoad) {
                 this.setState({ newRoad: undefined, possibleRoadConnections: [] })
 
-                /* Otherwise, send the escape to the type controller */
+                monitor.removeLocalRoad("LOCAL")
+
+            /* Otherwise, send the escape to the type controller */
             } else {
                 const keyEvent = new CustomEvent("key", { detail: { key: event.key } })
 

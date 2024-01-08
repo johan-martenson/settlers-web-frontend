@@ -17,7 +17,7 @@
 18. Add remaining gravel after a stone has been fully removed as a decoration
 19. Use different road building icons depending on height difference
 20. Add terrain overlaps to make the nature look smoother. Start with snow.
-21. Add possibility to pause an ongoing game.
+
 
 
 Done
@@ -31,3 +31,4 @@ Done
 6. Remove "visibleTrees" handling now that fog of war is implemented
 1. Bug where expanding the border doesn't update the available construction properly. Flags closest to the old border remained Flags. Diagonal down-right
 8. Shift rendering slightly based on height
+21. Add possibility to pause an ongoing game.

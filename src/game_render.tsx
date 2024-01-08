@@ -882,7 +882,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const width = this.normalCanvasRef.current.width
         const height = this.normalCanvasRef.current.height
 
-        this.gl?.viewport(0, 0, width, height)
+        // Make sure gl is available
+        if (this.gl === undefined) {
+            console.error("Gl is not available")
+
+            return
+        }
+
+        this.gl.viewport(0, 0, width, height)
 
         /* Clear the drawing list */
         const toDrawNormal: ToDraw[] = []
@@ -931,8 +938,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the terrain layer */
-        if (this.gl &&
-            this.drawGroundProgram &&
+        if (this.drawGroundProgram &&
             this.mapRenderInformation &&
             this.drawGroundScreenWidthUniformLocation !== undefined &&
             this.drawGroundScreenHeightUniformLocation !== undefined &&
@@ -1014,8 +1020,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         })
 
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (this.gl &&
-            this.drawImageProgram &&
+        if (this.drawImageProgram &&
             this.drawImagePositionBuffer &&
             this.drawImageTexCoordBuffer &&
             this.drawImageHeightAdjustmentLocation &&
@@ -1070,7 +1075,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                     gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
                     gl.uniform1f(this.drawImageHeightAdjustmentLocation, this.props.heightAdjust)
-                    gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+                    gl.uniform1f(this.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
 
                     // Draw the quad (2 triangles = 6 vertices)
                     gl.drawArrays(gl.TRIANGLES, 0, 6)
@@ -1082,7 +1087,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the road layer */
-        if (this.gl && this.drawGroundProgram && this.mapRenderInformation &&
+        if (this.drawGroundProgram && this.mapRenderInformation &&
             this.drawGroundScreenWidthUniformLocation !== undefined &&
             this.drawGroundScreenHeightUniformLocation !== undefined &&
             this.drawGroundLightVectorUniformLocation !== undefined &&
@@ -1140,8 +1145,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         duration.after("draw roads")
 
-
-        const ctx = overlayCtx
 
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
@@ -1836,7 +1839,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     toDrawNormal.push({
                         source: cargoDrawInfo,
                         gamePoint: { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 },
-                        height: monitor.allTiles.get(flag)?.height ?? 0
+                        height: monitor.getHeight(flag)
                     })
                 }
 
@@ -1849,7 +1852,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             gamePoint: { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 },
-                            height: monitor.allTiles.get(flag)?.height ?? 0
+                            height: monitor.getHeight(flag)
                         })
                     }
                 }
@@ -1863,7 +1866,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 },
-                            height: monitor.allTiles.get(flag)?.height ?? 0
+                            height: monitor.getHeight(flag)
                         })
                     }
                 }
@@ -1936,8 +1939,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Set up webgl2 with the right shaders to prepare for drawing shadows
-        if (this.gl &&
-            this.drawShadowProgram &&
+        if (this.drawShadowProgram &&
             this.drawImagePositionBuffer &&
             this.drawImageTexCoordBuffer &&
             this.drawShadowHeightAdjustmentUniformLocation !== undefined &&
@@ -1999,7 +2001,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (shadow.height !== undefined) {
                     this.gl.uniform1f(this.drawShadowHeightUniformLocation, shadow.height)
                 } else {
-                    this.gl.uniform1f(this.drawShadowHeightUniformLocation, monitor.allTiles.get(shadow.gamePoint)?.height ?? 0)
+                    this.gl.uniform1f(this.drawShadowHeightUniformLocation, monitor.getHeight(shadow.gamePoint))
                 }
 
                 // Draw the quad (2 triangles = 6 vertices)
@@ -2008,8 +2010,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (this.gl &&
-            this.drawImageProgram &&
+        if (this.drawImageProgram &&
             this.drawImageHeightAdjustmentLocation &&
             this.drawImageHeightLocation &&
             this.drawImagePositionBuffer &&
@@ -2070,7 +2071,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (draw.height !== undefined) {
                     this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
                 } else {
-                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
                 }
 
                 // Draw the quad (2 triangles = 6 vertices)
@@ -2094,18 +2095,43 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     source: startPointInfo,
                     gamePoint: center
                 })
-            }
 
-            this.props.possibleRoadConnections.forEach(
-                (point) => {
-                    const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
+                const centerHeight = monitor.getHeight(center)
 
-                    toDrawHover.push({
-                        source: startPointInfo,
-                        gamePoint: point
-                    })
+                const differenceToLevel = (a: number, b: number) => {
+                    const diff = Math.abs(a - b)
+
+                    if (diff === 1) {
+                        return 'LITTLE'
+                    } else if (diff == 2) {
+                        return 'MEDIUM'
+                    } else {
+                        return 'HIGH'
+                    }
                 }
-            )
+
+                this.props.possibleRoadConnections.forEach(
+                    (point) => {
+                        if (this.props.newRoad?.find(newRoadPoint => newRoadPoint.x === point.x && newRoadPoint.y === point.y) === undefined) {
+                            const height = monitor.getHeight(point)
+                            let startPointInfo
+
+                            if (height > centerHeight) {
+                                startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForConnectionAbove(differenceToLevel(height, centerHeight))
+                            } else if (height < centerHeight) {
+                                startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForConnectionBelow(differenceToLevel(height, centerHeight))
+                            } else {
+                                startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
+                            }
+
+                            toDrawHover.push({
+                                source: startPointInfo,
+                                gamePoint: point
+                            })
+                        }
+                    }
+                )
+            }
         }
 
         duration.after("collect possible road connections")
@@ -2179,8 +2205,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Draw the overlay layer. Assume for now that they don't need sorting
 
         // Set up webgl2 with the right shaders
-        if (this.gl &&
-            this.drawImageProgram &&
+        if (this.drawImageProgram &&
             this.drawImageHeightAdjustmentLocation !== undefined &&
             this.drawImageHeightLocation !== undefined &&
             this.drawImagePositionBuffer &&
@@ -2243,7 +2268,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (draw.height !== undefined) {
                     this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
                 } else {
-                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.allTiles.get(draw.gamePoint)?.height ?? 0)
+                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
                 }
 
                 // Draw the quad (2 triangles = 6 vertices)
@@ -2257,9 +2282,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw house titles */
         if (this.props.showHouseTitles) {
 
-            ctx.font = "bold 12px sans-serif"
-            ctx.strokeStyle = 'black'
-            ctx.fillStyle = 'yellow'
+            overlayCtx.font = "bold 12px sans-serif"
+            overlayCtx.strokeStyle = 'black'
+            overlayCtx.fillStyle = 'yellow'
 
             for (const house of monitor.houses.values()) {
 
@@ -2285,13 +2310,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     houseTitle = houseTitle + " (" + house.productivity + "%)"
                 }
 
-                const widthOffset = ctx.measureText(houseTitle).width / 2
+                const widthOffset = overlayCtx.measureText(houseTitle).width / 2
 
                 screenPoint.x -= widthOffset
                 screenPoint.y -= heightOffset
 
-                ctx.strokeText(houseTitle, screenPoint.x, screenPoint.y - 5)
-                ctx.fillText(houseTitle, screenPoint.x, screenPoint.y - 5)
+                overlayCtx.strokeText(houseTitle, screenPoint.x, screenPoint.y - 5)
+                overlayCtx.fillText(houseTitle, screenPoint.x, screenPoint.y - 5)
             }
         }
 
@@ -2299,7 +2324,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Fill in the buffers to draw fog of war
-        if (this.gl && this.fogOfWarCoordBuffer && this.fogOfWarIntensityBuffer) {
+        if (this.fogOfWarCoordBuffer && this.fogOfWarIntensityBuffer) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.fogOfWarCoordinates), this.gl.STATIC_DRAW)
 
@@ -2308,8 +2333,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         /* Draw the fog of war layer */
-        if (this.gl &&
-            this.fogOfWarRenderProgram &&
+        if (this.fogOfWarRenderProgram &&
             this.fogOfWarScreenWidthUniformLocation !== undefined &&
             this.fogOfWarScreenHeightUniformLocation !== undefined &&
             this.fogOfWarScaleUniformLocation !== undefined &&
@@ -2363,15 +2387,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.props.showFpsCounter && this.previousTimestamp) {
             const fps = getLatestValueForVariable("GameRender::renderGame.total")
 
-            ctx.fillStyle = 'white'
-            ctx.fillRect(width - 100, 5, 100, 60)
+            overlayCtx.fillStyle = 'white'
+            overlayCtx.fillRect(width - 100, 5, 100, 60)
 
-            ctx.closePath()
+            overlayCtx.closePath()
 
-            ctx.fillStyle = 'black'
-            ctx.fillText("" + fps, width - 100, 20)
+            overlayCtx.fillStyle = 'black'
+            overlayCtx.fillText("" + fps, width - 100, 20)
 
-            ctx.fillText("" + getAverageValueForVariable("GameRender::renderGame.total"), width - 100, 40)
+            overlayCtx.fillText("" + getAverageValueForVariable("GameRender::renderGame.total"), width - 100, 40)
         }
 
         this.previousTimestamp = timestamp
@@ -2380,7 +2404,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     gamePointToScreenPoint(gamePoint: Point): ScreenPoint {
-        const height = monitor.allTiles.get(gamePoint)?.height ?? 0
+        const height = monitor.getHeight(gamePoint)
 
         return gamePointToScreenPoint(
             gamePoint,
@@ -2770,8 +2794,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 // Handle horizontal roads
                 if (previous.y === point.y) {
-                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
-                    const height1 = monitor.allTiles.get(point)?.height ?? 0
+                    const height0 = monitor.getHeight(previous)
+                    const height1 = monitor.getHeight(point)
 
                     Array.prototype.push.apply(
                         coordinates,
@@ -2823,8 +2847,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road up-right
                 } else if (previous.x < point.x && previous.y < point.y) {
-                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
-                    const height1 = monitor.allTiles.get(point)?.height ?? 0
+                    const height0 = monitor.getHeight(previous)
+                    const height1 = monitor.getHeight(point)
 
                     Array.prototype.push.apply(
                         coordinates,
@@ -2876,8 +2900,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road down-right
                 } else if (previous.x < point.x && previous.y > point.y) {
-                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
-                    const height1 = monitor.allTiles.get(point)?.height ?? 0
+                    const height0 = monitor.getHeight(previous)
+                    const height1 = monitor.getHeight(point)
 
                     Array.prototype.push.apply(
                         coordinates,
@@ -2929,8 +2953,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road up-left
                 } else if (previous.x > point.x && previous.y < point.y) {
-                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
-                    const height1 = monitor.allTiles.get(point)?.height ?? 0
+                    const height0 = monitor.getHeight(previous)
+                    const height1 = monitor.getHeight(point)
 
                     Array.prototype.push.apply(
                         coordinates,
@@ -2982,8 +3006,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     // Handle road down-left
                 } else if (previous.x > point.x && previous.y > point.y) {
-                    const height0 = monitor.allTiles.get(previous)?.height ?? 0
-                    const height1 = monitor.allTiles.get(point)?.height ?? 0
+                    const height0 = monitor.getHeight(previous)
+                    const height1 = monitor.getHeight(point)
 
                     Array.prototype.push.apply(
                         coordinates,
@@ -3104,8 +3128,8 @@ function getTrianglesAffectedByFogOfWar(discovered: PointSetFast, tilesBelow: Se
 }
 
 function interpolateHeight(previous: Point, next: Point, progress: number): number {
-    const previousHeight = monitor.allTiles.get(previous)?.height ?? 0
-    const nextHeight = monitor.allTiles.get(next)?.height ?? 0
+    const previousHeight = monitor.getHeight(previous)
+    const nextHeight = monitor.getHeight(next)
 
     return previousHeight + (nextHeight - previousHeight) * progress
 }

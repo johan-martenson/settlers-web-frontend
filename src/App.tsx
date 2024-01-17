@@ -61,10 +61,6 @@ interface ShowFriendlyFlagInfo {
     flag: FlagInformation
 }
 
-interface ShowEnemyHouseInfo {
-    house: HouseInformation
-}
-
 interface PauseSignProps {
     message: string
 }
@@ -121,7 +117,6 @@ interface AppState {
     showFriendlyHouseInfo?: ShowFriendlyHouseInfo
     showFriendlyFlagInfo?: ShowFriendlyFlagInfo
     showConstructionInfo?: PointInformation
-    showEnemyHouseInfo?: ShowEnemyHouseInfo
     showHelp?: boolean
     showStatistics?: boolean
     showQuotas?: boolean
@@ -395,7 +390,6 @@ class App extends Component<AppProps, AppState> {
                 activeMenu: undefined,
                 showConstructionInfo: undefined,
                 showHelp: undefined,
-                showEnemyHouseInfo: undefined,
                 showFriendlyFlagInfo: undefined,
                 showFriendlyHouseInfo: undefined,
                 showMenu: false
@@ -788,22 +782,13 @@ class App extends Component<AppProps, AppState> {
             console.info("Clicked house " + JSON.stringify(house))
 
             /* Show friendly house info for own house */
-            if (house.playerId === this.props.selfPlayerId) {
-                console.info("Friendly house")
+            console.info("Friendly house")
 
-                this.setState({
-                    showMenu: false,
-                    showFriendlyHouseInfo: { house: house },
-                    activeMenu: 'FRIENDLY_HOUSE'
-                })
-            } else {
-
-                /* Show minimal house info for enemy's house */
-                this.setState({
-                    showMenu: false,
-                    showEnemyHouseInfo: { house: house }
-                })
-            }
+            this.setState({
+                showMenu: false,
+                showFriendlyHouseInfo: { house: house },
+                activeMenu: 'FRIENDLY_HOUSE'
+            })
 
             return
         }
@@ -1185,6 +1170,10 @@ class App extends Component<AppProps, AppState> {
 
                 {this.state.gameState === 'PAUSED' &&
                     <PauseSign message='PAUSED'/>
+                }
+
+                {this.state.gameState === 'EXPIRED' &&
+                    <PauseSign message='EXPIRED'/>
                 }
 
             </div>

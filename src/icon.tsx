@@ -40,19 +40,21 @@ const WorkerIcon = (props: WorkerIconProps) => {
                     const imageBitmap = await createImageBitmap(image)
 
                     setSourceImage(imageBitmap)
+                    setDimension(animationHandler.getSize(nation, direction) ?? {width: 0, height: 0})
+
                 } else {
                     console.error("No image")
                 }
             })().then(() => {
                 setAnimationHandler(animationHandler)
 
-                const dimension = animationHandler.getSize(nation, direction)
+                /*const dimension = animationHandler.getSize(nation, direction)
 
                 if (dimension) {
                     setDimension(dimension)
                 } else {
                     console.error("Failed to set dimension")
-                }
+                }*/
             })
         }
     }, [worker])

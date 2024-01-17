@@ -6,7 +6,7 @@ import './house_info.css'
 import { HeadquarterInfo } from "./headquarter"
 import { attackBuilding, houseIsReady, isMilitaryBuilding, pauseProductionForHouse, removeHouse, resumeProductionForHouse } from "../api/rest-api"
 import { MilitaryBuilding } from "./military_building"
-import {  monitor } from '../api/ws-api'
+import { monitor } from '../api/ws-api'
 
 interface HouseInfoProps {
     house: HouseInformation
@@ -152,7 +152,12 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }
                     <div>Attackers: ({chosenAttackers}/{house.availableAttackers})</div>
                     <Button onClick={() => setChosenAttackers(Math.max(chosenAttackers - 1, 0))}>Fewer</Button>
                     <Button onClick={() => setChosenAttackers(Math.min(chosenAttackers + 1, availableAttackers))}>More</Button>
-                    <Button onClick={() => attackBuilding(house, chosenAttackers, gameId, selfPlayerId)}>Attack</Button>
+                    <Button onClick={() => {
+                        attackBuilding(house, chosenAttackers, gameId, selfPlayerId)
+
+                        onClose()
+                    }
+                    }>Attack</Button>
                 </div>
             }
 

@@ -1115,8 +1115,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.uniform1f(this.drawGroundScreenHeightUniformLocation, height)
 
             // Set the light vector
-            const lightVector = [-1, 1, -1]
-            gl.uniform3fv(this.drawGroundLightVectorUniformLocation, lightVector)
+            gl.uniform3fv(this.drawGroundLightVectorUniformLocation, this.lightVector)
 
             // Set the current values for the scale, offset and the sampler
             gl.uniform2f(this.drawGroundScaleUniformLocation, this.props.scale, this.props.scale)
@@ -1564,7 +1563,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             shadowsToDraw.push({
                                 source: donkeyImage[1],
                                 gamePoint: interpolatedGamePoint,
-                                height: interpolatedGamePoint.y
+                                height: interpolatedHeight
                             })
                         }
                     }
@@ -2455,7 +2454,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
             const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
-            const gamePoint = this.screenPointToGamePointNoHeightAdjustment({ x: x, y: y })
+            const gamePoint = this.screenPointToGamePointWithHeightAdjustment({ x: x, y: y })
 
             this.props.onPointClicked(gamePoint)
         }
@@ -2504,7 +2503,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
             const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
-            const gamePoint = this.screenPointToGamePointNoHeightAdjustment({ x: x, y: y })
+            const gamePoint = this.screenPointToGamePointWithHeightAdjustment({ x: x, y: y })
 
             this.props.onDoubleClick(gamePoint)
         }

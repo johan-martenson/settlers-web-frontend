@@ -32,7 +32,7 @@ function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeContr
 }
 
 interface InputAction {
-    type: 'set' | 'add' | 'run'
+    type: 'set' | 'add' | 'run' | 'remove_last'
     payload: string
 }
 
@@ -112,6 +112,8 @@ const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlP
 
                 return { input: '' }
             }
+            case "remove_last":
+                return { input: state.input.substring(0, state.input.length - 1) }
         }
     }
 
@@ -124,7 +126,9 @@ const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlP
             } else if (key === "Enter") {
                 dispatchInput({ type: 'run', payload: "none" })
             } else if (key === "Backspace") {
-                setInput(input.substring(0, input.length - 1))
+                console.log("Is backspace")
+
+                dispatchInput({ type: 'remove_last', payload: 'none' })
             } else if (key.length === 1) {
                 if (key !== " ") {
                     addToInput(key)

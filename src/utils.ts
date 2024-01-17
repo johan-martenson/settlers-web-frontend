@@ -1,4 +1,5 @@
-import { getInformationOnPoint, getTerrainForMap,  removeHouse } from './api/rest-api'
+import { act } from 'react-dom/test-utils'
+import { getInformationOnPoint, getTerrainForMap, removeHouse } from './api/rest-api'
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation } from './api/types'
 import { Monitor, monitor } from './api/ws-api'
 import { ScreenPoint } from './game_render'
@@ -58,6 +59,8 @@ intToVegetationColor.set(20, [110, 57, 48])      // Lava 2
 intToVegetationColor.set(21, [110, 57, 48])      // Lava 3
 intToVegetationColor.set(22, [110, 57, 48])      // Lava 4
 intToVegetationColor.set(23, [140, 140, 140])  // Buildable mountain
+
+let reported = new Set()
 
 // FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {
@@ -594,7 +597,11 @@ actionAnimationType.set('HACKING_STONE', 'REPEAT')
 actionAnimationType.set('LOWER_FISHING_ROD', 'SINGLE_THEN_FREEZE')
 actionAnimationType.set('FISHING', 'REPEAT')
 actionAnimationType.set('PULL_UP_FISHING_ROD', 'SINGLE_THEN_FREEZE')
-actionAnimationType.set('CHEW_GUM', 'SINGLE_THEN_STOP')
+actionAnimationType.set('CHEW_GUM', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('HIT', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('JUMP_BACK', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('STAND_ASIDE', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('DIE', 'SINGLE_THEN_STOP')
 
 interface WorkerCommonFormat {
     shadowImages: Record<Direction, ImageSeriesInformation>
@@ -607,6 +614,7 @@ interface WorkerCommonFormat {
 interface WorkerNationSpecificFormat {
     fullImages: Record<Nation, Record<Direction, ImageSeriesInformation>>
     cargoImages?: Record<Nation, Record<MaterialAllUpperCase, Record<Direction, ImageSeriesInformation>>>
+    actions?: Record<Nation, Record<WorkerAction, Record<Direction | 'any', ImageSeriesInformation>>>
 }
 
 interface WorkerImageAtlasFormat {
@@ -700,10 +708,16 @@ class WorkerImageAtlasHandler {
 
     getDrawingInformationForAction(direction: Direction, action: WorkerAction, animationIndex: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            console.error("Undefined!")
+            console.error([action, direction])
+
             return undefined
         }
 
-        if (direction && this.imageAtlasInfo.common?.actions && this.imageAtlasInfo.common.actions[action][direction]) {
+        if (direction &&
+            this.imageAtlasInfo.common?.actions &&
+            this.imageAtlasInfo.common?.actions[action] &&
+            this.imageAtlasInfo.common.actions[action][direction]) {
             const actionImages = this.imageAtlasInfo.common.actions[action][direction]
 
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
@@ -729,7 +743,7 @@ class WorkerImageAtlasHandler {
                     texture: this.texture
                 }
             }
-        } else if (this.imageAtlasInfo.common?.actions && this.imageAtlasInfo.common.actions[action] && this.imageAtlasInfo.common.actions[action]?.any) {
+        } else if (this.imageAtlasInfo.common?.actions && this.imageAtlasInfo.common.actions[action] && this.imageAtlasInfo.common.actions[action].any) {
             const actionImages = this.imageAtlasInfo.common.actions[action].any
 
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
@@ -754,6 +768,48 @@ class WorkerImageAtlasHandler {
                     image: this.image,
                     texture: this.texture
                 }
+            }
+        } else if (this.imageAtlasInfo.nationSpecific &&
+            this.imageAtlasInfo.nationSpecific?.actions &&
+            this.imageAtlasInfo.nationSpecific.actions["ROMANS"] &&
+            this.imageAtlasInfo.nationSpecific.actions["ROMANS"][action] &&
+            this.imageAtlasInfo.nationSpecific.actions["ROMANS"][action][direction]) {
+            const actionImages = this.imageAtlasInfo.nationSpecific.actions["ROMANS"][action][direction]
+
+            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
+                return {
+                    sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
+                    sourceY: actionImages.startY,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
+                return {
+                    sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
+                    sourceY: actionImages.startY,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            } else if (actionAnimationType.get(action) == 'SINGLE_THEN_STOP') {
+                // SINGLE_THEN_STOP is handled in the first arm. If we get here the animation is drawn already
+
+                return undefined
+            }
+        } else {
+            if (!reported.has(action)) {
+
+                console.error("FOUND NO ACTION: ")
+                console.error([this.name, action, direction])
+
+                reported.add(action)
             }
         }
 
@@ -1872,6 +1928,10 @@ class DecorationsImageAtlasHandler {
     getDrawingInformationFor(decorationType: DecorationType): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
+        }
+
+        if (this.imageAtlasInfo === undefined || this.imageAtlasInfo[decorationType] === undefined) {
+            console.log([this.imageAtlasInfo, decorationType])
         }
 
         const imageInfo = this.imageAtlasInfo[decorationType].image

@@ -373,8 +373,9 @@ export type WorkerAction = 'PLANTING_TREE' |
     'SAWING' |
     'SHOOTING' |
     'SIT_DOWN' |
-    'ATTACK' |
-    'DEFEND' |
+    'HIT' |
+    'JUMP_BACK' |
+    'STAND_ASIDE' |
     'DIE' |
     'GET_HIT'
 

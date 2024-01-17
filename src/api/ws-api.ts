@@ -919,6 +919,10 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
 
     if (message.workersWithStartedActions) {
 
+        if (message.workersWithStartedActions.find(w => w.startedAction === 'HIT' || w.startedAction === 'GET_HIT' || w.startedAction === 'STAND_ASIDE' || w.startedAction === 'JUMP_BACK' || w.startedAction === 'DIE')) {
+            console.log(message.workersWithStartedActions)
+        }
+
         message.workersWithStartedActions.forEach(workerWithNewAction => {
             const worker = monitor.workers.get(workerWithNewAction.id)
 

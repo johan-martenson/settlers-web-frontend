@@ -1,4 +1,4 @@
-import { GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, Player, TransportCategoriesUpperCase } from './types'
+import { GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, Player, TransportCategoriesUpperCase, AttackType } from './types'
 import { PointMapFast } from '../util_types'
 
 function printTimestamp(message: string): void {
@@ -220,8 +220,9 @@ async function startGame(gameId: GameId): Promise<GameInformation> {
     return await response.json()
 }
 
-async function attackBuilding(houseInformation: HouseInformation, numberOfAttackers: number, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
+async function attackBuilding(houseInformation: HouseInformation, numberOfAttackers: number, attackType: AttackType, gameId: GameId, playerId: PlayerId): Promise<HouseInformation> {
     console.log("Attacking")
+    console.log(attackType)
 
     console.log("Request: /settlers/api/games/" + gameId + "/players/" + houseInformation.playerId + "/houses/" + houseInformation.id)
     console.log("Options: " + JSON.stringify({
@@ -233,7 +234,8 @@ async function attackBuilding(houseInformation: HouseInformation, numberOfAttack
             attacked:
             {
                 attackingPlayerId: playerId,
-                attackers: numberOfAttackers
+                attackers: numberOfAttackers,
+                attackType
             }
         }
         )
@@ -249,7 +251,8 @@ async function attackBuilding(houseInformation: HouseInformation, numberOfAttack
                 attacked:
                 {
                     attackingPlayerId: playerId,
-                    attackers: numberOfAttackers
+                    attackers: numberOfAttackers,
+                    attackType
                 }
             }
             )

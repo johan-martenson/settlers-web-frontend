@@ -16,6 +16,8 @@ export type ShipId = string
 export type GameMessageId = string
 export type StoneId = string
 
+export type AttackType = 'WEAK' | 'STRONG'
+
 export type ShipConstructionProgress = 'JUST_STARTED' | 'HALF_WAY' | 'ALMOST_DONE' | 'READY'
 
 export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"

@@ -4,8 +4,8 @@ Todo
 1. Animation of houses
 2. More sounds
 3. Planer
-4. Attacking - animation of fights
-5. Attacking - weak or strong attackers
+4. Waiting attacker shouldn't stand on a building
+5. Activity should stop around a flag where a fight is happening
 6. Defending - many/few defenders. Weak/strong defenders
 7. Military settings - weak/strong in center, closer to the edge, and at the edge
 9. Make materials visible when donkeys carry
@@ -21,9 +21,9 @@ Todo
 19. Add terrain overlaps to make the nature look smoother. Start with snow.
 20. FIX HOVER AND ONCLICK so that the closest point is always chosen
 21. Stones that are out of sight and are removed
-22. Prefer attacking from the closest military building
 23. Fix ugly scrollbar in type control
-24. Waiting attacker shouldn't stand on a building
+24. Workers (incl. scouts) can't walk through big stones (incl stones that can be mined)
+25. When attack with several attackers takes more than one attacker and then finally beats the home defender, no new home defender comes out and the attackers just stand around waiting
 
 
 Done

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
-import { GameId, HouseInformation, Nation, PlayerId, isMaterialUpperCase } from "../api/types"
+import { AttackType, GameId, HouseInformation, Nation, PlayerId, isMaterialUpperCase } from "../api/types"
 import { HouseIcon, InventoryIcon } from "../icon"
 import './house_info.css'
 import { HeadquarterInfo } from "./headquarter"
@@ -132,8 +132,8 @@ interface MilitaryEnemyHouseInfoProps {
 }
 
 const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }: MilitaryEnemyHouseInfoProps) => {
-
     const [chosenAttackers, setChosenAttackers] = useState<number>(0)
+    const [attackType, setAttackType] = useState<AttackType>('STRONG')
 
     const availableAttackers = house.availableAttackers ?? 0
 
@@ -149,11 +149,21 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }
             {house.availableAttackers !== 0 &&
                 <div>
                     Attack
-                    <div>Attackers: ({chosenAttackers}/{house.availableAttackers})</div>
-                    <Button onClick={() => setChosenAttackers(Math.max(chosenAttackers - 1, 0))}>Fewer</Button>
-                    <Button onClick={() => setChosenAttackers(Math.min(chosenAttackers + 1, availableAttackers))}>More</Button>
+                    <Field label="Number of attackers">
+                        <div>
+                            <div>Attackers: ({chosenAttackers}/{house.availableAttackers})</div>
+                            <Button onClick={() => setChosenAttackers(Math.max(chosenAttackers - 1, 0))}>Fewer</Button>
+                            <Button onClick={() => setChosenAttackers(Math.min(chosenAttackers + 1, availableAttackers))}>More</Button>
+                        </div>
+                    </Field>
+                    <Field label="Weak or strong attackers">
+                        <div>
+                            <Button onClick={() => setAttackType('WEAK')}>Weaker</Button>
+                            <Button onClick={() => setAttackType('STRONG')}>Stronger</Button>
+                        </div>
+                    </Field>
                     <Button onClick={() => {
-                        attackBuilding(house, chosenAttackers, gameId, selfPlayerId)
+                        attackBuilding(house, chosenAttackers, attackType, gameId, selfPlayerId)
 
                         onClose()
                     }

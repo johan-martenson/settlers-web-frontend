@@ -157,6 +157,14 @@ interface IronBarQuotasMessage extends ReplyMessage {
     metalworks: number
 }
 
+interface StrengthWhenPopulatingMilitaryBuildingMessage extends ReplyMessage {
+    strength: number
+}
+
+interface NumberReplyMessage extends ReplyMessage {
+    amount: number
+}
+
 export interface TileBelow {
     pointAbove: Point
     heightDownLeft: number
@@ -231,6 +239,14 @@ export interface Monitor {
     callGeologist: ((point: Point) => void)
 
     setReservedSoldiers: ((rank: SoldierType, amount: number) => void)
+
+    setStrengthWhenPopulatingMilitaryBuildings: ((strength: number) => void)
+    setDefenseStrength: ((strength: number) => void)
+    setDefenseFromSurroundingBuildings: ((strength: number) => void)
+
+    getStrengthWhenPopulatingMilitaryBuildings: (() => Promise<number>)
+    getDefenseStrength: (() => Promise<number>)
+    getDefenseFromSurroundingBuildings: (() => Promise<number>)
 
     addDetailedMonitoring: ((id: HouseId | FlagId) => void)
 
@@ -318,6 +334,14 @@ function isIronBarQuotasMessage(message: ReplyMessage): message is IronBarQuotas
     return 'armory' in message && 'metalworks' in message
 }
 
+function isStrengthWhenPopulatingMilitaryBuildingMessage(message: ReplyMessage): message is StrengthWhenPopulatingMilitaryBuildingMessage {
+    return 'strength' in message
+}
+
+function isNumberReplyMessage(message: ReplyMessage): message is NumberReplyMessage {
+    return 'amount' in message
+}
+
 const replies: Map<RequestId, ReplyMessage> = new Map()
 let nextRequestId = 0
 
@@ -376,6 +400,14 @@ const monitor: Monitor = {
     callGeologist: callGeologistWebsocket,
 
     setReservedSoldiers,
+
+    setStrengthWhenPopulatingMilitaryBuildings,
+    setDefenseStrength,
+    setDefenseFromSurroundingBuildings,
+
+    getStrengthWhenPopulatingMilitaryBuildings,
+    getDefenseStrength,
+    getDefenseFromSurroundingBuildings,
 
     addDetailedMonitoring,
 
@@ -444,7 +476,6 @@ function isGameChangesMessage(message: unknown): message is ChangesMessage {
     return message !== null &&
         message !== undefined &&
         typeof message === 'object' &&
-        'time' in message &&
         ('workersWithNewTargets' in message ||
             'removedWorkers' in message ||
             'newFlags' in message ||
@@ -2070,6 +2101,125 @@ function resumeGame() {
 
 function getHeight(point: Point): number {
     return monitor.allTiles.get(point)?.height ?? 0
+}
+
+function setStrengthWhenPopulatingMilitaryBuildings(strength: number) {
+    console.log("Setting the strength")
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
+            strength
+        }
+    ))
+}
+
+function getStrengthWhenPopulatingMilitaryBuildings(): Promise<number> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            if (isStrengthWhenPopulatingMilitaryBuildingMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply.strength)
+            }
+        })
+    })
+}
+
+function setDefenseStrength(strength: number) {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_DEFENSE_STRENGTH',
+            strength
+        }
+    ))
+}
+
+function getDefenseStrength(): Promise<number> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_DEFENSE_STRENGTH',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            if (isNumberReplyMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply.amount)
+            }
+        })
+    })
+}
+
+function setDefenseFromSurroundingBuildings(strength: number) {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
+            strength
+        }
+    ))
+}
+
+function getDefenseFromSurroundingBuildings(): Promise<number> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            if (isNumberReplyMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply.amount)
+            }
+        })
+    })
 }
 
 export {

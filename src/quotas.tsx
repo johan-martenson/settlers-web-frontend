@@ -5,19 +5,7 @@ import { Button, Field, SelectTabData, SelectTabEvent, Tab, TabList } from "@flu
 import { Nation } from "./api/types"
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
 import { monitor } from "./api/ws-api"
-
-interface AmountBarProps {
-    amount: number
-    max: number
-}
-
-const AmountBar = ({ amount, max }: AmountBarProps) => {
-    return (
-        <div style={{ width: "10em", display: 'block', height: '10px', backgroundColor: 'black' }}>
-            <div style={{ width: "" + (100 * amount / max) + "%", backgroundColor: "green", display: 'block', height: '10px' }} />
-        </div>
-    )
-}
+import { AmountBar } from "./amount_bar"
 
 interface QuotasProps {
     nation: Nation

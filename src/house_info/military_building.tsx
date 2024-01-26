@@ -89,7 +89,7 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
                             } else {
                                 return (
                                     <Tooltip content="Open space for additional soldier" relationship='label' withArrow key={index} >
-                                        <InventoryIcon material={'PRIVATE'} nation={nation} key={index} inline missing />
+                                        <div style={{display: 'inline'}}><InventoryIcon material={'PRIVATE'} nation={nation} key={index} inline missing /></div>
                                     </Tooltip>
                                 )
                             }

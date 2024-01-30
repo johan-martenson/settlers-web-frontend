@@ -5575,10 +5575,10 @@ detect-port-alt@^1.1.6:
     address "^1.0.1"
     debug "^2.6.0"
 
-devtools-protocol@0.0.1232444:
-  version "0.0.1232444"
-  resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1232444.tgz#406345a90a871ba852c530d73482275234936eed"
-  integrity sha512-pM27vqEfxSxRkTMnF+XCmxSEb6duO5R+t8A9DEEJgy4Wz2RVanje2mmj99B6A3zv2r/qGfYlOvYznUhuokizmg==
+devtools-protocol@0.0.1213968:
+  version "0.0.1213968"
+  resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1213968.tgz#b2b4ab2ea412bdc30d7a843aedf97b5646e12e6f"
+  integrity sha512-o4n/beY+3CcZwFctYapjGelKptR4AuQT5gXS1Kvgbig+ArwkxK7f8wDVuD1wsoswiJWCwV6OK+Qb7vhNzNmABQ==
 
 didyoumean@^1.2.2:
   version "1.2.2"
@@ -6631,10 +6631,10 @@ fsevents@^2.3.2, fsevents@~2.3.2:
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.3.tgz#cac6407785d03675a2a5e1a5305c697b347d90d6"
   integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
-fuite@^4.0.3:
-  version "4.0.3"
-  resolved "https://registry.yarnpkg.com/fuite/-/fuite-4.0.3.tgz#8496c5ef5c2695842812d0d87a4557c24029b4de"
-  integrity sha512-iZ++t7M8H6sNRQ1GbdYE7se8UEbNiPri4tjMO1XiJIMHTUrfGx8rxf86W23sv8a4RM4k288LRkAcS/YAWPSQNg==
+fuite@^4.0.4:
+  version "4.0.4"
+  resolved "https://registry.yarnpkg.com/fuite/-/fuite-4.0.4.tgz#4b9e9fc220978fa750b31c5c92d78cdd0fd3abdc"
+  integrity sha512-qlCzPAtSk+IETAzKd1l0JJ6YUdsB5mkTh03biJS+cglHIqPp0IptQPLLBWBwmhFAFtaCBAQPUGKV1rlB4rZXNw==
   dependencies:
     as-table "^1.0.55"
     atob "^2.1.2"
@@ -6647,7 +6647,7 @@ fuite@^4.0.3:
     ora "^8.0.1"
     please-upgrade-node "^3.2.0"
     pretty-bytes "^6.1.1"
-    puppeteer "^21.9.0"
+    puppeteer "21.8.0"
     quick-lru "^7.0.0"
     source-map "^0.7.4"
     stacktrace-parser "^0.1.10"
@@ -9842,26 +9842,26 @@ punycode@^2.1.0, punycode@^2.1.1:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.0.tgz#f67fa67c94da8f4d0cfff981aee4118064199b8f"
   integrity sha512-rRV+zQD8tVFys26lAGR9WUuS4iUAngJScM+ZRSKtvl5tKeZ2t5bvdNFdNHBW9FWR4guGHlgmsZ1G7BSm2wTbuA==
 
-puppeteer-core@21.9.0:
-  version "21.9.0"
-  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-21.9.0.tgz#7462d5dd0571cd1e0580cc3729d7951cc6fe2505"
-  integrity sha512-QgowcczLAoLWlV38s3y3VuEvjJGfKU5rR6Q23GUbiGOaiQi+QpaWQ+aXdzP9LHVSUPmHdAaWhcvMztYSw3f8gQ==
+puppeteer-core@21.8.0:
+  version "21.8.0"
+  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-21.8.0.tgz#16853ef69a1bc81ed8369631120cf47501192399"
+  integrity sha512-lRw1zXsrFE/COEAmupE0nSF+RSOJ+3rI12ZmMydkr6yXaAvfnYAoqND+HXXiRuzB+YM3IgsWekAMhNZCJOkbTA==
   dependencies:
     "@puppeteer/browsers" "1.9.1"
     chromium-bidi "0.5.4"
     cross-fetch "4.0.0"
     debug "4.3.4"
-    devtools-protocol "0.0.1232444"
+    devtools-protocol "0.0.1213968"
     ws "8.16.0"
 
-puppeteer@^21.9.0:
-  version "21.9.0"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-21.9.0.tgz#ff6cb321f6d43c1f39ba74bbdfccf2b5ef0121af"
-  integrity sha512-vcLR81Rp+MBrgqhiXZfpwEBbyKTa88Hd+8Al3+emWzcJb9evLLSfUYli0QUqhofPFrXsO2A/dAF9OunyOivL6w==
+puppeteer@21.8.0:
+  version "21.8.0"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-21.8.0.tgz#e001097402b6f4e924674da887e414862a183820"
+  integrity sha512-TFUTJd4Cg8dWEDOk0J4HjqL49BsAiVSeS85aWvt9XPs7+RileaVzCJTUmV6lJag4CV+O0RuRch2iG1qZ2mJWfg==
   dependencies:
     "@puppeteer/browsers" "1.9.1"
     cosmiconfig "9.0.0"
-    puppeteer-core "21.9.0"
+    puppeteer-core "21.8.0"
 
 q@^1.1.2:
   version "1.5.1"

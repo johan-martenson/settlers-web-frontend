@@ -73,7 +73,15 @@ const GameMenu = (
                         }} >Reset</Button>
                     </Field>
                     <Field label='Set game speed'>
-                        <Dropdown defaultValue={"Normal"} onOptionSelect={(event: SelectionEvents, data: OptionOnSelectData) => console.log("Select new game speed: " + data.optionValue)}>
+                        <Dropdown defaultValue={"Normal"} onOptionSelect={(event: SelectionEvents, data: OptionOnSelectData) => {
+                            if (data.optionValue === 'Fast') {
+                                monitor.setGameSpeed('FAST')
+                            } else if (data.optionValue === 'Normal') {
+                                monitor.setGameSpeed('NORMAL')
+                            } else {
+                                monitor.setGameSpeed('SLOW')
+                            }
+                        }}>
                             <Option>Fast</Option>
                             <Option>Normal</Option>
                             <Option>Slow</Option>

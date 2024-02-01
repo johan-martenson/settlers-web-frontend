@@ -1,9 +1,9 @@
 import { getPlayers, getTerrain, getViewForPlayer } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed } from './types'
 
-const GAME_TICK_LENGTH = 200;
+let gameTickLength = 200;
 
 interface MonitoredBorderForPlayer {
     color: string
@@ -45,6 +45,7 @@ interface PointAndDecoration {
 }
 
 interface ChangesMessage {
+    tick: number
     workersWithNewTargets?: WalkerTargetChange[]
     workersWithStartedActions?: WorkerNewAction[]
     wildAnimalsWithNewTargets?: WildAnimalInformation[]
@@ -239,10 +240,11 @@ export interface Monitor {
     callGeologist: ((point: Point) => void)
 
     setReservedSoldiers: ((rank: SoldierType, amount: number) => void)
-
     setStrengthWhenPopulatingMilitaryBuildings: ((strength: number) => void)
     setDefenseStrength: ((strength: number) => void)
     setDefenseFromSurroundingBuildings: ((strength: number) => void)
+
+    setGameSpeed: ((a: GameSpeed) => void)
 
     getStrengthWhenPopulatingMilitaryBuildings: (() => Promise<number>)
     getDefenseStrength: (() => Promise<number>)
@@ -400,10 +402,11 @@ const monitor: Monitor = {
     callGeologist: callGeologistWebsocket,
 
     setReservedSoldiers,
-
     setStrengthWhenPopulatingMilitaryBuildings,
     setDefenseStrength,
     setDefenseFromSurroundingBuildings,
+
+    setGameSpeed,
 
     getStrengthWhenPopulatingMilitaryBuildings,
     getDefenseStrength,
@@ -476,7 +479,8 @@ function isGameChangesMessage(message: unknown): message is ChangesMessage {
     return message !== null &&
         message !== undefined &&
         typeof message === 'object' &&
-        ('workersWithNewTargets' in message ||
+        ('tick' in message ||
+            'workersWithNewTargets' in message ||
             'removedWorkers' in message ||
             'newFlags' in message ||
             'changedFlags' in message ||
@@ -622,7 +626,7 @@ function startTimers() {
                 worker.actionAnimationIndex = worker.actionAnimationIndex + 1
             }
         }
-    }, 300)
+    }, gameTickLength)
 
     // Move workers locally to reduce the amount of messages from the server
     workerWalkingTimer = setInterval(async () => {
@@ -715,7 +719,7 @@ function startTimers() {
             }
         }
 
-    }, GAME_TICK_LENGTH / 2)
+    }, gameTickLength / 2)
 
     // Grow the crops locally to avoid the need for the server to send messages when crops change growth state
     cropGrowerTimer = setInterval(() => {
@@ -732,7 +736,7 @@ function startTimers() {
                 }
             }
         })
-    }, GAME_TICK_LENGTH * 10)
+    }, gameTickLength * 10)
 
     // Grow the trees locally to minimize the need for messages from the backend
     treeGrowerTimer = setInterval(() => {
@@ -749,7 +753,7 @@ function startTimers() {
                 }
             }
         })
-    }, GAME_TICK_LENGTH * 10)
+    }, gameTickLength * 10)
 }
 
 function websocketError(error: unknown): void {
@@ -921,6 +925,15 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     monitor.roads.delete('LOCAL')
     monitor.flags.delete('LOCAL')
     monitor.houses.delete('LOCAL')
+
+    // Update game tick
+    if (message.tick !== undefined) {
+        stopTimers()
+
+        gameTickLength = message.tick
+
+        startTimers()
+    }
 
     // Confirm local removals if they are part of the message
     message.removedFlags?.forEach(removedFlagId => monitor.localRemovedFlags.delete(removedFlagId))
@@ -2220,6 +2233,17 @@ function getDefenseFromSurroundingBuildings(): Promise<number> {
             }
         })
     })
+}
+
+function setGameSpeed(speed: GameSpeed) {
+    console.log("Set game speed: " + speed)
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_GAME_SPEED',
+            speed
+        }
+    ))
 }
 
 export {

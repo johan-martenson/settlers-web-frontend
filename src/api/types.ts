@@ -16,6 +16,8 @@ export type ShipId = string
 export type GameMessageId = string
 export type StoneId = string
 
+export type GameSpeed = 'FAST' | 'NORMAL' | 'SLOW'
+
 export type AttackType = 'WEAK' | 'STRONG'
 
 export type ShipConstructionProgress = 'JUST_STARTED' | 'HALF_WAY' | 'ALMOST_DONE' | 'READY'

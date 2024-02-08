@@ -1,5 +1,6 @@
+import { on } from "stream"
 import { DEFAULT_VOLUME } from "../App"
-import { GameMessage, GameMessageId, HouseId, Point, WorkerAction } from "../api/types"
+import { Action, GameMessage, GameMessageId, HouseId, Point, WorkerAction } from "../api/types"
 import { monitor } from "../api/ws-api"
 import { Sound } from "./utils"
 
@@ -10,7 +11,8 @@ export type SoundEffect = 'NEW-MESSAGE' |
     'STONEMASON_HACKING' |
     'FIRE' |
     'GEOLOGIST_FINDING' |
-    'GEOLOGIST_DIGGING'
+    'GEOLOGIST_DIGGING' |
+    'FALLING_TREE'
 
 interface Sfx {
     play: ((name: SoundEffect, loop: boolean) => Sound | undefined)
@@ -44,6 +46,7 @@ soundInstances.set('STONEMASON_HACKING', new Sound("assets/audio/stonemason-hack
 soundInstances.set('FIRE', new Sound("assets/audio/fire.wave"))
 soundInstances.set('GEOLOGIST_FINDING', new Sound("assets/audio/geologist-finding.wave"))
 soundInstances.set('GEOLOGIST_DIGGING', new Sound("assets/audio/geologist-digging-1.wave"))
+soundInstances.set('FALLING_TREE', new Sound('assets/audio/falling-tree.wave'))
 
 soundInstances.forEach(sound => sound.load())
 
@@ -55,7 +58,7 @@ function play(soundName: SoundEffect, loop = false): Sound | undefined {
     const sound = soundInstances.get(soundName)
 
     if (sound) {
-        sound.play(volume)
+        sound.play(volume, 0, loop)
     }
 
     return sound
@@ -64,7 +67,7 @@ function play(soundName: SoundEffect, loop = false): Sound | undefined {
 interface OngoingEffect {
     id: string
     point: Point
-    action: AnyAction
+    action: Action
     index: number
     playing?: Sound
 }
@@ -78,9 +81,7 @@ interface SoundEffectInformation {
     type: 'ONCE' | 'PERIODIC' | 'LOOPING'
 }
 
-type AnyAction = WorkerAction | 'HOUSE_BURNING'
-
-const SOUND_EFFECTS = new Map<AnyAction, SoundEffectInformation>()
+const SOUND_EFFECTS = new Map<Action, SoundEffectInformation>()
 
 SOUND_EFFECTS.set("HAMMERING_HOUSE_HIGH_AND_LOW", { start: 0, animationLength: 8, audio: "HAMMERING", type: 'PERIODIC' })
 SOUND_EFFECTS.set("CUTTING", { start: 4, animationLength: 8, audio: "WOODCUTTER_CUTTING", type: 'PERIODIC' })
@@ -88,6 +89,7 @@ SOUND_EFFECTS.set('PLANTING_TREE', { start: 36, animationLength: 36, audio: "FOR
 SOUND_EFFECTS.set('HACKING_STONE', { start: 4, animationLength: 8, audio: 'STONEMASON_HACKING', type: 'PERIODIC' })
 SOUND_EFFECTS.set('HOUSE_BURNING', { start: 0, animationLength: 2, audio: 'FIRE', type: 'LOOPING' })
 SOUND_EFFECTS.set('INVESTIGATING', { start: 10, animationLength: 16, audio: 'GEOLOGIST_DIGGING', type: 'PERIODIC' })
+SOUND_EFFECTS.set('FALLING_TREE', { start: 0, animationLength: 4, audio: 'FALLING_TREE', type: 'ONCE'})
 
 function startEffects() {
     if (soundEffectsState === 'RUNNING') {
@@ -103,11 +105,20 @@ function startEffects() {
 
     // Listen to events to start/stop sound effects
     monitor.listenToActions({
-        actionStarted: (id: string, point: Point, action: WorkerAction) => {
+        actionStarted: (id: string, point: Point, action: Action) => {
             ongoingEffects.set(id, { id, point, action, index: 0 })
         },
         actionEnded: (id: string, point: Point, action: string) => {
-            ongoingEffects.get(id)?.playing?.stop()
+
+            const ongoingEffect = ongoingEffects.get(id)
+
+            if (ongoingEffect) {
+                const soundEffect = SOUND_EFFECTS.get(ongoingEffect.action)
+
+                if (ongoingEffect.playing && soundEffect?.type === 'LOOPING') {
+                    ongoingEffects.get(id)?.playing?.stop()
+                }
+            }
 
             ongoingEffects.delete(id)
         }
@@ -145,14 +156,13 @@ function startEffects() {
                     ongoingEffect.point.x < visibility.right &&
                     ongoingEffect.point.y < visibility.top &&
                     ongoingEffect.point.y > visibility.bottom) {
-                    ongoingEffect.playing = play(soundEffect.audio, soundEffect.type === 'LOOPING')
+                        ongoingEffect.playing = play(soundEffect.audio, soundEffect.type === 'LOOPING')
                 }
 
                 // 3) Step index
                 ongoingEffect.index += 1
 
                 if (soundEffect && ongoingEffect.index === soundEffect.animationLength) {
-
                     if (soundEffect.type === 'ONCE') {
                         ongoingEffects.delete(id)
                     } else {

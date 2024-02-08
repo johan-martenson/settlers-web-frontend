@@ -1280,6 +1280,26 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             treeIndex = treeIndex + 1
         }
 
+        monitor.fallingTrees.forEach(tree => {
+            if (tree.x + 2 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
+                return
+            }
+
+            let treeDrawInfo = treeAnimations.getFallingTree(tree.type, tree.animation)
+
+            if (treeDrawInfo) {
+                toDrawNormal.push({
+                    source: treeDrawInfo[0],
+                    gamePoint: tree,
+                })
+
+                shadowsToDraw.push({
+                    source: treeDrawInfo[1],
+                    gamePoint: tree,
+                })
+            }
+        })
+
         duration.after("collect trees")
 
 

@@ -3,6 +3,7 @@ import { getInformationOnPoint, getTerrainForMap, removeHouse } from './api/rest
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation } from './api/types'
 import { Monitor, monitor } from './api/ws-api'
 import { ScreenPoint } from './game_render'
+import { tree } from 'd3'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -358,6 +359,10 @@ class TreeAnimation {
 
     getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getDrawingInformationForGrownTree(treeType, Math.floor((animationIndex + offset) / this.speedAdjust))
+    }
+
+    getFallingTree(treeType: TreeType, step: number): DrawingInformation[] | undefined {
+        return this.imageAtlasHandler.getDrawingInformationForFallingTree(treeType, step)
     }
 }
 
@@ -1513,7 +1518,37 @@ class TreeImageAtlasHandler {
         ]
     }
 
+    getDrawingInformationForFallingTree(treeType: TreeType, step: number): DrawingInformation[] | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
 
+        const imagePerTreeType = this.imageAtlasInfo.fallingTrees[treeType]
+        const shadowImagePerTreeType = this.imageAtlasInfo.fallingTreeShadows[treeType]
+
+        return [
+            {
+                sourceX: imagePerTreeType.startX + imagePerTreeType.width * step,
+                sourceY: imagePerTreeType.startY,
+                width: imagePerTreeType.width,
+                height: imagePerTreeType.height,
+                offsetX: imagePerTreeType.offsetX,
+                offsetY: imagePerTreeType.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: shadowImagePerTreeType.startX + shadowImagePerTreeType.width * step,
+                sourceY: shadowImagePerTreeType.startY,
+                width: shadowImagePerTreeType.width,
+                height: shadowImagePerTreeType.height,
+                offsetX: shadowImagePerTreeType.offsetX,
+                offsetY: shadowImagePerTreeType.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
+    }
 
     getImageForGrowingTree(treeType: TreeType, treeSize: TreeSize): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {

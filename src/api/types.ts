@@ -301,6 +301,12 @@ export interface TreeInformationLocal extends TreeInformation {
     growth: number
 }
 
+export interface FallingTreeInformation extends Point {
+    id: TreeId
+    type: TreeType
+    animation: number
+}
+
 export type SignTypes = 'iron' | 'gold' | 'coal' | 'stone' | 'water' | 'nothing'
 
 export type Size = 'SMALL' | 'MEDIUM' | 'LARGE'
@@ -383,7 +389,9 @@ export type WorkerAction = 'PLANTING_TREE' |
     'DIE' |
     'GET_HIT'
 
-    export type DecorationType = 'BROWN_MUSHROOM' |
+export type Action = 'FALLING_TREE' | 'HOUSE_BURNING' | WorkerAction
+
+export type DecorationType = 'BROWN_MUSHROOM' |
     'MINI_BROWN_MUSHROOM' |
     'TOADSTOOL' |
     'MINI_STONE' |

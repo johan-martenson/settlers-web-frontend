@@ -1,7 +1,7 @@
 import { getPlayers, getTerrain, getViewForPlayer } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action } from './types'
 
 let gameTickLength = 200;
 
@@ -57,11 +57,13 @@ interface ChangesMessage {
     changedFlags?: FlagInformation[]
     removedFlags?: FlagId[]
     newRoads?: RoadInformation[]
+    changedRoads?: RoadInformation[]
     removedRoads?: RoadId[]
     changedBorders?: BorderChange[]
     newTrees?: TreeInformation[]
     removedTrees?: TreeId[]
     newStones?: StoneInformation[]
+    changedStones?: StoneInformation[]
     removedStones?: StoneId[]
     newCrops?: CropInformation[]
     harvestedCrops?: CropId[]
@@ -104,8 +106,8 @@ interface PauseResumeMessage {
 }
 
 interface ActionListener {
-    actionStarted: ((id: string, point: Point, action: WorkerAction) => void)
-    actionEnded: ((id: string, point: Point, action: WorkerAction) => void)
+    actionStarted: ((id: string, point: Point, action: Action) => void)
+    actionEnded: ((id: string, point: Point, action: Action) => void)
 }
 
 interface HouseBurningListener {
@@ -192,6 +194,7 @@ export interface Monitor {
     roads: Map<RoadId, RoadInformation>
     border: Map<PlayerId, MonitoredBorderForPlayer>
     trees: Map<TreeId, TreeInformationLocal>
+    fallingTrees: Map<TreeId, FallingTreeInformation>
     stones: Map<StoneId, StoneInformation>
     crops: Map<CropId, CropInformationLocal>
     discoveredPoints: PointSetFast
@@ -355,6 +358,7 @@ const monitor: Monitor = {
     roads: new Map<RoadId, RoadInformation>(),
     border: new Map<PlayerId, MonitoredBorderForPlayer>(),
     trees: new Map<TreeId, TreeInformationLocal>(),
+    fallingTrees: new Map<TreeId, FallingTreeInformation>(),
     stones: new Map<StoneId, StoneInformation>(),
     crops: new Map<CropId, CropInformationLocal>(),
     discoveredPoints: new PointSetFast(),
@@ -480,6 +484,7 @@ function isGameChangesMessage(message: unknown): message is ChangesMessage {
         message !== undefined &&
         typeof message === 'object' &&
         ('tick' in message ||
+            'changedStones' in message ||
             'workersWithNewTargets' in message ||
             'removedWorkers' in message ||
             'newFlags' in message ||
@@ -626,6 +631,20 @@ function startTimers() {
                 worker.actionAnimationIndex = worker.actionAnimationIndex + 1
             }
         }
+
+        const treesToRemove: TreeId[] = []
+
+        monitor.fallingTrees.forEach(fallingTree => {
+            fallingTree.animation += 1
+
+            if (fallingTree.animation === 4) {
+                treesToRemove.push(fallingTree.id)
+
+                actionListeners.forEach(actionListener => actionListener.actionEnded(fallingTree.id, fallingTree, 'FALLING_TREE'))
+            }
+
+            treesToRemove.forEach(id => monitor.fallingTrees.delete(id))
+        })
     }, gameTickLength)
 
     // Move workers locally to reduce the amount of messages from the server
@@ -962,7 +981,6 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     }
 
     if (message.workersWithStartedActions) {
-
         if (message.workersWithStartedActions.find(w => w.startedAction === 'HIT' || w.startedAction === 'GET_HIT' || w.startedAction === 'STAND_ASIDE' || w.startedAction === 'JUMP_BACK' || w.startedAction === 'DIE')) {
             console.log(message.workersWithStartedActions)
         }
@@ -1046,15 +1064,34 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     })
 
     message.newRoads?.forEach(road => monitor.roads.set(road.id, road))
+    message.changedRoads?.forEach(road => monitor.roads.set(road.id, road))
     message.removedRoads?.forEach(id => monitor.roads.delete(id))
 
     message.newTrees?.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
-    message.removedTrees?.forEach(treeId => monitor.trees.delete(treeId))
+    message.removedTrees?.forEach(treeId => {
+        const treeToRemove = monitor.trees.get(treeId)
+
+        if (treeToRemove) {
+            monitor.fallingTrees.set(treeId,
+                {
+                    x: treeToRemove.x,
+                    y: treeToRemove.y,
+                    id: treeId,
+                    type: treeToRemove.type,
+                    animation: 0
+                })
+
+            actionListeners.forEach(actionListener => actionListener.actionStarted(treeId, treeToRemove, 'FALLING_TREE'))
+
+            monitor.trees.delete(treeId)
+        }
+    })
 
     message.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
     message.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
 
     message.newStones?.forEach(stone => monitor.stones.set(stone.id, stone))
+    message.changedStones?.forEach(stone => monitor.stones.set(stone.id, stone))
     message.removedStones?.forEach(stoneId => monitor.stones.delete(stoneId))
 
     if (message.changedBorders) {
@@ -1263,12 +1300,9 @@ function syncChangedBorders(borderChanges: BorderChange[]): void {
         const currentBorderForPlayer = monitor.border.get(borderChange.playerId)
 
         if (currentBorderForPlayer) {
-
             borderChange.newBorder.forEach(point => currentBorderForPlayer.points.add(point))
             borderChange.removedBorder.forEach(point => currentBorderForPlayer.points.delete(point))
-
         } else {
-
             const player = monitor.players.get(borderChange.playerId)
 
             if (!player) {

@@ -11,19 +11,16 @@ Todo
 8. Finish making all react components into functional components
 9. Fix statistics components. Should be general statistics to compare players, and Merchandise to see production and/or inventory
 10. Divide src into sub-folders better. prepare-game, play-game?
-11. Animation when trees fall
-12. Quota handling for planks
-13. Add the propeller to the mill
-14. Gradually draw finished building on top of the under construction-image
-15. Add remaining gravel after a stone has been fully removed as a decoration
-16. Add terrain overlaps to make the nature look smoother. Start with snow.
-17. FIX HOVER AND ONCLICK so that the closest point is always chosen
-18. Stones that are out of sight and are removed
-19. Stones that get smaller because of hacking should get updated in the web ui
-20. Fix ugly scrollbar in type control
-21. Workers (incl. scouts) can't walk offroad through big stones (incl stones that can be mined)
-22. When attack with several attackers takes more than one attacker and then finally beats the home defender, no new home defender comes out and the attackers just stand around waiting
-23. Soldiers waiting to fight should be facing the attacked building's flag
+11. Quota handling for planks
+12. Add the propeller to the mill
+13. Gradually draw finished building on top of the under construction-image
+14. Add remaining gravel after a stone has been fully removed as a decoration
+15. Add terrain overlaps to make the nature look smoother. Start with snow.
+16. FIX HOVER AND ONCLICK so that the closest point is always chosen
+17. Fix ugly scrollbar in type control
+18. Soldiers waiting to fight should be facing the attacked building's flag
+19. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
+
 
 
 Done
@@ -40,3 +37,9 @@ Done
 21. Add possibility to pause an ongoing game.
 6. Defending - many/few defenders. Weak/strong defenders
 4. Waiting attacker shouldn't stand on a building
+22. When attack with several attackers takes more than one attacker and then finally beats the home defender, no new home defender comes out and the attackers just stand around waiting
+19. Stones that get smaller because of hacking should get updated in the web ui
+21. Workers (incl. scouts) can't walk offroad through big stones (incl stones that can be mined)
+22. Road promoted - update in the map
+18. Stones that are out of sight and are removed
+11. Animation when trees fall

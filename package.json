@@ -12,7 +12,7 @@
     "@types/node": "^20.11.16",
     "d3": "^7.8.2",
     "@types/react": "^18.2.55",
-    "@types/react-dom": "^18.2.18",
+    "@types/react-dom": "^18.2.19",
     "fuite": "^4.0.4",
     "react": "^18.0.1",
     "react-dom": "^18.0.1",

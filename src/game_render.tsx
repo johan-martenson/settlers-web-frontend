@@ -42,7 +42,6 @@ interface MapRenderInformation {
 
 interface GameCanvasProps {
     cursorState: CursorState
-    scale: number
     screenWidth: number
     screenHeight: number
     selectedPoint?: Point
@@ -966,7 +965,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.uniform1f(this.drawGroundScreenWidthUniformLocation, width)
             gl.uniform1f(this.drawGroundScreenHeightUniformLocation, height)
             gl.uniform3fv(this.drawGroundLightVectorUniformLocation, this.lightVector)
-            gl.uniform2f(this.drawGroundScaleUniformLocation, this.props.scale, this.props.scale)
+            gl.uniform2f(this.drawGroundScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
             gl.uniform2f(this.drawGroundOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
             gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, this.props.heightAdjust)
             gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
@@ -1068,7 +1067,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.uniform1i(drawImageTextureLocation, 3)
                     gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
                     gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                    gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                    gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
                     gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
                     gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                     gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
@@ -1117,7 +1116,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             gl.uniform3fv(this.drawGroundLightVectorUniformLocation, this.lightVector)
 
             // Set the current values for the scale, offset and the sampler
-            gl.uniform2f(this.drawGroundScaleUniformLocation, this.props.scale, this.props.scale)
+            gl.uniform2f(this.drawGroundScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
             gl.uniform2f(this.drawGroundOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
 
             // Draw the roads
@@ -2009,7 +2008,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 this.gl.uniform1i(drawImageTextureLocation, 3)
                 this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
                 this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
-                this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                this.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
                 this.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
                 this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
@@ -2079,7 +2078,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 this.gl.uniform1i(drawImageTextureLocation, 3)
                 this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
                 this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                this.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
                 this.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
                 this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
@@ -2276,7 +2275,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 this.gl.uniform1i(drawImageTextureLocation, 3)
                 this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
                 this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                this.gl.uniform1f(drawImageScaleLocation, this.props.scale)
+                this.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
                 this.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
                 this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
@@ -2317,7 +2316,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 let heightOffset = 0
 
                 if (houseDrawInformation) {
-                    heightOffset = houseDrawInformation[0].offsetY * this.props.scale / DEFAULT_SCALE
+                    heightOffset = houseDrawInformation[0].offsetY * immediateUxState.scale / DEFAULT_SCALE
                 }
 
                 let houseTitle = camelCaseToWords(house.type)
@@ -2373,7 +2372,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             // Set the constants
             gl.uniform1f(this.fogOfWarScreenWidthUniformLocation, width)
             gl.uniform1f(this.fogOfWarScreenHeightUniformLocation, height)
-            gl.uniform2f(this.fogOfWarScaleUniformLocation, this.props.scale, this.props.scale)
+            gl.uniform2f(this.fogOfWarScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
             gl.uniform2f(this.fogOfWarOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
 
@@ -2429,7 +2428,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             height,
             immediateUxState.translate.x,
             immediateUxState.translate.y,
-            this.props.scale,
+            immediateUxState.scale,
             this.props.screenHeight,
             this.props.heightAdjust,
             //DEFAULT_HEIGHT_ADJUSTMENT,
@@ -2438,7 +2437,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint): Point {
-        return screenPointToGamePoint(screenPoint, immediateUxState.translate.x, immediateUxState.translate.y, this.props.scale, this.props.screenHeight)
+        return screenPointToGamePoint(screenPoint, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, this.props.screenHeight)
     }
 
     async onClickOrDoubleClick(event: React.MouseEvent): Promise<void> {

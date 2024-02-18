@@ -14,7 +14,7 @@ import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import { TypeControl, Command } from './type_control'
-import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket, screenPointToGamePoint } from './utils'
+import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState } from './api/types'
 import { Dismiss24Filled, CalendarAgenda24Regular, TextBulletListSquare24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon } from './icon'
@@ -528,7 +528,7 @@ class App extends Component<AppProps, AppState> {
         this.zoom(immediateUxState.scale + 1)
     }
 
-    /* Should move to the game canvas so the app doesn't have to know about this */
+    /* Should move to the game canvas so the app doesn't have to know about this? */
     zoom(newScale: number): void {
 
         // Set boundaries on how much scaling is allowed
@@ -951,10 +951,6 @@ class App extends Component<AppProps, AppState> {
         )
     }
 
-    setShowTitles(showTitles: boolean): void {
-        this.setState({ showTitles: showTitles })
-    }
-
     copyTouch(touch: React.Touch): StoredTouch {
         return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY }
     }
@@ -1089,7 +1085,6 @@ class App extends Component<AppProps, AppState> {
                 tabIndex={1}>
 
                 <GameCanvas
-                    scale={immediateUxState.scale}
                     screenWidth={immediateUxState.width}
                     screenHeight={immediateUxState.height}
                     onKeyDown={this.onKeyDown}
@@ -1116,7 +1111,7 @@ class App extends Component<AppProps, AppState> {
                     maxZoom={MAX_SCALE}
                     onSetSpeed={this.onSpeedSliderChange.bind(this)}
                     gameId={this.props.gameId}
-                    onSetTitlesVisible={this.setShowTitles.bind(this)}
+                    onSetTitlesVisible={(showTitles: boolean) => this.setState({ showTitles: showTitles })}
                     areTitlesVisible={this.state.showTitles}
                     onLeaveGame={this.props.onLeaveGame}
                     currentSpeed={0}

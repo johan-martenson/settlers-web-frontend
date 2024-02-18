@@ -20,6 +20,7 @@ Todo
 17. Soldiers waiting to fight should be facing the attacked building's flag
 18. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
 19. Update fighter's damage and health stats
+20. Make goto house/point with animation configurable
 
 
 

@@ -44,8 +44,19 @@ const globalSyncState = {
     height: 0
 }
 
+let nextAnimation = 0
+
 /* Track ongoing touches to make touch control work */
 const ongoingTouches: Map<number, StoredTouch> = new Map()
+
+type OngoingAnimation = {
+    counter: number
+    timer: NodeJS.Timeout
+}
+
+const ANIMATION_STEPS = 20
+
+const ongoingAnimations: Map<number, OngoingAnimation> = new Map()
 
 interface StoredTouch {
     identifier: number
@@ -65,7 +76,7 @@ interface PauseSignProps {
     message: string
 }
 
-const PauseSign = ({message}: PauseSignProps) => {
+const PauseSign = ({ message }: PauseSignProps) => {
 
     return (
         <div style={{
@@ -372,7 +383,7 @@ class App extends Component<AppProps, AppState> {
         })
 
         // Listen to the game state
-        monitor.listenToGameState((gameState: GameState) => this.setState({gameState}))
+        monitor.listenToGameState((gameState: GameState) => this.setState({ gameState }))
     }
 
     toggleDetails(): void {
@@ -397,20 +408,69 @@ class App extends Component<AppProps, AppState> {
         )
     }
 
-    goToHouse(houseId: HouseId): void {
-        console.info("Go to house " + houseId)
+    goToHouseAnimated(houseId: HouseId): void {
+        console.info("Go to house with animation: " + houseId)
 
         const house = monitor.houses.get(houseId)
 
         if (house) {
-            this.goToPoint({ x: house.x, y: house.y })
+            this.goToPointAnimated({ x: house.x, y: house.y })
 
             this.setState({ selected: { x: house.x, y: house.y } })
         }
     }
 
-    goToPoint(point: Point): void {
-        console.info("Go to point: " + JSON.stringify(point))
+    goToHouseImmediate(houseId: HouseId): void {
+        console.info("Go to house immediately: " + houseId)
+
+        const house = monitor.houses.get(houseId)
+
+        if (house) {
+            this.goToPointImmediate({ x: house.x, y: house.y })
+
+            this.setState({ selected: { x: house.x, y: house.y } })
+        }
+    }
+
+    goToPointAnimated(point: Point): void {
+        console.info("Go to point animated: " + JSON.stringify(point))
+
+        const id = getNextAnimationId()
+
+        const scaleY = this.state.scale
+
+        const newTranslateX = (globalSyncState.width / 2) - point.x * this.state.scale
+        const newTranslateY = (globalSyncState.height / 2) + point.y * scaleY - globalSyncState.height
+
+        const start = { x: this.state.translateX, y: this.state.translateY }
+        const diffX = newTranslateX - this.state.translateX
+        const diffY = newTranslateY - this.state.translateY
+
+        const timer = setInterval(
+            () => {
+                const animation = ongoingAnimations.get(id)
+
+                if (animation) {
+                    const factor = (1 - Math.cos(Math.PI * (animation.counter / ANIMATION_STEPS))) / 2
+
+                    this.setState({
+                        translateX: start.x + diffX * factor,
+                        translateY: start.y + diffY * factor
+                    })
+
+                    if (animation.counter == ANIMATION_STEPS) {
+                        clearInterval(animation.timer)
+                    }
+
+                    animation.counter += 1
+                }
+            }, 20)
+
+        ongoingAnimations.set(id, { counter: 0, timer })
+    }
+
+    goToPointImmediate(point: Point): void {
+        console.info("Go to point immediately: " + JSON.stringify(point))
 
         const scaleY = this.state.scale
 
@@ -604,7 +664,7 @@ class App extends Component<AppProps, AppState> {
         const headquarter = getHeadquarterForPlayer(this.props.selfPlayerId)
 
         if (headquarter) {
-            this.goToHouse(headquarter.id)
+            this.goToHouseImmediate(headquarter.id)
         }
 
         /* Listen for changes in the window size */
@@ -854,13 +914,13 @@ class App extends Component<AppProps, AppState> {
             if (this.state.activeMenu) {
                 this.closeActiveMenu()
 
-            /* Stop building a new road */
+                /* Stop building a new road */
             } else if (this.state.newRoad) {
                 this.setState({ newRoad: undefined, possibleRoadConnections: [] })
 
                 monitor.removeLocalRoad("LOCAL")
 
-            /* Otherwise, send the escape to the type controller */
+                /* Otherwise, send the escape to the type controller */
             } else {
                 const keyEvent = new CustomEvent("key", { detail: { key: event.key } })
 
@@ -1160,8 +1220,8 @@ class App extends Component<AppProps, AppState> {
                 <GameMessagesViewer
                     playerId={this.props.selfPlayerId}
                     nation={this.state.player?.nation ?? 'ROMANS'}
-                    onGoToHouse={this.goToHouse.bind(this)}
-                    onGoToPoint={this.goToPoint.bind(this)}
+                    onGoToHouse={this.goToHouseAnimated.bind(this)}
+                    onGoToPoint={this.goToPointAnimated.bind(this)}
                 />
 
                 {this.state.isMusicPlayerVisible &&
@@ -1169,16 +1229,22 @@ class App extends Component<AppProps, AppState> {
                 }
 
                 {this.state.gameState === 'PAUSED' &&
-                    <PauseSign message='PAUSED'/>
+                    <PauseSign message='PAUSED' />
                 }
 
                 {this.state.gameState === 'EXPIRED' &&
-                    <PauseSign message='EXPIRED'/>
+                    <PauseSign message='EXPIRED' />
                 }
 
             </div>
         )
     }
+}
+
+function getNextAnimationId(): number {
+    nextAnimation += 1
+
+    return nextAnimation - 1
 }
 
 export default App

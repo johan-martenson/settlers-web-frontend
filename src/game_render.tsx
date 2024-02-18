@@ -2549,10 +2549,16 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                                 const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
                                 const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
 
-                                const hoverPoint = this.screenPointToGamePointWithHeightAdjustment({ x, y })
+                                try {
+                                    const hoverPoint = this.screenPointToGamePointWithHeightAdjustment({ x, y })
 
-                                if (hoverPoint && (!this.state.hoverPoint || this.state.hoverPoint.x !== hoverPoint.x || this.state.hoverPoint.y !== hoverPoint.y)) {
-                                    this.setState({ hoverPoint })
+                                    if (hoverPoint &&
+                                        hoverPoint.y >= 0 &&
+                                        (!this.state.hoverPoint || this.state.hoverPoint.x !== hoverPoint.x || this.state.hoverPoint.y !== hoverPoint.y)) {
+                                        this.setState({ hoverPoint })
+                                    }
+                                } catch (error) {
+                                    console.error(error)
                                 }
                             }
 

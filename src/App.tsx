@@ -54,7 +54,9 @@ type OngoingAnimation = {
     timer: NodeJS.Timeout
 }
 
-const ANIMATION_STEPS = 20
+const ANIMATION_FPS = 40
+const ANIMATION_LENGTH_MS = 200
+const ANIMATION_STEPS = (ANIMATION_LENGTH_MS / 1000) * ANIMATION_FPS
 
 const ongoingAnimations: Map<number, OngoingAnimation> = new Map()
 
@@ -464,7 +466,7 @@ class App extends Component<AppProps, AppState> {
 
                     animation.counter += 1
                 }
-            }, 20)
+            }, 1000 / ANIMATION_FPS)
 
         ongoingAnimations.set(id, { counter: 0, timer })
     }

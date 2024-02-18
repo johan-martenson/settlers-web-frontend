@@ -1,8 +1,8 @@
-import { on } from "stream"
-import { DEFAULT_VOLUME } from "../App"
-import { Action, GameMessage, GameMessageId, HouseId, Point, WorkerAction } from "../api/types"
+import { DEFAULT_VOLUME, immediateUxState } from "../App"
+import { Action, GameMessage, GameMessageId, HouseId, Point } from "../api/types"
 import { monitor } from "../api/ws-api"
 import { Sound } from "./utils"
+import { screenPointToGamePoint } from "../utils"
 
 export type SoundEffect = 'NEW-MESSAGE' |
     'WOODCUTTER_CUTTING' |
@@ -18,14 +18,12 @@ interface Sfx {
     play: ((name: SoundEffect, loop: boolean) => Sound | undefined)
     startEffects: (() => void)
     setSoundEffectsVolume: ((volume: number) => void)
-    setVisibleOnScreen: ((left: number, right: number, top: number, bottom: number) => void)
 }
 
 const sfx: Sfx = {
     play: play,
     startEffects: startEffects,
-    setSoundEffectsVolume: setSoundEffectsVolume,
-    setVisibleOnScreen: setVisibleOnScreen
+    setSoundEffectsVolume: setSoundEffectsVolume
 }
 
 interface Visibility {
@@ -89,7 +87,7 @@ SOUND_EFFECTS.set('PLANTING_TREE', { start: 36, animationLength: 36, audio: "FOR
 SOUND_EFFECTS.set('HACKING_STONE', { start: 4, animationLength: 8, audio: 'STONEMASON_HACKING', type: 'PERIODIC' })
 SOUND_EFFECTS.set('HOUSE_BURNING', { start: 0, animationLength: 2, audio: 'FIRE', type: 'LOOPING' })
 SOUND_EFFECTS.set('INVESTIGATING', { start: 10, animationLength: 16, audio: 'GEOLOGIST_DIGGING', type: 'PERIODIC' })
-SOUND_EFFECTS.set('FALLING_TREE', { start: 0, animationLength: 4, audio: 'FALLING_TREE', type: 'ONCE'})
+SOUND_EFFECTS.set('FALLING_TREE', { start: 0, animationLength: 4, audio: 'FALLING_TREE', type: 'ONCE' })
 
 function startEffects() {
     if (soundEffectsState === 'RUNNING') {
@@ -145,6 +143,17 @@ function startEffects() {
     setInterval(
         () => {
 
+            // Keep track of what's visible on the screen
+            const upperLeftGamePoint = screenPointToGamePoint({ x: 0, y: 0 }, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, immediateUxState.height)
+            const lowerRightGamePoint = screenPointToGamePoint({ x: immediateUxState.width, y: immediateUxState.height }, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, immediateUxState.height)
+
+            visibility = {
+                left: upperLeftGamePoint.x,
+                right: lowerRightGamePoint.x,
+                top: upperLeftGamePoint.y,
+                bottom: lowerRightGamePoint.y
+            }
+
             // 1) Go through each ongoing actions
             ongoingEffects.forEach((ongoingEffect, id) => {
                 const soundEffect = SOUND_EFFECTS.get(ongoingEffect.action)
@@ -156,7 +165,7 @@ function startEffects() {
                     ongoingEffect.point.x < visibility.right &&
                     ongoingEffect.point.y < visibility.top &&
                     ongoingEffect.point.y > visibility.bottom) {
-                        ongoingEffect.playing = play(soundEffect.audio, soundEffect.type === 'LOOPING')
+                    ongoingEffect.playing = play(soundEffect.audio, soundEffect.type === 'LOOPING')
                 }
 
                 // 3) Step index
@@ -177,15 +186,6 @@ function setSoundEffectsVolume(newVolume: number) {
     volume = newVolume
 
     soundInstances.forEach(soundInstance => soundInstance.setVolume(newVolume))
-}
-
-function setVisibleOnScreen(left: number, right: number, top: number, bottom: number): void {
-    visibility = {
-        left,
-        right,
-        top,
-        bottom
-    }
 }
 
 export { sfx }

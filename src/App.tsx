@@ -31,7 +31,7 @@ const LONGEST_TICK_LENGTH = 500
 
 export const DEFAULT_VOLUME = 0.5
 
-const globalSyncState = {
+export const immediateUxState = {
     mouseDown: false,
     mouseDownX: 0,
     mouseDownY: 0,
@@ -41,7 +41,9 @@ const globalSyncState = {
     translateXAtMouseDown: 0,
     translateYAtMouseDown: 0,
     width: 0,
-    height: 0
+    height: 0,
+    translate: { x: 0, y: 0 },
+    scale: DEFAULT_SCALE
 }
 
 let nextAnimation = 0
@@ -114,11 +116,6 @@ interface AppState {
     possibleRoadConnections?: Point[]
 
     selected: Point
-
-    scale: number
-
-    translateX: number
-    translateY: number
 
     gameWidth: number
     gameHeight: number
@@ -202,10 +199,7 @@ class App extends Component<AppProps, AppState> {
 
         this.state = {
             showAvailableConstruction: false,
-            translateX: 0,
-            translateY: 0,
             selected: { x: 0, y: 0 },
-            scale: DEFAULT_SCALE,
             gameWidth: 0,
             gameHeight: 0,
             showMenu: false,
@@ -439,14 +433,14 @@ class App extends Component<AppProps, AppState> {
 
         const id = getNextAnimationId()
 
-        const scaleY = this.state.scale
+        const scaleY = immediateUxState.scale
 
-        const newTranslateX = (globalSyncState.width / 2) - point.x * this.state.scale
-        const newTranslateY = (globalSyncState.height / 2) + point.y * scaleY - globalSyncState.height
+        const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
+        const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
 
-        const start = { x: this.state.translateX, y: this.state.translateY }
-        const diffX = newTranslateX - this.state.translateX
-        const diffY = newTranslateY - this.state.translateY
+        const start = { x: immediateUxState.translate.x, y: immediateUxState.translate.y }
+        const diffX = newTranslateX - immediateUxState.translate.x
+        const diffY = newTranslateY - immediateUxState.translate.y
 
         const timer = setInterval(
             () => {
@@ -455,10 +449,10 @@ class App extends Component<AppProps, AppState> {
                 if (animation) {
                     const factor = (1 - Math.cos(Math.PI * (animation.counter / ANIMATION_STEPS))) / 2
 
-                    this.setState({
-                        translateX: start.x + diffX * factor,
-                        translateY: start.y + diffY * factor
-                    })
+                    immediateUxState.translate = {
+                        x: start.x + diffX * factor,
+                        y: start.y + diffY * factor
+                    }
 
                     if (animation.counter == ANIMATION_STEPS) {
                         clearInterval(animation.timer)
@@ -474,15 +468,15 @@ class App extends Component<AppProps, AppState> {
     goToPointImmediate(point: Point): void {
         console.info("Go to point immediately: " + JSON.stringify(point))
 
-        const scaleY = this.state.scale
+        const scaleY = immediateUxState.scale
 
-        const newTranslateX = (globalSyncState.width / 2) - point.x * this.state.scale
-        const newTranslateY = (globalSyncState.height / 2) + point.y * scaleY - globalSyncState.height
+        const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
+        const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
 
-        this.setState({
-            translateX: newTranslateX,
-            translateY: newTranslateY
-        })
+        immediateUxState.translate = {
+            x: newTranslateX,
+            y: newTranslateY
+        }
     }
 
     closeFriendlyHouseInfo(): void {
@@ -515,23 +509,23 @@ class App extends Component<AppProps, AppState> {
     }
 
     moveGameUp(): void {
-        this.setState({ translateY: this.state.translateY + 10 })
+        immediateUxState.translate.y += 10
     }
 
     moveGameDown(): void {
-        this.setState({ translateY: this.state.translateY - 10 })
+        immediateUxState.translate.y -= 10
     }
 
     moveGameRight(): void {
-        this.setState({ translateX: this.state.translateX - 10 })
+        immediateUxState.translate.x -= 10
     }
 
     moveGameLeft(): void {
-        this.setState({ translateX: this.state.translateX + 10 })
+        immediateUxState.translate.x += 10
     }
 
     zoomIn(): void {
-        this.zoom(this.state.scale + 1)
+        this.zoom(immediateUxState.scale + 1)
     }
 
     /* Should move to the game canvas so the app doesn't have to know about this */
@@ -543,20 +537,17 @@ class App extends Component<AppProps, AppState> {
 
         /* Center after zooming */
         const centerGamePoint = {
-            x: (globalSyncState.width / 2 - this.state.translateX) / this.state.scale,
-            y: (globalSyncState.height / 2 + this.state.translateY) / (this.state.scale)
+            x: (immediateUxState.width / 2 - immediateUxState.translate.x) / immediateUxState.scale,
+            y: (immediateUxState.height / 2 + immediateUxState.translate.y) / (immediateUxState.scale)
         }
 
         const newTranslate = {
-            x: globalSyncState.width / 2 - centerGamePoint.x * newScale,
-            y: globalSyncState.height / 2 - globalSyncState.height + centerGamePoint.y * newScale
+            x: immediateUxState.width / 2 - centerGamePoint.x * newScale,
+            y: immediateUxState.height / 2 - immediateUxState.height + centerGamePoint.y * newScale
         }
 
-        this.setState({
-            translateX: newTranslate.x,
-            translateY: newTranslate.y,
-            scale: newScale
-        })
+        immediateUxState.translate = newTranslate
+        immediateUxState.scale = newScale
     }
 
     onSpeedSliderChange(value: number): void {
@@ -564,19 +555,19 @@ class App extends Component<AppProps, AppState> {
     }
 
     zoomOut(): void {
-        this.zoom(this.state.scale - 1)
+        this.zoom(immediateUxState.scale - 1)
     }
 
     onMouseDown(event: React.MouseEvent): void {
 
         if (event.button === 2) {
-            globalSyncState.mouseDown = true
-            globalSyncState.mouseDownX = event.pageX
-            globalSyncState.mouseDownY = event.pageY
-            globalSyncState.mouseMoving = false
+            immediateUxState.mouseDown = true
+            immediateUxState.mouseDownX = event.pageX
+            immediateUxState.mouseDownY = event.pageY
+            immediateUxState.mouseMoving = false
 
-            globalSyncState.translateXAtMouseDown = this.state.translateX
-            globalSyncState.translateYAtMouseDown = this.state.translateY
+            immediateUxState.translateXAtMouseDown = immediateUxState.translate.x
+            immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
 
             this.setState({ cursorState: 'DRAGGING' })
         }
@@ -585,27 +576,27 @@ class App extends Component<AppProps, AppState> {
     }
 
     onMouseMove(event: React.MouseEvent): void {
-        if (globalSyncState.mouseDown) {
-            const deltaX = (event.pageX - globalSyncState.mouseDownX)
-            const deltaY = (event.pageY - globalSyncState.mouseDownY)
+        if (immediateUxState.mouseDown) {
+            const deltaX = (event.pageX - immediateUxState.mouseDownX)
+            const deltaY = (event.pageY - immediateUxState.mouseDownY)
 
             /* Detect move to separate move from click */
             if (deltaX * deltaX + deltaY * deltaY > 25) {
-                globalSyncState.mouseMoving = true
+                immediateUxState.mouseMoving = true
             }
 
-            this.setState({
-                translateX: globalSyncState.translateXAtMouseDown + deltaX,
-                translateY: globalSyncState.translateYAtMouseDown + deltaY
-            })
+            immediateUxState.translate = {
+                x: immediateUxState.translateXAtMouseDown + deltaX,
+                y: immediateUxState.translateYAtMouseDown + deltaY
+            }
         }
 
         event.stopPropagation()
     }
 
     onMouseUp(event: React.MouseEvent): void {
-        globalSyncState.mouseDown = false
-        globalSyncState.mouseMoving = false
+        immediateUxState.mouseDown = false
+        immediateUxState.mouseMoving = false
 
         this.setState({ cursorState: 'NOTHING' })
 
@@ -616,17 +607,8 @@ class App extends Component<AppProps, AppState> {
     onMouseLeave(event: React.MouseEvent): void {
         this.setState({ cursorState: 'NOTHING' })
 
-        globalSyncState.mouseDown = false
-        globalSyncState.mouseMoving = false
-    }
-
-    componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>): void {
-        if (prevState.translateX !== this.state.translateX || prevState.translateY !== this.state.translateY) {
-            const upperLeftGamePoint = screenPointToGamePoint({ x: 0, y: 0 }, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
-            const lowerRightGamePoint = screenPointToGamePoint({ x: globalSyncState.width, y: globalSyncState.height }, this.state.translateX, this.state.translateY, this.state.scale, globalSyncState.height)
-
-            sfx.setVisibleOnScreen(upperLeftGamePoint.x, lowerRightGamePoint.x, upperLeftGamePoint.y, lowerRightGamePoint.y)
-        }
+        immediateUxState.mouseDown = false
+        immediateUxState.mouseMoving = false
     }
 
     async componentDidMount(): Promise<void> {
@@ -647,10 +629,10 @@ class App extends Component<AppProps, AppState> {
         if (this.selfNameRef.current) {
 
             // Store the width and height of the canvas when it's been rendered
-            globalSyncState.width = this.selfNameRef.current.clientWidth
-            globalSyncState.height = this.selfNameRef.current.clientHeight
+            immediateUxState.width = this.selfNameRef.current.clientWidth
+            immediateUxState.height = this.selfNameRef.current.clientHeight
 
-            console.info("Screen dimensions: " + globalSyncState.width + "x" + globalSyncState.height)
+            console.info("Screen dimensions: " + immediateUxState.width + "x" + immediateUxState.height)
 
             /* Request focus if the game is not blocked */
             if (!this.state.showMenu) {
@@ -673,8 +655,8 @@ class App extends Component<AppProps, AppState> {
         window.addEventListener("resize",
             () => {
                 if (this.selfNameRef.current) {
-                    globalSyncState.width = this.selfNameRef.current.clientWidth
-                    globalSyncState.height = this.selfNameRef.current.clientHeight
+                    immediateUxState.width = this.selfNameRef.current.clientWidth
+                    immediateUxState.height = this.selfNameRef.current.clientHeight
                 }
             }
         )
@@ -692,7 +674,7 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Filter clicks that are really the end of moving the mouse */
-        if (globalSyncState.mouseMoving) {
+        if (immediateUxState.mouseMoving) {
             return
         }
 
@@ -995,18 +977,18 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Only move map with one movement */
-        if (!globalSyncState.touchMoveOngoing) {
+        if (!immediateUxState.touchMoveOngoing) {
             const touch = touches[0]
 
-            globalSyncState.touchIdentifier = touch.identifier
+            immediateUxState.touchIdentifier = touch.identifier
 
-            globalSyncState.mouseDownX = touch.pageX
-            globalSyncState.mouseDownY = touch.pageY
-            globalSyncState.mouseMoving = false
-            globalSyncState.touchMoveOngoing = true
+            immediateUxState.mouseDownX = touch.pageX
+            immediateUxState.mouseDownY = touch.pageY
+            immediateUxState.mouseMoving = false
+            immediateUxState.touchMoveOngoing = true
 
-            globalSyncState.translateXAtMouseDown = this.state.translateX
-            globalSyncState.translateYAtMouseDown = this.state.translateY
+            immediateUxState.translateXAtMouseDown = immediateUxState.translate.x
+            immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
         }
     }
 
@@ -1023,19 +1005,19 @@ class App extends Component<AppProps, AppState> {
                 continue
             }
 
-            if (globalSyncState.touchMoveOngoing && touch.identifier === globalSyncState.touchIdentifier) {
-                const deltaX = (touch.pageX - globalSyncState.mouseDownX)
-                const deltaY = (touch.pageY - globalSyncState.mouseDownY)
+            if (immediateUxState.touchMoveOngoing && touch.identifier === immediateUxState.touchIdentifier) {
+                const deltaX = (touch.pageX - immediateUxState.mouseDownX)
+                const deltaY = (touch.pageY - immediateUxState.mouseDownY)
 
                 /* Detect move to separate move from click */
                 if (deltaX * deltaX + deltaY * deltaY > 25) {
-                    globalSyncState.mouseMoving = true
+                    immediateUxState.mouseMoving = true
                 }
 
-                this.setState({
-                    translateX: globalSyncState.translateXAtMouseDown + deltaX,
-                    translateY: globalSyncState.translateYAtMouseDown + deltaY
-                })
+                immediateUxState.translate = {
+                    x: immediateUxState.translateXAtMouseDown + deltaX,
+                    y: immediateUxState.translateYAtMouseDown + deltaY
+                }
             }
 
             /* Store ongoing touches just because ... */
@@ -1060,7 +1042,7 @@ class App extends Component<AppProps, AppState> {
         console.log("touchcancel.")
 
         /* Stop moving */
-        globalSyncState.touchMoveOngoing = false
+        immediateUxState.touchMoveOngoing = false
 
         const touches = event.changedTouches
 
@@ -1074,7 +1056,7 @@ class App extends Component<AppProps, AppState> {
         event.preventDefault()
 
         /* Stop moving */
-        globalSyncState.touchMoveOngoing = false
+        immediateUxState.touchMoveOngoing = false
 
         const touches = event.changedTouches
 
@@ -1107,11 +1089,9 @@ class App extends Component<AppProps, AppState> {
                 tabIndex={1}>
 
                 <GameCanvas
-                    scale={this.state.scale}
-                    translateX={this.state.translateX}
-                    translateY={this.state.translateY}
-                    screenWidth={globalSyncState.width}
-                    screenHeight={globalSyncState.height}
+                    scale={immediateUxState.scale}
+                    screenWidth={immediateUxState.width}
+                    screenHeight={immediateUxState.height}
                     onKeyDown={this.onKeyDown}
                     onPointClicked={this.onPointClicked.bind(this)}
                     selectedPoint={this.state.selected}
@@ -1120,8 +1100,8 @@ class App extends Component<AppProps, AppState> {
                     newRoad={this.state.newRoad}
                     possibleRoadConnections={this.state.possibleRoadConnections}
                     showAvailableConstruction={this.state.showAvailableConstruction}
-                    width={globalSyncState.width}
-                    height={globalSyncState.height}
+                    width={immediateUxState.width}
+                    height={immediateUxState.height}
                     cursorState={this.state.cursorState}
                     heightAdjust={this.state.heightAdjust}
                 />
@@ -1131,7 +1111,7 @@ class App extends Component<AppProps, AppState> {
                 <GameMenu
                     currentPlayerId={this.props.selfPlayerId}
                     onChangedZoom={this.zoom.bind(this)}
-                    currentZoom={this.state.scale}
+                    currentZoom={immediateUxState.scale}
                     minZoom={MIN_SCALE}
                     maxZoom={MAX_SCALE}
                     onSetSpeed={this.onSpeedSliderChange.bind(this)}

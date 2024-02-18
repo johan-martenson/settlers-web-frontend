@@ -1285,7 +1285,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 return
             }
 
-            let treeDrawInfo = treeAnimations.getFallingTree(tree.type, tree.animation)
+            const treeDrawInfo = treeAnimations.getFallingTree(tree.type, tree.animation)
 
             if (treeDrawInfo) {
                 toDrawNormal.push({

@@ -5,21 +5,21 @@ Todo
 2. More sounds
 3. Planer
 4. Activity should stop around a flag where a fight is happening
-5. Finish Military settings - weak/strong in center, closer to the edge, and at the edge
-6. Make materials visible when donkeys carry
-7. In-game and in-game-creation chat
-8. Finish making all react components into functional components
-9. Fix statistics components. Should be general statistics to compare players, and Merchandise to see production and/or inventory
-10. Divide src into sub-folders better. prepare-game, play-game?
-11. Quota handling for planks
-12. Add the propeller to the mill
-13. Gradually draw finished building on top of the under construction-image
-14. Add remaining gravel after a stone has been fully removed as a decoration
-15. Add terrain overlaps to make the nature look smoother. Start with snow.
-16. FIX HOVER AND ONCLICK so that the closest point is always chosen
-17. Fix ugly scrollbar in type control
-18. Soldiers waiting to fight should be facing the attacked building's flag
-19. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
+5. Make materials visible when donkeys carry
+6. In-game and in-game-creation chat
+7. Finish making all react components into functional components
+8. Fix statistics components. Should be general statistics to compare players, and Merchandise to see production and/or inventory
+9. Divide src into sub-folders better. prepare-game, play-game?
+10. Quota handling for planks
+11. Add the propeller to the mill
+12. Gradually draw finished building on top of the under construction-image
+13. Add remaining gravel after a stone has been fully removed as a decoration
+14. Add terrain overlaps to make the nature look smoother. Start with snow.
+15. FIX HOVER AND ONCLICK so that the closest point is always chosen
+16. Fix ugly scrollbar in type control
+17. Soldiers waiting to fight should be facing the attacked building's flag
+18. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
+19. Update fighter's damage and health stats
 
 
 
@@ -43,3 +43,4 @@ Done
 22. Road promoted - update in the map
 18. Stones that are out of sight and are removed
 11. Animation when trees fall
+5. Finish Military settings - weak/strong in center, closer to the edge, and at the edge

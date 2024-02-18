@@ -389,7 +389,7 @@ export type WorkerAction = 'PLANTING_TREE' |
     'DIE' |
     'GET_HIT'
 
-export type Action = 'FALLING_TREE' | 'HOUSE_BURNING' | WorkerAction
+export type Action = 'FALLING_TREE' | 'HOUSE_BURNING' | WorkerAction
 
 export type DecorationType = 'BROWN_MUSHROOM' |
     'MINI_BROWN_MUSHROOM' |

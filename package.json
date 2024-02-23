@@ -13,7 +13,7 @@
     "d3": "^7.8.2",
     "@types/react": "^18.2.58",
     "@types/react-dom": "^18.2.19",
-    "fuite": "^4.0.4",
+    "fuite": "^4.0.5",
     "react": "^18.0.1",
     "react-dom": "^18.0.1",
     "react-scripts": "5.0.1",

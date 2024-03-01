@@ -1660,10 +1660,10 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-components@^9.46.6":
-  version "9.46.6"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-components/-/react-components-9.46.6.tgz#4e13568eb2fcd05191bd8d41271cd5cfd096dd29"
-  integrity sha512-/d3pcR+CXgXBAXrZZ2eTCr16DrrP+vv013pE8g8yjNJ6pULycN4YiVSM724ObbKlWLWyepz7pszhmmYUyIHgoQ==
+"@fluentui/react-components@^9.46.7":
+  version "9.46.7"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-components/-/react-components-9.46.7.tgz#4fa97acbdbdad9d81c506947a073938bca558231"
+  integrity sha512-UyNUwZeLTp5Rl+aZ2yGldjQz/CouByDsLXFhyyEbf+OWOMpD2fujvusirGYmQJKANd+smfvsCPpB0hHq+WaIAA==
   dependencies:
     "@fluentui/react-accordion" "^9.3.43"
     "@fluentui/react-alert" "9.0.0-beta.111"
@@ -1705,7 +1705,7 @@
     "@fluentui/react-table" "^9.11.12"
     "@fluentui/react-tabs" "^9.4.11"
     "@fluentui/react-tabster" "^9.19.2"
-    "@fluentui/react-tags" "^9.0.29"
+    "@fluentui/react-tags" "^9.1.0"
     "@fluentui/react-text" "^9.4.11"
     "@fluentui/react-textarea" "^9.3.65"
     "@fluentui/react-theme" "^9.1.16"
@@ -2182,10 +2182,10 @@
     keyborg "^2.5.0"
     tabster "^6.0.1"
 
-"@fluentui/react-tags@^9.0.29":
-  version "9.0.29"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-tags/-/react-tags-9.0.29.tgz#b58a80a5270f619d0e23b89be4eb864d29b37879"
-  integrity sha512-fUdtblSIy2A8zR36VEOK0mnRxw9m9UE0VhE851h+/evytI+bW6Zs52a7g64bMvclAtwhBWZCKrFHBZw46pXohQ==
+"@fluentui/react-tags@^9.1.0":
+  version "9.1.0"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-tags/-/react-tags-9.1.0.tgz#b74c4617f0cd8c44efbc7c60e62ae717f642c82d"
+  integrity sha512-RvxvN2jSiKqlQnPr6Nwr3U3M7+4D2kzuSzw4nErmX98iCrprbtgioFj6FBQ9sXly+Oc2ov6RsLDSjqv8nwNRqg==
   dependencies:
     "@fluentui/keyboard-keys" "^9.0.7"
     "@fluentui/react-aria" "^9.9.1"

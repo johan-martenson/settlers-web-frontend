@@ -4785,10 +4785,10 @@ chrome-trace-event@^1.0.2:
   resolved "https://registry.yarnpkg.com/chrome-trace-event/-/chrome-trace-event-1.0.3.tgz#1015eced4741e15d06664a957dbbf50d041e26ac"
   integrity sha512-p3KULyQg4S7NIHixdwbGX+nFHkoBiA4YQmyWtjb8XngSKV124nJmRysgAeujbUVb15vh+RvFUfCPqU7rXk+hZg==
 
-chromium-bidi@0.5.9:
-  version "0.5.9"
-  resolved "https://registry.yarnpkg.com/chromium-bidi/-/chromium-bidi-0.5.9.tgz#f068bd10e8a3007bc842ae99f5038c8689bf58a5"
-  integrity sha512-wOTX3m2zuHX0zRX4h7Ol1DAGz0cqHzo2IrAPvOqBxdd4ZR32vxg4FKNjmBihi1oP9b1QGSBBG5VNUUXUCsxDfg==
+chromium-bidi@0.5.10:
+  version "0.5.10"
+  resolved "https://registry.yarnpkg.com/chromium-bidi/-/chromium-bidi-0.5.10.tgz#03ac8381e6a0d6be67886d27f77777ef3a978429"
+  integrity sha512-4hsPE1VaLLM/sgNK/SlLbI24Ra7ZOuWAjA3rhw1lVCZ8ZiUgccS6cL5L/iqo4hjRcl5vwgYJ8xTtbXdulA9b6Q==
   dependencies:
     mitt "3.0.1"
     urlpattern-polyfill "10.0.0"
@@ -6844,10 +6844,10 @@ fsevents@^2.3.2, fsevents@~2.3.2:
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.3.tgz#cac6407785d03675a2a5e1a5305c697b347d90d6"
   integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
-fuite@^4.0.5:
-  version "4.0.5"
-  resolved "https://registry.yarnpkg.com/fuite/-/fuite-4.0.5.tgz#95db2997ceb79cfaccf87eb6af6b733d053a8934"
-  integrity sha512-vZB8CQqB6bv58e3+rEhpLABTCHdY6RPZvz8WMCnUBKcZfL/g+2EAdK3k73803aAGUl2VSnK/vnKAT1XtYjR3dA==
+fuite@^4.0.6:
+  version "4.0.6"
+  resolved "https://registry.yarnpkg.com/fuite/-/fuite-4.0.6.tgz#2bfca491f74ad6188c8066a8308af3a82bcc08f3"
+  integrity sha512-kwdwL45cgACkG1NhrVJsNuixS9wVc75wL98CR9bIdN9gJCTGTlWeZB8ye/2ak/tmm0Ax23YgrDQrT0zZh9mxvw==
   dependencies:
     as-table "^1.0.55"
     atob "^2.1.2"
@@ -6860,7 +6860,7 @@ fuite@^4.0.5:
     ora "^8.0.1"
     please-upgrade-node "^3.2.0"
     pretty-bytes "^6.1.1"
-    puppeteer "^22.2.0"
+    puppeteer "^22.3.0"
     quick-lru "^7.0.0"
     source-map "^0.7.4"
     stacktrace-parser "^0.1.10"
@@ -10163,26 +10163,26 @@ punycode@^2.1.0, punycode@^2.1.1:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.0.tgz#f67fa67c94da8f4d0cfff981aee4118064199b8f"
   integrity sha512-rRV+zQD8tVFys26lAGR9WUuS4iUAngJScM+ZRSKtvl5tKeZ2t5bvdNFdNHBW9FWR4guGHlgmsZ1G7BSm2wTbuA==
 
-puppeteer-core@22.2.0:
-  version "22.2.0"
-  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-22.2.0.tgz#85bf2c492ba02e8051bb75dff3043d21d9945f21"
-  integrity sha512-rxLM860FP05CxCPAn6dwY0KnVhbnogsXu4XORb+2hb/va69v7R1VdJWLMGHd7EE5wfpT8oFZ7Q6NN85OhOtV9Q==
+puppeteer-core@22.3.0:
+  version "22.3.0"
+  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-22.3.0.tgz#89fa75bbbcfa2927e3045c69253cc676f7bda728"
+  integrity sha512-Ho5Vdpdro05ZyCx/l5Hkc5vHiibKTaY37fIAD9NF9Gi/vDxkVTeX40U/mFnEmeoxyuYALvWCJfi7JTT82R6Tuw==
   dependencies:
     "@puppeteer/browsers" "2.1.0"
-    chromium-bidi "0.5.9"
+    chromium-bidi "0.5.10"
     cross-fetch "4.0.0"
     debug "4.3.4"
     devtools-protocol "0.0.1249869"
     ws "8.16.0"
 
-puppeteer@^22.2.0:
-  version "22.2.0"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-22.2.0.tgz#2f4e4bff252bc6999f213288ed717940b27b0918"
-  integrity sha512-0Ax7zeqqbQL6Zcpo1WAvrqWQAnGsLB4tmQUUwsb5Cfo05XaQ78LWUUjaO4um7qaddKpZfk0vXlGcRVwtedpWfg==
+puppeteer@^22.3.0:
+  version "22.3.0"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-22.3.0.tgz#4ea1f1c8c5a527b0e4ca21a242af7d3d9b89e294"
+  integrity sha512-GC+tyjzYKjaNjhlDAuqRgDM+IOsqOG75Da4L28G4eULNLLxKDt+79x2OOSQ47HheJBgGq7ATSExNE6gayxP6cg==
   dependencies:
     "@puppeteer/browsers" "2.1.0"
     cosmiconfig "9.0.0"
-    puppeteer-core "22.2.0"
+    puppeteer-core "22.3.0"
 
 q@^1.1.2:
   version "1.5.1"

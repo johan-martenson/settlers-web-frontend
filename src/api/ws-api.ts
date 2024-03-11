@@ -246,12 +246,18 @@ export interface Monitor {
     setStrengthWhenPopulatingMilitaryBuildings: ((strength: number) => void)
     setDefenseStrength: ((strength: number) => void)
     setDefenseFromSurroundingBuildings: ((strength: number) => void)
+    setMilitaryPopulationFarFromBorder: ((amount: number) => void)
+    setMilitaryPopulationCloserToBorder: ((amount: number) => void)
+    setMilitaryPopulationCloseToBorder: ((amount: number) => void)
 
     setGameSpeed: ((a: GameSpeed) => void)
 
     getStrengthWhenPopulatingMilitaryBuildings: (() => Promise<number>)
     getDefenseStrength: (() => Promise<number>)
     getDefenseFromSurroundingBuildings: (() => Promise<number>)
+    getPopulateMilitaryFarFromBorder: (() => Promise<number>)
+    getPopulateMilitaryCloserToBorder: (() => Promise<number>)
+    getPopulateMilitaryCloseToBorder: (() => Promise<number>)
 
     addDetailedMonitoring: ((id: HouseId | FlagId) => void)
 
@@ -409,12 +415,18 @@ const monitor: Monitor = {
     setStrengthWhenPopulatingMilitaryBuildings,
     setDefenseStrength,
     setDefenseFromSurroundingBuildings,
+    setMilitaryPopulationFarFromBorder,
+    setMilitaryPopulationCloserToBorder,
+    setMilitaryPopulationCloseToBorder,
 
     setGameSpeed,
 
     getStrengthWhenPopulatingMilitaryBuildings,
     getDefenseStrength,
     getDefenseFromSurroundingBuildings,
+    getPopulateMilitaryFarFromBorder,
+    getPopulateMilitaryCloserToBorder,
+    getPopulateMilitaryCloseToBorder,
 
     addDetailedMonitoring,
 
@@ -2269,6 +2281,96 @@ function getDefenseFromSurroundingBuildings(): Promise<number> {
     })
 }
 
+function getPopulateMilitaryFarFromBorder(): Promise<number> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_POPULATE_MILITARY_FAR_FROM_BORDER',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            if (isNumberReplyMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply.amount)
+            }
+        })
+    })
+}
+
+function getPopulateMilitaryCloserToBorder(): Promise<number> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_POPULATE_MILITARY_CLOSER_TO_BORDER',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            if (isNumberReplyMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply.amount)
+            }
+        })
+    })
+}
+
+function getPopulateMilitaryCloseToBorder(): Promise<number> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_POPULATE_MILITARY_CLOSE_TO_BORDER',
+            requestId
+        }
+    ))
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            if (isNumberReplyMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                result(reply.amount)
+            }
+        })
+    })
+}
+
 function setGameSpeed(speed: GameSpeed) {
     console.log("Set game speed: " + speed)
 
@@ -2276,6 +2378,33 @@ function setGameSpeed(speed: GameSpeed) {
         {
             command: 'SET_GAME_SPEED',
             speed
+        }
+    ))
+}
+
+function setMilitaryPopulationFarFromBorder(population: number): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_MILITARY_POPULATION_FAR_FROM_BORDER',
+            population
+        }
+    ))
+}
+
+function setMilitaryPopulationCloserToBorder(population: number): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_MILITARY_POPULATION_CLOSER_TO_BORDER',
+            population
+        }
+    ))
+}
+
+function setMilitaryPopulationCloseToBorder(population: number): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_MILITARY_POPULATION_CLOSE_TO_BORDER',
+            population
         }
     ))
 }

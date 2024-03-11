@@ -39,7 +39,7 @@ const HouseInfo = (props: HouseInfoProps) => {
         return () => monitor.removeDetailedMonitoring(house.id)
 
         // Only change detailed monitoring if the house id changes
-    }, [house])
+    }, [house.id])
 
     return (
         <>

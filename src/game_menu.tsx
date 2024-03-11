@@ -21,6 +21,8 @@ interface GameMenuProps {
     isMusicPlayerVisible: boolean
     isTypingControllerVisible: boolean
     isAvailableConstructionVisible: boolean
+    isAnimateMapScrollingSet: boolean
+    isAnimateZoomingSet: boolean
     defaultZoom: number
 
     onChangedZoom: ((scale: number) => void)
@@ -36,12 +38,14 @@ interface GameMenuProps {
     onSetAvailableConstructionVisible: ((visible: boolean) => void)
     onSetMusicVolume: ((volume: number) => void)
     onSetHeightAdjust: ((heightAdjust: number) => void)
+    onSetAnimateMapScrolling: ((shouldAnimate: boolean) => void)
+    onSetAnimateZooming: ((shouldAnimate: boolean) => void)
 }
 
 const GameMenu = (
-    { minZoom, maxZoom, isOpen, defaultZoom, areTitlesVisible, isMusicPlayerVisible, isTypingControllerVisible, isAvailableConstructionVisible,
+    { minZoom, maxZoom, isOpen, defaultZoom, areTitlesVisible, isMusicPlayerVisible, isTypingControllerVisible, isAvailableConstructionVisible, isAnimateMapScrollingSet, isAnimateZoomingSet,
         onClose, onChangedZoom, onSetTitlesVisible, onSetMusicPlayerVisible, onSetTypingControllerVisible, onSetAvailableConstructionVisible, onLeaveGame, onStatistics,
-        onHelp, onSetTransportPriority, onSetMusicVolume, onSetHeightAdjust }: GameMenuProps
+        onHelp, onSetTransportPriority, onSetMusicVolume, onSetHeightAdjust, onSetAnimateMapScrolling, onSetAnimateZooming }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
 
@@ -112,6 +116,20 @@ const GameMenu = (
                             defaultChecked={isAvailableConstructionVisible}
                         />
                     </Field>
+
+                    <Field label="Animate scrolling in map">
+                        <Switch
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAnimateMapScrolling(data.checked)}
+                            defaultChecked={isAnimateMapScrollingSet}
+                        />
+                    </Field>
+                    <Field label="Animate zooming">
+                        <Switch
+                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAnimateZooming(data.checked)}
+                            defaultChecked={isAnimateZoomingSet}
+                        />
+                    </Field>
+
 
                     <Button onClick={() => {
                         onStatistics()

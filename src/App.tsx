@@ -21,11 +21,13 @@ import { FlagIcon, HouseIcon } from './icon'
 import { HouseInfo } from './house_info/house_info'
 import { sfx } from './sound/sound_effects'
 import { Quotas } from './quotas'
+import { animator } from './utils/animator'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
 const MAX_SCALE = 70
 const MIN_SCALE = 10
+const ARROW_KEY_MOVE_DISTANCE = 20
 
 const LONGEST_TICK_LENGTH = 500
 
@@ -133,6 +135,8 @@ interface AppState {
     showMenu: boolean
     isMusicPlayerVisible: boolean
     isTypingControllerVisible: boolean
+    animateMapScrolling: boolean
+    animateZoom: boolean
 
     showTitles: boolean
     showAvailableConstruction: boolean
@@ -151,7 +155,6 @@ interface AppState {
 
 class App extends Component<AppProps, AppState> {
 
-    private keyHandlers: Map<number, (() => void)> = new Map()
     private selfNameRef = React.createRef<HTMLDivElement>()
     private readonly commands: Map<string, Command>
     monitoringPromise: Promise<void>
@@ -176,20 +179,6 @@ class App extends Component<AppProps, AppState> {
         this.onKeyDown = this.onKeyDown.bind(this)
 
         this.toggleDetails = this.toggleDetails.bind(this)
-
-        this.zoomOut = this.zoomOut.bind(this)
-        this.zoomIn = this.zoomIn.bind(this)
-
-        this.keyHandlers.set(27, this.closeActiveMenu) // ESC
-        this.keyHandlers.set(32, this.toggleDetails)   // SPACE
-        this.keyHandlers.set(38, this.moveGameUp)      // UP
-        this.keyHandlers.set(40, this.moveGameDown)    // DOWN
-        this.keyHandlers.set(39, this.moveGameRight)   // RIGHT
-        this.keyHandlers.set(37, this.moveGameLeft)    // LEFT
-        this.keyHandlers.set(187, this.zoomIn)         // +
-        this.keyHandlers.set(189, this.zoomOut)        // -
-        this.keyHandlers.set(77, this.showMenu)        // M
-
         this.moveGameRight = this.moveGameRight.bind(this)
         this.moveGameLeft = this.moveGameLeft.bind(this)
         this.moveGameUp = this.moveGameUp.bind(this)
@@ -211,7 +200,9 @@ class App extends Component<AppProps, AppState> {
             isTypingControllerVisible: true,
             musicVolume: 1,
             heightAdjust: DEFAULT_HEIGHT_ADJUSTMENT,
-            gameState: 'STARTED'
+            gameState: 'STARTED',
+            animateMapScrolling: true,
+            animateZoom: true
         }
 
         /* Set up type control commands */
@@ -404,78 +395,44 @@ class App extends Component<AppProps, AppState> {
         )
     }
 
-    goToHouseAnimated(houseId: HouseId): void {
-        console.info("Go to house with animation: " + houseId)
-
-        const house = monitor.houses.get(houseId)
-
-        if (house) {
-            this.goToPointAnimated({ x: house.x, y: house.y })
-
-            this.setState({ selected: { x: house.x, y: house.y } })
-        }
-    }
-
-    goToHouseImmediate(houseId: HouseId): void {
+    goToHouse(houseId: HouseId): void {
         console.info("Go to house immediately: " + houseId)
 
         const house = monitor.houses.get(houseId)
 
         if (house) {
-            this.goToPointImmediate({ x: house.x, y: house.y })
+            this.goToPoint({ x: house.x, y: house.y })
 
             this.setState({ selected: { x: house.x, y: house.y } })
         }
     }
 
-    goToPointAnimated(point: Point): void {
-        console.info("Go to point animated: " + JSON.stringify(point))
-
-        const id = getNextAnimationId()
-
-        const scaleY = immediateUxState.scale
-
-        const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
-        const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
-
-        const start = { x: immediateUxState.translate.x, y: immediateUxState.translate.y }
-        const diffX = newTranslateX - immediateUxState.translate.x
-        const diffY = newTranslateY - immediateUxState.translate.y
-
-        const timer = setInterval(
-            () => {
-                const animation = ongoingAnimations.get(id)
-
-                if (animation) {
-                    const factor = (1 - Math.cos(Math.PI * (animation.counter / ANIMATION_STEPS))) / 2
-
-                    immediateUxState.translate = {
-                        x: start.x + diffX * factor,
-                        y: start.y + diffY * factor
-                    }
-
-                    if (animation.counter == ANIMATION_STEPS) {
-                        clearInterval(animation.timer)
-                    }
-
-                    animation.counter += 1
-                }
-            }, 1000 / ANIMATION_FPS)
-
-        ongoingAnimations.set(id, { counter: 0, timer })
+    setNewTranslatedAnimated(newTranslateX: number, newTranslateY: number) {
+        animator.animateSeveral('TRANSLATE', (newTranslate) => {
+            immediateUxState.translate = {
+                x: newTranslate[0],
+                y: newTranslate[1]
+            }
+        },
+            [immediateUxState.translate.x, immediateUxState.translate.y],
+            [newTranslateX, newTranslateY])
     }
 
-    goToPointImmediate(point: Point): void {
-        console.info("Go to point immediately: " + JSON.stringify(point))
+    goToPoint(point: Point): void {
+        console.info("Go to point: " + JSON.stringify(point))
 
         const scaleY = immediateUxState.scale
 
         const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
         const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
 
-        immediateUxState.translate = {
-            x: newTranslateX,
-            y: newTranslateY
+        if (this.state.animateMapScrolling) {
+            this.setNewTranslatedAnimated(newTranslateX, newTranslateY)
+        } else {
+            immediateUxState.translate = {
+                x: newTranslateX,
+                y: newTranslateY
+            }
         }
     }
 
@@ -509,53 +466,78 @@ class App extends Component<AppProps, AppState> {
     }
 
     moveGameUp(): void {
-        immediateUxState.translate.y += 10
+        if (this.state.animateMapScrolling) {
+            this.setNewTranslatedAnimated(immediateUxState.translate.x, immediateUxState.translate.y + ARROW_KEY_MOVE_DISTANCE)
+        } else {
+            immediateUxState.translate.y += ARROW_KEY_MOVE_DISTANCE
+        }
     }
 
     moveGameDown(): void {
-        immediateUxState.translate.y -= 10
+        if (this.state.animateMapScrolling) {
+            this.setNewTranslatedAnimated(immediateUxState.translate.x, immediateUxState.translate.y - ARROW_KEY_MOVE_DISTANCE)
+        } else {
+            immediateUxState.translate.y -= ARROW_KEY_MOVE_DISTANCE
+        }
     }
 
     moveGameRight(): void {
-        immediateUxState.translate.x -= 10
+        if (this.state.animateMapScrolling) {
+            this.setNewTranslatedAnimated(immediateUxState.translate.x - ARROW_KEY_MOVE_DISTANCE, immediateUxState.translate.y)
+        } else {
+            immediateUxState.translate.x -= ARROW_KEY_MOVE_DISTANCE
+        }
     }
 
     moveGameLeft(): void {
-        immediateUxState.translate.x += 10
+        if (this.state.animateMapScrolling) {
+            this.setNewTranslatedAnimated(immediateUxState.translate.x + ARROW_KEY_MOVE_DISTANCE, immediateUxState.translate.y)
+        } else {
+            immediateUxState.translate.x += ARROW_KEY_MOVE_DISTANCE
+        }
     }
 
-    zoomIn(): void {
-        this.zoom(immediateUxState.scale + 1)
-    }
-
-    /* Should move to the game canvas so the app doesn't have to know about this? */
     zoom(newScale: number): void {
 
         // Set boundaries on how much scaling is allowed
         newScale = Math.min(newScale, MAX_SCALE)
         newScale = Math.max(newScale, MIN_SCALE)
 
-        /* Center after zooming */
-        const centerGamePoint = {
-            x: (immediateUxState.width / 2 - immediateUxState.translate.x) / immediateUxState.scale,
-            y: (immediateUxState.height / 2 + immediateUxState.translate.y) / (immediateUxState.scale)
-        }
+        if (this.state.animateZoom) {
+            animator.animate('ZOOM', (newScale) => {
+                const centerGamePoint = {
+                    x: (immediateUxState.width / 2 - immediateUxState.translate.x) / immediateUxState.scale,
+                    y: (immediateUxState.height / 2 + immediateUxState.translate.y) / (immediateUxState.scale)
+                }
 
-        const newTranslate = {
-            x: immediateUxState.width / 2 - centerGamePoint.x * newScale,
-            y: immediateUxState.height / 2 - immediateUxState.height + centerGamePoint.y * newScale
-        }
+                const newTranslate = {
+                    x: immediateUxState.width / 2 - centerGamePoint.x * newScale,
+                    y: immediateUxState.height / 2 - immediateUxState.height + centerGamePoint.y * newScale
+                }
 
-        immediateUxState.translate = newTranslate
-        immediateUxState.scale = newScale
+                immediateUxState.translate = newTranslate
+                immediateUxState.scale = newScale
+            },
+                immediateUxState.scale,
+                newScale)
+        } else {
+            const centerGamePoint = {
+                x: (immediateUxState.width / 2 - immediateUxState.translate.x) / immediateUxState.scale,
+                y: (immediateUxState.height / 2 + immediateUxState.translate.y) / (immediateUxState.scale)
+            }
+
+            const newTranslate = {
+                x: immediateUxState.width / 2 - centerGamePoint.x * newScale,
+                y: immediateUxState.height / 2 - immediateUxState.height + centerGamePoint.y * newScale
+            }
+
+            immediateUxState.translate = newTranslate
+            immediateUxState.scale = newScale
+        }
     }
 
     onSpeedSliderChange(value: number): void {
         setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.gameId)
-    }
-
-    zoomOut(): void {
-        this.zoom(immediateUxState.scale - 1)
     }
 
     onMouseDown(event: React.MouseEvent): void {
@@ -648,7 +630,7 @@ class App extends Component<AppProps, AppState> {
         const headquarter = getHeadquarterForPlayer(this.props.selfPlayerId)
 
         if (headquarter) {
-            this.goToHouseImmediate(headquarter.id)
+            this.goToHouse(headquarter.id)
         }
 
         /* Listen for changes in the window size */
@@ -913,18 +895,18 @@ class App extends Component<AppProps, AppState> {
 
         } else if (event.key === " ") {
             this.toggleDetails()
-        } else if (event.key === "Up") {
+        } else if (event.key === "ArrowUp") {
             this.moveGameUp()
-        } else if (event.key === "Right") {
+        } else if (event.key === "ArrowRight") {
             this.moveGameRight()
-        } else if (event.key === "Down") {
+        } else if (event.key === "ArrowDown") {
             this.moveGameDown()
-        } else if (event.key === "Left") {
+        } else if (event.key === "ArrowLeft") {
             this.moveGameLeft()
         } else if (event.key === "+") {
-            this.zoomIn()
+            this.zoom(immediateUxState.scale + 1)
         } else if (event.key === "-") {
-            this.zoomOut()
+            this.zoom(immediateUxState.scale - 1)
         } else if (event.key === "M") {
             this.showMenu()
         } else {
@@ -1105,7 +1087,7 @@ class App extends Component<AppProps, AppState> {
 
                 <GameMenu
                     currentPlayerId={this.props.selfPlayerId}
-                    onChangedZoom={this.zoom.bind(this)}
+                    onChangedZoom={(newScale) => this.zoom(newScale)}
                     currentZoom={immediateUxState.scale}
                     minZoom={MIN_SCALE}
                     maxZoom={MAX_SCALE}
@@ -1119,16 +1101,20 @@ class App extends Component<AppProps, AppState> {
                     onHelp={() => this.setState({ showHelp: true })}
                     onSetTransportPriority={() => this.setState({ showSetTransportPriority: true })}
                     isOpen={this.state.showMenu}
-                    onClose={() => this.setState({ showMenu: false })}
-                    onSetMusicPlayerVisible={(visible: boolean) => this.setState({ isMusicPlayerVisible: visible })}
+                    isAnimateMapScrollingSet={this.state.animateMapScrolling}
+                    isAnimateZoomingSet={this.state.animateZoom}
+                    isAvailableConstructionVisible={this.state.showAvailableConstruction}
                     isMusicPlayerVisible={this.state.isMusicPlayerVisible}
                     isTypingControllerVisible={this.state.isTypingControllerVisible}
-                    onSetTypingControllerVisible={(visible: boolean) => this.setState({ isTypingControllerVisible: visible })}
                     defaultZoom={DEFAULT_SCALE}
-                    isAvailableConstructionVisible={this.state.showAvailableConstruction}
+                    onClose={() => this.setState({ showMenu: false })}
+                    onSetMusicPlayerVisible={(visible: boolean) => this.setState({ isMusicPlayerVisible: visible })}
+                    onSetTypingControllerVisible={(visible: boolean) => this.setState({ isTypingControllerVisible: visible })}
                     onSetAvailableConstructionVisible={(visible: boolean) => this.setState({ showAvailableConstruction: visible })}
                     onSetMusicVolume={(volume: number) => this.setState({ musicVolume: volume })}
                     onSetHeightAdjust={(heightAdjust: number) => this.setState({ heightAdjust })}
+                    onSetAnimateMapScrolling={(animateMapScrolling) => this.setState({animateMapScrolling})}
+                    onSetAnimateZooming={(animateZoom) => this.setState({animateZoom})}
                 />
 
                 {this.state.showFriendlyHouseInfo &&
@@ -1197,8 +1183,8 @@ class App extends Component<AppProps, AppState> {
                 <GameMessagesViewer
                     playerId={this.props.selfPlayerId}
                     nation={this.state.player?.nation ?? 'ROMANS'}
-                    onGoToHouse={this.goToHouseAnimated.bind(this)}
-                    onGoToPoint={this.goToPointAnimated.bind(this)}
+                    onGoToHouse={this.goToHouse.bind(this)}
+                    onGoToPoint={this.goToPoint.bind(this)}
                 />
 
                 {this.state.isMusicPlayerVisible &&

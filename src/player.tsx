@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useState } from 'react'
 import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Field, Dropdown, Option, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem, SelectionEvents, OptionOnSelectData } from "@fluentui/react-components"
 import './player.css'
-import { NATIONS, Nation, PlayerInformation } from './api/types'
+import { NATIONS, Nation, PlayerInformation, isNation } from './api/types'
 import { MoreHorizontal20Regular } from "@fluentui/react-icons"
 
 interface PlayerProps {
@@ -55,7 +55,7 @@ const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProp
                         </Field>
 
                         <Field label="Set nation">
-                            <Dropdown defaultValue={'ROMANS'} onOptionSelect={(a: SelectionEvents, b: any) => setEditNation(b.optionValue)}>
+                            <Dropdown defaultValue={'ROMANS'} onOptionSelect={(a: SelectionEvents, b: OptionOnSelectData) => isNation(b.optionValue) && setEditNation(b.optionValue)}>
                                 {Array.from(NATIONS).map(nation => { return <Option key={nation}>{nation}</Option> })}
                             </Dropdown>
                         </Field>

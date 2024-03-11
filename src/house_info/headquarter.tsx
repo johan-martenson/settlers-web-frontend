@@ -73,18 +73,55 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
     useEffect(
         () => {
             (async () => {
-                //monitor.setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings)
-            })().then()
-        },
-        [defenseFromSurroundingBuildings])
-
-    useEffect(
-        () => {
-            (async () => {
                 //monitor.setDefendersStayHome(defendersStayHome)
             })
         },
         [defendersStayHome])
+
+    useEffect(
+        () => {
+            (async () => {
+                const populate = await monitor.getPopulateMilitaryFarFromBorder()
+
+                setPopulateFarFromBorder(populate)
+            })().then()
+        }, []
+    )
+
+    useEffect(
+        () => {
+            (async () => {
+                const populate = await monitor.getPopulateMilitaryCloserToBorder()
+
+                setPopulateCloserToBorder(populate)
+            })
+        }
+    )
+
+    useEffect(
+        () => {
+            (async () => {
+                const populate = await monitor.getPopulateMilitaryCloseToBorder()
+
+                setPopulateCloseToBorder(populate)
+            })().then()
+        }, []
+    )
+
+    useEffect(
+        () => monitor.setMilitaryPopulationFarFromBorder(populateFarFromBorder),
+        [populateFarFromBorder]
+    )
+
+    useEffect(
+        () => monitor.setMilitaryPopulationCloserToBorder(populateCloserToBorder),
+        [populateCloserToBorder]
+    )
+
+    useEffect(
+        () => monitor.setMilitaryPopulationCloseToBorder(populateCloseToBorder),
+        [populateCloseToBorder]
+    )
 
     return (
         <div className="house-info">

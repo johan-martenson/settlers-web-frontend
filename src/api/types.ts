@@ -640,6 +640,10 @@ function isHeadquarterInformation(houseInformation: HouseInformation): houseInfo
     return 'reserved' in houseInformation
 }
 
+function isNation(maybeNation: unknown): maybeNation is Nation {
+    return maybeNation === 'ROMANS' || maybeNation === "VIKINGS" || maybeNation === 'JAPANESE' || maybeNation === 'AFRICANS'
+}
+
 function rankToMaterial(rank: SoldierType): MaterialAllUpperCase {
     if (rank === 'PRIVATE_RANK') {
         return 'PRIVATE'
@@ -760,6 +764,7 @@ export {
     isStoreHouseIsReadyMessage,
     getSoldierDisplayName,
     isBuilding,
+    isNation,
     WILD_ANIMAL_TYPES,
     SMALL_HOUSES,
     MEDIUM_HOUSES,

@@ -1,9 +1,7 @@
-import { act } from 'react-dom/test-utils'
 import { getInformationOnPoint, getTerrainForMap, removeHouse } from './api/rest-api'
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation } from './api/types'
 import { Monitor, monitor } from './api/ws-api'
 import { ScreenPoint } from './game_render'
-import { tree } from 'd3'
 
 const vegetationToInt = new Map<Vegetation, number>()
 

@@ -179,10 +179,6 @@ class App extends Component<AppProps, AppState> {
         this.onKeyDown = this.onKeyDown.bind(this)
 
         this.toggleDetails = this.toggleDetails.bind(this)
-        this.moveGameRight = this.moveGameRight.bind(this)
-        this.moveGameLeft = this.moveGameLeft.bind(this)
-        this.moveGameUp = this.moveGameUp.bind(this)
-        this.moveGameDown = this.moveGameDown.bind(this)
 
         this.closeActiveMenu = this.closeActiveMenu.bind(this)
 
@@ -465,35 +461,11 @@ class App extends Component<AppProps, AppState> {
         )
     }
 
-    moveGameUp(): void {
+    moveGame(newTranslateX: number, newTranslateY: number): void {
         if (this.state.animateMapScrolling) {
-            this.setNewTranslatedAnimated(immediateUxState.translate.x, immediateUxState.translate.y + ARROW_KEY_MOVE_DISTANCE)
+            this.setNewTranslatedAnimated(newTranslateX, newTranslateY)
         } else {
-            immediateUxState.translate.y += ARROW_KEY_MOVE_DISTANCE
-        }
-    }
-
-    moveGameDown(): void {
-        if (this.state.animateMapScrolling) {
-            this.setNewTranslatedAnimated(immediateUxState.translate.x, immediateUxState.translate.y - ARROW_KEY_MOVE_DISTANCE)
-        } else {
-            immediateUxState.translate.y -= ARROW_KEY_MOVE_DISTANCE
-        }
-    }
-
-    moveGameRight(): void {
-        if (this.state.animateMapScrolling) {
-            this.setNewTranslatedAnimated(immediateUxState.translate.x - ARROW_KEY_MOVE_DISTANCE, immediateUxState.translate.y)
-        } else {
-            immediateUxState.translate.x -= ARROW_KEY_MOVE_DISTANCE
-        }
-    }
-
-    moveGameLeft(): void {
-        if (this.state.animateMapScrolling) {
-            this.setNewTranslatedAnimated(immediateUxState.translate.x + ARROW_KEY_MOVE_DISTANCE, immediateUxState.translate.y)
-        } else {
-            immediateUxState.translate.x += ARROW_KEY_MOVE_DISTANCE
+            immediateUxState.translate = { x: newTranslateX, y: newTranslateY }
         }
     }
 
@@ -896,13 +868,13 @@ class App extends Component<AppProps, AppState> {
         } else if (event.key === " ") {
             this.toggleDetails()
         } else if (event.key === "ArrowUp") {
-            this.moveGameUp()
+            this.moveGame(immediateUxState.translate.x, immediateUxState.translate.y + ARROW_KEY_MOVE_DISTANCE)
         } else if (event.key === "ArrowRight") {
-            this.moveGameRight()
+            this.moveGame(immediateUxState.translate.x - ARROW_KEY_MOVE_DISTANCE, immediateUxState.translate.y)
         } else if (event.key === "ArrowDown") {
-            this.moveGameDown()
+            this.moveGame(immediateUxState.translate.x, immediateUxState.translate.y - ARROW_KEY_MOVE_DISTANCE)
         } else if (event.key === "ArrowLeft") {
-            this.moveGameLeft()
+            this.moveGame(immediateUxState.translate.x + ARROW_KEY_MOVE_DISTANCE, immediateUxState.translate.y)
         } else if (event.key === "+") {
             this.zoom(immediateUxState.scale + 1)
         } else if (event.key === "-") {
@@ -1113,8 +1085,8 @@ class App extends Component<AppProps, AppState> {
                     onSetAvailableConstructionVisible={(visible: boolean) => this.setState({ showAvailableConstruction: visible })}
                     onSetMusicVolume={(volume: number) => this.setState({ musicVolume: volume })}
                     onSetHeightAdjust={(heightAdjust: number) => this.setState({ heightAdjust })}
-                    onSetAnimateMapScrolling={(animateMapScrolling) => this.setState({animateMapScrolling})}
-                    onSetAnimateZooming={(animateZoom) => this.setState({animateZoom})}
+                    onSetAnimateMapScrolling={(animateMapScrolling) => this.setState({ animateMapScrolling })}
+                    onSetAnimateZooming={(animateZoom) => this.setState({ animateZoom })}
                 />
 
                 {this.state.showFriendlyHouseInfo &&

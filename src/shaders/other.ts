@@ -12,7 +12,7 @@
 
 */
 
-const texturedImageVertexShader = `#version 300 es
+const texturedImageVertexShader = /* glsl */`#version 300 es
 
 in vec2 a_position;
 in vec2 a_texcoord;
@@ -68,7 +68,7 @@ void main() {
   gl_Position = vec4(vertex, 0.0, 1.0);
 }`
 
-const texturedImageVertexShaderPixelPerfectStraightCoordinates = `#version 300 es
+const texturedImageVertexShaderPixelPerfectStraightCoordinates = /* glsl */`#version 300 es
 
 in vec2 a_position;
 in vec2 a_texcoord;
@@ -114,7 +114,7 @@ void main() {
   gl_Position = vec4(vertex, 0.0, 1.0);
 }`
 
-const passthroughVertexShader = `#version 300 es
+const passthroughVertexShader = /* glsl */`#version 300 es
 
 in vec2 a_coord;
 in vec2 a_texcoord;
@@ -128,7 +128,7 @@ void main() {
 }
 `
 
-const solidRedFragmentShader = `#version 300 es
+const solidRedFragmentShader = /* glsl */`#version 300 es
 precision highp float;
 
 out vec4 outColor;

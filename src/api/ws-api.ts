@@ -160,10 +160,6 @@ interface IronBarQuotasMessage extends ReplyMessage {
     metalworks: number
 }
 
-interface StrengthWhenPopulatingMilitaryBuildingMessage extends ReplyMessage {
-    strength: number
-}
-
 interface NumberReplyMessage extends ReplyMessage {
     amount: number
 }
@@ -345,10 +341,6 @@ function isWaterQuotasMessage(message: ReplyMessage): message is WaterQuotasMess
 
 function isIronBarQuotasMessage(message: ReplyMessage): message is IronBarQuotasMessage {
     return 'armory' in message && 'metalworks' in message
-}
-
-function isStrengthWhenPopulatingMilitaryBuildingMessage(message: ReplyMessage): message is StrengthWhenPopulatingMilitaryBuildingMessage {
-    return 'strength' in message
 }
 
 function isNumberReplyMessage(message: ReplyMessage): message is NumberReplyMessage {
@@ -796,6 +788,10 @@ function websocketError(error: unknown): void {
 }
 
 function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent): void {
+    if (monitor.gameState === 'EXPIRED') {
+        return
+    }
+
     console.info("Websocket closed: " + JSON.stringify(e))
     console.info(e)
 
@@ -803,10 +799,10 @@ function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent
         console.error("The game has been removed from the backend")
 
         monitor.gameState = "EXPIRED"
+
+        gameStateListeners.forEach(listener => listener("EXPIRED"))
     } else {
-
         setTimeout(() => {
-
             const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
 
             console.info("Websocket url: " + websocketUrl)
@@ -2178,33 +2174,7 @@ function setStrengthWhenPopulatingMilitaryBuildings(strength: number) {
 }
 
 function getStrengthWhenPopulatingMilitaryBuildings(): Promise<number> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
-            requestId
-        }
-    ))
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isStrengthWhenPopulatingMilitaryBuildingMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply.strength)
-            }
-        })
-    })
+    return getAmountForCommand('GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING')
 }
 
 function setDefenseStrength(strength: number) {
@@ -2217,16 +2187,7 @@ function setDefenseStrength(strength: number) {
 }
 
 function getDefenseStrength(): Promise<number> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_DEFENSE_STRENGTH',
-            requestId
-        }
-    ))
-
-    return waitForNumberReply(requestId)
+    return getAmountForCommand('GET_DEFENSE_STRENGTH')
 }
 
 function setDefenseFromSurroundingBuildings(strength: number) {
@@ -2239,50 +2200,27 @@ function setDefenseFromSurroundingBuildings(strength: number) {
 }
 
 function getDefenseFromSurroundingBuildings(): Promise<number> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
-            requestId
-        }
-    ))
-
-    return waitForNumberReply(requestId)
+    return getAmountForCommand('GET_DEFENSE_FROM_SURROUNDING_BUILDINGS')
 }
 
 function getPopulateMilitaryFarFromBorder(): Promise<number> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_POPULATE_MILITARY_FAR_FROM_BORDER',
-            requestId
-        }
-    ))
-
-    return waitForNumberReply(requestId)
+    return getAmountForCommand('GET_POPULATE_MILITARY_FAR_FROM_BORDER')
 }
 
 function getPopulateMilitaryCloserToBorder(): Promise<number> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_POPULATE_MILITARY_CLOSER_TO_BORDER',
-            requestId
-        }
-    ))
-
-    return waitForNumberReply(requestId)
+    return getAmountForCommand('GET_POPULATE_MILITARY_CLOSER_TO_BORDER')
 }
 
 function getPopulateMilitaryCloseToBorder(): Promise<number> {
+    return getAmountForCommand('GET_POPULATE_MILITARY_CLOSE_TO_BORDER')
+}
+
+function getAmountForCommand(command: string): Promise<number> {
     const requestId = getRequestId()
 
     websocket?.send(JSON.stringify(
         {
-            command: 'GET_POPULATE_MILITARY_CLOSE_TO_BORDER',
+            command,
             requestId
         }
     ))
@@ -2313,16 +2251,7 @@ function waitForNumberReply(requestId: number): Promise<number> {
 }
 
 function getSoldiersAvailableForAttack(): Promise<number> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_SOLDIERS_AVAILABLE_FOR_ATTACK',
-            requestId
-        }
-    ))
-
-    return waitForNumberReply(requestId)
+    return getAmountForCommand('GET_SOLDIERS_AVAILABLE_FOR_ATTACK')
 }
 
 function setGameSpeed(speed: GameSpeed) {

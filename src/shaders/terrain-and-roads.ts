@@ -3,7 +3,7 @@
  * 
  * Provides brightness for linear interpolation (gouraud shading) to the fragment shader
  */
-const textureAndLightingVertexShader = /*glsl*/`#version 300 es
+const textureAndLightingVertexShader = /* glsl */`#version 300 es
 in vec3 a_coords;   // game coordinate (x, y)
 in vec3 a_normal;
 in vec2 a_texture_mapping;
@@ -31,6 +31,9 @@ void main (void) {
     adjusted_coord.y = a_coords.y + ((a_coords.z - STANDARD_HEIGHT) / u_height_adjust);
 
 
+    // CONVERT GAME POINT TO SCREEN POINT
+
+
     // Calculate the on-screen coordinates -- vertex = a_coords * u_scale + u_offset
     vertex.x = (((adjusted_coord.x * u_scale.x + u_offset.x) / u_screen_width) * 2.0) - 1.0;
     vertex.y = (((adjusted_coord.y * u_scale.y - u_offset.y) / u_screen_height) * 2.0) - 1.0;
@@ -51,7 +54,7 @@ void main (void) {
 }
 `
 
-const textureAndLightingFragmentShader = /*glsl*/`#version 300 es
+const textureAndLightingFragmentShader = /* glsl */`#version 300 es
 precision highp float;
 
 in highp vec2 vTextureCoord;

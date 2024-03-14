@@ -101,8 +101,8 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
                 const populate = await monitor.getPopulateMilitaryCloserToBorder()
 
                 setPopulateCloserToBorder(populate)
-            })
-        }
+            })().then()
+        }, []
     )
 
     useEffect(

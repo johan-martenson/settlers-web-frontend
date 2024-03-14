@@ -1,5 +1,5 @@
 
-const fogOfWarFragmentShader = `#version 300 es
+const fogOfWarFragmentShader = /* glsl */`#version 300 es
 precision highp float;
 
 in float v_brightness;
@@ -17,7 +17,7 @@ void main() {
  *
  * Provides brightness for linear interpolation (gouraud shading) to the fragment shader
  */
-const fogOfWarVertexShader = `#version 300 es
+const fogOfWarVertexShader = /* glsl */`#version 300 es
 in vec2 a_coordinates;   // game coordinate (x, y)
 in float a_intensity;    // intensity: 0-1
 
@@ -33,6 +33,8 @@ vec2 vertex;
 vec2 temp;
 
 void main (void) {
+
+    // CONVERT GAME POINT TO SCREEN POINT
 
     // Calculate the on-screen coordinates
     //vertex = a_coordinates * u_scale + u_offset;

@@ -1,4 +1,4 @@
-const texturedImageVertexShaderPixelPerfect = /*glsl*/`#version 300 es
+const texturedImageVertexShaderPixelPerfect = /* glsl */`#version 300 es
 
 in vec2 a_position;
 in vec2 a_texcoord;
@@ -33,6 +33,9 @@ void main() {
    // Start by adjusting the coordinate based on the height
    adjusted_coord.x = u_game_point.x + ((u_height - STANDARD_HEIGHT) / u_height_adjust);
    adjusted_coord.y = u_game_point.y + ((u_height - STANDARD_HEIGHT) / u_height_adjust);
+
+
+   // CONVERT GAME POINT TO SCREEN POINT
 
 
    // Calculate the on-screen center of the image (pixel coordinates)
@@ -70,7 +73,7 @@ void main() {
    gl_Position = vec4(vertex, 0.0, 1.0);
 }`
 
-const textureFragmentShader = `#version 300 es
+const textureFragmentShader = /* glsl */`#version 300 es
 precision highp float;
 
 in vec2 v_texcoord;
@@ -83,7 +86,7 @@ void main() {
    outColor = texture(u_texture, v_texcoord);
 }`
 
-const shadowFragmentShader = `#version 300 es
+const shadowFragmentShader = /* glsl */`#version 300 es
 precision highp float;
 
 in vec2 v_texcoord;

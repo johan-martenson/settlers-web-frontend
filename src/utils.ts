@@ -59,7 +59,7 @@ intToVegetationColor.set(21, [110, 57, 48])      // Lava 3
 intToVegetationColor.set(22, [110, 57, 48])      // Lava 4
 intToVegetationColor.set(23, [140, 140, 140])  // Buildable mountain
 
-let reported = new Set()
+const reported = new Set()
 
 // FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {

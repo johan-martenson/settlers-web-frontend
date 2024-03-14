@@ -495,6 +495,7 @@ export interface HouseInformation extends Point {
 }
 
 export interface HeadquarterInformation extends HouseInformation {
+    inReserve: { [key in SoldierType]: number }
     reserved: { [key in SoldierType]: number }
 }
 

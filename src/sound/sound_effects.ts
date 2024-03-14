@@ -97,6 +97,7 @@ function startEffects() {
     volume = DEFAULT_VOLUME
 
     // Load each sound
+    // eslint-disable-next-line
     soundInstances.forEach((sound, title) => {
         sound.load()
     })
@@ -106,6 +107,8 @@ function startEffects() {
         actionStarted: (id: string, point: Point, action: Action) => {
             ongoingEffects.set(id, { id, point, action, index: 0 })
         },
+
+        // eslint-disable-next-line
         actionEnded: (id: string, point: Point, action: string) => {
 
             const ongoingEffect = ongoingEffects.get(id)
@@ -126,6 +129,8 @@ function startEffects() {
         houseStartedToBurn: (id: HouseId, point: Point) => {
             ongoingEffects.set(id, { id, point, action: 'HOUSE_BURNING', index: 0 })
         },
+
+        // eslint-disable-next-line
         houseStoppedBurning: (id: HouseId, point: Point) => {
             ongoingEffects.get(id)?.playing?.stop()
 

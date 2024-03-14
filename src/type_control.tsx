@@ -117,7 +117,7 @@ const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlP
         }
     }
 
-    function listener(event: any) {
+    function listener(event: Event) {
         if (isTypingControlKeyEvent(event)) {
             const key = event.detail.key
 

@@ -19,9 +19,10 @@ Todo
 16. Fix ugly scrollbar in type control
 17. Soldiers waiting to fight should be facing the attacked building's flag
 18. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
-19. Make goto house/point with animation configurable
-20. Change pseudo 3d effect to only shift upwards, not to the right
-21. Make the speed selector in the menu a controlled component
+19. Change pseudo 3d effect to only shift upwards, not to the right
+20. Make the speed selector in the menu a controlled component
+21. Add skeleton decoration on the ground when a worker dies
+22. Pinch-to-zoom should zoom in the game, not the full web page
 
 
 
@@ -47,3 +48,4 @@ Done
 11. Animation when trees fall
 5. Finish Military settings - weak/strong in center, closer to the edge, and at the edge
 19. Update fighter's damage and health stats
+19. Make goto house/point with animation configurable

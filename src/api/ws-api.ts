@@ -249,6 +249,7 @@ export interface Monitor {
     setMilitaryPopulationFarFromBorder: ((amount: number) => void)
     setMilitaryPopulationCloserToBorder: ((amount: number) => void)
     setMilitaryPopulationCloseToBorder: ((amount: number) => void)
+    setSoldiersAvailableForAttack: ((amount: number) => void)
 
     setGameSpeed: ((a: GameSpeed) => void)
 
@@ -258,6 +259,7 @@ export interface Monitor {
     getPopulateMilitaryFarFromBorder: (() => Promise<number>)
     getPopulateMilitaryCloserToBorder: (() => Promise<number>)
     getPopulateMilitaryCloseToBorder: (() => Promise<number>)
+    getSoldiersAvailableForAttack: (() => Promise<number>)
 
     addDetailedMonitoring: ((id: HouseId | FlagId) => void)
 
@@ -418,6 +420,7 @@ const monitor: Monitor = {
     setMilitaryPopulationFarFromBorder,
     setMilitaryPopulationCloserToBorder,
     setMilitaryPopulationCloseToBorder,
+    setSoldiersAvailableForAttack,
 
     setGameSpeed,
 
@@ -427,6 +430,7 @@ const monitor: Monitor = {
     getPopulateMilitaryFarFromBorder,
     getPopulateMilitaryCloserToBorder,
     getPopulateMilitaryCloseToBorder,
+    getSoldiersAvailableForAttack,
 
     addDetailedMonitoring,
 
@@ -2222,24 +2226,7 @@ function getDefenseStrength(): Promise<number> {
         }
     ))
 
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isNumberReplyMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply.amount)
-            }
-        })
-    })
+    return waitForNumberReply(requestId)
 }
 
 function setDefenseFromSurroundingBuildings(strength: number) {
@@ -2261,24 +2248,7 @@ function getDefenseFromSurroundingBuildings(): Promise<number> {
         }
     ))
 
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isNumberReplyMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply.amount)
-            }
-        })
-    })
+    return waitForNumberReply(requestId)
 }
 
 function getPopulateMilitaryFarFromBorder(): Promise<number> {
@@ -2291,24 +2261,7 @@ function getPopulateMilitaryFarFromBorder(): Promise<number> {
         }
     ))
 
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isNumberReplyMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply.amount)
-            }
-        })
-    })
+    return waitForNumberReply(requestId)
 }
 
 function getPopulateMilitaryCloserToBorder(): Promise<number> {
@@ -2321,24 +2274,7 @@ function getPopulateMilitaryCloserToBorder(): Promise<number> {
         }
     ))
 
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isNumberReplyMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply.amount)
-            }
-        })
-    })
+    return waitForNumberReply(requestId)
 }
 
 function getPopulateMilitaryCloseToBorder(): Promise<number> {
@@ -2351,6 +2287,11 @@ function getPopulateMilitaryCloseToBorder(): Promise<number> {
         }
     ))
 
+    return waitForNumberReply(requestId)
+}
+
+function waitForNumberReply(requestId: number): Promise<number> {
+
     // eslint-disable-next-line
     return new Promise((result, reject) => {
         const timer = setInterval(() => {
@@ -2367,8 +2308,21 @@ function getPopulateMilitaryCloseToBorder(): Promise<number> {
 
                 result(reply.amount)
             }
-        })
+        }, 10)
     })
+}
+
+function getSoldiersAvailableForAttack(): Promise<number> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command: 'GET_SOLDIERS_AVAILABLE_FOR_ATTACK',
+            requestId
+        }
+    ))
+
+    return waitForNumberReply(requestId)
 }
 
 function setGameSpeed(speed: GameSpeed) {
@@ -2405,6 +2359,15 @@ function setMilitaryPopulationCloseToBorder(population: number): void {
         {
             command: 'SET_MILITARY_POPULATION_CLOSE_TO_BORDER',
             population
+        }
+    ))
+}
+
+function setSoldiersAvailableForAttack(amount: number): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'SET_SOLDIERS_AVAILABLE_FOR_ATTACK',
+            amount
         }
     ))
 }

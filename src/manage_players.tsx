@@ -11,12 +11,6 @@ export interface PlayerCandidateType {
     type: PlayerType
 }
 
-const PLAYER_COLORS = [
-    "#AABBCC",
-    "#BBCCAA",
-    "#CCAABB"
-]
-
 interface ManagePlayersProps {
     selfPlayer: PlayerInformation
     gameId: GameId

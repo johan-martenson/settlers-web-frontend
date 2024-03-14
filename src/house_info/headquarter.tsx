@@ -18,7 +18,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
     const [strengthWhenPopulatingBuildings, setStrengthWhenPopulatingBuildings] = useState<number>(5)
     const [defenseFromSurroundingBuildings, setDefenseFromSurroundingBuildings] = useState<number>(5)
     const [defenseStrength, setDefenseStrength] = useState<number>(5)
-    const [defendersStayHome, setDefendersStayHome] = useState<number>(5)
+    const [soldiersAvailableForAttack, setSoldiersAvailableForAttack] = useState<number>(5)
     const [populateFarFromBorder, setPopulateFarFromBorder] = useState<number>(5)
     const [populateCloserToBorder, setPopulateCloserToBorder] = useState<number>(5)
     const [populateCloseToBorder, setPopulateCloseToBorder] = useState<number>(5)
@@ -66,17 +66,24 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
 
     useEffect(
         () => {
-            monitor.setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings)
-        },
+            (async () => {
+                const amount = await monitor.getSoldiersAvailableForAttack()
+
+                setSoldiersAvailableForAttack(amount)
+            })().then()
+        }, [])
+
+    useEffect(
+        () => monitor.setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings),
         [defenseFromSurroundingBuildings])
 
     useEffect(
         () => {
             (async () => {
-                //monitor.setDefendersStayHome(defendersStayHome)
+                monitor.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
             })
         },
-        [defendersStayHome])
+        [soldiersAvailableForAttack])
 
     useEffect(
         () => {
@@ -111,6 +118,11 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
     useEffect(
         () => monitor.setMilitaryPopulationFarFromBorder(populateFarFromBorder),
         [populateFarFromBorder]
+    )
+
+    useEffect(
+        () => monitor.setSoldiersAvailableForAttack(soldiersAvailableForAttack),
+        [soldiersAvailableForAttack]
     )
 
     useEffect(
@@ -172,12 +184,11 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
                 <div className='headquarter-reserved-soldiers'>
                     {SOLDIER_TYPES.map(rank => {
                         if (isHeadquarterInformation(house)) {
-                            const hosted = (house.soldiers) ? house.soldiers.filter(soldier => soldier === rank).length : 0
                             const soldierDisplayName = getSoldierDisplayName(rank)
 
                             return (
                                 <div className='headquarter-inventory-item' key={rank} style={{ display: "block" }}>
-                                    ({hosted} / {house.reserved[rank]}) <Tooltip content={soldierDisplayName} relationship='label' withArrow key={rank}>
+                                    ({house.inReserve[rank]} / {house.reserved[rank]}) <Tooltip content={soldierDisplayName} relationship='label' withArrow key={rank}>
                                         <div style={{ display: "inline" }}><InventoryIcon material={rankToMaterial(rank)} nation={nation} inline /></div>
                                     </Tooltip>
                                     <Subtract16Filled onClick={() => house.reserved[rank] !== 0 && monitor.setReservedSoldiers(rank, house.reserved[rank] - 1)} />
@@ -215,11 +226,11 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
                         </div>
                     </Field>
 
-                    <Field label="Defenders left out of attack">
+                    <Field label="Soldiers available for attack">
                         <div style={{ gap: "7px", display: "flex", flexDirection: "row" }}>
-                            <Subtract16Filled onClick={() => setDefendersStayHome(prev => Math.max(0, prev - 1))} />
-                            <meter min={0} max={10} value={defendersStayHome} />
-                            <Add16Filled onClick={() => setDefendersStayHome(prev => Math.min(10, prev + 1))} />
+                            <Subtract16Filled onClick={() => setSoldiersAvailableForAttack(prev => Math.max(0, prev - 1))} />
+                            <meter min={0} max={10} value={soldiersAvailableForAttack} />
+                            <Add16Filled onClick={() => setSoldiersAvailableForAttack(prev => Math.min(10, prev + 1))} />
                         </div>
                     </Field>
 

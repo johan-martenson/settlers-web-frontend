@@ -14,7 +14,7 @@ const CLOSE_ENOUGH = 0.01
 const SPEED = 0.5
 const DT = 1
 
-const ongoingAnimations = new Map<String, OngoingAnimation>()
+const ongoingAnimations = new Map<string, OngoingAnimation>()
 
 let timer: NodeJS.Timeout | undefined
 let state: AnimatorState = 'STOPPED'
@@ -26,7 +26,7 @@ function step() {
 
         for (let i = 0; i < animation.target.length; i++) {
             let current = animation.current[i]
-            let target = animation.target[i]
+            const target = animation.target[i]
 
             if (Math.abs(target - current) >= CLOSE_ENOUGH) {
                 current += (target - current) * (1 - Math.exp(- SPEED * DT))

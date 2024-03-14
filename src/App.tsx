@@ -48,21 +48,8 @@ export const immediateUxState = {
     scale: DEFAULT_SCALE
 }
 
-let nextAnimation = 0
-
 /* Track ongoing touches to make touch control work */
 const ongoingTouches: Map<number, StoredTouch> = new Map()
-
-type OngoingAnimation = {
-    counter: number
-    timer: NodeJS.Timeout
-}
-
-const ANIMATION_FPS = 40
-const ANIMATION_LENGTH_MS = 200
-const ANIMATION_STEPS = (ANIMATION_LENGTH_MS / 1000) * ANIMATION_FPS
-
-const ongoingAnimations: Map<number, OngoingAnimation> = new Map()
 
 interface StoredTouch {
     identifier: number
@@ -1174,12 +1161,6 @@ class App extends Component<AppProps, AppState> {
             </div>
         )
     }
-}
-
-function getNextAnimationId(): number {
-    nextAnimation += 1
-
-    return nextAnimation - 1
 }
 
 export default App

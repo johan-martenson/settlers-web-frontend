@@ -27,7 +27,7 @@ vec2 adjusted_coord;
 void main (void) {
 
     // Adjust the the coordinate so that higher points are drawn slightly farther away, and lower points slightly closer
-    adjusted_coord.x = a_coords.x + ((a_coords.z - STANDARD_HEIGHT) / u_height_adjust);
+    adjusted_coord.x = a_coords.x;
     adjusted_coord.y = a_coords.y + ((a_coords.z - STANDARD_HEIGHT) / u_height_adjust);
 
 

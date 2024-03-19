@@ -31,7 +31,7 @@ out vec2 v_texcoord;
 void main() {
 
    // Start by adjusting the coordinate based on the height
-   adjusted_coord.x = u_game_point.x + ((u_height - STANDARD_HEIGHT) / u_height_adjust);
+   adjusted_coord.x = u_game_point.x;
    adjusted_coord.y = u_game_point.y + ((u_height - STANDARD_HEIGHT) / u_height_adjust);
 
 

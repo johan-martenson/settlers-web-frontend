@@ -2522,7 +2522,7 @@ function screenPointToGamePoint(screenPoint: ScreenPoint, translateX: number, tr
 
 function gamePointToScreenPoint(gamePoint: Point, height: number, translateX: number, translateY: number, scale: number, screenHeight: number, heightAdjust: number, standardHeight: number): ScreenPoint {
     const adjustedPoint = {
-        x: gamePoint.x + ((height - standardHeight) / heightAdjust),
+        x: gamePoint.x,
         y: gamePoint.y + ((height - standardHeight) / heightAdjust)
     }
 

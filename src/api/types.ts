@@ -399,7 +399,8 @@ export type DecorationType = 'BROWN_MUSHROOM' |
     'STONE' |
     'DEAD_TREE_LYING_DOWN' |
     'DEAD_TREE' |
-    'SMALL_SKELETON' |
+    'ANIMAL_SKELETON_1' |
+    'ANIMAL_SKELETON_2' |
     'FLOWERS' |
     'LARGE_BUSH' |
     'PILE_OF_STONES' |
@@ -412,6 +413,8 @@ export type DecorationType = 'BROWN_MUSHROOM' |
     'MINI_BUSH' |
     'GRASS_2' |
     'MINI_GRASS' |
+    'HUMAN_SKELETON_1' |
+    'HUMAN_SKELETON_2' |
     'PORTAL' |
     'SHINING_PORTAL' |
     'MINI_STONE_WITH_GRASS' |

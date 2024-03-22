@@ -4,7 +4,7 @@ import { Duration } from './duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from './api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, UiElementsImageAtlasHandler, Vector, WorkerAnimation } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUp, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, UiElementsImageAtlasHandler, Vector, WorkerAnimation } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 import { flagAnimations, houses } from './assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-war'
@@ -281,7 +281,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     private drawShadowPositionBuffer?: WebGLBuffer | null
 
     private allPointsVisibilityTracking = new PointMapFast<TrianglesAtPoint>()
-
 
     constructor(props: GameCanvasProps) {
         super(props)
@@ -2483,15 +2482,31 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         let distance = 2000
         let adjustedGamePoint: Point | undefined
+        const downLeft = getPointDownLeft(unadjustedGamePoint)
+        const downRight = getPointDownRight(unadjustedGamePoint)
+        const down = getPointDown(unadjustedGamePoint)
+        const downDownLeft = getPointDownLeft(down)
+        const downDownRight = getPointDownRight(down)
+        const downDown = getPointDown(down)
+        const upLeft = getPointUpLeft(unadjustedGamePoint)
+        const upRight = getPointUpRight(unadjustedGamePoint)
+        const up = getPointUp(unadjustedGamePoint)
+        const upUpLeft = getPointUpLeft(up)
+        const upUpRight = getPointUpRight(up)
 
         const candidates = [
             unadjustedGamePoint,
-            getPointDownLeft(unadjustedGamePoint),
-            getPointDownRight(unadjustedGamePoint),
-            getPointLeft(unadjustedGamePoint),
-            getPointRight(unadjustedGamePoint),
-            getPointUpLeft(unadjustedGamePoint),
-            getPointUpRight(unadjustedGamePoint)
+            downLeft,
+            downRight,
+            down,
+            downDownLeft,
+            downDownRight,
+            downDown,
+            upLeft,
+            upRight,
+            up,
+            upUpLeft,
+            upUpRight
         ]
 
         for (const gamePoint of candidates) {

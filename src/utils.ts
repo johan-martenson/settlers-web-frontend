@@ -254,6 +254,20 @@ function getPointLeft(point: Point): Point {
     }
 }
 
+function getPointUp(point: Point): Point {
+    return {
+        x: point.x,
+        y: point.y + 2
+    }
+}
+
+function getPointDown(point: Point): Point {
+    return {
+        x: point.x,
+        y: point.y - 2
+    }
+}
+
 function arrayToRgbStyle(rgb: number[]): string {
     return 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')'
 }
@@ -2560,6 +2574,8 @@ export {
     getPointDownRight,
     getPointUpLeft,
     getPointUpRight,
+    getPointDown,
+    getPointUp,
     getLineBetweenPoints,
     getDotProduct,
     getNormalForTriangle,

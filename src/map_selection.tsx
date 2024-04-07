@@ -6,12 +6,12 @@ import { Subtitle1 } from '@fluentui/react-components'
 import MapInformationCard from './map_information_card'
 
 interface MapSelectionProps {
+    minPlayers: number
     onMapSelected: ((map: MapInformation) => void)
     className?: string
 }
 
-const MapSelection = ({ onMapSelected }: MapSelectionProps) => {
-
+const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
     const [map, setMap] = useState<MapInformation | undefined>()
 
     return (
@@ -30,6 +30,7 @@ const MapSelection = ({ onMapSelected }: MapSelectionProps) => {
                     }
                 }
 
+                minPlayers={minPlayers}
                 defaultSelect
             />
         </div>

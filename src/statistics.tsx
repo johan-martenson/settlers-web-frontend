@@ -4,7 +4,7 @@ import { getGameStatistics, getLandStatistics } from './api/rest-api'
 import { Dialog } from './dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
-import { GameId, ProductionStatistics, LandStatistics, MaterialAllUpperCase, MATERIALS_UPPER_CASE, LandDataPoint, Measurement, Nation } from './api/types'
+import { GameId, ProductionStatistics, LandStatistics, MaterialAllUpperCase, MATERIALS_UPPER_CASE, LandDataPoint, Measurement, Nation, PlayerColor } from './api/types'
 import { InventoryIcon } from './icon'
 
 interface StatisticsProps {
@@ -21,8 +21,18 @@ interface StatisticsState {
     state: "PRODUCTION" | "LAND"
 }
 
-class Statistics extends Component<StatisticsProps, StatisticsState> {
+const PLAYER_COLOR_MAPPING = new Map<PlayerColor, string>()
 
+PLAYER_COLOR_MAPPING.set('BLUE', 'blue')
+PLAYER_COLOR_MAPPING.set('BROWN', 'brown')
+PLAYER_COLOR_MAPPING.set('GRAY', 'gray')
+PLAYER_COLOR_MAPPING.set('GREEN', 'green')
+PLAYER_COLOR_MAPPING.set('PURPLE', 'purple')
+PLAYER_COLOR_MAPPING.set('RED', 'red')
+PLAYER_COLOR_MAPPING.set('WHITE', 'white')
+PLAYER_COLOR_MAPPING.set('YELLOW', 'yellow')
+
+class Statistics extends Component<StatisticsProps, StatisticsState> {
     private landStatsContainerRef = React.createRef<SVGSVGElement>()
     private statsParentRef = React.createRef<HTMLDivElement>()
 
@@ -47,19 +57,10 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
     }
 
     async componentDidMount(): Promise<void> {
-
         this.updateStatistics()
-
-        /*setTimeout(
-            async () => {
-                await this.updateStatistics()
-            },
-            5000
-        )*/
     }
 
     async updateStatistics(): Promise<void> {
-
         const productionStats = await getGameStatistics(this.props.gameId)
         const landStats = await getLandStatistics(this.props.gameId)
 
@@ -78,22 +79,6 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         this.drawProductionStatistics(this.productionStatsContainerRef.current, this.statsParentRef.current, productionStats, this.state.materialToShow)
 
         this.drawLandStatistics(this.landStatsContainerRef.current, this.statsParentRef.current, landStats)
-
-        //this.setState({ productionStatistics: gameStatistics, drawnStatistics: drawn })
-
-        /*this.setState(
-            {
-                productionStatistics: gameStatistics,
-                drawnStatistics: false
-            }
-        )*/
-
-        /*setTimeout(
-            async () => {
-                await this.updateStatistics()
-            },
-            5000
-        )*/
     }
 
     render(): JSX.Element {
@@ -122,14 +107,16 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                         />
                     </div>
 
-                    <div className='select-materials'>
-                        {[...MATERIALS_UPPER_CASE].filter(material => material !== 'WELL_WORKER' && material !== 'STORAGE_WORKER')
-                            .map(material => <div onClick={() => this.setState({ materialToShow: material })} key={material}>
-                                <Tooltip content={material.toLocaleLowerCase()} relationship={'label'}>
-                                    <div><InventoryIcon nation={this.props.nation} material={material} missing={material !== this.state.materialToShow} /></div>
-                                </Tooltip>
-                            </div>)}
-                    </div>
+                    {this.state.state === 'PRODUCTION' &&
+                        <div className='select-materials'>
+                            {[...MATERIALS_UPPER_CASE].filter(material => material !== 'WELL_WORKER' && material !== 'STORAGE_WORKER')
+                                .map(material => <div onClick={() => this.setState({ materialToShow: material })} key={material}>
+                                    <Tooltip content={material.toLocaleLowerCase()} relationship={'label'}>
+                                        <div><InventoryIcon nation={this.props.nation} material={material} missing={material !== this.state.materialToShow} /></div>
+                                    </Tooltip>
+                                </div>)}
+                        </div>
+                    }
                 </div>
             </Dialog>
         )
@@ -140,6 +127,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
     }
 
     drawLandStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, landStatisticsWithGaps: LandStatistics): void {
+
+        console.log(landStatisticsWithGaps.players)
 
         /*  Complement the reported land metrics */
         const landStatistics: LandDataPoint[] = []
@@ -275,15 +264,19 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             lines[i](landStatistics)
         }
 
-        /* FIXME: for now use a fixed set of colors instead of the right colors for each player */
-        const colors = ["red", "blue"]
-
         /* Add the lines */
         // eslint-disable-next-line
         for (const i in landStatisticsWithGaps.players) {
+            const player = landStatisticsWithGaps.players[i]
+            const color = PLAYER_COLOR_MAPPING.get(player.color)
+
+            if (color === undefined) {
+                continue
+            }
+
             statisticsSvg.append("path")
                 .attr("fill", "none")
-                .attr("stroke", colors[i])
+                .attr("stroke", color)
                 .attr("stroke-width", 2)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round")
@@ -301,14 +294,14 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     (event) => {
                         d3.select(event.target)
                             .attr("stroke-width", 2)
-                            .attr("stroke", colors[i])
+                            .attr("stroke", color)
                     }
                 )
 
             statisticsSvg.selectAll(".dot" + i)
                 .data(landStatistics)
                 .enter().append("circle") // Uses the enter().append() method
-                .attr("fill", colors[i])
+                .attr("fill", color)
                 .attr("class", "dot") // Assign a class for styling
 
                 // eslint-disable-next-line
@@ -333,7 +326,6 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .attr("r", 5)
                 .on("mouseover",
                     (event, d) => {
-
                         const dotElement = d3.select(event.target)
 
                         dotElement
@@ -363,7 +355,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     // eslint-disable-next-line
                     (event, d) => {
                         d3.select(event.target)
-                            .attr("fill", colors[i])
+                            .attr("fill", color)
                             .attr("r", 5)
 
                         d3.select("#textlabel-landstatistics-tooltip")

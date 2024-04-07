@@ -561,7 +561,7 @@ export interface Measurement {
 
 export interface PlayerInformationLight {
     name: string
-    color: string
+    color: PlayerColor
 }
 
 export interface ProductionStatistics {

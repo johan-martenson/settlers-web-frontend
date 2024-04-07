@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { createGame, deleteGame, setMapForGame, startGame, setResourceLevelForGame, getMaps, setOthersCanJoinGame } from './api/rest-api'
+import { createGame, deleteGame, setMapForGame, startGame, setResourceLevelForGame, getMaps, setOthersCanJoinGame, getGameInformation } from './api/rest-api'
 import { Input, Button, Field, InputOnChangeData } from "@fluentui/react-components"
 import './game_creator.css'
 import GameOptions from './game_options'
@@ -95,6 +95,16 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
         }
     }
 
+    async function refreshGame() {
+        if (game) {
+            const updatedGame = await getGameInformation(game.id)
+
+            setGame(updatedGame)
+        } else {
+            console.error("Game id not available")
+        }
+    }
+
     return (
         <>
             {state === "GET_NAME_FOR_GAME" &&
@@ -147,15 +157,18 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
                         </div>
 
                         <div className='players-column'>
-                            <ManagePlayers gameId={game.id}
+                            <ManagePlayers
+                                gameId={game.id}
                                 selfPlayer={selfPlayer}
                                 defaultComputerPlayers={1}
-                                maxPlayers={10}
+                                maxPlayers={map?.maxPlayers ?? 3}
+                                onPlayerAdded={() => refreshGame()}
+                                onPlayerRemoved={() => refreshGame()}
                             />
                         </div>
 
                         <div className='map-column'>
-                            <MapSelection onMapSelected={onMapSelected} />
+                            <MapSelection onMapSelected={onMapSelected} minPlayers={game.players.length} />
                         </div>
                     </div>
                     <div className='start-or-cancel'>

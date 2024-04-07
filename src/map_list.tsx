@@ -7,9 +7,10 @@ import { MapInformation } from './api/types'
 interface MapListProps {
     onMapSelected: ((map: MapInformation) => void)
     defaultSelect?: boolean
+    minPlayers: number
 }
 
-const MapList = ({ defaultSelect, onMapSelected }: MapListProps) => {
+const MapList = ({ minPlayers, defaultSelect, onMapSelected }: MapListProps) => {
     const [maps, setMaps] = useState<MapInformation[]>([])
 
     useEffect(
@@ -26,9 +27,8 @@ const MapList = ({ defaultSelect, onMapSelected }: MapListProps) => {
 
     return (
         <div className="map-list">
-            {maps.map(
+            {maps.filter(map => map.maxPlayers >= minPlayers).map(
                 (map, index) => {
-
                     return (
                         <div key={index} >
                             <MapInformationCard map={map} onMapSelected={() => onMapSelected(map)} />

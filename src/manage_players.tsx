@@ -23,7 +23,6 @@ interface ManagePlayersProps {
 const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlayerAdded }: ManagePlayersProps) => {
     const [players, setPlayers] = useState<PlayerInformation[]>([selfPlayer])
 
-
     async function onPlayerUpdated(name: string, nation: Nation, index: number): Promise<void> {
 
         const playerToUpdate = players[index]
@@ -44,7 +43,6 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
     }
 
     async function addComputerPlayer(): Promise<void> {
-
         let nextPlayer = undefined
 
         for (let i = 0; i < maxPlayers; i++) {
@@ -118,7 +116,11 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
                     )
                 }
             )}
-            <Button onClick={() => addComputerPlayer()} >Add computer player</Button>
+
+            <Button
+                onClick={() => addComputerPlayer()}
+                disabled={players.length >= maxPlayers}
+            >Add computer player</Button>
         </div>
     )
 }

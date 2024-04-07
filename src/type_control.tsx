@@ -19,6 +19,11 @@ interface TypeControlProps {
 
 interface TypeControlKey {
     key: string
+    altKey: boolean
+    ctrlKey: boolean
+    metaKey: boolean
+    shiftKey: boolean
+
 }
 
 function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeControlKey> {
@@ -119,6 +124,10 @@ const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlP
 
     function listener(event: Event) {
         if (isTypingControlKeyEvent(event)) {
+            if (event.detail.metaKey || event.detail.altKey || event.detail.ctrlKey) {
+                return
+            }
+
             const key = event.detail.key
 
             if (key === "Escape") {

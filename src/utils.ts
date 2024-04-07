@@ -953,6 +953,38 @@ class HouseImageAtlasHandler {
         }
     }
 
+    getPartialHouseReady(nation: Nation, houseType: AnyBuilding, percentageReady: number): DrawingInformation[] | undefined {
+        if (this.image === undefined || this.imageAtlasInfo === undefined) {
+            return undefined
+        }
+
+        const houseImage = this.imageAtlasInfo.buildings[nation][houseType].ready
+        const houseShadowImage = this.imageAtlasInfo.buildings[nation][houseType].readyShadow
+
+        return [
+            {
+                sourceX: houseImage.x,
+                sourceY: houseImage.y + houseImage.height * ((100 - percentageReady) / 100),
+                width: houseImage.width,
+                height: houseImage.height * (percentageReady / 100),
+                offsetX: houseImage.offsetX,
+                offsetY: houseImage.offsetY - houseImage.height * ((100 - percentageReady) / 100),
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: houseShadowImage.x,
+                sourceY: houseShadowImage.y + houseImage.height * ((100 - percentageReady) / 100),
+                width: houseShadowImage.width,
+                height: houseShadowImage.height * (percentageReady / 100),
+                offsetX: houseShadowImage.offsetX,
+                offsetY: houseShadowImage.offsetY - houseImage.height * ((100 - percentageReady) / 100),
+                image: this.image,
+                texture: this.texture
+            }
+        ]
+    }
+
     getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined

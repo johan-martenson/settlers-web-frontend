@@ -81,7 +81,7 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
             const game: GameInformation = await createGame(title, defaultMapId, [
                 {
                     name: playerName,
-                    color: "0xAABBCC",
+                    color: 'BLUE',
                     nation: "ROMANS"
                 }
             ])

@@ -77,7 +77,7 @@ const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProp
                 description={isEditing ? <></> :
                     <Caption1>
                         {nationPrettyString}, {player.type === "COMPUTER" && "computer player"}
-                        {isSelf && "me"}
+                        {isSelf && "me"}, {player.color.toLocaleLowerCase()}
                     </Caption1>
                 }
                 action={<Menu>

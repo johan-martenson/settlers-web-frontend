@@ -12,15 +12,15 @@ Todo
 9. Divide src into sub-folders better. prepare-game, play-game?
 10. Quota handling for planks
 11. Add the propeller to the mill
-12. Gradually draw finished building on top of the under construction-image
-13. Add remaining gravel after a stone has been fully removed as a decoration
-14. Add terrain overlaps to make the nature look smoother. Start with snow.
-15. Fix ugly scrollbar in type control
-16. Soldiers waiting to fight should be facing the attacked building's flag
-17. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
-18. Make the speed selector in the menu a controlled component
-19. Add skeleton decoration on the ground when a worker dies
-20. Pinch-to-zoom should zoom in the game, not the full web page
+12. Add remaining gravel after a stone has been fully removed as a decoration
+13. Add terrain overlaps to make the nature look smoother. Start with snow.
+14. Fix ugly scrollbar in type control
+15. Soldiers waiting to fight should be facing the attacked building's flag
+16. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
+17. Make the speed selector in the menu a controlled component
+18. Add skeleton decoration on the ground when a worker dies
+19. Pinch-to-zoom should zoom in the game, not the full web page
+20. After the fat courier chews gum it remains frozen in the last frame of the animation
 
 
 
@@ -49,3 +49,4 @@ Done
 19. Make goto house/point with animation configurable
 19. Change pseudo 3d effect to only shift upwards, not to the right
 15. FIX HOVER AND ONCLICK so that the closest point is always chosen
+12. Gradually draw finished building on top of the under construction-image

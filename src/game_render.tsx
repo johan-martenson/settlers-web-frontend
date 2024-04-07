@@ -1201,8 +1201,22 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     source: fireDrawInformation,
                     gamePoint: house,
                 })
-            } else if (house.state === "UNFINISHED") {
-                const houseDrawInformation = houses.getDrawingInformationForHouseUnderConstruction(currentPlayerNation, house.type)
+            } else if (house.state === "UNFINISHED" && house.constructionProgress !== undefined) {
+                const houseUnderConstruction = houses.getDrawingInformationForHouseUnderConstruction(currentPlayerNation, house.type)
+
+                if (houseUnderConstruction) {
+                    toDrawNormal.push({
+                        source: houseUnderConstruction[0],
+                        gamePoint: house,
+                    })
+
+                    shadowsToDraw.push({
+                        source: houseUnderConstruction[1],
+                        gamePoint: house,
+                    })
+                }
+
+                const houseDrawInformation = houses.getPartialHouseReady(currentPlayerNation, house.type, house.constructionProgress)
 
                 if (houseDrawInformation) {
                     toDrawNormal.push({

@@ -194,6 +194,7 @@ const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: Unfin
             <HouseIcon houseType={house.type} nation={nation} />
 
             <div>Under construction ...</div>
+            <meter max={100} value={house.constructionProgress} />
 
             {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined).length > 0 &&
                 <Field label="Resources">

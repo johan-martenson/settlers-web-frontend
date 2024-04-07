@@ -193,9 +193,16 @@ export interface WildAnimalInformation extends Point {
     path?: Point[]
 }
 
+export type PlayerColor = 'BLUE' | 'YELLOW' | 'RED' | 'PURPLE' | 'GRAY' | 'GREEN' | 'BROWN' | 'WHITE'
+export const PLAYER_COLORS: PlayerColor[] = ['BLUE', 'YELLOW', 'RED', 'PURPLE', 'GRAY', 'GREEN', 'BROWN', 'WHITE']
+
+function isPlayerColor(playerColor: unknown): playerColor is PlayerColor {
+    return typeof(playerColor) === 'string' && PLAYER_COLORS.find(e => e === playerColor) !== undefined
+}
+
 export interface Player {
     name: string
-    color: string
+    color: PlayerColor
     nation: Nation
 }
 
@@ -262,7 +269,7 @@ export interface PlayerInformation {
     readonly name: string
     readonly id: PlayerId
     readonly type: PlayerType
-    readonly color: string
+    readonly color: PlayerColor
     readonly centerPoint: Point
     readonly discoveredPoints: Set<Point>
     readonly nation: Nation
@@ -769,6 +776,7 @@ export {
     getSoldierDisplayName,
     isBuilding,
     isNation,
+    isPlayerColor,
     WILD_ANIMAL_TYPES,
     SMALL_HOUSES,
     MEDIUM_HOUSES,

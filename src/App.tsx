@@ -500,7 +500,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     onMouseDown(event: React.MouseEvent): void {
-
         if (event.button === 2) {
             immediateUxState.mouseDown = true
             immediateUxState.mouseDownX = event.pageX
@@ -553,7 +552,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     async componentDidMount(): Promise<void> {
-
         if (document.addEventListener) {
             document.addEventListener('contextmenu', function (e) {
 
@@ -667,7 +665,6 @@ class App extends Component<AppProps, AppState> {
 
                 /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
             } else if (isRoadAtPoint(point, monitor.roads)) {
-
                 console.info('Placing flag for road')
 
                 if (monitor.isAvailable(point, 'FLAG')) {
@@ -717,7 +714,6 @@ class App extends Component<AppProps, AppState> {
 
         /* First, handle double clicks differently if a new road is being created */
         if (this.state.newRoad) {
-
             console.log("New road exists")
 
             if (monitor.isAvailable(point, 'FLAG')) {
@@ -782,7 +778,6 @@ class App extends Component<AppProps, AppState> {
         const flag = monitor.getFlagAtPointLocal(point)
 
         if (flag) {
-
             console.info("Clicked flag")
 
             /* Show friendly flag dialog */
@@ -847,11 +842,10 @@ class App extends Component<AppProps, AppState> {
 
                 /* Otherwise, send the escape to the type controller */
             } else {
-                const keyEvent = new CustomEvent("key", { detail: { key: event.key } })
+                const keyEvent = new CustomEvent("key", { detail: { key: event.key, metaKey: event.metaKey, altKey: event.altKey, ctrlKey: event.ctrlKey } })
 
                 document.dispatchEvent(keyEvent)
             }
-
         } else if (event.key === " ") {
             this.toggleDetails()
         } else if (event.key === "ArrowUp") {
@@ -869,7 +863,7 @@ class App extends Component<AppProps, AppState> {
         } else if (event.key === "M") {
             this.showMenu()
         } else {
-            const keyEvent = new CustomEvent("key", { detail: { key: event.key } })
+            const keyEvent = new CustomEvent("key", { detail: { key: event.key, metaKey: event.metaKey, altKey: event.altKey, ctrlKey: event.ctrlKey } })
 
             document.dispatchEvent(keyEvent)
         }
@@ -897,7 +891,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     onTouchStart(event: React.TouchEvent): void {
-
         event.preventDefault()
 
         console.log("touchstart.")
@@ -930,7 +923,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     onTouchMove(event: React.TouchEvent): void {
-
         event.preventDefault()
 
         const touches = event.changedTouches
@@ -989,7 +981,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     onTouchEnd(event: React.TouchEvent): void {
-
         event.preventDefault()
 
         /* Stop moving */

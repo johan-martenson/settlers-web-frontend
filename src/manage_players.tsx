@@ -3,11 +3,11 @@ import { Button, Subtitle1 } from "@fluentui/react-components"
 import { Player } from './player'
 import './manage_players.css'
 import { addComputerPlayerToGame, getPlayers, updatePlayer, removePlayerFromGame } from './api/rest-api'
-import { PlayerType, PlayerInformation, GameId, Nation } from './api/types'
+import { PlayerType, PlayerInformation, GameId, Nation, PlayerColor, PLAYER_COLORS, isPlayerColor } from './api/types'
 
 export interface PlayerCandidateType {
     name: string
-    color: string
+    color: PlayerColor
     type: PlayerType
 }
 
@@ -59,18 +59,28 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
             return
         }
 
-        const newComputerPlayer: PlayerCandidateType = {
-            name: "Computer Player " + nextPlayer,
-            type: "COMPUTER",
-            color: "#777777"
+        const colorsRemaining = new Set<PlayerColor>(PLAYER_COLORS)
+
+        players.forEach(player => colorsRemaining.delete(player.color))
+
+        const nextColor = colorsRemaining.values().next()
+
+        if (nextColor.value) {
+            const newComputerPlayer: PlayerCandidateType = {
+                name: "Computer Player " + nextPlayer,
+                type: "COMPUTER",
+                color: nextColor.value
+            }
+
+            const addedPlayer = await addComputerPlayerToGame(gameId, newComputerPlayer.name, newComputerPlayer.color, 'ROMANS')
+
+            const updatedPlayers = await getPlayers(gameId)
+            setPlayers(updatedPlayers)
+
+            onPlayerAdded && onPlayerAdded(addedPlayer)
+        } else {
+            console.error("No color available for computer player")
         }
-
-        const addedPlayer = await addComputerPlayerToGame(gameId, newComputerPlayer.name, newComputerPlayer.color, 'ROMANS')
-
-        const updatedPlayers = await getPlayers(gameId)
-        setPlayers(updatedPlayers)
-
-        onPlayerAdded && onPlayerAdded(addedPlayer)
     }
 
     return (

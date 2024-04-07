@@ -16,7 +16,7 @@ const MapSelection = ({ onMapSelected }: MapSelectionProps) => {
 
     return (
         <div className="select-map">
-            <Subtitle1 as="h4" block>Select map</Subtitle1>
+            <Subtitle1 as="h4" block>Map</Subtitle1>
 
             {map &&
                 <MapInformationCard map={map} expanded={true} controls={false} />

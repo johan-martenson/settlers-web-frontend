@@ -50,7 +50,6 @@ export const TOOLS_UPPER_CASE_STRING: Set<string> = new Set(['AXE', 'SHOVEL', 'P
 
 export type MaterialWorkerUpperCase = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER' | 'COURIER' | 'DONKEY_BREEDER' | 'DONKEY' | 'FARMER' | 'FISHERMAN' | 'FORESTER' | 'GEOLOGIST' | 'HUNTER' | 'IRON_FOUNDER' | 'METALWORKER' | 'MILLER' | 'MINER' | 'MINTER' | 'PIG_BREEDER' | 'SAWMILL_WORKER' | 'SCOUT' | 'STONEMASON' | 'STORAGE_WORKER' | 'WELL_WORKER' | 'WOODCUTTER_WORKER' | 'PRIVATE' | 'PRIVATE_FIRST_CLASS' | 'SERGEANT' | 'OFFICER' | 'GENERAL' | 'BUILDER' | 'PLANER' | 'SHIPWRIGHT'
 
-export type NationSmallCaps = 'romans' | 'africans' | 'japanese' | 'vikings'
 export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
 
 export const NATIONS = new Set(['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS'])

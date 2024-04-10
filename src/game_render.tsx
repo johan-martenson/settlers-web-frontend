@@ -1145,20 +1145,20 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
         /* Collect borders to draw */
-        for (const borderForPlayer of monitor.border.values()) {
+        monitor.border.forEach((borderForPlayer) => {
             borderForPlayer.points.forEach(borderPoint => {
                 if (borderPoint.x < minXInGame || borderPoint.x > maxXInGame || borderPoint.y < minYInGame || borderPoint.y > maxYInGame) {
                     return
                 }
 
-                const borderPointInfo = borderImageAtlasHandler.getDrawingInformation('romans', 'LAND')
+                const borderPointInfo = borderImageAtlasHandler.getDrawingInformation(borderForPlayer.nation, borderForPlayer.color, 'LAND')
 
                 toDrawNormal.push({
                     source: borderPointInfo,
                     gamePoint: borderPoint,
                 })
             })
-        }
+        })
 
         duration.after("collect borders")
 

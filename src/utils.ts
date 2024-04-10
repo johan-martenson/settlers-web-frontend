@@ -1,5 +1,5 @@
 import { getInformationOnPoint, getTerrainForMap, removeHouse } from './api/rest-api'
-import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
+import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
 import { Monitor, monitor } from './api/ws-api'
 import { ScreenPoint } from './game_render'
 
@@ -1151,7 +1151,7 @@ export interface OneImageInformation {
 
 class BorderImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<NationSmallCaps, Record<"landBorder" | "coastBorder", OneImageInformation>>
+    private imageAtlasInfo?: Record<Nation, Record<PlayerColor, Record<"landBorder" | "coastBorder", OneImageInformation>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1180,17 +1180,17 @@ class BorderImageAtlasHandler {
         }
     }
 
-    getDrawingInformation(nation: NationSmallCaps, type: "LAND" | "COAST"): DrawingInformation | undefined {
+    getDrawingInformation(nation: Nation, color: PlayerColor, type: "LAND" | "COAST"): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const infoPerNation = this.imageAtlasInfo[nation]
-
-        let imageInfo = infoPerNation["landBorder"]
+        let imageInfo
 
         if (type === "COAST") {
-            imageInfo = infoPerNation["coastBorder"]
+            imageInfo = this.imageAtlasInfo[nation][color]["coastBorder"]
+        } else {
+            imageInfo = this.imageAtlasInfo[nation][color]['landBorder']
         }
 
         return {

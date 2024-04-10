@@ -6,7 +6,8 @@ import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, P
 let gameTickLength = 200;
 
 interface MonitoredBorderForPlayer {
-    color: string
+    color: PlayerColor
+    nation: Nation
     points: PointSetFast
 }
 
@@ -586,6 +587,7 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
         monitor.border.set(borderInformation.playerId,
             {
                 color: player.color,
+                nation: player.nation,
                 points: new PointSetFast(borderInformation.points)
             }
         )
@@ -938,6 +940,7 @@ function receivedFullSyncMessage(message: FullSyncMessage): void {
         monitor.border.set(borderInformation.playerId,
             {
                 color: player.color,
+                nation: monitor.players.get(borderInformation.playerId)?.nation ?? 'ROMANS',
                 points: new PointSetFast(borderInformation.points)
             }
         )
@@ -1328,6 +1331,7 @@ function syncChangedBorders(borderChanges: BorderChange[]): void {
             monitor.border.set(borderChange.playerId,
                 {
                     color: player.color,
+                    nation: monitor.players.get(borderChange.playerId)?.nation ?? 'ROMANS',
                     points: new PointSetFast(borderChange.newBorder)
                 }
             )

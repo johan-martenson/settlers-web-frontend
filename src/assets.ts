@@ -1,5 +1,5 @@
 import { Dimension, DrawingInformation, HouseImageAtlasHandler, ImageSeriesInformation, WorkerAnimation, loadImageNg, makeTextureFromImage } from "./utils"
-import { FlagType, MaterialAllUpperCase, Nation, WorkerType } from "./api/types"
+import { FlagType, MaterialAllUpperCase, Nation, PlayerColor, WorkerType } from "./api/types"
 
 const workers = new Map<WorkerType, WorkerAnimation>()
 
@@ -55,7 +55,7 @@ class MaterialImageAtlasHandler {
 
 class FlagImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<FlagType, Record<'images' | 'shadows', ImageSeriesInformation>>>
+    private imageAtlasInfo?: Record<Nation, Record<FlagType, Record<PlayerColor | 'shadows', ImageSeriesInformation>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -88,13 +88,13 @@ class FlagImageAtlasHandler {
         }
     }
 
-    getDrawingInformationFor(nation: Nation, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
+    getDrawingInformationFor(nation: Nation, color: PlayerColor, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        const images = this.imageAtlasInfo[nation][flagType].images
-        const shadowImages = this.imageAtlasInfo[nation][flagType].shadows
+        const images = this.imageAtlasInfo[nation][flagType][color]
+        const shadowImages = this.imageAtlasInfo[nation][flagType]['shadows']
 
         const frameIndex = animationCounter % images.nrImages
 
@@ -123,8 +123,7 @@ class FlagImageAtlasHandler {
     }
 
     getSize(nation: Nation, flagType: FlagType): Dimension | undefined {
-
-        const drawingInfo = this.getDrawingInformationFor(nation, flagType, 0)
+        const drawingInfo = this.getDrawingInformationFor(nation, 'BLUE', flagType, 0)
 
         if (drawingInfo) {
 
@@ -161,8 +160,8 @@ class FlagAnimation {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(nation: Nation, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationFor(nation, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
+    getAnimationFrame(nation: Nation, color: PlayerColor, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
+        return this.imageAtlasHandler.getDrawingInformationFor(nation, color, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
     }
 
     getSize(nation: Nation, flagType: FlagType): Dimension | undefined {

@@ -518,6 +518,7 @@ export interface FlagInformation extends Point {
     id: FlagId
     playerId: PlayerId
     type: FlagType
+    color: PlayerColor
     stackedCargo?: MaterialAllUpperCase[]
     nation: Nation
 }

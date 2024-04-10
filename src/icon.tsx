@@ -180,6 +180,7 @@ interface FlagIconProps {
     animate?: boolean
     nation: Nation
     scale?: number
+    color?: PlayerColor
 }
 
 const FlagIcon = (props: FlagIconProps) => {
@@ -187,6 +188,7 @@ const FlagIcon = (props: FlagIconProps) => {
     const animate = props.animate ?? false
     const nation = props.nation
     const scale = props.scale ?? 1
+    const color = props.color ?? 'BLUE'
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
     const [animationIndex, setAnimationIndex] = useState<number>(0)
@@ -256,7 +258,7 @@ const FlagIcon = (props: FlagIconProps) => {
             }
 
             // Read the source image data
-            const drawArray = animationHandler?.getAnimationFrame(nation, type, animationIndex, 0)
+            const drawArray = animationHandler?.getAnimationFrame(nation, color, type, animationIndex, 0)
 
             if (!drawArray) {
                 console.error("No drawing information")

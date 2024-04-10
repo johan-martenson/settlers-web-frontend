@@ -1,7 +1,7 @@
 import { getPlayers, getTerrain, getViewForPlayer } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, MaterialAllUpperCase, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation } from './types'
 
 let gameTickLength = 200;
 
@@ -19,6 +19,8 @@ interface WalkerTargetChange {
     cargo?: MaterialAllUpperCase
     type: WorkerType
     bodyType?: BodyType
+    color: PlayerColor
+    nation: Nation
 }
 
 interface BorderChange {
@@ -1372,7 +1374,6 @@ function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void
 function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
 
     for (const walkerTargetChange of targetChanges) {
-
         let worker = monitor.workers.get(walkerTargetChange.id)
         const direction = simpleDirectionToCompassDirection(walkerTargetChange.direction)
 
@@ -1386,7 +1387,9 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
                 direction,
                 percentageTraveled: 0,
                 type: walkerTargetChange.type,
-                bodyType: walkerTargetChange.bodyType
+                bodyType: walkerTargetChange.bodyType,
+                color: walkerTargetChange.color,
+                nation: walkerTargetChange.nation
             }
 
             monitor.workers.set(worker.id, worker)

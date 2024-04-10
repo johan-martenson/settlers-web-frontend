@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { AnyBuilding, Direction, FlagType, MaterialAllUpperCase, Nation, WorkerType } from './api/types'
+import { AnyBuilding, Direction, FlagType, MaterialAllUpperCase, Nation, PlayerColor, WorkerType } from './api/types'
 import { FlagAnimation, flagAnimations, houses, materialImageAtlasHandler, workers } from './assets'
 import { Dimension, WorkerAnimation, resizeCanvasToDisplaySize } from './utils'
 import './icon.css'
@@ -10,6 +10,7 @@ interface WorkerIconProps {
     nation: Nation
     direction?: Direction
     scale?: number
+    color?: PlayerColor
 }
 
 const WorkerIcon = (props: WorkerIconProps) => {
@@ -18,6 +19,7 @@ const WorkerIcon = (props: WorkerIconProps) => {
     const nation = props.nation
     const direction = props.direction ?? 'WEST'
     const scale = props.scale ?? 1
+    const color = props.color ?? 'BLUE'
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
     const [animationIndex, setAnimationIndex] = useState<number>(0)
@@ -40,7 +42,7 @@ const WorkerIcon = (props: WorkerIconProps) => {
                     const imageBitmap = await createImageBitmap(image)
 
                     setSourceImage(imageBitmap)
-                    setDimension(animationHandler.getSize(nation, direction) ?? {width: 0, height: 0})
+                    setDimension(animationHandler.getSize(nation, direction, color) ?? {width: 0, height: 0})
 
                 } else {
                     console.error("No image")
@@ -98,7 +100,7 @@ const WorkerIcon = (props: WorkerIconProps) => {
             context.clearRect(0, 0, width, height)
 
             // Read the source image data
-            const drawArray = animationHandler?.getAnimationFrame(direction, 0, animationIndex)
+            const drawArray = animationHandler?.getAnimationFrame(nation, direction, color, 0, animationIndex)
 
             if (!drawArray) {
                 console.error("No drawing information")

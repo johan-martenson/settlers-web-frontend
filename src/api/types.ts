@@ -439,6 +439,8 @@ export type SimpleDirection = 'UP_LEFT' | 'UP_RIGHT' | 'RIGHT' | 'DOWN_RIGHT' | 
 export interface WorkerInformation extends Point {
     id: WorkerId
     type: WorkerType
+    color: PlayerColor
+    nation: Nation
     betweenPoints: boolean
     direction: Direction
     previous?: Point
@@ -454,6 +456,8 @@ export interface WorkerInformation extends Point {
 export interface ServerWorkerInformation extends Point {
     id: WorkerId
     type: WorkerType
+    color: PlayerColor
+    nation: Nation
     betweenPoints: boolean
     direction: SimpleDirection
     previous?: Point
@@ -502,6 +506,7 @@ export interface HouseInformation extends Point {
     availableAttackers?: number
     productivity?: number
     upgrading?: boolean
+    nation: Nation
 }
 
 export interface HeadquarterInformation extends HouseInformation {

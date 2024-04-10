@@ -1,5 +1,5 @@
 import { getInformationOnPoint, getTerrainForMap, removeHouse } from './api/rest-api'
-import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation } from './api/types'
+import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, NationSmallCaps, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
 import { Monitor, monitor } from './api/ws-api'
 import { ScreenPoint } from './game_render'
 
@@ -455,12 +455,12 @@ class WorkerAnimation {
         this.imageAtlasHandler.makeTexture(gl)
     }
 
-    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForWorker("ROMANS", direction, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
+    getAnimationFrame(nation: Nation, direction: Direction, color: PlayerColor, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
+        return this.imageAtlasHandler.getDrawingInformationForWorker(nation, direction, color, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
     }
 
-    getActionAnimation(direction: Direction, action: WorkerAction, animationIndex: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForAction(direction, action, animationIndex)
+    getActionAnimation(nation: Nation, direction: Direction, action: WorkerAction, color: PlayerColor, animationIndex: number): DrawingInformation | undefined {
+        return this.imageAtlasHandler.getDrawingInformationForAction(nation, direction, action, color, animationIndex)
     }
 
     getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
@@ -471,8 +471,8 @@ class WorkerAnimation {
         return this.imageAtlasHandler
     }
 
-    getSize(nation: Nation, direction: Direction): Dimension | undefined {
-        return this.imageAtlasHandler.getSize(nation, direction)
+    getSize(nation: Nation, direction: Direction, color: PlayerColor): Dimension | undefined {
+        return this.imageAtlasHandler.getSize(nation, direction, color)
     }
 }
 
@@ -624,14 +624,19 @@ interface WorkerCommonFormat {
     shadowImages: Record<Direction, ImageSeriesInformation>
     fullImages: Record<Direction, ImageSeriesInformation>
     bodyImages: Record<Direction, ImageSeriesInformation>
+    bodyImagesByPlayer: Record<Direction, Record<PlayerColor, ImageSeriesInformation>>
+    fullImagesByPlayer: Record<Direction, Record<PlayerColor, ImageSeriesInformation>>
     cargoImages?: Record<MaterialAllUpperCase, Record<Direction, ImageSeriesInformation>>
     actions?: Record<WorkerAction, Record<Direction | 'any', ImageSeriesInformation>>
+    actionsByPlayer?: Record<WorkerAction, Record<Direction | 'any', Record<PlayerColor, ImageSeriesInformation>>>
 }
 
 interface WorkerNationSpecificFormat {
     fullImages: Record<Nation, Record<Direction, ImageSeriesInformation>>
+    fullImagesByPlayer: Record<Nation, Record<Direction, Record<PlayerColor, ImageSeriesInformation>>>
     cargoImages?: Record<Nation, Record<MaterialAllUpperCase, Record<Direction, ImageSeriesInformation>>>
     actions?: Record<Nation, Record<WorkerAction, Record<Direction | 'any', ImageSeriesInformation>>>
+    actionsByPlayer?: Record<Nation, Record<WorkerAction, Record<Direction | 'any', Record<PlayerColor, ImageSeriesInformation>>>>
 }
 
 interface WorkerImageAtlasFormat {
@@ -647,13 +652,11 @@ class WorkerImageAtlasHandler {
     private texture?: WebGLTexture | null
 
     constructor(prefix: string, name: string) {
-
         this.pathPrefix = prefix
         this.name = name
     }
 
     async load(): Promise<void> {
-
         if (this.image) {
             return
         }
@@ -677,7 +680,7 @@ class WorkerImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForWorker(nation: Nation, direction: Direction, animationCounter: number, offset: number): DrawingInformation[] | undefined {
+    getDrawingInformationForWorker(nation: Nation, direction: Direction, color: PlayerColor, animationCounter: number, offset: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -687,10 +690,31 @@ class WorkerImageAtlasHandler {
 
         let images
 
-        if (this.imageAtlasInfo.nationSpecific?.fullImages) {
+        if (this.imageAtlasInfo.nationSpecific &&
+            this.imageAtlasInfo.nationSpecific.fullImagesByPlayer &&
+            this.imageAtlasInfo.nationSpecific.fullImagesByPlayer[nation] &&
+            this.imageAtlasInfo.nationSpecific.fullImagesByPlayer[nation][direction] &&
+            this.imageAtlasInfo.nationSpecific.fullImagesByPlayer[nation][direction][color]
+        ) {
+            images = this.imageAtlasInfo.nationSpecific.fullImagesByPlayer[nation][direction][color]
+        } else if (this.imageAtlasInfo.nationSpecific?.fullImages) {
             images = this.imageAtlasInfo.nationSpecific.fullImages[nation][direction]
+        } else if (
+            this.imageAtlasInfo.common?.fullImagesByPlayer &&
+            this.imageAtlasInfo.common.fullImagesByPlayer[direction] &&
+            this.imageAtlasInfo.common.fullImagesByPlayer[direction][color]
+        ) {
+            images = this.imageAtlasInfo.common.fullImagesByPlayer[direction][color]
         } else if (this.imageAtlasInfo.common?.fullImages) {
             images = this.imageAtlasInfo.common.fullImages[direction]
+        } else if (this.imageAtlasInfo.common?.fullImagesByPlayer) {
+            images = this.imageAtlasInfo.common.fullImagesByPlayer[direction][color]
+        } else if (
+            this.imageAtlasInfo.common?.bodyImagesByPlayer &&
+            this.imageAtlasInfo.common.bodyImagesByPlayer[direction] &&
+            this.imageAtlasInfo.common.bodyImagesByPlayer[direction][color]
+        ) {
+            images = this.imageAtlasInfo.common.bodyImagesByPlayer[direction][color]
         } else if (this.imageAtlasInfo.common?.bodyImages) {
             images = this.imageAtlasInfo.common.bodyImages[direction]
         } else {
@@ -723,7 +747,7 @@ class WorkerImageAtlasHandler {
         ]
     }
 
-    getDrawingInformationForAction(direction: Direction, action: WorkerAction, animationIndex: number): DrawingInformation | undefined {
+    getDrawingInformationForAction(nation: Nation, direction: Direction, action: WorkerAction, color: PlayerColor, animationIndex: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             console.error("Undefined!")
             console.error([action, direction])
@@ -732,6 +756,36 @@ class WorkerImageAtlasHandler {
         }
 
         if (direction &&
+            this.imageAtlasInfo.common.actionsByPlayer &&
+            this.imageAtlasInfo.common.actionsByPlayer[action] &&
+            this.imageAtlasInfo.common.actionsByPlayer[action][direction] &&
+            this.imageAtlasInfo.common.actionsByPlayer[action][direction][color]) {
+            const actionImages = this.imageAtlasInfo.common.actionsByPlayer[action][direction][color]
+
+            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
+                return {
+                    sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
+                    sourceY: actionImages.startY,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
+                return {
+                    sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
+                    sourceY: actionImages.startY,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            }
+        } else if (direction &&
             this.imageAtlasInfo.common?.actions &&
             this.imageAtlasInfo.common?.actions[action] &&
             this.imageAtlasInfo.common.actions[action][direction]) {
@@ -788,11 +842,45 @@ class WorkerImageAtlasHandler {
             }
         } else if (this.imageAtlasInfo.nationSpecific &&
             this.imageAtlasInfo.nationSpecific?.actions &&
-            this.imageAtlasInfo.nationSpecific.actions["ROMANS"] &&
-            this.imageAtlasInfo.nationSpecific.actions["ROMANS"][action] &&
-            this.imageAtlasInfo.nationSpecific.actions["ROMANS"][action][direction]) {
-            const actionImages = this.imageAtlasInfo.nationSpecific.actions["ROMANS"][action][direction]
+            this.imageAtlasInfo.nationSpecific.actions[nation] &&
+            this.imageAtlasInfo.nationSpecific.actions[nation][action] &&
+            this.imageAtlasInfo.nationSpecific.actions[nation][action][direction]) {
+            const actionImages = this.imageAtlasInfo.nationSpecific.actions[nation][action][direction]
 
+            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
+                return {
+                    sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
+                    sourceY: actionImages.startY,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
+                return {
+                    sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
+                    sourceY: actionImages.startY,
+                    width: actionImages.width,
+                    height: actionImages.height,
+                    offsetX: actionImages.offsetX,
+                    offsetY: actionImages.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            } else if (actionAnimationType.get(action) == 'SINGLE_THEN_STOP') {
+                // SINGLE_THEN_STOP is handled in the first arm. If we get here the animation is drawn already
+
+                return undefined
+            }
+        } else if (this.imageAtlasInfo.nationSpecific &&
+            this.imageAtlasInfo.nationSpecific?.actionsByPlayer &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation] &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action] &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction] &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]) {
+            const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
                 return {
                     sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
@@ -858,11 +946,10 @@ class WorkerImageAtlasHandler {
         return undefined
     }
 
-    getSize(nation: Nation, direction: Direction): Dimension | undefined {
-        const drawingInfo = this.getDrawingInformationForWorker(nation, direction, 0, 0)
+    getSize(nation: Nation, direction: Direction, color: PlayerColor): Dimension | undefined {
+        const drawingInfo = this.getDrawingInformationForWorker(nation, direction, color, 0, 0)
 
         if (drawingInfo) {
-
             return {
                 width: drawingInfo[0].width,
                 height: drawingInfo[0].height

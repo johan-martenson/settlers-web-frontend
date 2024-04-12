@@ -926,7 +926,8 @@ class WorkerImageAtlasHandler {
             return undefined
         }
 
-        if (this.imageAtlasInfo.nationSpecific.cargoImages) {
+        if (this.imageAtlasInfo?.nationSpecific &&
+            this.imageAtlasInfo.nationSpecific.cargoImages) {
             return undefined // TODO: fix this when there is a nation specific cargo image
         } else if (this.imageAtlasInfo.common.cargoImages) {
             const cargoImages = this.imageAtlasInfo.common.cargoImages[material][direction]

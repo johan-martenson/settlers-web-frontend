@@ -162,6 +162,7 @@ class App extends Component<AppProps, AppState> {
         this.onTouchEnd = this.onTouchEnd.bind(this)
         this.onTouchMove = this.onTouchMove.bind(this)
         this.onTouchCancel = this.onTouchCancel.bind(this)
+        this.onWheel = this.onWheel.bind(this)
 
         this.onKeyDown = this.onKeyDown.bind(this)
 
@@ -965,6 +966,12 @@ class App extends Component<AppProps, AppState> {
         }
     }
 
+    onWheel(event: React.WheelEvent): void {
+        event.preventDefault()
+
+        this.zoom(immediateUxState.scale - event.deltaY / 20.0)
+    }
+
     onTouchCancel(event: React.TouchEvent): void {
         event.preventDefault()
 
@@ -1014,6 +1021,7 @@ class App extends Component<AppProps, AppState> {
                 onTouchMove={this.onTouchMove}
                 onTouchEnd={this.onTouchEnd}
                 onTouchCancel={this.onTouchCancel}
+                onWheel={this.onWheel}
                 tabIndex={1}>
 
                 <GameCanvas

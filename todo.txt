@@ -21,6 +21,8 @@ Todo
 18. Add skeleton decoration on the ground when a worker dies
 19. Pinch-to-zoom should zoom in the game, not the full web page
 20. After the fat courier chews gum it remains frozen in the last frame of the animation
+21. Border markers should look different for water/land
+22. Worker actions should be different per player color
 
 
 

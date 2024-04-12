@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
 import { AttackType, GameId, HouseInformation, Nation, PlayerId, isMaterialUpperCase } from "../api/types"
-import { HouseIcon, InventoryIcon } from "../icon"
+import { HouseIcon, InventoryIcon, UiIcon } from "../icon"
 import './house_info.css'
 import { HeadquarterInfo } from "./headquarter"
 import { attackBuilding, houseIsReady, isMilitaryBuilding, pauseProductionForHouse, removeHouse, resumeProductionForHouse } from "../api/rest-api"
@@ -17,7 +17,6 @@ interface HouseInfoProps {
 }
 
 const HouseInfo = (props: HouseInfoProps) => {
-
     const [house, setHouse] = useState<HouseInformation>(props.house)
 
     const selfPlayerId = props.selfPlayerId
@@ -96,7 +95,10 @@ const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose }: PlannedH
 
                 onClose()
             }}
-            >Destroy</Button>
+            >
+                <UiIcon type='DESTROY_BUILDING' />
+                Destroy
+            </Button>
             <Button onClick={onClose} >Close</Button>
         </div>
     )
@@ -231,7 +233,10 @@ const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: Unfin
 
                 onClose()
             }}
-            >Destroy</Button>
+            >
+                <UiIcon type='DESTROY_BUILDING' />
+                Destroy
+            </Button>
             <Button onClick={onClose} >Close</Button>
         </div>
     )
@@ -313,7 +318,11 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
 
                 onClose()
             }}
-            >Destroy</Button>
+            >
+                <UiIcon type='DESTROY_BUILDING' />
+                Destroy
+            </Button>
+
 
             <Button onClick={() => { onClose() }} >Close</Button>
         </div >

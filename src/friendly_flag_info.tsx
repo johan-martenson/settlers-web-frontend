@@ -3,7 +3,7 @@ import { FlagInformation, Nation } from './api/types'
 import './friendly_flag_info.css'
 import { monitor } from './api/ws-api'
 import { Button, Field } from '@fluentui/react-components'
-import { FlagIcon, InventoryIcon } from './icon'
+import { FlagIcon, InventoryIcon, UiIcon } from './icon'
 
 interface FriendlyFlagInfoProps {
     flag: FlagInformation
@@ -39,7 +39,7 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
 
             <div className="flag-information">
 
-                <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} />
+                <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate/>
 
                 <div className="button-row">
 
@@ -73,7 +73,7 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                         }
                     >
                         <div className='friendly-flag-info-button-icon-and-label'>
-                            <InventoryIcon material='GEOLOGIST' nation={nation} />
+                            <UiIcon type='GEOLOGIST' />
                             Call geologist
                         </div>
                     </Button>

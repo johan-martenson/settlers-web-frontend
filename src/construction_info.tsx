@@ -5,7 +5,7 @@ import { Dialog, DialogSection } from './dialog'
 import { monitor } from './api/ws-api'
 import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag, canRemoveRoad } from './utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { FlagIcon, HouseIcon } from './icon'
+import { FlagIcon, HouseIcon, UiIcon } from './icon'
 
 interface ConstructionInfoProps {
     point: PointInformation
@@ -122,7 +122,6 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
 
                             {canRemoveRoad(point) &&
                                 <Button
-                                    icon="scissor.png"
                                     onClick={
                                         async () => {
                                             if (point.roadId) {
@@ -132,7 +131,10 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                                             }
                                         }
                                     }
-                                >Dig up road</Button>
+                                >
+                                    <UiIcon type='SCISSORS' scale={1} />
+                                    Dig up road
+                                </Button>
                             }
                         </div>
                     </DialogSection>

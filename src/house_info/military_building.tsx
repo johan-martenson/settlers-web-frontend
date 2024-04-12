@@ -1,9 +1,9 @@
 import React from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
 import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterialUpperCase, rankToMaterial } from "../api/types"
-import { HouseIcon, InventoryIcon } from "../icon"
+import { HouseIcon, InventoryIcon, UiIcon } from "../icon"
 import './house_info.css'
-import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, upgradeMilitaryBuilding } from "../api/rest-api"
+import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse, upgradeMilitaryBuilding } from "../api/rest-api"
 
 interface MilitaryBuildingProps {
     house: HouseInformation
@@ -132,6 +132,16 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
             {canBeUpgraded(house) && !house.upgrading &&
                 <Button onClick={() => upgradeMilitaryBuilding(gameId, playerId, house.id)} >Upgrade</Button>
             }
+
+            <Button onClick={() => {
+                removeHouse(house.id, playerId, gameId)
+
+                onClose()
+            }}
+            >
+                <UiIcon type='DESTROY_BUILDING' />
+                Destroy
+            </Button>
 
             <Button onClick={onClose} >Close</Button>
         </div>

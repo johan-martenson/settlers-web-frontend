@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { AnyBuilding, Direction, FlagType, MaterialAllUpperCase, Nation, PlayerColor, WorkerType } from './api/types'
-import { FlagAnimation, flagAnimations, houses, materialImageAtlasHandler, workers } from './assets'
+import { FlagAnimation, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from './assets'
 import { Dimension, WorkerAnimation, resizeCanvasToDisplaySize } from './utils'
 import './icon.css'
 
@@ -175,6 +175,101 @@ const InventoryIcon = (props: InventoryIconProps) => {
 }
 
 
+export type UiIconType = 'DESTROY_BUILDING' | 'SCISSORS' | 'INFORMATION' | 'GEOLOGIST' | 'ATTACK'
+
+
+interface UiIconProps {
+    type: UiIconType
+    scale?: number
+}
+
+const UiIcon = (props: UiIconProps) => {
+    const type = props.type
+    const scale = props.scale ?? 1.0
+
+    const canvasRef = useRef<HTMLCanvasElement | null>(null)
+    const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
+    const [sourceImage, setSourceImage] = useState<ImageBitmap>()
+
+    useEffect(() => {
+        (async () => {
+            await uiElementsImageAtlasHandler.load()
+
+            const image = uiElementsImageAtlasHandler.getImage()
+
+            if (image) {
+                const imageBitmap = await createImageBitmap(image)
+
+                const drawInfo = uiElementsImageAtlasHandler.getUiElement(type)
+
+                if (drawInfo) {
+                    setSourceImage(imageBitmap)
+                    setDimension({ width: drawInfo.width, height: drawInfo.height})
+                }
+
+                console.log("Set image")
+            } else {
+                console.error("No image")
+            }
+        })().then()
+    }, [type])
+
+    // Drawing
+    useEffect(() => {
+        (async () => {
+            console.log("Drawing image")
+
+            const canvas = canvasRef.current
+
+            if (!canvas) {
+                console.error("No canvas ref set")
+
+                return
+            }
+
+            const context = canvas.getContext('2d')
+
+            if (!context) {
+                console.error("No context")
+
+                return
+            }
+
+            // Read the source image data
+            const drawInfo = uiElementsImageAtlasHandler.getUiElement(type)
+
+            if (!drawInfo) {
+                console.error("No drawing information")
+
+                return
+            }
+
+            const width = drawInfo.width * scale
+            const height = drawInfo.height * scale
+
+            canvas.width = width
+            canvas.height = height
+
+            context.clearRect(0, 0, width, height)
+
+            if (sourceImage) {
+                console.log("Did draw image")
+
+                context.drawImage(sourceImage, drawInfo.sourceX, drawInfo.sourceY, drawInfo.width, drawInfo.height, 0, 0, width, height)
+            }
+        })().then()
+
+    }, [type, scale, sourceImage])
+
+    return <canvas
+        ref={canvasRef}
+        width={dimension.width * scale}
+        height={dimension.height * scale}
+        style={{ width: dimension.width * scale, height: dimension.height * scale }}
+    />
+}
+
+
 interface FlagIconProps {
     type: FlagType
     animate?: boolean
@@ -297,5 +392,6 @@ export {
     WorkerIcon,
     HouseIcon,
     InventoryIcon,
-    FlagIcon
+    FlagIcon,
+    UiIcon
 }

@@ -124,7 +124,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                                 <Button
                                     onClick={
                                         async () => {
-                                            if (point.roadId) {
+                                            if (point.is === 'road') {
                                                 monitor.removeRoad(point.roadId)
 
                                                 onClose()

@@ -212,6 +212,7 @@ export interface Monitor {
     localRemovedFlags: Map<FlagId, FlagInformation>
     localRemovedRoads: Map<RoadId, RoadInformation>
     gameState: GameState
+    housesAt: PointMapFast<HouseInformation>
 
     placeHouse: ((houseType: AnyBuilding, point: Point) => void)
     placeRoad: ((points: Point[]) => void)
@@ -290,6 +291,8 @@ export interface Monitor {
 
     pauseGame: (() => void)
     resumeGame: (() => void)
+
+    houseAt: ((point: Point) => HouseInformation | undefined)
 
     killWebsocket: (() => void)
 }
@@ -379,6 +382,8 @@ const monitor: Monitor = {
     decorations: new PointMapFast<Decoration>(),
     gameState: 'STARTED',
 
+    housesAt: new PointMapFast<HouseInformation>(),
+
     localRemovedFlags: new Map<FlagId, FlagInformation>(),
     localRemovedRoads: new Map<RoadId, RoadInformation>(),
 
@@ -459,6 +464,8 @@ const monitor: Monitor = {
 
     pauseGame,
     resumeGame,
+
+    houseAt,
 
     killWebsocket
 }
@@ -560,7 +567,10 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     view.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
 
-    view.houses.forEach(house => monitor.houses.set(house.id, house))
+    view.houses.forEach(house => {
+        monitor.houses.set(house.id, house)
+        monitor.housesAt.set(house, house)
+    })
 
     view.flags.forEach(flag => monitor.flags.set(flag.id, flag))
 
@@ -892,6 +902,7 @@ function receivedFullSyncMessage(message: FullSyncMessage): void {
     monitor.crops.clear()
     monitor.deadTrees.clear()
     monitor.decorations.clear()
+    monitor.housesAt.clear()
 
     message.availableConstruction.forEach((availableAtPoint, pointString) => {
         const point = pointStringToPoint(pointString)
@@ -909,13 +920,15 @@ function receivedFullSyncMessage(message: FullSyncMessage): void {
 
     message.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
 
-    message.houses.forEach(house => monitor.houses.set(house.id, house))
+    message.houses.forEach(house => {
+        monitor.houses.set(house.id, house)
+        monitor.housesAt.set(house, house)
+    })
 
     message.flags.forEach(flag => {
         monitor.flags.set(flag.id, flag)
         flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
     })
-
 
     message.roads.forEach(road => monitor.roads.set(road.id, road))
 
@@ -1046,7 +1059,10 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
 
     message.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
 
-    message.newBuildings?.forEach(house => monitor.houses.set(house.id, house))
+    message.newBuildings?.forEach(house => {
+        monitor.houses.set(house.id, house)
+        monitor.housesAt.set(house, house)
+    })
 
     if (message.changedBuildings) {
         message.changedBuildings.forEach(house => {
@@ -1059,10 +1075,19 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
             }
 
             monitor.houses.set(house.id, house)
+
+            monitor.housesAt.set(house, house)
         })
     }
 
-    message.removedBuildings?.forEach(id => monitor.houses.delete(id))
+    message.removedBuildings?.forEach(id => {
+        const house = monitor.houses.get(id)
+        monitor.houses.delete(id)
+
+        if (house) {
+            monitor.housesAt.delete(house)
+        }
+    })
 
     message.newDecorations?.forEach(pointAndDecoration => monitor.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
     message.removedDecorations?.forEach(point => monitor.decorations.delete(point))
@@ -1678,65 +1703,75 @@ function callGeologistWebsocket(point: Point): void {
     ))
 }
 
-export interface PointInformationLocal extends Point {
+export type PointInformationLocal = {
+    x: number
+    y: number
+    canBuild: AvailableConstruction[]
+} & ({
+    is?: undefined
+} | {
+    is: 'building'
+    buildingId: HouseId
+} | {
+    is: 'flag'
+    flagId: FlagId
+} | {
+    is: 'road'
+    roadId: RoadId
+})
+
+/*export interface PointInformationLocal extends Point {
     canBuild: AvailableConstruction[]
     buildingId?: HouseId
     flagId?: FlagId
     roadId?: RoadId
     is: "flag" | "building" | "road" | undefined
-}
+}*/
 
 function getInformationOnPointLocal(point: Point): PointInformationLocal {
-    let canBuild = monitor.availableConstruction.get(point)
-    let buildingId = undefined
-    let flagId = undefined
-    let roadId = undefined
-    let is: "flag" | "building" | "road" | undefined = undefined
+    const canBuild = monitor.availableConstruction.get(point)
 
     for (const building of monitor.houses.values()) {
         if (building.x === point.x && building.y === point.y) {
-            buildingId = building.id
-
-            is = "building"
-
-            break
+            return {
+                x: point.x,
+                y: point.y,
+                canBuild: canBuild ?? [],
+                buildingId: building.id,
+                is: 'building'
+            }
         }
     }
 
     for (const flag of monitor.flags.values()) {
         if (flag.x === point.x && flag.y === point.y) {
-            flagId = flag.id
-
-            is = "flag"
-
-            break
-        }
-    }
-
-    if (buildingId === undefined) {
-        for (const [candidateRoadId, road] of monitor.roads) {
-            if (road.points.find(roadPoint => roadPoint.x === point.x && roadPoint.y === point.y)) {
-                is = "road"
-
-                roadId = candidateRoadId
-
-                break
+            return {
+                x: point.x,
+                y: point.y,
+                canBuild: canBuild ?? [],
+                flagId: flag.id,
+                is: 'flag'
             }
         }
     }
 
-    if (canBuild === undefined) {
-        canBuild = []
+    for (const [candidateRoadId, road] of monitor.roads) {
+        if (road.points.find(roadPoint => roadPoint.x === point.x && roadPoint.y === point.y)) {
+            return {
+                x: point.x,
+                y: point.y,
+                canBuild: canBuild ?? [],
+                roadId: candidateRoadId,
+                is: 'road'
+            }
+        }
     }
 
     return {
         x: point.x,
         y: point.y,
-        canBuild,
-        buildingId,
-        flagId,
-        roadId,
-        is
+        canBuild: canBuild ?? [],
+        is: undefined
     }
 }
 
@@ -2306,6 +2341,10 @@ function setSoldiersAvailableForAttack(amount: number): void {
             amount
         }
     ))
+}
+
+function houseAt(point: Point): HouseInformation | undefined {
+    return monitor.housesAt.get(point)
 }
 
 export {

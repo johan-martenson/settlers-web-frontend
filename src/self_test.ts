@@ -383,6 +383,13 @@ function testPointMap(): void {
     } else {
         console.error("NOT OK")
     }
+
+    // Test clearing the map
+    pointMap.clear()
+
+    if (pointMap.size !== 0 || pointMap.has(point1) || pointMap.get(point1) !== undefined) {
+        console.error("NOT OK")
+    }
 }
 
 export { do_self_test }

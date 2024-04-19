@@ -9,6 +9,8 @@ import { sfx } from './sound/sound_effects'
 import { DEFAULT_VOLUME } from './App'
 import { monitor } from './api/ws-api'
 
+export type GameSpeed = 'Fast' | 'Normal' | 'Slow'
+
 interface GameMenuProps {
     gameId: GameId
     currentPlayerId: PlayerId
@@ -24,6 +26,7 @@ interface GameMenuProps {
     isAnimateMapScrollingSet: boolean
     isAnimateZoomingSet: boolean
     defaultZoom: number
+    gameSpeed: GameSpeed
 
     onChangedZoom: ((scale: number) => void)
     onSetSpeed: ((speed: number) => void)
@@ -40,19 +43,29 @@ interface GameMenuProps {
     onSetHeightAdjust: ((heightAdjust: number) => void)
     onSetAnimateMapScrolling: ((shouldAnimate: boolean) => void)
     onSetAnimateZooming: ((shouldAnimate: boolean) => void)
+    onGameSpeedChange: ((gameSpeed: GameSpeed) => void)
 }
 
 const GameMenu = (
-    { minZoom, maxZoom, isOpen, defaultZoom, areTitlesVisible, isMusicPlayerVisible, isTypingControllerVisible, isAvailableConstructionVisible, isAnimateMapScrollingSet, isAnimateZoomingSet,
+    { minZoom,
+        maxZoom,
+        isOpen,
+        defaultZoom,
+        areTitlesVisible,
+        isMusicPlayerVisible,
+        isTypingControllerVisible,
+        isAvailableConstructionVisible,
+        isAnimateMapScrollingSet,
+        isAnimateZoomingSet,
+        gameSpeed,
         onClose, onChangedZoom, onSetTitlesVisible, onSetMusicPlayerVisible, onSetTypingControllerVisible, onSetAvailableConstructionVisible, onLeaveGame, onStatistics,
-        onHelp, onSetTransportPriority, onSetMusicVolume, onSetHeightAdjust, onSetAnimateMapScrolling, onSetAnimateZooming }: GameMenuProps
+        onHelp, onSetTransportPriority, onSetMusicVolume, onSetHeightAdjust, onSetAnimateMapScrolling, onSetAnimateZooming, onGameSpeedChange }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
 
     return (
         <Drawer type='overlay' separator open={isOpen} onOpenChange={() => onClose()}>
             <DrawerHeader>
-
                 <DrawerHeaderTitle action={<Button appearance="subtle" aria-label="Close" icon={<Dismiss24Regular />} onClick={() => onClose()} />} >
                     Menu
                 </DrawerHeaderTitle>
@@ -77,13 +90,19 @@ const GameMenu = (
                         }} >Reset</Button>
                     </Field>
                     <Field label='Set game speed'>
-                        <Dropdown defaultValue={"Normal"} onOptionSelect={(event: SelectionEvents, data: OptionOnSelectData) => {
+                        <Dropdown value={gameSpeed} onOptionSelect={(event: SelectionEvents, data: OptionOnSelectData) => {
                             if (data.optionValue === 'Fast') {
                                 monitor.setGameSpeed('FAST')
+
+                                onGameSpeedChange('Fast')
                             } else if (data.optionValue === 'Normal') {
                                 monitor.setGameSpeed('NORMAL')
+
+                                onGameSpeedChange('Normal')
                             } else {
                                 monitor.setGameSpeed('SLOW')
+
+                                onGameSpeedChange('Slow')
                             }
                         }}>
                             <Option>Fast</Option>

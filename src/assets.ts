@@ -397,6 +397,9 @@ class FlagImageAtlasHandler {
 
     getDrawingInformationFor(nation: Nation, color: PlayerColor, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            console.error("Image or image atlas undefined")
+            console.error([this.imageAtlasInfo, this.image])
+
             return undefined
         }
 

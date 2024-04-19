@@ -1,4 +1,4 @@
-import { GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, SignTypes, Player, TransportCategoriesUpperCase, AttackType } from './types'
+import { GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, Player, TransportCategoriesUpperCase, AttackType } from './types'
 import { PointMapFast } from '../util_types'
 
 function printTimestamp(message: string): void {
@@ -695,7 +695,7 @@ async function getMessagesForPlayer(gameId: GameId, playerId: PlayerId): Promise
 async function evacuateHouseOnPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
     const pointInformation = await getInformationOnPoint(point, gameId, playerId)
 
-    if (!pointInformation.buildingId) {
+    if (pointInformation.is !== 'building') {
         return
     }
 
@@ -722,6 +722,7 @@ function houseIsOccupied(house: HouseInformation): boolean {
     return house.state === "OCCUPIED"
 }
 
+/*
 const signToColor = new Map<SignTypes, string>()
 
 signToColor.set("iron", "red")
@@ -729,9 +730,10 @@ signToColor.set("coal", "black")
 signToColor.set("gold", "yellow")
 signToColor.set("stone", "white")
 signToColor.set("water", "blue")
+*/
 
 export {
-    signToColor,
+    //signToColor,
     pauseProductionForHouse,
     resumeProductionForHouse,
     printTimestamp,

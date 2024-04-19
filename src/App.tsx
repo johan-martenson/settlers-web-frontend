@@ -3,7 +3,7 @@ import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, getInformatio
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import FriendlyFlagInfo from './friendly_flag_info'
-import GameMenu from './game_menu'
+import GameMenu, { GameSpeed } from './game_menu'
 import GameMessagesViewer from './game_messages_viewer'
 import { CursorState, DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, GameCanvas } from './game_render'
 import Guide from './guide'
@@ -124,6 +124,7 @@ interface AppState {
     isTypingControllerVisible: boolean
     animateMapScrolling: boolean
     animateZoom: boolean
+    gameSpeed: GameSpeed
 
     showTitles: boolean
     showAvailableConstruction: boolean
@@ -143,7 +144,7 @@ interface AppState {
 class App extends Component<AppProps, AppState> {
 
     private selfNameRef = React.createRef<HTMLDivElement>()
-    private readonly commands: Map<string, Command>
+    private commands: Map<string, Command>
     monitoringPromise: Promise<void>
 
     constructor(props: AppProps) {
@@ -186,172 +187,12 @@ class App extends Component<AppProps, AppState> {
             heightAdjust: DEFAULT_HEIGHT_ADJUSTMENT,
             gameState: 'STARTED',
             animateMapScrolling: true,
-            animateZoom: true
+            animateZoom: true,
+            gameSpeed: 'Normal'
         }
 
         /* Set up type control commands */
         this.commands = new Map()
-
-        SMALL_HOUSES.forEach(building => this.commands.set(building, {
-            action: () => monitor.placeHouse(building, this.state.selected),
-            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'small') !== undefined,
-            icon: <HouseIcon houseType={building} nation={'ROMANS'} scale={0.5} />
-        }
-        ))
-        MEDIUM_HOUSES.forEach(building => this.commands.set(building, {
-            action: () => monitor.placeHouse(building, this.state.selected),
-            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'medium') !== undefined,
-            icon: <HouseIcon houseType={building} nation={'ROMANS'} scale={0.5} />
-        }))
-        LARGE_HOUSES.forEach(building => building !== 'Headquarter' && this.commands.set(building, {
-            action: () => monitor.placeHouse(building, this.state.selected),
-            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'large') !== undefined,
-            icon: <HouseIcon houseType={building} nation={'ROMANS'} scale={0.5} />
-        }))
-
-        this.commands.set("Kill websocket", {
-            action: () => monitor.killWebsocket(),
-            icon: <Dismiss24Filled />
-        })
-
-        this.commands.set("Road", {
-            action: async () => {
-                console.log("Building road")
-
-                /* Get the possible connections from the server and draw them */
-                const pointDownRight = { x: this.state.selected.x + 1, y: this.state.selected.y - 1 }
-                const pointInformations = await monitor.getInformationOnPoints([this.state.selected, pointDownRight])
-
-                const pointInformation = pointInformations.get(this.state.selected)
-                const pointDownRightInformation = pointInformations.get(pointDownRight)
-
-                if (pointInformation === undefined) {
-                    console.error("Failed to get point information!")
-                    console.error(this.state.selected)
-
-                    return
-                }
-
-                /* If a house is selected, start the road from the flag */
-                if (pointInformation.is && pointInformation.is === "building") {
-                    if (pointDownRightInformation === undefined) {
-                        console.error("Failed to get point down right information!")
-                        console.error(pointDownRight)
-
-                        return
-                    }
-
-                    this.setState(
-                        {
-                            newRoad: [pointDownRight],
-                            possibleRoadConnections: pointDownRightInformation.possibleRoadConnections,
-                            cursorState: 'BUILDING_ROAD'
-                        }
-                    )
-                } else if (pointInformation.is && pointInformation.is === "flag") {
-
-                    this.setState(
-                        {
-                            newRoad: [this.state.selected],
-                            possibleRoadConnections: pointInformation.possibleRoadConnections,
-                            cursorState: 'BUILDING_ROAD'
-                        }
-                    )
-                }
-            },
-            filter: (pointInformation: PointInformation) => pointInformation.is === 'building' || pointInformation.is === 'flag'
-        })
-
-        this.commands.set("Flag", {
-            action: () => {
-                if (monitor.isAvailable(this.state.selected, 'FLAG')) {
-                    monitor.placeFlag(this.state.selected)
-                }
-            },
-            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'flag') !== undefined,
-            icon: <FlagIcon nation="ROMANS" type="NORMAL" animate scale={0.7} />
-        })
-        this.commands.set("Remove (house, flag, or road)", {
-            action: () => removeHouseOrFlagOrRoadAtPointWebsocket(this.state.selected, monitor),
-            filter: (pointInformation: PointInformation) => pointInformation.is !== undefined &&
-                (pointInformation?.buildingId == undefined || monitor.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter')
-        })
-        this.commands.set("Statistics", {
-            action: () => this.setState({ showStatistics: true })
-        })
-        this.commands.set("Game information", {
-            action: () => {
-                console.info("Game id: " + this.props.gameId)
-                console.info("Player id: " + this.props.selfPlayerId)
-
-                getPlayers(this.props.gameId).then(players => console.info({ title: "Players: ", players }))
-            },
-            icon: <TextBulletListSquare24Regular />
-        })
-        this.commands.set("Titles", {
-            action: () => this.setState({ showTitles: !this.state.showTitles })
-        })
-        this.commands.set("Geologist", {
-            action: async () => monitor.callGeologist(this.state.selected),
-            filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
-        })
-        this.commands.set("Scout", {
-            action: async () => monitor.callScout(this.state.selected),
-            filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
-        })
-        this.commands.set("Evacuate building", {
-            action: () => evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId),
-            filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
-        })
-        this.commands.set("Transport priority", {
-            action: () => this.setState({ showSetTransportPriority: true })
-        })
-        this.commands.set("List statistics", {
-            action: () => printVariables()
-        })
-        this.commands.set("Upgrade", {
-            action: async () => {
-                const houseInformation = monitor.getHouseAtPointLocal(this.state.selected)
-
-                if (houseInformation && canBeUpgraded(houseInformation)) {
-                    upgradeMilitaryBuilding(this.props.gameId, this.props.selfPlayerId, houseInformation.id)
-                }
-            },
-            filter: (pointInformation: PointInformation) => {
-
-                if (pointInformation.is !== 'building' || pointInformation?.buildingId === undefined) {
-                    return false
-                }
-
-                const houseInformation = monitor.houses.get(pointInformation.buildingId)
-
-                return (houseInformation?.state === 'OCCUPIED' || houseInformation?.state === 'UNOCCUPIED') &&
-                    (houseInformation?.type == 'Barracks' || houseInformation?.type == 'GuardHouse' ||
-                        houseInformation?.type == 'WatchTower')
-            },
-            icon: <AddCircle24Regular />
-        })
-        this.commands.set("Fps", {
-            action: () => { this.setState({ showFpsCounter: !this.state.showFpsCounter }) },
-            icon: <TopSpeed24Filled />
-        })
-        this.commands.set("Menu", {
-            action: () => {
-                this.showMenu.bind(this)()
-            },
-            icon: <CalendarAgenda24Regular />
-        })
-        this.commands.set("Quotas", {
-            action: () => {
-                this.setState({ showQuotas: true })
-            }
-        })
-        this.commands.set("Pause game", {
-            action: () => monitor.pauseGame()
-        })
-        this.commands.set("Resume game", {
-            action: () => monitor.resumeGame()
-        })
 
         // Listen to the game state
         monitor.listenToGameState((gameState: GameState) => this.setState({ gameState }))
@@ -563,12 +404,174 @@ class App extends Component<AppProps, AppState> {
 
         await this.monitoringPromise
 
+        const player = monitor.players.get(this.props.selfPlayerId)
+        const nation = player?.nation ?? 'VIKINGS'
+        const color = player?.color ?? 'GREEN'
+
+        SMALL_HOUSES.forEach(building => this.commands.set(building, {
+            action: () => monitor.placeHouse(building, this.state.selected),
+            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'small') !== undefined,
+            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+        }))
+        MEDIUM_HOUSES.forEach(building => this.commands.set(building, {
+            action: () => monitor.placeHouse(building, this.state.selected),
+            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'medium') !== undefined,
+            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+        }))
+        LARGE_HOUSES.forEach(building => building !== 'Headquarter' && this.commands.set(building, {
+            action: () => monitor.placeHouse(building, this.state.selected),
+            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'large') !== undefined,
+            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+        }))
+
+        this.commands.set("Kill websocket", {
+            action: () => monitor.killWebsocket(),
+            icon: <Dismiss24Filled />
+        })
+
+        this.commands.set("Road", {
+            action: async () => {
+                console.log("Building road")
+
+                /* Get the possible connections from the server and draw them */
+                const pointDownRight = { x: this.state.selected.x + 1, y: this.state.selected.y - 1 }
+                const pointInformations = await monitor.getInformationOnPoints([this.state.selected, pointDownRight])
+
+                const pointInformation = pointInformations.get(this.state.selected)
+                const pointDownRightInformation = pointInformations.get(pointDownRight)
+
+                if (pointInformation === undefined) {
+                    console.error("Failed to get point information!")
+                    console.error(this.state.selected)
+
+                    return
+                }
+
+                /* If a house is selected, start the road from the flag */
+                if (pointInformation.is && pointInformation.is === "building") {
+                    if (pointDownRightInformation === undefined) {
+                        console.error("Failed to get point down right information!")
+                        console.error(pointDownRight)
+
+                        return
+                    }
+
+                    this.setState(
+                        {
+                            newRoad: [pointDownRight],
+                            possibleRoadConnections: pointDownRightInformation.possibleRoadConnections,
+                            cursorState: 'BUILDING_ROAD'
+                        }
+                    )
+                } else if (pointInformation.is && pointInformation.is === "flag") {
+
+                    this.setState(
+                        {
+                            newRoad: [this.state.selected],
+                            possibleRoadConnections: pointInformation.possibleRoadConnections,
+                            cursorState: 'BUILDING_ROAD'
+                        }
+                    )
+                }
+            },
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'building' || pointInformation.is === 'flag'
+        })
+
+        this.commands.set("Flag", {
+            action: () => {
+                if (monitor.isAvailable(this.state.selected, 'FLAG')) {
+                    monitor.placeFlag(this.state.selected)
+                }
+            },
+            filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'flag') !== undefined,
+            icon: <FlagIcon nation={nation} type="NORMAL" animate scale={0.7} color={color} />
+        })
+        this.commands.set("Remove (house, flag, or road)", {
+            action: () => removeHouseOrFlagOrRoadAtPointWebsocket(this.state.selected, monitor),
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'building' &&
+            monitor.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
+        })
+        this.commands.set("Statistics", {
+            action: () => this.setState({ showStatistics: true })
+        })
+        this.commands.set("Game information", {
+            action: () => {
+                console.info("Game id: " + this.props.gameId)
+                console.info("Player id: " + this.props.selfPlayerId)
+
+                getPlayers(this.props.gameId).then(players => console.info({ title: "Players: ", players }))
+            },
+            icon: <TextBulletListSquare24Regular />
+        })
+        this.commands.set("Titles", {
+            action: () => this.setState({ showTitles: !this.state.showTitles })
+        })
+        this.commands.set("Geologist", {
+            action: async () => monitor.callGeologist(this.state.selected),
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
+        })
+        this.commands.set("Scout", {
+            action: async () => monitor.callScout(this.state.selected),
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
+        })
+        this.commands.set("Evacuate building", {
+            action: () => evacuateHouseOnPoint(this.state.selected, this.props.gameId, this.props.selfPlayerId),
+            filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
+        })
+        this.commands.set("Transport priority", {
+            action: () => this.setState({ showSetTransportPriority: true })
+        })
+        this.commands.set("List statistics", {
+            action: () => printVariables()
+        })
+        this.commands.set("Upgrade", {
+            action: async () => {
+                const houseInformation = monitor.getHouseAtPointLocal(this.state.selected)
+
+                if (houseInformation && canBeUpgraded(houseInformation)) {
+                    upgradeMilitaryBuilding(this.props.gameId, this.props.selfPlayerId, houseInformation.id)
+                }
+            },
+            filter: (pointInformation: PointInformation) => {
+
+                if (pointInformation.is !== 'building' || pointInformation?.buildingId === undefined) {
+                    return false
+                }
+
+                const houseInformation = monitor.houses.get(pointInformation.buildingId)
+
+                return (houseInformation?.state === 'OCCUPIED' || houseInformation?.state === 'UNOCCUPIED') &&
+                    (houseInformation?.type == 'Barracks' || houseInformation?.type == 'GuardHouse' ||
+                        houseInformation?.type == 'WatchTower')
+            },
+            icon: <AddCircle24Regular />
+        })
+        this.commands.set("Fps", {
+            action: () => { this.setState({ showFpsCounter: !this.state.showFpsCounter }) },
+            icon: <TopSpeed24Filled />
+        })
+        this.commands.set("Menu", {
+            action: () => {
+                this.showMenu.bind(this)()
+            },
+            icon: <CalendarAgenda24Regular />
+        })
+        this.commands.set("Quotas", {
+            action: () => {
+                this.setState({ showQuotas: true })
+            }
+        })
+        this.commands.set("Pause game", {
+            action: () => monitor.pauseGame()
+        })
+        this.commands.set("Resume game", {
+            action: () => monitor.resumeGame()
+        })
+
         // Store information about the player
         this.setState({ player: monitor.players.get(this.props.selfPlayerId) })
 
         if (this.selfNameRef.current) {
-
-            // Store the width and height of the canvas when it's been rendered
             immediateUxState.width = this.selfNameRef.current.clientWidth
             immediateUxState.height = this.selfNameRef.current.clientHeight
 
@@ -967,8 +970,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     onWheel(event: React.WheelEvent): void {
-        event.preventDefault()
-
         this.zoom(immediateUxState.scale - event.deltaY / 20.0)
     }
 
@@ -1047,6 +1048,7 @@ class App extends Component<AppProps, AppState> {
                     currentPlayerId={this.props.selfPlayerId}
                     onChangedZoom={(newScale) => this.zoom(newScale)}
                     currentZoom={immediateUxState.scale}
+                    gameSpeed={this.state.gameSpeed}
                     minZoom={MIN_SCALE}
                     maxZoom={MAX_SCALE}
                     onSetSpeed={this.onSpeedSliderChange.bind(this)}
@@ -1073,6 +1075,7 @@ class App extends Component<AppProps, AppState> {
                     onSetHeightAdjust={(heightAdjust: number) => this.setState({ heightAdjust })}
                     onSetAnimateMapScrolling={(animateMapScrolling) => this.setState({ animateMapScrolling })}
                     onSetAnimateZooming={(animateZoom) => this.setState({ animateZoom })}
+                    onGameSpeedChange={(gameSpeed) => this.setState({ gameSpeed })}
                 />
 
                 {this.state.showFriendlyHouseInfo &&

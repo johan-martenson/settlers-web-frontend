@@ -210,7 +210,25 @@ export interface Point {
     y: number
 }
 
-export interface PointInformation {
+export type PointInformation = {
+    canBuild: AvailableConstruction[]
+    possibleRoadConnections: Point[]
+    x: number
+    y: number
+} & ({
+    is?: undefined
+} | {
+    is: 'building'
+    buildingId: HouseId
+} | {
+    is: 'flag'
+    flagId: FlagId
+} | {
+    is: 'road'
+    roadId: RoadId
+})
+
+/*export interface PointInformation {
     readonly canBuild: AvailableConstruction[]
     readonly is?: "building" | "flag" | "road"
     readonly x: number
@@ -219,7 +237,7 @@ export interface PointInformation {
     readonly buildingId?: HouseId
     readonly flagId?: FlagId
     readonly roadId?: RoadId
-}
+}*/
 
 export type TreeType = "PINE" | "BIRCH" | "OAK" | "PALM_1" | "PALM_2" | "PINE_APPLE" | "CYPRESS" | "CHERRY" | "FIR"
 
@@ -313,7 +331,7 @@ export interface FallingTreeInformation extends Point {
     animation: number
 }
 
-export type SignTypes = 'iron' | 'gold' | 'coal' | 'stone' | 'water' | 'nothing'
+export type SignTypes = 'IRON' | 'GOLD' | 'COAL' | 'STONE' | 'WATER' | 'NOTHING'
 
 export type Size = 'SMALL' | 'MEDIUM' | 'LARGE'
 

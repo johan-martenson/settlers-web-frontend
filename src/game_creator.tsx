@@ -183,7 +183,7 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
             }
 
             <div id="worker-animation">
-                <WorkerIcon worker='General' animate nation='ROMANS' direction={'WEST'} scale={3} />
+                <WorkerIcon worker='General' animate nation='ROMANS' direction={'WEST'} scale={3} drawShadow />
             </div>
 
         </>

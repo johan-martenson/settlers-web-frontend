@@ -8,15 +8,15 @@ interface MapListProps {
     onMapSelected: ((map: MapInformation) => void)
     defaultSelect?: boolean
     minPlayers: number
+    filter?: string
 }
 
-const MapList = ({ minPlayers, defaultSelect, onMapSelected }: MapListProps) => {
+const MapList = ({ minPlayers, defaultSelect, filter, onMapSelected }: MapListProps) => {
     const [maps, setMaps] = useState<MapInformation[]>([])
 
     useEffect(
         () => {
             (async () => {
-
                 const maps = await getMaps()
 
                 defaultSelect && onMapSelected(maps[0])
@@ -27,7 +27,10 @@ const MapList = ({ minPlayers, defaultSelect, onMapSelected }: MapListProps) => 
 
     return (
         <div className="map-list">
-            {maps.filter(map => map.maxPlayers >= minPlayers).map(
+            {maps
+            .filter(map => map.maxPlayers >= minPlayers)
+            .filter(map => filter === undefined || map.title.toLowerCase().includes(filter.toLowerCase()))
+            .map(
                 (map, index) => {
                     return (
                         <div key={index} >

@@ -140,7 +140,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
 
             <h1>Headquarters</h1>
 
-            <HouseIcon houseType="Headquarter" nation={nation} />
+            <HouseIcon houseType="Headquarter" nation={nation} drawShadow />
 
             <TabList
                 defaultSelectedValue={'INVENTORY'}

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { MapInformation } from './api/types'
 import { MapList } from './map_list'
 import './map_selection.css'
-import { Subtitle1 } from '@fluentui/react-components'
+import { Divider, Input, InputOnChangeData, Label, Subtitle1 } from '@fluentui/react-components'
 import MapInformationCard from './map_information_card'
 
 interface MapSelectionProps {
@@ -13,6 +13,7 @@ interface MapSelectionProps {
 
 const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
     const [map, setMap] = useState<MapInformation | undefined>()
+    const [search, setSearch] = useState<string>()
 
     return (
         <div className="select-map">
@@ -21,6 +22,24 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
             {map &&
                 <MapInformationCard map={map} expanded={true} controls={false} />
             }
+
+            <Divider />
+
+            <div>
+                <Label>Search</Label>
+                <Input type="text"
+                    onChange={
+
+                        // eslint-disable-next-line
+                        (event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
+                            setSearch(data.value)
+                        }
+                    }
+
+                    defaultValue={""}
+                />
+
+            </div>
 
             <MapList
                 onMapSelected={
@@ -31,6 +50,7 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                 }
 
                 minPlayers={minPlayers}
+                filter={search}
                 defaultSelect
             />
         </div>

@@ -65,7 +65,7 @@ const Lobby = ({ playerName }: LobbyProps) => {
                         <Button onClick={() => setState("CREATE_GAME")} autoFocus appearance='primary'>Create new game</Button>
                     </div>
                     <div id="worker-animation">
-                        <WorkerIcon worker='General' animate={true} nation='ROMANS' direction={'WEST'} scale={3} />
+                        <WorkerIcon worker='General' animate={true} nation='ROMANS' direction={'WEST'} scale={3} drawShadow />
                     </div>
                 </>
             }
@@ -79,7 +79,7 @@ const Lobby = ({ playerName }: LobbyProps) => {
                         }
                     />
                     <div id="worker-animation">
-                        <WorkerIcon worker='General' animate={true} nation='ROMANS' direction={'WEST'} scale={3} />
+                        <WorkerIcon worker='General' animate={true} nation='ROMANS' direction={'WEST'} scale={3} drawShadow />
                     </div>
 
                 </>

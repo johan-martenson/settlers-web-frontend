@@ -12,17 +12,20 @@ Todo
 9. Divide src into sub-folders better. prepare-game, play-game?
 10. Quota handling for planks
 11. Add the propeller to the mill
-12. Add remaining gravel after a stone has been fully removed as a decoration
-13. Add terrain overlaps to make the nature look smoother. Start with snow.
-14. Fix ugly scrollbar in type control
-15. Soldiers waiting to fight should be facing the attacked building's flag
-16. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
-17. Make the speed selector in the menu a controlled component
-18. Add skeleton decoration on the ground when a worker dies
-19. Pinch-to-zoom should zoom in the game, not the full web page
-20. After the fat courier chews gum it remains frozen in the last frame of the animation
-21. Border markers should look different for water/land
-22. Worker actions should be different per player color
+12. Add terrain overlaps to make the nature look smoother. Start with snow.
+13. Fix ugly scrollbar in type control
+14. Soldiers waiting to fight should be facing the attacked building's flag
+15. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
+16. Add skeleton decoration on the ground when a worker dies
+17. Pinch-to-zoom should zoom in the game, not the full web page
+18. Border markers should look different for water/land
+19. Fix map loading so the default map looks good
+20. Missed discovered land up-right from new guard house
+21. Workers should walk slower up-hill and faster down-hill
+22. Fix NullPointerException that happens after playing for a long time
+23. Fix scroll event that "leaks through" from overlaid div to game render
+24. (Japanese) buildings seem to have either wrong under-construction images or they are drawn with the wrong offset
+25. With guard house, new owned land is larger than discovered land. Reload fixes it
 
 
 
@@ -52,3 +55,10 @@ Done
 19. Change pseudo 3d effect to only shift upwards, not to the right
 15. FIX HOVER AND ONCLICK so that the closest point is always chosen
 12. Gradually draw finished building on top of the under construction-image
+22. Worker actions should be different per player color
+17. Make the speed selector in the menu a controlled component
+21. Fix building images for each nation (romans seem correct, japanese is not)
+25. Add shadow to house icons. Consider making the shadow optional
+23. Texture for planned(sign vs box) house for the japanese player looks strange
+12. Add remaining gravel after a stone has been fully removed as a decoration
+19. After the fat courier chews gum it remains frozen in the last frame of the animation

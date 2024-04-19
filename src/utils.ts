@@ -314,15 +314,15 @@ async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: Mo
 
     console.log({ title: "Remove house/flag/road via websocket", localPointInformation: pointInformation })
 
-    if (pointInformation.is === "building" && pointInformation.buildingId) {
+    if (pointInformation.is === "building") {
         monitor.removeBuilding(pointInformation.buildingId)
     }
 
-    if (pointInformation.flagId !== undefined) {
+    if (pointInformation.is === 'flag') {
         monitor.removeFlag(pointInformation.flagId)
     }
 
-    if (pointInformation.roadId !== undefined) {
+    if (pointInformation.is === 'road') {
         monitor.removeRoad(pointInformation.roadId)
     }
 }
@@ -614,7 +614,7 @@ actionAnimationType.set('HACKING_STONE', 'REPEAT')
 actionAnimationType.set('LOWER_FISHING_ROD', 'SINGLE_THEN_FREEZE')
 actionAnimationType.set('FISHING', 'REPEAT')
 actionAnimationType.set('PULL_UP_FISHING_ROD', 'SINGLE_THEN_FREEZE')
-actionAnimationType.set('CHEW_GUM', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('CHEW_GUM', 'SINGLE_THEN_STOP')
 actionAnimationType.set('HIT', 'SINGLE_THEN_FREEZE')
 actionAnimationType.set('JUMP_BACK', 'SINGLE_THEN_FREEZE')
 actionAnimationType.set('STAND_ASIDE', 'SINGLE_THEN_FREEZE')
@@ -786,10 +786,11 @@ class WorkerImageAtlasHandler {
                 }
             }
         } else if (direction &&
-            this.imageAtlasInfo.common?.actions &&
-            this.imageAtlasInfo.common?.actions[action] &&
-            this.imageAtlasInfo.common.actions[action][direction]) {
-            const actionImages = this.imageAtlasInfo.common.actions[action][direction]
+            this.imageAtlasInfo.common.actionsByPlayer &&
+            this.imageAtlasInfo.common.actionsByPlayer[action] &&
+            this.imageAtlasInfo.common.actionsByPlayer[action]['any'] &&
+            this.imageAtlasInfo.common.actionsByPlayer[action]['any'][color]) {
+            const actionImages = this.imageAtlasInfo.common.actionsByPlayer[action]['any'][color]
 
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
                 return {
@@ -814,39 +815,13 @@ class WorkerImageAtlasHandler {
                     texture: this.texture
                 }
             }
-        } else if (this.imageAtlasInfo.common?.actions && this.imageAtlasInfo.common.actions[action] && this.imageAtlasInfo.common.actions[action].any) {
-            const actionImages = this.imageAtlasInfo.common.actions[action].any
-
-            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                return {
-                    sourceX: actionImages.startX,
-                    sourceY: actionImages.startY + ((animationIndex) % actionImages.nrImages) * actionImages.height,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
-                    image: this.image,
-                    texture: this.texture
-                }
-            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                return {
-                    sourceX: actionImages.startX,
-                    sourceY: actionImages.startY + (actionImages.nrImages - 1) * actionImages.height,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
-                    image: this.image,
-                    texture: this.texture
-                }
-            }
         } else if (this.imageAtlasInfo.nationSpecific &&
-            this.imageAtlasInfo.nationSpecific?.actions &&
-            this.imageAtlasInfo.nationSpecific.actions[nation] &&
-            this.imageAtlasInfo.nationSpecific.actions[nation][action] &&
-            this.imageAtlasInfo.nationSpecific.actions[nation][action][direction]) {
-            const actionImages = this.imageAtlasInfo.nationSpecific.actions[nation][action][direction]
-
+            this.imageAtlasInfo.nationSpecific?.actionsByPlayer &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation] &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action] &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction] &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]) {
+            const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
                 return {
                     sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
@@ -878,9 +853,9 @@ class WorkerImageAtlasHandler {
             this.imageAtlasInfo.nationSpecific?.actionsByPlayer &&
             this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation] &&
             this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action] &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction] &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]) {
-            const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'] &&
+            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'][color]) {
+            const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'][color]
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
                 return {
                     sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
@@ -1003,6 +978,10 @@ class HouseImageAtlasHandler {
         }
     }
 
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
+    }
+
     getDrawingInformationForHouseJustStarted(nation: Nation): DrawingInformation | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             return undefined
@@ -1075,6 +1054,9 @@ class HouseImageAtlasHandler {
 
     getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
+            console.error("Image or image atlas is undefined")
+            console.error([this.image, this.imageAtlasInfo])
+
             return undefined
         }
 
@@ -1208,7 +1190,7 @@ class BorderImageAtlasHandler {
 }
 
 interface SignImageAtlasFormat {
-    images: Record<SignTypes | 'shadowImage', Record<Size, OneImageInformation>>
+    images: Record<SignTypes, Record<Size, OneImageInformation>>
     shadowImage: OneImageInformation
 }
 

@@ -36,7 +36,7 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
 
             <h1>{house.type}</h1>
 
-            <HouseIcon houseType={house.type} nation={nation} />
+            <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             {house.upgrading && <div>Upgrading ...</div>}
 

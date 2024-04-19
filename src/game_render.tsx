@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, Nation, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api/types'
+import { Direction, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api/types'
 import { Duration } from './duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from './api/ws-api'
@@ -91,8 +91,6 @@ let logOnce = true
 let timer: ReturnType<typeof setTimeout>
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
-const currentPlayerNation: Nation = "ROMANS"
-
 const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
 
 const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler("assets/")
@@ -1168,7 +1166,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             if (house.state === 'PLANNED') {
-                const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(currentPlayerNation)
+                const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(house.nation)
 
                 toDrawNormal.push({
                     source: plannedDrawInformation,
@@ -1200,7 +1198,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gamePoint: house,
                 })
             } else if (house.state === "UNFINISHED" && house.constructionProgress !== undefined) {
-                const houseUnderConstruction = houses.getDrawingInformationForHouseUnderConstruction(currentPlayerNation, house.type)
+                const houseUnderConstruction = houses.getDrawingInformationForHouseUnderConstruction(house.nation, house.type)
 
                 if (houseUnderConstruction) {
                     toDrawNormal.push({
@@ -1348,7 +1346,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (sign.type !== undefined && sign.amount !== undefined) {
                 signDrawInfo = signImageAtlasHandler.getDrawingInformation(sign.type, sign.amount)
             } else {
-                signDrawInfo = signImageAtlasHandler.getDrawingInformation("nothing", "LARGE")
+                signDrawInfo = signImageAtlasHandler.getDrawingInformation("NOTHING", "LARGE")
             }
 
             if (signDrawInfo) {

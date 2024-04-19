@@ -4,6 +4,8 @@ import { FlagAnimation, flagAnimations, houses, materialImageAtlasHandler, uiEle
 import { Dimension, WorkerAnimation, resizeCanvasToDisplaySize } from './utils'
 import './icon.css'
 
+const SHADOW_COLOR = "#333333"
+
 interface WorkerIconProps {
     worker: WorkerType
     animate?: boolean
@@ -11,6 +13,7 @@ interface WorkerIconProps {
     direction?: Direction
     scale?: number
     color?: PlayerColor
+    drawShadow?: boolean
 }
 
 const WorkerIcon = (props: WorkerIconProps) => {
@@ -20,6 +23,7 @@ const WorkerIcon = (props: WorkerIconProps) => {
     const direction = props.direction ?? 'WEST'
     const scale = props.scale ?? 1
     const color = props.color ?? 'BLUE'
+    const drawShadow = props.drawShadow ?? false
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
     const [animationIndex, setAnimationIndex] = useState<number>(0)
@@ -27,7 +31,6 @@ const WorkerIcon = (props: WorkerIconProps) => {
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
     const [sourceImage, setSourceImage] = useState<ImageBitmap>()
 
-    // Load image to draw from
     useEffect(() => {
         const animationHandler = workers.get(worker)
 
@@ -35,33 +38,27 @@ const WorkerIcon = (props: WorkerIconProps) => {
             (async () => {
                 await animationHandler.load()
 
-                // Read the source image data, convert it to a bitmap, and store it
                 const image = animationHandler?.getImageAtlasHandler().getSourceImage()
+                const drawArray = animationHandler?.getAnimationFrame(nation, direction, color, 0, animationIndex)
 
-                if (image) {
+                if (image && drawArray) {
                     const imageBitmap = await createImageBitmap(image)
 
                     setSourceImage(imageBitmap)
-                    setDimension(animationHandler.getSize(nation, direction, color) ?? {width: 0, height: 0})
 
+                    setDimension({
+                        width: Math.max(drawArray[0].offsetX, drawArray[1].offsetX) + Math.max(drawArray[0].width - drawArray[0].offsetX, drawArray[1].width - drawArray[1].offsetX),
+                        height: Math.max(drawArray[0].offsetY, drawArray[1].offsetY) + Math.max(drawArray[0].height - drawArray[0].offsetY, drawArray[1].height - drawArray[1].offsetY)
+                    })
                 } else {
                     console.error("No image")
                 }
             })().then(() => {
                 setAnimationHandler(animationHandler)
-
-                /*const dimension = animationHandler.getSize(nation, direction)
-
-                if (dimension) {
-                    setDimension(dimension)
-                } else {
-                    console.error("Failed to set dimension")
-                }*/
             })
         }
     }, [worker])
 
-    // Animation
     useEffect(() => {
         if (animate) {
             const intervalId = setInterval(() => {
@@ -73,7 +70,6 @@ const WorkerIcon = (props: WorkerIconProps) => {
         return () => { }
     }, [animate])
 
-    // Drawing
     useEffect(() => {
         (async () => {
             const canvas = canvasRef.current
@@ -93,13 +89,8 @@ const WorkerIcon = (props: WorkerIconProps) => {
             }
             resizeCanvasToDisplaySize(canvas)
 
-            const width = canvas.width
-            const height = canvas.height
+            context.clearRect(0, 0, canvas.width, canvas.height)
 
-            // Clear the background
-            context.clearRect(0, 0, width, height)
-
-            // Read the source image data
             const drawArray = animationHandler?.getAnimationFrame(nation, direction, color, 0, animationIndex)
 
             if (!drawArray) {
@@ -108,11 +99,31 @@ const WorkerIcon = (props: WorkerIconProps) => {
                 return
             }
 
-            const draw = drawArray[0]
+            const drawInfo = drawArray[0]
+            const shadowInfo = drawArray[1]
 
-            // Write the image data
             if (sourceImage) {
-                context.drawImage(sourceImage, draw.sourceX, draw.sourceY, draw.width, draw.height, 0, 0, width, height)
+                if (drawShadow) {
+                    context.drawImage(sourceImage,
+                        shadowInfo.sourceX, shadowInfo.sourceY,
+                        shadowInfo.width, shadowInfo.height,
+                        (drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale,
+                        shadowInfo.width * scale, shadowInfo.height * scale
+                    )
+
+                    context.globalCompositeOperation = "source-in"
+
+                    context.fillStyle = SHADOW_COLOR
+                    context.fillRect((drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale, shadowInfo.width * scale, shadowInfo.height * scale)
+                    context.globalCompositeOperation = "source-over"
+                }
+
+            context.drawImage(sourceImage,
+                    drawInfo.sourceX, drawInfo.sourceY,
+                    drawInfo.width, drawInfo.height,
+                    0, 0,
+                    drawInfo.width * scale, drawInfo.height * scale
+                )
             }
         })().then()
 
@@ -126,22 +137,104 @@ interface HouseProps {
     houseType: AnyBuilding
     scale?: number
     inline?: boolean
+    drawShadow?: boolean
 }
 
-const HouseIcon = ({ nation, houseType, scale }: HouseProps) => {
-    const url = houses.getUrlForIndividualBuilding(nation, houseType)
+const HouseIcon = (props: HouseProps) => {
+    const nation = props.nation
+    const houseType = props.houseType
+    const scale = props.scale ?? 1
+    const drawShadow = props.drawShadow ?? false
 
-    return (<span className="house-icon">
-        <img
-            src={url}
-            onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                const img = event.target as HTMLImageElement
+    const canvasRef = useRef<HTMLCanvasElement | null>(null)
+    const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
+    const [sourceImage, setSourceImage] = useState<ImageBitmap>()
 
-                img.width = img.naturalWidth * (scale ?? 1.0)
-                img.height = img.naturalHeight * (scale ?? 1.0)
-            }}
-        />
-    </span>)
+    useEffect(() => {
+            (async () => {
+                await houses.load()
+
+                const image = houses.getSourceImage()
+                const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
+
+                if (image && drawArray) {
+                    const imageBitmap = await createImageBitmap(image)
+
+                    setSourceImage(imageBitmap)
+
+                    setDimension({
+                        width: Math.max(drawArray[0].offsetX, drawArray[1].offsetX) + Math.max(drawArray[0].width - drawArray[0].offsetX, drawArray[1].width - drawArray[1].offsetX),
+                        height: Math.max(drawArray[0].offsetY, drawArray[1].offsetY) + Math.max(drawArray[0].height - drawArray[0].offsetY, drawArray[1].height - drawArray[1].offsetY)
+                    })
+                } else {
+                    console.error("No image")
+                }
+            })().then()
+    }, [nation, houseType])
+
+    useEffect(() => {
+        (async () => {
+            const canvas = canvasRef.current
+
+            if (!canvas) {
+                console.error("No canvas ref set")
+
+                return
+            }
+
+            const context = canvas.getContext('2d')
+
+            if (!context) {
+                console.error("No context")
+
+                return
+            }
+
+            resizeCanvasToDisplaySize(canvas)
+
+            context.clearRect(0, 0, canvas.width, canvas.height)
+
+            const drawArray = houses?.getDrawingInformationForHouseReady(nation, houseType)
+
+            if (!drawArray) {
+                console.error("No drawing information")
+                console.error([nation, houseType])
+
+                return
+            }
+
+            const drawInfo = drawArray[0]
+            const shadowInfo = drawArray[1]
+
+            if (sourceImage) {
+                console.log("Drawing")
+
+                if (drawShadow) {
+                    context.drawImage(sourceImage,
+                        shadowInfo.sourceX, shadowInfo.sourceY,
+                        shadowInfo.width, shadowInfo.height,
+                        (drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale,
+                        shadowInfo.width * scale, shadowInfo.height * scale
+                    )
+
+                    context.globalCompositeOperation = "source-in"
+
+                    context.fillStyle = SHADOW_COLOR
+                    context.fillRect((drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale, shadowInfo.width * scale, shadowInfo.height * scale)
+                    context.globalCompositeOperation = "source-over"
+                }
+
+            context.drawImage(sourceImage,
+                    drawInfo.sourceX, drawInfo.sourceY,
+                    drawInfo.width, drawInfo.height,
+                    0, 0,
+                    drawInfo.width * scale, drawInfo.height * scale
+                )
+            }
+        })().then()
+    }, [nation, houseType, scale, drawShadow, sourceImage])
+
+    return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }
 
 interface InventoryIconProps {
@@ -357,6 +450,7 @@ const FlagIcon = (props: FlagIconProps) => {
 
             if (!drawArray) {
                 console.error("No drawing information")
+                console.error([nation, color, type])
 
                 return
             }

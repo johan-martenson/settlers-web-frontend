@@ -88,7 +88,7 @@ const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose }: PlannedH
 
             <h1>Planned {house.type}</h1>
 
-            <HouseIcon houseType={house.type} nation={nation} />
+            <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             <Button onClick={() => {
                 removeHouse(house.id, playerId, gameId)
@@ -117,7 +117,7 @@ const EnemyHouseInfo = ({ house, nation, onClose }: EnemyHouseInfoProps) => {
 
             <h1>Enemy building: {house.type}</h1>
 
-            <HouseIcon houseType={house.type} nation={nation} />
+            <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             <Button onClick={onClose} >Close</Button>
         </div>
@@ -144,7 +144,7 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }
 
             <h1>Military enemy building: {house.type}</h1>
 
-            <HouseIcon houseType={house.type} nation={nation} />
+            <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             {house.availableAttackers === 0 && <div>No attack possible</div>}
 
@@ -193,7 +193,7 @@ const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: Unfin
 
             <h1>{house.type}</h1>
 
-            <HouseIcon houseType={house.type} nation={nation} />
+            <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             <div>Under construction ...</div>
             <meter max={100} value={house.constructionProgress} />
@@ -259,7 +259,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
 
             <h1>{house.type}</h1>
 
-            <HouseIcon houseType={house.type} nation={nation} />
+            <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             <div className="production-info">
 

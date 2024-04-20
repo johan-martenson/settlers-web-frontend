@@ -8,10 +8,13 @@ interface MapListProps {
     onMapSelected: ((map: MapInformation) => void)
     defaultSelect?: boolean
     minPlayers: number
-    filter?: string
+    filterTitle?: string
+    filterAuthor?: string
+    filterMinPlayers?: number
+    filterMaxPlayers?: number
 }
 
-const MapList = ({ minPlayers, defaultSelect, filter, onMapSelected }: MapListProps) => {
+const MapList = ({ minPlayers, defaultSelect, filterTitle, filterAuthor, filterMinPlayers, filterMaxPlayers, onMapSelected }: MapListProps) => {
     const [maps, setMaps] = useState<MapInformation[]>([])
 
     useEffect(
@@ -25,21 +28,27 @@ const MapList = ({ minPlayers, defaultSelect, filter, onMapSelected }: MapListPr
             })().then()
         }, [])
 
+    const matches = maps
+        .filter(map => map.maxPlayers >= minPlayers)
+        .filter(map => filterTitle === undefined || filterTitle === "" || map.title.toLowerCase().includes(filterTitle.toLowerCase()))
+        .filter(map => filterAuthor === undefined || filterAuthor === "" || map.author.toLowerCase().includes(filterAuthor.toLowerCase()))
+        .filter(map => (filterMinPlayers ?? 0) < map.maxPlayers)
+        .filter(map => (filterMaxPlayers ?? 8) > map.maxPlayers)
+
     return (
-        <div className="map-list">
-            {maps
-            .filter(map => map.maxPlayers >= minPlayers)
-            .filter(map => filter === undefined || map.title.toLowerCase().includes(filter.toLowerCase()))
-            .map(
-                (map, index) => {
+        <div>
+            <div>
+                {`${matches.length} of ${maps.length}`}
+            </div>
+            <div className="map-list">
+                {matches.map((map, index) => {
                     return (
                         <div key={index} >
                             <MapInformationCard map={map} onMapSelected={() => onMapSelected(map)} />
                         </div>
                     )
-                }
-            )
-            }
+                })}
+            </div>
         </div>
     )
 }

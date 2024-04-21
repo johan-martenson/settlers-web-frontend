@@ -52,7 +52,7 @@ export type MaterialWorkerUpperCase = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER'
 
 export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
 
-export const NATIONS = new Set(['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS'])
+export const NATIONS: Set<Nation> = new Set(['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS'])
 
 export type Direction = "EAST" | "SOUTH_EAST" | "SOUTH_WEST" | "WEST" | "NORTH_WEST" | "NORTH_EAST"
 

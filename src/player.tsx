@@ -1,8 +1,9 @@
 import React, { ChangeEvent, useState } from 'react'
-import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Field, Dropdown, Option, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem, SelectionEvents, OptionOnSelectData } from "@fluentui/react-components"
+import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Field, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem, Tooltip } from "@fluentui/react-components"
 import './player.css'
-import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation, isNation } from './api/types'
+import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation } from './api/types'
 import { MoreHorizontal20Regular } from "@fluentui/react-icons"
+import { WorkerIcon } from './icon'
 
 interface PlayerProps {
     isSelf?: boolean
@@ -15,7 +16,7 @@ interface PlayerProps {
 const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpdated }: PlayerProps) => {
 
     const [editName, setEditName] = useState<string | undefined>()
-    const [editNation, setEditNation] = useState<Nation | undefined>()
+    const [editNation, setEditNation] = useState<Nation>(player.nation)
     const [editColor, setEditColor] = useState<PlayerColor>(player.color)
     const [isEditing, setIsEditing] = useState<boolean>(false)
 
@@ -49,18 +50,27 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                                     if (ev.key === 'Enter') {
                                         updatePlayer()
 
-                                        setEditName(undefined)
-                                        setEditNation(undefined)
-
                                         setIsEditing(false)
                                     }
                                 }} />
                         </Field>
 
                         <Field label="Nation">
-                            <Dropdown defaultValue={player.nation} onOptionSelect={(a: SelectionEvents, b: OptionOnSelectData) => isNation(b.optionValue) && setEditNation(b.optionValue)}>
-                                {Array.from(NATIONS).map(nation => { return <Option key={nation}>{nation}</Option> })}
-                            </Dropdown>
+                            <div style={{ display: "flex", flexDirection: "row" }}>
+                                {Array.from(NATIONS)
+                                    .map(nation => (
+                                        <div
+                                            style={{borderBottom: (nation === editNation) ? "1px solid lightgray" : "none" }}
+                                            onClick={() => setEditNation(nation)} key={nation}
+                                        >
+                                            <Tooltip content={nation.toLocaleLowerCase()} relationship='label' withArrow key={"BLUE"} >
+                                                <div>
+                                                    <WorkerIcon worker='General' color="BLUE" nation={nation} scale={2} />
+                                                </div>
+                                            </Tooltip>
+                                        </div>
+                                    ))}
+                            </div>
                         </Field>
 
                         <Field label="Color">
@@ -68,25 +78,24 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                                 {PLAYER_COLORS
                                     .filter(color => availableColors.has(color) || color === player.color)
                                     .map(color => (
-                                        <div
-                                            key={color}
-                                            style={{
-                                                width: "1em",
-                                                height: "1em",
-                                                margin: "0.5em",
-                                                backgroundColor: color.toLowerCase()
-                                            }}
-                                            onClick={() => setEditColor(color)}
-                                        />
+                                        <Tooltip content={color.toLocaleLowerCase()} relationship='label' withArrow key={color} >
+                                            <div
+                                                style={{
+                                                    width: "1em",
+                                                    height: "1em",
+                                                    margin: "0.5em",
+                                                    backgroundColor: color.toLowerCase(),
+                                                    borderBottom: (color === editColor) ? "1px solid lightgray" : "none"
+                                                }}
+                                                onClick={() => setEditColor(color)}
+                                            />
+                                        </Tooltip>
                                     ))}
                             </div>
                         </Field>
 
                         <Button onClick={() => {
                             updatePlayer()
-
-                            setEditName(undefined)
-                            setEditNation(undefined)
 
                             setIsEditing(false)
                         }} >Ok</Button>

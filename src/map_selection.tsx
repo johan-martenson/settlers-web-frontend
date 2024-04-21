@@ -39,7 +39,7 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                                 value={filterAuthor}
                                 onChange={(event: SearchBoxChangeEvent, data: InputOnChangeData) => setSearchAuthor(data.value)}
                             />
-                            <Field label="Min players">
+                            <Field label={`Min players (${filterMinPlayers})`}>
                                 <Slider
                                     step={1}
                                     min={1}
@@ -54,7 +54,7 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                                     }
                                 />
                             </Field>
-                            <Field label="Max players">
+                            <Field label={`Max players (${filterMaxPlayers})`}>
                                 <Slider
                                     step={1}
                                     min={1}

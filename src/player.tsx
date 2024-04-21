@@ -1,20 +1,22 @@
 import React, { ChangeEvent, useState } from 'react'
 import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Field, Dropdown, Option, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem, SelectionEvents, OptionOnSelectData } from "@fluentui/react-components"
 import './player.css'
-import { NATIONS, Nation, PlayerInformation, isNation } from './api/types'
+import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation, isNation } from './api/types'
 import { MoreHorizontal20Regular } from "@fluentui/react-icons"
 
 interface PlayerProps {
     isSelf?: boolean
     player: PlayerInformation
+    availableColors: Set<PlayerColor>
     onPlayerRemoved?: (() => void)
-    onPlayerUpdated?: ((name: string, nation: Nation) => void)
+    onPlayerUpdated?: ((name: string, nation: Nation, color: PlayerColor) => void)
 }
 
-const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProps) => {
+const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpdated }: PlayerProps) => {
 
     const [editName, setEditName] = useState<string | undefined>()
     const [editNation, setEditNation] = useState<Nation | undefined>()
+    const [editColor, setEditColor] = useState<PlayerColor>(player.color)
     const [isEditing, setIsEditing] = useState<boolean>(false)
 
     const nationPrettyString = player.nation.charAt(0).toUpperCase() + player.nation.slice(1).toLowerCase()
@@ -28,8 +30,9 @@ const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProp
 
         const updatedName = editName ?? player.name
         const updatedNation = editNation ?? player.nation
+        const updatedColor = editColor ?? player.color
 
-        onPlayerUpdated(updatedName, updatedNation)
+        onPlayerUpdated(updatedName, updatedNation, updatedColor)
     }
 
     return (
@@ -37,7 +40,7 @@ const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProp
             <CardHeader
                 header={(isEditing) ?
                     <div className='player-edit'>
-                        <Field label="Set name">
+                        <Field label="Name">
                             <Input
                                 type="text"
                                 placeholder={player.name}
@@ -54,11 +57,31 @@ const Player = ({ player, isSelf, onPlayerRemoved, onPlayerUpdated }: PlayerProp
                                 }} />
                         </Field>
 
-                        <Field label="Set nation">
-                            <Dropdown defaultValue={'ROMANS'} onOptionSelect={(a: SelectionEvents, b: OptionOnSelectData) => isNation(b.optionValue) && setEditNation(b.optionValue)}>
+                        <Field label="Nation">
+                            <Dropdown defaultValue={player.nation} onOptionSelect={(a: SelectionEvents, b: OptionOnSelectData) => isNation(b.optionValue) && setEditNation(b.optionValue)}>
                                 {Array.from(NATIONS).map(nation => { return <Option key={nation}>{nation}</Option> })}
                             </Dropdown>
                         </Field>
+
+                        <Field label="Color">
+                            <div style={{ display: "flex", flexDirection: "row" }} >
+                                {PLAYER_COLORS
+                                    .filter(color => availableColors.has(color) || color === player.color)
+                                    .map(color => (
+                                        <div
+                                            key={color}
+                                            style={{
+                                                width: "1em",
+                                                height: "1em",
+                                                margin: "0.5em",
+                                                backgroundColor: color.toLowerCase()
+                                            }}
+                                            onClick={() => setEditColor(color)}
+                                        />
+                                    ))}
+                            </div>
+                        </Field>
+
                         <Button onClick={() => {
                             updatePlayer()
 

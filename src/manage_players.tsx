@@ -23,17 +23,15 @@ interface ManagePlayersProps {
 const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlayerAdded }: ManagePlayersProps) => {
     const [players, setPlayers] = useState<PlayerInformation[]>([selfPlayer])
 
-    async function onPlayerUpdated(name: string, nation: Nation, index: number): Promise<void> {
-
+    async function onPlayerUpdated(name: string, nation: Nation, color: PlayerColor, index: number): Promise<void> {
         const playerToUpdate = players[index]
-        await updatePlayer(gameId, playerToUpdate.id, name, nation, playerToUpdate.color)
+        await updatePlayer(gameId, playerToUpdate.id, name, nation, color)
 
         const updatedPlayers = await getPlayers(gameId)
         setPlayers(updatedPlayers)
     }
 
     async function removePlayer(player: PlayerInformation): Promise<void> {
-
         await removePlayerFromGame(gameId, player.id)
 
         const updatedPlayers = await getPlayers(gameId)
@@ -81,6 +79,12 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
         }
     }
 
+    const availableColors: Set<PlayerColor> = new Set()
+
+    PLAYER_COLORS.forEach(color => availableColors.add(color))
+
+    players.forEach(player => availableColors.delete(player.color))
+
     return (
         <div className="player-list">
 
@@ -93,9 +97,10 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
 
                             {player.id === selfPlayer.id &&
                                 <Player key={index} isSelf={true}
+                                    availableColors={availableColors}
                                     onPlayerUpdated={
-                                        (name: string, nation: Nation) => {
-                                            onPlayerUpdated(name, nation, index)
+                                        (name: string, nation: Nation, color: PlayerColor) => {
+                                            onPlayerUpdated(name, nation, color, index)
                                         }
                                     }
                                     player={player}
@@ -104,9 +109,10 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
 
                             {player.id !== selfPlayer.id &&
                                 <Player key={index} player={player}
+                                    availableColors={availableColors}
                                     onPlayerUpdated={
-                                        (name: string, nation: Nation) => {
-                                            onPlayerUpdated(name, nation, index)
+                                        (name: string, nation: Nation, color: PlayerColor) => {
+                                            onPlayerUpdated(name, nation, color, index)
                                         }
                                     }
                                     onPlayerRemoved={() => { removePlayer(player) }}

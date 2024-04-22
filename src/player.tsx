@@ -14,7 +14,6 @@ interface PlayerProps {
 }
 
 const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpdated }: PlayerProps) => {
-
     const [editName, setEditName] = useState<string | undefined>()
     const [editNation, setEditNation] = useState<Nation>(player.nation)
     const [editColor, setEditColor] = useState<PlayerColor>(player.color)
@@ -60,7 +59,11 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                                 {Array.from(NATIONS)
                                     .map(nation => (
                                         <div
-                                            style={{borderBottom: (nation === editNation) ? "1px solid lightgray" : "none" }}
+                                            style={{
+                                                border: (nation === editNation) ? "2px solid lightgray" : "2px solid rgba(0, 0, 0, 0)",
+                                                margin: "2px",
+                                                padding: "2px"
+                                            }}
                                             onClick={() => setEditNation(nation)} key={nation}
                                         >
                                             <Tooltip content={nation.toLocaleLowerCase()} relationship='label' withArrow key={"BLUE"} >
@@ -83,9 +86,10 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                                                 style={{
                                                     width: "1em",
                                                     height: "1em",
-                                                    margin: "0.5em",
+                                                    margin: "2px",
                                                     backgroundColor: color.toLowerCase(),
-                                                    borderBottom: (color === editColor) ? "1px solid lightgray" : "none"
+                                                    border: (color === editColor) ? "2px solid lightgray" : "2px solid rgba(0, 0, 0, 0)",
+                                                    padding: "2px"
                                                 }}
                                                 onClick={() => setEditColor(color)}
                                             />

@@ -511,6 +511,7 @@ export interface HouseInformation extends Point {
     id: HouseId
     playerId: PlayerId
     type: AnyBuilding
+    door: 'OPEN' | 'CLOSED'
     evacuated: boolean
     soldiers?: SoldierType[]
     maxSoldiers?: number

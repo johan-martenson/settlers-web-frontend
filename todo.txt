@@ -4,7 +4,7 @@ Todo
 1. Animation of houses
 2. More sounds
 3. Planer
-4. Activity should stop around a flag where a fight is happening
+4. Activity should stop around a flag where a fight is happening - storehouse worker remaining
 5. Make materials visible when donkeys carry
 6. In-game and in-game-creation chat
 7. Finish making all react components into functional components
@@ -24,8 +24,7 @@ Todo
 21. Workers should walk slower up-hill and faster down-hill
 22. Fix NullPointerException that happens after playing for a long time
 23. Fix scroll event that "leaks through" from overlaid div to game render
-24. (Japanese) buildings seem to have either wrong under-construction images or they are drawn with the wrong offset
-25. With guard house, new owned land is larger than discovered land. Reload fixes it
+24. With guard house, new owned land is larger than discovered land. Reload fixes it
 
 
 
@@ -62,3 +61,4 @@ Done
 23. Texture for planned(sign vs box) house for the japanese player looks strange
 12. Add remaining gravel after a stone has been fully removed as a decoration
 19. After the fat courier chews gum it remains frozen in the last frame of the animation
+24. (Japanese) buildings seem to have either wrong under-construction images or they are drawn with the wrong offset

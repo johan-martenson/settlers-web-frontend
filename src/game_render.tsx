@@ -1239,6 +1239,17 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         gamePoint: house,
                     })
                 }
+
+                if (house.door === 'OPEN') {
+                    const door = houses.getDrawingInformationForOpenDoor(house.nation, house.type)
+
+                    if (door) {
+                        toDrawNormal.push({
+                            source: door[0],
+                            gamePoint: house,
+                        })
+                    }
+                }
             }
         }
 

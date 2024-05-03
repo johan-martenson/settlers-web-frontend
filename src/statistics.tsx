@@ -297,70 +297,6 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                             .attr("stroke", color)
                     }
                 )
-
-            statisticsSvg.selectAll(".dot" + i)
-                .data(landStatistics)
-                .enter().append("circle") // Uses the enter().append() method
-                .attr("fill", color)
-                .attr("class", "dot") // Assign a class for styling
-
-                // eslint-disable-next-line
-                .attr("cx", function (data, index) {
-                    const xScaled = xScale(data.time)
-
-                    if (xScaled !== undefined) {
-                        return xScaled
-                    }
-
-                    return 0
-                })
-                .attr("cy", function (data) {
-                    const yScaled = yScale(data.values[i])
-
-                    if (yScaled !== undefined) {
-                        return yScaled
-                    }
-
-                    return 0
-                })
-                .attr("r", 5)
-                .on("mouseover",
-                    (event, d) => {
-                        const dotElement = d3.select(event.target)
-
-                        dotElement
-                            .attr("fill", "orange")
-                            .attr("r", 10)
-
-                        let xScaled = xScale(d.time)
-                        let yScaled = yScale(d.values[i])
-
-                        if (xScaled === undefined) {
-                            xScaled = 0
-                        }
-
-                        if (yScaled === undefined) {
-                            yScaled = 0
-                        }
-
-                        statisticsSvg
-                            .append("text")
-                            .attr("id", "textlabel-landstatistics-tooltip")
-                            .attr("x", + xScaled + 20)
-                            .attr("y", + yScaled + 20)
-                            .text(d.values[i])
-                    })
-                .on("mouseout",
-
-                    // eslint-disable-next-line
-                    (event, d) => {
-                        d3.select(event.target)
-                            .attr("fill", color)
-                            .attr("r", 5)
-
-                        d3.select("#textlabel-landstatistics-tooltip")
-                            .remove()
-                    })
         }
     }
 
@@ -528,7 +464,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             statisticsSvg.selectAll(".dot" + i)
                 .data(resourceStatistics)
                 .enter().append("circle")
-                .attr("fill", colors[i])
+                .attr("fill", "rgba(0, 0, 0, 0)")
+                //.attr("fill", colors[i])
                 .attr("class", "dot") // Assign a class for styling
 
                 // eslint-disable-next-line
@@ -553,11 +490,10 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .attr("r", 5)
                 .on("mouseover",
                     (event, d) => {
-
                         const dotElement = d3.select(event.target)
 
                         dotElement
-                            .attr("fill", "orange")
+                            .attr("fill", colors[i])
                             .attr("r", 5)
 
                         let xScaled = xScale(d.time)
@@ -583,7 +519,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     // eslint-disable-next-line
                     (event, d) => {
                         d3.select(event.target)
-                            .attr("fill", colors[i])
+                            .attr("fill", "rgba(0, 0, 0, 0)")
                             .attr("r", 5)
 
                         d3.select("#textlabel-statistics-tooltip")

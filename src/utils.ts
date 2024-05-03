@@ -942,7 +942,7 @@ class WorkerImageAtlasHandler {
 }
 
 interface HouseImageAtlasInformation {
-    buildings: Record<Nation, Record<AnyBuilding, Record<'ready' | 'underConstruction' | 'underConstructionShadow' | 'readyShadow', OneImageInformation>>>
+    buildings: Record<Nation, Record<AnyBuilding, Record<'ready' | 'underConstruction' | 'underConstructionShadow' | 'readyShadow' | 'openDoor', OneImageInformation>>>
     constructionPlanned: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
     constructionJustStarted: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
 }
@@ -1050,6 +1050,35 @@ class HouseImageAtlasHandler {
                 texture: this.texture
             }
         ]
+    }
+
+    getDrawingInformationForOpenDoor(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {
+
+        if (this.image === undefined || this.imageAtlasInfo === undefined) {
+            console.error("Image or image atlas is undefined")
+            console.error([this.image, this.imageAtlasInfo])
+
+            return undefined
+        }
+
+        const doorImage = this.imageAtlasInfo.buildings[nation][houseType].openDoor
+
+        if (doorImage) {
+            return [
+                {
+                    sourceX: doorImage.x,
+                    sourceY: doorImage.y,
+                    width: doorImage.width,
+                    height: doorImage.height,
+                    offsetX: doorImage.offsetX,
+                    offsetY: doorImage.offsetY,
+                    image: this.image,
+                    texture: this.texture
+                }
+            ]
+        }
+
+        return undefined
     }
 
     getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {

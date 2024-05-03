@@ -116,8 +116,7 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
                             <Input type="text" placeholder="Name..."
                                 autoFocus
                                 onChange={
-                                    // eslint-disable-next-line
-                                    (event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
+                                    (_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
                                         setTitle(data.value)
                                     }
                                 }

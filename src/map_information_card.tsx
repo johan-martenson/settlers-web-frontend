@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import { MapInformation, MapId, TerrainAtPoint } from './api/types'
+import React, { useEffect, useState } from 'react'
+import { MapInformation, MapId } from './api/types'
 import { Button, Text, Caption1 } from "@fluentui/react-components"
 import { Card, CardHeader } from "@fluentui/react-components"
 import './map_information_card.css'
@@ -14,96 +14,60 @@ interface MapInformationCardProps {
     onMapSelected?: ((map: MapInformation) => void)
 }
 
-interface MapInformationCardState {
-    expanded: boolean
-    terrain?: TerrainAtPoint[]
-    mapImage?: HTMLImageElement
-}
+function MapInformationCard(props: MapInformationCardProps) {
+    const [mapImage, setMapImage] = useState<HTMLImageElement>()
 
-class MapInformationCard extends Component<MapInformationCardProps, MapInformationCardState> {
+    useEffect(
+        () => {
+            const cachedImage = cachedMapImages.get(props.map.id)
 
-    constructor(props: MapInformationCardProps) {
-        super(props)
+            if (cachedImage) {
+                setMapImage(cachedImage)
+            } else {
+                makeImageFromMap(props.map, 4, 2).then(
+                    (image) => {
+                        if (image) {
+                            setMapImage(image)
 
-        this.state = {
-            expanded: this.props.expanded ? this.props.expanded : false,
-        }
-    }
-
-    async componentDidMount(): Promise<void> {
-        const mapImage = await makeImageFromMap(this.props.map, 4, 2)
-
-        if (!mapImage) {
-            console.log("No image!")
-
-            return
-        }
-
-        cachedMapImages.set(this.props.map.id, mapImage)
-
-        this.setState({ mapImage })
-    }
-
-    async componentDidUpdate(): Promise<void> {
-        const mapImage = cachedMapImages.get(this.props.map.id)
-
-        if (mapImage) {
-            this.setState({ mapImage })
-        } else {
-            const mapImage = await makeImageFromMap(this.props.map, 4, 2)
-
-            if (!mapImage) {
-                return
+                            cachedMapImages.set(props.map.id, image)
+                        }
+                    }
+                )
             }
+        },
+        [props.map.id]
+    )
 
-            this.setState({ mapImage })
-
-            cachedMapImages.set(this.props.map.id, mapImage)
-        }
-    }
-
-    shouldComponentUpdate(nextProps: MapInformationCardProps, nextState: MapInformationCardState): boolean {
-        return this.props.map.id !== nextProps.map.id ||
-            this.props.onMapSelected !== nextProps.onMapSelected ||
-            this.state.expanded !== nextState.expanded ||
-            this.state.mapImage !== nextState.mapImage
-    }
-
-    onMapSelected(): void {
-
-        if (this.props.onMapSelected) {
-            this.props.onMapSelected(this.props.map)
-        }
-    }
-
-    render(): JSX.Element {
-        if (this.props.onMapSelected) {
-            return (
-                <Card>
-                    <CardHeader
-                        image={<img src={(this.state.mapImage) ? this.state.mapImage.src : ""} />}
-                        header={<Text weight="semibold">{this.props.map.title}</Text>}
-                        description={
-                            <Caption1>{this.props.map.maxPlayers} players, {this.props.map.width}x{this.props.map.height}, by {this.props.map.author}</Caption1>
+    if (props.onMapSelected) {
+        return (
+            <Card>
+                <CardHeader
+                    image={<img src={(mapImage) ? mapImage.src : ""} />}
+                    header={<Text weight="semibold">{props.map.title}</Text>}
+                    description={
+                        <Caption1>{props.map.maxPlayers} players, {props.map.width}x{props.map.height}, by {props.map.author}</Caption1>
+                    }
+                    action={<Button onClick={() => {
+                        if (props.onMapSelected) {
+                            props.onMapSelected(props.map)
                         }
-                        action={ <Button onClick={this.onMapSelected.bind(this)}>Select</Button> }
-                    />
-                </Card>
-            )
-        } else {
-            return (
-                <Card>
-                    <CardHeader
-                        image={<img src={(this.state.mapImage) ? this.state.mapImage.src : ""} />}
-                        header={<Text weight="semibold">{this.props.map.title}</Text>}
-                        description={
-                            <Caption1>{this.props.map.maxPlayers} players, {this.props.map.width}x{this.props.map.height}, by {this.props.map.author}</Caption1>
-                        }
-                    />
-                </Card>
-            )
-        }
-
+                    }
+                    }>Select</Button>}
+                />
+            </Card>
+        )
+    } else {
+        return (
+            <Card>
+                <CardHeader
+                    image={<img src={(mapImage) ? mapImage.src : ""} />}
+                    header={<Text weight="semibold">{props.map.title}</Text>}
+                    description={
+                        <Caption1>{props.map.maxPlayers} players, {props.map.width}x{props.map.height}, by {props.map.author}</Caption1>
+                    }
+                />
+            </Card>
+        )
     }
 }
 

@@ -195,7 +195,6 @@ const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo
 const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
 
 class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
-
     private normalCanvasRef = React.createRef<HTMLCanvasElement>()
     private overlayCanvasRef = React.createRef<HTMLCanvasElement>()
     private lightVector: number[]
@@ -311,7 +310,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
     componentDidUpdate(prevProps: GameCanvasProps): void {
         if (prevProps.cursorState !== this.props.cursorState && this?.normalCanvasRef?.current) {
-
             if (this.props.cursorState === 'DRAGGING') {
                 this.normalCanvasRef.current.style.cursor = 'move'
             } else if (this.props.cursorState === 'BUILDING_ROAD') {
@@ -808,7 +806,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             } else {
                 console.error("Failed to create shadow rendering gl program")
             }
-
         } else {
             console.error("No canvasRef.current")
         }
@@ -1243,12 +1240,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (house.door === 'OPEN') {
                     const door = houses.getDrawingInformationForOpenDoor(house.nation, house.type)
 
-                    if (door) {
-                        toDrawNormal.push({
-                            source: door[0],
-                            gamePoint: house,
-                        })
-                    }
+                    toDrawNormal.push({
+                        source: door,
+                        gamePoint: house,
+                    })
                 }
             }
         }
@@ -1607,15 +1602,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
 
                     if (worker.cargo) {
-                        const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, 'ROMANS')
+                        const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
 
-                        if (cargoImage) {
-                            toDrawNormal.push({
-                                source: cargoImage,
-                                gamePoint: interpolatedGamePoint,
-                                height: interpolatedHeight
-                            })
-                        }
+                        toDrawNormal.push({
+                            source: cargoImage,
+                            gamePoint: interpolatedGamePoint,
+                            height: interpolatedHeight
+                        })
                     }
                 } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
                     let image
@@ -1715,14 +1708,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
                     if (worker.cargo) {
-                        const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, 'ROMANS')
+                        const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
 
-                        if (cargoImage) {
-                            toDrawNormal.push({
-                                source: cargoImage,
-                                gamePoint: worker
-                            })
-                        }
+                        toDrawNormal.push({
+                            source: cargoImage,
+                            gamePoint: worker
+                        })
                     }
                 } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
                     let didDrawAnimation = false
@@ -1832,12 +1823,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     } else {
                         const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
 
-                        if (cargo) {
-                            toDrawNormal.push({
-                                source: cargo,
-                                gamePoint: worker
-                            })
-                        }
+                        toDrawNormal.push({
+                            source: cargo,
+                            gamePoint: worker
+                        })
                     }
                 }
             }
@@ -1966,6 +1955,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         duration.after("Collect available construction")
+
 
         // Draw the Shadow layer and the Normal layer
 
@@ -2282,7 +2272,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Go through the images to draw
             for (const draw of toDrawHover) {
-
                 if (draw.gamePoint === undefined || draw.source?.texture === undefined) {
                     continue
                 }
@@ -2318,7 +2307,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         /* Draw house titles */
         if (this.props.showHouseTitles) {
-
             overlayCtx.font = "bold 12px sans-serif"
             overlayCtx.strokeStyle = 'black'
             overlayCtx.fillStyle = 'yellow'
@@ -2472,7 +2460,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 this.onClick(event)
             }, 200)
         } else {
-
             if (timer) {
                 clearTimeout(timer)
             }
@@ -2563,7 +2550,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     render(): JSX.Element {
-
         return (
             <>
                 <canvas
@@ -2613,7 +2599,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const textureMapping: number[] = []
 
         tilesBelow.forEach(tileBelow => {
-
             const point = tileBelow.pointAbove
             const pointDownLeft = getPointDownLeft(point)
             const pointDownRight = getPointDownRight(point)
@@ -2676,7 +2661,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         tilesDownRight.forEach(tile => {
-
             const point = tile.pointLeft
             const pointDownRight = getPointDownRight(point)
             const pointRight = getPointRight(point)
@@ -2754,7 +2738,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const downRightNormals = new PointMapFast<Vector>()
 
         for (const terrainAtPoint of tilesBelow) {
-
             const point = terrainAtPoint.pointAbove
             const height = terrainAtPoint.heightAbove
 
@@ -2770,7 +2753,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         for (const terrainAtPoint of tilesDownRight) {
-
             const point = terrainAtPoint.pointLeft
             const height = terrainAtPoint.heightLeft
 
@@ -2818,7 +2800,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     prepareToRenderRoads(roads: Iterable<RoadInformation>): RenderInformation {
-
         console.log("Prepare to render roads")
 
         // Create the render information for the roads
@@ -2832,7 +2813,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             let previous: Point | undefined = undefined
 
             for (const point of road.points) {
-
                 if (previous === undefined) {
                     previous = point
 

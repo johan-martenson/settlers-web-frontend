@@ -479,14 +479,6 @@ async function getHouseInformationWithAttackPossibility(houseId: HouseId, gameId
 }
 
 async function getInformationOnPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<PointInformation> {
-    // x, y
-    // canBuild: ['small', 'medium', 'large', 'flag', 'mine', 'harbor']
-    // isType: ('flag' | 'building' | 'stone' | 'tree')
-    // (building: {type: ..., } |
-    // possibleRoadConnections: [{x: 2, y:4}, ...]
-    // buildingId?
-    // flagId?
-
     console.info("Get information on point")
 
     const response = await fetch("/settlers/api/games/" + gameId + "/map/points?x=" + point.x + "&y=" + point.y + "&playerId=" + playerId)

@@ -25,6 +25,9 @@ Todo
 22. Fix NullPointerException that happens after playing for a long time
 23. Fix scroll event that "leaks through" from overlaid div to game render
 24. With guard house, new owned land is larger than discovered land. Reload fixes it
+25. A decoration with a small patch of grass has the wrong shadow - a portal shadow
+26. Wild animals walk in place
+27. Frontend sometimes freezes even if the backend is still running
 
 
 

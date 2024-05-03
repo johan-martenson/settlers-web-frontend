@@ -22,118 +22,90 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
     const [populateFarFromBorder, setPopulateFarFromBorder] = useState<number>(5)
     const [populateCloserToBorder, setPopulateCloserToBorder] = useState<number>(5)
     const [populateCloseToBorder, setPopulateCloseToBorder] = useState<number>(5)
+    const [loaded, setLoaded] = useState<boolean>(false)
 
     useEffect(
         () => {
-            (async () => {
-                const strength = await monitor.getDefenseStrength()
+            monitor.getMilitarySettings().then(
+                (settings) => {
+                    setStrengthWhenPopulatingBuildings(settings.soldierStrengthWhenPopulatingBuildings)
+                    setDefenseFromSurroundingBuildings(settings.defenseFromSurroundingBuildings)
+                    setDefenseStrength(settings.defenseStrength)
+                    setSoldiersAvailableForAttack(soldiersAvailableForAttack)
+                    setPopulateFarFromBorder(settings.soldierAmountWhenPopulatingFarFromBorder)
+                    setPopulateCloserToBorder(settings.soldierAmountWhenPopulatingAwayFromBorder)
+                    setPopulateCloseToBorder(settings.soldierAmountWhenPopulatingCloseToBorder)
 
-                setDefenseStrength(strength)
-            })().then()
+                    setLoaded(true)
+                }
+            )
         },
-        [])
+        []
+    )
 
     useEffect(
         () => {
-            monitor.setDefenseStrength(defenseStrength)
+            if (loaded) {
+                monitor.setMilitaryPopulationFarFromBorder(populateFarFromBorder)
+            }
         },
-        [defenseStrength])
+        [populateFarFromBorder])
 
     useEffect(
         () => {
-            (async () => {
-                const strength = await monitor.getStrengthWhenPopulatingMilitaryBuildings()
-
-                setStrengthWhenPopulatingBuildings(strength)
-            })().then()
-        },
-        [])
-
-    useEffect(
-        () => {
-            monitor.setStrengthWhenPopulatingMilitaryBuildings(strengthWhenPopulatingBuildings)
-        },
-        [strengthWhenPopulatingBuildings])
-
-    useEffect(
-        () => {
-            (async () => {
-                const defenseFromSurroundingBuildings = await monitor.getDefenseFromSurroundingBuildings()
-
-                setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings)
-            })().then()
-        }, [])
-
-    useEffect(
-        () => {
-            (async () => {
-                const amount = await monitor.getSoldiersAvailableForAttack()
-
-                setSoldiersAvailableForAttack(amount)
-            })().then()
-        }, [])
-
-    useEffect(
-        () => monitor.setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings),
-        [defenseFromSurroundingBuildings])
-
-    useEffect(
-        () => {
-            (async () => {
+            if (loaded) {
                 monitor.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
-            })
+            }
         },
         [soldiersAvailableForAttack])
 
     useEffect(
         () => {
-            (async () => {
-                const populate = await monitor.getPopulateMilitaryFarFromBorder()
-
-                setPopulateFarFromBorder(populate)
-            })().then()
-        }, []
-    )
+            if (loaded) {
+                monitor.setMilitaryPopulationCloserToBorder(populateCloserToBorder)
+            }
+        },
+        [populateCloserToBorder])
 
     useEffect(
         () => {
-            (async () => {
-                const populate = await monitor.getPopulateMilitaryCloserToBorder()
-
-                setPopulateCloserToBorder(populate)
-            })().then()
-        }, []
-    )
+            if (loaded) {
+                monitor.setMilitaryPopulationCloseToBorder(populateCloseToBorder)
+            }
+        },
+        [populateCloseToBorder])
 
     useEffect(
         () => {
-            (async () => {
-                const populate = await monitor.getPopulateMilitaryCloseToBorder()
-
-                setPopulateCloseToBorder(populate)
-            })().then()
-        }, []
-    )
+            if (loaded) {
+                monitor.setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings)
+            }
+        },
+        [defenseFromSurroundingBuildings])
 
     useEffect(
-        () => monitor.setMilitaryPopulationFarFromBorder(populateFarFromBorder),
-        [populateFarFromBorder]
-    )
+        () => {
+            if (loaded) {
+                monitor.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
+            }
+        },
+        [soldiersAvailableForAttack])
 
     useEffect(
-        () => monitor.setSoldiersAvailableForAttack(soldiersAvailableForAttack),
-        [soldiersAvailableForAttack]
-    )
+        () => {
+            if (loaded) {
+                monitor.setStrengthWhenPopulatingMilitaryBuildings(strengthWhenPopulatingBuildings)
+            }
+        },
+        [strengthWhenPopulatingBuildings])
 
     useEffect(
-        () => monitor.setMilitaryPopulationCloserToBorder(populateCloserToBorder),
-        [populateCloserToBorder]
-    )
-
-    useEffect(
-        () => monitor.setMilitaryPopulationCloseToBorder(populateCloseToBorder),
-        [populateCloseToBorder]
-    )
+        () => {
+            if (loaded) {
+                monitor.setDefenseStrength(defenseStrength)
+            }
+        },
+        [defenseStrength])
 
     return (
         <div className="house-info">

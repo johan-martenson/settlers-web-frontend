@@ -18,19 +18,16 @@ interface GameMessagesViewerProps {
 const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [messages, setMessages] = useState<GameMessage[]>(Array.from(monitor.messages.values()))
-    const [recentlyDeleted, setRecentlyDelected] = useState<Set<GameMessageId>>(new Set<GameMessageId>())
 
     function removeMessage(message: GameMessage) {
         monitor.removeMessage(message.id)
-
-        recentlyDeleted.add(message.id)
     }
 
     useEffect(() => {
-        const messageReceiver = (_receivedMessages: GameMessage[], removedMessages: GameMessageId[]) => {
-            setMessages(Array.from(monitor.messages.values()))
 
-            removedMessages.forEach(messageId => recentlyDeleted.delete(messageId))
+        // eslint-disable-next-line
+        const messageReceiver = (_receivedMessages: GameMessage[], _removedMessages: GameMessageId[]) => {
+            setMessages(Array.from(monitor.messages.values()))
         }
 
         // Subscribe to received messages
@@ -48,7 +45,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
             {expanded &&
                 <div className="game-message-list">
 
-                    {messages.filter(message => !recentlyDeleted.has(message.id)).map(
+                    {messages.map(
                         (message, index) => {
 
                             return (
@@ -157,8 +154,6 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                     <Button icon={<Delete24Filled />}
                                         onClick={() => {
                                             removeMessage(message)
-
-                                            setRecentlyDelected(recentlyDeleted.add(message.id))
                                         }}
                                         appearance='transparent' />
                                 </div>
@@ -166,7 +161,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                         }
                     )
                     }
-                    <Button onClick={() => messages.forEach(message => removeMessage(message))} >Clear all</Button>
+                    <Button onClick={() => monitor.removeMessages(messages)} >Clear all</Button>
 
                 </div>
             }

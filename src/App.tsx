@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, getInformationOnPoint, getPlayers, setSpeed, upgradeMilitaryBuilding } from './api/rest-api'
+import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, getPlayers, setSpeed, upgradeMilitaryBuilding } from './api/rest-api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import FriendlyFlagInfo from './friendly_flag_info'
@@ -685,7 +685,7 @@ class App extends Component<AppProps, AppState> {
                 console.info("Continuing road building with extended road segment")
 
                 /* Get the available connections from the added point */
-                const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.props.selfPlayerId)
+                const pointInformation = await monitor.getInformationOnPoint(point)
 
                 console.log("Possible new road direct adjacent road connections: " + JSON.stringify(pointInformation.possibleRoadConnections))
 
@@ -799,7 +799,7 @@ class App extends Component<AppProps, AppState> {
         }
 
         /* Ask the server for what can be done on the spot */
-        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.props.selfPlayerId)
+        const pointInformation = await monitor.getInformationOnPoint(point)
 
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
@@ -877,7 +877,7 @@ class App extends Component<AppProps, AppState> {
         console.info("Start new road construction at: " + JSON.stringify({ x: point.x, y: point.y }))
 
         /* Get the possible connections from the server and draw them */
-        const pointInformation = await getInformationOnPoint(point, this.props.gameId, this.props.selfPlayerId)
+        const pointInformation = await monitor.getInformationOnPoint(point)
 
         this.setState(
             {

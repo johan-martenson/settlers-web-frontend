@@ -385,7 +385,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                             <div className="quota">
                                 <Subtract16Filled onClick={() => setMetalworksIronBarAmount((previous) => Math.max(0, previous - 1))} />
                                 <AmountBar amount={metalworksIronBarAmount} max={10} />
-                                <Add16Filled onClick={() => setMetalworksIronBarAmount((previous) => Math.min(10, previous - 1))} />
+                                <Add16Filled onClick={() => setMetalworksIronBarAmount((previous) => Math.min(10, previous + 1))} />
                             </div>
                         </div>
                     </Field>

@@ -108,6 +108,16 @@ interface PauseResumeMessage {
     gameState: "PAUSED" | "STARTED"
 }
 
+type MilitarySettings = {
+    defenseStrength: number
+    defenseFromSurroundingBuildings: number
+    soldierAmountWhenPopulatingCloseToBorder: number
+    soldierAmountWhenPopulatingAwayFromBorder: number
+    soldierAmountWhenPopulatingFarFromBorder: number
+    soldierStrengthWhenPopulatingBuildings: number
+    soldierAmountsAvailableForAttack: number
+}
+
 interface ActionListener {
     actionStarted: ((id: string, point: Point, action: Action) => void)
     actionEnded: ((id: string, point: Point, action: Action) => void)
@@ -125,42 +135,6 @@ interface FlagListener {
 
 interface ReplyMessage {
     requestId: RequestId
-}
-
-interface PointsInformationMessage extends ReplyMessage {
-    pointsWithInformation: PointInformation[]
-}
-
-interface CoalQuotasMessage extends ReplyMessage {
-    mint: number
-    armory: number
-    ironSmelter: number
-}
-
-interface FoodQuotasMessage extends ReplyMessage {
-    ironMine: number
-    coalMine: number
-    goldMine: number
-    graniteMine: number
-}
-
-interface WheatQuotasMessage extends ReplyMessage {
-    donkeyFarm: number
-    pigFarm: number
-    mill: number
-    brewery: number
-}
-
-interface WaterQuotasMessage extends ReplyMessage {
-    bakery: number
-    donkeyFarm: number
-    pigFarm: number
-    brewery: number
-}
-
-interface IronBarQuotasMessage extends ReplyMessage {
-    armory: number
-    metalworks: number
 }
 
 interface NumberReplyMessage extends ReplyMessage {
@@ -226,6 +200,7 @@ export interface Monitor {
     removeLocalRoad: ((roadId: RoadId) => void)
     removeDetailedMonitoring: ((houseId: HouseId) => void)
     removeMessage: ((messageId: GameMessageId) => void)
+    removeMessages: ((messages: GameMessage[]) => void)
 
     undoRemoveLocalRoad: ((roadId: RoadId) => void)
 
@@ -236,6 +211,7 @@ export interface Monitor {
     getInformationOnPointLocal: ((point: Point) => PointInformationLocal)
     getHouseAtPointLocal: ((point: Point) => HouseInformation | undefined)
     getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
+    getInformationOnPoint: ((point: Point) => Promise<PointInformation>)
     getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
     getHeight: ((point: Point) => number)
 
@@ -260,6 +236,7 @@ export interface Monitor {
     getPopulateMilitaryCloserToBorder: (() => Promise<number>)
     getPopulateMilitaryCloseToBorder: (() => Promise<number>)
     getSoldiersAvailableForAttack: (() => Promise<number>)
+    getMilitarySettings: (() => Promise<MilitarySettings>)
 
     addDetailedMonitoring: ((id: HouseId | FlagId) => void)
 
@@ -325,30 +302,6 @@ function isReplyMessage(message: unknown): message is ReplyMessage {
         'requestId' in message
 }
 
-function isInformationOnPointsMessage(message: ReplyMessage): message is PointsInformationMessage {
-    return 'pointsWithInformation' in message
-}
-
-function isCoalQuotasMessage(message: ReplyMessage): message is CoalQuotasMessage {
-    return 'mint' in message && 'armory' in message && 'ironSmelter' in message
-}
-
-function isFoodQuotasMessage(message: ReplyMessage): message is FoodQuotasMessage {
-    return 'ironMine' in message && 'goldMine' in message && 'coalMine' in message && 'graniteMine' in message
-}
-
-function isWheatQuotasMessage(message: ReplyMessage): message is WheatQuotasMessage {
-    return 'donkeyFarm' in message && 'pigFarm' in message && 'mill' in message && 'brewery' in message
-}
-
-function isWaterQuotasMessage(message: ReplyMessage): message is WaterQuotasMessage {
-    return 'bakery' in message && 'donkeyFarm' in message && 'pigFarm' in message && 'brewery' in message
-}
-
-function isIronBarQuotasMessage(message: ReplyMessage): message is IronBarQuotasMessage {
-    return 'armory' in message && 'metalworks' in message
-}
-
 function isNumberReplyMessage(message: ReplyMessage): message is NumberReplyMessage {
     return 'amount' in message
 }
@@ -398,6 +351,7 @@ const monitor: Monitor = {
     removeBuilding: removeBuildingWebsocket,
     removeLocalRoad,
     removeMessage,
+    removeMessages,
 
     undoRemoveLocalRoad,
 
@@ -407,6 +361,7 @@ const monitor: Monitor = {
     getInformationOnPointLocal,
     getHouseAtPointLocal,
     getFlagAtPointLocal,
+    getInformationOnPoint,
     getInformationOnPoints,
     getHeight,
 
@@ -431,6 +386,7 @@ const monitor: Monitor = {
     getPopulateMilitaryCloserToBorder,
     getPopulateMilitaryCloseToBorder,
     getSoldiersAvailableForAttack,
+    getMilitarySettings,
 
     addDetailedMonitoring,
 
@@ -802,6 +758,8 @@ function websocketError(error: unknown): void {
 }
 
 function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent): void {
+    console.log("Disconnected from backend")
+
     if (monitor.gameState === 'EXPIRED') {
         return
     }
@@ -864,6 +822,8 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
 function receivedPauseResumeMessage(message: PauseResumeMessage): void {
     if (message.gameState === 'PAUSED') {
         monitor.gameState = 'PAUSED'
+
+        console.log("Got game paused message. Pausing.")
 
         stopTimers()
     } else {
@@ -1337,7 +1297,6 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
 }
 
 function syncChangedBorders(borderChanges: BorderChange[]): void {
-
     for (const borderChange of borderChanges) {
         const currentBorderForPlayer = monitor.border.get(borderChange.playerId)
 
@@ -1366,7 +1325,6 @@ function syncChangedBorders(borderChanges: BorderChange[]): void {
 
 function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void {
     for (const wildAnimalInformation of wildAnimals) {
-
         let wildAnimal = monitor.wildAnimals.get(wildAnimalInformation.id)
 
         if (wildAnimal === undefined) {
@@ -1401,7 +1359,6 @@ function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void
 }
 
 function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
-
     for (const walkerTargetChange of targetChanges) {
         let worker = monitor.workers.get(walkerTargetChange.id)
         const direction = simpleDirectionToCompassDirection(walkerTargetChange.direction)
@@ -1720,14 +1677,6 @@ export type PointInformationLocal = {
     roadId: RoadId
 })
 
-/*export interface PointInformationLocal extends Point {
-    canBuild: AvailableConstruction[]
-    buildingId?: HouseId
-    flagId?: FlagId
-    roadId?: RoadId
-    is: "flag" | "building" | "road" | undefined
-}*/
-
 function getInformationOnPointLocal(point: Point): PointInformationLocal {
     const canBuild = monitor.availableConstruction.get(point)
 
@@ -1795,54 +1744,31 @@ function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
     return undefined
 }
 
+type InformationOnPointsReply = {
+    pointsWithInformation: PointInformation[]
+}
+
+async function getInformationOnPoint(point: Point): Promise<PointInformation> {
+    const options = { points: [point] }
+
+    const reply = await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, typeof options>("INFORMATION_ON_POINTS", options)
+
+    return reply.pointsWithInformation[0]
+}
+
 async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<PointInformation>> {
-    const requestId = getRequestId()
+    const options = { points }
 
-    console.log({
-        title: "Request information on points",
-        requestId
-    })
+    const reply = await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, typeof options>("INFORMATION_ON_POINTS", options)
 
-    websocket?.send(JSON.stringify(
-        {
-            command: 'INFORMATION_ON_POINTS',
-            requestId,
-            points
-        }
-    ))
+    const map = new PointMapFast<PointInformation>()
 
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
+    reply.pointsWithInformation.forEach(pointInformation => map.set({ x: pointInformation.x, y: pointInformation.y }, pointInformation))
 
-            console.log({
-                title: "Looking for replies for request",
-                requestId,
-                reply
-            })
-
-            if (!reply) {
-                return
-            }
-
-            if (isInformationOnPointsMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                const map = new PointMapFast<PointInformation>()
-
-                reply.pointsWithInformation.forEach(pointInformation => map.set({ x: pointInformation.x, y: pointInformation.y }, pointInformation))
-
-                result(map)
-            }
-        }, 5)
-    })
+    return map
 }
 
 function setReservedSoldiers(rank: SoldierType, amount: number): void {
-
     console.log("Set number of reserved soldiers for " + rank + " to: " + amount)
 
     websocket?.send(JSON.stringify(
@@ -1876,6 +1802,15 @@ function removeMessage(messageId: GameMessageId): void {
         {
             command: 'REMOVE_MESSAGE',
             messageId
+        }
+    ))
+}
+
+function removeMessages(messages: GameMessage[]): void {
+    websocket?.send(JSON.stringify(
+        {
+            command: 'REMOVE_MESSAGES',
+            messageIds: messages.map(message => message.id)
         }
     ))
 }
@@ -1986,34 +1921,9 @@ interface IronBarQuotas {
 }
 
 function getFoodQuotas(): Promise<FoodQuotas> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_FOOD_QUOTAS',
-            requestId
-        }
-    ))
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isFoodQuotasMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply)
-            }
-        }, 5)
-    })
+    return sendRequestAndWaitForReply<FoodQuotas>("GET_FOOD_QUOTAS")
 }
+
 function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number) {
     websocket?.send(JSON.stringify(
         {
@@ -2027,127 +1937,19 @@ function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewe
 
 }
 function getWheatQuotas(): Promise<WheatQuotas> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_WHEAT_QUOTAS',
-            requestId
-        }
-    ))
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isWheatQuotasMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply)
-            }
-        }, 5)
-    })
+    return sendRequestAndWaitForReply<WheatQuotas>("GET_WHEAT_QUOTAS")
 }
 
 function getWaterQuotas(): Promise<WaterQuotas> {
-    const requestId = getRequestId()
-
-    console.log("Get water quotas. Request id: " + requestId)
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_WATER_QUOTAS',
-            requestId
-        }
-    ))
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isWaterQuotasMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply)
-            }
-        }, 5)
-    })
+    return sendRequestAndWaitForReply<WaterQuotas>("GET_WATER_QUOTAS")
 }
 
 function getCoalQuotas(): Promise<CoalQuotas> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_COAL_QUOTAS',
-            requestId
-        }
-    ))
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isCoalQuotasMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply)
-            }
-        }, 5)
-    })
+    return sendRequestAndWaitForReply<CoalQuotas>("GET_COAL_QUOTAS")
 }
 
 function getIronBarQuotas(): Promise<IronBarQuotas> {
-    const requestId = getRequestId()
-
-    console.log("Get iron bar quotas. Request id: " + requestId)
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'GET_IRON_BAR_QUOTAS',
-            requestId
-        }
-    ))
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isIronBarQuotasMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                result(reply)
-            }
-        })
-    })
+    return sendRequestAndWaitForReply<IronBarQuotas>("GET_IRON_BAR_QUOTAS")
 }
 
 function setFoodQuotas(ironMineAmount: number, coalMineAmount: number, goldMineAmount: number, graniteMineAmount: number) {
@@ -2267,7 +2069,13 @@ function getAmountForCommand(command: string): Promise<number> {
         }
     ))
 
+    console.log(`Send request: ${command} with id: ${requestId}`)
+
     return waitForNumberReply(requestId)
+}
+
+function getMilitarySettings(): Promise<MilitarySettings> {
+    return sendRequestAndWaitForReply<MilitarySettings>("GET_MILITARY_SETTINGS")
 }
 
 function waitForNumberReply(requestId: number): Promise<number> {
@@ -2286,8 +2094,81 @@ function waitForNumberReply(requestId: number): Promise<number> {
 
                 clearInterval(timer)
 
+                console.log(`Got number reply: ${reply.amount}`)
+
                 result(reply.amount)
             }
+        }, 10)
+    })
+}
+
+function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command: string, options: Options): Promise<ReplyType> {
+    const requestId = getRequestId()
+
+    console.log({
+        command,
+        requestId,
+        ...options
+    })
+
+    websocket?.send(JSON.stringify(
+        {
+            command,
+            requestId,
+            ...options
+        }
+    ))
+
+    console.log(`Send request: ${command} with id: ${requestId}`)
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            replies.delete(requestId)
+
+            clearInterval(timer)
+
+            console.log(`Got reply: ${JSON.stringify(reply)}`)
+
+            result(reply as ReplyType)
+        }, 10)
+    })
+}
+
+function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyType> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command,
+            requestId
+        }
+    ))
+
+    console.log(`Send request: ${command} with id: ${requestId}`)
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            replies.delete(requestId)
+
+            clearInterval(timer)
+
+            console.log(`Got reply: ${JSON.stringify(reply)}`)
+
+            result(reply as ReplyType)
         }, 10)
     })
 }

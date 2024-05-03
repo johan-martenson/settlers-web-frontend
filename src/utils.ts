@@ -1,6 +1,6 @@
-import { getInformationOnPoint, getTerrainForMap, removeHouse } from './api/rest-api'
-import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, GameId, PlayerId, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
-import { Monitor, monitor } from './api/ws-api'
+import { getTerrainForMap } from './api/rest-api'
+import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
+import { Monitor } from './api/ws-api'
 import { ScreenPoint } from './game_render'
 
 const vegetationToInt = new Map<Vegetation, number>()
@@ -293,19 +293,6 @@ function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boole
     }
 
     return found
-}
-
-async function removeHouseOrFlagOrRoadAtPoint(point: Point, gameId: GameId, playerId: PlayerId): Promise<void> {
-
-    const pointInformation = await getInformationOnPoint(point, gameId, playerId)
-
-    if (pointInformation.is === "building" && pointInformation.buildingId) {
-        await removeHouse(pointInformation.buildingId, playerId, gameId)
-    } else if (pointInformation.is === "flag" && pointInformation.flagId) {
-        monitor.removeFlag(pointInformation.flagId)
-    } else if (pointInformation.is === "road" && pointInformation.roadId) {
-        monitor.removeRoad(pointInformation.roadId)
-    }
 }
 
 async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: Monitor): Promise<void> {
@@ -2413,7 +2400,6 @@ export {
     getTimestamp,
     normalize,
     same,
-    removeHouseOrFlagOrRoadAtPoint,
     isRoadAtPoint,
     isContext2D,
     terrainInformationToTerrainAtPointList,

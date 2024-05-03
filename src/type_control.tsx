@@ -1,8 +1,8 @@
 import React, { useEffect, useReducer, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
-import { getInformationOnPoint } from './api/rest-api'
 import { PointInformation, Point, GameId, PlayerId } from './api/types'
+import { monitor } from './api/ws-api'
 
 export interface Command {
     action: (() => void)
@@ -58,7 +58,7 @@ interface InputState {
  *       current value.
  *
  */
-const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlProps) => {
+const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
     const [expanded, setExpanded] = useState<boolean>()
     const [selectedPointInformation, setSelectedPointInformation] = useState<PointInformation>()
     const [inputState, dispatchInput] = useReducer(reducer, { input: "" })
@@ -66,9 +66,15 @@ const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlP
     useEffect(
         () => {
             (async () => {
-                const updatedPointInformation = await getInformationOnPoint(selectedPoint, gameId, playerId)
 
-                setSelectedPointInformation(updatedPointInformation)
+                // Use try-catch because this can be called before the websocket is setup and will then fail
+                try {
+                    const updatedPointInformation = await monitor.getInformationOnPoint(selectedPoint)
+
+                    setSelectedPointInformation(updatedPointInformation)    
+                } catch (error) {
+                    console.error(`Error while getting info on selectiong point: ${selectedPoint}, ${error}`)
+                }
             })().then()
 
             return () => { }

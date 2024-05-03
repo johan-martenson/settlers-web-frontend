@@ -1,4 +1,4 @@
-import React, { Component, PropsWithChildren } from 'react'
+import React, { PropsWithChildren, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'
@@ -8,84 +8,67 @@ import App from './App'
 import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/react-components'
 import { GameId, PlayerId } from './api/types'
 
-interface GameInitProps { }
-interface GameInitState {
-    state: "ENTER_PLAYER_INFORMATION" | "LOBBY" | "PLAY_GAME"
-    player?: string
-    gameId?: GameId
-    selfPlayerId?: PlayerId
-}
+function GameInit() {
+    const [state, setState] = useState<"ENTER_PLAYER_INFORMATION" | "LOBBY" | "PLAY_GAME">("ENTER_PLAYER_INFORMATION")
+    const [player, setPlayer] = useState<string>()
+    const [gameId, setGameId] = useState<GameId>()
+    const [selfPlayerId, setSelfPlayerId] = useState<PlayerId>()
 
-class GameInit extends Component<GameInitProps, GameInitState> {
+    useEffect(
+        () => {
+            const urlParams = new URLSearchParams(window.location.search)
+            const gameId = urlParams.get("gameId")
+            const playerId = urlParams.get("playerId")
 
-    constructor(props: GameInitProps) {
-        super(props)
+            if (gameId) {
+                if (playerId === null || playerId === undefined) {
+                    getPlayers(gameId).then(
+                        (players) => {
+                            const player = players[0]
 
-        this.state = {
-            state: "ENTER_PLAYER_INFORMATION"
-        }
-    }
-
-    async componentDidMount(): Promise<void> {
-
-        const urlParams = new URLSearchParams(window.location.search)
-        const gameId = urlParams.get("gameId")
-        const playerId = urlParams.get("playerId")
-
-        if (gameId) {
-            let selfPlayerId = playerId
-
-            if (selfPlayerId === null || selfPlayerId === undefined) {
-                selfPlayerId = (await getPlayers(gameId))[0].id
+                            setGameId(gameId)
+                            setSelfPlayerId(player.id)
+                            setState("PLAY_GAME")
+                        })
+                } else {
+                    setGameId(gameId)
+                    setSelfPlayerId(playerId)
+                    setState("PLAY_GAME")
+                }
             }
+        },
+        []
+    )
 
-            this.setState(
-                {
-                    state: "PLAY_GAME",
-                    gameId: gameId,
-                    selfPlayerId: selfPlayerId
-                }
-            )
-        }
-    }
+    return (
+        <div>
+            {state === "ENTER_PLAYER_INFORMATION" &&
+                <FillInPlayerInformation
+                    onPlayerInformationDone={
+                        (name) => {
+                            console.log("Player entering lobby: " + name)
 
-    onPlayerInformationDone(name: string): void {
+                            setPlayer(name)
+                            setState("LOBBY")
 
-        console.log("Player entering lobby: " + name)
-
-        this.setState(
-            {
-                player: name,
-                state: "LOBBY"
-            }
-        )
-
-        console.log("Now in lobby")
-    }
-
-    render(): JSX.Element {
-
-        return (
-            <div>
-                {this.state.state === "ENTER_PLAYER_INFORMATION" &&
-                    <FillInPlayerInformation onPlayerInformationDone={this.onPlayerInformationDone.bind(this)} />
-                }
-
-                {this.state.state === "LOBBY" && this.state.player &&
-                    <Lobby playerName={this.state.player} />
-                }
-
-                {this.state.state === "PLAY_GAME" && this.state.gameId && this.state.selfPlayerId &&
-                    <App gameId={this.state.gameId}
-                        selfPlayerId={this.state.selfPlayerId}
-                        onLeaveGame={
-                            () => this.setState({ state: "LOBBY" })
+                            console.log("Now in lobby")
                         }
-                    />
-                }
-            </div>
-        )
-    }
+                    }
+                />
+            }
+
+            {state === "LOBBY" && player && <Lobby playerName={player} />}
+
+            {state === "PLAY_GAME" && gameId && selfPlayerId &&
+                <App gameId={gameId}
+                    selfPlayerId={selfPlayerId}
+                    onLeaveGame={
+                        () => setState("LOBBY")
+                    }
+                />
+            }
+        </div>
+    )
 }
 
 const container = document.getElementById('root')

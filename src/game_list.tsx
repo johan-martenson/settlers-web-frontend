@@ -45,8 +45,6 @@ const GameList = ({ onJoinGame }: GameListProps) => {
                     }
                 }
             })().then()
-
-            return () => { }
         }, [])
 
     return (

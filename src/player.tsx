@@ -44,9 +44,9 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                             <Input
                                 type="text"
                                 placeholder={player.name}
-                                onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setEditName(data.value)}
-                                onKeyDown={(ev: React.KeyboardEvent<HTMLInputElement>) => {
-                                    if (ev.key === 'Enter') {
+                                onChange={(_event: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setEditName(data.value)}
+                                onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+                                    if (event.key === 'Enter') {
                                         updatePlayer()
 
                                         setIsEditing(false)

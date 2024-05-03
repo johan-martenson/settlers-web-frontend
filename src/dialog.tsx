@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import { Button } from '@fluentui/react-components'
 import './dialog.css'
 
@@ -13,39 +13,31 @@ interface DialogProps {
     children?: React.ReactNode
 }
 
-interface DialogState { }
+function Dialog(props: DialogProps) {
+    const className = (props.floating) ? "Dialog FloatingWindow" : "Dialog NonfloatingWindow" + ((props.className) ? props.className : "")
+    const closeLabel = props.closeLabel ? props.closeLabel : "Close"
 
-class Dialog extends Component<DialogProps, DialogState> {
+    return (
+        <div className={className} id={props.id}>
 
-    render(): JSX.Element {
+            <div>
+                {props.heading && <h1>{props.heading}</h1>}
 
-        const className = (this.props.floating) ? "Dialog FloatingWindow" : "Dialog NonfloatingWindow" + ((this.props.className) ? this.props.className : "")
-        const closeLabel = this.props.closeLabel ? this.props.closeLabel : "Close"
+                {props.children}
+            </div>
 
-        return (
-            <div className={className} id={this.props.id}>
-
-                <div>
-                    {this.props.heading &&
-                        <h1>{this.props.heading}</h1>
-                    }
-
-                    {this.props.children}
-                </div>
-
-                {!this.props.noCloseButton &&
-                    <Button onClick={
-                        () => {
-                            if (this.props.onCloseDialog) {
-                                this.props.onCloseDialog()
-                            }
+            {!props.noCloseButton &&
+                <Button onClick={
+                    () => {
+                        if (props.onCloseDialog) {
+                            props.onCloseDialog()
                         }
                     }
-                    >{closeLabel}</Button>
                 }
-            </div>
-        )
-    }
+                >{closeLabel}</Button>
+            }
+        </div>
+    )
 }
 
 interface DialogSectionProps {
@@ -53,17 +45,13 @@ interface DialogSectionProps {
     children?: React.ReactNode
 }
 
-interface DialogSectionState { }
-
-class DialogSection extends Component<DialogSectionProps, DialogSectionState> {
-    render(): JSX.Element {
-        return (
-            <div className="DialogSection">
-                {this.props.label && <div className="MenuSectionLabel" >{this.props.label}</div>}
-                {this.props.children}
-            </div>
-        )
-    }
+function DialogSection(props: DialogSectionProps) {
+    return (
+        <div className="DialogSection">
+            {props.label && <div className="MenuSectionLabel" >{props.label}</div>}
+            {props.children}
+        </div>
+    )
 }
 
 export { Dialog, DialogSection }

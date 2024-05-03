@@ -77,7 +77,7 @@ const GameMenu = (
                             min={minZoom}
                             value={zoom}
                             step={1}
-                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
                                 onChangedZoom(data.value)
 
                                 setZoom(data.value)
@@ -90,7 +90,7 @@ const GameMenu = (
                         }} >Reset</Button>
                     </Field>
                     <Field label='Set game speed'>
-                        <Dropdown value={gameSpeed} onOptionSelect={(event: SelectionEvents, data: OptionOnSelectData) => {
+                        <Dropdown value={gameSpeed} onOptionSelect={(_event: SelectionEvents, data: OptionOnSelectData) => {
                             if (data.optionValue === 'Fast') {
                                 monitor.setGameSpeed('FAST')
 
@@ -112,26 +112,26 @@ const GameMenu = (
                     </Field>
                     <Field label='Show house titles'>
                         <Switch
-                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetTitlesVisible(data.checked)}
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetTitlesVisible(data.checked)}
                             defaultChecked={areTitlesVisible} />
                     </Field>
 
                     <Field label='Show music player'>
                         <Switch
-                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetMusicPlayerVisible(data.checked)}
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetMusicPlayerVisible(data.checked)}
                             defaultChecked={isMusicPlayerVisible}
                         />
                     </Field>
 
                     <Field label='Show typing controller'>
                         <Switch
-                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetTypingControllerVisible(data.checked)}
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetTypingControllerVisible(data.checked)}
                             defaultChecked={isTypingControllerVisible}
                         />
                     </Field>
                     <Field label="Show available construction">
                         <Switch
-                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAvailableConstructionVisible(data.checked)}
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAvailableConstructionVisible(data.checked)}
                             defaultChecked={isAvailableConstructionVisible}
                         />
                     </Field>
@@ -144,7 +144,7 @@ const GameMenu = (
                     </Field>
                     <Field label="Animate zooming">
                         <Switch
-                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAnimateZooming(data.checked)}
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAnimateZooming(data.checked)}
                             defaultChecked={isAnimateZoomingSet}
                         />
                     </Field>
@@ -175,7 +175,7 @@ const GameMenu = (
                             max={1.0}
                             step={0.1}
                             defaultValue={DEFAULT_VOLUME}
-                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
                                 sfx.setSoundEffectsVolume(data.value)
                             }} />
                     </Field>
@@ -186,20 +186,20 @@ const GameMenu = (
                             max={1.0}
                             step={0.1}
                             defaultValue={DEFAULT_VOLUME}
-                            onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
                                 onSetMusicVolume(data.value)
                             }} />
                     </Field>
 
                     <Field label="Depth">
                         <Slider
-                        min={0.0}
-                        max={30}
-                        step={0.5}
-                        defaultValue={DEFAULT_HEIGHT_ADJUSTMENT}
-                        onChange={(ev: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
-                            onSetHeightAdjust(data.value)
-                        }}
+                            min={0.0}
+                            max={30}
+                            step={0.5}
+                            defaultValue={DEFAULT_HEIGHT_ADJUSTMENT}
+                            onChange={(_event: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                                onSetHeightAdjust(data.value)
+                            }}
                         />
                     </Field>
 

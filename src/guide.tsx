@@ -8,7 +8,6 @@ interface GuideProps {
 }
 
 const Guide = ({ onClose }: GuideProps) => {
-
     const [pageNumber, setPageNumber] = useState<number>(0)
 
     const currentPage: PageType = HELP_PAGES[pageNumber]
@@ -38,7 +37,6 @@ interface PageProps {
 }
 
 const Page = ({ page }: PageProps) => {
-
     return (
         <div className="page">
 

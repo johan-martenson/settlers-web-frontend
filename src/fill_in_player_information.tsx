@@ -29,9 +29,7 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
                         <Label>Name</Label>
                         <Input type="text"
                             onChange={
-
-                                // eslint-disable-next-line
-                                (event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
+                                (_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
                                     setUserName(data.value)
                                 }
                             }

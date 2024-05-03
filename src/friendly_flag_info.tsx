@@ -13,7 +13,6 @@ interface FriendlyFlagInfoProps {
 }
 
 const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
-
     const nation = props.nation
 
     const onClose = props.onClose

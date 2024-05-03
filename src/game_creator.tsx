@@ -9,6 +9,9 @@ import ManagePlayers from './manage_players'
 import { WorkerIcon } from './icon'
 import { GameId, PlayerId, MapInformation, GameInformation, PlayerInformation, ResourceLevel } from './api/types'
 
+const DEFAULT_COLOR = 'RED'
+const DEFAULT_NATION = 'JAPANESE'
+
 interface GameCreatorProps {
     playerName: string
     onGameStarted: ((gameId: GameId, selfPlayerId: PlayerId) => void)
@@ -81,8 +84,8 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
             const game: GameInformation = await createGame(title, defaultMapId, [
                 {
                     name: playerName,
-                    color: 'RED',
-                    nation: "JAPANESE"
+                    color: DEFAULT_COLOR,
+                    nation: DEFAULT_NATION
                 }
             ])
 

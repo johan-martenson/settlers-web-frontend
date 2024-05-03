@@ -16,7 +16,6 @@ interface GameMessagesViewerProps {
 }
 
 const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
-
     const [expanded, setExpanded] = useState<boolean>(false)
     const [messages, setMessages] = useState<GameMessage[]>(Array.from(monitor.messages.values()))
     const [recentlyDeleted, setRecentlyDelected] = useState<Set<GameMessageId>>(new Set<GameMessageId>())
@@ -28,9 +27,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
     }
 
     useEffect(() => {
-
-        const messageReceiver = (receivedMessages: GameMessage[], removedMessages: GameMessageId[]) => {
-
+        const messageReceiver = (_receivedMessages: GameMessage[], removedMessages: GameMessageId[]) => {
             setMessages(Array.from(monitor.messages.values()))
 
             removedMessages.forEach(messageId => recentlyDeleted.delete(messageId))

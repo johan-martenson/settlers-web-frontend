@@ -2204,7 +2204,6 @@ function pointStringToPoint(pointString: string): Point {
 }
 
 async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSize: number): Promise<HTMLImageElement | undefined> {
-
     const terrainInformation = await getTerrainForMap(map.id)
 
     const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
@@ -2238,11 +2237,9 @@ async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSiz
     ctx.fill()
 
     terrain.forEach(pointTerrainInformation => {
-
         const point = pointTerrainInformation.point
 
         if (point.x % scaleDown === 0 && point.y % scaleDown === 0) {
-
             const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
             const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
 

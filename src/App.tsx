@@ -70,7 +70,6 @@ interface PauseSignProps {
 }
 
 const PauseSign = ({ message }: PauseSignProps) => {
-
     return (
         <div style={{
             position: "absolute",
@@ -142,7 +141,6 @@ interface AppState {
 }
 
 class App extends Component<AppProps, AppState> {
-
     private selfNameRef = React.createRef<HTMLDivElement>()
     private commands: Map<string, Command>
     monitoringPromise: Promise<void>
@@ -386,7 +384,7 @@ class App extends Component<AppProps, AppState> {
     }
 
     // eslint-disable-next-line
-    onMouseLeave(event: React.MouseEvent): void {
+    onMouseLeave(_event: React.MouseEvent): void {
         this.setState({ cursorState: 'NOTHING' })
 
         immediateUxState.mouseDown = false
@@ -395,10 +393,10 @@ class App extends Component<AppProps, AppState> {
 
     async componentDidMount(): Promise<void> {
         if (document.addEventListener) {
-            document.addEventListener('contextmenu', function (e) {
+            document.addEventListener('contextmenu', function (event) {
 
                 // Do nothing. The purpose is to make it possible to drag the screen with the right mouse button
-                e.preventDefault()
+                event.preventDefault()
             }, false)
         }
 
@@ -489,7 +487,7 @@ class App extends Component<AppProps, AppState> {
         this.commands.set("Remove (house, flag, or road)", {
             action: () => removeHouseOrFlagOrRoadAtPointWebsocket(this.state.selected, monitor),
             filter: (pointInformation: PointInformation) => pointInformation.is === 'building' &&
-            monitor.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
+                monitor.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
         })
         this.commands.set("Statistics", {
             action: () => this.setState({ showStatistics: true })
@@ -1008,7 +1006,6 @@ class App extends Component<AppProps, AppState> {
     }
 
     render(): JSX.Element {
-
         return (
             <div
                 className="App"

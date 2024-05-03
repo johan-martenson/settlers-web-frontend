@@ -131,7 +131,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
             <TabList
                 defaultSelectedValue={materialToManage}
                 onTabSelect={
-                    (event: SelectTabEvent, data: SelectTabData) => {
+                    (_event: SelectTabEvent, data: SelectTabData) => {
                         const value = data.value
 
                         if (value === 'COAL') {

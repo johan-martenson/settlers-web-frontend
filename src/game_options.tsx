@@ -15,7 +15,6 @@ OPTIONS.set("MEDIUM", "Medium")
 OPTIONS.set("HIGH", "Plenty")
 
 const GameOptions = ({ setAvailableResources, setOthersCanJoin }: GameOptionsProps) => {
-
     return (
         <div className="settings">
 
@@ -24,7 +23,7 @@ const GameOptions = ({ setAvailableResources, setOthersCanJoin }: GameOptionsPro
             <Field label="Allow others to join?">
                 <Switch
                     defaultChecked={true}
-                    onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => setOthersCanJoin(data.checked)}
+                    onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => setOthersCanJoin(data.checked)}
                 />
             </Field>
 
@@ -32,7 +31,7 @@ const GameOptions = ({ setAvailableResources, setOthersCanJoin }: GameOptionsPro
                 <Select
                     className="ResourceButtons"
                     onChange={
-                        (ev: ChangeEvent<HTMLSelectElement>, data: SelectOnChangeData) => {
+                        (_event: ChangeEvent<HTMLSelectElement>, data: SelectOnChangeData) => {
                             const value = data.value
 
                             console.log(data)

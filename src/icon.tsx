@@ -87,6 +87,7 @@ const WorkerIcon = (props: WorkerIconProps) => {
 
                 return
             }
+
             resizeCanvasToDisplaySize(canvas)
 
             context.clearRect(0, 0, canvas.width, canvas.height)

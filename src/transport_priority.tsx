@@ -84,10 +84,10 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTranspor
                 {priority.map(
                     (category, index) => {
                         const icon = <Tooltip content={category} relationship={'label'} withArrow>
-                            <div style={{ display: 'inline' }} onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-                                if (e.code === 'ArrowUp') {
+                            <div style={{ display: 'inline' }} onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+                                if (event.code === 'ArrowUp') {
                                     increasePriority(selected)
-                                } else if (e.code === 'ArrowDown') {
+                                } else if (event.code === 'ArrowDown') {
                                     decreasePriority(selected)
                                 }
                             }}

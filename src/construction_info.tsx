@@ -15,7 +15,6 @@ interface ConstructionInfoProps {
 }
 
 const ConstructionInfo = (props: ConstructionInfoProps) => {
-
     const nation = props.nation
     const onStartNewRoad = props.onStartNewRoad
     const onClose = props.onClose
@@ -72,7 +71,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                 <TabList
                     defaultSelectedValue={constructionInitialSelection}
                     onTabSelect={
-                        (event: SelectTabEvent, data: SelectTabData) => {
+                        (_event: SelectTabEvent, data: SelectTabData) => {
                             const value = data.value
 
                             if (value === "Buildings" || value === "FlagsAndRoads") {

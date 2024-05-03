@@ -195,49 +195,34 @@ const TypeControl = ({ commands, selectedPoint, gameId, playerId }: TypeControlP
 
             <div className="container-alternatives">
 
-                {Array.from(commands.entries()).map(
-                    ([commandName, command], index) => {
-                        let show = true
+                {expanded &&
+                    Array.from(commands.entries())
 
-                        if (command.filter && selectedPointInformation) {
-                            try {
-                                show = command.filter(selectedPointInformation)
-                            } catch (error) {
-                                show = false
-                            }
-                        }
-
-                        if (show && inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)) {
-
-                            return (
-                                <div key={index} className="alternative" onClick={() => {
-                                    commandChosen(commandName)
-                                    setInput("")
-                                }} >
-                                    <span>
-                                        <span className="MatchingPart">{commandName.substring(0, input.length)}</span>
-                                        <span className="RemainingPart">{commandName.substring(input.length, commandName.length)}</span>
-                                    </span>
-                                    {command.icon}
-                                </div>
-                            )
-                        } else if (show) {
-
-                            if (expanded) {
+                        // eslint-disable-next-line
+                        .filter(([_commandName, command]) => !command.filter || !selectedPointInformation || command.filter(selectedPointInformation))
+                        .map(
+                            ([commandName, command], index) => {
                                 return (
-                                    <div key={index} className="alternative" onClick={() => {
-                                        commandChosen(commandName)
-                                        setInput("")
-                                    }} >
+                                    <div
+                                        key={index}
+                                        className="alternative"
+                                        onClick={() => {
+                                            commandChosen(commandName)
+                                            setInput("")
+                                        }} >
+
+                                        {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch) &&
+                                            <span>
+                                                <span className="MatchingPart">{commandName.substring(0, input.length)}</span>
+                                                <span className="RemainingPart">{commandName.substring(input.length, commandName.length)}</span>
+                                            </span>
+                                        }
                                         {commandName} {command.icon}
                                     </div>
                                 )
                             }
-                        }
-
-                        return null
-                    }
-                )}
+                        )
+                }
             </div>
         </div>
     )

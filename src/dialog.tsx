@@ -18,7 +18,7 @@ function Dialog(props: DialogProps) {
     const closeLabel = props.closeLabel ? props.closeLabel : "Close"
 
     return (
-        <div className={className} id={props.id}>
+        <div className={className} id={props.id} onWheel={(event) => event.stopPropagation()}>
 
             <div>
                 {props.heading && <h1>{props.heading}</h1>}

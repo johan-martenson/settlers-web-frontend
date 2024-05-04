@@ -32,7 +32,7 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
     // TODO: show resources when upgrading. Show text "is upgrading..."
 
     return (
-        <div className="house-info">
+        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
 
             <h1>{house.type}</h1>
 

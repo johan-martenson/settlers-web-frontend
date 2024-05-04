@@ -21,7 +21,6 @@ interface MusicPlayerProps {
 type Mode = 'LOOP_SONG' | 'LOOP_LIST' | 'SHUFFLE_LIST'
 
 const MusicPlayer = ({ volume }: MusicPlayerProps) => {
-
     const [expanded, setExpanded] = useState<boolean>(false)
     const [playing, setPlaying] = useState<boolean>(false)
     const [songs, setSongs] = useState<SongAndTitle[]>([])
@@ -114,7 +113,7 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
     }
 
     return (
-        <div className="music-player">
+        <div className="music-player" onWheel={(event) => event.stopPropagation()}>
             <div> <b>Music</b></div>
 
             {playing && songs && expanded &&

@@ -108,7 +108,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
         [defenseStrength])
 
     return (
-        <div className="house-info">
+        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
 
             <h1>Headquarters</h1>
 

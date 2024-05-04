@@ -33,7 +33,7 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
         }, [])
 
     return (
-        <div className='friendly-flag-info'>
+        <div className='friendly-flag-info' onWheel={(event) => event.stopPropagation()}>
             <h1>Flag</h1>
 
             <div className="flag-information">

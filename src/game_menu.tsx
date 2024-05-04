@@ -64,7 +64,7 @@ const GameMenu = (
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
 
     return (
-        <Drawer type='overlay' separator open={isOpen} onOpenChange={() => onClose()}>
+        <Drawer type='overlay' separator open={isOpen} onOpenChange={() => onClose()} onWheel={(event) => event.stopPropagation()}>
             <DrawerHeader>
                 <DrawerHeaderTitle action={<Button appearance="subtle" aria-label="Close" icon={<Dismiss24Regular />} onClick={() => onClose()} />} >
                     Menu

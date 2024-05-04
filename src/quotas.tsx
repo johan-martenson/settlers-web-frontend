@@ -124,7 +124,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     }, [armoryIronBarAmount, metalworksIronBarAmount])
 
     return (
-        <div className="quotas-window">
+        <div className="quotas-window" onWheel={(event) => event.stopPropagation()}>
 
             <h1>Quotas</h1>
 

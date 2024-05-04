@@ -194,7 +194,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
     }
 
     return (
-        <div className="type-control">
+        <div className="type-control" onWheel={(event) => event.stopPropagation()}>
 
             <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} />
             <div className={className}>{input}</div>

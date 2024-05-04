@@ -37,7 +37,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
     }, [playerId])
 
     return (
-        <div className="game-messages">
+        <div className="game-messages" onWheel={(event) => event.stopPropagation()}>
 
             <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} />
             <div> <b>Messages</b></div>

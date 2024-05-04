@@ -84,7 +84,7 @@ interface PlannedHouseInfoProps {
 
 const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose }: PlannedHouseInfoProps) => {
     return (
-        <div className="house-info">
+        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
 
             <h1>Planned {house.type}</h1>
 
@@ -113,7 +113,7 @@ interface EnemyHouseInfoProps {
 
 const EnemyHouseInfo = ({ house, nation, onClose }: EnemyHouseInfoProps) => {
     return (
-        <div className="house-info">
+        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
 
             <h1>Enemy building: {house.type}</h1>
 
@@ -140,7 +140,7 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }
     const availableAttackers = house.availableAttackers ?? 0
 
     return (
-        <div className="house-info">
+        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
 
             <h1>Military enemy building: {house.type}</h1>
 
@@ -189,7 +189,7 @@ interface UnfinishedHouseInfo {
 
 const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: UnfinishedHouseInfo) => {
     return (
-        <div className="house-info">
+        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
 
             <h1>{house.type}</h1>
 
@@ -255,7 +255,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
     const producedMaterial = house.produces
 
     return (
-        <div className="house-info">
+        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
 
             <h1>{house.type}</h1>
 

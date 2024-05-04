@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { FlagInformation, Nation } from './api/types'
 import './friendly_flag_info.css'
 import { monitor } from './api/ws-api'
-import { Button, Field } from '@fluentui/react-components'
+import { Button, Field, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, InventoryIcon, UiIcon } from './icon'
 
 interface FriendlyFlagInfoProps {
@@ -62,35 +62,37 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                         }
                     >Build road</Button>
 
-                    <Button
-                        onClick={
-                            async () => {
-                                monitor.callGeologist(flag)
+                    <Tooltip content={"Call geologist"} relationship='label' withArrow>
+                        <Button
+                            onClick={
+                                async () => {
+                                    monitor.callGeologist(flag)
 
-                                onClose()
+                                    onClose()
+                                }
                             }
-                        }
-                    >
-                        <div className='friendly-flag-info-button-icon-and-label'>
-                            <UiIcon type='GEOLOGIST' />
-                            Call geologist
-                        </div>
-                    </Button>
+                        >
+                            <div className='friendly-flag-info-button-icon-and-label'>
+                                <UiIcon type='GEOLOGIST' />
+                            </div>
+                        </Button>
+                    </Tooltip>
 
-                    <Button
-                        onClick={
-                            async () => {
-                                monitor.callScout(flag)
+                    <Tooltip content={"Call geologist"} relationship='label' withArrow>
+                        <Button
+                            onClick={
+                                async () => {
+                                    monitor.callScout(flag)
 
-                                onClose()
+                                    onClose()
+                                }
                             }
-                        }
-                    >
-                        <div className='friendly-flag-info-button-icon-and-label'>
-                            <InventoryIcon material='SCOUT' nation={nation} />
-                            Send scout
-                        </div>
-                    </Button>
+                        >
+                            <div className='friendly-flag-info-button-icon-and-label'>
+                                <InventoryIcon material='SCOUT' nation={nation} />
+                            </div>
+                        </Button>
+                    </Tooltip>
                 </div>
 
                 {flag.stackedCargo &&

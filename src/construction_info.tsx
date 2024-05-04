@@ -4,7 +4,7 @@ import './construction_info.css'
 import { Dialog, DialogSection } from './dialog'
 import { monitor } from './api/ws-api'
 import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag, canRemoveRoad } from './utils'
-import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
+import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon, UiIcon } from './icon'
 
 interface ConstructionInfoProps {
@@ -20,7 +20,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
     const onClose = props.onClose
 
     const [point, setPoint] = useState<PointInformation>(props.point)
-    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads' )
+    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads')
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<'small' | 'medium' | 'large'>('small')
 
     const constructionOptions = new Map()
@@ -162,11 +162,9 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                     <DialogSection>
                         <div className="house-construction-buttons">
                             {SMALL_HOUSES.map(
-                                (house) => {
-
-                                    return (
+                                (house) =>
+                                    <Tooltip content={camelCaseToWords(house)} relationship='label' withArrow key={house}>
                                         <Button className="ConstructionItem"
-                                            key={house}
                                             onClick={
                                                 async () => {
                                                     console.info("Creating house")
@@ -178,11 +176,10 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                                         >
                                             <div className='house-construction-button'>
                                                 <HouseIcon nation={nation} houseType={house} drawShadow />
-                                                {camelCaseToWords(house)}
                                             </div>
                                         </Button>
-                                    )
-                                })
+                                    </Tooltip>
+                            )
                             }
                         </div>
                     </DialogSection>
@@ -194,11 +191,9 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                     <DialogSection>
                         <div className="house-construction-buttons">
                             {MEDIUM_HOUSES.map(
-                                (house) => {
-
-                                    return (
+                                (house) =>
+                                    <Tooltip content={camelCaseToWords(house)} relationship='label' withArrow key={house}>
                                         <Button className="ConstructionItem"
-                                            key={house}
                                             onClick={
                                                 async () => {
                                                     console.info("Creating house")
@@ -210,11 +205,10 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                                         >
                                             <div className='house-construction-button'>
                                                 <HouseIcon nation={nation} houseType={house} drawShadow />
-                                                {camelCaseToWords(house)}
                                             </div>
                                         </Button>
-                                    )
-                                })
+                                    </Tooltip>
+                            )
                             }
                         </div>
                     </DialogSection>
@@ -227,22 +221,22 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                         <div className="house-construction-buttons">
                             {LARGE_HOUSES.filter(house => house !== 'Headquarter').map(
                                 (house) =>
-                                    <Button className="ConstructionItem"
-                                        key={house}
-                                        onClick={
-                                            async () => {
-                                                console.info("Creating house")
-                                                monitor.placeHouse(house, point)
+                                    <Tooltip content={camelCaseToWords(house)} relationship='label' withArrow key={house}>
+                                        <Button className="ConstructionItem"
+                                            onClick={
+                                                async () => {
+                                                    console.info("Creating house")
+                                                    monitor.placeHouse(house, point)
 
-                                                onClose()
+                                                    onClose()
+                                                }
                                             }
-                                        }
-                                    >
-                                        <div className='house-construction-button'>
-                                            <HouseIcon nation={nation} houseType={house} drawShadow />
-                                            {camelCaseToWords(house)}
-                                        </div>
-                                    </Button>
+                                        >
+                                            <div className='house-construction-button'>
+                                                <HouseIcon nation={nation} houseType={house} drawShadow />
+                                            </div>
+                                        </Button>
+                                    </Tooltip>
                             )
                             }
                         </div>

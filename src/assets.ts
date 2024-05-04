@@ -436,7 +436,6 @@ class FlagImageAtlasHandler {
         const drawingInfo = this.getDrawingInformationFor(nation, 'BLUE', flagType, 0)
 
         if (drawingInfo) {
-
             return {
                 width: drawingInfo[0].width,
                 height: drawingInfo[0].height
@@ -445,6 +444,20 @@ class FlagImageAtlasHandler {
         }
 
         return undefined
+    }
+
+    getSizeWithShadow(nation: Nation, flagType: FlagType): Dimension | undefined {
+        const draw = this.getDrawingInformationFor(nation, 'BLUE', flagType, 0)
+
+        if (draw) {
+            return {
+                width: Math.max(draw[0].offsetX, draw[1].offsetX) + Math.max(draw[0].width - draw[0].offsetX, draw[1].width - draw[1].offsetX),
+                height: Math.max(draw[0].offsetY, draw[1].offsetY) + Math.max(draw[0].height - draw[0].offsetY, draw[1].height - draw[1].offsetY),
+            }
+        }
+
+        return undefined
+
     }
 
     getImage(): HTMLImageElement | undefined {
@@ -472,6 +485,10 @@ class FlagAnimation {
 
     getAnimationFrame(nation: Nation, color: PlayerColor, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
         return this.imageAtlasHandler.getDrawingInformationFor(nation, color, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
+    }
+
+    getSizeWithShadow(nation: Nation, flagType: FlagType): Dimension | undefined {
+        return this.imageAtlasHandler.getSizeWithShadow(nation, flagType)
     }
 
     getSize(nation: Nation, flagType: FlagType): Dimension | undefined {

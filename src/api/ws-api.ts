@@ -5,6 +5,8 @@ import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, P
 
 let gameTickLength = 200;
 
+const MAX_WAIT_FOR_REPLY = 1000; // milliseconds
+
 interface MonitoredBorderForPlayer {
     color: PlayerColor
     nation: Nation
@@ -2121,12 +2123,21 @@ function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command: stri
 
     console.log(`Send request: ${command} with id: ${requestId}`)
 
+    const timestampSent = (new Date()).getTime()
+
     // eslint-disable-next-line
     return new Promise((result, reject) => {
         const timer = setInterval(() => {
+            const timestampSawReply = (new Date()).getTime()
+
+            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
+                clearInterval(timer)
+            }
+
             const reply = replies.get(requestId)
 
             if (!reply) {
+
                 return
             }
 
@@ -2134,10 +2145,10 @@ function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command: stri
 
             clearInterval(timer)
 
-            console.log(`Got reply: ${JSON.stringify(reply)}`)
+            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
 
             result(reply as ReplyType)
-        }, 10)
+        }, 5)
     })
 }
 
@@ -2153,12 +2164,21 @@ function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyTy
 
     console.log(`Send request: ${command} with id: ${requestId}`)
 
+    const timestampSent = (new Date()).getTime()
+
     // eslint-disable-next-line
     return new Promise((result, reject) => {
         const timer = setInterval(() => {
+            const timestampSawReply = (new Date()).getTime()
+
+            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
+                clearInterval(timer)
+            }
+
             const reply = replies.get(requestId)
 
             if (!reply) {
+
                 return
             }
 
@@ -2166,10 +2186,10 @@ function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyTy
 
             clearInterval(timer)
 
-            console.log(`Got reply: ${JSON.stringify(reply)}`)
+            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
 
             result(reply as ReplyType)
-        }, 10)
+        }, 5)
     })
 }
 

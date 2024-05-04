@@ -23,11 +23,10 @@ Todo
 20. Missed discovered land up-right from new guard house
 21. Workers should walk slower up-hill and faster down-hill
 22. Fix NullPointerException that happens after playing for a long time
-23. Fix scroll event that "leaks through" from overlaid div to game render
-24. With guard house, new owned land is larger than discovered land. Reload fixes it
-25. A decoration with a small patch of grass has the wrong shadow - a portal shadow
-26. Wild animals walk in place
-27. Frontend sometimes freezes even if the backend is still running
+23. With guard house, new owned land is larger than discovered land. Reload fixes it
+24. Wild animals walk in place
+25. Frontend sometimes freezes even if the backend is still running
+26. Houses should have their doors open and close
 
 
 
@@ -65,3 +64,5 @@ Done
 12. Add remaining gravel after a stone has been fully removed as a decoration
 19. After the fat courier chews gum it remains frozen in the last frame of the animation
 24. (Japanese) buildings seem to have either wrong under-construction images or they are drawn with the wrong offset
+25. A decoration with a small patch of grass has the wrong shadow - a portal shadow
+23. Fix scroll event that "leaks through" from overlaid div to game render

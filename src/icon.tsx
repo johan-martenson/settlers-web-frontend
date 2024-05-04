@@ -257,6 +257,7 @@ const InventoryIcon = (props: InventoryIconProps) => {
     return (<div className="inventory-icon" style={{ display: displayStyle, opacity: transparency }} >
         <img
             src={url}
+            draggable={false}
             onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
                 const img = event.target as HTMLImageElement
 
@@ -370,6 +371,7 @@ interface FlagIconProps {
     nation: Nation
     scale?: number
     color?: PlayerColor
+    drawShadow?: boolean
 }
 
 const FlagIcon = (props: FlagIconProps) => {
@@ -378,6 +380,7 @@ const FlagIcon = (props: FlagIconProps) => {
     const nation = props.nation
     const scale = props.scale ?? 1
     const color = props.color ?? 'BLUE'
+    const drawShadow = props.drawShadow ?? false
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
     const [animationIndex, setAnimationIndex] = useState<number>(0)
@@ -404,7 +407,7 @@ const FlagIcon = (props: FlagIconProps) => {
             })().then(() => {
                 setAnimationHandler(flagAnimations)
 
-                const dimension = flagAnimations.getSize(nation, type)
+                const dimension = drawShadow ? flagAnimations.getSizeWithShadow(nation, type) : flagAnimations.getSize(nation, type)
 
                 if (dimension) {
                     setDimension(dimension)
@@ -457,23 +460,36 @@ const FlagIcon = (props: FlagIconProps) => {
             }
 
             const draw = drawArray[0]
+            const shadow = drawArray[1]
 
             const width = draw.width * scale
             const height = draw.height * scale
 
-            canvas.width = width
-            canvas.height = height
-
             // Clear the background
-            context.clearRect(0, 0, width, height)
+            context.clearRect(0, 0, dimension.width * scale, dimension.height * scale)
 
             // Write the image data
             if (sourceImage) {
+                if (drawShadow) {
+                    context.drawImage(
+                        sourceImage,
+                        shadow.sourceX, shadow.sourceY,
+                        shadow.width, shadow.height,
+                        (draw.offsetX - shadow.offsetX) * scale, (draw.offsetY - shadow.offsetY) * scale,
+                        shadow.width * scale, shadow.height * scale)
+                }
+
+                context.globalCompositeOperation = "source-in"
+
+                context.fillStyle = SHADOW_COLOR
+                context.fillRect((draw.offsetX - shadow.offsetX) * scale, (draw.offsetY - shadow.offsetY) * scale, shadow.width * scale, shadow.height * scale)
+                context.globalCompositeOperation = "source-over"
+
                 context.drawImage(sourceImage, draw.sourceX, draw.sourceY, draw.width, draw.height, 0, 0, width, height)
             }
         })().then()
 
-    }, [animationIndex, animate, type, nation, scale, animationHandler, sourceImage])
+    }, [animationIndex, animate, type, nation, scale, animationHandler, sourceImage, drawShadow])
 
     return <canvas
         ref={canvasRef}

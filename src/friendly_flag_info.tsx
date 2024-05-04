@@ -38,7 +38,7 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
 
             <div className="flag-information">
 
-                <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate/>
+                <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate drawShadow />
 
                 <div className="button-row">
 

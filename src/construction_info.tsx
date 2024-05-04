@@ -143,7 +143,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                     <TabList
                         defaultSelectedValue={"small"}
                         onTabSelect={
-                            (event: SelectTabEvent, data: SelectTabData) => {
+                            (_event: SelectTabEvent, data: SelectTabData) => {
                                 const value = data.value
                                 if (value === "small" || value === "medium" || value === "large") {
                                     setBuildingSizeSelected(value)
@@ -177,7 +177,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                                             }
                                         >
                                             <div className='house-construction-button'>
-                                                <HouseIcon nation={nation} houseType={house} />
+                                                <HouseIcon nation={nation} houseType={house} drawShadow />
                                                 {camelCaseToWords(house)}
                                             </div>
                                         </Button>
@@ -209,7 +209,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                                             }
                                         >
                                             <div className='house-construction-button'>
-                                                <HouseIcon nation={nation} houseType={house} />
+                                                <HouseIcon nation={nation} houseType={house} drawShadow />
                                                 {camelCaseToWords(house)}
                                             </div>
                                         </Button>
@@ -239,7 +239,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                                         }
                                     >
                                         <div className='house-construction-button'>
-                                            <HouseIcon nation={nation} houseType={house} />
+                                            <HouseIcon nation={nation} houseType={house} drawShadow />
                                             {camelCaseToWords(house)}
                                         </div>
                                     </Button>

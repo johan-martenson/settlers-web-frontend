@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType } from './api/types'
+import { Direction, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType, TerrainAtPoint, SNOW_TEXTURE } from './api/types'
 import { Duration } from './duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from './api/ws-api'
@@ -15,6 +15,12 @@ import { immediateUxState } from './App'
 export const DEFAULT_SCALE = 35.0
 export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
 export const STANDARD_HEIGHT = 10.0
+
+const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
+const NORMAL_STRAIGHT_UP_AS_LIST = [0, 0, 1]
+
+const SNOW_TRANSITION_TEXTURE_MAPPING = [192, 176, 255, 176, 225, 191].map(v => v / 255.0)
+const OVERLAP_FACTOR = (16.0 / 47.0)
 
 export interface ScreenPoint {
     x: number
@@ -499,7 +505,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             if (this.gl && this.drawGroundProgram) {
                 if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
 
-                    const mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                    const mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
                     this.mapRenderInformation = mapRenderInformation
 
@@ -530,7 +536,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         console.log("Subscribed to changes in roads")
 
         /* Put together the render information from the discovered tiles */
-        this.mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+        this.mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
         /*  Initialize webgl2 */
         if (this.normalCanvasRef?.current) {
@@ -951,7 +957,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Configure the drawing context
             gl.enable(gl.BLEND)
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
             // Set the constants
             gl.uniform1f(this.drawGroundScreenWidthUniformLocation, width)
@@ -2591,143 +2597,237 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         )
     }
 
-    prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>): MapRenderInformation {
-
-        // Count number of triangles per type of terrain and create a list of triangle information for each terrain
+    prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>, allTiles: PointMapFast<TerrainAtPoint>): MapRenderInformation {
         const coordinates: number[] = []
         const normals: number[] = []
         const textureMapping: number[] = []
 
+        const transitionCoordinates: number[] = []
+        const transitionNormals: number[] = []
+        const transitionTextureMapping: number[] = []
+
         tilesBelow.forEach(tileBelow => {
             const point = tileBelow.pointAbove
+            const pointRight = getPointRight(point)
+            const pointLeft = getPointLeft(point)
             const pointDownLeft = getPointDownLeft(point)
             const pointDownRight = getPointDownRight(point)
+            const pointDown = getPointDown(point)
 
-            const normal = this.normals.get(point)
-            const normalDownLeft = this.normals.get(pointDownLeft)
-            const normalDownRight = this.normals.get(pointDownRight)
+            const triangleBelow = [point, pointDownLeft, pointDownRight]
 
             const terrainBelow = tileBelow.vegetation
 
             if (VEGETATION_INTEGERS.indexOf(terrainBelow) === -1) {
-                console.log("UNKNOWN TERRAIN: " + terrainBelow)
+                console.error("UNKNOWN TERRAIN: " + terrainBelow)
             }
 
             // Add the coordinates for each triangle to the coordinates buffer
-            Array.prototype.push.apply(
-                coordinates,
-                [
-                    point.x, point.y, tileBelow.heightAbove,
-                    pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
-                    pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight
-                ])
+            triangleBelow.forEach(point => Array.prototype.push.apply(coordinates, [point.x, point.y, allTiles.get(point)?.height ?? 0]))
 
-            // Add the normal for each triangle to the normals buffer
-            if (normal !== undefined && normalDownLeft !== undefined && normalDownRight !== undefined) {
-                Array.prototype.push.apply(
-                    normals,
-                    [
-                        normal.x, normal.y, normal.z,
-                        normalDownLeft.x, normalDownLeft.y, normalDownLeft.z,
-                        normalDownRight.x, normalDownRight.y, normalDownRight.z
-                    ])
+            // Add the normals
+            triangleBelow
+                .map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
+                .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
 
-                // Place dummy normals
-            } else {
-                Array.prototype.push.apply(
-                    normals,
-                    [
-                        0, 0, 1,
-                        0, 0, 1,
-                        0, 0, 1,
-                    ])
-            }
+            Array.prototype.push.apply(textureMapping, vegetationToTextureMapping.get(terrainBelow)?.below ?? [0, 0, 0.5, 1, 1, 0])
 
-            // Add the texture mapping
-            //    --  Texture coordinates go from 0, 0 to 1, 1.
-            //    --  To map to pixel coordinates:
-            //            texcoordX = pixelCoordX / (width  - 1)
-            //            texcoordY = pixelCoordY / (height - 1)
-            const textureMappingToAdd = vegetationToTextureMapping.get(terrainBelow)?.below
+            // Add a transition triangle to make the border between two textures nicer
+            if (terrainBelow === SNOW_TEXTURE) {
+                const terrainAtDownLeft = allTiles.get(pointDownLeft)
+                const terrainAtDown = allTiles.get(pointDown)
+                const terrain = allTiles.get(point)
+                const terrainLeft = allTiles.get(pointLeft)
 
-            if (textureMappingToAdd !== undefined) {
-                Array.prototype.push.apply(textureMapping, textureMappingToAdd)
-            } else {
-                console.error("No matching texture mapping for " + terrainBelow)
+                // Transition below
+                if (terrainAtDownLeft && terrainAtDownLeft.downRight !== SNOW_TEXTURE && terrainAtDown) {
+                    const baseHeight = (tileBelow.heightDownLeft + tileBelow.heightDownRight) / 2
+                    const downHeight = terrainAtDown.height
 
-                Array.prototype.push.apply(textureMapping, [0, 0, 0.5, 1, 1, 0]) // Place dummy texture mapping
+                    // Add coordinates
+                    Array.prototype.push.apply(
+                        transitionCoordinates,
+                        [
+                            pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
+                            pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
+                            pointDown.x, pointDownLeft.y - 0.25, baseHeight + (downHeight - baseHeight) * 0.25
+                        ]
+                    )
+
+                    // Add texture mapping
+                    Array.prototype.push.apply(transitionTextureMapping, SNOW_TRANSITION_TEXTURE_MAPPING)
+
+                    // Add normals
+                    const points = [pointDownLeft, pointDownRight, pointDown]
+
+                    // TODO: interpolate the normal
+                    points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                        normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+                    )
+                }
+
+                // Transition up-right
+                if (terrain && terrain.downRight !== SNOW_TEXTURE) {
+                    const baseHeight = (tileBelow.heightAbove + tileBelow.heightDownRight) / 2
+                    const base = { x: (point.x + pointDownRight.x) / 2, y: (point.y + pointDownRight.y) / 2 }
+                    const heightRight = allTiles.get(pointRight)?.height ?? 0
+
+                    // Add coordinates
+                    Array.prototype.push.apply(
+                        transitionCoordinates,
+                        [
+                            point.x, point.y, tileBelow.heightAbove,
+                            pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
+                            base.x + (pointRight.x - base.x) * OVERLAP_FACTOR, base.y + (pointRight.y - base.y) * OVERLAP_FACTOR, baseHeight + (heightRight - baseHeight) * OVERLAP_FACTOR
+                        ])
+
+                    // Add texture mapping
+                    Array.prototype.push.apply(transitionTextureMapping, SNOW_TRANSITION_TEXTURE_MAPPING)
+
+                    // Add normals
+                    const points = [point, pointDownRight, pointRight]
+
+                    // TODO: interpolate the normal
+                    points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                        normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+                    )
+                }
+
+                // Transition up-left
+                if (terrainLeft && terrainLeft.downRight !== SNOW_TEXTURE) {
+                    const baseHeight = (tileBelow.heightDownLeft, tileBelow.heightAbove) / 2
+                    const base = { x: (point.x + pointDownLeft.x) / 2, y: (point.y + pointDownLeft.y) / 2 }
+                    const heightLeft = terrainLeft.height
+
+                    Array.prototype.push.apply(
+                        transitionCoordinates,
+                        [
+                            point.x, point.y, tileBelow.heightAbove,
+                            pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
+                            base.x + (pointLeft.x - base.x) * 0.7, base.y + (pointLeft.y - base.y) * 0.7, baseHeight + (heightLeft - baseHeight) * 0.7
+                        ])
+
+                    // Add texture mapping
+                    Array.prototype.push.apply(transitionTextureMapping, SNOW_TRANSITION_TEXTURE_MAPPING)
+
+                    // Add normals
+                    //const points = [point, pointDownLeft, pointLeft]
+                    const points = [point, pointDownLeft, pointLeft]
+
+                    // TODO: interpolate the normal
+                    points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                        normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+                    )
+                }
             }
         })
 
 
         tilesDownRight.forEach(tile => {
             const point = tile.pointLeft
-            const pointDownRight = getPointDownRight(point)
+            const pointUpRight = getPointUpRight(point)
             const pointRight = getPointRight(point)
+            const pointDownRight = getPointDownRight(point)
+            const pointDownLeft = getPointDownLeft(point)
+            const pointRightDownRight = getPointDownRight(getPointRight(point))
 
-            const normal = this.normals.get(point)
-            const normalDownRight = this.normals.get(pointDownRight)
-            const normalRight = this.normals.get(pointRight)
+            const triangleDownRight = [point, pointDownRight, pointRight]
 
             const terrainDownRight = tile.vegetation
+            const terrainBelow = allTiles.get(point)
+            const terrainUpRight = allTiles.get(pointUpRight)
+            const terrainRight = allTiles.get(pointRight)
 
             if (VEGETATION_INTEGERS.indexOf(terrainDownRight) === -1) {
                 console.log("UNKNOWN TERRAIN: " + terrainDownRight)
             }
 
             // Add the coordinates for each triangle to the coordinates buffer
-            Array.prototype.push.apply(
-                coordinates,
-                [
-                    point.x, point.y, tile.heightLeft,
-                    pointDownRight.x, pointDownRight.y, tile.heightDown,
-                    pointRight.x, pointRight.y, tile.heightRight
-                ]
-            )
+            triangleDownRight.forEach(point => Array.prototype.push.apply(coordinates, [point.x, point.y, allTiles.get(point)?.height ?? 0]))
 
             // Add the normals for each triangle to the normals buffer
-            if (normal !== undefined && normalDownRight !== undefined && normalRight !== undefined) {
-                Array.prototype.push.apply(
-                    normals,
-                    [
-                        normal.x, normal.y, normal.z,
-                        normalDownRight.x, normalDownRight.y, normalDownRight.z,
-                        normalRight.x, normalRight.y, normalRight.z
-                    ]
-                )
-            } else {
-
-                // Place dummy normals
-                Array.prototype.push.apply(
-                    normals,
-                    [
-                        0, 0, 1,
-                        0, 0, 1,
-                        0, 0, 1,
-                    ]
-                )
-            }
+            triangleDownRight
+                .map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
+                .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
 
             // Add the texture mapping for the triangles
-            //    --  Texture coordinates go from 0, 0 to 1, 1.
-            //    --  To map to pixel coordinates:
-            //            texcoordX = pixelCoordX / (width  - 1)
-            //            texcoordY = pixelCoordY / (height - 1)
-            const textureMappingToAdd = vegetationToTextureMapping.get(terrainDownRight)?.downRight
+            Array.prototype.push.apply(textureMapping, vegetationToTextureMapping.get(terrainDownRight)?.downRight ?? [0, 1, 0.5, 0, 1, 1])
 
-            if (textureMappingToAdd !== undefined) {
-                Array.prototype.push.apply(textureMapping, textureMappingToAdd)
-            } else {
-                console.error("No matching texture mapping for " + terrainDownRight)
+            // Add transitions
+            if (terrainDownRight === SNOW_TEXTURE) {
 
-                Array.prototype.push.apply(textureMapping, [0, 1, 0.5, 0, 1, 1]) // Place dummy texture mapping
+                // Triangle below on the left
+                if (terrainBelow && terrainBelow.below !== SNOW_TEXTURE) {
+                    const baseHeight = (tile.heightLeft, tile.heightDown) / 2
+                    const base = { x: (point.x + pointDownRight.x) / 2, y: (point.y + pointDownRight.y) / 2 }
+
+                    Array.prototype.push.apply(transitionCoordinates,
+                        [
+                            pointDownRight.x, pointDownRight.y, tile.heightDown,
+                            point.x, point.y, tile.heightLeft,
+                            base.x + (pointDownLeft.x - base.x) * OVERLAP_FACTOR, base.y + (pointDownLeft.y - base.y) * OVERLAP_FACTOR, baseHeight + (allTiles.get(pointDownLeft)?.height ?? 0 - baseHeight) * OVERLAP_FACTOR
+                        ])
+
+                    Array.prototype.push.apply(transitionTextureMapping, SNOW_TRANSITION_TEXTURE_MAPPING)
+
+                    const points = [pointDownRight, point, pointDownLeft]
+
+                    points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                        normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+                    )
+                }
+
+                // Triangle above
+                if (terrainUpRight && terrainUpRight.below !== SNOW_TEXTURE) {
+                    const baseHeight = (tile.heightLeft, tile.heightRight) / 2
+                    const heightUp = allTiles.get(pointUpRight)?.height ?? 0
+
+                    Array.prototype.push.apply(transitionCoordinates,
+                        [
+                            point.x, point.y, tile.heightLeft,
+                            pointRight.x, pointRight.y, tile.heightRight,
+                            point.x + 1, point.y + 0.8, baseHeight + (heightUp - baseHeight) * 0.8
+                        ]
+                    )
+
+                    Array.prototype.push.apply(transitionTextureMapping, SNOW_TRANSITION_TEXTURE_MAPPING)
+
+                    const points = [point, pointRight, pointUpRight]
+
+                    points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                        normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+                    )
+                }
+
+                // Triangle below on the right
+                if (terrainRight && terrainRight.below !== SNOW_TEXTURE) {
+                    const baseHeight = (tile.heightRight + tile.heightDown) / 2
+                    const base = {x: (pointRight.x + pointDownRight.x) / 2, y: (pointRight.y + pointDownRight.y) / 2}
+                    const heightRightDownRight = allTiles.get(pointRightDownRight)?.height ?? 0
+
+                    Array.prototype.push.apply(transitionCoordinates,
+                        [
+                            pointRight.x, pointRight.y, tile.heightRight,
+                            pointDownRight.x, pointDownRight.y, tile.heightDown,
+                            base.x + (pointRightDownRight.x - base.x) * 0.4, base.y + (pointRightDownRight.y - base.y) * 0.4, baseHeight + (heightRightDownRight - baseHeight) * 0.4
+                        ]
+                    )
+
+                    Array.prototype.push.apply(transitionTextureMapping, SNOW_TRANSITION_TEXTURE_MAPPING)
+
+                    const points = [pointRight, pointDownRight, pointRightDownRight]
+
+                    points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                        normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+                    )
+                }
             }
         })
 
         return {
-            coordinates: coordinates,
-            normals: normals,
-            textureMapping: textureMapping
+            coordinates: coordinates.concat(transitionCoordinates),
+            normals: normals.concat(transitionNormals),
+            textureMapping: textureMapping.concat(transitionTextureMapping)
         }
     }
 

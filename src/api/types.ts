@@ -259,7 +259,31 @@ export type VegetationIntegers = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11
 
 const VEGETATION_INTEGERS: VegetationIntegers[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
 
+export const SAVANNAH = 0
+export const MOUNTAIN_1 = 1
 export const SNOW_TEXTURE = 2
+export const SWAMP = 3
+export const DESERT_1 = 4
+export const WATER_1 = 5
+export const BUILDABLE_WATER = 6
+export const DESERT_2 = 7
+export const MEADOW_1 = 8
+export const MEADOW_2 = 9
+export const MEADOW_3 = 10
+export const MOUNTAIN_2 = 11
+export const MOUNTAIN_3 = 12
+export const MOUNTAIN_4 = 13
+export const STEPPE = 14
+export const FLOWER_MEADOW = 15
+export const LAVA_1 = 16
+export const MAGENTA = 17
+export const MOUNTAIN_MEADOW = 18
+export const WATER_2 = 19
+export const LAVA_2 = 20
+export const LAVA_3 = 21
+export const LAVA_4 = 22
+export const BUILDABLE_MOUNTAIN = 23
+
 
 export interface TerrainAtPoint {
     point: Point

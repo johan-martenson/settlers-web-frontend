@@ -5,7 +5,7 @@
   "dependencies": {
     "@fluentui/react-components": "^9.49.2",
     "@testing-library/jest-dom": "^6.4.3",
-    "@testing-library/react": "^15.0.6",
+    "@testing-library/react": "^15.0.7",
     "@testing-library/user-event": "^14.5.2",
     "@types/d3": "^7.4.3",
     "@types/jest": "^29.5.12",

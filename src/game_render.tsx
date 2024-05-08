@@ -1,12 +1,12 @@
 import React, { Component } from 'react'
-import { Direction, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, WorkerType, TerrainAtPoint, SNOW_TEXTURE as SNOW, SAVANNAH, BUILDABLE_WATER, DESERT_1, DESERT_2, MEADOW_1, MEADOW_2, MEADOW_3, MOUNTAIN_1, MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, SWAMP, WATER_1, BUILDABLE_MOUNTAIN, FLOWER_MEADOW, LAVA_1, LAVA_2, LAVA_3, LAVA_4, MAGENTA, MOUNTAIN_MEADOW, STEPPE, WATER_2 } from './api/types'
+import { Direction, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, TerrainAtPoint, SNOW_TEXTURE as SNOW, SAVANNAH, BUILDABLE_WATER, DESERT_1, DESERT_2, MEADOW_1, MEADOW_2, MEADOW_3, MOUNTAIN_1, MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, SWAMP, WATER_1, BUILDABLE_MOUNTAIN, FLOWER_MEADOW, LAVA_1, LAVA_2, LAVA_3, LAVA_4, MAGENTA, MOUNTAIN_MEADOW, STEPPE, WATER_2 } from './api/types'
 import { Duration } from './duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from './api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
 import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUp, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
-import { flagAnimations, houses, uiElementsImageAtlasHandler } from './assets'
+import { flagAnimations, houses, uiElementsImageAtlasHandler, workers } from './assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from './shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
@@ -100,11 +100,11 @@ const TRANSITION_TEXTURE_MAPPINGS: Map<VegetationIntegers, number[]> = new Map()
 OVERLAPS.set(SNOW, new Set([SAVANNAH, MOUNTAIN_1, SWAMP, DESERT_1, WATER_1, BUILDABLE_WATER, DESERT_2, MEADOW_1, MEADOW_2, MEADOW_3,
     MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, STEPPE, FLOWER_MEADOW, LAVA_1, MAGENTA, MOUNTAIN_MEADOW, WATER_2, LAVA_2, LAVA_3, LAVA_4, BUILDABLE_MOUNTAIN]))
 
-OVERLAPS.set(MOUNTAIN_1, new Set([FLOWER_MEADOW]))
-OVERLAPS.set(MOUNTAIN_2, new Set([FLOWER_MEADOW]))
-OVERLAPS.set(MOUNTAIN_3, new Set([FLOWER_MEADOW]))
-OVERLAPS.set(MOUNTAIN_4, new Set([FLOWER_MEADOW]))
-OVERLAPS.set(BUILDABLE_MOUNTAIN, new Set([FLOWER_MEADOW]))
+OVERLAPS.set(MOUNTAIN_1, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
+OVERLAPS.set(MOUNTAIN_2, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
+OVERLAPS.set(MOUNTAIN_3, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
+OVERLAPS.set(MOUNTAIN_4, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
+OVERLAPS.set(BUILDABLE_MOUNTAIN, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
 OVERLAPS.set(SWAMP, new Set([WATER_1, WATER_2, BUILDABLE_WATER]))
 OVERLAPS.set(SAVANNAH, new Set([WATER_1, WATER_2, BUILDABLE_WATER]))
 OVERLAPS.set(STEPPE, new Set([MEADOW_1, MEADOW_2, MEADOW_3, FLOWER_MEADOW, SAVANNAH]))
@@ -200,40 +200,6 @@ animals.set("STAG", new AnimalAnimation("assets/nature/animals/", "stag", 10))
 const donkeyAnimation = new AnimalAnimation("assets/nature/animals/", "donkey", 10)
 
 const shipImageAtlas = new ShipImageAtlasHandler("assets/")
-
-const workers = new Map<WorkerType, WorkerAnimation>()
-
-workers.set("Farmer", new WorkerAnimation("assets/", "farmer", 10))
-workers.set("Fisherman", new WorkerAnimation("assets/", "fisher", 10))
-workers.set("Courier", new WorkerAnimation("assets/", "helper", 10))
-workers.set("StorageWorker", new WorkerAnimation("assets/", "helper", 10))
-workers.set("Hunter", new WorkerAnimation("assets/", "hunter", 10))
-workers.set("IronFounder", new WorkerAnimation("assets/", "iron_founder", 10))
-workers.set("Metalworker", new WorkerAnimation("assets/", "metalworker", 10))
-workers.set("Miller", new WorkerAnimation("assets/", "miller", 10))
-workers.set("Miner", new WorkerAnimation("assets/", "miner", 10))
-workers.set("Minter", new WorkerAnimation("assets/", "minter", 10))
-workers.set("PigBreeder", new WorkerAnimation("assets/", "pig_breeder", 10))
-workers.set("Planer", new WorkerAnimation("assets/", "planer", 10))
-workers.set("Scout", new WorkerAnimation("assets/", "scout", 10))
-workers.set("ShipWright", new WorkerAnimation("assets/", "ship_wright", 10))
-workers.set("DonkeyBreeder", new WorkerAnimation("assets/", "donkey_breeder", 10))
-workers.set("Butcher", new WorkerAnimation("assets/", "butcher", 10))
-workers.set("Builder", new WorkerAnimation("assets/", "builder", 10))
-workers.set("Brewer", new WorkerAnimation("assets/", "brewer", 10))
-workers.set("Baker", new WorkerAnimation("assets/", "baker", 10))
-workers.set("Armorer", new WorkerAnimation("assets/", "armorer", 10))
-workers.set("WoodcutterWorker", new WorkerAnimation("assets/", "woodcutter", 10))
-workers.set("Forester", new WorkerAnimation("assets/", "forester", 10))
-workers.set("SawmillWorker", new WorkerAnimation("assets/", "carpenter", 10))
-workers.set("Stonemason", new WorkerAnimation("assets/", "stonemason", 10))
-workers.set("Scout", new WorkerAnimation("assets/", "scout", 10))
-workers.set("Private", new WorkerAnimation("assets/", "private", 10))
-workers.set("Private_first_class", new WorkerAnimation("assets/", "private_first_class", 10))
-workers.set("Sergeant", new WorkerAnimation("assets/", "sergeant", 10))
-workers.set("Officer", new WorkerAnimation("assets/", "officer", 10))
-workers.set("General", new WorkerAnimation("assets/", "general", 10))
-workers.set("Geologist", new WorkerAnimation("assets/", "geologist", 10))
 
 const thinCarrierWithCargo = new WorkerAnimation("assets/", "thin-carrier-with-cargo", 10)
 const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-cargo", 10)

@@ -23,18 +23,19 @@ const ExpandCollapseToggle = ({ inverted, onCollapse, onExpand }: ExpandCollapse
         setExpanded(!expanded)
     }
 
-    if (inverted) {
-        if (expanded) {
-            return (<Button icon={<ChevronUp24Filled onClick={onClick} />} appearance='transparent' />)
-        } else {
-            return (<Button icon={<ChevronDown24Filled onClick={onClick} />} appearance='transparent' />)
-        }
-    }
-
-    if (expanded) {
-        return (<Button icon={<ChevronDown24Filled onClick={onClick} />} appearance='transparent' />)
+    if ((inverted && expanded) || (!inverted && !expanded)) {
+        return (
+            <span className="ExpandCollapseToggle">
+                <Button icon={<ChevronUp24Filled onClick={onClick} />} appearance='transparent' />
+            </span>
+        )
     } else {
-        return (<Button icon={<ChevronUp24Filled onClick={onClick} />} appearance='transparent' />)
+        return (
+            <span className="ExpandCollapseToggle">
+                <Button icon={<ChevronDown24Filled onClick={onClick} />} appearance='transparent' />
+            </span>
+        )
+
     }
 }
 

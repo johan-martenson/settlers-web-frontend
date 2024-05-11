@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Button, Field, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from "@fluentui/react-components"
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
-import { HouseInformation, MATERIALS_UPPER_CASE, Nation, SOLDIER_TYPES, getSoldierDisplayName, isHeadquarterInformation, rankToMaterial } from "../api/types"
+import { HouseInformation, MATERIALS, Nation, SOLDIER_TYPES, getSoldierDisplayName, isHeadquarterInformation, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon } from "../icon"
 import './house_info.css'
 import { useState } from "react"
@@ -137,7 +137,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
 
             {panel === 'INVENTORY' &&
                 <div className="headquarter-inventory">
-                    {Array.from(MATERIALS_UPPER_CASE).filter(material => material !== 'STORAGE_WORKER' && material !== 'WELL_WORKER').map(material => {
+                    {Array.from(MATERIALS).filter(material => material !== 'STOREHOUSE_WORKER' && material !== 'WELL_WORKER').map(material => {
                         const amount = house.resources[material]?.has ?? 0
 
                         return (

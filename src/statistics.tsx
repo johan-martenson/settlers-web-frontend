@@ -4,7 +4,7 @@ import { getGameStatistics, getLandStatistics } from './api/rest-api'
 import { Dialog } from './dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
-import { GameId, ProductionStatistics, LandStatistics, MaterialAllUpperCase, MATERIALS_UPPER_CASE, LandDataPoint, Measurement, Nation, PlayerColor } from './api/types'
+import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerColor } from './api/types'
 import { InventoryIcon } from './icon'
 
 interface StatisticsProps {
@@ -16,7 +16,7 @@ interface StatisticsProps {
 interface StatisticsState {
     productionStatistics?: ProductionStatistics
     landStatistics?: LandStatistics
-    materialToShow: MaterialAllUpperCase
+    materialToShow: Material
     drawnStatistics: boolean
     state: "PRODUCTION" | "LAND"
 }
@@ -109,7 +109,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
                     {this.state.state === 'PRODUCTION' &&
                         <div className='select-materials'>
-                            {[...MATERIALS_UPPER_CASE].filter(material => material !== 'WELL_WORKER' && material !== 'STORAGE_WORKER')
+                            {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
                                 .map(material => <div onClick={() => this.setState({ materialToShow: material })} key={material}>
                                     <Tooltip content={material.toLocaleLowerCase()} relationship={'label'}>
                                         <div><InventoryIcon nation={this.props.nation} material={material} missing={material !== this.state.materialToShow} /></div>
@@ -316,7 +316,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         return resultArray
     }
 
-    drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, productionStats: ProductionStatistics, material: MaterialAllUpperCase): void {
+    drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, productionStats: ProductionStatistics, material: Material): void {
 
         /* Get the right material statistics to graph */
         const resourceStatisticsFull = productionStats.materialStatistics[material]

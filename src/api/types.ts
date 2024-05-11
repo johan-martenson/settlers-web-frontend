@@ -26,29 +26,24 @@ export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "min
 
 export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
 
-export type TransportCategories = 'food' | 'weapons' | 'tools' | 'iron' | 'iron_bar' | 'coal' | 'gold' | 'plank' | 'wood' | 'stone' | 'coin' | 'wheat' | 'water' | 'pig' | 'flour'
-export type TransportCategoriesUpperCase = 'FOOD' | 'WEAPONS' | 'TOOLS' | 'IRON' | 'IRON_BAR' | 'COAL' | 'GOLD' | 'PLANK' | 'WOOD' | 'STONE' | 'COIN' | 'WHEAT' | 'WATER' | 'PIG' | 'FLOUR' | 'BOAT'
-export const TRANSPORT_CATEGORIES = new Set<TransportCategories>(['food', 'weapons', 'tools', 'iron', 'iron_bar', 'coal', 'gold', 'plank', 'wood', 'stone', 'coin', 'wheat', 'water', 'pig', 'flour'])
-export const TRANSPORT_CATEGORIES_UPPER_CASE = new Set<TransportCategoriesUpperCase>(['FOOD', 'WEAPONS', 'TOOLS', 'IRON', 'IRON_BAR', 'COAL', 'GOLD', 'PLANK', 'WOOD', 'STONE', 'COIN', 'WHEAT', 'WATER', 'PIG', 'FLOUR'])
+export type TransportCategories = 'FOOD' | 'WEAPONS' | 'TOOLS' | 'IRON' | 'IRON_BAR' | 'COAL' | 'GOLD' | 'PLANK' | 'WOOD' | 'STONE' | 'COIN' | 'WHEAT' | 'WATER' | 'PIG' | 'FLOUR' | 'BOAT'
+export const TRANSPORT_CATEGORIES = new Set<TransportCategories>(['FOOD', 'WEAPONS', 'TOOLS', 'IRON', 'IRON_BAR', 'COAL', 'GOLD', 'PLANK', 'WOOD', 'STONE', 'COIN', 'WHEAT', 'WATER', 'PIG', 'FLOUR'])
 
-export type MaterialAllUpperCase = "FLOUR" | "PIG" | "GOLD" | "IRON" | "COAL" | "STONE" | "WATER" | "WOOD" | "PLANK" | "BREAD" | "FISH" | "MEAT" | "SHIELD" | "SWORD" | "BEER" | "COIN" | "METALWORKER" | "WHEAT" | "SHIPWRIGHT" | "IRON_BAR" | 'BOAT' | ToolAllUpperCase | MaterialWorkerUpperCase
-export const WORKER_MATERIALS_UPPER_CASE = new Set<MaterialWorkerUpperCase>(['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'SAWMILL_WORKER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL', 'BUILDER', 'PLANER', 'SHIPWRIGHT'])
+export type Material = "FLOUR" | "PIG" | "GOLD" | "IRON" | "COAL" | "STONE" | "WATER" | "WOOD" | "PLANK" | "BREAD" | "FISH" | "MEAT" | "SHIELD" | "SWORD" | "BEER" | "COIN" | "METALWORKER" | "WHEAT" | "SHIPWRIGHT" | "IRON_BAR" | 'BOAT' | Tool | MaterialWorker
+export const WORKER_MATERIALS = new Set<MaterialWorker>(['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'SAWMILL_WORKER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL', 'BUILDER', 'PLANER', 'SHIPWRIGHT'])
 
-export const MATERIALS_UPPER_CASE = new Set<MaterialAllUpperCase>(["PIG", "FLOUR", "GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
-WORKER_MATERIALS_UPPER_CASE.forEach(workerMaterial => MATERIALS_UPPER_CASE.add(workerMaterial))
+export const MATERIALS = new Set<Material>(["PIG", "FLOUR", "GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
+WORKER_MATERIALS.forEach(workerMaterial => MATERIALS.add(workerMaterial))
 
-export const MATERIALS_UPPER_CASE_AS_STRING = new Set<string>(["PIG", "FLOUR", "GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
-WORKER_MATERIALS_UPPER_CASE.forEach(workerMaterial => MATERIALS_UPPER_CASE_AS_STRING.add(workerMaterial))
+export const MATERIALS_AS_STRING = new Set<string>(["PIG", "FLOUR", "GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
+WORKER_MATERIALS.forEach(workerMaterial => MATERIALS_AS_STRING.add(workerMaterial))
 
-export type ToolAllUpperCase = 'AXE' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
-export type Tool = 'axe' | 'shovel' | 'pick_axe' | 'fishing_rod' | 'bow' | 'saw' | 'cleaver' | 'rolling_pin' | 'crucible' | 'tongs' | 'scythe'
+export type Tool = 'AXE' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
 
-export const TOOLS: Set<Tool> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
-export const TOOLS_AS_STRING: Set<string> = new Set(['axe', 'shovel', 'pick_axe', 'fishing_rod', 'bow', 'saw', 'cleaver', 'rolling_pin', 'crucible', 'tongs', 'scythe'])
-export const TOOLS_UPPER_CASE: Set<ToolAllUpperCase> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
-export const TOOLS_UPPER_CASE_STRING: Set<string> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
+export const TOOLS: Set<Tool> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
+export const TOOLS_STRING: Set<string> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
 
-export type MaterialWorkerUpperCase = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER' | 'COURIER' | 'DONKEY_BREEDER' | 'DONKEY' | 'FARMER' | 'FISHERMAN' | 'FORESTER' | 'GEOLOGIST' | 'HUNTER' | 'IRON_FOUNDER' | 'METALWORKER' | 'MILLER' | 'MINER' | 'MINTER' | 'PIG_BREEDER' | 'SAWMILL_WORKER' | 'SCOUT' | 'STONEMASON' | 'STOREHOUSE_WORKER' | 'WELL_WORKER' | 'WOODCUTTER_WORKER' | 'PRIVATE' | 'PRIVATE_FIRST_CLASS' | 'SERGEANT' | 'OFFICER' | 'GENERAL' | 'BUILDER' | 'PLANER' | 'SHIPWRIGHT'
+export type MaterialWorker = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER' | 'COURIER' | 'DONKEY_BREEDER' | 'DONKEY' | 'FARMER' | 'FISHERMAN' | 'FORESTER' | 'GEOLOGIST' | 'HUNTER' | 'IRON_FOUNDER' | 'METALWORKER' | 'MILLER' | 'MINER' | 'MINTER' | 'PIG_BREEDER' | 'SAWMILL_WORKER' | 'SCOUT' | 'STONEMASON' | 'STOREHOUSE_WORKER' | 'WELL_WORKER' | 'WOODCUTTER_WORKER' | 'PRIVATE' | 'PRIVATE_FIRST_CLASS' | 'SERGEANT' | 'OFFICER' | 'GENERAL' | 'BUILDER' | 'PLANER' | 'SHIPWRIGHT'
 
 export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
 
@@ -64,7 +59,7 @@ export type CropGrowth = 'JUST_PLANTED' | 'SMALL' | 'ALMOST_GROWN' | 'FULL_GROWN
 
 export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST_FULL' | 'FULL'
 
-export type HouseResources = { [key in MaterialAllUpperCase]?: HouseResourceItem }
+export type HouseResources = { [key in Material]?: HouseResourceItem }
 
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
@@ -490,7 +485,7 @@ export interface WorkerInformation extends Point {
     next?: Point
     percentageTraveled: number
     plannedPath?: Point[]
-    cargo?: MaterialAllUpperCase
+    cargo?: Material
     bodyType?: BodyType
     action?: WorkerAction
     actionAnimationIndex?: number
@@ -507,7 +502,7 @@ export interface ServerWorkerInformation extends Point {
     next?: Point
     percentageTraveled: number
     plannedPath?: Point[]
-    cargo?: MaterialAllUpperCase
+    cargo?: Material
     bodyType?: BodyType
     action?: WorkerAction
     actionAnimationIndex?: number
@@ -542,8 +537,8 @@ export interface HouseInformation extends Point {
     soldiers?: SoldierType[]
     maxSoldiers?: number
     constructionProgress?: number
-    resources: { [key in MaterialAllUpperCase]: HouseResourceItem }
-    produces?: MaterialAllUpperCase
+    resources: { [key in Material]: HouseResourceItem }
+    produces?: Material
     promotionsEnabled: boolean
     productionEnabled: boolean
     state: HouseState
@@ -563,7 +558,7 @@ export interface FlagInformation extends Point {
     playerId: PlayerId
     type: FlagType
     color: PlayerColor
-    stackedCargo?: MaterialAllUpperCase[]
+    stackedCargo?: Material[]
     nation: Nation
 }
 
@@ -616,7 +611,7 @@ export interface PlayerInformationLight {
 
 export interface ProductionStatistics {
     players: PlayerInformationLight[]
-    materialStatistics: { [key in MaterialAllUpperCase]: Measurement[] }
+    materialStatistics: { [key in Material]: Measurement[] }
 }
 
 export interface LandDataPoint {
@@ -630,7 +625,7 @@ export interface LandStatistics {
     landStatistics: LandDataPoint[]
 }
 
-export type TransportPriorityInformation = MaterialAllUpperCase[]
+export type TransportPriorityInformation = Material[]
 
 
 type GameMessageType = "MILITARY_BUILDING_READY" | "NO_MORE_RESOURCES" | 'MILITARY_BUILDING_OCCUPIED' | 'UNDER_ATTACK' | 'GEOLOGIST_FIND' | 'BUILDING_LOST' | 'BUILDING_CAPTURED' | 'STORE_HOUSE_IS_READY' | 'TREE_CONSERVATION_PROGRAM_ACTIVATED' | 'TREE_CONSERVATION_PROGRAM_DEACTIVATED' | 'MILITARY_BUILDING_CAUSED_LOST_LAND'
@@ -705,7 +700,7 @@ function isNation(maybeNation: unknown): maybeNation is Nation {
     return maybeNation === 'ROMANS' || maybeNation === "VIKINGS" || maybeNation === 'JAPANESE' || maybeNation === 'AFRICANS'
 }
 
-function rankToMaterial(rank: SoldierType): MaterialAllUpperCase {
+function rankToMaterial(rank: SoldierType): Material {
     if (rank === 'PRIVATE_RANK') {
         return 'PRIVATE'
     } else if (rank === 'PRIVATE_FIRST_CLASS_RANK') {
@@ -723,8 +718,8 @@ function rankToMaterial(rank: SoldierType): MaterialAllUpperCase {
     return 'STONE'
 }
 
-function isToolUpperCase(material: MaterialAllUpperCase): material is ToolAllUpperCase {
-    return TOOLS_UPPER_CASE_STRING.has(material)
+function isToolUpperCase(material: Material): material is Tool {
+    return TOOLS_STRING.has(material)
 }
 
 
@@ -736,11 +731,11 @@ function isWildAnimal(animal: unknown): animal is WildAnimalInformation {
         WILD_ANIMAL_TYPES.findIndex(type => type === animal.type) !== -1
 }
 
-function isMaterialUpperCase(material: unknown): material is MaterialAllUpperCase {
+function isMaterialUpperCase(material: unknown): material is Material {
     return material !== null &&
         material !== undefined &&
         typeof material === 'string' &&
-        MATERIALS_UPPER_CASE_AS_STRING.has(material)
+        MATERIALS_AS_STRING.has(material)
 }
 
 function getSoldierDisplayName(soldierType: SoldierType): string {

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { setTransportPriorityForMaterial } from './api/rest-api'
 import { Dialog } from './dialog'
 import './transport_priority.css'
-import { GameId, PlayerId, MaterialAllUpperCase, Nation, TransportCategoriesUpperCase, TRANSPORT_CATEGORIES_UPPER_CASE } from './api/types'
+import { GameId, PlayerId, Material, Nation, TransportCategories, TRANSPORT_CATEGORIES } from './api/types'
 import { Tooltip } from '@fluentui/react-components'
 import { InventoryIcon } from './icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
@@ -15,7 +15,7 @@ interface SetTransportPriorityProps {
     onClose: (() => void)
 }
 
-const CATEGORY_MATERIALS_MAP = new Map<TransportCategoriesUpperCase, MaterialAllUpperCase[]>()
+const CATEGORY_MATERIALS_MAP = new Map<TransportCategories, Material[]>()
 
 CATEGORY_MATERIALS_MAP.set('FOOD', ['BREAD', 'MEAT', 'FISH'])
 CATEGORY_MATERIALS_MAP.set('WEAPONS', ['SWORD', 'SHIELD'])
@@ -35,10 +35,10 @@ CATEGORY_MATERIALS_MAP.set('FLOUR', ['FLOUR'])
 CATEGORY_MATERIALS_MAP.set('BOAT', ['BOAT'])
 
 const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTransportPriorityProps) => {
-    const [selected, setSelected] = useState<TransportCategoriesUpperCase>('PLANK')
-    const [priority, setPriority] = useState<TransportCategoriesUpperCase[]>(Array.from(TRANSPORT_CATEGORIES_UPPER_CASE))
+    const [selected, setSelected] = useState<TransportCategories>('PLANK')
+    const [priority, setPriority] = useState<TransportCategories[]>(Array.from(TRANSPORT_CATEGORIES))
 
-    async function increasePriority(category: TransportCategoriesUpperCase): Promise<void> {
+    async function increasePriority(category: TransportCategories): Promise<void> {
         const currentPriority = priority.findIndex(e => e === category)
 
         console.log("Current priority for " + category + ": " + currentPriority)
@@ -58,12 +58,12 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTranspor
         setPriority(updatedPriority)
     }
 
-    async function decreasePriority(category: TransportCategoriesUpperCase): Promise<void> {
+    async function decreasePriority(category: TransportCategories): Promise<void> {
         const currentPriority = priority.findIndex(e => e === category)
 
         console.log("Current priority for " + category + ": " + currentPriority)
 
-        if (currentPriority == TRANSPORT_CATEGORIES_UPPER_CASE.size) {
+        if (currentPriority == TRANSPORT_CATEGORIES.size) {
             return
         }
 

@@ -1622,7 +1622,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             height: interpolatedHeight
                         })
                     }
-                } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
+                } else if (worker.type === "Courier" || worker.type === 'StorehouseWorker') {
                     let image
 
                     if (worker.cargo) {
@@ -1671,7 +1671,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-                    if (worker.type === 'Courier' || worker.type === 'StorageWorker') {
+                    if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
                         let cargoDrawInfo
 
                         if (worker?.bodyType === 'FAT') {
@@ -1727,7 +1727,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             gamePoint: worker
                         })
                     }
-                } else if (worker.type === "Courier" || worker.type === 'StorageWorker') {
+                } else if (worker.type === "Courier" || worker.type === 'StorehouseWorker') {
                     let didDrawAnimation = false
 
                     if (worker.action && worker.actionAnimationIndex !== undefined) {
@@ -1819,7 +1819,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 if (worker.cargo) {
-                    if (worker.type === 'Courier' || worker.type === 'StorageWorker') {
+                    if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
                         let cargoDrawInfo
 
                         if (worker?.bodyType === 'FAT') {

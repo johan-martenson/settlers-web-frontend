@@ -1,5 +1,5 @@
 import { Dimension, DrawingInformation, HouseImageAtlasHandler, ImageSeriesInformation, OneImageInformation, WorkerAnimation, loadImageNg, makeTextureFromImage } from "./utils"
-import { FlagType, MaterialAllUpperCase, Nation, PlayerColor, WorkerType } from "./api/types"
+import { FlagType, Material, Nation, PlayerColor, WorkerType } from "./api/types"
 import { UiIconType } from "./icon"
 
 const workers = new Map<WorkerType, WorkerAnimation>()
@@ -7,7 +7,7 @@ const workers = new Map<WorkerType, WorkerAnimation>()
 workers.set("Farmer", new WorkerAnimation("assets/", "farmer", 10))
 workers.set("Fisherman", new WorkerAnimation("assets/", "fisher", 10))
 workers.set("Courier", new WorkerAnimation("assets/", "helper", 10))
-workers.set("StorageWorker", new WorkerAnimation("assets/", "helper", 10))
+workers.set("StorehouseWorker", new WorkerAnimation("assets/", "helper", 10))
 workers.set("Hunter", new WorkerAnimation("assets/", "hunter", 10))
 workers.set("IronFounder", new WorkerAnimation("assets/", "iron_founder", 10))
 workers.set("Metalworker", new WorkerAnimation("assets/", "metalworker", 10))
@@ -350,7 +350,7 @@ class MaterialImageAtlasHandler {
         this.pathPrefix = prefix
     }
 
-    getInventoryIconUrl(nation: Nation, material: MaterialAllUpperCase): string {
+    getInventoryIconUrl(nation: Nation, material: Material): string {
 
         if (material === "SHIELD") {
             return this.pathPrefix + "/inventory-icons/" + nation + "/" + material + ".png"

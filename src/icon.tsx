@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { AnyBuilding, Direction, FlagType, MaterialAllUpperCase, Nation, PlayerColor, WorkerType } from './api/types'
+import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from './api/types'
 import { FlagAnimation, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from './assets'
 import { Dimension, WorkerAnimation, resizeCanvasToDisplaySize } from './utils'
 import './icon.css'
@@ -240,7 +240,7 @@ const HouseIcon = (props: HouseProps) => {
 
 interface InventoryIconProps {
     nation: Nation
-    material: MaterialAllUpperCase
+    material: Material
     label?: string
     scale?: number
     inline?: boolean

@@ -1,5 +1,5 @@
 import { getTerrainForMap } from './api/rest-api'
-import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, TreeType, FireSize, Direction, WorkerAction, MaterialAllUpperCase, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
+import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, TreeType, FireSize, Direction, WorkerAction, Material, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
 import { Monitor } from './api/ws-api'
 import { ScreenPoint } from './game_render'
 
@@ -450,7 +450,7 @@ class WorkerAnimation {
         return this.imageAtlasHandler.getDrawingInformationForAction(nation, direction, action, color, animationIndex)
     }
 
-    getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
+    getDrawingInformationForCargo(direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
         return this.imageAtlasHandler.getDrawingInformationForCargo(direction, material, animationIndex, Math.floor(offset))
     }
 
@@ -613,7 +613,7 @@ interface WorkerCommonFormat {
     bodyImages: Record<Direction, ImageSeriesInformation>
     bodyImagesByPlayer: Record<Direction, Record<PlayerColor, ImageSeriesInformation>>
     fullImagesByPlayer: Record<Direction, Record<PlayerColor, ImageSeriesInformation>>
-    cargoImages?: Record<MaterialAllUpperCase, Record<Direction, ImageSeriesInformation>>
+    cargoImages?: Record<Material, Record<Direction, ImageSeriesInformation>>
     actions?: Record<WorkerAction, Record<Direction | 'any', ImageSeriesInformation>>
     actionsByPlayer?: Record<WorkerAction, Record<Direction | 'any', Record<PlayerColor, ImageSeriesInformation>>>
 }
@@ -621,7 +621,7 @@ interface WorkerCommonFormat {
 interface WorkerNationSpecificFormat {
     fullImages: Record<Nation, Record<Direction, ImageSeriesInformation>>
     fullImagesByPlayer: Record<Nation, Record<Direction, Record<PlayerColor, ImageSeriesInformation>>>
-    cargoImages?: Record<Nation, Record<MaterialAllUpperCase, Record<Direction, ImageSeriesInformation>>>
+    cargoImages?: Record<Nation, Record<Material, Record<Direction, ImageSeriesInformation>>>
     actions?: Record<Nation, Record<WorkerAction, Record<Direction | 'any', ImageSeriesInformation>>>
     actionsByPlayer?: Record<Nation, Record<WorkerAction, Record<Direction | 'any', Record<PlayerColor, ImageSeriesInformation>>>>
 }
@@ -883,7 +883,7 @@ class WorkerImageAtlasHandler {
         return undefined
     }
 
-    getDrawingInformationForCargo(direction: Direction, material: MaterialAllUpperCase, animationIndex: number, offset: number): DrawingInformation | undefined {
+    getDrawingInformationForCargo(direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -1378,8 +1378,8 @@ class FireImageAtlasHandler {
 }
 
 interface CargoInformation {
-    generic: Record<MaterialAllUpperCase, OneImageInformation>
-    nationSpecific: Record<Nation, Record<MaterialAllUpperCase, OneImageInformation>>
+    generic: Record<Material, OneImageInformation>
+    nationSpecific: Record<Nation, Record<Material, OneImageInformation>>
 }
 
 class CargoImageAtlasHandler {
@@ -1413,7 +1413,7 @@ class CargoImageAtlasHandler {
         }
     }
 
-    getDrawingInformation(nation: Nation, material: MaterialAllUpperCase): DrawingInformation | undefined {
+    getDrawingInformation(nation: Nation, material: Material): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -1933,8 +1933,8 @@ class CropImageAtlasHandler {
 interface AnimalImageAtlasFormat {
     images: Record<Direction, ImageSeriesInformation>
     shadowImages?: Record<Direction, OneImageInformation>
-    cargos?: Record<MaterialAllUpperCase, OneImageInformation>
-    nationSpecific?: Record<Nation, Record<MaterialAllUpperCase, OneImageInformation>>
+    cargos?: Record<Material, OneImageInformation>
+    nationSpecific?: Record<Nation, Record<Material, OneImageInformation>>
 }
 
 const ANIMAL_FALLBACK_DIRECTION = new Map<Direction, Direction>()
@@ -1979,7 +1979,7 @@ class AnimalImageAtlasHandler {
         }
     }
 
-    getDrawingInformationForCargo(material: MaterialAllUpperCase, nation: Nation): DrawingInformation | undefined {
+    getDrawingInformationForCargo(material: Material, nation: Nation): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }

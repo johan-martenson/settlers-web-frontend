@@ -1,68 +1,34 @@
-Todo
-====
+Todo 1.0
+========
 
 1. Animation of houses
 2. More sounds
 3. Planer
-4. Activity should stop around a flag where a fight is happening - storehouse worker remaining
-5. Make materials visible when donkeys carry
+4. Make materials visible when donkeys carry
+5. Finish making all react components into functional components
+6. Fix statistics components. Should be general statistics to compare players, and Merchandise to see production and/or inventory
+7. Quota handling for planks
+8. Add the propeller to the mill
+9. Fix ugly scrollbar in type control
+10. Soldiers waiting to fight should be facing the attacked building's flag
+11. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
+12. Add skeleton decoration on the ground when a worker dies
+13. Pinch-to-zoom should zoom in the game, not the full web page
+14. Border markers should look different for water/land
+15. Fix map loading so the default map looks good
+16. Missed discovered land up-right from new guard house
+17. Fix NullPointerException that happens after playing for a long time
+18. With guard house, new owned land is larger than discovered land. Reload fixes it
+19. Wild animals walk in place
+20. Frontend sometimes freezes even if the backend is still running
+21. Houses should have their doors open and close
+
+
+
+Todo 2.0
+========
+
+1. Build windowing system
 6. In-game and in-game-creation chat
-7. Finish making all react components into functional components
-8. Fix statistics components. Should be general statistics to compare players, and Merchandise to see production and/or inventory
 9. Divide src into sub-folders better. prepare-game, play-game?
-10. Quota handling for planks
-11. Add the propeller to the mill
-12. Add terrain overlaps to make the nature look smoother. Start with snow.
-13. Fix ugly scrollbar in type control
-14. Soldiers waiting to fight should be facing the attacked building's flag
-15. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
-16. Add skeleton decoration on the ground when a worker dies
-17. Pinch-to-zoom should zoom in the game, not the full web page
-18. Border markers should look different for water/land
-19. Fix map loading so the default map looks good
-20. Missed discovered land up-right from new guard house
 21. Workers should walk slower up-hill and faster down-hill
-22. Fix NullPointerException that happens after playing for a long time
-23. With guard house, new owned land is larger than discovered land. Reload fixes it
-24. Wild animals walk in place
-25. Frontend sometimes freezes even if the backend is still running
-26. Houses should have their doors open and close
-
-
-
-Done
-====
-
-1. Limit sounds to objects visible on the screen (first impl., seems like objects aren't properly removed when actions are finished)
-2. Fog of war
-3. More music player controls - loop song, loop all, shuffle
-4. Make main roads render with different road texture
-5. Change WorkerIcon to use Canvas2d instead of webgl
-6. Remove "visibleTrees" handling now that fog of war is implemented
-1. Bug where expanding the border doesn't update the available construction properly. Flags closest to the old border remained Flags. Diagonal down-right
-8. Shift rendering slightly based on height
-21. Add possibility to pause an ongoing game.
-6. Defending - many/few defenders. Weak/strong defenders
-4. Waiting attacker shouldn't stand on a building
-22. When attack with several attackers takes more than one attacker and then finally beats the home defender, no new home defender comes out and the attackers just stand around waiting
-19. Stones that get smaller because of hacking should get updated in the web ui
-21. Workers (incl. scouts) can't walk offroad through big stones (incl stones that can be mined)
-22. Road promoted - update in the map
-18. Stones that are out of sight and are removed
-11. Animation when trees fall
-5. Finish Military settings - weak/strong in center, closer to the edge, and at the edge
-19. Update fighter's damage and health stats
-19. Make goto house/point with animation configurable
-19. Change pseudo 3d effect to only shift upwards, not to the right
-15. FIX HOVER AND ONCLICK so that the closest point is always chosen
-12. Gradually draw finished building on top of the under construction-image
-22. Worker actions should be different per player color
-17. Make the speed selector in the menu a controlled component
-21. Fix building images for each nation (romans seem correct, japanese is not)
-25. Add shadow to house icons. Consider making the shadow optional
-23. Texture for planned(sign vs box) house for the japanese player looks strange
-12. Add remaining gravel after a stone has been fully removed as a decoration
-19. After the fat courier chews gum it remains frozen in the last frame of the animation
-24. (Japanese) buildings seem to have either wrong under-construction images or they are drawn with the wrong offset
-25. A decoration with a small patch of grass has the wrong shadow - a portal shadow
-23. Fix scroll event that "leaks through" from overlaid div to game render

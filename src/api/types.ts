@@ -256,7 +256,7 @@ const VEGETATION_INTEGERS: VegetationIntegers[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
 
 export const SAVANNAH = 0
 export const MOUNTAIN_1 = 1
-export const SNOW_TEXTURE = 2
+export const SNOW = 2
 export const SWAMP = 3
 export const DESERT_1 = 4
 export const WATER_1 = 5

@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, Point, RoadInformation, VegetationIntegers, VEGETATION_INTEGERS, WildAnimalType, TerrainAtPoint, SNOW_TEXTURE as SNOW, SAVANNAH, BUILDABLE_WATER, DESERT_1, DESERT_2, MEADOW_1, MEADOW_2, MEADOW_3, MOUNTAIN_1, MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, SWAMP, WATER_1, BUILDABLE_MOUNTAIN, FLOWER_MEADOW, LAVA_1, LAVA_2, LAVA_3, LAVA_4, MAGENTA, MOUNTAIN_MEADOW, STEPPE, WATER_2 } from './api/types'
+import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, WildAnimalType, TerrainAtPoint } from './api/types'
 import { Duration } from './duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from './api/ws-api'
@@ -11,6 +11,7 @@ import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-w
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from './shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
 import { immediateUxState } from './App'
+import { OVERLAPS, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
 
 export const DEFAULT_SCALE = 35.0
 export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
@@ -69,11 +70,6 @@ interface GameCanvasState {
     hoverPoint?: Point
 }
 
-interface BelowAndDownRight {
-    below: number[]
-    downRight: number[]
-}
-
 interface RenderInformation {
     coordinates: number[]
     normals: number[]
@@ -94,50 +90,6 @@ let newRoadCurrentLength = 0
 let logOnce = true
 let timer: ReturnType<typeof setTimeout>
 
-const OVERLAPS: Map<VegetationIntegers, Set<VegetationIntegers>> = new Map()
-const TRANSITION_TEXTURE_MAPPINGS: Map<VegetationIntegers, number[]> = new Map()
-
-OVERLAPS.set(SNOW, new Set([SAVANNAH, MOUNTAIN_1, SWAMP, DESERT_1, WATER_1, BUILDABLE_WATER, DESERT_2, MEADOW_1, MEADOW_2, MEADOW_3,
-    MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, STEPPE, FLOWER_MEADOW, LAVA_1, MAGENTA, MOUNTAIN_MEADOW, WATER_2, LAVA_2, LAVA_3, LAVA_4, BUILDABLE_MOUNTAIN]))
-
-OVERLAPS.set(MOUNTAIN_1, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
-OVERLAPS.set(MOUNTAIN_2, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
-OVERLAPS.set(MOUNTAIN_3, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
-OVERLAPS.set(MOUNTAIN_4, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
-OVERLAPS.set(BUILDABLE_MOUNTAIN, new Set([FLOWER_MEADOW, MEADOW_1, MEADOW_2, MEADOW_3, SAVANNAH]))
-OVERLAPS.set(SWAMP, new Set([WATER_1, WATER_2, BUILDABLE_WATER]))
-OVERLAPS.set(SAVANNAH, new Set([WATER_1, WATER_2, BUILDABLE_WATER]))
-OVERLAPS.set(STEPPE, new Set([MEADOW_1, MEADOW_2, MEADOW_3, FLOWER_MEADOW, SAVANNAH]))
-OVERLAPS.set(MEADOW_1, new Set([SAVANNAH, SWAMP, WATER_1, WATER_2, BUILDABLE_WATER]))
-OVERLAPS.set(MEADOW_2, new Set([SAVANNAH, SWAMP, WATER_1, WATER_2, BUILDABLE_WATER]))
-OVERLAPS.set(MEADOW_3, new Set([SAVANNAH, SWAMP, WATER_1, WATER_2, BUILDABLE_WATER]))
-OVERLAPS.set(FLOWER_MEADOW, new Set([SAVANNAH, SWAMP, WATER_1, WATER_2, BUILDABLE_WATER]))
-OVERLAPS.set(MOUNTAIN_MEADOW, new Set([MEADOW_1, MEADOW_2, MEADOW_3, FLOWER_MEADOW, DESERT_1, DESERT_2]))
-OVERLAPS.set(DESERT_1, new Set([SAVANNAH, WATER_1, WATER_2, BUILDABLE_WATER, MEADOW_1, MEADOW_2, MEADOW_3, FLOWER_MEADOW, MOUNTAIN_1, MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, BUILDABLE_MOUNTAIN]))
-OVERLAPS.set(DESERT_2, new Set([SAVANNAH, WATER_1, WATER_2, BUILDABLE_WATER, MEADOW_1, MEADOW_2, MEADOW_3, FLOWER_MEADOW, MOUNTAIN_1, MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, BUILDABLE_MOUNTAIN]))
-
-const MOUNTAIN_TRANSITION = ([192, 192, 255, 192, 225, 207]).map(v => v / 255.0)
-const DESERT_TRANSITION = ([192, 208, 255, 208, 225, 223]).map(v => v / 255.0)
-const GRASS_TRANSITION = ([192, 224, 255, 224, 225, 239]).map(v => v / 255.0)
-const SNOW_TRANSITION = ([192, 176, 255, 176, 225, 191]).map(v => v / 255.0)
-
-TRANSITION_TEXTURE_MAPPINGS.set(SNOW, SNOW_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_1, MOUNTAIN_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_2, MOUNTAIN_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_3, MOUNTAIN_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_4, MOUNTAIN_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(BUILDABLE_MOUNTAIN, DESERT_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(SWAMP, GRASS_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(SAVANNAH, GRASS_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(MEADOW_1, GRASS_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(MEADOW_2, GRASS_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(MEADOW_3, GRASS_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(FLOWER_MEADOW, GRASS_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_MEADOW, MOUNTAIN_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(DESERT_1, DESERT_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(DESERT_2, DESERT_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(STEPPE, DESERT_TRANSITION)
-
 
 // Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
 const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
@@ -153,34 +105,6 @@ const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler("assets/")
 const borderImageAtlasHandler = new BorderImageAtlasHandler("assets/")
 
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
-
-const vegetationToTextureMapping: Map<VegetationIntegers, BelowAndDownRight> = new Map()
-
-vegetationToTextureMapping.set(0, { below: [0, 3, 0.5, 2, 1, 3].map(v => v * 48 / 256), downRight: [0, 2, 0.5, 3, 1, 2].map(v => v * 48 / 256) }) // Savannah
-vegetationToTextureMapping.set(1, { below: [0, 2, 0.5, 1, 2, 2].map(v => v * 48 / 256), downRight: [0, 1, 0.5, 2, 1, 1].map(v => v * 48 / 256) }) // Mountain 1
-vegetationToTextureMapping.set(2, { below: [0, 1, 0.5, 0, 1, 1].map(v => v * 48 / 256), downRight: [0, 0, 0.5, 1, 1, 0].map(v => v * 48 / 256) }) // Snow
-vegetationToTextureMapping.set(3, { below: [2, 1, 2.5, 0, 3, 1].map(v => v * 48 / 256), downRight: [2, 0, 2.5, 1, 3, 0].map(v => v * 48 / 256) }) // Swamp
-vegetationToTextureMapping.set(4, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Desert 1
-vegetationToTextureMapping.set(5, { below: [194, 76, 219, 50, 245, 76].map(v => v / 256), downRight: [194, 77, 219, 101, 245, 77].map(v => v / 256) }) // Water 1
-vegetationToTextureMapping.set(6, { below: [194, 76, 219, 50, 245, 76].map(v => v / 256), downRight: [194, 77, 219, 101, 245, 77].map(v => v / 256) }) // Buildable water
-vegetationToTextureMapping.set(7, { below: [1, 1, 1.5, 0, 2, 1].map(v => v * 48 / 256), downRight: [1, 0, 1.5, 1, 2, 0].map(v => v * 48 / 256) }) // Desert 2
-vegetationToTextureMapping.set(8, { below: [1, 3, 1.5, 2, 2, 3].map(v => v * 48 / 256), downRight: [1, 2, 1.5, 3, 2, 2].map(v => v * 48 / 256) }) // Meadow 1
-vegetationToTextureMapping.set(9, { below: [2, 3, 2.5, 2, 3, 3].map(v => v * 48 / 256), downRight: [2, 2, 2.5, 3, 3, 2].map(v => v * 48 / 256) }) // Meadow 2
-vegetationToTextureMapping.set(10, { below: [3, 3, 3.5, 2, 4, 3].map(v => v * 48 / 256), downRight: [3, 2, 3.5, 3, 4, 2].map(v => v * 48 / 256) }) // Meadow 3
-vegetationToTextureMapping.set(11, { below: [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256), downRight: [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256) }) // Mountain 2
-vegetationToTextureMapping.set(12, { below: [2, 2, 2.5, 1, 3, 2].map(v => v * 48 / 256), downRight: [2, 1, 2.5, 2, 3, 1].map(v => v * 48 / 256) }) // Mountain 3
-vegetationToTextureMapping.set(13, { below: [3, 2, 3.5, 1, 4, 2].map(v => v * 48 / 256), downRight: [3, 1, 3.5, 2, 4, 1].map(v => v * 48 / 256) }) // Mountain 4
-vegetationToTextureMapping.set(14, { below: [0, 191, 24, 144, 47, 191].map(v => v / 256), downRight: [0, 191, 24, 144, 47, 191].map(v => v / 256) }) // Steppe
-vegetationToTextureMapping.set(15, { below: [3, 1, 3.5, 0, 4, 1].map(v => v * 48 / 256), downRight: [3, 0, 3.5, 1, 4, 0].map(v => v * 48 / 256) }) // Flower meadow
-vegetationToTextureMapping.set(16, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 1
-vegetationToTextureMapping.set(17, { below: [2, 4, 2.5, 3, 3, 4].map(v => v * 48 / 256), downRight: [2, 3, 2.5, 4, 3, 3].map(v => v * 48 / 256) }) // Magenta
-vegetationToTextureMapping.set(18, { below: [1, 4, 1.5, 3, 2, 4].map(v => v * 48 / 256), downRight: [1, 3, 1.5, 4, 2, 3].map(v => v * 48 / 256) }) // Mountain meadow
-vegetationToTextureMapping.set(19, { below: [194, 76, 219, 50, 245, 76].map(v => v / 256), downRight: [194, 77, 219, 101, 245, 77].map(v => v / 256) }) // Water 2
-vegetationToTextureMapping.set(20, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 2
-vegetationToTextureMapping.set(21, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 3
-vegetationToTextureMapping.set(22, { below: [192, 132, 219, 104, 247, 132].map(v => v / 256), downRight: [192, 133, 220, 160, 246, 132].map(v => v / 256) }) // Lava 4
-
-vegetationToTextureMapping.set(23, { below: [1, 2, 1.5, 1, 2, 2].map(v => v * 48 / 256), downRight: [1, 1, 1.5, 2, 2, 1].map(v => v * 48 / 256) }) // Buildable mountain
 
 const treeAnimations = new TreeAnimation("assets/nature/", 2)
 const treeImageAtlasHandler = treeAnimations.getImageAtlasHandler()

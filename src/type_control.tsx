@@ -71,7 +71,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
                 try {
                     const updatedPointInformation = await monitor.getInformationOnPoint(selectedPoint)
 
-                    setSelectedPointInformation(updatedPointInformation)    
+                    setSelectedPointInformation(updatedPointInformation)
                 } catch (error) {
                     console.error(`Error while getting info on selectiong point: ${selectedPoint}, ${error}`)
                 }
@@ -193,6 +193,10 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
         className += " closed"
     }
 
+    console.log(selectedPointInformation)
+
+    const invalidSelectedPointInformation = selectedPointInformation === undefined || ! ('canBuild' in selectedPointInformation)
+
     return (
         <div className="type-control" onWheel={(event) => event.stopPropagation()}>
 
@@ -201,11 +205,14 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
             <div className="container-alternatives">
 
-                {expanded &&
+                {
                     Array.from(commands.entries())
 
                         // eslint-disable-next-line
-                        .filter(([_commandName, command]) => !command.filter || !selectedPointInformation || command.filter(selectedPointInformation))
+                        .filter(([_commandName, command]) => !command.filter || invalidSelectedPointInformation || command.filter(selectedPointInformation))
+
+                        // eslint-disable-next-line
+                        .filter(([commandName, _command]) => expanded || (inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)))
                         .map(
                             ([commandName, command], index) => {
                                 return (
@@ -217,13 +224,22 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
                                             setInput("")
                                         }} >
 
-                                        {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch) &&
-                                            <span>
-                                                <span className="MatchingPart">{commandName.substring(0, input.length)}</span>
-                                                <span className="RemainingPart">{commandName.substring(input.length, commandName.length)}</span>
-                                            </span>
-                                        }
-                                        {commandName} {command.icon}
+                                        {(
+                                            () => {
+                                                if (inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)) {
+                                                    return (
+                                                        <>
+                                                            <span>
+                                                                <span className="MatchingPart">{commandName.substring(0, input.length)}</span>
+                                                                <span className="RemainingPart">{commandName.substring(input.length, commandName.length)}</span>
+                                                            </span>
+                                                            {command.icon}
+                                                        </>
+                                                    )
+                                                } else {
+                                                    return (<>{commandName} {command.icon}</>)
+                                                }
+                                            })()}
                                     </div>
                                 )
                             }

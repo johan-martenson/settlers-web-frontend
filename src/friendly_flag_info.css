@@ -34,7 +34,8 @@
     left: 10vw;
     top: 10vh;
     width: 30vw;
-    height: 30vh;
+    min-height: 10em;
+    height: auto;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -43,5 +44,6 @@
     background-color: darkslategray;
     padding-left: 2em;
     padding-right: 2em;
+    padding-bottom: 2em;
     gap: 10px;
 }

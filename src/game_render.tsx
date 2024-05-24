@@ -11,7 +11,7 @@ import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-w
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from './shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
 import { immediateUxState } from './App'
-import { OVERLAPS, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
+import { MAIN_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_TEXTURE_MAPPING, OVERLAPS, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
 
 export const DEFAULT_SCALE = 35.0
 export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
@@ -849,7 +849,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 title: "Information about selection point",
                 point: this.props.selectedPoint,
                 vegetationBelow: monitor.allTiles.get(this.props.selectedPoint)?.below,
-                vegetationDownRight: monitor.allTiles.get(this.props.selectedPoint)?.downRight
+                vegetationDownRight: monitor.allTiles.get(this.props.selectedPoint)?.downRight,
+                discovered: monitor.discoveredPoints.has(this.props.selectedPoint),
+                normal: this.normals.get(this.props.selectedPoint)
             })
         }
 
@@ -1080,7 +1082,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Collect borders to draw */
         monitor.border.forEach((borderForPlayer) => {
             borderForPlayer.points.forEach(borderPoint => {
-                if (borderPoint.x < minXInGame || borderPoint.x > maxXInGame || borderPoint.y < minYInGame || borderPoint.y > maxYInGame) {
+                if (borderPoint.x < minXInGame - 1 || borderPoint.x > maxXInGame || borderPoint.y < minYInGame - 1 || borderPoint.y > maxYInGame + 1) {
                     return
                 }
 
@@ -1507,7 +1509,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             // Worker is moving and not at a fixed point
             if (worker.betweenPoints && worker.previous !== undefined && worker.next) {
-                if (worker.previous.x < minXInGame || worker.previous.x > maxXInGame || worker.previous.y < minYInGame || worker.previous.y > maxYInGame) {
+                if (worker.previous.x < minXInGame - 1 || worker.previous.x > maxXInGame || worker.previous.y < minYInGame - 1 || worker.previous.y > maxYInGame + 1) {
                     continue
                 }
 
@@ -1627,7 +1629,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 }
             } else {
-                if (worker.x < minXInGame || worker.x > maxXInGame || worker.y < minYInGame || worker.y > maxYInGame) {
+                if (worker.x < minXInGame - 1 || worker.x > maxXInGame || worker.y < minYInGame - 1 || worker.y > maxYInGame + 1) {
                     continue
                 }
 
@@ -2584,7 +2586,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     [
                         pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
                         pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
-                        pointDown.x, pointDownLeft.y - 0.25, baseHeight + (downHeight - baseHeight) * 0.25
+                        pointDown.x, pointDownLeft.y - 0.4, baseHeight + (downHeight - baseHeight) * 0.4
                     ]
                 )
 
@@ -2711,7 +2713,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     [
                         point.x, point.y, tile.heightLeft,
                         pointRight.x, pointRight.y, tile.heightRight,
-                        point.x + 1, point.y + 0.6, baseHeight + (heightUp - baseHeight) * 0.6
+                        point.x + 1, point.y + 0.6, baseHeight + (heightUp - baseHeight) * 0.7
                     ]
                 )
 
@@ -2756,8 +2758,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
     }
 
     calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDownRight: Iterable<TileDownRight>): void {
-
-        // Calculate the normals for each triangle
         const straightBelowNormals = new PointMapFast<Vector>()
         const downRightNormals = new PointMapFast<Vector>()
 
@@ -2831,9 +2831,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const normals: number[] = []
         const textureMapping: number[] = []
 
+        // Iterate through each segment of the road
         for (const road of roads) {
-
-            // Iterate through each segment of the road
             let previous: Point | undefined = undefined
 
             for (const point of road.points) {
@@ -2862,12 +2861,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x, previous.y, height0,
-                            previous.x, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            previous.x, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            point.x, point.y + 0.4, height1
+                            previous.x, previous.y - 0.15, height0,
+                            previous.x, previous.y + 0.15, height0,
+                            point.x, point.y - 0.15, height1,
+                            previous.x, previous.y + 0.15, height0,
+                            point.x, point.y - 0.15, height1,
+                            point.x, point.y + 0.15, height1
                         ]
                     )
 
@@ -2881,31 +2880,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    if (road.type === 'NORMAL') {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                1.0, 1 - 1.0
-                            ]
-                        )
-                    } else {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                1.0, 0.059
-                            ]
-                        )
-                    }
+                    Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
                     // Handle road up-right
                 } else if (previous.x < point.x && previous.y < point.y) {
@@ -2915,12 +2890,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x + 0.2, previous.y, height0,
-                            previous.x - 0.2, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            previous.x - 0.2, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            point.x - 0.2, point.y + 0.4, height1
+                            previous.x + 0.1, previous.y - 0.1, height0,
+                            previous.x - 0.1, previous.y + 0.1, height0,
+                            point.x - 0.1, point.y - 0.1, height1,
+                            previous.x - 0.1, previous.y + 0.1, height0,
+                            point.x + 0.1, point.y - 0.1, height1,
+                            point.x - 0.1, point.y + 0.1, height1
                         ]
                     )
 
@@ -2934,33 +2909,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    if (road.type === 'NORMAL') {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                1.0, 1 - 1.0
-                            ]
-                        )
-                    } else {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                1.0, 0.059
-                            ]
-                        )
-                    }
+                    Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                    // Handle road down-right
+                // Handle road down-right
                 } else if (previous.x < point.x && previous.y > point.y) {
                     const height0 = monitor.getHeight(previous)
                     const height1 = monitor.getHeight(point)
@@ -2968,12 +2919,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x - 0.2, previous.y, height0,
-                            previous.x + 0.2, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            previous.x + 0.2, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            point.x + 0.2, point.y + 0.4, height1
+                            previous.x - 0.1, previous.y - 0.1, height0,
+                            previous.x + 0.1, previous.y + 0.1, height0,
+                            point.x - 0.1, point.y - 0.1, height1,
+                            previous.x + 0.1, previous.y + 0.1, height0,
+                            point.x - 0.1, point.y - 0.1, height1,
+                            point.x + 0.1, point.y + 0.1, height1
                         ]
                     )
 
@@ -2987,33 +2938,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    if (road.type === 'NORMAL') {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                1.0, 1 - 1.0
-                            ]
-                        )
-                    } else {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                1.0, 0.059
-                            ]
-                        )
-                    }
+                    Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                    // Handle road up-left
+                // Handle road up-left
                 } else if (previous.x > point.x && previous.y < point.y) {
                     const height0 = monitor.getHeight(previous)
                     const height1 = monitor.getHeight(point)
@@ -3021,12 +2948,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x - 0.2, previous.y, height0,
-                            previous.x + 0.2, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            previous.x + 0.2, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            point.x + 0.2, point.y + 0.4, height1
+                            previous.x - 0.1, previous.y - 0.1, height0,
+                            previous.x + 0.1, previous.y + 0.1, height0,
+                            point.x - 0.1, point.y - 0.1, height1,
+                            previous.x + 0.1, previous.y + 0.1, height0,
+                            point.x - 0.1, point.y - 0.1, height1,
+                            point.x + 0.1, point.y + 0.1, height1
                         ]
                     )
 
@@ -3040,33 +2967,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    if (road.type === 'NORMAL') {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                1.0, 1 - 1.0
-                            ]
-                        )
-                    } else {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                1.0, 0.059
-                            ]
-                        )
-                    }
+                    Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                    // Handle road down-left
+                // Handle road down-left
                 } else if (previous.x > point.x && previous.y > point.y) {
                     const height0 = monitor.getHeight(previous)
                     const height1 = monitor.getHeight(point)
@@ -3074,12 +2977,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x + 0.2, previous.y, height0,
-                            previous.x - 0.2, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            previous.x - 0.2, previous.y + 0.4, height0,
-                            point.x, point.y, height1,
-                            point.x - 0.2, point.y + 0.4, height1
+                            previous.x + 0.1, previous.y - 0.1, height0,
+                            previous.x - 0.1, previous.y + 0.1, height0,
+                            point.x - 0.1, point.y - 0.1, height1,
+                            previous.x - 0.1, previous.y + 0.1, height0,
+                            point.x - 0.1, point.y - 0.1, height1,
+                            point.x - 0.1, point.y + 0.1, height1
                         ]
                     )
 
@@ -3093,31 +2996,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             normalPoint.x, normalPoint.y, normalPoint.z
                         ])
 
-                    if (road.type === 'NORMAL') {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                0.75, 1 - 1.0,
-                                1.0, 1 - 0.941,
-                                1.0, 1 - 1.0
-                            ]
-                        )
-                    } else {
-                        Array.prototype.push.apply(
-                            textureMapping,
-                            [
-                                0.75, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                0.75, 0.059,
-                                1.0, 0.118,
-                                1.0, 0.059
-                            ]
-                        )
-                    }
+                    Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
                 }
 
                 previous = point
@@ -3136,8 +3015,8 @@ function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
     const surrounding = surroundingPoints(point)
 
     // TODO: filter points outside of the map
-    const foundInside = surrounding.filter(neighbor => discovered.has(neighbor)).length > 0
-    const foundOutside = surrounding.filter(neighbor => !discovered.has(neighbor)).length > 0
+    const foundInside = surrounding.filter(neighbor => neighbor.x > 0 && discovered.has(neighbor)).length > 0
+    const foundOutside = surrounding.filter(neighbor => neighbor.x > 0 && !discovered.has(neighbor)).length > 0
 
     return foundInside && foundOutside
 }

@@ -44,6 +44,7 @@ interface GameMenuProps {
     onSetAnimateMapScrolling: ((shouldAnimate: boolean) => void)
     onSetAnimateZooming: ((shouldAnimate: boolean) => void)
     onGameSpeedChange: ((gameSpeed: GameSpeed) => void)
+    onQuota: (() => void)
 }
 
 const GameMenu = (
@@ -58,8 +59,22 @@ const GameMenu = (
         isAnimateMapScrollingSet,
         isAnimateZoomingSet,
         gameSpeed,
-        onClose, onChangedZoom, onSetTitlesVisible, onSetMusicPlayerVisible, onSetTypingControllerVisible, onSetAvailableConstructionVisible, onLeaveGame, onStatistics,
-        onHelp, onSetTransportPriority, onSetMusicVolume, onSetHeightAdjust, onSetAnimateMapScrolling, onSetAnimateZooming, onGameSpeedChange }: GameMenuProps
+        onClose,
+        onChangedZoom,
+        onSetTitlesVisible,
+        onSetMusicPlayerVisible,
+        onSetTypingControllerVisible,
+        onSetAvailableConstructionVisible,
+        onLeaveGame,
+        onStatistics,
+        onHelp,
+        onSetTransportPriority,
+        onSetMusicVolume,
+        onSetHeightAdjust,
+        onSetAnimateMapScrolling,
+        onSetAnimateZooming,
+        onGameSpeedChange,
+        onQuota }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
 
@@ -162,6 +177,11 @@ const GameMenu = (
                         onClose()
                     }}
                     >Set transport priority</Button>
+                    <Button onClick={() => {
+                        onQuota()
+
+                        onClose()
+                    }}>Set quota</Button>
                     <Button onClick={() => {
                         onHelp()
 

@@ -1,7 +1,7 @@
 import { getPlayers, getTerrain, getViewForPlayer } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, FlagDebugInfo } from './types'
 
 let gameTickLength = 200;
 
@@ -216,6 +216,7 @@ export interface Monitor {
     getInformationOnPoint: ((point: Point) => Promise<PointInformation>)
     getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
     getHeight: ((point: Point) => number)
+    getFlagDebugInfo: ((flagId: FlagId) => Promise<FlagDebugInfo>)
 
     callScout: ((point: Point) => void)
     callGeologist: ((point: Point) => void)
@@ -228,6 +229,8 @@ export interface Monitor {
     setMilitaryPopulationCloserToBorder: ((amount: number) => void)
     setMilitaryPopulationCloseToBorder: ((amount: number) => void)
     setSoldiersAvailableForAttack: ((amount: number) => void)
+
+    upgrade: ((houseId: HouseId) => void)
 
     setGameSpeed: ((a: GameSpeed) => void)
 
@@ -366,6 +369,7 @@ const monitor: Monitor = {
     getInformationOnPoint,
     getInformationOnPoints,
     getHeight,
+    getFlagDebugInfo,
 
     callScout: callScoutWebsocket,
     callGeologist: callGeologistWebsocket,
@@ -379,6 +383,7 @@ const monitor: Monitor = {
     setMilitaryPopulationCloseToBorder,
     setSoldiersAvailableForAttack,
 
+    upgrade,
     setGameSpeed,
 
     getStrengthWhenPopulatingMilitaryBuildings,
@@ -953,6 +958,8 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     message.newDiscoveredLand?.forEach(point => monitor.discoveredPoints.add(point))
 
     if (message.newDiscoveredLand) {
+        console.log("Got new discovered points")
+
         storeDiscoveredTiles(message.newDiscoveredLand)
     }
 
@@ -1184,16 +1191,15 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
         const pointRight = getPointRight(point)
         const pointUpLeft = getPointUpLeft(point)
 
-        const isLeftDiscovered = monitor.discoveredPoints.has(pointLeft)
-        const isDownLeftDiscovered = monitor.discoveredPoints.has(pointDownLeft)
+        const isLeftDiscovered = pointLeft.x > 0 && monitor.discoveredPoints.has(pointLeft)
+        const isDownLeftDiscovered = pointDownLeft.x > 0 && pointDownLeft.y > 0 && monitor.discoveredPoints.has(pointDownLeft)
         const isDownRightDiscovered = monitor.discoveredPoints.has(pointDownRight)
         const isRightDiscovered = monitor.discoveredPoints.has(pointRight)
         const isUpRightDiscovered = monitor.discoveredPoints.has(pointUpRight)
         const isUpLeftDiscovered = monitor.discoveredPoints.has(pointUpLeft)
-        const isPointLeftDiscovered = monitor.discoveredPoints.has(pointLeft)
 
-        const terrainAtPointLeft = monitor.allTiles.get(pointLeft)
-        const terrainAtPointDownLeft = monitor.allTiles.get(pointDownLeft)
+        const terrainAtPointLeft = pointLeft.x > 0 ? monitor.allTiles.get(pointLeft) : undefined
+        const terrainAtPointDownLeft = (pointDownLeft.x > 0 && pointDownLeft.y > 0) ? monitor.allTiles.get(pointDownLeft) : undefined
         const terrainAtPointDownRight = monitor.allTiles.get(pointDownRight)
         const terrainAtPointRight = monitor.allTiles.get(pointRight)
         const terrainAtPointUpRight = monitor.allTiles.get(pointUpRight)
@@ -1265,7 +1271,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
         }
 
         /* Tile up left */
-        if (isUpLeftDiscovered && isPointLeftDiscovered && terrainAtPointUpLeft && terrainAtPointLeft &&
+        if (isUpLeftDiscovered && isLeftDiscovered && terrainAtPointUpLeft && terrainAtPointLeft &&
             !monitor.pointsWithBelowTileDiscovered.has(pointUpLeft)) {
             monitor.discoveredBelowTiles.add(
                 {
@@ -2246,6 +2252,16 @@ function setSoldiersAvailableForAttack(amount: number): void {
 
 function houseAt(point: Point): HouseInformation | undefined {
     return monitor.housesAt.get(point)
+}
+
+function upgrade(houseId: HouseId): void {
+    websocket?.send(JSON.stringify({ command: 'UPGRADE', houseId }))
+}
+
+async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
+    const options = { flagId }
+
+    return sendRequestAndWaitForReplyWithOptions<FlagDebugInfo, typeof options>('FLAG_DEBUG_INFORMATION', options)
 }
 
 export {

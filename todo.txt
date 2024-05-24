@@ -17,18 +17,71 @@ Todo 1.0
 14. Border markers should look different for water/land
 15. Fix map loading so the default map looks good
 16. Missed discovered land up-right from new guard house
+  - No notification sent?
+    - Not sent from server?
+      - Discovered points reporting depended on order of adding military buildings. Adding one but building it after other military buildings caused the problem.
+    - Message misclassified?
+  - Discovery logic wrong?
 17. Fix NullPointerException that happens after playing for a long time
 18. With guard house, new owned land is larger than discovered land. Reload fixes it
 19. Wild animals walk in place
 20. Frontend sometimes freezes even if the backend is still running
 21. Houses should have their doors open and close
+22. Military buidings should have flags matching hosted soldiers and a cross if they are evacuated
+23. Bug:
+  java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.Road.getCourier()" because "road" is null
+	at org.appland.settlers.model.GameMap.doRemoveRoad(GameMap.java:324)
+	at org.appland.settlers.model.buildings.Building.tearDown(Building.java:650)
+	at org.appland.settlers.model.GameMap.lambda$updateBorder$39(GameMap.java:1137)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:179)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596)
+	at org.appland.settlers.model.GameMap.updateBorder(GameMap.java:1135)
+	at org.appland.settlers.model.buildings.Building.stepTime(Building.java:588)
+	at org.appland.settlers.model.GameMap.stepTime(GameMap.java:414)
+	at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:92)
 
+25. Starting inventory levels
+26. Short range for the quarry
+27. Re-route cargo at full flags when new roads are built to resolve the issue
+28. Confusing - flag of sawmill gets full of wood even though the sawmill has space (and couriers stand waiting and don't deliver to the sawmill)
+29. Remaining stones look too buidings
+30. Remaining stones should disappear when flag/building/road is placed on top
+31. Draw small circle of road under each flag
 
+32. Possible bug when drawing fisherman action
+    utils.ts:876 FOUND NO ACTION: 
+    utils.ts:877 
+    (3) ['fisher', 'LOWER_FISHING_ROD', 'NORTH_WEST']
+    utils.ts:876 FOUND NO ACTION: 
+    utils.ts:877 
+    (3) ['fisher', 'FISHING', 'NORTH_WEST']
+    2
+    type_control.tsx:196 undefined
+    type_control.tsx:196 undefined
+    utils.ts:876 FOUND NO ACTION: 
+    utils.ts:877 
+    (3) ['fisher', 'PULL_UP_FISHING_ROD', 'NORTH_WEST']
+
+33. Inconsistent width of roads going diagonally
 
 Todo 2.0
 ========
 
 1. Build windowing system
-6. In-game and in-game-creation chat
-9. Divide src into sub-folders better. prepare-game, play-game?
-21. Workers should walk slower up-hill and faster down-hill
+2. In-game and in-game-creation chat
+3. Divide src into sub-folders better. prepare-game, play-game?
+4. Workers should walk slower up-hill and faster down-hill
+5. Workers/soldiers should only leave buildings one-by-one, not all at once
+6. Use websocket from start, incl. lobby and game creation

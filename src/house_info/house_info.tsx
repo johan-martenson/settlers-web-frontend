@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
+import { PauseRegular, PlayRegular } from '@fluentui/react-icons'
 import { AttackType, GameId, HouseInformation, Nation, PlayerId, isMaterialUpperCase } from "../api/types"
 import { HouseIcon, InventoryIcon, UiIcon } from "../icon"
 import './house_info.css'
@@ -84,7 +85,11 @@ interface PlannedHouseInfoProps {
 
 const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose }: PlannedHouseInfoProps) => {
     return (
-        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
+        <div
+            className="house-info"
+            onWheel={(event) => event.stopPropagation()}
+            onMouseDown={event => { if (event.button === 2) onClose() }}
+        >
 
             <h1>Planned {house.type}</h1>
 
@@ -113,7 +118,11 @@ interface EnemyHouseInfoProps {
 
 const EnemyHouseInfo = ({ house, nation, onClose }: EnemyHouseInfoProps) => {
     return (
-        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
+        <div
+            className="house-info"
+            onWheel={(event) => event.stopPropagation()}
+            onMouseDown={event => { if (event.button === 2) onClose() }}
+        >
 
             <h1>Enemy building: {house.type}</h1>
 
@@ -140,7 +149,11 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }
     const availableAttackers = house.availableAttackers ?? 0
 
     return (
-        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
+        <div
+            className="house-info"
+            onWheel={(event) => event.stopPropagation()}
+            onMouseDown={event => { if (event.button === 2) onClose() }}
+        >
 
             <h1>Military enemy building: {house.type}</h1>
 
@@ -189,7 +202,11 @@ interface UnfinishedHouseInfo {
 
 const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: UnfinishedHouseInfo) => {
     return (
-        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
+        <div
+            className="house-info"
+            onWheel={(event) => event.stopPropagation()}
+            onMouseDown={event => { if (event.button === 2) onClose() }}
+        >
 
             <h1>{house.type}</h1>
 
@@ -255,7 +272,10 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
     const producedMaterial = house.produces
 
     return (
-        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
+        <div className="house-info"
+            onWheel={(event) => event.stopPropagation()}
+            onMouseDown={event => { if (event.button === 2) onClose() }}
+        >
 
             <h1>{house.type}</h1>
 
@@ -305,24 +325,30 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
 
             </div>
 
-            {house.productionEnabled &&
-                <Button onClick={() => pauseProductionForHouse(gameId, playerId, house.id)} >Pause production</Button>
-            }
+            <div className="building-button-row">
+                {house.productionEnabled &&
+                    <Tooltip content={'Pause production'} relationship='label' withArrow>
+                        <Button onClick={() => pauseProductionForHouse(gameId, playerId, house.id)} ><PauseRegular /></Button>
+                    </Tooltip>
+                }
 
-            {!house.productionEnabled &&
-                <Button onClick={() => resumeProductionForHouse(gameId, playerId, house.id)} >Resume production</Button>
-            }
+                {!house.productionEnabled &&
+                    <Tooltip content={'Resume production'} relationship='label' withArrow>
+                        <Button onClick={() => resumeProductionForHouse(gameId, playerId, house.id)} ><PlayRegular /></Button>
+                    </Tooltip>
+                }
 
-            <Button onClick={() => {
-                removeHouse(house.id, playerId, gameId)
+                <Tooltip content={'Remove'} relationship='label' withArrow>
+                    <Button onClick={() => {
+                        removeHouse(house.id, playerId, gameId)
 
-                onClose()
-            }}
-            >
-                <UiIcon type='DESTROY_BUILDING' />
-                Destroy
-            </Button>
-
+                        onClose()
+                    }}
+                    >
+                        <UiIcon type='DESTROY_BUILDING' />
+                    </Button>
+                </Tooltip>
+            </div>
 
             <Button onClick={() => { onClose() }} >Close</Button>
         </div >

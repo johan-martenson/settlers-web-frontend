@@ -562,6 +562,16 @@ export interface FlagInformation extends Point {
     nation: Nation
 }
 
+export type CargoInformation = {
+    material: Material
+    target: Point
+    targetType: AnyBuilding
+}
+
+export type FlagDebugInfo = FlagInformation & {
+    cargos: CargoInformation[]
+}
+
 export interface BorderInformation {
     playerId: PlayerId
     points: Point[]

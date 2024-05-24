@@ -1,7 +1,7 @@
 import * as d3 from 'd3'
 import React, { Component } from 'react'
 import { getGameStatistics, getLandStatistics } from './api/rest-api'
-import { Dialog } from './dialog'
+import { Dialog } from './components/dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerColor } from './api/types'

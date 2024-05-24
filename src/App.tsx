@@ -15,13 +15,15 @@ import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import { TypeControl, Command } from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
-import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState } from './api/types'
+import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState, RoadId } from './api/types'
 import { Dismiss24Filled, CalendarAgenda24Regular, TextBulletListSquare24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon } from './icon'
 import { HouseInfo } from './house_info/house_info'
 import { sfx } from './sound/sound_effects'
 import { Quotas } from './quotas'
 import { animator } from './utils/animator'
+import { RoadInfo } from './road-info'
+import { Debug } from './debug/debug'
 
 type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
 
@@ -81,7 +83,8 @@ const PauseSign = ({ message }: PauseSignProps) => {
             height: "auto",
             lineHeight: "8rem",
             display: "flex",
-            justifyContent: "center"
+            justifyContent: "center",
+            zIndex: 2000
         }}>
             <div style={{
                 backgroundColor: "black", borderRadius: "5px"
@@ -119,6 +122,7 @@ interface AppState {
     showStatistics?: boolean
     showQuotas?: boolean
     showMenu: boolean
+    showDebug: boolean
     isMusicPlayerVisible: boolean
     isTypingControllerVisible: boolean
     animateMapScrolling: boolean
@@ -128,6 +132,8 @@ interface AppState {
     showTitles: boolean
     showAvailableConstruction: boolean
     showSetTransportPriority: boolean
+    showRoadInfo: boolean
+    roadId?: RoadId
     gameState: GameState
 
     serverUnreachable?: string
@@ -175,8 +181,10 @@ class App extends Component<AppProps, AppState> {
             gameWidth: 0,
             gameHeight: 0,
             showMenu: false,
+            showDebug: false,
             showTitles: true,
             showSetTransportPriority: false,
+            showRoadInfo: false,
             cursorState: 'NOTHING',
             showFpsCounter: false,
             isMusicPlayerVisible: true,
@@ -565,6 +573,9 @@ class App extends Component<AppProps, AppState> {
         this.commands.set("Resume game", {
             action: () => monitor.resumeGame()
         })
+        this.commands.set("Debug", {
+            action: () => this.setState({ showDebug: true })
+        })
 
         // Store information about the player
         this.setState({ player: monitor.players.get(this.props.selfPlayerId) })
@@ -812,10 +823,12 @@ class App extends Component<AppProps, AppState> {
             this.setState(
                 {
                     showMenu: false,
-                    showConstructionInfo: pointInformation,
-                    activeMenu: 'CONSTRUCTION'
+                    showRoadInfo: true,
+                    roadId: pointInformation.roadId
                 }
             )
+
+            console.log("SHOWING ROAD INFO WINDOW")
         }
 
         /* Open the window to construct houses/flags/roads */
@@ -1073,6 +1086,7 @@ class App extends Component<AppProps, AppState> {
                     onSetAnimateMapScrolling={(animateMapScrolling) => this.setState({ animateMapScrolling })}
                     onSetAnimateZooming={(animateZoom) => this.setState({ animateZoom })}
                     onGameSpeedChange={(gameSpeed) => this.setState({ gameSpeed })}
+                    onQuota={() => this.setState({ showQuotas: true })}
                 />
 
                 {this.state.showFriendlyHouseInfo &&
@@ -1130,6 +1144,13 @@ class App extends Component<AppProps, AppState> {
                     />
                 }
 
+                {this.state.showRoadInfo && this.state.roadId &&
+                    <RoadInfo
+                        roadId={this.state.roadId}
+                        onClose={() => this.setState({ showRoadInfo: false })}
+                    />
+                }
+
                 {this.state.isTypingControllerVisible &&
                     <TypeControl commands={this.commands}
                         selectedPoint={this.state.selected}
@@ -1156,6 +1177,8 @@ class App extends Component<AppProps, AppState> {
                 {this.state.gameState === 'EXPIRED' &&
                     <PauseSign message='EXPIRED' />
                 }
+
+                {this.state.showDebug && <Debug point={this.state.selected} onClose={() => this.setState({ showDebug: false })} />}
 
             </div>
         )

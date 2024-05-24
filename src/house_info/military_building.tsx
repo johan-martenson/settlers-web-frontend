@@ -3,7 +3,8 @@ import { Button, Field, Tooltip } from "@fluentui/react-components"
 import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterialUpperCase, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon, UiIcon } from "../icon"
 import './house_info.css'
-import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse, upgradeMilitaryBuilding } from "../api/rest-api"
+import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse } from "../api/rest-api"
+import { monitor } from '../api/ws-api'
 
 interface MilitaryBuildingProps {
     house: HouseInformation
@@ -32,7 +33,15 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
     // TODO: show resources when upgrading. Show text "is upgrading..."
 
     return (
-        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
+        <div
+            className="house-info"
+            onWheel={(event) => event.stopPropagation()} onMouseDown={event => {
+                event.stopPropagation()
+
+                if (event.button === 2) {
+                    onClose()
+                }
+            }}>
 
             <h1>{house.type}</h1>
 
@@ -83,13 +92,13 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
 
                                 return (
                                     <Tooltip content={soldierDisplayName} relationship='label' withArrow key={index} >
-                                        <div style={{display: 'inline'}}><InventoryIcon material={soldierMaterial} nation={nation} key={index} inline /></div>
+                                        <div style={{ display: 'inline' }}><InventoryIcon material={soldierMaterial} nation={nation} key={index} inline /></div>
                                     </Tooltip>
                                 )
                             } else {
                                 return (
                                     <Tooltip content="Open space for additional soldier" relationship='label' withArrow key={index} >
-                                        <div style={{display: 'inline'}}><InventoryIcon material={'PRIVATE'} nation={nation} key={index} inline missing /></div>
+                                        <div style={{ display: 'inline' }}><InventoryIcon material={'PRIVATE'} nation={nation} key={index} inline missing /></div>
                                     </Tooltip>
                                 )
                             }
@@ -113,35 +122,40 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
                 </div>
             </Field>
 
-            {house.promotionsEnabled &&
-                <Button onClick={() => { disablePromotionsForHouse(gameId, playerId, house.id) }} >Disable promotions</Button>
-            }
+            <div className='building-button-row'>
+                {house.promotionsEnabled &&
+                    <Button onClick={() => { disablePromotionsForHouse(gameId, playerId, house.id) }} >Disable<br />promotions</Button>
+                }
 
-            {!house.promotionsEnabled &&
-                <Button onClick={() => { enablePromotionsForHouse(gameId, playerId, house.id) }} >Enable promotions</Button>
-            }
+                {!house.promotionsEnabled &&
+                    <Button onClick={() => { enablePromotionsForHouse(gameId, playerId, house.id) }} >Enable<br />promotions</Button>
+                }
 
-            {isEvacuated(house) &&
-                <Button onClick={() => { cancelEvacuationForHouse(gameId, playerId, house.id) }} >Cancel evacuation</Button>
-            }
+                {isEvacuated(house) &&
+                    <Button onClick={() => { cancelEvacuationForHouse(gameId, playerId, house.id) }} >Cancel<br />evacuation</Button>
+                }
 
-            {!isEvacuated(house) &&
-                <Button onClick={() => { evacuateHouse(gameId, playerId, house.id) }} >Evacuate</Button>
-            }
+                {!isEvacuated(house) &&
+                    <Button onClick={() => { evacuateHouse(gameId, playerId, house.id) }} >Evacuate</Button>
+                }
 
-            {canBeUpgraded(house) && !house.upgrading &&
-                <Button onClick={() => upgradeMilitaryBuilding(gameId, playerId, house.id)} >Upgrade</Button>
-            }
+                {canBeUpgraded(house) && !house.upgrading &&
+                    <Button onClick={() => monitor.upgrade(house.id)} >Upgrade</Button>
+                }
 
-            <Button onClick={() => {
-                removeHouse(house.id, playerId, gameId)
 
-                onClose()
-            }}
-            >
-                <UiIcon type='DESTROY_BUILDING' />
-                Destroy
-            </Button>
+                <Tooltip content={'Remove'} relationship='label' withArrow>
+                    <Button onClick={() => {
+                        removeHouse(house.id, playerId, gameId)
+
+                        onClose()
+                    }}
+                    >
+                        <UiIcon type='DESTROY_BUILDING' />
+                    </Button>
+                </Tooltip>
+
+            </div>
 
             <Button onClick={onClose} >Close</Button>
         </div>

@@ -14,7 +14,6 @@ interface FriendlyFlagInfoProps {
 
 const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
     const nation = props.nation
-
     const onClose = props.onClose
     const onStartNewRoad = props.onStartNewRoad
 
@@ -33,7 +32,11 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
         }, [])
 
     return (
-        <div className='friendly-flag-info' onWheel={(event) => event.stopPropagation()}>
+        <div
+            className='friendly-flag-info'
+            onWheel={(event) => event.stopPropagation()}
+            onMouseDown={event => { if (event.button === 2) { onClose() } }}
+        >
             <h1>Flag</h1>
 
             <div className="flag-information">
@@ -42,25 +45,31 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
 
                 <div className="button-row">
 
-                    <Button
-                        onClick={
-                            async () => {
-                                monitor.removeFlag(flag.id)
+                    <Tooltip content={'Remove flag'} relationship='label' withArrow>
+                        <Button
+                            onClick={
+                                async () => {
+                                    monitor.removeFlag(flag.id)
 
-                                onClose()
+                                    onClose()
+                                }
                             }
-                        }
-                    >Remove</Button>
+                        >
+                            Remove
+                        </Button>
+                    </Tooltip>
 
-                    <Button
-                        onClick={
-                            () => {
-                                onStartNewRoad(flag)
+                    <Tooltip content='Build road' relationship='label' withArrow>
+                        <Button
+                            onClick={
+                                () => {
+                                    onStartNewRoad(flag)
 
-                                onClose()
+                                    onClose()
+                                }
                             }
-                        }
-                    >Build road</Button>
+                        >Build road</Button>
+                    </Tooltip>
 
                     <Tooltip content={"Call geologist"} relationship='label' withArrow>
                         <Button
@@ -78,7 +87,7 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                         </Button>
                     </Tooltip>
 
-                    <Tooltip content={"Call geologist"} relationship='label' withArrow>
+                    <Tooltip content={"Call scout"} relationship='label' withArrow>
                         <Button
                             onClick={
                                 async () => {
@@ -99,7 +108,7 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                     <div className='friendly-flag-info-stacked-cargo'>
                         <Field label='Cargo waiting'>
                             <div className='friendly-flag-info-cargo-list'>
-                                {flag.stackedCargo.map(material => <InventoryIcon material={material} key={material} nation={nation} inline />)}
+                                {flag.stackedCargo.map((material, index) => <InventoryIcon material={material} key={index} nation={nation} inline />)}
                             </div>
                         </Field>
                     </div>

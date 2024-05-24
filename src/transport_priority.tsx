@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { setTransportPriorityForMaterial } from './api/rest-api'
-import { Dialog } from './dialog'
+import { Dialog } from './components/dialog'
 import './transport_priority.css'
 import { GameId, PlayerId, Material, Nation, TransportCategories, TRANSPORT_CATEGORIES } from './api/types'
 import { Tooltip } from '@fluentui/react-components'

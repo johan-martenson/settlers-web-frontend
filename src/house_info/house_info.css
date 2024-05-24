@@ -6,7 +6,6 @@
     left: 10vw;
     top: 10vh;
     width: 30vw;
-    height: 80vh;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -15,7 +14,10 @@
     background-color: darkslategray;
     padding-left: 2em;
     padding-right: 2em;
+    padding-bottom: 2em;
     gap: 10px;
+    height: auto;
+    min-height: 20em;
 }
 
 .headquarter-inventory {
@@ -46,4 +48,11 @@
     justify-content: flex-start;
     align-items: flex-start;
     gap: 10px;
+}
+
+.building-button-row {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    flex-wrap: wrap;
 }

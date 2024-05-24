@@ -7,6 +7,70 @@ import './house_info.css'
 import { useState } from "react"
 import { monitor } from "../api/ws-api"
 
+const MATERIAL_LABELS: Map<string, string> = new Map(Object.entries(
+    {
+        PLANK: 'Plank',
+        WOOD: 'Wood',
+        STONE: 'Stone',
+        PIG: 'Pig',
+        FLOUR: 'Flour',
+        GOLD: 'Gold',
+        IRON: 'Iron',
+        COAL: 'Coal',
+        WATER: 'Water',
+        BREAD: 'Bread',
+        FISH: 'Fish',
+        MEAT: 'Meat',
+        SHIELD: 'Shield',
+        SWORD: 'Sword',
+        BEER: 'Beer',
+        COIN: 'Coin',
+        METALWORKER: 'Metal worker',
+        WHEAT: 'Wheat',
+        SHIPWRIGHT: 'Shipwright',
+        AXE: 'Axe',
+        SHOVEL: 'Shovel',
+        PICK_AXE: 'Pick axe',
+        FISHING_ROD: 'Fishing rod',
+        BOW: 'Bow',
+        SAW: 'Saw',
+        CLEAVER: 'Cleaver',
+        ROLLING_PIN: 'Rolling pin',
+        CRUCIBLE: 'Crucible',
+        TONGS: 'Tongs',
+        SCYTHE: 'Scythe',
+        IRON_BAR: 'Iron bar',
+        ARMORER: 'Armorer',
+        BAKER: 'Baker',
+        BREWER: 'Brewer',
+        BUTCHER: 'Butcher',
+        COURIER: 'Courier',
+        DONKEY_BREEDER: 'Donkey breeder',
+        DONKEY: 'Donkey',
+        FARMER: 'Farmer',
+        FISHERMAN: 'Fisherman',
+        FORESTER: 'Forester',
+        GEOLOGIST: 'Geologist',
+        HUNTER: 'Hunter',
+        IRON_FOUNDER: 'Iron founder',
+        MILLER: 'Miller',
+        MINER: 'Miner',
+        MINTER: 'Minter',
+        PIG_BREEDER: 'Pig breeder',
+        SAWMILL_WORKER: 'Sawmill worker',
+        SCOUT: 'Scout',
+        STONEMASON: 'Stonemason',
+        WOODCUTTER_WORKER: 'Woodcutter',
+        PRIVATE: 'Private',
+        PRIVATE_FIRST_CLASS: 'Private first class',
+        SERGEANT: 'Sergeant',
+        OFFICER: 'Officer',
+        GENERAL: 'General',
+        BUILDER: 'Builder',
+        PLANER: 'Planer'
+    }
+))
+
 interface HeadquarterInfoProps {
     house: HouseInformation
     nation: Nation
@@ -108,7 +172,10 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
         [defenseStrength])
 
     return (
-        <div className="house-info" onWheel={(event) => event.stopPropagation()}>
+        <div className="house-info"
+            onWheel={(event) => event.stopPropagation()}
+            onMouseDown={event => { if (event.button === 2) onClose() }}
+        >
 
             <h1>Headquarters</h1>
 
@@ -142,7 +209,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
 
                         return (
                             <div className="headquarter-inventory-item" key={material} >
-                                <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow >
+                                <Tooltip content={MATERIAL_LABELS.get(material) ?? material.toLocaleLowerCase()} relationship='label' withArrow >
                                     <div><InventoryIcon nation={nation} material={material} scale={1} label={material.toLowerCase()} /></div>
                                 </Tooltip>
                                 {amount}

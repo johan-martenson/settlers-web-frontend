@@ -6,7 +6,8 @@
     left: 10vw;
     top: 10vh;
     width: 30em;
-    height: 80vh;
+    min-height: 10rem;
+    height: auto;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -15,6 +16,7 @@
     background-color: darkslategray;
     padding-left: 2em;
     padding-right: 2em;
+    padding-bottom: 2rem;
     gap: 10px;
 }
 

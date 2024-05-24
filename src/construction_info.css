@@ -11,9 +11,33 @@
     justify-content: space-between;
     align-content: flex-start;
     gap: 10px;
+    padding: 2em;
+    align-items: center;
 }
 
 .house-construction-button {
     display: flex;
     flex-direction: column;
+}
+
+.building-name-label {
+    height: 2em;
+}
+
+.button-row {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.construction-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+    min-height: 10em;
+    height: auto;
+    align-items: center;
+    justify-content: space-between;
+
 }

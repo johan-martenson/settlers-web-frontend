@@ -8,25 +8,21 @@ import { HeadquarterInfo } from "./headquarter"
 import { attackBuilding, houseIsReady, isMilitaryBuilding, pauseProductionForHouse, removeHouse, resumeProductionForHouse } from "../api/rest-api"
 import { MilitaryBuilding } from "./military_building"
 import { monitor } from '../api/ws-api'
+import { Window } from '../components/dialog'
 
 interface HouseInfoProps {
     house: HouseInformation
     selfPlayerId: PlayerId
     gameId: GameId
     nation: Nation
+
     onClose: (() => void)
 }
 
-const HouseInfo = (props: HouseInfoProps) => {
+const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, ...props}: HouseInfoProps) => {
     const [house, setHouse] = useState<HouseInformation>(props.house)
 
-    const selfPlayerId = props.selfPlayerId
-    const nation = props.nation
-    const gameId = props.gameId
-
-    const onClose = props.onClose
-
-    const ownHouse = (house.playerId === selfPlayerId)
+    const isOwnHouse = (house.playerId === selfPlayerId)
 
     useEffect(() => {
 
@@ -43,31 +39,31 @@ const HouseInfo = (props: HouseInfoProps) => {
 
     return (
         <>
-            {ownHouse && house.type === 'Headquarter' &&
+            {isOwnHouse && house.type === 'Headquarter' &&
                 <HeadquarterInfo house={house} nation={nation} onClose={onClose} />
             }
 
-            {ownHouse && house.state === 'PLANNED' &&
+            {isOwnHouse && house.state === 'PLANNED' &&
                 <PlannedHouseInfo house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} />
             }
 
-            {ownHouse && house.state === 'UNFINISHED' &&
+            {isOwnHouse && house.state === 'UNFINISHED' &&
                 <UnfinishedHouseInfo house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} />
             }
 
-            {ownHouse && house.type !== 'Headquarter' && houseIsReady(house) && isMilitaryBuilding(house) &&
+            {isOwnHouse && house.type !== 'Headquarter' && houseIsReady(house) && isMilitaryBuilding(house) &&
                 <MilitaryBuilding house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} />
             }
 
-            {ownHouse && (house.state === 'OCCUPIED' || house.state === 'UNOCCUPIED') && !isMilitaryBuilding(house) &&
+            {isOwnHouse && (house.state === 'OCCUPIED' || house.state === 'UNOCCUPIED') && !isMilitaryBuilding(house) &&
                 <ProductionBuilding house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} />
             }
 
-            {!ownHouse && !isMilitaryBuilding(house) &&
+            {!isOwnHouse && !isMilitaryBuilding(house) &&
                 <EnemyHouseInfo house={house} nation={nation} onClose={onClose} />
             }
 
-            {!ownHouse && isMilitaryBuilding(house) &&
+            {!isOwnHouse && isMilitaryBuilding(house) &&
                 <MilitaryEnemyHouseInfo house={house} gameId={gameId} selfPlayerId={selfPlayerId} nation={nation} onClose={onClose} />
             }
         </>
@@ -85,13 +81,7 @@ interface PlannedHouseInfoProps {
 
 const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose }: PlannedHouseInfoProps) => {
     return (
-        <div
-            className="house-info"
-            onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) onClose() }}
-        >
-
-            <h1>Planned {house.type}</h1>
+        <Window className="house-info" heading={'Planned ' + house.type} onClose={onClose}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -104,8 +94,7 @@ const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose }: PlannedH
                 <UiIcon type='DESTROY_BUILDING' />
                 Destroy
             </Button>
-            <Button onClick={onClose} >Close</Button>
-        </div>
+        </Window>
     )
 }
 
@@ -118,18 +107,9 @@ interface EnemyHouseInfoProps {
 
 const EnemyHouseInfo = ({ house, nation, onClose }: EnemyHouseInfoProps) => {
     return (
-        <div
-            className="house-info"
-            onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) onClose() }}
-        >
-
-            <h1>Enemy building: {house.type}</h1>
-
+        <Window className="house-info" onClose={onClose} heading={`Enemy building: ${house.type}`}>
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
-
-            <Button onClick={onClose} >Close</Button>
-        </div>
+        </Window>
     )
 }
 
@@ -149,14 +129,7 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }
     const availableAttackers = house.availableAttackers ?? 0
 
     return (
-        <div
-            className="house-info"
-            onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) onClose() }}
-        >
-
-            <h1>Military enemy building: {house.type}</h1>
-
+        <Window className="house-info" onClose={onClose} heading={`Military enemy building: {house.type}`}>
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             {house.availableAttackers === 0 && <div>No attack possible</div>}
@@ -185,9 +158,7 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }
                     }>Attack</Button>
                 </div>
             }
-
-            <Button onClick={onClose} >Close</Button>
-        </div>
+        </Window>
     )
 }
 
@@ -202,13 +173,7 @@ interface UnfinishedHouseInfo {
 
 const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: UnfinishedHouseInfo) => {
     return (
-        <div
-            className="house-info"
-            onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) onClose() }}
-        >
-
-            <h1>{house.type}</h1>
+        <Window className="house-info" heading={house.type} onClose={onClose}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -254,8 +219,7 @@ const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: Unfin
                 <UiIcon type='DESTROY_BUILDING' />
                 Destroy
             </Button>
-            <Button onClick={onClose} >Close</Button>
-        </div>
+        </Window>
     )
 }
 
@@ -272,12 +236,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
     const producedMaterial = house.produces
 
     return (
-        <div className="house-info"
-            onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) onClose() }}
-        >
-
-            <h1>{house.type}</h1>
+        <Window className="house-info" onClose={onClose} heading={house.type}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -349,9 +308,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
                     </Button>
                 </Tooltip>
             </div>
-
-            <Button onClick={() => { onClose() }} >Close</Button>
-        </div >
+        </Window >
     )
 }
 

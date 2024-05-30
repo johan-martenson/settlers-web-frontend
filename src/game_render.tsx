@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, WildAnimalType, TerrainAtPoint } from './api/types'
+import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, WildAnimalType, TerrainAtPoint, FlagInformation } from './api/types'
 import { Duration } from './duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from './api/ws-api'
@@ -11,7 +11,7 @@ import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-w
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from './shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
 import { immediateUxState } from './App'
-import { MAIN_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_TEXTURE_MAPPING, OVERLAPS, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
+import { MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
 
 export const DEFAULT_SCALE = 35.0
 export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
@@ -274,7 +274,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         if (this.gl !== undefined && this.drawGroundProgram !== undefined &&
             this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
 
-            this.roadRenderInformation = this.prepareToRenderRoads(monitor.roads.values())
+            this.roadRenderInformation = this.prepareToRenderRoads(monitor.roads.values(), monitor.flags.values())
 
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.coordinates), this.gl.STATIC_DRAW)
@@ -2823,17 +2823,27 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    prepareToRenderRoads(roads: Iterable<RoadInformation>): RenderInformation {
+    prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<FlagInformation>): RenderInformation {
         console.log("Prepare to render roads")
 
-        // Create the render information for the roads
         const coordinates: number[] = []
         const normals: number[] = []
         const textureMapping: number[] = []
 
+        const mainRoadFlagPoints = new PointSetFast()
+        const normalRoadFlagPoints = new PointSetFast()
+
         // Iterate through each segment of the road
         for (const road of roads) {
             let previous: Point | undefined = undefined
+
+            if (road.type === 'MAIN') {
+                mainRoadFlagPoints.add(road.points[0])
+                mainRoadFlagPoints.add(road.points[road.points.length - 1])
+            } else {
+                normalRoadFlagPoints.add(road.points[0])
+                normalRoadFlagPoints.add(road.points[road.points.length - 1])
+            }
 
             for (const point of road.points) {
                 if (previous === undefined) {
@@ -2911,7 +2921,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                // Handle road down-right
+                    // Handle road down-right
                 } else if (previous.x < point.x && previous.y > point.y) {
                     const height0 = monitor.getHeight(previous)
                     const height1 = monitor.getHeight(point)
@@ -2940,7 +2950,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                // Handle road up-left
+                    // Handle road up-left
                 } else if (previous.x > point.x && previous.y < point.y) {
                     const height0 = monitor.getHeight(previous)
                     const height1 = monitor.getHeight(point)
@@ -2969,7 +2979,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                // Handle road down-left
+                    // Handle road down-left
                 } else if (previous.x > point.x && previous.y > point.y) {
                     const height0 = monitor.getHeight(previous)
                     const height1 = monitor.getHeight(point)
@@ -3001,6 +3011,45 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 previous = point
             }
+        }
+
+        // Add a circle of "road" for each flag
+        for (const flag of flags) {
+            const isNormal = normalRoadFlagPoints.has(flag)
+            const isMain = mainRoadFlagPoints.has(flag)
+
+            if (!isNormal && !isMain) {
+                continue
+            }
+
+            const height = monitor.allTiles.get(flag)?.height ?? 0
+            const normal = this.normals.get(flag) ?? { x: 0, y: 0, z: 1 }
+
+            // TODO: read out height and normals surrounding and then interpolate
+
+            Array.prototype.push.apply(
+                coordinates,
+                [
+                    flag.x - 0.15, flag.y - 0.15, height,
+                    flag.x - 0.15, flag.y + 0.15, height,
+                    flag.x + 0.15, flag.y - 0.15, height,
+                    flag.x - 0.15, flag.y + 0.15, height,
+                    flag.x + 0.15, flag.y - 0.15, height,
+                    flag.x + 0.15, flag.y + 0.15, height
+                ]
+            )
+
+            Array.prototype.push.apply(normals,
+                [
+                    normal.x, normal.y, normal.z,
+                    normal.x, normal.y, normal.z,
+                    normal.x, normal.y, normal.z,
+                    normal.x, normal.y, normal.z,
+                    normal.x, normal.y, normal.z,
+                    normal.x, normal.y, normal.z
+                ])
+
+            Array.prototype.push.apply(textureMapping, isMain ? MAIN_ROAD_WITH_FLAG : NORMAL_ROAD_WITH_FLAG)
         }
 
         return {

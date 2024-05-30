@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { HELP_PAGES, PageType } from './help_pages'
 import './guide.css'
 import { Button } from '@fluentui/react-components'
+import { Window } from './components/dialog'
 
 interface GuideProps {
     onClose: (() => void)
@@ -13,7 +14,7 @@ const Guide = ({ onClose }: GuideProps) => {
     const currentPage: PageType = HELP_PAGES[pageNumber]
 
     return (
-        <div className="guide">
+        <Window className="guide" heading={currentPage.title} onClose={onClose}>
 
             <Page page={currentPage} />
 
@@ -26,9 +27,7 @@ const Guide = ({ onClose }: GuideProps) => {
                     <Button onClick={() => { setPageNumber(pageNumber + 1) }} >Next</Button>
                 }
             </div>
-
-            <Button onClick={() => onClose()}>Close</Button>
-        </div>
+        </Window>
     )
 }
 
@@ -39,8 +38,6 @@ interface PageProps {
 const Page = ({ page }: PageProps) => {
     return (
         <div className="page">
-
-            <h1 className="page-title">{page.title}</h1>
 
             <div className="DialogSection PageIllustrations">
 

@@ -1,7 +1,7 @@
 import * as d3 from 'd3'
 import React, { Component } from 'react'
 import { getGameStatistics, getLandStatistics } from './api/rest-api'
-import { Dialog } from './components/dialog'
+import { Window } from './components/dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerColor } from './api/types'
@@ -85,7 +85,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const titleLabel = "Statistics"
 
         return (
-            <Dialog heading={titleLabel} onCloseDialog={() => this.props.onClose()} floating >
+            <Window heading={titleLabel} onClose={this.props.onClose}>
                 <div id="stats-page">
                     <TabList onTabSelect={
                         (event: SelectTabEvent, data: SelectTabData) => {
@@ -118,7 +118,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                         </div>
                     }
                 </div>
-            </Dialog>
+            </Window>
         )
     }
 

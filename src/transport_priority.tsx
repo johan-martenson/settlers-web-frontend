@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { setTransportPriorityForMaterial } from './api/rest-api'
-import { Dialog } from './components/dialog'
+import { Window } from './components/dialog'
 import './transport_priority.css'
 import { GameId, PlayerId, Material, Nation, TransportCategories, TRANSPORT_CATEGORIES } from './api/types'
 import { Tooltip } from '@fluentui/react-components'
@@ -79,7 +79,7 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTranspor
     }
 
     return (
-        <Dialog heading="Transport priority" floating onCloseDialog={() => onClose()}>
+        <Window heading="Transport priority" onClose={onClose}>
             <div className='transport-priority-list'>
                 {priority.map(
                     (category, index) => {
@@ -109,7 +109,7 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTranspor
                 )
                 }
             </div>
-        </Dialog >)
+        </Window >)
 }
 
 export { SetTransportPriority }

@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react'
-import { Button, Field, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from "@fluentui/react-components"
+import { Field, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from "@fluentui/react-components"
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
 import { HouseInformation, MATERIALS, Nation, SOLDIER_TYPES, getSoldierDisplayName, isHeadquarterInformation, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon } from "../icon"
 import './house_info.css'
 import { useState } from "react"
 import { monitor } from "../api/ws-api"
+import { Window } from '../components/dialog'
 
 const MATERIAL_LABELS: Map<string, string> = new Map(Object.entries(
     {
@@ -87,6 +88,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
     const [populateCloserToBorder, setPopulateCloserToBorder] = useState<number>(5)
     const [populateCloseToBorder, setPopulateCloseToBorder] = useState<number>(5)
     const [loaded, setLoaded] = useState<boolean>(false)
+    const [hover, setHover] = useState<string>()
 
     useEffect(
         () => {
@@ -172,13 +174,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
         [defenseStrength])
 
     return (
-        <div className="house-info"
-            onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) onClose() }}
-        >
-
-            <h1>Headquarters</h1>
-
+        <Window className="house-info" onClose={onClose} heading='Headquarters' hoverInfo={hover}>
             <HouseIcon houseType="Headquarter" nation={nation} drawShadow />
 
             <TabList
@@ -206,11 +202,17 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
                 <div className="headquarter-inventory">
                     {Array.from(MATERIALS).filter(material => material !== 'STOREHOUSE_WORKER' && material !== 'WELL_WORKER').map(material => {
                         const amount = house.resources[material]?.has ?? 0
+                        const label = MATERIAL_LABELS.get(material) ?? material.toLocaleLowerCase()
 
                         return (
                             <div className="headquarter-inventory-item" key={material} >
-                                <Tooltip content={MATERIAL_LABELS.get(material) ?? material.toLocaleLowerCase()} relationship='label' withArrow >
-                                    <div><InventoryIcon nation={nation} material={material} scale={1} label={material.toLowerCase()} /></div>
+                                <Tooltip content={label} relationship='label' withArrow >
+                                    <div
+                                        onMouseEnter={() => setHover(label)}
+                                        onMouseLeave={() => setHover(undefined)}
+                                    >
+                                        <InventoryIcon nation={nation} material={material} scale={1} label={material.toLowerCase()} />
+                                    </div>
                                 </Tooltip>
                                 {amount}
                             </div>
@@ -228,7 +230,13 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
                             return (
                                 <div className='headquarter-inventory-item' key={rank} style={{ display: "block" }}>
                                     ({house.inReserve[rank]} / {house.reserved[rank]}) <Tooltip content={soldierDisplayName} relationship='label' withArrow key={rank}>
-                                        <div style={{ display: "inline" }}><InventoryIcon material={rankToMaterial(rank)} nation={nation} inline /></div>
+                                        <div
+                                            style={{ display: "inline" }}
+                                            onMouseEnter={() => setHover(soldierDisplayName)}
+                                            onMouseLeave={() => setHover(undefined)}
+                                        >
+                                            <InventoryIcon material={rankToMaterial(rank)} nation={nation} inline />
+                                        </div>
                                     </Tooltip>
                                     <Subtract16Filled onClick={() => house.reserved[rank] !== 0 && monitor.setReservedSoldiers(rank, house.reserved[rank] - 1)} />
                                     <Add16Filled onClick={() => house.reserved[rank] !== 100 && monitor.setReservedSoldiers(rank, house.reserved[rank] + 1)} />
@@ -299,9 +307,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
                 </div>
             }
 
-            <Button onClick={() => onClose()} >Close</Button>
-
-        </div >
+        </Window>
     )
 }
 

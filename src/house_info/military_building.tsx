@@ -1,10 +1,12 @@
 import React from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
+import { Dismiss16Filled, ExpandUpRight24Filled } from '@fluentui/react-icons'
 import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterialUpperCase, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon, UiIcon } from "../icon"
 import './house_info.css'
 import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse } from "../api/rest-api"
 import { monitor } from '../api/ws-api'
+import { Window } from '../components/dialog'
 
 interface MilitaryBuildingProps {
     house: HouseInformation
@@ -33,17 +35,7 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
     // TODO: show resources when upgrading. Show text "is upgrading..."
 
     return (
-        <div
-            className="house-info"
-            onWheel={(event) => event.stopPropagation()} onMouseDown={event => {
-                event.stopPropagation()
-
-                if (event.button === 2) {
-                    onClose()
-                }
-            }}>
-
-            <h1>{house.type}</h1>
+        <Window className="house-info" heading={house.type} onClose={onClose}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -140,7 +132,9 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
                 }
 
                 {canBeUpgraded(house) && !house.upgrading &&
-                    <Button onClick={() => monitor.upgrade(house.id)} >Upgrade</Button>
+                    <Button onClick={() => monitor.upgrade(house.id)} >
+                        <ExpandUpRight24Filled />
+                    </Button>
                 }
 
 
@@ -157,8 +151,10 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
 
             </div>
 
-            <Button onClick={onClose} >Close</Button>
-        </div>
+            <Button onClick={onClose} >
+                <Dismiss16Filled />
+            </Button>
+        </Window>
     )
 }
 

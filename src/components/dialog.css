@@ -1,0 +1,72 @@
+.window {
+    padding-left: 2em;
+    padding-right: 2em;
+    z-index: 999;
+    background-color: darkslategray;
+    border-radius: var(--dialog-rounded-corner);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    margin: auto;
+    gap: 2em;
+
+    .h2 {
+        text-align: left;
+    }
+}
+
+.window-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+    min-height: 10em;
+    height: auto;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hover-info-label {
+    height: 2em;
+}
+
+.DialogSection {
+    margin-top: 0;
+    margin-bottom: 0;
+    max-height: 100%;
+    width: 100%;
+}
+
+.DialogSection h3 {
+    margin-top: 0;
+    margin-bottom: 0;
+    text-align: left;
+}
+
+/* Make dialogs occupy the full screen on small screens */
+@media (max-width: 999px) {
+    .window {
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+}
+
+/* Adjust for screens larger than mobile */
+@media screen and (min-width: 1000px) {
+    .window {
+        position: absolute;
+        left: 20vw;
+        top: 10vh;
+        width: 40vw;
+        height: auto;
+        min-height: 20em;
+        margin: auto;
+        padding: 2em;
+    }
+}
+
+.BottomButtons {
+    display: flex;
+    justify-content: center;
+}

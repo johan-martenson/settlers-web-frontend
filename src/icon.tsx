@@ -16,10 +16,8 @@ interface WorkerIconProps {
     drawShadow?: boolean
 }
 
-const WorkerIcon = (props: WorkerIconProps) => {
-    const worker = props.worker
+const WorkerIcon = ({ worker, nation, ...props }: WorkerIconProps) => {
     const animate = props.animate ?? false
-    const nation = props.nation
     const direction = props.direction ?? 'WEST'
     const scale = props.scale ?? 1
     const color = props.color ?? 'BLUE'
@@ -119,7 +117,7 @@ const WorkerIcon = (props: WorkerIconProps) => {
                     context.globalCompositeOperation = "source-over"
                 }
 
-            context.drawImage(sourceImage,
+                context.drawImage(sourceImage,
                     drawInfo.sourceX, drawInfo.sourceY,
                     drawInfo.width, drawInfo.height,
                     0, 0,
@@ -141,36 +139,35 @@ interface HouseProps {
     drawShadow?: boolean
 }
 
-const HouseIcon = (props: HouseProps) => {
-    const nation = props.nation
-    const houseType = props.houseType
+const HouseIcon = ({ nation, houseType, ...props }: HouseProps) => {
     const scale = props.scale ?? 1
     const drawShadow = props.drawShadow ?? false
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
     const [sourceImage, setSourceImage] = useState<ImageBitmap>()
 
     useEffect(() => {
-            (async () => {
-                await houses.load()
+        (async () => {
+            await houses.load()
 
-                const image = houses.getSourceImage()
-                const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
+            const image = houses.getSourceImage()
+            const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
 
-                if (image && drawArray) {
-                    const imageBitmap = await createImageBitmap(image)
+            if (image && drawArray) {
+                const imageBitmap = await createImageBitmap(image)
 
-                    setSourceImage(imageBitmap)
+                setSourceImage(imageBitmap)
 
-                    setDimension({
-                        width: Math.max(drawArray[0].offsetX, drawArray[1].offsetX) + Math.max(drawArray[0].width - drawArray[0].offsetX, drawArray[1].width - drawArray[1].offsetX),
-                        height: Math.max(drawArray[0].offsetY, drawArray[1].offsetY) + Math.max(drawArray[0].height - drawArray[0].offsetY, drawArray[1].height - drawArray[1].offsetY)
-                    })
-                } else {
-                    console.error("No image")
-                }
-            })().then()
+                setDimension({
+                    width: Math.max(drawArray[0].offsetX, drawArray[1].offsetX) + Math.max(drawArray[0].width - drawArray[0].offsetX, drawArray[1].width - drawArray[1].offsetX),
+                    height: Math.max(drawArray[0].offsetY, drawArray[1].offsetY) + Math.max(drawArray[0].height - drawArray[0].offsetY, drawArray[1].height - drawArray[1].offsetY)
+                })
+            } else {
+                console.error("No image")
+            }
+        })().then()
     }, [nation, houseType])
 
     useEffect(() => {
@@ -225,7 +222,7 @@ const HouseIcon = (props: HouseProps) => {
                     context.globalCompositeOperation = "source-over"
                 }
 
-            context.drawImage(sourceImage,
+                context.drawImage(sourceImage,
                     drawInfo.sourceX, drawInfo.sourceY,
                     drawInfo.width, drawInfo.height,
                     0, 0,
@@ -247,9 +244,9 @@ interface InventoryIconProps {
     missing?: boolean
 }
 
-const InventoryIcon = (props: InventoryIconProps) => {
-    const url = materialImageAtlasHandler.getInventoryIconUrl(props.nation, props.material)
-    const scale = (props?.scale !== undefined) ? props.scale : 1.0
+const InventoryIcon = ({ nation, material, ...props }: InventoryIconProps) => {
+    const url = materialImageAtlasHandler.getInventoryIconUrl(nation, material)
+    const scale = props.scale ?? 1.0
 
     const displayStyle = (props.inline) ? 'inline' : 'block'
     const transparency = (props.missing) ? '0.5' : '1.0'
@@ -272,17 +269,16 @@ const InventoryIcon = (props: InventoryIconProps) => {
 
 export type UiIconType = 'DESTROY_BUILDING' | 'SCISSORS' | 'INFORMATION' | 'GEOLOGIST' | 'ATTACK'
 
-
 interface UiIconProps {
     type: UiIconType
     scale?: number
 }
 
-const UiIcon = (props: UiIconProps) => {
-    const type = props.type
+const UiIcon = ({ type, ...props }: UiIconProps) => {
     const scale = props.scale ?? 1.0
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
     const [sourceImage, setSourceImage] = useState<ImageBitmap>()
 
@@ -299,7 +295,7 @@ const UiIcon = (props: UiIconProps) => {
 
                 if (drawInfo) {
                     setSourceImage(imageBitmap)
-                    setDimension({ width: drawInfo.width, height: drawInfo.height})
+                    setDimension({ width: drawInfo.width, height: drawInfo.height })
                 }
 
                 console.log("Set image")
@@ -374,15 +370,14 @@ interface FlagIconProps {
     drawShadow?: boolean
 }
 
-const FlagIcon = (props: FlagIconProps) => {
-    const type = props.type
+const FlagIcon = ({ type, nation, ...props }: FlagIconProps) => {
     const animate = props.animate ?? false
-    const nation = props.nation
     const scale = props.scale ?? 1
     const color = props.color ?? 'BLUE'
     const drawShadow = props.drawShadow ?? false
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
     const [animationIndex, setAnimationIndex] = useState<number>(0)
     const [animationHandler, setAnimationHandler] = useState<FlagAnimation>()
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })

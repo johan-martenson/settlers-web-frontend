@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react"
 import { HouseIcon } from "./icon"
 import './quotas.css'
-import { Button, Field, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components"
+import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components"
 import { Nation } from "./api/types"
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
 import { monitor } from "./api/ws-api"
 import { AmountBar } from "./amount_bar"
+import { Window } from './components/dialog'
 
 interface QuotasProps {
     nation: Nation
@@ -124,9 +125,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     }, [armoryIronBarAmount, metalworksIronBarAmount])
 
     return (
-        <div className="quotas-window" onWheel={(event) => event.stopPropagation()}>
-
-            <h1>Quotas</h1>
+        <Window className="quotas-window" heading='Quotas' onClose={onClose}>
 
             <TabList
                 defaultSelectedValue={materialToManage}
@@ -391,8 +390,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
                     </Field>
                 </>
             }
-            <Button onClick={() => onClose()} >Close</Button>
-        </div>
+        </Window>
     )
 }
 

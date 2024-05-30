@@ -4,6 +4,7 @@ import './friendly_flag_info.css'
 import { monitor } from './api/ws-api'
 import { Button, Field, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, InventoryIcon, UiIcon } from './icon'
+import { Window } from './components/dialog'
 
 interface FriendlyFlagInfoProps {
     flag: FlagInformation
@@ -32,13 +33,7 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
         }, [])
 
     return (
-        <div
-            className='friendly-flag-info'
-            onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) { onClose() } }}
-        >
-            <h1>Flag</h1>
-
+        <Window className='friendly-flag-info' heading='Flag' onClose={onClose}>
             <div className="flag-information">
 
                 <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate drawShadow />
@@ -114,9 +109,8 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                     </div>
                 }
             </div>
-            <Button onClick={() => onClose()}>Close</Button>
 
-        </div>
+        </Window>
     )
 }
 

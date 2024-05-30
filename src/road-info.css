@@ -1,0 +1,26 @@
+.road-info {
+    display: flex;
+    flex-direction: column;
+    background-color: darkgray;
+    color: white;
+    z-index: 2000;
+    position: absolute;
+    left: 10vw;
+    top: 10vh;
+    width: 20em;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: flex-start;
+    background-color: darkslategray;
+    padding-left: 2em;
+    padding-right: 2em;
+    padding-bottom: 2em;
+    gap: 10px;
+    height: auto;
+    min-height: 5em;
+}
+
+.button-row {
+    display: flex;
+    flex-direction: row;
+}

@@ -57,10 +57,10 @@ Todo 1.0
 27. Re-route cargo at full flags when new roads are built to resolve the issue
   - Re-route both to the headquarters/storehouses, and to consumers directly
   - Overload happends when many things need to get to the headquarters and something is getting delivered in the opposite direction but can't because the flag is full
+  - Should cargos not be sent if there is no path without overloaded flags?
 28. Confusing - flag of sawmill gets full of wood even though the sawmill has space (and couriers stand waiting and don't deliver to the sawmill)
 29. Remaining stones look too buidings
 30. Remaining stones should disappear when flag/building/road is placed on top
-31. Draw small circle of road under each flag
 
 32. Possible bug when drawing fisherman action
     utils.ts:876 FOUND NO ACTION: 

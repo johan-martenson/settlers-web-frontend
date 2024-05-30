@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES } from './api/types'
 import './construction_info.css'
-import { Dialog, DialogSection } from './components/dialog'
+import { Window, DialogSection } from './components/dialog'
 import { monitor } from './api/ws-api'
 import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from './utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
@@ -66,7 +66,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
     }
 
     return (
-        <Dialog id="ConstructionInfo" className="ConstructionInfoWindow" heading="Construction" onCloseDialog={onClose} floating={true}>
+        <Window id="ConstructionInfo" className="construction-info-window" heading="Construction" onClose={onClose} hoverInfo={hover}>
 
             <div className='construction-info'>
                 <TabList
@@ -102,6 +102,9 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                                                 onClose()
                                             }
                                         }
+
+                                        onMouseEnter={() => setHover("Raise flag")}
+                                        onMouseLeave={() => setHover(undefined)}
                                     >
                                         <FlagIcon type='NORMAL' nation={nation} />
 
@@ -240,13 +243,8 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                     </DialogSection>
                 }
 
-                {selected === 'Buildings' &&
-                    <div className='building-name-label'>
-                        {hover}
-                    </div>
-                }
             </div>
-        </Dialog>
+        </Window>
     )
 }
 

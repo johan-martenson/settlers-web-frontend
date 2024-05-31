@@ -2852,158 +2852,108 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                const normalPrevious = this.normals?.get(previous)
-                const normalPoint = this.normals?.get(point)
+                let left
+                let right
 
-                if (normalPrevious === undefined || normalPoint === undefined) {
+                if (previous.x < point.x) {
+                    left = previous
+                    right = point
+                } else {
+                    left = point
+                    right = previous
+                }
+
+                const normalLeft = this.normals?.get(left)
+                const normalRight = this.normals?.get(right)
+
+                if (normalLeft === undefined || normalRight === undefined) {
                     console.error("Missing normals")
-                    console.log(normalPrevious)
-                    console.log(normalPoint)
+                    console.log(normalLeft)
+                    console.log(normalRight)
 
                     continue
                 }
 
                 // Handle horizontal roads
-                if (previous.y === point.y) {
-                    const height0 = monitor.getHeight(previous)
-                    const height1 = monitor.getHeight(point)
+                if (left.y === right.y) {
+                    const heightLeft = monitor.getHeight(left)
+                    const heightRight = monitor.getHeight(right)
 
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x, previous.y - 0.15, height0,
-                            previous.x, previous.y + 0.15, height0,
-                            point.x, point.y - 0.15, height1,
-                            previous.x, previous.y + 0.15, height0,
-                            point.x, point.y - 0.15, height1,
-                            point.x, point.y + 0.15, height1
-                        ]
-                    )
+                            left.x, left.y - 0.15, heightLeft,
+                            left.x, left.y + 0.15, heightLeft,
+                            right.x, right.y - 0.15, heightRight,
+                            left.x, left.y + 0.15, heightLeft,
+                            right.x, right.y - 0.15, heightRight,
+                            right.x, right.y + 0.15, heightRight
+                        ])
 
                     Array.prototype.push.apply(normals,
                         [
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalRight.x, normalRight.y, normalRight.z,
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalRight.x, normalRight.y, normalRight.z,
+                            normalRight.x, normalRight.y, normalRight.z
                         ])
 
                     Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                    // Handle road up-right
-                } else if (previous.x < point.x && previous.y < point.y) {
-                    const height0 = monitor.getHeight(previous)
-                    const height1 = monitor.getHeight(point)
+                // Handle road up-right
+                } else if (left.y < right.y) {
+                    const heightLeft = monitor.getHeight(left)
+                    const heightRight = monitor.getHeight(right)
 
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x + 0.1, previous.y - 0.1, height0,
-                            previous.x - 0.1, previous.y + 0.1, height0,
-                            point.x - 0.1, point.y - 0.1, height1,
-                            previous.x - 0.1, previous.y + 0.1, height0,
-                            point.x + 0.1, point.y - 0.1, height1,
-                            point.x - 0.1, point.y + 0.1, height1
-                        ]
-                    )
+                            left.x + 0.1, left.y - 0.1, heightLeft,
+                            left.x - 0.1, left.y + 0.1, heightLeft,
+                            right.x + 0.1, right.y - 0.1, heightRight,
+                            left.x - 0.1, left.y + 0.1, heightLeft,
+                            right.x + 0.1, right.y - 0.1, heightRight,
+                            right.x - 0.1, right.y + 0.1, heightRight
+                        ])
 
                     Array.prototype.push.apply(normals,
                         [
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalRight.x, normalRight.y, normalRight.z,
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalRight.x, normalRight.y, normalRight.z,
+                            normalRight.x, normalRight.y, normalRight.z
                         ])
 
                     Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                    // Handle road down-right
-                } else if (previous.x < point.x && previous.y > point.y) {
-                    const height0 = monitor.getHeight(previous)
-                    const height1 = monitor.getHeight(point)
+                // Handle road down-right
+                } else if (left.y > right.y) {
+                    const heightLeft = monitor.getHeight(left)
+                    const heightRight = monitor.getHeight(right)
 
                     Array.prototype.push.apply(
                         coordinates,
                         [
-                            previous.x - 0.1, previous.y - 0.1, height0,
-                            previous.x + 0.1, previous.y + 0.1, height0,
-                            point.x - 0.1, point.y - 0.1, height1,
-                            previous.x + 0.1, previous.y + 0.1, height0,
-                            point.x - 0.1, point.y - 0.1, height1,
-                            point.x + 0.1, point.y + 0.1, height1
-                        ]
-                    )
-
-                    Array.prototype.push.apply(normals,
-                        [
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z
+                            left.x - 0.1, left.y - 0.1, heightLeft,
+                            left.x + 0.1, left.y + 0.1, heightLeft,
+                            right.x - 0.1, right.y - 0.1, heightRight,
+                            left.x + 0.1, left.y + 0.1, heightLeft,
+                            right.x - 0.1, right.y - 0.1, heightRight,
+                            right.x + 0.1, right.y + 0.1, heightRight
                         ])
 
-                    Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
-
-                    // Handle road up-left
-                } else if (previous.x > point.x && previous.y < point.y) {
-                    const height0 = monitor.getHeight(previous)
-                    const height1 = monitor.getHeight(point)
-
-                    Array.prototype.push.apply(
-                        coordinates,
-                        [
-                            previous.x - 0.1, previous.y - 0.1, height0,
-                            previous.x + 0.1, previous.y + 0.1, height0,
-                            point.x - 0.1, point.y - 0.1, height1,
-                            previous.x + 0.1, previous.y + 0.1, height0,
-                            point.x - 0.1, point.y - 0.1, height1,
-                            point.x + 0.1, point.y + 0.1, height1
-                        ]
-                    )
-
                     Array.prototype.push.apply(normals,
                         [
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z
-                        ])
-
-                    Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
-
-                    // Handle road down-left
-                } else if (previous.x > point.x && previous.y > point.y) {
-                    const height0 = monitor.getHeight(previous)
-                    const height1 = monitor.getHeight(point)
-
-                    Array.prototype.push.apply(
-                        coordinates,
-                        [
-                            previous.x + 0.1, previous.y - 0.1, height0,
-                            previous.x - 0.1, previous.y + 0.1, height0,
-                            point.x - 0.1, point.y - 0.1, height1,
-                            previous.x - 0.1, previous.y + 0.1, height0,
-                            point.x - 0.1, point.y - 0.1, height1,
-                            point.x - 0.1, point.y + 0.1, height1
-                        ]
-                    )
-
-                    Array.prototype.push.apply(normals,
-                        [
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPrevious.x, normalPrevious.y, normalPrevious.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z,
-                            normalPoint.x, normalPoint.y, normalPoint.z
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalRight.x, normalRight.y, normalRight.z,
+                            normalLeft.x, normalLeft.y, normalLeft.z,
+                            normalRight.x, normalRight.y, normalRight.z,
+                            normalRight.x, normalRight.y, normalRight.z
                         ])
 
                     Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)

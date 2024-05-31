@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import { Dismiss16Filled } from '@fluentui/react-icons'
 import './dialog.css'
@@ -16,6 +16,8 @@ interface WindowProps {
 function Window(props: WindowProps) {
     const className = props.className !== undefined ? `window ${props.className}` : 'window'
 
+    const [windowHoverInfo, setWindowHoverInfo] = useState<string>()
+
     return (
         <div
             className={className}
@@ -29,9 +31,13 @@ function Window(props: WindowProps) {
                 {props.children}
             </div>
             <div className='hover-info-label'>
-                {props.hoverInfo}
+                {windowHoverInfo ?? props.hoverInfo}
             </div>
-            <Button onClick={() => props.onClose()} >
+            <Button
+                onClick={() => props.onClose()}
+                onMouseEnter={() => setWindowHoverInfo("Close window")}
+                onMouseLeave={() => setWindowHoverInfo(undefined)}
+            >
                 <Dismiss16Filled />
             </Button>
         </div >

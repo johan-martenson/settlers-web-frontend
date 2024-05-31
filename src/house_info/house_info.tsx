@@ -19,7 +19,7 @@ interface HouseInfoProps {
     onClose: (() => void)
 }
 
-const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, ...props}: HouseInfoProps) => {
+const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, ...props }: HouseInfoProps) => {
     const [house, setHouse] = useState<HouseInformation>(props.house)
 
     const isOwnHouse = (house.playerId === selfPlayerId)
@@ -235,8 +235,10 @@ interface ProductionBuildingProps {
 const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: ProductionBuildingProps) => {
     const producedMaterial = house.produces
 
+    const [hoverInfo, setHoverInfo] = useState<string>()
+
     return (
-        <Window className="house-info" onClose={onClose} heading={house.type}>
+        <Window className="house-info" onClose={onClose} heading={house.type} hoverInfo={hoverInfo}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -260,12 +262,22 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
                                         return <div key={material}>
                                             {Array.from({ length: has }, () => 1).map(
                                                 (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
-                                                    <span><InventoryIcon material={material} nation={nation} key={index} inline /></span>
+                                                    <span
+                                                        onMouseEnter={() => setHoverInfo(material.toLocaleLowerCase())}
+                                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                                    >
+                                                        <InventoryIcon material={material} nation={nation} key={index} inline />
+                                                    </span>
                                                 </Tooltip>
                                             )}
                                             {Array.from({ length: gap }, () => 1).map(
                                                 (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
-                                                    <span><InventoryIcon material={material} nation={nation} key={index + 10} inline missing /></span>
+                                                    <span
+                                                        onMouseEnter={() => setHoverInfo(material.toLocaleLowerCase())}
+                                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                                    >
+                                                        <InventoryIcon material={material} nation={nation} key={index + 10} inline missing />
+                                                    </span>
                                                 </Tooltip>
                                             )}
                                         </div>
@@ -277,9 +289,12 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
                 }
 
                 {producedMaterial &&
-                    <div>Produces: <Tooltip content={producedMaterial} relationship='label' withArrow >
-                        <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
-                    </Tooltip></div>
+                    <div
+                        onMouseEnter={() => setHoverInfo(producedMaterial)}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >Produces: <Tooltip content={producedMaterial} relationship='label' withArrow >
+                            <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
+                        </Tooltip></div>
                 }
 
             </div>
@@ -287,13 +302,24 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
             <div className="building-button-row">
                 {house.productionEnabled &&
                     <Tooltip content={'Pause production'} relationship='label' withArrow>
-                        <Button onClick={() => pauseProductionForHouse(gameId, playerId, house.id)} ><PauseRegular /></Button>
+                        <Button
+                            onClick={() => pauseProductionForHouse(gameId, playerId, house.id)}
+                            onMouseEnter={() => setHoverInfo("Pause production")}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        ><PauseRegular />
+                        </Button>
                     </Tooltip>
                 }
 
                 {!house.productionEnabled &&
                     <Tooltip content={'Resume production'} relationship='label' withArrow>
-                        <Button onClick={() => resumeProductionForHouse(gameId, playerId, house.id)} ><PlayRegular /></Button>
+                        <Button
+                            onClick={() => resumeProductionForHouse(gameId, playerId, house.id)}
+                            onMouseEnter={() => setHoverInfo("Resume production")}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        >
+                            <PlayRegular />
+                        </Button>
                     </Tooltip>
                 }
 
@@ -303,6 +329,8 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: Produc
 
                         onClose()
                     }}
+                        onMouseEnter={() => setHoverInfo("Tear down")}
+                        onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         <UiIcon type='DESTROY_BUILDING' />
                     </Button>

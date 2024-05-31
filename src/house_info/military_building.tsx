@@ -1,6 +1,5 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
-import { Dismiss16Filled, ExpandUpRight24Filled } from '@fluentui/react-icons'
 import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterialUpperCase, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon, UiIcon } from "../icon"
 import './house_info.css'
@@ -20,6 +19,8 @@ interface MilitaryBuildingProps {
 const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: MilitaryBuildingProps) => {
     const soldiers: (SoldierType | null)[] = []
 
+    const [hoverInfo, setHoverInfo] = useState<string>()
+
     if (house.soldiers && house.maxSoldiers) {
         soldiers.push(...house.soldiers)
 
@@ -35,7 +36,7 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
     // TODO: show resources when upgrading. Show text "is upgrading..."
 
     return (
-        <Window className="house-info" heading={house.type} onClose={onClose}>
+        <Window className="house-info" heading={house.type} onClose={onClose} hoverInfo={hoverInfo}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -116,24 +117,52 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
 
             <div className='building-button-row'>
                 {house.promotionsEnabled &&
-                    <Button onClick={() => { disablePromotionsForHouse(gameId, playerId, house.id) }} >Disable<br />promotions</Button>
+                    <Button
+                        onClick={() => { disablePromotionsForHouse(gameId, playerId, house.id) }}
+                        onMouseEnter={() => setHoverInfo("Disable promotions")}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        Disable<br />promotions
+                    </Button>
                 }
 
                 {!house.promotionsEnabled &&
-                    <Button onClick={() => { enablePromotionsForHouse(gameId, playerId, house.id) }} >Enable<br />promotions</Button>
+                    <Button
+                        onClick={() => { enablePromotionsForHouse(gameId, playerId, house.id) }}
+                        onMouseEnter={() => setHoverInfo("Enable promotions")}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        Enable<br />promotions
+                    </Button>
                 }
 
                 {isEvacuated(house) &&
-                    <Button onClick={() => { cancelEvacuationForHouse(gameId, playerId, house.id) }} >Cancel<br />evacuation</Button>
+                    <Button
+                        onClick={() => { cancelEvacuationForHouse(gameId, playerId, house.id) }}
+                        onMouseEnter={() => setHoverInfo("Cancel evacuation")}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        Cancel<br />evacuation
+                    </Button>
                 }
 
                 {!isEvacuated(house) &&
-                    <Button onClick={() => { evacuateHouse(gameId, playerId, house.id) }} >Evacuate</Button>
+                    <Button
+                        onClick={() => { evacuateHouse(gameId, playerId, house.id) }}
+                        onMouseEnter={() => setHoverInfo("Evacuate")}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >Evacuate</Button>
                 }
 
                 {canBeUpgraded(house) && !house.upgrading &&
-                    <Button onClick={() => monitor.upgrade(house.id)} >
-                        <ExpandUpRight24Filled />
+                    <Button
+                        onClick={() => monitor.upgrade(house.id)}
+                        onMouseEnter={() => setHoverInfo("Upgrade")}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        {house.type === 'Barracks' && <HouseIcon houseType='GuardHouse' nation={nation} scale={0.5} />}
+                        {house.type === 'GuardHouse' && <HouseIcon houseType='WatchTower' nation={nation} scale={0.5} />}
+                        {house.type === 'WatchTower' && <HouseIcon houseType='Fortress' nation={nation} scale={0.5} />}
                     </Button>
                 }
 
@@ -144,16 +173,14 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
 
                         onClose()
                     }}
+                        onMouseEnter={() => setHoverInfo("Tear down")}
+                        onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         <UiIcon type='DESTROY_BUILDING' />
                     </Button>
                 </Tooltip>
 
             </div>
-
-            <Button onClick={onClose} >
-                <Dismiss16Filled />
-            </Button>
         </Window>
     )
 }

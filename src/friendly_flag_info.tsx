@@ -13,12 +13,9 @@ interface FriendlyFlagInfoProps {
     onClose: (() => void)
 }
 
-const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
-    const nation = props.nation
-    const onClose = props.onClose
-    const onStartNewRoad = props.onStartNewRoad
-
+const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, ...props }: FriendlyFlagInfoProps) => {
     const [flag, setFlag] = useState<FlagInformation>(props.flag)
+    const [hoverInfo, setHoverInfo] = useState<string>()
 
     useEffect(
         () => {
@@ -33,7 +30,7 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
         }, [])
 
     return (
-        <Window className='friendly-flag-info' heading='Flag' onClose={onClose}>
+        <Window className='friendly-flag-info' heading='Flag' onClose={onClose} hoverInfo={hoverInfo}>
             <div className="flag-information">
 
                 <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate drawShadow />
@@ -49,6 +46,8 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                                     onClose()
                                 }
                             }
+                            onMouseEnter={() => setHoverInfo("Remove flag")}
+                            onMouseLeave={() => setHoverInfo(undefined)}
                         >
                             Remove
                         </Button>
@@ -63,6 +62,8 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                                     onClose()
                                 }
                             }
+                            onMouseEnter={() => setHoverInfo("Build road")}
+                            onMouseLeave={() => setHoverInfo(undefined)}
                         >Build road</Button>
                     </Tooltip>
 
@@ -75,6 +76,8 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                                     onClose()
                                 }
                             }
+                            onMouseEnter={() => setHoverInfo("Call geologist")}
+                            onMouseLeave={() => setHoverInfo(undefined)}
                         >
                             <div className='friendly-flag-info-button-icon-and-label'>
                                 <UiIcon type='GEOLOGIST' />
@@ -91,6 +94,8 @@ const FriendlyFlagInfo = (props: FriendlyFlagInfoProps) => {
                                     onClose()
                                 }
                             }
+                            onMouseEnter={() => setHoverInfo("Call scout")}
+                            onMouseLeave={() => setHoverInfo(undefined)}
                         >
                             <div className='friendly-flag-info-button-icon-and-label'>
                                 <InventoryIcon material='SCOUT' nation={nation} />

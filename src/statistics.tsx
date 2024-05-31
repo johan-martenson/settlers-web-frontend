@@ -13,12 +13,20 @@ interface StatisticsProps {
     nation: Nation
 }
 
+type GraphHover = {
+    x: number
+    y: number
+    value: number
+}
+
 interface StatisticsState {
     productionStatistics?: ProductionStatistics
     landStatistics?: LandStatistics
     materialToShow: Material
     drawnStatistics: boolean
     state: "PRODUCTION" | "LAND"
+    hoverInfo?: string
+    graphHover?: GraphHover
 }
 
 const PLAYER_COLOR_MAPPING = new Map<PlayerColor, string>()
@@ -48,8 +56,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         }
     }
 
-    shouldComponentUpdate(): boolean {
-        return !this.state.drawnStatistics
+    shouldComponentUpdate(nextProps: StatisticsProps, nextState: StatisticsState): boolean {
+        return !this.state.drawnStatistics || nextState.hoverInfo !== this.state.hoverInfo
     }
 
     async componentDidUpdate(): Promise<void> {
@@ -85,50 +93,64 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const titleLabel = "Statistics"
 
         return (
-            <Window heading={titleLabel} onClose={this.props.onClose}>
-                <div id="stats-page">
-                    <TabList onTabSelect={
-                        (event: SelectTabEvent, data: SelectTabData) => {
-                            this.setState({ state: (data.value === "LAND") ? "LAND" : "PRODUCTION" })
-                        }
-                    } >
-                        <Tab value={"PRODUCTION"}>Production</Tab>
-                        <Tab value={"LAND"}>Land</Tab>
-                    </TabList>
+            <>
+                <Window heading={titleLabel} onClose={this.props.onClose} hoverInfo={this.state.hoverInfo}>
+                    <div id="stats-page">
+                        <TabList onTabSelect={
+                            (event: SelectTabEvent, data: SelectTabData) => {
+                                this.setState({ state: (data.value === "LAND") ? "LAND" : "PRODUCTION" })
+                            }
+                        } >
+                            <Tab value={"PRODUCTION"}>Production</Tab>
+                            <Tab value={"LAND"}>Land</Tab>
+                        </TabList>
 
-                    <div ref={this.statsParentRef} id="stats-parent">
-                        <svg id="land-stats-svg"
-                            ref={this.landStatsContainerRef}
-                            display={(this.state.state === 'LAND') ? 'block' : 'none'} />
+                        <div ref={this.statsParentRef} id="stats-parent">
+                            <svg id="land-stats-svg"
+                                ref={this.landStatsContainerRef}
+                                display={(this.state.state === 'LAND') ? 'block' : 'none'} />
 
-                        <svg id="production-stats-svg"
-                            ref={this.productionStatsContainerRef}
-                            display={(this.state.state === 'PRODUCTION') ? 'block' : 'none'}
-                        />
-                    </div>
-
-                    {this.state.state === 'PRODUCTION' &&
-                        <div className='select-materials'>
-                            {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
-                                .map(material => <div onClick={() => this.setState({ materialToShow: material })} key={material}>
-                                    <Tooltip content={material.toLocaleLowerCase()} relationship={'label'}>
-                                        <div><InventoryIcon nation={this.props.nation} material={material} missing={material !== this.state.materialToShow} /></div>
-                                    </Tooltip>
-                                </div>)}
+                            <svg id="production-stats-svg"
+                                ref={this.productionStatsContainerRef}
+                                display={(this.state.state === 'PRODUCTION') ? 'block' : 'none'}
+                            />
                         </div>
-                    }
-                </div>
-            </Window>
+
+                        {this.state.state === 'PRODUCTION' &&
+                            <div className='select-materials'>
+                                {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
+                                    .map(material => <div onClick={() => this.setState({ materialToShow: material })} key={material}>
+                                        <Tooltip content={material.toLocaleLowerCase()} relationship={'label'}>
+                                            <div
+                                                onMouseEnter={() => this.setState({ hoverInfo: material.toLocaleLowerCase() })}
+                                                onMouseLeave={() => this.setState({ hoverInfo: undefined })}
+                                            ><InventoryIcon nation={this.props.nation} material={material} missing={material !== this.state.materialToShow} /></div>
+                                        </Tooltip>
+                                    </div>)}
+                            </div>
+                        }
+                    </div>
+                </Window>
+
+                {this.state.graphHover &&
+                    <div style={{
+                        left: "" + this.state.graphHover.x + "px",
+                        top: "" + this.state.graphHover.y + "px",
+                        zIndex: "5000",
+                        width: "5em",
+                        height: "2em",
+                        position: "fixed",
+                        backgroundColor: "white",
+                        color: "black"
+                    }}>
+                        {this.state.graphHover.value}
+                    </div>
+                }
+            </>
         )
     }
 
-    onClose(): void {
-        this.props.onClose()
-    }
-
     drawLandStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, landStatisticsWithGaps: LandStatistics): void {
-
-        console.log(landStatisticsWithGaps.players)
 
         /*  Complement the reported land metrics */
         const landStatistics: LandDataPoint[] = []
@@ -337,11 +359,11 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const fullWidth = parent.clientWidth
 
         /* Set the margins */
-        const margin = { top: 20, right: 20, bottom: 20, left: 20 }
+        const margin = { top: 30, right: 40, bottom: 30, left: 40 }
 
         /* Calculate the inner dimensions */
-        const height = fullHeight - margin.right - margin.left
-        const width = fullWidth - margin.top - margin.bottom
+        const dataAreaWidth = fullWidth - margin.top - margin.bottom
+        const dataAreaHeight = fullHeight - margin.right - margin.left
 
         /* Calculate the max range of the axis */
         let maxTime = 0
@@ -354,55 +376,28 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         maxValue = Math.max(maxValue, 10)
 
-        /* Create each axis */
+        /* Create the x & y axis */
         const xScale = d3.scaleLinear()
             .domain([0, maxTime]).nice()
-            .range([margin.left, width - margin.right])
+            .range([0, dataAreaWidth])
 
         const yScale = d3.scaleLinear()
             .domain([0, maxValue]).nice()
-            .range([height - margin.bottom, margin.top])
-        //.range([height, 0])
+            .range([dataAreaHeight, 0])
 
-        // eslint-disable-next-line
         const xAxis = d3.axisBottom(xScale)
-
+            .tickArguments([5])
         const yAxis = d3.axisLeft(yScale)
+            .tickArguments([5])
 
         /* Create the lines */
         const lines: d3.Line<LandDataPoint>[] = []
 
-        // eslint-disable-next-line
-        for (const i in productionStats.players) {
-
-            lines.push(
+        productionStats.players.forEach(
+            (player, i) => lines.push(
                 d3.line<Measurement>()
-                    .x(
-
-                        // eslint-disable-next-line
-                        (d, i, arr) => {
-                            const xScaled = xScale(d.time)
-
-                            if (xScaled === undefined) {
-                                return 0
-                            }
-
-                            return xScaled
-                        }
-                    )
-                    .y(
-                        (d) => {
-                            const yScaled = yScale(d.values[i])
-
-                            if (yScaled === undefined) {
-                                return 0
-                            }
-
-                            return yScaled
-                        }
-                    )
-            )
-        }
+                    .x(d => xScale(d.time) ?? 0)
+                    .y(d => yScale(d.values[i]) ?? 0)))
 
         /* Get the svg to draw on */
         const statisticsSvg = d3.select(statisticsSvgElement)
@@ -410,122 +405,95 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         /* Clear the svg to remove previous elements */
         d3.selectAll("#production-stats-svg > *").remove()
 
+        // Color the background
+        statisticsSvg.append('rect')
+            .attr('x', margin.left)
+            .attr('y', margin.top)
+            .attr('width', dataAreaWidth)
+            .attr('height', dataAreaHeight)
+            .style('fill', 'lightgray')
+
         /* Set the dimensions */
         statisticsSvg
-            .attr("width", fullWidth)
-            .attr("height", fullHeight)
+            .attr("preserveAspectRatio", "xMinYMin meet")
+            .attr("viewBox", `0 0 ${fullWidth} ${fullHeight}`)
+            .classed("svg-content", true)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
         /* Add the x axis */
-        /*statisticsSvg.append("g")
-            .attr("transform", "translate(0, " + (height - margin.top) + ")")
-            .call(xAxis)*/
+        statisticsSvg.append("g")
+            .attr("transform", `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
+            .call(xAxis.tickSize(-dataAreaHeight))
 
         /* Add the y axis */
         statisticsSvg.append("g")
-            .attr("transform", `translate(30, 0)`)
-            .call(yAxis)
+            .attr("transform", `translate(${margin.left}, ${margin.top})`)
+            .call(yAxis.tickSize(-dataAreaWidth))
 
         /* Instantiate the lines */
-        // eslint-disable-next-line
-        for (const i in productionStats.players) {
-            lines[i](resourceStatistics)
-        }
-
-        /* FIXME: for now use a fixed set of colors instead of the right colors for each player */
-        const colors = ["red", "blue"]
+        productionStats.players.forEach(
+            (player, index) => lines[index](resourceStatistics)
+        )
 
         /* Add the lines */
-        // eslint-disable-next-line
-        for (const i in productionStats.players) {
-            statisticsSvg.append("path")
-                .attr("fill", "none")
-                .attr("stroke", colors[i])
-                .attr("stroke-width", 4)
-                .attr("stroke-linejoin", "round")
-                .attr("stroke-linecap", "round")
-                .datum(resourceStatistics) // 10. Binds data to the line 
-                .attr("class", "line") // Assign a class for styling 
-                .attr("d", lines[i]) // 11. Calls the line generator 
-                .on("mouseover",
-                    (event) => {
-                        d3.select(event.target)
-                            .attr("stroke", "orange")
-                    }
-                )
-                .on("mouseout",
-                    (event) => {
-                        d3.select(event.target)
-                            .attr("stroke", colors[i])
-                    }
-                )
+        productionStats.players.forEach(
+            (player, index) => {
+                const color = player.color
+                const name = player.name
 
-            statisticsSvg.selectAll(".dot" + i)
-                .data(resourceStatistics)
-                .enter().append("circle")
-                .attr("fill", "rgba(0, 0, 0, 0)")
-                //.attr("fill", colors[i])
-                .attr("class", "dot") // Assign a class for styling
+                statisticsSvg.append("path")
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                    .attr("fill", "none")
+                    .attr("stroke", color)
+                    .attr("stroke-width", 4)
+                    .attr("stroke-linejoin", "round")
+                    .attr("stroke-linecap", "round")
+                    .datum(resourceStatistics) // 10. Binds data to the line
+                    .attr("class", "line")
+                    .attr("d", lines[index]) // 11. Calls the line generator
+                    .on("mouseenter", () => this.setState({ hoverInfo: name }))
+                    .on("mouseleave", () => this.setState({ hoverInfo: undefined }))
 
-                // eslint-disable-next-line
-                .attr("cx", function (data, index) {
-                    const xScaled = xScale(data.time)
+                statisticsSvg.selectAll(".dot" + index)
+                    .data(resourceStatistics)
+                    .enter().append("circle")
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                    .attr("fill", "rgba(0, 0, 0, 0)")
+                    .attr("class", "dot")
 
-                    if (xScaled === undefined) {
-                        return 0
-                    }
-
-                    return xScaled
-                })
-                .attr("cy", function (data) {
-                    const yScaled = yScale(data.values[i])
-
-                    if (yScaled === undefined) {
-                        return 0
-                    }
-
-                    return yScaled
-                })
-                .attr("r", 5)
-                .on("mouseover",
-                    (event, d) => {
-                        const dotElement = d3.select(event.target)
-
-                        dotElement
-                            .attr("fill", colors[i])
-                            .attr("r", 5)
-
-                        let xScaled = xScale(d.time)
-                        let yScaled = yScale(d.values[i])
+                    .attr("cx", function (data) {
+                        const xScaled = xScale(data.time)
 
                         if (xScaled === undefined) {
-                            xScaled = 0
+                            return 0
                         }
+
+                        return xScaled
+                    })
+                    .attr("cy", function (data) {
+                        const yScaled = yScale(data.values[index])
 
                         if (yScaled === undefined) {
-                            yScaled = 0
+                            return 0
                         }
 
-                        statisticsSvg
-                            .append("text")
-                            .attr("id", "textlabel-statistics-tooltip")
-                            .attr("x", xScaled + 20)
-                            .attr("y", yScaled + 20)
-                            .text(d.values[i])
+                        return yScaled
                     })
-                .on("mouseout",
+                    .attr("r", 5)
+                    .on("mouseenter",
+                        (event, d) => {
+                            this.setState({
+                                hoverInfo: name,
+                                graphHover: {
+                                    x: event.pageX + 20, y: event.pageY + 20, value: d.values[index]
+                                }
+                            })
+                        })
 
-                    // eslint-disable-next-line
-                    (event, d) => {
-                        d3.select(event.target)
-                            .attr("fill", "rgba(0, 0, 0, 0)")
-                            .attr("r", 5)
-
-                        d3.select("#textlabel-statistics-tooltip")
-                            .remove()
-                    })
-        }
+                    .on("mouseleave", () => this.setState({ hoverInfo: undefined, graphHover: undefined }))
+            }
+        )
     }
 }
 

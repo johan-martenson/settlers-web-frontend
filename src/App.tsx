@@ -221,6 +221,7 @@ class App extends Component<AppProps, AppState> {
                 showHelp: undefined,
                 showFriendlyFlagInfo: undefined,
                 showFriendlyHouseInfo: undefined,
+                showStatistics: undefined,
                 showMenu: false
             }
         )

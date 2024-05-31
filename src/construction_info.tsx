@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES } from './api/types'
 import './construction_info.css'
-import { Window, DialogSection } from './components/dialog'
+import { Window } from './components/dialog'
 import { monitor } from './api/ws-api'
 import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from './utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
@@ -88,46 +88,44 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                 </TabList>
 
                 {selected === "FlagsAndRoads" &&
-                    <DialogSection>
-                        <div className="DialogSection">
+                    <div className="dialog-section">
 
-                            <div className='button-row'>
-                                <Tooltip content={'Raise flag'} relationship='label' withArrow>
-                                    <Button
-                                        onClick={
-                                            () => {
-                                                console.info("Raising flag")
-                                                monitor.placeFlag(point)
+                        <div className='button-row'>
+                            <Tooltip content={'Raise flag'} relationship='label' withArrow>
+                                <Button
+                                    onClick={
+                                        () => {
+                                            console.info("Raising flag")
+                                            monitor.placeFlag(point)
 
-                                                onClose()
-                                            }
+                                            onClose()
                                         }
+                                    }
 
-                                        onMouseEnter={() => setHover("Raise flag")}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    >
-                                        <FlagIcon type='NORMAL' nation={nation} />
+                                    onMouseEnter={() => setHover("Raise flag")}
+                                    onMouseLeave={() => setHover(undefined)}
+                                >
+                                    <FlagIcon type='NORMAL' nation={nation} />
 
-                                    </Button>
-                                </Tooltip>
+                                </Button>
+                            </Tooltip>
 
-                                {canBuildRoad(point) &&
-                                    <Button
-                                        icon="road-1.png"
-                                        onClick={
-                                            () => {
-                                                console.info("Starting to build road")
+                            {canBuildRoad(point) &&
+                                <Button
+                                    icon="road-1.png"
+                                    onClick={
+                                        () => {
+                                            console.info("Starting to build road")
 
-                                                onStartNewRoad(point)
+                                            onStartNewRoad(point)
 
-                                                onClose()
-                                            }
+                                            onClose()
                                         }
-                                    >Build road</Button>
-                                }
-                            </div>
+                                    }
+                                >Build road</Button>
+                            }
                         </div>
-                    </DialogSection>
+                    </div>
                 }
 
                 {selected === "Buildings" &&
@@ -150,7 +148,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                 }
 
                 {selected === "Buildings" && buildingSizeSelected === "small" &&
-                    <DialogSection>
+                    <div className="dialog-section">
                         <div className="house-construction-buttons">
                             {SMALL_HOUSES.map(
                                 (house) =>
@@ -176,13 +174,13 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                             )
                             }
                         </div>
-                    </DialogSection>
+                    </div>
                 }
 
                 {selected === "Buildings" &&
                     canBuildMediumHouse(point) &&
                     buildingSizeSelected === "medium" &&
-                    <DialogSection>
+                    <div className="dialog-section">
                         <div className="house-construction-buttons">
                             {MEDIUM_HOUSES.map(
                                 (house) =>
@@ -208,13 +206,13 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                             )
                             }
                         </div>
-                    </DialogSection>
+                    </div>
                 }
 
                 {selected === "Buildings" &&
                     canBuildLargeHouse(point) &&
                     buildingSizeSelected === "large" &&
-                    <DialogSection>
+                    <div className="dialog-section">
                         <div className="house-construction-buttons">
                             {LARGE_HOUSES.filter(house => house !== 'Headquarter').map(
                                 (house) =>
@@ -240,7 +238,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                             )
                             }
                         </div>
-                    </DialogSection>
+                    </div>
                 }
 
             </div>

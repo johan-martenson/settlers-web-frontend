@@ -13,7 +13,7 @@ interface WindowProps {
     onClose: (() => void)
 }
 
-function Window(props: WindowProps) {
+function Window({ onClose, ...props }: WindowProps) {
     const className = props.className !== undefined ? `window ${props.className}` : 'window'
 
     const [windowHoverInfo, setWindowHoverInfo] = useState<string>()
@@ -23,7 +23,13 @@ function Window(props: WindowProps) {
             className={className}
             id={props.id}
             onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) props.onClose() }}
+            onMouseDown={event => { if (event.button === 2) onClose() }}
+            onKeyDown={(event: React.KeyboardEvent) => {
+                console.log(event.key)
+                if (event.key === "Escape") {
+                    onClose()
+                }
+            }}
         >
             <div className="window-content">
                 {props.heading && <h1>{props.heading}</h1>}
@@ -34,7 +40,7 @@ function Window(props: WindowProps) {
                 {windowHoverInfo ?? props.hoverInfo}
             </div>
             <Button
-                onClick={() => props.onClose()}
+                onClick={() => onClose()}
                 onMouseEnter={() => setWindowHoverInfo("Close window")}
                 onMouseLeave={() => setWindowHoverInfo(undefined)}
             >
@@ -44,19 +50,5 @@ function Window(props: WindowProps) {
     )
 }
 
-interface DialogSectionProps {
-    label?: string
-    children?: React.ReactNode
-}
-
-function DialogSection(props: DialogSectionProps) {
-    return (
-        <div className="DialogSection">
-            {props.label && <div className="MenuSectionLabel" >{props.label}</div>}
-            {props.children}
-        </div>
-    )
-}
-
-export { Window, DialogSection }
+export { Window }
 

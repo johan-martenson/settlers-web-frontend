@@ -6,6 +6,12 @@
 
 #stats-parent {
     flex: 1 0 40%;
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    vertical-align: top;
+    overflow: hidden;
 }
 
 .select-materials {
@@ -13,4 +19,18 @@
     flex-direction: row;
     flex-wrap: wrap;
     gap: 10px;
+}
+
+#textlabel-statistics-tooltip {
+    background-color: white;
+    padding-left: 1em;
+    padding-right: 1em;
+    color: red;
+}
+
+.svg-content {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
 }

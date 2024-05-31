@@ -15,7 +15,8 @@
         text-align: left;
     }
 
-    box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.60);
+    /*box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.60);*/
+    box-shadow: rgba(0, 0, 0, 0.50) 1.95px 1.95px 2.6px;
 }
 
 .window-content {
@@ -30,19 +31,11 @@
 
 .hover-info-label {
     height: 2em;
-}
-
-.DialogSection {
-    margin-top: 0;
-    margin-bottom: 0;
-    max-height: 100%;
-    width: 100%;
-}
-
-.DialogSection h3 {
-    margin-top: 0;
-    margin-bottom: 0;
-    text-align: left;
+    background-color: rgba(0, 0, 0, 0.50);
+    width: 20em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 /* Make dialogs occupy the full screen on small screens */

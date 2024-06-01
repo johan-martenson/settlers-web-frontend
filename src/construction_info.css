@@ -42,14 +42,14 @@
 
 }
 
-.DialogSection {
+.dialog-section {
     margin-top: 0;
     margin-bottom: 0;
     max-height: 100%;
     width: 100%;
 }
 
-.DialogSection h3 {
+.dialog-section h3 {
     margin-top: 0;
     margin-bottom: 0;
     text-align: left;

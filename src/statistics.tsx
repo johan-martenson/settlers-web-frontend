@@ -108,11 +108,11 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                         <div ref={this.statsParentRef} id="stats-parent">
                             <svg id="land-stats-svg"
                                 ref={this.landStatsContainerRef}
-                                display={(this.state.state === 'LAND') ? 'block' : 'none'} />
+                                display={(this.state.state === 'LAND') ? 'inline-block' : 'none'} />
 
                             <svg id="production-stats-svg"
                                 ref={this.productionStatsContainerRef}
-                                display={(this.state.state === 'PRODUCTION') ? 'block' : 'none'}
+                                display={(this.state.state === 'PRODUCTION') ? 'inline-block' : 'none'}
                             />
                         </div>
 
@@ -152,13 +152,17 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
     drawLandStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, landStatisticsWithGaps: LandStatistics): void {
 
-        /*  Complement the reported land metrics */
+        // Prepare the data - output is landStatistics, maxTime, and maxValue
         const landStatistics: LandDataPoint[] = []
+
+        let maxValue = 0
+        const maxTime = landStatisticsWithGaps.currentTime
 
         let previousMeasurement = undefined
         for (let i = 0; i < landStatisticsWithGaps.landStatistics.length; i++) {
             const measurement = landStatisticsWithGaps.landStatistics[i]
 
+            // Add an extra measurement to make the graph jump straight up
             if (previousMeasurement) {
                 landStatistics.push(
                     {
@@ -167,6 +171,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     }
                 )
             }
+
+            maxValue = Math.max(maxValue, measurement.values.reduce((a, b) => Math.max(a, b)))
 
             landStatistics.push(measurement)
 
@@ -180,21 +186,17 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             }
         )
 
-        const firstDataPoint = landStatistics[0]
-
-        /* Define the full dimensions of the graph window */
+        // Define layout - full width x height, the margin, and the inner width x height
         const fullHeight = parent.clientHeight
         const fullWidth = parent.clientWidth
 
-        /* Set the margins */
-        const margin = { top: 20, right: 20, bottom: 20, left: 20 }
+        const margin = { top: 30, right: 40, bottom: 30, left: 50 }
 
-        /* Calculate the inner dimensions */
-        const height = fullHeight - margin.right - margin.left
-        const width = fullWidth - margin.top - margin.bottom
+        const dataAreaWidth = fullWidth - margin.top - margin.bottom
+        const dataAreaHeight = fullHeight - margin.right - margin.left
 
         /* Calculate the max range of both axis and the min time value */
-        let maxTimeCalculated = 0
+        /*let maxTimeCalculated = 0
         let maxValueCalculated = 0
         let minTimeCalculated = firstDataPoint.time
 
@@ -207,119 +209,80 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
                 maxValueCalculated = Math.max(maxValueCalculated, localMaxValue)
             }
-        )
+        )*/
 
-        /* Create each axis */
+        // Define the view and value ranges - output is xScale and yScale
         const xScale = d3.scaleLinear()
-            .domain([minTimeCalculated, maxTimeCalculated]).nice()
-            .range([margin.left, width - margin.right])
+            .domain([0, maxTime]).nice()
+            .range([0, dataAreaWidth])
 
         const yScale = d3.scaleLinear()
-            .domain([0, maxValueCalculated]).nice()
-            .range([height - margin.bottom, margin.top])
+            .domain([0, maxValue]).nice()
+            .range([dataAreaHeight, 0])
 
-        // eslint-disable-next-line
-        const xAxis = d3.axisBottom(xScale)
-
-        const yAxis = d3.axisLeft(yScale)
-
-        /* Create the lines */
+        // Create the lines
         const lines: d3.Line<LandDataPoint>[] = []
 
         // eslint-disable-next-line
         for (const i in landStatisticsWithGaps.players) {
-
             lines.push(
                 d3.line<LandDataPoint>()
-                    .x(
-
-                        // eslint-disable-next-line
-                        (d, i, arr) => {
-                            const xScaled = xScale(d.time)
-
-                            if (xScaled !== undefined) {
-                                return xScaled
-                            }
-
-                            return 0
-                        }
-                    )
-                    .y(
-                        (d) => {
-                            const yScaled = yScale(d.values[i])
-
-                            if (yScaled !== undefined) {
-                                return yScaled
-                            }
-
-                            return 0
-                        }
-                    )
+                    .x((d) => xScale(d.time) ?? 0)
+                    .y((d) => yScale(d.values[i]) ?? 0)
             )
         }
 
-        /* Get the svg to draw on */
-        const statisticsSvg = d3.select(statisticsSvgElement)
-
-        /* Clear the svg to remove previous elements */
+        // Remove the previous rendering (if any)
         d3.selectAll("#land-stats-svg > *").remove()
 
-        /* Set the dimensions */
+        // Get the svg to draw on
+        const statisticsSvg = d3.select(statisticsSvgElement)
+
+        // Color the background
+        statisticsSvg.append('rect')
+            .attr('x', margin.left)
+            .attr('y', margin.top)
+            .attr('width', dataAreaWidth)
+            .attr('height', dataAreaHeight)
+            .style('fill', 'lightgray')
+
+        // Make the svg fill its parent and adapt when the size changes
         statisticsSvg
-            .attr("width", fullWidth)
-            .attr("height", fullHeight)
+            .attr("preserveAspectRatio", "xMinYMin meet")
+            .attr("viewBox", `0 0 ${fullWidth} ${fullHeight}`)
+            .classed("svg-content", true)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
-        /* Add the x axis */
+        // Add the x axis and the y axis
         statisticsSvg.append("g")
-            .attr("transform", "translate(0, " + height + ")")
-            .call(xAxis)
+            .attr("transform", `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
+            .call(d3.axisBottom(xScale).tickArguments([5]).tickSize(-dataAreaHeight))
 
-        /* Add the y axis */
         statisticsSvg.append("g")
-            .call(yAxis)
+            .attr("transform", `translate(${margin.left}, ${margin.top})`)
+            .call(d3.axisLeft(yScale).tickArguments([5]).tickSize(-dataAreaWidth))
 
-        /* Instantiate the lines */
-        // eslint-disable-next-line
-        for (const i in landStatisticsWithGaps.players) {
-            lines[i](landStatistics)
-        }
+        // Instantiate the lines
+        /*landStatisticsWithGaps.players.forEach(
+            (player, index) => lines[index](landStatistics)
+        )*/
 
-        /* Add the lines */
-        // eslint-disable-next-line
-        for (const i in landStatisticsWithGaps.players) {
-            const player = landStatisticsWithGaps.players[i]
-            const color = PLAYER_COLOR_MAPPING.get(player.color)
-
-            if (color === undefined) {
-                continue
-            }
-
-            statisticsSvg.append("path")
+        // Add the lines
+        landStatisticsWithGaps.players.forEach(
+            (player, index) => statisticsSvg.append("path")
+                .attr('transform', `translate(${margin.left}, ${margin.top})`)
                 .attr("fill", "none")
-                .attr("stroke", color)
+                .attr("stroke", player.color)
                 .attr("stroke-width", 2)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round")
                 .datum(landStatistics) // 10. Binds data to the line 
                 .attr("class", "line") // Assign a class for styling 
-                .attr("d", lines[i]) // 11. Calls the line generator 
-                .on("mouseover",
-                    (event) => {
-                        d3.select(event.target)
-                            .attr("stroke-width", 4)
-                            .attr("stroke", "orange")
-                    }
-                )
-                .on("mouseout",
-                    (event) => {
-                        d3.select(event.target)
-                            .attr("stroke-width", 2)
-                            .attr("stroke", color)
-                    }
-                )
-        }
+                .attr("d", lines[index]) // 11. Calls the line generator 
+                .on("mouseover", () => this.setState({ hoverInfo: player.name }))
+                .on("mouseout", () => this.setState({ hoverInfo: undefined }))
+        )
     }
 
     reduceDataArrayIfNeeded(dataArray: Measurement[], amount: number): Measurement[] {
@@ -340,7 +303,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
     drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, productionStats: ProductionStatistics, material: Material): void {
 
-        /* Get the right material statistics to graph */
+        // Prepare the data - output is resourceStatistics, maxTime, and maxValue
         const resourceStatisticsFull = productionStats.materialStatistics[material]
 
         let resourceStatistics: Measurement[]
@@ -354,18 +317,6 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             }]
         }
 
-        /* Define the full dimensions of the graph window */
-        const fullHeight = parent.clientHeight
-        const fullWidth = parent.clientWidth
-
-        /* Set the margins */
-        const margin = { top: 30, right: 40, bottom: 30, left: 40 }
-
-        /* Calculate the inner dimensions */
-        const dataAreaWidth = fullWidth - margin.top - margin.bottom
-        const dataAreaHeight = fullHeight - margin.right - margin.left
-
-        /* Calculate the max range of the axis */
         let maxTime = 0
         let maxValue = 0
 
@@ -376,7 +327,16 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         maxValue = Math.max(maxValue, 10)
 
-        /* Create the x & y axis */
+        // Define layout - full width x height, the margin, and the inner width x height
+        const fullHeight = parent.clientHeight
+        const fullWidth = parent.clientWidth
+
+        const margin = { top: 30, right: 40, bottom: 30, left: 40 }
+
+        const dataAreaWidth = fullWidth - margin.top - margin.bottom
+        const dataAreaHeight = fullHeight - margin.right - margin.left
+
+        // Define the view and value ranges - output is xScale and yScale
         const xScale = d3.scaleLinear()
             .domain([0, maxTime]).nice()
             .range([0, dataAreaWidth])
@@ -385,12 +345,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .domain([0, maxValue]).nice()
             .range([dataAreaHeight, 0])
 
-        const xAxis = d3.axisBottom(xScale)
-            .tickArguments([5])
-        const yAxis = d3.axisLeft(yScale)
-            .tickArguments([5])
-
-        /* Create the lines */
+        // Create the lines
         const lines: d3.Line<LandDataPoint>[] = []
 
         productionStats.players.forEach(
@@ -399,11 +354,11 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     .x(d => xScale(d.time) ?? 0)
                     .y(d => yScale(d.values[i]) ?? 0)))
 
-        /* Get the svg to draw on */
-        const statisticsSvg = d3.select(statisticsSvgElement)
-
-        /* Clear the svg to remove previous elements */
+        // Remove the previous rendering (if any)
         d3.selectAll("#production-stats-svg > *").remove()
+
+        // Get the svg to draw on
+        const statisticsSvg = d3.select(statisticsSvgElement)
 
         // Color the background
         statisticsSvg.append('rect')
@@ -413,7 +368,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .attr('height', dataAreaHeight)
             .style('fill', 'lightgray')
 
-        /* Set the dimensions */
+        // Make the svg fill its parent and adapt when the size changes
         statisticsSvg
             .attr("preserveAspectRatio", "xMinYMin meet")
             .attr("viewBox", `0 0 ${fullWidth} ${fullHeight}`)
@@ -421,17 +376,16 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
-        /* Add the x axis */
+        // Add the x axis and the y axis
         statisticsSvg.append("g")
             .attr("transform", `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
-            .call(xAxis.tickSize(-dataAreaHeight))
+            .call(d3.axisBottom(xScale).tickArguments([5]).tickSize(-dataAreaHeight))
 
-        /* Add the y axis */
         statisticsSvg.append("g")
             .attr("transform", `translate(${margin.left}, ${margin.top})`)
-            .call(yAxis.tickSize(-dataAreaWidth))
+            .call(d3.axisLeft(yScale).tickArguments([5]).tickSize(-dataAreaWidth))
 
-        /* Instantiate the lines */
+        // Instantiate the lines
         productionStats.players.forEach(
             (player, index) => lines[index](resourceStatistics)
         )

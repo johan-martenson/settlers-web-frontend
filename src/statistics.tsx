@@ -4,7 +4,7 @@ import { getGameStatistics, getLandStatistics } from './api/rest-api'
 import { Window } from './components/dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
-import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerColor } from './api/types'
+import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation } from './api/types'
 import { InventoryIcon } from './icon'
 
 interface StatisticsProps {
@@ -28,17 +28,6 @@ interface StatisticsState {
     hoverInfo?: string
     graphHover?: GraphHover
 }
-
-const PLAYER_COLOR_MAPPING = new Map<PlayerColor, string>()
-
-PLAYER_COLOR_MAPPING.set('BLUE', 'blue')
-PLAYER_COLOR_MAPPING.set('BROWN', 'brown')
-PLAYER_COLOR_MAPPING.set('GRAY', 'gray')
-PLAYER_COLOR_MAPPING.set('GREEN', 'green')
-PLAYER_COLOR_MAPPING.set('PURPLE', 'purple')
-PLAYER_COLOR_MAPPING.set('RED', 'red')
-PLAYER_COLOR_MAPPING.set('WHITE', 'white')
-PLAYER_COLOR_MAPPING.set('YELLOW', 'yellow')
 
 class Statistics extends Component<StatisticsProps, StatisticsState> {
     private landStatsContainerRef = React.createRef<SVGSVGElement>()
@@ -72,7 +61,13 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const productionStats = await getGameStatistics(this.props.gameId)
         const landStats = await getLandStatistics(this.props.gameId)
 
-        if (!this.landStatsContainerRef?.current || !this.statsParentRef?.current) {
+        if (!this.statsParentRef?.current) {
+            console.error("Missing stats parent reference")
+
+            return
+        }
+
+        if (!this.landStatsContainerRef?.current) {
             console.error("Missing land stats reference")
 
             return
@@ -96,13 +91,27 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             <>
                 <Window heading={titleLabel} onClose={this.props.onClose} hoverInfo={this.state.hoverInfo}>
                     <div id="stats-page">
-                        <TabList onTabSelect={
-                            (event: SelectTabEvent, data: SelectTabData) => {
-                                this.setState({ state: (data.value === "LAND") ? "LAND" : "PRODUCTION" })
-                            }
-                        } >
-                            <Tab value={"PRODUCTION"}>Production</Tab>
-                            <Tab value={"LAND"}>Land</Tab>
+                        <TabList
+                            selectedValue={this.state.state}
+                            onTabSelect={
+                                (event: SelectTabEvent, data: SelectTabData) => {
+                                    this.setState({ state: (data.value === "LAND") ? "LAND" : "PRODUCTION" })
+                                }
+                            } >
+                            <Tab
+                                value={"PRODUCTION"}
+                                onMouseEnter={() => this.setState({ hoverInfo: 'Production statistics' })}
+                                onMouseLeave={() => this.setState({ hoverInfo: undefined })}
+                            >
+                                Production
+                            </Tab>
+                            <Tab
+                                value={"LAND"}
+                                onMouseEnter={() => this.setState({ hoverInfo: 'Land size statistics' })}
+                                onMouseLeave={() => this.setState({ hoverInfo: undefined })}
+                            >
+                                Land
+                            </Tab>
                         </TabList>
 
                         <div ref={this.statsParentRef} id="stats-parent">
@@ -195,22 +204,6 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         const dataAreaWidth = fullWidth - margin.top - margin.bottom
         const dataAreaHeight = fullHeight - margin.right - margin.left
 
-        /* Calculate the max range of both axis and the min time value */
-        /*let maxTimeCalculated = 0
-        let maxValueCalculated = 0
-        let minTimeCalculated = firstDataPoint.time
-
-        landStatisticsWithGaps.landStatistics.forEach(
-            (measurement: LandDataPoint) => {
-                maxTimeCalculated = Math.max(maxTimeCalculated, measurement.time)
-                minTimeCalculated = Math.min(minTimeCalculated, measurement.time)
-
-                const localMaxValue = Math.max(...measurement.values)
-
-                maxValueCalculated = Math.max(maxValueCalculated, localMaxValue)
-            }
-        )*/
-
         // Define the view and value ranges - output is xScale and yScale
         const xScale = d3.scaleLinear()
             .domain([0, maxTime]).nice()
@@ -223,14 +216,12 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         // Create the lines
         const lines: d3.Line<LandDataPoint>[] = []
 
-        // eslint-disable-next-line
-        for (const i in landStatisticsWithGaps.players) {
-            lines.push(
+        landStatisticsWithGaps.players.forEach(
+            (player, index) => lines.push(
                 d3.line<LandDataPoint>()
                     .x((d) => xScale(d.time) ?? 0)
-                    .y((d) => yScale(d.values[i]) ?? 0)
-            )
-        }
+                    .y((d) => yScale(d.values[index]) ?? 0)
+            ))
 
         // Remove the previous rendering (if any)
         d3.selectAll("#land-stats-svg > *").remove()
@@ -263,11 +254,6 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
             .attr("transform", `translate(${margin.left}, ${margin.top})`)
             .call(d3.axisLeft(yScale).tickArguments([5]).tickSize(-dataAreaWidth))
 
-        // Instantiate the lines
-        /*landStatisticsWithGaps.players.forEach(
-            (player, index) => lines[index](landStatistics)
-        )*/
-
         // Add the lines
         landStatisticsWithGaps.players.forEach(
             (player, index) => statisticsSvg.append("path")
@@ -277,9 +263,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                 .attr("stroke-width", 2)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round")
-                .datum(landStatistics) // 10. Binds data to the line 
-                .attr("class", "line") // Assign a class for styling 
-                .attr("d", lines[index]) // 11. Calls the line generator 
+                .datum(landStatistics) // Bind data to the line
+                .attr("class", "line")
+                .attr("d", lines[index]) // Call the line generator
                 .on("mouseover", () => this.setState({ hoverInfo: player.name }))
                 .on("mouseout", () => this.setState({ hoverInfo: undefined }))
         )
@@ -403,9 +389,9 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     .attr("stroke-width", 4)
                     .attr("stroke-linejoin", "round")
                     .attr("stroke-linecap", "round")
-                    .datum(resourceStatistics) // 10. Binds data to the line
+                    .datum(resourceStatistics) // Bind data to the line
                     .attr("class", "line")
-                    .attr("d", lines[index]) // 11. Calls the line generator
+                    .attr("d", lines[index]) // Call the line generator
                     .on("mouseenter", () => this.setState({ hoverInfo: name }))
                     .on("mouseleave", () => this.setState({ hoverInfo: undefined }))
 

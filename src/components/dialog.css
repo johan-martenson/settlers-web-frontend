@@ -27,6 +27,7 @@
     height: auto;
     align-items: center;
     justify-content: space-between;
+    align-self: stretch;
 }
 
 .hover-info-label {

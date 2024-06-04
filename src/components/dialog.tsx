@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import { Dismiss16Filled } from '@fluentui/react-icons'
 import './dialog.css'
+import { Point } from '../api/types'
 
 interface WindowProps {
     hoverInfo?: string
@@ -13,17 +14,56 @@ interface WindowProps {
     onClose: (() => void)
 }
 
+type Drag = {
+    mouseDragStart: Point
+    windowDragStart: Point
+}
+
 function Window({ onClose, ...props }: WindowProps) {
     const className = props.className !== undefined ? `window ${props.className}` : 'window'
 
     const [windowHoverInfo, setWindowHoverInfo] = useState<string>()
+    const [dragging, setDragging] = useState<Drag>()
+    const [windowPosition, setWindowPosition] = useState<Point>()
+
+    let style = {}
+
+    if (windowPosition) {
+        style = { left: windowPosition.x, top: windowPosition.y }
+    }
 
     return (
         <div
             className={className}
             id={props.id}
+            style={style}
             onWheel={(event) => event.stopPropagation()}
-            onMouseDown={event => { if (event.button === 2) onClose() }}
+            onMouseDown={(event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+                if (event.button === 2) {
+                    onClose()
+                } else {
+                    setDragging({
+                        mouseDragStart: { x: event.clientX, y: event.clientY },
+                        windowDragStart: { x: event.currentTarget.offsetLeft, y: event.currentTarget.offsetTop }
+                    })
+                }
+            }}
+
+            onMouseMove={(event) => {
+                if (dragging) {
+                    setWindowPosition({
+                        x: event.clientX - (dragging.mouseDragStart.x - dragging.windowDragStart.x),
+                        y: event.clientY - (dragging.mouseDragStart.y - dragging.windowDragStart.y)
+                    })
+                }
+            }}
+
+            onMouseUp={() => {
+                if (dragging) {
+                    setDragging(undefined)
+                }
+            }}
+
             onKeyDown={(event: React.KeyboardEvent) => {
                 console.log(event.key)
                 if (event.key === "Escape") {

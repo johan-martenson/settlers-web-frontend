@@ -16,10 +16,11 @@ interface HouseInfoProps {
     gameId: GameId
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, ...props }: HouseInfoProps) => {
+const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, onRaise, ...props }: HouseInfoProps) => {
     const [house, setHouse] = useState<HouseInformation>(props.house)
 
     const isOwnHouse = (house.playerId === selfPlayerId)
@@ -40,31 +41,31 @@ const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, ...props }: HouseInf
     return (
         <>
             {isOwnHouse && house.type === 'Headquarter' &&
-                <HeadquarterInfo house={house} nation={nation} onClose={onClose} />
+                <HeadquarterInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {isOwnHouse && house.state === 'PLANNED' &&
-                <PlannedHouseInfo house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} />
+                <PlannedHouseInfo house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {isOwnHouse && house.state === 'UNFINISHED' &&
-                <UnfinishedHouseInfo house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} />
+                <UnfinishedHouseInfo house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {isOwnHouse && house.type !== 'Headquarter' && houseIsReady(house) && isMilitaryBuilding(house) &&
-                <MilitaryBuilding house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} />
+                <MilitaryBuilding house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {isOwnHouse && (house.state === 'OCCUPIED' || house.state === 'UNOCCUPIED') && !isMilitaryBuilding(house) &&
-                <ProductionBuilding house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} />
+                <ProductionBuilding house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {!isOwnHouse && !isMilitaryBuilding(house) &&
-                <EnemyHouseInfo house={house} nation={nation} onClose={onClose} />
+                <EnemyHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {!isOwnHouse && isMilitaryBuilding(house) &&
-                <MilitaryEnemyHouseInfo house={house} gameId={gameId} selfPlayerId={selfPlayerId} nation={nation} onClose={onClose} />
+                <MilitaryEnemyHouseInfo house={house} gameId={gameId} selfPlayerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
         </>
     )
@@ -76,12 +77,13 @@ interface PlannedHouseInfoProps {
     gameId: GameId
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose }: PlannedHouseInfoProps) => {
+const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose, onRaise }: PlannedHouseInfoProps) => {
     return (
-        <Window className="house-info" heading={'Planned ' + house.type} onClose={onClose}>
+        <Window className="house-info" heading={'Planned ' + house.type} onClose={onClose} onRaise={onRaise}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -102,12 +104,13 @@ interface EnemyHouseInfoProps {
     house: HouseInformation
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const EnemyHouseInfo = ({ house, nation, onClose }: EnemyHouseInfoProps) => {
+const EnemyHouseInfo = ({ house, nation, onClose, onRaise }: EnemyHouseInfoProps) => {
     return (
-        <Window className="house-info" onClose={onClose} heading={`Enemy building: ${house.type}`}>
+        <Window className="house-info" onClose={onClose} heading={`Enemy building: ${house.type}`} onRaise={onRaise}>
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
         </Window>
     )
@@ -119,17 +122,18 @@ interface MilitaryEnemyHouseInfoProps {
     selfPlayerId: PlayerId
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose }: MilitaryEnemyHouseInfoProps) => {
+const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose, onRaise }: MilitaryEnemyHouseInfoProps) => {
     const [chosenAttackers, setChosenAttackers] = useState<number>(0)
     const [attackType, setAttackType] = useState<AttackType>('STRONG')
 
     const availableAttackers = house.availableAttackers ?? 0
 
     return (
-        <Window className="house-info" onClose={onClose} heading={`Military enemy building: {house.type}`}>
+        <Window className="house-info" onClose={onClose} heading={`Military enemy building: {house.type}`} onRaise={onRaise}>
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             {house.availableAttackers === 0 && <div>No attack possible</div>}
@@ -168,12 +172,13 @@ interface UnfinishedHouseInfo {
     gameId: GameId
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose }: UnfinishedHouseInfo) => {
+const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose, onRaise }: UnfinishedHouseInfo) => {
     return (
-        <Window className="house-info" heading={house.type} onClose={onClose}>
+        <Window className="house-info" heading={house.type} onClose={onClose} onRaise={onRaise}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -229,16 +234,17 @@ interface ProductionBuildingProps {
     gameId: GameId
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const ProductionBuilding = ({ house, playerId, gameId, nation, onClose }: ProductionBuildingProps) => {
+const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }: ProductionBuildingProps) => {
     const producedMaterial = house.produces
 
     const [hoverInfo, setHoverInfo] = useState<string>()
 
     return (
-        <Window className="house-info" onClose={onClose} heading={house.type} hoverInfo={hoverInfo}>
+        <Window className="house-info" onClose={onClose} heading={house.type} hoverInfo={hoverInfo} onRaise={onRaise}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 

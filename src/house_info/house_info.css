@@ -1,7 +1,6 @@
 .house-info {
     background-color: darkgray;
     color: white;
-    z-index: 2000;
     position: absolute;
     left: 10vw;
     top: 10vh;

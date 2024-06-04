@@ -75,10 +75,12 @@ const MATERIAL_LABELS: Map<string, string> = new Map(Object.entries(
 interface HeadquarterInfoProps {
     house: HouseInformation
     nation: Nation
+
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
+const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoProps) => {
     const [panel, setPanel] = useState<'INVENTORY' | 'RESERVED' | 'MILITARY_SETTINGS'>('INVENTORY')
     const [strengthWhenPopulatingBuildings, setStrengthWhenPopulatingBuildings] = useState<number>(5)
     const [defenseFromSurroundingBuildings, setDefenseFromSurroundingBuildings] = useState<number>(5)
@@ -174,7 +176,7 @@ const HeadquarterInfo = ({ house, nation, onClose }: HeadquarterInfoProps) => {
         [defenseStrength])
 
     return (
-        <Window className="house-info" onClose={onClose} heading='Headquarters' hoverInfo={hover}>
+        <Window className="house-info" onClose={onClose} heading='Headquarters' hoverInfo={hover} onRaise={onRaise}>
             <HouseIcon houseType="Headquarter" nation={nation} drawShadow />
 
             <TabList

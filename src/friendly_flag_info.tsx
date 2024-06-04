@@ -9,11 +9,13 @@ import { Window } from './components/dialog'
 interface FriendlyFlagInfoProps {
     flag: FlagInformation
     nation: Nation
+
+    onRaise: (() => void)
     onStartNewRoad: ((flag: FlagInformation) => void)
     onClose: (() => void)
 }
 
-const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, ...props }: FriendlyFlagInfoProps) => {
+const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }: FriendlyFlagInfoProps) => {
     const [flag, setFlag] = useState<FlagInformation>(props.flag)
     const [hoverInfo, setHoverInfo] = useState<string>()
 
@@ -30,7 +32,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, ...props }: Friendl
         }, [])
 
     return (
-        <Window className='friendly-flag-info' heading='Flag' onClose={onClose} hoverInfo={hoverInfo}>
+        <Window className='friendly-flag-info' heading='Flag' onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
             <div className="flag-information">
 
                 <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate drawShadow />

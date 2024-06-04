@@ -12,6 +12,7 @@ interface SetTransportPriorityProps {
     playerId: PlayerId
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
@@ -34,7 +35,7 @@ CATEGORY_MATERIALS_MAP.set('PIG', ['PIG'])
 CATEGORY_MATERIALS_MAP.set('FLOUR', ['FLOUR'])
 CATEGORY_MATERIALS_MAP.set('BOAT', ['BOAT'])
 
-const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTransportPriorityProps) => {
+const SetTransportPriority = ({ playerId, gameId, nation, onClose, onRaise }: SetTransportPriorityProps) => {
     const [selected, setSelected] = useState<TransportCategories>('PLANK')
     const [priority, setPriority] = useState<TransportCategories[]>(Array.from(TRANSPORT_CATEGORIES))
 
@@ -79,7 +80,7 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose }: SetTranspor
     }
 
     return (
-        <Window heading="Transport priority" onClose={onClose}>
+        <Window heading="Transport priority" onClose={onClose} onRaise={onRaise}>
             <div className='transport-priority-list'>
                 {priority.map(
                     (category, index) => {

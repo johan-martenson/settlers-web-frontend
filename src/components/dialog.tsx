@@ -12,6 +12,7 @@ interface WindowProps {
     children?: React.ReactNode
 
     onClose: (() => void)
+    onRaise: (() => void)
 }
 
 type Drag = {
@@ -19,7 +20,7 @@ type Drag = {
     windowDragStart: Point
 }
 
-function Window({ onClose, ...props }: WindowProps) {
+function Window({ onClose, onRaise, ...props }: WindowProps) {
     const className = props.className !== undefined ? `window ${props.className}` : 'window'
 
     const [windowHoverInfo, setWindowHoverInfo] = useState<string>()
@@ -46,6 +47,8 @@ function Window({ onClose, ...props }: WindowProps) {
                         mouseDragStart: { x: event.clientX, y: event.clientY },
                         windowDragStart: { x: event.currentTarget.offsetLeft, y: event.currentTarget.offsetTop }
                     })
+
+                    onRaise()
                 }
             }}
 

@@ -10,15 +10,13 @@ import { FlagIcon, HouseIcon } from './icon'
 interface ConstructionInfoProps {
     point: PointInformation
     nation: Nation
+
+    onRaise: (() => void)
     onClose: (() => void)
     onStartNewRoad: ((point: Point) => void)
 }
 
-const ConstructionInfo = (props: ConstructionInfoProps) => {
-    const nation = props.nation
-    const onStartNewRoad = props.onStartNewRoad
-    const onClose = props.onClose
-
+const ConstructionInfo = ({nation, onStartNewRoad, onClose, onRaise, ...props}: ConstructionInfoProps) => {
     const [point, setPoint] = useState<PointInformation>(props.point)
     const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads')
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<'small' | 'medium' | 'large'>('small')
@@ -66,7 +64,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
     }
 
     return (
-        <Window id="ConstructionInfo" className="construction-info-window" heading="Construction" onClose={onClose} hoverInfo={hover}>
+        <Window id="ConstructionInfo" className="construction-info-window" heading="Construction" onClose={onClose} hoverInfo={hover} onRaise={onRaise}>
 
             <div className='construction-info'>
                 <TabList
@@ -83,8 +81,7 @@ const ConstructionInfo = (props: ConstructionInfoProps) => {
                 >
                     {Array.from(constructionOptions.entries(), ([key, value], index) => {
                         return <Tab value={key} key={index}>{value}</Tab>
-                    }
-                    )}
+                    })}
                 </TabList>
 
                 {selected === "FlagsAndRoads" &&

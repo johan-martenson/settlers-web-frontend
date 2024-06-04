@@ -25,7 +25,67 @@ import { animator } from './utils/animator'
 import { RoadInfo } from './road-info'
 import { Debug } from './debug/debug'
 
-type Menu = 'MAIN' | 'FRIENDLY_HOUSE' | 'FRIENDLY_FLAG' | 'CONSTRUCTION' | 'GUIDE'
+type HouseWindow = {
+    type: 'HOUSE'
+    house: HouseInformation
+}
+
+type FlagWindow = {
+    type: 'FLAG'
+    flag: FlagInformation
+}
+
+type ConstructionWindow = {
+    type: 'CONSTRUCTION_WINDOW'
+    pointInformation: PointInformation
+}
+
+type StatisticsWindow = {
+    type: 'STATISTICS'
+}
+
+type GuideWindow = {
+    type: 'GUIDE'
+}
+
+type DebugWindow = {
+    type: 'DEBUG'
+}
+
+type QuotaWindow = {
+    type: 'QUOTA'
+}
+
+type RoadWindow = {
+    type: 'ROAD_INFO'
+    roadId: RoadId
+}
+
+type TransportPriorityWindow = {
+    type: 'TRANSPORT_PRIORITY'
+}
+
+type WindowType = HouseWindow |
+    FlagWindow |
+    ConstructionWindow |
+    StatisticsWindow |
+    GuideWindow |
+    DebugWindow |
+    QuotaWindow |
+    RoadWindow |
+    TransportPriorityWindow
+
+type Window = {
+    id: number
+} & WindowType
+
+let trackNextWindowId = 0
+
+function nextWindowId(): number {
+    trackNextWindowId++
+
+    return trackNextWindowId - 1
+}
 
 const MAX_SCALE = 70
 const MIN_SCALE = 10
@@ -59,14 +119,6 @@ interface StoredTouch {
     pageY: number
 }
 
-interface ShowFriendlyHouseInfo {
-    house: HouseInformation
-}
-
-interface ShowFriendlyFlagInfo {
-    flag: FlagInformation
-}
-
 interface PauseSignProps {
     message: string
 }
@@ -98,7 +150,7 @@ const PauseSign = ({ message }: PauseSignProps) => {
 interface AppProps {
     selfPlayerId: PlayerId
     gameId: GameId
-    observe?: boolean
+
     onLeaveGame: (() => void)
 }
 
@@ -113,16 +165,9 @@ interface AppState {
 
     player?: PlayerInformation
 
-    activeMenu?: Menu
+    windows: Window[]
 
-    showFriendlyHouseInfo?: ShowFriendlyHouseInfo
-    showFriendlyFlagInfo?: ShowFriendlyFlagInfo
-    showConstructionInfo?: PointInformation
-    showHelp?: boolean
-    showStatistics?: boolean
-    showQuotas?: boolean
     showMenu: boolean
-    showDebug: boolean
     isMusicPlayerVisible: boolean
     isTypingControllerVisible: boolean
     animateMapScrolling: boolean
@@ -131,9 +176,7 @@ interface AppState {
 
     showTitles: boolean
     showAvailableConstruction: boolean
-    showSetTransportPriority: boolean
-    showRoadInfo: boolean
-    roadId?: RoadId
+
     gameState: GameState
 
     serverUnreachable?: string
@@ -149,6 +192,7 @@ interface AppState {
 class App extends Component<AppProps, AppState> {
     private selfNameRef = React.createRef<HTMLDivElement>()
     private commands: Map<string, Command>
+
     monitoringPromise: Promise<void>
 
     constructor(props: AppProps) {
@@ -173,18 +217,14 @@ class App extends Component<AppProps, AppState> {
 
         this.toggleDetails = this.toggleDetails.bind(this)
 
-        this.closeActiveMenu = this.closeActiveMenu.bind(this)
-
         this.state = {
             showAvailableConstruction: false,
             selected: { x: 0, y: 0 },
             gameWidth: 0,
             gameHeight: 0,
             showMenu: false,
-            showDebug: false,
+            windows: [],
             showTitles: true,
-            showSetTransportPriority: false,
-            showRoadInfo: false,
             cursorState: 'NOTHING',
             showFpsCounter: false,
             isMusicPlayerVisible: true,
@@ -204,25 +244,63 @@ class App extends Component<AppProps, AppState> {
         monitor.listenToGameState((gameState: GameState) => this.setState({ gameState }))
     }
 
+    openSingletonWindow(window: WindowType): void {
+        console.log(["Singleton window", window])
+
+        const windows = this.state.windows.filter(w => w.type !== window.type)
+
+        const windowWithId = {
+            ...window,
+            id: nextWindowId()
+        }
+
+        windows.push(windowWithId)
+
+        this.setState({ windows })
+    }
+
+    openWindow(window: WindowType): void {
+        console.log("Window", window)
+
+        const windows = [...this.state.windows]
+
+        const windowWithId = {
+            ...window,
+            id: nextWindowId()
+        }
+
+        windows.push(windowWithId)
+
+        this.setState({ windows })
+    }
+
+    closeWindow(id: number): void {
+        this.setState({ windows: this.state.windows.filter(w => w.id !== id) })
+    }
+
+    raiseWindow(id: number): void {
+        console.log("Raising")
+
+        const window = this.state.windows.find(w => w.id === id)
+
+        console.log(["Raising", window])
+
+        if (window !== undefined) {
+            const remaining = this.state.windows.filter(w => w.id !== id)
+
+            remaining.push(window)
+
+            console.log(remaining)
+
+            this.setState({ windows: remaining })
+        }
+    }
+
     toggleDetails(): void {
         this.setState(
             {
                 showTitles: true,
                 showAvailableConstruction: !this.state.showAvailableConstruction
-            }
-        )
-    }
-
-    closeActiveMenu(): void {
-        this.setState(
-            {
-                activeMenu: undefined,
-                showConstructionInfo: undefined,
-                showHelp: undefined,
-                showFriendlyFlagInfo: undefined,
-                showFriendlyHouseInfo: undefined,
-                showStatistics: undefined,
-                showMenu: false
             }
         )
     }
@@ -266,35 +344,6 @@ class App extends Component<AppProps, AppState> {
                 y: newTranslateY
             }
         }
-    }
-
-    closeFriendlyHouseInfo(): void {
-        console.info("Closing friendly house info")
-
-        this.setState({ showFriendlyHouseInfo: undefined })
-    }
-
-    showMenu(): void {
-
-        /* Close active dialogs first */
-        this.closeActiveMenu()
-
-        /* Open the menu */
-        this.setState(
-            {
-                showMenu: true,
-                activeMenu: 'MAIN'
-            }
-        )
-    }
-
-    showHelp(): void {
-        this.setState(
-            {
-                activeMenu: 'GUIDE',
-                showHelp: true
-            }
-        )
     }
 
     moveGame(newTranslateX: number, newTranslateY: number): void {
@@ -499,7 +548,9 @@ class App extends Component<AppProps, AppState> {
                 monitor.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
         })
         this.commands.set("Statistics", {
-            action: () => this.setState({ showStatistics: true })
+            action: () => {
+                this.openSingletonWindow({ type: 'STATISTICS' })
+            }
         })
         this.commands.set("Game information", {
             action: () => {
@@ -526,7 +577,7 @@ class App extends Component<AppProps, AppState> {
             filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
         })
         this.commands.set("Transport priority", {
-            action: () => this.setState({ showSetTransportPriority: true })
+            action: () => this.openSingletonWindow({ type: 'TRANSPORT_PRIORITY' })
         })
         this.commands.set("List statistics", {
             action: () => printVariables()
@@ -559,14 +610,12 @@ class App extends Component<AppProps, AppState> {
         })
         this.commands.set("Menu", {
             action: () => {
-                this.showMenu.bind(this)()
+                this.setState({ showMenu: true })
             },
             icon: <CalendarAgenda24Regular />
         })
         this.commands.set("Quotas", {
-            action: () => {
-                this.setState({ showQuotas: true })
-            }
+            action: () => this.openSingletonWindow({ type: 'QUOTA' })
         })
         this.commands.set("Pause game", {
             action: () => monitor.pauseGame()
@@ -575,7 +624,7 @@ class App extends Component<AppProps, AppState> {
             action: () => monitor.resumeGame()
         })
         this.commands.set("Debug", {
-            action: () => this.setState({ showDebug: true })
+            action: () => this.openSingletonWindow({ type: 'DEBUG' })
         })
 
         // Store information about the player
@@ -620,11 +669,6 @@ class App extends Component<AppProps, AppState> {
 
     async onPointClicked(point: Point): Promise<void> {
         console.info("Clicked point: " + point.x + ", " + point.y)
-
-        /* Ignore clicks if the player is an observer */
-        if (this.props.observe) {
-            return
-        }
 
         /* Filter clicks that are really the end of moving the mouse */
         if (immediateUxState.mouseMoving) {
@@ -721,11 +765,6 @@ class App extends Component<AppProps, AppState> {
     async onDoubleClick(point: Point): Promise<void> {
         console.info("Double click on " + point.x + ", " + point.y)
 
-        /* Ignore double clicks if the player is an observer */
-        if (this.props.observe) {
-            return
-        }
-
         /* First, handle double clicks differently if a new road is being created */
         if (this.state.newRoad) {
             console.log("New road exists")
@@ -779,10 +818,10 @@ class App extends Component<AppProps, AppState> {
             /* Show friendly house info for own house */
             console.info("Friendly house")
 
+            this.openWindow({ type: 'HOUSE', house })
+
             this.setState({
                 showMenu: false,
-                showFriendlyHouseInfo: { house: house },
-                activeMenu: 'FRIENDLY_HOUSE'
             })
 
             return
@@ -798,13 +837,7 @@ class App extends Component<AppProps, AppState> {
             if (flag.playerId === this.props.selfPlayerId) {
                 console.info("Friendly flag")
 
-                this.setState(
-                    {
-                        showMenu: false,
-                        showFriendlyFlagInfo: { flag: flag },
-                        activeMenu: 'FRIENDLY_FLAG'
-                    }
-                )
+                this.openWindow({ type: 'FLAG', flag })
             }
 
             return
@@ -821,25 +854,14 @@ class App extends Component<AppProps, AppState> {
         }
 
         else if (pointInformation.is === "road" && pointInformation.roadId) {
-            this.setState(
-                {
-                    showMenu: false,
-                    showRoadInfo: true,
-                    roadId: pointInformation.roadId
-                }
-            )
+            this.openWindow({ type: 'ROAD_INFO', roadId: pointInformation.roadId })
 
             console.log("SHOWING ROAD INFO WINDOW")
         }
 
         /* Open the window to construct houses/flags/roads */
         else if (pointInformation.canBuild && pointInformation.canBuild.length !== 0) {
-            this.setState(
-                {
-                    showConstructionInfo: pointInformation,
-                    activeMenu: 'CONSTRUCTION'
-                }
-            )
+            this.openWindow({ type: 'CONSTRUCTION_WINDOW', pointInformation: pointInformation })
         }
     }
 
@@ -847,8 +869,8 @@ class App extends Component<AppProps, AppState> {
         if (event.key === "Escape") {
 
             /* Close the active menu (if there is an active menu) */
-            if (this.state.activeMenu) {
-                this.closeActiveMenu()
+            if (this.state.windows.length > 0) {
+                this.closeWindow(this.state.windows[this.state.windows.length - 1].id)
 
                 /* Stop building a new road */
             } else if (this.state.newRoad) {
@@ -877,7 +899,7 @@ class App extends Component<AppProps, AppState> {
         } else if (event.key === "-") {
             this.zoom(immediateUxState.scale - 1)
         } else if (event.key === "M") {
-            this.showMenu()
+            this.setState({ showMenu: true })
         } else {
             const keyEvent = new CustomEvent("key", { detail: { key: event.key, metaKey: event.metaKey, altKey: event.altKey, ctrlKey: event.ctrlKey } })
 
@@ -1053,7 +1075,7 @@ class App extends Component<AppProps, AppState> {
                     heightAdjust={this.state.heightAdjust}
                 />
 
-                <MenuButton onMenuButtonClicked={this.showMenu.bind(this)} />
+                <MenuButton onMenuButtonClicked={() => this.setState({ showMenu: true })} />
 
                 <GameMenu
                     currentPlayerId={this.props.selfPlayerId}
@@ -1068,9 +1090,9 @@ class App extends Component<AppProps, AppState> {
                     areTitlesVisible={this.state.showTitles}
                     onLeaveGame={this.props.onLeaveGame}
                     currentSpeed={0}
-                    onStatistics={() => this.setState({ showStatistics: true })}
-                    onHelp={() => this.setState({ showHelp: true })}
-                    onSetTransportPriority={() => this.setState({ showSetTransportPriority: true })}
+                    onStatistics={() => this.openSingletonWindow({ type: 'STATISTICS' })}
+                    onHelp={() => this.openSingletonWindow({ type: 'GUIDE' })}
+                    onSetTransportPriority={() => this.openSingletonWindow({ type: 'STATISTICS' })}
                     isOpen={this.state.showMenu}
                     isAnimateMapScrollingSet={this.state.animateMapScrolling}
                     isAnimateZoomingSet={this.state.animateZoom}
@@ -1087,70 +1109,85 @@ class App extends Component<AppProps, AppState> {
                     onSetAnimateMapScrolling={(animateMapScrolling) => this.setState({ animateMapScrolling })}
                     onSetAnimateZooming={(animateZoom) => this.setState({ animateZoom })}
                     onGameSpeedChange={(gameSpeed) => this.setState({ gameSpeed })}
-                    onQuota={() => this.setState({ showQuotas: true })}
+                    onQuota={() => this.openSingletonWindow({ type: 'QUOTA' })}
                 />
 
-                {this.state.showFriendlyHouseInfo &&
-                    <HouseInfo
-                        gameId={this.props.gameId}
-                        selfPlayerId={this.props.selfPlayerId}
-                        house={this.state.showFriendlyHouseInfo.house}
-                        nation={this.state.player?.nation ?? 'ROMANS'}
-                        onClose={this.closeActiveMenu.bind(this)}
-                    />
-                }
-
-                {this.state.showFriendlyFlagInfo &&
-                    <FriendlyFlagInfo
-                        flag={this.state.showFriendlyFlagInfo.flag}
-                        onClose={this.closeActiveMenu.bind(this)}
-                        onStartNewRoad={this.startNewRoad.bind(this)}
-                        nation={this.state.player?.nation ?? 'ROMANS'}
-                    />
-                }
-
-                {this.state.showHelp &&
-                    <Guide onClose={this.closeActiveMenu.bind(this)} />
-                }
-
-                {this.state.showConstructionInfo &&
-                    <ConstructionInfo point={this.state.showConstructionInfo}
-                        onClose={this.closeActiveMenu.bind(this)}
-                        onStartNewRoad={this.startNewRoad.bind(this)}
-                        nation={(this.state.player) ? this.state.player.nation : "ROMANS"}
-                    />
-                }
-
-                {this.state.showStatistics &&
-                    <Statistics
-                        onClose={() => this.setState({ showStatistics: false })}
-                        gameId={this.props.gameId}
-                        nation={this.state.player?.nation ?? 'ROMANS'}
-                    />
-                }
-
-                {this.state.showQuotas &&
-                    <Quotas
-                        nation={this.state.player?.nation ?? 'ROMANS'}
-                        onClose={() => this.setState({ showQuotas: false })}
-                    />
-                }
-
-                {this.state.showSetTransportPriority &&
-                    <SetTransportPriority
-                        onClose={() => this.setState({ showSetTransportPriority: false })}
-                        nation={this.state.player?.nation ?? 'ROMANS'}
-                        gameId={this.props.gameId}
-                        playerId={this.props.selfPlayerId}
-                    />
-                }
-
-                {this.state.showRoadInfo && this.state.roadId &&
-                    <RoadInfo
-                        roadId={this.state.roadId}
-                        onClose={() => this.setState({ showRoadInfo: false })}
-                    />
-                }
+                {this.state.windows.map(window => {
+                    switch (window.type) {
+                        case 'CONSTRUCTION_WINDOW':
+                            return <ConstructionInfo
+                                key={window.id}
+                                point={window.pointInformation}
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                                onStartNewRoad={this.startNewRoad.bind(this)}
+                                nation={(this.state.player) ? this.state.player.nation : "ROMANS"}
+                            />
+                        case 'FLAG':
+                            return <FriendlyFlagInfo
+                                key={window.id}
+                                flag={window.flag}
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                                onStartNewRoad={this.startNewRoad.bind(this)}
+                                nation={this.state.player?.nation ?? 'ROMANS'}
+                            />
+                        case 'HOUSE':
+                            return <HouseInfo
+                                key={window.id}
+                                gameId={this.props.gameId}
+                                selfPlayerId={this.props.selfPlayerId}
+                                house={window.house}
+                                nation={this.state.player?.nation ?? 'ROMANS'}
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                            />
+                        case 'GUIDE':
+                            return <Guide
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                                key={window.id}
+                            />
+                        case 'STATISTICS':
+                            return <Statistics
+                                key={window.id}
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                                gameId={this.props.gameId}
+                                nation={this.state.player?.nation ?? 'ROMANS'}
+                            />
+                        case 'QUOTA':
+                            return <Quotas
+                                key={window.id}
+                                nation={this.state.player?.nation ?? 'ROMANS'}
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                            />
+                        case 'TRANSPORT_PRIORITY':
+                            return <SetTransportPriority
+                                key={window.id}
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                                nation={this.state.player?.nation ?? 'ROMANS'}
+                                gameId={this.props.gameId}
+                                playerId={this.props.selfPlayerId}
+                            />
+                        case 'ROAD_INFO':
+                            return <RoadInfo
+                                key={window.id}
+                                roadId={window.roadId}
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                            />
+                        case 'DEBUG':
+                            return <Debug
+                                point={this.state.selected}
+                                onClose={() => this.closeWindow(window.id)}
+                                onRaise={() => this.raiseWindow(window.id)}
+                                key={window.id}
+                            />
+                    }
+                })}
 
                 {this.state.isTypingControllerVisible &&
                     <TypeControl commands={this.commands}
@@ -1178,9 +1215,6 @@ class App extends Component<AppProps, AppState> {
                 {this.state.gameState === 'EXPIRED' &&
                     <PauseSign message='EXPIRED' />
                 }
-
-                {this.state.showDebug && <Debug point={this.state.selected} onClose={() => this.setState({ showDebug: false })} />}
-
             </div>
         )
     }

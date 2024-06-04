@@ -15,10 +15,12 @@ function Value({ children }: { children?: React.ReactNode }) {
 
 type DebugProps = {
     point: Point
+
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-function Debug({ point, onClose }: DebugProps) {
+function Debug({ point, onClose, onRaise }: DebugProps) {
     const [flagInformation, setFlagInformation] = useState<FlagDebugInfo>()
     const [pointInformation, setPointInformation] = useState<PointInformation>()
     const [gameInformation, setGameInformation] = useState<GameInformation>()
@@ -51,7 +53,7 @@ function Debug({ point, onClose }: DebugProps) {
     const vegetationBelow = monitor.allTiles.get(point)?.below
     const vegetationDownRight = monitor.allTiles.get(point)?.downRight
 
-    return (<Window className="debug-window" heading='Debug' onClose={onClose}>
+    return (<Window className="debug-window" heading='Debug' onClose={onClose} onRaise={onRaise}>
         <Accordion multiple>
 
             <AccordionItem value="1">

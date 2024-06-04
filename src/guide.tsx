@@ -5,16 +5,17 @@ import { Button } from '@fluentui/react-components'
 import { Window } from './components/dialog'
 
 interface GuideProps {
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const Guide = ({ onClose }: GuideProps) => {
+const Guide = ({ onClose, onRaise }: GuideProps) => {
     const [pageNumber, setPageNumber] = useState<number>(0)
 
     const currentPage: PageType = HELP_PAGES[pageNumber]
 
     return (
-        <Window className="guide" heading={currentPage.title} onClose={onClose}>
+        <Window className="guide" heading={currentPage.title} onClose={onClose} onRaise={onRaise}>
 
             <Page page={currentPage} />
 

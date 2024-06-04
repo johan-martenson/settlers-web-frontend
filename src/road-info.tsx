@@ -9,12 +9,13 @@ import { Window } from './components/dialog'
 type RoadInfoProps = {
     roadId: RoadId
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const RoadInfo = ({ roadId, onClose }: RoadInfoProps) => {
+const RoadInfo = ({ roadId, onClose, onRaise }: RoadInfoProps) => {
     return (
-        <Window className="road-info" heading='Road' onClose={onClose}>
+        <Window className="road-info" heading='Road' onClose={onClose} onRaise={onRaise}>
             <div className="button-row">
                 <Button onClick={() => {
                     monitor.removeRoad(roadId)

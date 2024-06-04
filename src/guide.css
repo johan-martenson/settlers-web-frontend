@@ -1,7 +1,6 @@
 .guide {
     background-color: darkgray;
     color: white;
-    z-index: 3000;
     position: absolute;
     left: 10vw;
     top: 10vh;

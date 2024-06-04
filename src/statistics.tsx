@@ -8,9 +8,11 @@ import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, Land
 import { InventoryIcon } from './icon'
 
 interface StatisticsProps {
-    onClose: (() => void)
     gameId: GameId
     nation: Nation
+
+    onRaise: (() => void)
+    onClose: (() => void)
 }
 
 type GraphHover = {
@@ -89,7 +91,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         return (
             <>
-                <Window heading={titleLabel} onClose={this.props.onClose} hoverInfo={this.state.hoverInfo}>
+                <Window heading={titleLabel} onClose={this.props.onClose} hoverInfo={this.state.hoverInfo} onRaise={this.props.onRaise}>
                     <div id="stats-page">
                         <TabList
                             selectedValue={this.state.state}

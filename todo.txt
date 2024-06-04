@@ -16,19 +16,12 @@ Todo 1.0
 13. Pinch-to-zoom should zoom in the game, not the full web page
 14. Border markers should look different for water/land
 15. Fix map loading so the default map looks good
-16. Missed discovered land up-right from new guard house
-  - No notification sent?
-    - Not sent from server?
-      - Discovered points reporting depended on order of adding military buildings. Adding one but building it after other military buildings caused the problem.
-    - Message misclassified?
-  - Discovery logic wrong?
-17. Fix NullPointerException that happens after playing for a long time
-18. With guard house, new owned land is larger than discovered land. Reload fixes it
-19. Wild animals walk in place
-20. Frontend sometimes freezes even if the backend is still running
-21. Houses should have their doors open and close
-22. Military buidings should have flags matching hosted soldiers and a cross if they are evacuated
-23. Bug:
+16. With guard house, new owned land is larger than discovered land. Reload fixes it
+17. Wild animals walk in place
+18. Frontend sometimes freezes even if the backend is still running
+19. Houses should have their doors open and close
+20. Military buidings should have flags matching hosted soldiers and a cross if they are evacuated
+21. Bug:
   java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.Road.getCourier()" because "road" is null
 	at org.appland.settlers.model.GameMap.doRemoveRoad(GameMap.java:324)
 	at org.appland.settlers.model.buildings.Building.tearDown(Building.java:650)
@@ -52,17 +45,16 @@ Todo 1.0
 	at org.appland.settlers.model.GameMap.stepTime(GameMap.java:414)
 	at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:92)
 
-25. Starting inventory levels
-26. Short range for the quarry
-27. Re-route cargo at full flags when new roads are built to resolve the issue
+22. Starting inventory levels
+23. Re-route cargo at full flags when new roads are built to resolve the issue
   - Re-route both to the headquarters/storehouses, and to consumers directly
   - Overload happends when many things need to get to the headquarters and something is getting delivered in the opposite direction but can't because the flag is full
   - Should cargos not be sent if there is no path without overloaded flags?
-28. Confusing - flag of sawmill gets full of wood even though the sawmill has space (and couriers stand waiting and don't deliver to the sawmill)
-29. Remaining stones look too buidings
-30. Remaining stones should disappear when flag/building/road is placed on top
+24. Confusing - flag of sawmill gets full of wood even though the sawmill has space (and couriers stand waiting and don't deliver to the sawmill)
+25. Remaining stones look too buidings
+26. Remaining stones should disappear when flag/building/road is placed on top
 
-32. Possible bug when drawing fisherman action
+27. Possible bug when drawing fisherman action
     utils.ts:876 FOUND NO ACTION: 
     utils.ts:877 
     (3) ['fisher', 'LOWER_FISHING_ROD', 'NORTH_WEST']
@@ -76,7 +68,30 @@ Todo 1.0
     utils.ts:877 
     (3) ['fisher', 'PULL_UP_FISHING_ROD', 'NORTH_WEST']
 
-33. Inconsistent width of roads going diagonally
+28. Inconsistent width of roads going diagonally
+
+29. Bug
+    CREATED NEW WEBSOCKET MONITOR
+    Websocket opened
+    Storing session
+    Starting to monitor
+    Exception during game loop: java.util.ConcurrentModificationException
+    java.util.ConcurrentModificationException
+      at java.base/java.util.HashMap$HashIterator.nextNode(HashMap.java:1605)
+      at java.base/java.util.HashMap$KeyIterator.next(HashMap.java:1628)
+      at org.appland.settlers.model.Player.sendMonitoringEvents(Player.java:1170)
+      at org.appland.settlers.model.GameMap.stepTime(GameMap.java:751)
+      at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:92)
+      at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+      at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358)
+      at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
+      at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+      at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+      at java.base/java.lang.Thread.run(Thread.java:1583)
+    null
+    org.appland.settlers.model.GameMap@22109add
+
+30. Inventory in the headquarters should update when its window is open
 
 Todo 2.0
 ========

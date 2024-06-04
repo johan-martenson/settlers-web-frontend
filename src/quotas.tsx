@@ -11,10 +11,11 @@ import { Window } from './components/dialog'
 interface QuotasProps {
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const Quotas = ({ nation, onClose }: QuotasProps) => {
+const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
     const [materialToManage, setMaterialToManage] = useState<'COAL' | 'WHEAT' | 'WATER' | 'PLANK' | 'FOOD' | 'IRON_BAR'>('COAL')
     const [mintAmount, setMintAmount] = useState<number>(5)
     const [armoryCoalAmount, setArmoryCoalAmount] = useState<number>(5)
@@ -125,7 +126,7 @@ const Quotas = ({ nation, onClose }: QuotasProps) => {
     }, [armoryIronBarAmount, metalworksIronBarAmount])
 
     return (
-        <Window className="quotas-window" heading='Quotas' onClose={onClose}>
+        <Window className="quotas-window" heading='Quotas' onClose={onClose} onRaise={onRaise}>
 
             <TabList
                 defaultSelectedValue={materialToManage}

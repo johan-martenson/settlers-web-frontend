@@ -13,10 +13,11 @@ interface MilitaryBuildingProps {
     gameId: GameId
     nation: Nation
 
+    onRaise: (() => void)
     onClose: (() => void)
 }
 
-const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: MilitaryBuildingProps) => {
+const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }: MilitaryBuildingProps) => {
     const soldiers: (SoldierType | null)[] = []
 
     const [hoverInfo, setHoverInfo] = useState<string>()
@@ -36,7 +37,7 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose }: Military
     // TODO: show resources when upgrading. Show text "is upgrading..."
 
     return (
-        <Window className="house-info" heading={house.type} onClose={onClose} hoverInfo={hoverInfo}>
+        <Window className="house-info" heading={house.type} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 

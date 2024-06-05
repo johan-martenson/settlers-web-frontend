@@ -4,8 +4,10 @@ import { getGameStatistics, getLandStatistics } from './api/rest-api'
 import { Window } from './components/dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
-import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation } from './api/types'
+import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerInformation } from './api/types'
 import { InventoryIcon } from './icon'
+import { monitor } from './api/ws-api'
+import { ColorBox } from './components/utils'
 
 interface StatisticsProps {
     gameId: GameId
@@ -29,6 +31,7 @@ interface StatisticsState {
     state: "PRODUCTION" | "LAND"
     hoverInfo?: string
     graphHover?: GraphHover
+    playersToShow: PlayerInformation[]
 }
 
 class Statistics extends Component<StatisticsProps, StatisticsState> {
@@ -43,7 +46,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         this.state = {
             drawnStatistics: false,
             materialToShow: "PLANK",
-            state: "PRODUCTION"
+            state: "PRODUCTION",
+            playersToShow: [...monitor.players.values()]
         }
     }
 
@@ -131,13 +135,48 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                             <div className='select-materials'>
                                 {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
                                     .map(material => <div onClick={() => this.setState({ materialToShow: material })} key={material}>
-                                        <Tooltip content={material.toLocaleLowerCase()} relationship={'label'}>
+                                        <Tooltip content={material.toLocaleLowerCase()} relationship='label'>
                                             <div
                                                 onMouseEnter={() => this.setState({ hoverInfo: material.toLocaleLowerCase() })}
                                                 onMouseLeave={() => this.setState({ hoverInfo: undefined })}
                                             ><InventoryIcon nation={this.props.nation} material={material} missing={material !== this.state.materialToShow} /></div>
                                         </Tooltip>
                                     </div>)}
+                            </div>
+                        }
+
+                        {this.state.state === 'LAND' &&
+                            <div className='select-players'>
+                                {Array.from(monitor.players.values()).map(player => <div
+                                    key={player.id}
+                                >
+                                    <Tooltip content={player.name} relationship='label'>
+                                        <div
+                                            style={{ gap: "15px" }}
+                                            onClick={() => {
+                                                if (this.state.playersToShow.find(p => p.id === player.id)) {
+                                                    const remaining = this.state.playersToShow.filter(p => p.id !== player.id)
+
+                                                    this.setState({ playersToShow: remaining })
+                                                } else {
+                                                    this.setState({ playersToShow: [...this.state.playersToShow, player] })
+                                                }
+                                            }}
+                                            onMouseEnter={() => {
+                                                if (this.state.playersToShow.find(p => p.id === player.id) !== undefined) {
+                                                    this.setState({ hoverInfo: `Hide ${player.name}` })
+                                                } else {
+                                                    this.setState({ hoverInfo: `Show ${player.name}` })
+                                                }
+                                            }}
+                                            onMouseLeave={() => this.setState({ hoverInfo: undefined })}
+                                        >
+                                            {player.name}
+                                            <ColorBox color={player.color} />
+                                        </div>
+                                    </Tooltip>
+                                </div>
+                                )}
                             </div>
                         }
                     </div>
@@ -258,18 +297,19 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         // Add the lines
         landStatisticsWithGaps.players.forEach(
-            (player, index) => statisticsSvg.append("path")
-                .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                .attr("fill", "none")
-                .attr("stroke", player.color)
-                .attr("stroke-width", 2)
-                .attr("stroke-linejoin", "round")
-                .attr("stroke-linecap", "round")
-                .datum(landStatistics) // Bind data to the line
-                .attr("class", "line")
-                .attr("d", lines[index]) // Call the line generator
-                .on("mouseover", () => this.setState({ hoverInfo: player.name }))
-                .on("mouseout", () => this.setState({ hoverInfo: undefined }))
+            (player, index) => this.state.playersToShow.find(p => p.name === player.name) !== undefined &&
+                statisticsSvg.append("path")
+                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
+                    .attr("fill", "none")
+                    .attr("stroke", player.color)
+                    .attr("stroke-width", 2)
+                    .attr("stroke-linejoin", "round")
+                    .attr("stroke-linecap", "round")
+                    .datum(landStatistics) // Bind data to the line
+                    .attr("class", "line")
+                    .attr("d", lines[index]) // Call the line generator
+                    .on("mouseover", () => this.setState({ hoverInfo: player.name }))
+                    .on("mouseout", () => this.setState({ hoverInfo: undefined }))
         )
     }
 

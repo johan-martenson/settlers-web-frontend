@@ -16,7 +16,7 @@ interface ConstructionInfoProps {
     onStartNewRoad: ((point: Point) => void)
 }
 
-const ConstructionInfo = ({nation, onStartNewRoad, onClose, onRaise, ...props}: ConstructionInfoProps) => {
+const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }: ConstructionInfoProps) => {
     const [point, setPoint] = useState<PointInformation>(props.point)
     const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads')
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<'small' | 'medium' | 'large'>('small')
@@ -27,13 +27,15 @@ const ConstructionInfo = ({nation, onStartNewRoad, onClose, onRaise, ...props}: 
 
     useEffect(
         () => {
-            const listener = (availableConstruction: AvailableConstruction[]) => {
-                const updatedPoint: PointInformation = {
-                    ...point,
-                    canBuild: availableConstruction,
-                }
+            const listener = {
+                onAvailableConstructionChanged: (availableConstruction: AvailableConstruction[]) => {
+                    const updatedPoint: PointInformation = {
+                        ...point,
+                        canBuild: availableConstruction,
+                    }
 
-                setPoint(updatedPoint)
+                    setPoint(updatedPoint)
+                }
             }
 
             monitor.listenToAvailableConstruction(point, listener)

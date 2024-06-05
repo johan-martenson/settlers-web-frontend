@@ -244,7 +244,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise 
     const [hoverInfo, setHoverInfo] = useState<string>()
 
     return (
-        <Window className="house-info" onClose={onClose} heading={house.type} hoverInfo={hoverInfo} onRaise={onRaise}>
+        <Window className="house-info production-building" onClose={onClose} heading={house.type} hoverInfo={hoverInfo} onRaise={onRaise}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 

@@ -9,7 +9,7 @@
     align-items: center;
     justify-content: space-between;
     margin: auto;
-    gap: 2em;
+    gap: 1em;
 
     .h2 {
         text-align: left;
@@ -23,7 +23,7 @@
 .window-content {
     display: flex;
     flex-direction: column;
-    gap: 2em;
+    gap: 1em;
     min-height: 10em;
     height: auto;
     align-items: center;

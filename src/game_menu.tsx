@@ -1,5 +1,5 @@
-import React, { ChangeEvent, useState } from 'react'
-import { GameId, PlayerId } from './api/types'
+import React, { ChangeEvent, useEffect, useState } from 'react'
+import { GameId, GameSpeed, PlayerId } from './api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
 import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option, SelectionEvents, OptionOnSelectData } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
@@ -8,8 +8,6 @@ import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './game_render'
 import { sfx } from './sound/sound_effects'
 import { DEFAULT_VOLUME } from './App'
 import { monitor } from './api/ws-api'
-
-export type GameSpeed = 'Fast' | 'Normal' | 'Slow'
 
 interface GameMenuProps {
     gameId: GameId
@@ -26,7 +24,6 @@ interface GameMenuProps {
     isAnimateMapScrollingSet: boolean
     isAnimateZoomingSet: boolean
     defaultZoom: number
-    gameSpeed: GameSpeed
 
     onChangedZoom: ((scale: number) => void)
     onSetSpeed: ((speed: number) => void)
@@ -43,7 +40,6 @@ interface GameMenuProps {
     onSetHeightAdjust: ((heightAdjust: number) => void)
     onSetAnimateMapScrolling: ((shouldAnimate: boolean) => void)
     onSetAnimateZooming: ((shouldAnimate: boolean) => void)
-    onGameSpeedChange: ((gameSpeed: GameSpeed) => void)
     onQuota: (() => void)
 }
 
@@ -58,7 +54,6 @@ const GameMenu = (
         isAvailableConstructionVisible,
         isAnimateMapScrollingSet,
         isAnimateZoomingSet,
-        gameSpeed,
         onClose,
         onChangedZoom,
         onSetTitlesVisible,
@@ -73,10 +68,21 @@ const GameMenu = (
         onSetHeightAdjust,
         onSetAnimateMapScrolling,
         onSetAnimateZooming,
-        onGameSpeedChange,
         onQuota }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
+    const [gameSpeed, setGameSpeed] = useState<GameSpeed>('NORMAL')
+
+    useEffect(
+        () => {
+            setGameSpeed(monitor.gameSpeed)
+
+            monitor.listenToGameState({
+                onGameSpeedChanged: gameSpeed => setGameSpeed(gameSpeed)
+            })
+        },
+        []
+    )
 
     return (
         <Drawer type='overlay' separator open={isOpen} onOpenChange={() => onClose()} onWheel={(event) => event.stopPropagation()}>
@@ -105,19 +111,13 @@ const GameMenu = (
                         }} >Reset</Button>
                     </Field>
                     <Field label='Set game speed'>
-                        <Dropdown value={gameSpeed} onOptionSelect={(_event: SelectionEvents, data: OptionOnSelectData) => {
+                        <Dropdown value={gameSpeed.charAt(0).toUpperCase() + gameSpeed.substring(1).toLocaleLowerCase()} onOptionSelect={(_event: SelectionEvents, data: OptionOnSelectData) => {
                             if (data.optionValue === 'Fast') {
                                 monitor.setGameSpeed('FAST')
-
-                                onGameSpeedChange('Fast')
                             } else if (data.optionValue === 'Normal') {
                                 monitor.setGameSpeed('NORMAL')
-
-                                onGameSpeedChange('Normal')
                             } else {
                                 monitor.setGameSpeed('SLOW')
-
-                                onGameSpeedChange('Slow')
                             }
                         }}>
                             <Option>Fast</Option>

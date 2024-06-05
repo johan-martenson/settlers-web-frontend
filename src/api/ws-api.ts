@@ -51,6 +51,7 @@ interface PointAndDecoration {
 
 interface ChangesMessage {
     tick: number
+    gameSpeed?: GameSpeed
     workersWithNewTargets?: WalkerTargetChange[]
     workersWithStartedActions?: WorkerNewAction[]
     wildAnimalsWithNewTargets?: WildAnimalInformation[]
@@ -135,6 +136,15 @@ interface FlagListener {
     onRemove: (() => void)
 }
 
+interface GameListener {
+    onGameStateChanged?: ((gameState: GameState) => void)
+    onGameSpeedChanged?: ((gameSpeed: GameSpeed) => void)
+}
+
+interface AvailableConstructionListener {
+    onAvailableConstructionChanged: ((availableConstruction: AvailableConstruction[]) => void)
+}
+
 interface ReplyMessage {
     requestId: RequestId
 }
@@ -189,6 +199,7 @@ export interface Monitor {
     localRemovedRoads: Map<RoadId, RoadInformation>
     gameState: GameState
     housesAt: PointMapFast<HouseInformation>
+    gameSpeed: GameSpeed
 
     placeHouse: ((houseType: AnyBuilding, point: Point) => void)
     placeRoad: ((points: Point[]) => void)
@@ -246,8 +257,8 @@ export interface Monitor {
     addDetailedMonitoring: ((id: HouseId | FlagId) => void)
 
     listenToFlag: ((flagId: FlagId, listener: FlagListener) => void)
-    listenToGameState: ((listener: (gameState: GameState) => void) => void)
-    listenToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
+    listenToGameState: ((listener: GameListener) => void)
+    listenToAvailableConstruction: ((point: Point, listener: AvailableConstructionListener) => void)
     listenToActions: ((listener: ActionListener) => void)
     listenToBurningHouses: ((listener: HouseBurningListener) => void)
     listenToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
@@ -257,7 +268,7 @@ export interface Monitor {
 
     stopListeningToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
     stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
-    stopListeningToAvailableConstruction: ((point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) => void)
+    stopListeningToAvailableConstruction: ((point: Point, listener: AvailableConstructionListener) => void)
 
     setCoalQuotas: ((mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void)
     setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
@@ -283,10 +294,10 @@ const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: Game
 const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
 const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
 const roadListeners: (() => void)[] = []
-const availableConstructionListeners = new PointMapFast<((availableConstruction: AvailableConstruction[]) => void)[]>()
+const availableConstructionListeners = new PointMapFast<AvailableConstructionListener[]>()
 const actionListeners: ActionListener[] = []
 const houseBurningListeners: HouseBurningListener[] = []
-const gameStateListeners: ((gameState: GameState) => void)[] = []
+const gameListeners: GameListener[] = []
 
 const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[]>()
 
@@ -339,6 +350,7 @@ const monitor: Monitor = {
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
     decorations: new PointMapFast<Decoration>(),
     gameState: 'STARTED',
+    gameSpeed: 'NORMAL',
 
     housesAt: new PointMapFast<HouseInformation>(),
 
@@ -779,7 +791,7 @@ function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent
 
         monitor.gameState = "EXPIRED"
 
-        gameStateListeners.forEach(listener => listener("EXPIRED"))
+        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged("EXPIRED"))
     } else {
         setTimeout(() => {
             const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
@@ -839,7 +851,7 @@ function receivedPauseResumeMessage(message: PauseResumeMessage): void {
         startTimers()
     }
 
-    gameStateListeners.forEach(listener => listener(message.gameState))
+    gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(message.gameState))
 }
 
 function stopTimers() {
@@ -949,6 +961,13 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
         gameTickLength = message.tick
 
         startTimers()
+    }
+
+    // Update game speed
+    if (message.gameSpeed) {
+        monitor.gameSpeed = message.gameSpeed
+
+        gameListeners.forEach(listener => listener.onGameSpeedChanged && listener.onGameSpeedChanged(monitor.gameSpeed))
     }
 
     // Confirm local removals if they are part of the message
@@ -1134,7 +1153,7 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
                 monitor.availableConstruction.set(point, change.available)
             }
 
-            availableConstructionListeners.get(point)?.forEach(listener => listener(change.available))
+            availableConstructionListeners.get(point)?.forEach(listener => listener.onAvailableConstructionChanged(change.available))
         }
     }
 
@@ -1849,7 +1868,7 @@ function stopListeningToFlag(flagId: FlagId, listener: FlagListener): void {
     }
 }
 
-function listenToAvailableConstruction(point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)): void {
+function listenToAvailableConstruction(point: Point, listener: AvailableConstructionListener): void {
     if (availableConstructionListeners.has(point)) {
         availableConstructionListeners.set(point, [])
     }
@@ -1857,7 +1876,7 @@ function listenToAvailableConstruction(point: Point, listener: ((availableConstr
     availableConstructionListeners.get(point)?.push(listener)
 }
 
-function stopListeningToAvailableConstruction(point: Point, listener: ((availableConstruction: AvailableConstruction[]) => void)) {
+function stopListeningToAvailableConstruction(point: Point, listener: AvailableConstructionListener) {
     const listeners = availableConstructionListeners.get(point)
 
     if (listeners) {
@@ -1873,8 +1892,8 @@ function listenToActions(listener: ActionListener) {
     actionListeners.push(listener)
 }
 
-function listenToGameState(listener: ((gameState: GameState) => void)) {
-    gameStateListeners.push(listener)
+function listenToGameState(listener: GameListener) {
+    gameListeners.push(listener)
 }
 
 function listenToBurningHouses(listener: HouseBurningListener) {

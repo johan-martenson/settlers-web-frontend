@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
-import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, getPlayers, setSpeed, upgradeMilitaryBuilding } from './api/rest-api'
+import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, setSpeed, upgradeMilitaryBuilding } from './api/rest-api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import FriendlyFlagInfo from './friendly_flag_info'
-import GameMenu, { GameSpeed } from './game_menu'
+import GameMenu from './game_menu'
 import GameMessagesViewer from './game_messages_viewer'
 import { CursorState, DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, GameCanvas } from './game_render'
 import Guide from './guide'
@@ -16,7 +16,7 @@ import { SetTransportPriority } from './transport_priority'
 import { TypeControl, Command } from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState, RoadId } from './api/types'
-import { Dismiss24Filled, CalendarAgenda24Regular, TextBulletListSquare24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
+import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon } from './icon'
 import { HouseInfo } from './house_info/house_info'
 import { sfx } from './sound/sound_effects'
@@ -172,7 +172,6 @@ interface AppState {
     isTypingControllerVisible: boolean
     animateMapScrolling: boolean
     animateZoom: boolean
-    gameSpeed: GameSpeed
 
     showTitles: boolean
     showAvailableConstruction: boolean
@@ -215,8 +214,6 @@ class App extends Component<AppProps, AppState> {
 
         this.onKeyDown = this.onKeyDown.bind(this)
 
-        this.toggleDetails = this.toggleDetails.bind(this)
-
         this.state = {
             showAvailableConstruction: false,
             selected: { x: 0, y: 0 },
@@ -233,15 +230,16 @@ class App extends Component<AppProps, AppState> {
             heightAdjust: DEFAULT_HEIGHT_ADJUSTMENT,
             gameState: 'STARTED',
             animateMapScrolling: true,
-            animateZoom: true,
-            gameSpeed: 'Normal'
+            animateZoom: true
         }
 
         /* Set up type control commands */
         this.commands = new Map()
 
         // Listen to the game state
-        monitor.listenToGameState((gameState: GameState) => this.setState({ gameState }))
+        monitor.listenToGameState( {
+            onGameStateChanged: (gameState: GameState) => this.setState({ gameState })
+        })
     }
 
     openSingletonWindow(window: WindowType): void {
@@ -294,15 +292,6 @@ class App extends Component<AppProps, AppState> {
 
             this.setState({ windows: remaining })
         }
-    }
-
-    toggleDetails(): void {
-        this.setState(
-            {
-                showTitles: true,
-                showAvailableConstruction: !this.state.showAvailableConstruction
-            }
-        )
     }
 
     goToHouse(houseId: HouseId): void {
@@ -391,10 +380,6 @@ class App extends Component<AppProps, AppState> {
             immediateUxState.translate = newTranslate
             immediateUxState.scale = newScale
         }
-    }
-
-    onSpeedSliderChange(value: number): void {
-        setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.gameId)
     }
 
     onMouseDown(event: React.MouseEvent): void {
@@ -551,15 +536,6 @@ class App extends Component<AppProps, AppState> {
             action: () => {
                 this.openSingletonWindow({ type: 'STATISTICS' })
             }
-        })
-        this.commands.set("Game information", {
-            action: () => {
-                console.info("Game id: " + this.props.gameId)
-                console.info("Player id: " + this.props.selfPlayerId)
-
-                getPlayers(this.props.gameId).then(players => console.info({ title: "Players: ", players }))
-            },
-            icon: <TextBulletListSquare24Regular />
         })
         this.commands.set("Titles", {
             action: () => this.setState({ showTitles: !this.state.showTitles })
@@ -885,7 +861,12 @@ class App extends Component<AppProps, AppState> {
                 document.dispatchEvent(keyEvent)
             }
         } else if (event.key === " ") {
-            this.toggleDetails()
+            this.setState(
+                {
+                    showTitles: true,
+                    showAvailableConstruction: !this.state.showAvailableConstruction
+                }
+            )
         } else if (event.key === "ArrowUp") {
             this.moveGame(immediateUxState.translate.x, immediateUxState.translate.y + ARROW_KEY_MOVE_DISTANCE)
         } else if (event.key === "ArrowRight") {
@@ -1081,10 +1062,9 @@ class App extends Component<AppProps, AppState> {
                     currentPlayerId={this.props.selfPlayerId}
                     onChangedZoom={(newScale) => this.zoom(newScale)}
                     currentZoom={immediateUxState.scale}
-                    gameSpeed={this.state.gameSpeed}
                     minZoom={MIN_SCALE}
                     maxZoom={MAX_SCALE}
-                    onSetSpeed={this.onSpeedSliderChange.bind(this)}
+                    onSetSpeed={value => setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.gameId)}
                     gameId={this.props.gameId}
                     onSetTitlesVisible={(showTitles: boolean) => this.setState({ showTitles: showTitles })}
                     areTitlesVisible={this.state.showTitles}
@@ -1108,7 +1088,6 @@ class App extends Component<AppProps, AppState> {
                     onSetHeightAdjust={(heightAdjust: number) => this.setState({ heightAdjust })}
                     onSetAnimateMapScrolling={(animateMapScrolling) => this.setState({ animateMapScrolling })}
                     onSetAnimateZooming={(animateZoom) => this.setState({ animateZoom })}
-                    onGameSpeedChange={(gameSpeed) => this.setState({ gameSpeed })}
                     onQuota={() => this.openSingletonWindow({ type: 'QUOTA' })}
                 />
 

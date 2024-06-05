@@ -54,16 +54,27 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }:
                                     const has = house.resources[material].has ?? 0
                                     const canHold = house.resources[material].canHold ?? 0
                                     const gap = Math.max(canHold - has, 0)
+                                    const materialLabel = material.charAt(0) + material.substring(1).toLocaleLowerCase()
 
                                     return <div key={material}>
                                         {Array.from({ length: has }, () => 1).map(
-                                            (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
-                                                <span><InventoryIcon material={material} nation={nation} inline /></span>
+                                            (value, index) => <Tooltip content={materialLabel} relationship='label' withArrow key={index}>
+                                                <span
+                                                    onMouseEnter={() => setHoverInfo(materialLabel)}
+                                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                                >
+                                                    <InventoryIcon material={material} nation={nation} inline />
+                                                </span>
                                             </Tooltip>
                                         )}
                                         {Array.from({ length: gap }, () => 1).map(
-                                            (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
-                                                <span><InventoryIcon material={material} nation={nation} inline missing /></span>
+                                            (value, index) => <Tooltip content={materialLabel} relationship='label' withArrow key={index}>
+                                                <span
+                                                    onMouseEnter={() => setHoverInfo(materialLabel)}
+                                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                                >
+                                                    <InventoryIcon material={material} nation={nation} inline missing />
+                                                </span>
                                             </Tooltip>
                                         )}
                                     </div>
@@ -86,7 +97,10 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }:
 
                                 return (
                                     <Tooltip content={soldierDisplayName} relationship='label' withArrow key={index} >
-                                        <div style={{ display: 'inline' }}><InventoryIcon material={soldierMaterial} nation={nation} key={index} inline /></div>
+                                        <div
+                                            onMouseEnter={() => setHoverInfo(soldierDisplayName)}
+                                            onMouseLeave={() => setHoverInfo(undefined)}
+                                            style={{ display: 'inline' }}><InventoryIcon material={soldierMaterial} nation={nation} key={index} inline /></div>
                                     </Tooltip>
                                 )
                             } else {
@@ -105,12 +119,18 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }:
                 <div>
                     {Array.from({ length: hasCoins }, () => 1).map(
                         (value, index) => <Tooltip content="Coin" relationship={'label'} withArrow key={index}>
-                            <span><InventoryIcon material={'COIN'} nation={nation} inline /></span>
+                            <span
+                                onMouseEnter={() => setHoverInfo('Coin')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            ><InventoryIcon material={'COIN'} nation={nation} inline /></span>
                         </Tooltip>
                     )}
                     {Array.from({ length: gapCoins }, () => 1).map(
                         (value, index) => <Tooltip content="Coin" relationship={'label'} withArrow key={index}>
-                            <span><InventoryIcon material={'COIN'} nation={nation} inline missing /></span>
+                            <span
+                            onMouseEnter={() => setHoverInfo(`Can hold ${gapCoins} coins more`)}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                            ><InventoryIcon material={'COIN'} nation={nation} inline missing /></span>
                         </Tooltip>
                     )}
                 </div>

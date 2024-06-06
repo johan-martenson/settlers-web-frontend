@@ -1059,9 +1059,7 @@ class App extends Component<AppProps, AppState> {
                 <MenuButton onMenuButtonClicked={() => this.setState({ showMenu: true })} />
 
                 <GameMenu
-                    currentPlayerId={this.props.selfPlayerId}
                     onChangedZoom={(newScale) => this.zoom(newScale)}
-                    currentZoom={immediateUxState.scale}
                     minZoom={MIN_SCALE}
                     maxZoom={MAX_SCALE}
                     onSetSpeed={value => setSpeed(Math.round(LONGEST_TICK_LENGTH / value), this.props.gameId)}
@@ -1069,7 +1067,6 @@ class App extends Component<AppProps, AppState> {
                     onSetTitlesVisible={(showTitles: boolean) => this.setState({ showTitles: showTitles })}
                     areTitlesVisible={this.state.showTitles}
                     onLeaveGame={this.props.onLeaveGame}
-                    currentSpeed={0}
                     onStatistics={() => this.openSingletonWindow({ type: 'STATISTICS' })}
                     onHelp={() => this.openSingletonWindow({ type: 'GUIDE' })}
                     onSetTransportPriority={() => this.openSingletonWindow({ type: 'STATISTICS' })}

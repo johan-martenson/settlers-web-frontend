@@ -17,13 +17,15 @@ export type SoundEffect = 'NEW-MESSAGE' |
 interface Sfx {
     play: ((name: SoundEffect, loop: boolean) => Sound | undefined)
     startEffects: (() => void)
+    stopEffects: (() => void)
     setSoundEffectsVolume: ((volume: number) => void)
 }
 
 const sfx: Sfx = {
     play: play,
-    startEffects: startEffects,
-    setSoundEffectsVolume: setSoundEffectsVolume
+    startEffects,
+    stopEffects,
+    setSoundEffectsVolume
 }
 
 interface Visibility {
@@ -89,6 +91,13 @@ SOUND_EFFECTS.set('HOUSE_BURNING', { start: 0, animationLength: 2, audio: 'FIRE'
 SOUND_EFFECTS.set('INVESTIGATING', { start: 10, animationLength: 16, audio: 'GEOLOGIST_DIGGING', type: 'PERIODIC' })
 SOUND_EFFECTS.set('FALLING_TREE', { start: 0, animationLength: 4, audio: 'FALLING_TREE', type: 'ONCE' })
 
+let soundEffectsTimer: NodeJS.Timeout | undefined
+
+function stopEffects() {
+    soundEffectsState = 'STOPPED'
+    clearInterval(soundEffectsTimer)
+}
+
 function startEffects() {
     if (soundEffectsState === 'RUNNING') {
         return
@@ -145,7 +154,7 @@ function startEffects() {
 
     soundEffectsState = 'RUNNING'
 
-    setInterval(
+    soundEffectsTimer = setInterval(
         () => {
 
             // Keep track of what's visible on the screen

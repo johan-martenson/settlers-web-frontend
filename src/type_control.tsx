@@ -5,7 +5,7 @@ import { PointInformation, Point, GameId, PlayerId } from './api/types'
 import { monitor } from './api/ws-api'
 
 export interface Command {
-    action: (() => void)
+    action: ((point: Point) => void)
     filter?: ((selectedPointInformation: PointInformation) => boolean) | undefined
     icon?: React.ReactNode
 }
@@ -160,7 +160,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
         const command = commands.get(commandName)
 
         if (command) {
-            command.action()
+            command.action(selectedPoint)
         }
     }
 
@@ -192,8 +192,6 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
     } else {
         className += " closed"
     }
-
-    console.log(selectedPointInformation)
 
     const invalidSelectedPointInformation = selectedPointInformation === undefined || ! ('canBuild' in selectedPointInformation)
 

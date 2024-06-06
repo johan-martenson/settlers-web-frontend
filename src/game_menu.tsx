@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
-import { GameId, GameSpeed, PlayerId } from './api/types'
+import { GameId, GameSpeed } from './api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
 import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option, SelectionEvents, OptionOnSelectData } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
@@ -11,12 +11,9 @@ import { monitor } from './api/ws-api'
 
 interface GameMenuProps {
     gameId: GameId
-    currentPlayerId: PlayerId
     maxZoom: number
     minZoom: number
-    currentZoom: number
     areTitlesVisible: boolean
-    currentSpeed: number
     isOpen: boolean
     isMusicPlayerVisible: boolean
     isTypingControllerVisible: boolean

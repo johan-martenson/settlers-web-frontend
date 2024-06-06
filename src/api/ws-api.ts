@@ -6,6 +6,11 @@ import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, P
 let gameTickLength = 200;
 
 const MAX_WAIT_FOR_REPLY = 1000; // milliseconds
+const MAX_WAIT_FOR_CONNECTION = 10_000;
+
+type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
+
+let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
 
 interface MonitoredBorderForPlayer {
     color: PlayerColor
@@ -136,7 +141,8 @@ interface FlagListener {
     onRemove: (() => void)
 }
 
-interface GameListener {
+export interface GameListener {
+    onMonitoringStarted?: (() => void)
     onGameStateChanged?: ((gameState: GameState) => void)
     onGameSpeedChanged?: ((gameSpeed: GameSpeed) => void)
 }
@@ -269,6 +275,7 @@ export interface Monitor {
     stopListeningToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
     stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
     stopListeningToAvailableConstruction: ((point: Point, listener: AvailableConstructionListener) => void)
+    stopListeningToGameState: ((listener: GameListener) => void)
 
     setCoalQuotas: ((mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void)
     setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
@@ -288,6 +295,8 @@ export interface Monitor {
     houseAt: ((point: Point) => HouseInformation | undefined)
 
     killWebsocket: (() => void)
+    waitForConnection: (() => Promise<void>)
+    waitForGameDataAvailable: (() => Promise<void>)
 }
 
 const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)[] = []
@@ -424,6 +433,7 @@ const monitor: Monitor = {
     stopListeningToFlag,
     stopListeningToAvailableConstruction,
     stopListeningToMessages,
+    stopListeningToGameState,
 
     setCoalQuotas,
     setFoodQuotas,
@@ -442,7 +452,9 @@ const monitor: Monitor = {
 
     houseAt,
 
-    killWebsocket
+    killWebsocket,
+    waitForConnection,
+    waitForGameDataAvailable
 }
 
 function isFullSyncMessage(message: unknown): message is FullSyncMessage {
@@ -609,9 +621,23 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
 
     websocket = new WebSocket(websocketUrl)
 
-    websocket.onopen = () => console.info("Websocket for subscription is open")
-    websocket.onclose = (e) => websocketDisconnected(gameId, playerId, e)
-    websocket.onerror = (e) => websocketError(e)
+    connectionStatus = 'CONNECTING'
+
+    websocket.onopen = () => {
+        console.info("Websocket for subscription is open")
+
+        connectionStatus = 'CONNECTED'
+
+        gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
+    }
+    websocket.onclose = (e) => {
+        websocketDisconnected(gameId, playerId, e)
+        connectionStatus = 'NOT_CONNECTED'
+    }
+    websocket.onerror = (e) => {
+        websocketError(e)
+        connectionStatus = 'NOT_CONNECTED'
+    }
 
     websocket.onmessage = (message) => websocketMessageReceived(message)
 
@@ -1183,11 +1209,7 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     }
 
     if (message.newRoads !== undefined || message.removedRoads !== undefined) {
-        console.log({ title: "Before notifying road listeners", roads: monitor.roads.values(), listeners: roadListeners, numberRoads: monitor.roads.size })
-
         roadListeners.forEach(roadListener => roadListener())
-
-        console.log({ title: "After calling road listeners", numberRoads: monitor.roads.size })
     }
 
     if (message.changedBuildings) {
@@ -1438,6 +1460,12 @@ function stopListeningToMessages(messageListenerFn: (messagesReceived: GameMessa
     const index = messageListeners.indexOf(messageListenerFn)
 
     delete messageListeners[index]
+}
+
+function stopListeningToGameState(listener: GameListener): void {
+    const index = gameListeners.indexOf(listener)
+
+    delete gameListeners[index]
 }
 
 function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformation) => void): void {
@@ -2281,6 +2309,58 @@ async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
     const options = { flagId }
 
     return sendRequestAndWaitForReplyWithOptions<FlagDebugInfo, typeof options>('FLAG_DEBUG_INFORMATION', options)
+}
+
+function waitForGameDataAvailable(): Promise<void> {
+    const timestampWaitStarted = (new Date()).getTime()
+
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const timestampNow = (new Date()).getTime()
+
+            if (timestampNow - timestampWaitStarted > MAX_WAIT_FOR_CONNECTION) {
+                clearInterval(timer)
+
+                console.error('Timed out waiting for game data to be available.')
+
+                reject('Timed out')
+            }
+
+            if (monitor.allTiles.size > 0) {
+                clearInterval(timer)
+
+                console.log('Game data is available')
+
+                result()
+            }
+        }, 5)
+    })
+}
+
+function waitForConnection(): Promise<void> {
+    const timestampWaitStarted = (new Date()).getTime()
+
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const timestampNow = (new Date()).getTime()
+
+            if (timestampNow - timestampWaitStarted > MAX_WAIT_FOR_CONNECTION) {
+                clearInterval(timer)
+
+                console.error('Failed to connect to websocket backend')
+
+                reject('Timed out')
+            }
+
+            if (connectionStatus === 'CONNECTED') {
+                clearInterval(timer)
+
+                console.log('Connection is established')
+
+                result()
+            }
+        }, 5)
+    })
 }
 
 export {

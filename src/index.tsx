@@ -4,9 +4,9 @@ import { FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'
 import { Lobby } from './lobby'
 import { getPlayers } from './api/rest-api'
-import App from './App'
 import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/react-components'
 import { GameId, PlayerId } from './api/types'
+import Play from './play'
 
 function GameInit() {
     const [state, setState] = useState<"ENTER_PLAYER_INFORMATION" | "LOBBY" | "PLAY_GAME">("ENTER_PLAYER_INFORMATION")
@@ -60,7 +60,7 @@ function GameInit() {
             {state === "LOBBY" && player && <Lobby playerName={player} />}
 
             {state === "PLAY_GAME" && gameId && selfPlayerId &&
-                <App gameId={gameId}
+                <Play gameId={gameId}
                     selfPlayerId={selfPlayerId}
                     onLeaveGame={
                         () => setState("LOBBY")

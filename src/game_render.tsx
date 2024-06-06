@@ -10,7 +10,7 @@ import { flagAnimations, houses, uiElementsImageAtlasHandler, workers } from './
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from './shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
-import { immediateUxState } from './App'
+import { immediateUxState } from './play'
 import { MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
 
 export const DEFAULT_SCALE = 35.0
@@ -399,77 +399,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             decorationsImageAtlasHandler.load()
         ])
 
-        const monitorLoadingPromise = monitor.getLoadingPromise()
-
-        if (monitorLoadingPromise !== undefined) {
-            allThingsToWaitFor.push(monitorLoadingPromise)
-        }
-
-        await Promise.all(allThingsToWaitFor)
-
-        console.log("Download image atlases done")
-
-
-        // Start tracking visible triangles
-        if (this.allPointsVisibilityTracking.size === 0) {
-            monitor.allTiles.forEach(tile => this.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
-        }
-
-        this.updateFogOfWarRendering()
-
-        /*
-           Update the calculated normals -- avoid the race condition by doing this after subscription is established.
-           This must be performed before subscribing for road changes
-        */
-        if (monitor.isGameDataAvailable() && this.normals.size === 0) {
-            console.log("Game data available and no normals. Calculating before setting up listeners")
-
-            this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-        }
-
-        /* Subscribe for new discovered points */
-        // eslint-disable-next-line
-        monitor.listenToDiscoveredPoints(points => {
-
-            // Update the calculated normals
-            this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-            console.log("New discovered points - calculated normals")
-
-            // Update the map rendering buffers
-            if (this.gl && this.drawGroundProgram) {
-                if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
-
-                    const mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
-
-                    this.mapRenderInformation = mapRenderInformation
-
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.coordinates), this.gl.STATIC_DRAW)
-
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.normals), this.gl.STATIC_DRAW)
-
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
-                } else {
-                    console.error("At least one render buffer was undefined")
-                }
-            } else {
-                console.error("Gl or ground render pgrogram is undefined")
-            }
-
-            // Update fog of war rendering
-            this.updateFogOfWarRendering()
-        })
-
-        console.log("Subscribed to changes in discovered points")
-
-        /* Subscribe for added and removed roads */
-        monitor.listenToRoads(this.updateRoadDrawingBuffers)
-
-        console.log("Subscribed to changes in roads")
+        // Wait for the game data to be read from the backend and the websocket to be established
+        await Promise.all([monitor.waitForConnection(), monitor.waitForGameDataAvailable()])
 
         /* Put together the render information from the discovered tiles */
+        this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+
         this.mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
         /*  Initialize webgl2 */
@@ -479,35 +414,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             const gl = canvas.getContext("webgl2", { alpha: false })
 
             if (gl) {
-
-                // Make textures for the image atlases
-                for (const animation of workers.values()) {
-                    animation.makeTexture(gl)
-                }
-
-                for (const animation of animals.values()) {
-                    animation.makeTexture(gl)
-                }
-
-                treeAnimations.makeTexture(gl)
-                flagAnimations.makeTexture(gl)
-                houses.makeTexture(gl)
-                fireAnimations.makeTexture(gl)
-                signImageAtlasHandler.makeTexture(gl)
-                uiElementsImageAtlasHandler.makeTexture(gl)
-                cropsImageAtlasHandler.makeTexture(gl)
-                stoneImageAtlasHandler.makeTexture(gl)
-                decorationsImageAtlasHandler.makeTexture(gl)
-                donkeyAnimation.makeTexture(gl)
-                borderImageAtlasHandler.makeTexture(gl)
-                roadBuildingImageAtlasHandler.makeTexture(gl)
-                cargoImageAtlasHandler.makeTexture(gl)
-                fatCarrierWithCargo.makeTexture(gl)
-                thinCarrierWithCargo.makeTexture(gl)
-                fatCarrierNoCargo.makeTexture(gl)
-                thinCarrierNoCargo.makeTexture(gl)
-                shipImageAtlas.makeTexture(gl)
-                decorationsImageAtlasHandler.makeTexture(gl)
 
                 // Create and compile the shaders
                 const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
@@ -573,16 +479,6 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     this.roadTextureMappingBuffer = gl.createBuffer()
                     gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
                     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
-
-                    // Load the image atlas for terrain and roads
-                    const imageAtlasTerrainAndRoads = await loadImageAsync(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
-
-                    // Create the road texture
-                    const textureTerrainAndRoadAtlas = makeTextureFromImage(gl, imageAtlasTerrainAndRoads)
-
-                    // Bind the terrain and road image atlas texture
-                    gl.activeTexture(gl.TEXTURE0 + 1)
-                    gl.bindTexture(gl.TEXTURE_2D, textureTerrainAndRoadAtlas)
 
                     this.gl = gl
                 } else {
@@ -750,6 +646,107 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             console.error("No canvasRef.current")
         }
 
+        // Start tracking visible triangles
+        if (this.allPointsVisibilityTracking.size === 0) {
+            monitor.allTiles.forEach(tile => this.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
+        }
+
+        this.updateFogOfWarRendering()
+
+        // Start listeners
+        monitor.listenToRoads(() => {
+            console.log("Received updated road callback")
+            this.updateRoadDrawingBuffers()
+        })
+        monitor.listenToGameState({
+            onMonitoringStarted: () => {
+                console.log("Received monitoring started callback. Calculating normals")
+                this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                this.updateRoadDrawingBuffers()
+            }
+        })
+
+        // eslint-disable-next-line
+        monitor.listenToDiscoveredPoints(points => {
+
+            // Update the calculated normals
+            this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+            console.log("New discovered points - calculated normals")
+
+            // Update the map rendering buffers
+            if (this.gl && this.drawGroundProgram) {
+                if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
+
+                    const mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
+
+                    this.mapRenderInformation = mapRenderInformation
+
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
+                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.coordinates), this.gl.STATIC_DRAW)
+
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
+                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.normals), this.gl.STATIC_DRAW)
+
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
+                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
+                } else {
+                    console.error("At least one render buffer was undefined")
+                }
+            } else {
+                console.error("Gl or ground render pgrogram is undefined")
+            }
+
+            // Update fog of war rendering
+            this.updateFogOfWarRendering()
+        })
+
+        console.log('Started listeners')
+
+
+        // Wait for asset loading to finish and for the websocket connection to be established
+        await Promise.all(allThingsToWaitFor)
+
+        console.log("Download image atlases done. Connection to websocket backend established")
+
+
+        // Make textures for the image atlases
+        if (this.gl) {
+            for (const animation of workers.values()) {
+                animation.makeTexture(this.gl)
+            }
+
+            for (const animation of animals.values()) {
+                animation.makeTexture(this.gl)
+            }
+
+            treeAnimations.makeTexture(this.gl)
+            flagAnimations.makeTexture(this.gl)
+            houses.makeTexture(this.gl)
+            fireAnimations.makeTexture(this.gl)
+            signImageAtlasHandler.makeTexture(this.gl)
+            uiElementsImageAtlasHandler.makeTexture(this.gl)
+            cropsImageAtlasHandler.makeTexture(this.gl)
+            stoneImageAtlasHandler.makeTexture(this.gl)
+            decorationsImageAtlasHandler.makeTexture(this.gl)
+            donkeyAnimation.makeTexture(this.gl)
+            borderImageAtlasHandler.makeTexture(this.gl)
+            roadBuildingImageAtlasHandler.makeTexture(this.gl)
+            cargoImageAtlasHandler.makeTexture(this.gl)
+            fatCarrierWithCargo.makeTexture(this.gl)
+            thinCarrierWithCargo.makeTexture(this.gl)
+            fatCarrierNoCargo.makeTexture(this.gl)
+            thinCarrierNoCargo.makeTexture(this.gl)
+            shipImageAtlas.makeTexture(this.gl)
+            decorationsImageAtlasHandler.makeTexture(this.gl)
+
+            const imageAtlasTerrainAndRoads = await loadImageAsync(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
+            const textureTerrainAndRoadAtlas = makeTextureFromImage(this.gl, imageAtlasTerrainAndRoads)
+
+            // Bind the terrain and road image atlas texture
+            this.gl.activeTexture(this.gl.TEXTURE0 + 1)
+            this.gl.bindTexture(this.gl.TEXTURE_2D, textureTerrainAndRoadAtlas)
+        }
+
         /* Prepare to draw roads */
         this.updateRoadDrawingBuffers()
 
@@ -774,12 +771,10 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         this.previous = now
 
         // Check if there are changes to the newRoads props array. In that case the buffers for drawing roads need to be updated.
-        const newRoadsUpdatedLength = this.props.newRoad?.length || 0
+        const newRoadsUpdatedLength = this.props.newRoad?.length ?? 0
 
         if (newRoadCurrentLength !== newRoadsUpdatedLength) {
             newRoadCurrentLength = newRoadsUpdatedLength
-
-            console.log("New roads changed. Now it is " + JSON.stringify(this.props.newRoad))
 
             if (this.props.newRoad !== undefined) {
                 monitor.placeLocalRoad(this.props.newRoad)
@@ -2902,7 +2897,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                // Handle road up-right
+                    // Handle road up-right
                 } else if (left.y < right.y) {
                     const heightLeft = monitor.getHeight(left)
                     const heightRight = monitor.getHeight(right)
@@ -2930,7 +2925,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
 
-                // Handle road down-right
+                    // Handle road down-right
                 } else if (left.y > right.y) {
                     const heightLeft = monitor.getHeight(left)
                     const heightRight = monitor.getHeight(right)

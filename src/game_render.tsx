@@ -47,7 +47,6 @@ interface MapRenderInformation {
 
 interface GameCanvasProps {
     cursorState: CursorState
-    screenWidth: number
     screenHeight: number
     selectedPoint?: Point
     possibleRoadConnections?: Point[]
@@ -55,9 +54,6 @@ interface GameCanvasProps {
     showAvailableConstruction: boolean
     showHouseTitles: boolean
     showFpsCounter?: boolean
-
-    width: number
-    height: number
 
     heightAdjust: number
 

@@ -162,7 +162,6 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
                             <ManagePlayers
                                 gameId={game.id}
                                 selfPlayer={selfPlayer}
-                                defaultComputerPlayers={1}
                                 maxPlayers={map?.maxPlayers ?? 3}
                                 onPlayerAdded={() => refreshGame()}
                                 onPlayerRemoved={() => refreshGame()}

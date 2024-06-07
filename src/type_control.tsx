@@ -1,7 +1,7 @@
 import React, { useEffect, useReducer, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
-import { PointInformation, Point, GameId, PlayerId } from './api/types'
+import { PointInformation, Point } from './api/types'
 import { monitor } from './api/ws-api'
 
 export interface Command {
@@ -13,8 +13,6 @@ export interface Command {
 interface TypeControlProps {
     commands: Map<string, Command>
     selectedPoint: Point
-    gameId: GameId
-    playerId: PlayerId
 }
 
 interface TypeControlKey {

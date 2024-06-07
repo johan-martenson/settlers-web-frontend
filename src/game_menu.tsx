@@ -1,16 +1,15 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
-import { GameId, GameSpeed } from './api/types'
+import { GameSpeed } from './api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
 import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option, SelectionEvents, OptionOnSelectData } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './game_render'
 import { sfx } from './sound/sound_effects'
-import { DEFAULT_VOLUME } from './App'
+import { DEFAULT_VOLUME } from './play'
 import { monitor } from './api/ws-api'
 
 interface GameMenuProps {
-    gameId: GameId
     maxZoom: number
     minZoom: number
     areTitlesVisible: boolean
@@ -23,7 +22,6 @@ interface GameMenuProps {
     defaultZoom: number
 
     onChangedZoom: ((scale: number) => void)
-    onSetSpeed: ((speed: number) => void)
     onSetTitlesVisible: ((showTitles: boolean) => void)
     onLeaveGame: (() => void)
     onStatistics: (() => void)

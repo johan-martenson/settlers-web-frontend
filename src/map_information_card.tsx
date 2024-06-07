@@ -9,8 +9,6 @@ const cachedMapImages = new Map<MapId, HTMLImageElement>()
 
 interface MapInformationCardProps {
     map: MapInformation
-    expanded?: boolean
-    controls?: boolean
     onMapSelected?: ((map: MapInformation) => void)
 }
 

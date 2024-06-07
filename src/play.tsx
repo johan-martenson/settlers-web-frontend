@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, setSpeed, upgradeMilitaryBuilding } from './api/rest-api'
+import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, upgradeMilitaryBuilding } from './api/rest-api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import FriendlyFlagInfo from './friendly_flag_info'
@@ -90,8 +90,6 @@ function nextWindowId(): number {
 const MAX_SCALE = 70
 const MIN_SCALE = 10
 const ARROW_KEY_MOVE_DISTANCE = 20
-
-const LONGEST_TICK_LENGTH = 500
 
 export const DEFAULT_VOLUME = 0.5
 
@@ -988,7 +986,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             tabIndex={1}>
 
             <GameCanvas
-                screenWidth={immediateUxState.width}
                 screenHeight={immediateUxState.height}
                 onKeyDown={onKeyDown}
                 onPointClicked={(point: Point) => onPointClicked(point)}
@@ -998,8 +995,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 newRoad={newRoad?.newRoad}
                 possibleRoadConnections={newRoad?.possibleConnections}
                 showAvailableConstruction={showAvailableConstruction}
-                width={immediateUxState.width}
-                height={immediateUxState.height}
                 cursorState={cursor}
                 heightAdjust={heightAdjust}
             />
@@ -1010,8 +1005,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 onChangedZoom={newScale => zoom(newScale)}
                 minZoom={MIN_SCALE}
                 maxZoom={MAX_SCALE}
-                onSetSpeed={value => setSpeed(Math.round(LONGEST_TICK_LENGTH / value), gameId)}
-                gameId={gameId}
                 onSetTitlesVisible={(showTitles: boolean) => setShowTitles(showTitles)}
                 areTitlesVisible={showTitles}
                 onLeaveGame={onLeaveGame}
@@ -1114,11 +1107,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             })}
 
             {showTypingController &&
-                <TypeControl commands={commands}
-                    selectedPoint={selected}
-                    gameId={gameId}
-                    playerId={selfPlayerId}
-                />
+                <TypeControl commands={commands} selectedPoint={selected} />
             }
 
             <GameMessagesViewer

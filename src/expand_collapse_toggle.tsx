@@ -4,7 +4,6 @@ import { Button } from '@fluentui/react-components'
 import { ChevronUp24Filled, ChevronDown24Filled } from '@fluentui/react-icons'
 
 interface ExpandCollapseToggleProps {
-    expanded?: boolean
     inverted?: boolean
     onExpand: (() => void)
     onCollapse: (() => void)

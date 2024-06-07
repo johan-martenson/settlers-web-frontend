@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { addHumanPlayerToGame, getGameInformation } from './api/rest-api'
-import App from './App'
 import { Button } from "@fluentui/react-components"
 import { GameCreator } from './game_creator'
 import GameList from './game_list'
 import './lobby.css'
 import { WorkerIcon } from './icon'
 import { GameId, PlayerId } from './api/types'
+import Play from './play'
 
 type LobbyStates = "LIST_GAMES" | "CREATE_GAME" | "PLAY_GAME" | "WAIT_FOR_GAME"
 
@@ -72,7 +72,7 @@ const Lobby = ({ playerName }: LobbyProps) => {
 
             {state === "PLAY_GAME" && gameId && selfPlayerId &&
                 <>
-                    <App gameId={gameId}
+                    <Play gameId={gameId}
                         selfPlayerId={selfPlayerId}
                         onLeaveGame={
                             () => setState("LIST_GAMES")

@@ -8,7 +8,6 @@ import MapInformationCard from './map_information_card'
 interface MapSelectionProps {
     minPlayers: number
     onMapSelected: ((map: MapInformation) => void)
-    className?: string
 }
 
 const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
@@ -22,7 +21,7 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
         <div className="select-map">
             <Subtitle1 as="h4" block>Map</Subtitle1>
 
-            {map && <MapInformationCard map={map} expanded={true} controls={false} />}
+            {map && <MapInformationCard map={map} />}
 
             <Accordion collapsible>
                 <AccordionItem value="1">

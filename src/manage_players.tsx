@@ -14,7 +14,6 @@ export interface PlayerCandidateType {
 interface ManagePlayersProps {
     selfPlayer: PlayerInformation
     gameId: GameId
-    defaultComputerPlayers: number
     maxPlayers: number
     onPlayerAdded?: ((player: PlayerInformation) => void)
     onPlayerRemoved?: ((player: PlayerInformation) => void)

@@ -78,7 +78,7 @@ void main(void) {
     texture_color[1] = texture_color[1] + v_brightness;
     texture_color[2] = texture_color[2] + v_brightness;
 
-    pixel_color = vec4(texture_color[0], texture_color[1], texture_color[2], texture_color[3]);
+    pixel_color = vec4(texture_color[0], texture_color[1], texture_color[2], floor(texture_color[3]));
 }
 `
 

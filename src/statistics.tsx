@@ -1,5 +1,5 @@
 import * as d3 from 'd3'
-import React, { Component } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { getGameStatistics, getLandStatistics } from './api/rest-api'
 import { Window } from './components/dialog'
 import "./statistics.css"
@@ -9,198 +9,61 @@ import { InventoryIcon } from './icon'
 import { monitor } from './api/ws-api'
 import { ColorBox } from './components/utils'
 
-interface StatisticsProps {
-    gameId: GameId
-    nation: Nation
-
-    onRaise: (() => void)
-    onClose: (() => void)
-}
-
 type GraphHover = {
     x: number
     y: number
     value: number
 }
 
-interface StatisticsState {
-    productionStatistics?: ProductionStatistics
-    landStatistics?: LandStatistics
-    materialToShow: Material
-    drawnStatistics: boolean
-    state: "PRODUCTION" | "LAND"
-    hoverInfo?: string
-    graphHover?: GraphHover
-    playersToShow: PlayerInformation[]
+interface StatisticsProps {
+    gameId: GameId
+    nation: Nation
+    onRaise: () => void
+    onClose: () => void
 }
 
-class Statistics extends Component<StatisticsProps, StatisticsState> {
-    private landStatsContainerRef = React.createRef<SVGSVGElement>()
-    private statsParentRef = React.createRef<HTMLDivElement>()
+const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClose, ...props }: StatisticsProps) => {
+    const landStatsContainerRef = useRef<SVGSVGElement>(null)
+    const productionStatsContainerRef = useRef<SVGSVGElement>(null)
+    const statsParentRef = useRef<HTMLDivElement>(null)
 
-    private productionStatsContainerRef = React.createRef<SVGSVGElement>()
+    const [productionStatistics, setProductionStatistics] = useState<ProductionStatistics>()
+    const [landStatistics, setLandStatistics] = useState<LandStatistics>()
+    const [materialToShow, setMaterialToShow] = useState<Material>("PLANK")
+    const [state, setState] = useState<"PRODUCTION" | "LAND">("PRODUCTION")
+    const [hoverInfo, setHoverInfo] = useState<string>()
+    const [graphHover, setGraphHover] = useState<GraphHover>()
+    const [playersToShow, setPlayersToShow] = useState<PlayerInformation[]>(Array.from(monitor.players.values()))
 
-    constructor(props: StatisticsProps) {
-        super(props)
-
-        this.state = {
-            drawnStatistics: false,
-            materialToShow: "PLANK",
-            state: "PRODUCTION",
-            playersToShow: [...monitor.players.values()]
+    useEffect(() => {
+        async function fetchData() {
+            const productionStats = await getGameStatistics(gameId)
+            const landStats = await getLandStatistics(gameId)
+            setProductionStatistics(productionStats)
+            setLandStatistics(landStats)
         }
-    }
+        fetchData()
+    }, [gameId])  // Run once on mount and when gameId changes
 
-    shouldComponentUpdate(nextProps: StatisticsProps, nextState: StatisticsState): boolean {
-        return !this.state.drawnStatistics || nextState.hoverInfo !== this.state.hoverInfo
-    }
-
-    async componentDidUpdate(): Promise<void> {
-        this.updateStatistics()
-    }
-
-    async componentDidMount(): Promise<void> {
-        this.updateStatistics()
-    }
-
-    async updateStatistics(): Promise<void> {
-        const productionStats = await getGameStatistics(this.props.gameId)
-        const landStats = await getLandStatistics(this.props.gameId)
-
-        if (!this.statsParentRef?.current) {
-            console.error("Missing stats parent reference")
-
-            return
+    useEffect(() => {
+        if (productionStatsContainerRef.current && statsParentRef.current && productionStatistics) {
+            drawProductionStatistics(
+                productionStatsContainerRef.current,
+                statsParentRef.current,
+                productionStatistics!,
+                materialToShow
+            )
         }
-
-        if (!this.landStatsContainerRef?.current) {
-            console.error("Missing land stats reference")
-
-            return
+        if (landStatsContainerRef.current && statsParentRef.current && landStatistics) {
+            drawLandStatistics(
+                landStatsContainerRef.current,
+                statsParentRef.current,
+                landStatistics!
+            )
         }
+    }, [productionStatistics, landStatistics, materialToShow, state, playersToShow])
 
-        if (!this.productionStatsContainerRef?.current) {
-            console.error("Missing production stats reference")
-
-            return
-        }
-
-        this.drawProductionStatistics(this.productionStatsContainerRef.current, this.statsParentRef.current, productionStats, this.state.materialToShow)
-
-        this.drawLandStatistics(this.landStatsContainerRef.current, this.statsParentRef.current, landStats)
-    }
-
-    render(): JSX.Element {
-        const titleLabel = "Statistics"
-
-        return (
-            <>
-                <Window heading={titleLabel} onClose={this.props.onClose} hoverInfo={this.state.hoverInfo} onRaise={this.props.onRaise}>
-                    <div id="stats-page">
-                        <TabList
-                            selectedValue={this.state.state}
-                            onTabSelect={
-                                (event: SelectTabEvent, data: SelectTabData) => {
-                                    this.setState({ state: (data.value === "LAND") ? "LAND" : "PRODUCTION" })
-                                }
-                            } >
-                            <Tab
-                                value={"PRODUCTION"}
-                                onMouseEnter={() => this.setState({ hoverInfo: 'Production statistics' })}
-                                onMouseLeave={() => this.setState({ hoverInfo: undefined })}
-                            >
-                                Production
-                            </Tab>
-                            <Tab
-                                value={"LAND"}
-                                onMouseEnter={() => this.setState({ hoverInfo: 'Land size statistics' })}
-                                onMouseLeave={() => this.setState({ hoverInfo: undefined })}
-                            >
-                                Land
-                            </Tab>
-                        </TabList>
-
-                        <div ref={this.statsParentRef} id="stats-parent">
-                            <svg id="land-stats-svg"
-                                ref={this.landStatsContainerRef}
-                                display={(this.state.state === 'LAND') ? 'inline-block' : 'none'} />
-
-                            <svg id="production-stats-svg"
-                                ref={this.productionStatsContainerRef}
-                                display={(this.state.state === 'PRODUCTION') ? 'inline-block' : 'none'}
-                            />
-                        </div>
-
-                        {this.state.state === 'PRODUCTION' &&
-                            <div className='select-materials'>
-                                {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
-                                    .map(material => <div onClick={() => this.setState({ materialToShow: material })} key={material}>
-                                        <Tooltip content={material.toLocaleLowerCase()} relationship='label'>
-                                            <div
-                                                onMouseEnter={() => this.setState({ hoverInfo: material.toLocaleLowerCase() })}
-                                                onMouseLeave={() => this.setState({ hoverInfo: undefined })}
-                                            ><InventoryIcon nation={this.props.nation} material={material} missing={material !== this.state.materialToShow} /></div>
-                                        </Tooltip>
-                                    </div>)}
-                            </div>
-                        }
-
-                        {this.state.state === 'LAND' &&
-                            <div className='select-players'>
-                                {Array.from(monitor.players.values()).map(player => <div
-                                    key={player.id}
-                                >
-                                    <Tooltip content={player.name} relationship='label'>
-                                        <div
-                                            style={{ gap: "15px" }}
-                                            onClick={() => {
-                                                if (this.state.playersToShow.find(p => p.id === player.id)) {
-                                                    const remaining = this.state.playersToShow.filter(p => p.id !== player.id)
-
-                                                    this.setState({ playersToShow: remaining })
-                                                } else {
-                                                    this.setState({ playersToShow: [...this.state.playersToShow, player] })
-                                                }
-                                            }}
-                                            onMouseEnter={() => {
-                                                if (this.state.playersToShow.find(p => p.id === player.id) !== undefined) {
-                                                    this.setState({ hoverInfo: `Hide ${player.name}` })
-                                                } else {
-                                                    this.setState({ hoverInfo: `Show ${player.name}` })
-                                                }
-                                            }}
-                                            onMouseLeave={() => this.setState({ hoverInfo: undefined })}
-                                        >
-                                            {player.name}
-                                            <ColorBox color={player.color} />
-                                        </div>
-                                    </Tooltip>
-                                </div>
-                                )}
-                            </div>
-                        }
-                    </div>
-                </Window>
-
-                {this.state.graphHover &&
-                    <div style={{
-                        left: "" + this.state.graphHover.x + "px",
-                        top: "" + this.state.graphHover.y + "px",
-                        zIndex: "5000",
-                        width: "5em",
-                        height: "2em",
-                        position: "fixed",
-                        backgroundColor: "white",
-                        color: "black"
-                    }}>
-                        {this.state.graphHover.value}
-                    </div>
-                }
-            </>
-        )
-    }
-
-    drawLandStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, landStatisticsWithGaps: LandStatistics): void {
+    function drawLandStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, landStatisticsWithGaps: LandStatistics): void {
 
         // Prepare the data - output is landStatistics, maxTime, and maxValue
         const landStatistics: LandDataPoint[] = []
@@ -297,7 +160,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
 
         // Add the lines
         landStatisticsWithGaps.players.forEach(
-            (player, index) => this.state.playersToShow.find(p => p.name === player.name) !== undefined &&
+            (player, index) => playersToShow.find(p => p.name === player.name) !== undefined &&
                 statisticsSvg.append("path")
                     .attr('transform', `translate(${margin.left}, ${margin.top})`)
                     .attr("fill", "none")
@@ -308,12 +171,12 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     .datum(landStatistics) // Bind data to the line
                     .attr("class", "line")
                     .attr("d", lines[index]) // Call the line generator
-                    .on("mouseover", () => this.setState({ hoverInfo: player.name }))
-                    .on("mouseout", () => this.setState({ hoverInfo: undefined }))
+                    .on("mouseover", () => setHoverInfo(player.name))
+                    .on("mouseout", () => setHoverInfo(undefined))
         )
     }
 
-    reduceDataArrayIfNeeded(dataArray: Measurement[], amount: number): Measurement[] {
+    function reduceDataArrayIfNeeded(dataArray: Measurement[], amount: number): Measurement[] {
         const resultArray: Measurement[] = []
 
         const ratio = Math.floor(dataArray.length / amount)
@@ -329,7 +192,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         return resultArray
     }
 
-    drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, productionStats: ProductionStatistics, material: Material): void {
+    function drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, productionStats: ProductionStatistics, material: Material): void {
 
         // Prepare the data - output is resourceStatistics, maxTime, and maxValue
         const resourceStatisticsFull = productionStats.materialStatistics[material]
@@ -337,7 +200,7 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
         let resourceStatistics: Measurement[]
 
         if (resourceStatisticsFull) {
-            resourceStatistics = (resourceStatisticsFull.length > 30) ? this.reduceDataArrayIfNeeded(resourceStatisticsFull, 30) : resourceStatisticsFull
+            resourceStatistics = (resourceStatisticsFull.length > 30) ? reduceDataArrayIfNeeded(resourceStatisticsFull, 30) : resourceStatisticsFull
         } else {
             resourceStatistics = [{
                 time: 0,
@@ -434,8 +297,8 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     .datum(resourceStatistics) // Bind data to the line
                     .attr("class", "line")
                     .attr("d", lines[index]) // Call the line generator
-                    .on("mouseenter", () => this.setState({ hoverInfo: name }))
-                    .on("mouseleave", () => this.setState({ hoverInfo: undefined }))
+                    .on("mouseenter", () => setHoverInfo(name))
+                    .on("mouseleave", () => setHoverInfo(undefined))
 
                 statisticsSvg.selectAll(".dot" + index)
                     .data(resourceStatistics)
@@ -465,18 +328,128 @@ class Statistics extends Component<StatisticsProps, StatisticsState> {
                     .attr("r", 5)
                     .on("mouseenter",
                         (event, d) => {
-                            this.setState({
-                                hoverInfo: name,
-                                graphHover: {
-                                    x: event.pageX + 20, y: event.pageY + 20, value: d.values[index]
-                                }
+                            setHoverInfo(name)
+                            setGraphHover({
+                                x: event.pageX + 20, y: event.pageY + 20, value: d.values[index]
                             })
                         })
 
-                    .on("mouseleave", () => this.setState({ hoverInfo: undefined, graphHover: undefined }))
+                    .on("mouseleave", () => {
+                        setHoverInfo(undefined)
+                        setGraphHover(undefined)
+                    })
             }
         )
     }
+
+    const titleLabel = "Statistics"
+
+    return (
+        <>
+            <Window heading={titleLabel} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
+                <div id="stats-page">
+                    <TabList
+                        selectedValue={state}
+                        onTabSelect={(event: SelectTabEvent, data: SelectTabData) => setState((data.value === "LAND") ? "LAND" : "PRODUCTION")
+                        } >
+                        <Tab
+                            value={"PRODUCTION"}
+                            onMouseEnter={() => setHoverInfo('Production statistics')}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        >
+                            Production
+                        </Tab>
+                        <Tab
+                            value={"LAND"}
+                            onMouseEnter={() => setHoverInfo('Land size statistics')}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        >
+                            Land
+                        </Tab>
+                    </TabList>
+
+                    <div ref={statsParentRef} id="stats-parent">
+                        <svg id="land-stats-svg"
+                            ref={landStatsContainerRef}
+                            display={(state === 'LAND') ? 'inline-block' : 'none'} />
+
+                        <svg id="production-stats-svg"
+                            ref={productionStatsContainerRef}
+                            display={(state === 'PRODUCTION') ? 'inline-block' : 'none'}
+                        />
+                    </div>
+
+                    {state === 'PRODUCTION' &&
+                        <div className='select-materials'>
+                            {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
+                                .map(material => <div onClick={() => setMaterialToShow(material)} key={material}>
+                                    <Tooltip content={material.toLocaleLowerCase()} relationship='label'>
+                                        <div
+                                            onMouseEnter={() => setHoverInfo(material.toLocaleLowerCase())}
+                                            onMouseLeave={() => setHoverInfo(undefined)}
+                                        ><InventoryIcon nation={nation} material={material} missing={material !== materialToShow} /></div>
+                                    </Tooltip>
+                                </div>)}
+                        </div>
+                    }
+
+                    {state === 'LAND' &&
+                        <div className='select-players'>
+                            {Array.from(monitor.players.values()).map(player => <div
+                                key={player.id}
+                            >
+                                <Tooltip content={player.name} relationship='label'>
+                                    <div
+                                        style={{ gap: "15px" }}
+                                        onClick={() => {
+                                            if (playersToShow.find(p => p.id === player.id)) {
+                                                const remaining = playersToShow.filter(p => p.id !== player.id)
+
+                                                setPlayersToShow(remaining)
+                                            } else {
+                                                setPlayersToShow([...playersToShow, player])
+                                            }
+                                        }}
+                                        onMouseEnter={() => {
+                                            if (playersToShow.find(p => p.id === player.id) !== undefined) {
+                                                setHoverInfo(`Hide ${player.name}`)
+                                            } else {
+                                                setHoverInfo(`Show ${player.name}`)
+                                            }
+                                        }}
+                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                    >
+                                        {player.name}
+                                        <ColorBox color={player.color} />
+                                    </div>
+                                </Tooltip>
+                            </div>
+                            )}
+                        </div>
+                    }
+                </div>
+            </Window>
+
+            {graphHover &&
+                <div style={{
+                    left: "" + graphHover.x + "px",
+                    top: "" + graphHover.y + "px",
+                    zIndex: "5000",
+                    width: "5em",
+                    height: "2em",
+                    position: "fixed",
+                    backgroundColor: "white",
+                    color: "black"
+                }}>
+                    {graphHover.value}
+                </div>
+            }
+        </>
+    )
 }
 
 export default Statistics
+
+
+
+

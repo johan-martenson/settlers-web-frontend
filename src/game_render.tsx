@@ -4,18 +4,15 @@ import { Duration } from './duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from './api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUp, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 import { flagAnimations, houses, uiElementsImageAtlasHandler, workers } from './assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from './shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
 import { immediateUxState } from './play'
-import { MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
-
-export const DEFAULT_SCALE = 35.0
-export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
-export const STANDARD_HEIGHT = 10.0
+import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
+import { textures } from './render/textures'
 
 const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
 
@@ -27,6 +24,11 @@ export interface ScreenPoint {
 }
 
 export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD'
+
+type FogOfWarRenderInformation = {
+    coordinates: number[]
+    intensities: number[]
+}
 
 interface TrianglesAtPoint {
     belowVisible: boolean
@@ -45,8 +47,13 @@ interface MapRenderInformation {
     textureMapping: number[]
 }
 
+type View = {
+    scale: number
+    translate: Point
+}
+
 interface GameCanvasProps {
-    cursor: CursorState
+    cursor?: CursorState
     screenHeight: number
     selectedPoint?: Point
     possibleRoadConnections?: Point[]
@@ -54,12 +61,13 @@ interface GameCanvasProps {
     showAvailableConstruction: boolean
     showHouseTitles: boolean
     showFpsCounter?: boolean
+    view?: View
 
     heightAdjust: number
 
-    onPointClicked: ((point: Point) => void)
-    onDoubleClick: ((point: Point) => void)
-    onKeyDown: ((event: React.KeyboardEvent) => void)
+    onPointClicked?: ((point: Point) => void)
+    onDoubleClick?: ((point: Point) => void)
+    onKeyDown?: ((event: React.KeyboardEvent) => void)
 }
 
 interface RenderInformation {
@@ -76,14 +84,8 @@ MOUSE_STYLES.set('NOTHING', 'default')
 MOUSE_STYLES.set('DRAGGING', 'move')
 MOUSE_STYLES.set('BUILDING_ROAD', "url(assets/ui-elements/building-road.png), pointer")
 
-let newRoadCurrentLength = 0
-
-// eslint-disable-next-line
-let logOnce = true
 let timer: ReturnType<typeof setTimeout>
 
-
-// Temporary workaround until buildings are correct for all players and the monitor and the backend retrieves player nation correctly
 const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
 
 const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler("assets/")
@@ -126,6 +128,8 @@ const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-car
 const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo", 10)
 const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
 
+let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
+
 type RenderState = {
     previousTimestamp?: number
     previous: number
@@ -134,7 +138,16 @@ type RenderState = {
     animationIndex: number
     mapRenderInformation?: MapRenderInformation
     gl?: WebGL2RenderingContext
+
+    // Draw directions
     screenHeight: number
+    scale: number
+    translate: Point
+
+    hoverPoint?: Point
+    newRoadCurrentLength: number
+
+    showAvailableConstruction: boolean
 
     // Map of the normal for each point on the map
     normals: PointMapFast<Vector>
@@ -205,6 +218,7 @@ type RenderState = {
     drawShadowPositionBuffer?: WebGLBuffer | null
 
     allPointsVisibilityTracking: PointMapFast<TrianglesAtPoint>
+    once: boolean
 }
 
 function GameCanvas({
@@ -217,6 +231,7 @@ function GameCanvas({
     showHouseTitles,
     showFpsCounter,
     screenHeight,
+    view,
     onPointClicked,
     onKeyDown,
     onDoubleClick }: GameCanvasProps) {
@@ -226,6 +241,10 @@ function GameCanvas({
         previous: performance.now(),
         overshoot: 0,
         screenHeight: 0,
+        showAvailableConstruction,
+        scale: 0,
+        translate: { x: 0, y: 0 },
+        newRoadCurrentLength: 0,
         animationIndex: 0,
         normals: new PointMapFast<Vector>(),
         drawGroundProgram: null,
@@ -234,7 +253,8 @@ function GameCanvas({
         fogOfWarIntensities: [],
         drawShadowProgram: null,
         drawImageProgram: null,
-        allPointsVisibilityTracking: visiblePoints
+        allPointsVisibilityTracking: visiblePoints,
+        once: true
     }
 
     const normalCanvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -243,7 +263,6 @@ function GameCanvas({
 
     // eslint-disable-next-line
     const [renderState, setRenderState] = useState<RenderState>(initRenderState)
-    const [hoverPoint, setHoverPoint] = useState<Point>()
 
     // Run once on mount
     useEffect(
@@ -252,6 +271,13 @@ function GameCanvas({
 
             monitor.allTiles.forEach(tile => visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
         }, []
+    )
+
+    useEffect(
+        () => {
+            renderState.showAvailableConstruction = showAvailableConstruction
+        },
+        [showAvailableConstruction]
     )
 
     // Run when the cursor is changed (and when the normal canvas is set up)
@@ -290,7 +316,7 @@ function GameCanvas({
         }
     }
 
-    function updateFogOfWarRendering() {
+    function updateFogOfWarRendering(): FogOfWarRenderInformation {
         const triangles = getTrianglesAffectedByFogOfWar(monitor.discoveredPoints, monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
         renderState.fogOfWarCoordinates = []
@@ -363,12 +389,13 @@ function GameCanvas({
                 renderState.fogOfWarIntensities.push(0)
             }
         })
+
+        return { coordinates: renderState.fogOfWarCoordinates, intensities: renderState.fogOfWarIntensities }
     }
 
     useEffect(
         () => {
             async function loadAssetsAndSetupGl() {
-
                 const fileLoading = []
 
                 for (const worker of workers.values()) {
@@ -379,7 +406,7 @@ function GameCanvas({
                     fileLoading.push(animal.load())
                 }
 
-                const allThingsToWaitFor = fileLoading.concat([
+                const allThingsToWaitFor: Promise<void | HTMLImageElement>[] = fileLoading.concat([
                     treeAnimations.load(),
                     flagAnimations.load(),
                     houses.load(),
@@ -400,6 +427,14 @@ function GameCanvas({
                     shipImageAtlas.load(),
                     decorationsImageAtlasHandler.load()
                 ])
+
+                if (imageAtlasTerrainAndRoads === undefined) {
+                    const terrainAndRoadsPromise = loadImageAsync(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
+
+                    terrainAndRoadsPromise.then((image) => imageAtlasTerrainAndRoads = image)
+
+                    allThingsToWaitFor.push(terrainAndRoadsPromise)
+                }
 
                 // Wait for the game data to be read from the backend and the websocket to be established
                 await Promise.all([monitor.waitForConnection(), monitor.waitForGameDataAvailable()])
@@ -443,16 +478,17 @@ function GameCanvas({
                             const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 
                             // Get handles
-                            renderState.drawGroundLightVectorUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_light_vector")
-                            renderState.drawGroundScaleUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_scale")
-                            renderState.drawGroundOffsetUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_offset")
-                            renderState.drawGroundHeightAdjustUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_height_adjust")
-                            renderState.drawGroundSamplerUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, 'u_sampler')
-                            renderState.drawGroundScreenWidthUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_screen_width")
-                            renderState.drawGroundScreenHeightUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_screen_height")
                             renderState.drawGroundCoordAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_coords")
                             renderState.drawGroundNormalAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_normal")
                             renderState.drawGroundTextureMappingAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_texture_mapping")
+
+                            renderState.drawGroundLightVectorUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_light_vector")
+                            renderState.drawGroundScaleUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_scale")
+                            renderState.drawGroundOffsetUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_offset")
+                            renderState.drawGroundScreenWidthUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_screen_width")
+                            renderState.drawGroundScreenHeightUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_screen_height")
+                            renderState.drawGroundHeightAdjustUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_height_adjust")
+                            renderState.drawGroundSamplerUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, 'u_sampler')
 
                             // Set up the buffer attributes
                             renderState.terrainCoordinatesBuffer = gl.createBuffer()
@@ -679,18 +715,16 @@ function GameCanvas({
                     if (renderState.gl && renderState.drawGroundProgram) {
                         if (renderState.terrainCoordinatesBuffer !== undefined && renderState.terrainNormalsBuffer !== undefined && renderState.terrainTextureMappingBuffer !== undefined) {
 
-                            const mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
-
-                            renderState.mapRenderInformation = mapRenderInformation
+                            renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
                             renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
-                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.coordinates), renderState.gl.STATIC_DRAW)
+                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.coordinates), renderState.gl.STATIC_DRAW)
 
                             renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
-                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.normals), renderState.gl.STATIC_DRAW)
+                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.normals), renderState.gl.STATIC_DRAW)
 
                             renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
-                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), renderState.gl.STATIC_DRAW)
+                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.textureMapping), renderState.gl.STATIC_DRAW)
                         } else {
                             console.error("At least one render buffer was undefined")
                         }
@@ -714,39 +748,35 @@ function GameCanvas({
                 // Make textures for the image atlases
                 if (renderState.gl) {
                     for (const animation of workers.values()) {
-                        animation.makeTexture(renderState.gl)
+                        textures.registerTexture(renderState.gl, animation.getImage())
                     }
 
                     for (const animation of animals.values()) {
-                        animation.makeTexture(renderState.gl)
+                        textures.registerTexture(renderState.gl, animation.getImage())
                     }
 
-                    treeAnimations.makeTexture(renderState.gl)
-                    flagAnimations.makeTexture(renderState.gl)
-                    houses.makeTexture(renderState.gl)
-                    fireAnimations.makeTexture(renderState.gl)
-                    signImageAtlasHandler.makeTexture(renderState.gl)
-                    uiElementsImageAtlasHandler.makeTexture(renderState.gl)
-                    cropsImageAtlasHandler.makeTexture(renderState.gl)
-                    stoneImageAtlasHandler.makeTexture(renderState.gl)
-                    decorationsImageAtlasHandler.makeTexture(renderState.gl)
-                    donkeyAnimation.makeTexture(renderState.gl)
-                    borderImageAtlasHandler.makeTexture(renderState.gl)
-                    roadBuildingImageAtlasHandler.makeTexture(renderState.gl)
-                    cargoImageAtlasHandler.makeTexture(renderState.gl)
-                    fatCarrierWithCargo.makeTexture(renderState.gl)
-                    thinCarrierWithCargo.makeTexture(renderState.gl)
-                    fatCarrierNoCargo.makeTexture(renderState.gl)
-                    thinCarrierNoCargo.makeTexture(renderState.gl)
-                    shipImageAtlas.makeTexture(renderState.gl)
-                    decorationsImageAtlasHandler.makeTexture(renderState.gl)
+                    textures.registerTexture(renderState.gl, treeAnimations.getImage())
+                    textures.registerTexture(renderState.gl, flagAnimations.getImage())
+                    textures.registerTexture(renderState.gl, houses.getSourceImage())
+                    textures.registerTexture(renderState.gl, fireAnimations.getImage())
+                    textures.registerTexture(renderState.gl, signImageAtlasHandler.getSourceImage())
+                    textures.registerTexture(renderState.gl, uiElementsImageAtlasHandler.getImage())
+                    textures.registerTexture(renderState.gl, cropsImageAtlasHandler.getSourceImage())
+                    textures.registerTexture(renderState.gl, stoneImageAtlasHandler.getSourceImage())
+                    textures.registerTexture(renderState.gl, decorationsImageAtlasHandler.getSourceImage())
+                    textures.registerTexture(renderState.gl, donkeyAnimation.getImage())
+                    textures.registerTexture(renderState.gl, borderImageAtlasHandler.getSourceImage())
+                    textures.registerTexture(renderState.gl, roadBuildingImageAtlasHandler.getSourceImage())
+                    textures.registerTexture(renderState.gl, cargoImageAtlasHandler.getSourceImage())
+                    textures.registerTexture(renderState.gl, fatCarrierWithCargo.getImage())
+                    textures.registerTexture(renderState.gl, thinCarrierWithCargo.getImage())
+                    textures.registerTexture(renderState.gl, fatCarrierNoCargo.getImage())
+                    textures.registerTexture(renderState.gl, thinCarrierNoCargo.getImage())
+                    textures.registerTexture(renderState.gl, shipImageAtlas.getSourceImage())
 
-                    const imageAtlasTerrainAndRoads = await loadImageAsync(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
-                    const textureTerrainAndRoadAtlas = makeTextureFromImage(renderState.gl, imageAtlasTerrainAndRoads)
+                    textures.registerTexture(renderState.gl, imageAtlasTerrainAndRoads)
 
                     // Bind the terrain and road image atlas texture
-                    renderState.gl.activeTexture(renderState.gl.TEXTURE0 + 1)
-                    renderState.gl.bindTexture(renderState.gl.TEXTURE_2D, textureTerrainAndRoadAtlas)
                 }
 
                 /* Prepare to draw roads */
@@ -773,11 +803,16 @@ function GameCanvas({
         renderState.overshoot = timeSinceLastDraw % ANIMATION_PERIOD
         renderState.previous = now
 
+        if (view === undefined) {
+            renderState.scale = immediateUxState.scale
+            renderState.translate = immediateUxState.translate
+        }
+
         // Check if there are changes to the newRoads props array. In that case the buffers for drawing roads need to be updated.
         const newRoadsUpdatedLength = newRoad?.length ?? 0
 
-        if (newRoadCurrentLength !== newRoadsUpdatedLength) {
-            newRoadCurrentLength = newRoadsUpdatedLength
+        if (renderState.newRoadCurrentLength !== newRoadsUpdatedLength) {
+            renderState.newRoadCurrentLength = newRoadsUpdatedLength
 
             if (newRoad !== undefined) {
                 monitor.placeLocalRoad(newRoad)
@@ -810,6 +845,8 @@ function GameCanvas({
         const width = normalCanvasRef.current.width
         const height = normalCanvasRef.current.height
 
+        renderState.screenHeight = height
+
         // Make sure gl is available
         if (renderState.gl === undefined) {
             console.error("Gl is not available")
@@ -827,8 +864,8 @@ function GameCanvas({
         /* Clear the overlay - make it fully transparent */
         overlayCtx.clearRect(0, 0, width, height)
 
-        const upLeft = screenPointToGamePointNoHeightAdjustment({ x: 0, y: 0 })
-        const downRight = screenPointToGamePointNoHeightAdjustment({ x: width, y: height })
+        const upLeft = screenPointToGamePointNoHeightAdjustmentInternal({ x: 0, y: 0 })
+        const downRight = screenPointToGamePointNoHeightAdjustmentInternal({ x: width, y: height })
 
         const minXInGame = upLeft.x
         const maxYInGame = upLeft.y
@@ -865,44 +902,54 @@ function GameCanvas({
             renderState.terrainCoordinatesBuffer !== undefined &&
             renderState.terrainNormalsBuffer !== undefined &&
             renderState.terrainTextureMappingBuffer !== undefined &&
-            renderState.mapRenderInformation) {
+            renderState.mapRenderInformation &&
+            imageAtlasTerrainAndRoads !== undefined) {
 
             const gl = renderState.gl
 
             gl.useProgram(renderState.drawGroundProgram)
 
-            // Configure the drawing context
-            gl.enable(gl.BLEND)
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+            const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
-            // Set the constants
-            gl.uniform1f(renderState.drawGroundScreenWidthUniformLocation, width)
-            gl.uniform1f(renderState.drawGroundScreenHeightUniformLocation, height)
-            gl.uniform3fv(renderState.drawGroundLightVectorUniformLocation, lightVector)
-            gl.uniform2f(renderState.drawGroundScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
-            gl.uniform2f(renderState.drawGroundOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
-            gl.uniform1f(renderState.drawGroundHeightAdjustUniformLocation, heightAdjust)
-            gl.uniform1i(renderState.drawGroundSamplerUniformLocation, 1)
+            if (textureSlot !== undefined) {
 
-            // Set up the buffers
-            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
-            gl.vertexAttribPointer(renderState.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(renderState.drawGroundCoordAttributeLocation)
+                // Configure the drawing context
+                gl.enable(gl.BLEND)
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
-            gl.vertexAttribPointer(renderState.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(renderState.drawGroundNormalAttributeLocation)
+                // Set the constants
+                gl.uniform1f(renderState.drawGroundScreenWidthUniformLocation, width)
+                gl.uniform1f(renderState.drawGroundScreenHeightUniformLocation, height)
+                gl.uniform3fv(renderState.drawGroundLightVectorUniformLocation, lightVector)
+                gl.uniform2f(renderState.drawGroundScaleUniformLocation, renderState.scale, renderState.scale)
+                gl.uniform2f(renderState.drawGroundOffsetUniformLocation, renderState.translate.x, renderState.translate.y)
+                gl.uniform1f(renderState.drawGroundHeightAdjustUniformLocation, heightAdjust)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
-            gl.vertexAttribPointer(renderState.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(renderState.drawGroundTextureMappingAttributeLocation)
+                gl.uniform1i(renderState.drawGroundSamplerUniformLocation, textureSlot)
 
-            // Fill the screen with black color
-            gl.clearColor(0.0, 0.0, 0.0, 1.0)
-            gl.clear(gl.COLOR_BUFFER_BIT)
+                // Set up the buffers
+                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
+                gl.vertexAttribPointer(renderState.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(renderState.drawGroundCoordAttributeLocation)
 
-            // Draw the triangles: mode, offset (nr vertices), count (nr vertices)
-            gl.drawArrays(gl.TRIANGLES, 0, renderState.mapRenderInformation.coordinates.length / 3)
+                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
+                gl.vertexAttribPointer(renderState.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(renderState.drawGroundNormalAttributeLocation)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
+                gl.vertexAttribPointer(renderState.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(renderState.drawGroundTextureMappingAttributeLocation)
+
+                // Fill the screen with black color
+                gl.clearColor(0.0, 0.0, 0.0, 1.0)
+                gl.clear(gl.COLOR_BUFFER_BIT)
+
+                // Draw the triangles: mode, offset (nr vertices), count (nr vertices)
+                gl.drawArrays(gl.TRIANGLES, 0, renderState.mapRenderInformation.coordinates.length / 3)
+            } else {
+                console.error(`Texture slot is undefined`)
+            }
+
         } else {
             console.error("Did not draw the terrain layer")
         }
@@ -970,17 +1017,21 @@ function GameCanvas({
 
             // Draw decorations objects
             for (const draw of decorationsToDraw) {
-                if (draw?.source?.texture !== undefined) {
+                if (draw?.source?.image !== undefined) {
+                    const textureSlot = textures.activateTextureForRendering(gl, draw.source.image)
 
-                    gl.activeTexture(gl.TEXTURE3)
-                    gl.bindTexture(gl.TEXTURE_2D, draw.source.texture)
+                    if (textureSlot === undefined) {
+                        console.error(`Texture slot is undefined for ${draw.source.image}`)
+
+                        continue
+                    }
 
                     // Set the constants
-                    gl.uniform1i(drawImageTextureLocation, 3)
+                    gl.uniform1i(drawImageTextureLocation, textureSlot)
                     gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
                     gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                    gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
-                    gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+                    gl.uniform1f(drawImageScaleLocation, renderState.scale)
+                    gl.uniform2f(drawImageScreenOffsetLocation, renderState.translate.x, renderState.translate.y)
                     gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                     gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                     gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
@@ -989,6 +1040,8 @@ function GameCanvas({
 
                     // Draw the quad (2 triangles = 6 vertices)
                     gl.drawArrays(gl.TRIANGLES, 0, 6)
+                } else {
+                    console.error(`The texture for ${draw?.source?.image} is undefined`)
                 }
             }
         }
@@ -1011,43 +1064,50 @@ function GameCanvas({
             renderState.roadCoordinatesBuffer !== undefined &&
             renderState.roadNormalsBuffer !== undefined &&
             renderState.roadTextureMappingBuffer !== undefined &&
-            renderState.drawGroundHeightAdjustUniformLocation !== undefined) {
+            renderState.drawGroundHeightAdjustUniformLocation !== undefined &&
+            imageAtlasTerrainAndRoads !== undefined) {
 
             const gl = renderState.gl
 
             gl.useProgram(renderState.drawGroundProgram)
 
-            gl.enable(gl.BLEND)
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+            const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
-            // Set screen width and height
-            gl.uniform1f(renderState.drawGroundScreenWidthUniformLocation, width)
-            gl.uniform1f(renderState.drawGroundScreenHeightUniformLocation, height)
+            if (textureSlot !== undefined) {
+                gl.enable(gl.BLEND)
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-            // Set the light vector
-            gl.uniform3fv(renderState.drawGroundLightVectorUniformLocation, lightVector)
+                // Set screen width and height
+                gl.uniform1f(renderState.drawGroundScreenWidthUniformLocation, width)
+                gl.uniform1f(renderState.drawGroundScreenHeightUniformLocation, height)
 
-            // Set the current values for the scale, offset and the sampler
-            gl.uniform2f(renderState.drawGroundScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
-            gl.uniform2f(renderState.drawGroundOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+                // Set the light vector
+                gl.uniform3fv(renderState.drawGroundLightVectorUniformLocation, lightVector)
 
-            // Draw the roads
-            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadCoordinatesBuffer)
-            gl.vertexAttribPointer(renderState.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(renderState.drawGroundCoordAttributeLocation)
+                // Set the current values for the scale, offset and the sampler
+                gl.uniform2f(renderState.drawGroundScaleUniformLocation, renderState.scale, renderState.scale)
+                gl.uniform2f(renderState.drawGroundOffsetUniformLocation, renderState.translate.x, renderState.translate.y)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadNormalsBuffer)
-            gl.vertexAttribPointer(renderState.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(renderState.drawGroundNormalAttributeLocation)
+                // Draw the roads
+                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadCoordinatesBuffer)
+                gl.vertexAttribPointer(renderState.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(renderState.drawGroundCoordAttributeLocation)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadTextureMappingBuffer)
-            gl.vertexAttribPointer(renderState.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(renderState.drawGroundTextureMappingAttributeLocation)
+                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadNormalsBuffer)
+                gl.vertexAttribPointer(renderState.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(renderState.drawGroundNormalAttributeLocation)
 
-            gl.uniform1i(renderState.drawGroundSamplerUniformLocation, 1)
-            gl.uniform1f(renderState.drawGroundHeightAdjustUniformLocation, heightAdjust)
+                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadTextureMappingBuffer)
+                gl.vertexAttribPointer(renderState.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                gl.enableVertexAttribArray(renderState.drawGroundTextureMappingAttributeLocation)
 
-            gl.drawArrays(gl.TRIANGLES, 0, renderState.roadRenderInformation?.coordinates.length / 3)
+                gl.uniform1i(renderState.drawGroundSamplerUniformLocation, textureSlot)
+                gl.uniform1f(renderState.drawGroundHeightAdjustUniformLocation, heightAdjust)
+
+                gl.drawArrays(gl.TRIANGLES, 0, renderState.roadRenderInformation?.coordinates.length / 3)
+            } else {
+                console.error(`Texture slot is undefined for ${imageAtlasTerrainAndRoads.src}`)
+            }
         } else {
             console.error("Missing information to draw roads")
         }
@@ -1143,7 +1203,7 @@ function GameCanvas({
                     })
                 }
             } else {
-                const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)        
+                const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
 
                 if (houseDrawInformation) {
                     toDrawNormal.push({
@@ -1825,7 +1885,7 @@ function GameCanvas({
 
 
         /* Collect available construction */
-        if (showAvailableConstruction) {
+        if (renderState.showAvailableConstruction) {
             for (const [gamePoint, available] of monitor.availableConstruction.entries()) {
                 if (available.length === 0) {
                     continue
@@ -1927,20 +1987,24 @@ function GameCanvas({
 
             // Draw all shadows
             for (const shadow of shadowsToDraw) {
-                if (shadow.gamePoint === undefined || shadow.source?.texture === undefined) {
+                if (shadow.gamePoint === undefined || shadow.source?.image === undefined) {
                     continue
                 }
 
-                // Set the texture
-                renderState.gl.activeTexture(renderState.gl.TEXTURE3)
-                renderState.gl.bindTexture(renderState.gl.TEXTURE_2D, shadow.source.texture)
+                const textureSlot = textures.activateTextureForRendering(renderState.gl, shadow.source.image)
+
+                if (textureSlot === undefined) {
+                    console.error(`Texture slot is undefined for ${shadow.source.image}`)
+
+                    continue
+                }
 
                 // Set the constants
-                renderState.gl.uniform1i(drawImageTextureLocation, 3)
+                renderState.gl.uniform1i(drawImageTextureLocation, textureSlot)
                 renderState.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
                 renderState.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
-                renderState.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
-                renderState.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+                renderState.gl.uniform1f(drawImageScaleLocation, renderState.scale)
+                renderState.gl.uniform2f(drawImageScreenOffsetLocation, renderState.translate.x, renderState.translate.y)
                 renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 renderState.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
                 renderState.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
@@ -1956,6 +2020,7 @@ function GameCanvas({
                 renderState.gl.drawArrays(renderState.gl.TRIANGLES, 0, 6)
             }
         }
+
 
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
         if (renderState.drawImageProgram &&
@@ -1997,20 +2062,24 @@ function GameCanvas({
 
             // Draw normal objects
             for (const draw of sortedToDrawList) {
-                if (draw.gamePoint === undefined || draw.source?.texture === undefined) {
+                if (draw.gamePoint === undefined || draw.source?.image === undefined) {
                     continue
                 }
 
-                // Set the texture
-                renderState.gl.activeTexture(renderState.gl.TEXTURE3)
-                renderState.gl.bindTexture(renderState.gl.TEXTURE_2D, draw.source.texture)
+                const textureSlot = textures.activateTextureForRendering(renderState.gl, draw.source.image)
+
+                if (textureSlot === undefined) {
+                    console.error(`Texture slot is undefined for ${draw.source.image}`)
+
+                    continue
+                }
 
                 // Set the constants
-                renderState.gl.uniform1i(drawImageTextureLocation, 3)
+                renderState.gl.uniform1i(drawImageTextureLocation, textureSlot)
                 renderState.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
                 renderState.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                renderState.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
-                renderState.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+                renderState.gl.uniform1f(drawImageScaleLocation, renderState.scale)
+                renderState.gl.uniform2f(drawImageScreenOffsetLocation, renderState.translate.x, renderState.translate.y)
                 renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 renderState.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                 renderState.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
@@ -2026,7 +2095,6 @@ function GameCanvas({
                 renderState.gl.drawArrays(renderState.gl.TRIANGLES, 0, 6)
             }
         }
-
 
         // Handle the hover layer
         const toDrawHover: ToDraw[] = []
@@ -2099,8 +2167,8 @@ function GameCanvas({
 
 
         /* Draw the hover point */
-        if (hoverPoint && hoverPoint.y > 0) {
-            const availableConstructionAtHoverPoint = monitor.availableConstruction.get(hoverPoint)
+        if (renderState.hoverPoint && renderState.hoverPoint.y > 0 && renderState.hoverPoint.x > 0) {
+            const availableConstructionAtHoverPoint = monitor.availableConstruction.get(renderState.hoverPoint)
 
             if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
                 if (availableConstructionAtHoverPoint.includes("large")) {
@@ -2109,35 +2177,35 @@ function GameCanvas({
 
                     toDrawHover.push({
                         source: largeHouseAvailableInfo,
-                        gamePoint: hoverPoint
+                        gamePoint: renderState.hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("medium")) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
 
                     toDrawHover.push({
                         source: mediumHouseAvailableInfo,
-                        gamePoint: hoverPoint
+                        gamePoint: renderState.hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("small")) {
                     const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
 
                     toDrawHover.push({
                         source: smallHouseAvailableInfo,
-                        gamePoint: hoverPoint
+                        gamePoint: renderState.hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("mine")) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
 
                     toDrawHover.push({
                         source: mineAvailableInfo,
-                        gamePoint: hoverPoint
+                        gamePoint: renderState.hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("flag")) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
 
                     toDrawHover.push({
                         source: flagAvailableInfo,
-                        gamePoint: hoverPoint
+                        gamePoint: renderState.hoverPoint
                     })
                 }
             } else {
@@ -2145,7 +2213,7 @@ function GameCanvas({
 
                 toDrawHover.push({
                     source: hoverPointDrawInfo,
-                    gamePoint: hoverPoint
+                    gamePoint: renderState.hoverPoint
                 })
             }
         }
@@ -2193,20 +2261,24 @@ function GameCanvas({
 
             // Go through the images to draw
             for (const draw of toDrawHover) {
-                if (draw.gamePoint === undefined || draw.source?.texture === undefined) {
+                if (draw.gamePoint === undefined || draw.source?.image === undefined) {
                     continue
                 }
 
-                // Set the texture
-                renderState.gl.activeTexture(renderState.gl.TEXTURE3)
-                renderState.gl.bindTexture(renderState.gl.TEXTURE_2D, draw.source.texture)
+                const textureSlot = textures.activateTextureForRendering(renderState.gl, draw.source.image)
+
+                if (textureSlot === undefined) {
+                    console.error(`Texture slot is undefined for ${draw.source.image}`)
+
+                    continue
+                }
 
                 // Set the constants
-                renderState.gl.uniform1i(drawImageTextureLocation, 3)
+                renderState.gl.uniform1i(drawImageTextureLocation, textureSlot)
                 renderState.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
                 renderState.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                renderState.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
-                renderState.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+                renderState.gl.uniform1f(drawImageScaleLocation, renderState.scale)
+                renderState.gl.uniform2f(drawImageScreenOffsetLocation, renderState.translate.x, renderState.translate.y)
                 renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                 renderState.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                 renderState.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
@@ -2237,14 +2309,14 @@ function GameCanvas({
                     continue
                 }
 
-                const screenPoint = gamePointToScreenPointInternal(house)
+                const screenPoint = gamePointToScreenPointWithHeightAdjustmentInternal(house)
 
                 const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
 
                 let heightOffset = 0
 
                 if (houseDrawInformation) {
-                    heightOffset = houseDrawInformation[0].offsetY * immediateUxState.scale / DEFAULT_SCALE
+                    heightOffset = houseDrawInformation[0].offsetY * renderState.scale / DEFAULT_SCALE
                 }
 
                 let houseTitle = camelCaseToWords(house.type)
@@ -2300,8 +2372,8 @@ function GameCanvas({
             // Set the constants
             gl.uniform1f(renderState.fogOfWarScreenWidthUniformLocation, width)
             gl.uniform1f(renderState.fogOfWarScreenHeightUniformLocation, height)
-            gl.uniform2f(renderState.fogOfWarScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
-            gl.uniform2f(renderState.fogOfWarOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+            gl.uniform2f(renderState.fogOfWarScaleUniformLocation, renderState.scale, renderState.scale)
+            gl.uniform2f(renderState.fogOfWarOffsetUniformLocation, renderState.translate.x, renderState.translate.y)
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
 
             // Set the buffers
@@ -2319,7 +2391,14 @@ function GameCanvas({
             console.error("Did not draw the fog of war layer")
         }
 
+        if (renderState.once) {
+            console.log(renderState.gl.getError())
+
+            renderState.once = false
+        }
+
         duration.reportStats()
+
 
         /* List counters if the rendering time exceeded the previous maximum */
         if (isLatestValueHighestForVariable("GameRender::renderGame.total")) {
@@ -2348,24 +2427,23 @@ function GameCanvas({
         requestAnimationFrame(renderGame)
     }
 
-    function gamePointToScreenPointInternal(gamePoint: Point): ScreenPoint {
+    function gamePointToScreenPointWithHeightAdjustmentInternal(gamePoint: Point): ScreenPoint {
         const height = monitor.getHeight(gamePoint)
 
-        return gamePointToScreenPoint(
+        return gamePointToScreenPointWithHeightAdjustment(
             gamePoint,
             height,
-            immediateUxState.translate.x,
-            immediateUxState.translate.y,
-            immediateUxState.scale,
+            renderState.translate.x,
+            renderState.translate.y,
+            renderState.scale,
             renderState.screenHeight,
             heightAdjust,
-            //DEFAULT_HEIGHT_ADJUSTMENT,
             STANDARD_HEIGHT
         )
     }
 
-    function screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint): Point {
-        return screenPointToGamePoint(screenPoint, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, renderState.screenHeight)
+    function screenPointToGamePointNoHeightAdjustmentInternal(screenPoint: ScreenPoint): Point {
+        return screenPointToGamePointNoHeightAdjustment(screenPoint, renderState.translate.x, renderState.translate.y, renderState.scale, renderState.screenHeight)
     }
 
     async function onClickOrDoubleClick(event: React.MouseEvent): Promise<void> {
@@ -2399,57 +2477,10 @@ function GameCanvas({
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * overlayCanvasRef.current.width)
             const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * overlayCanvasRef.current.height)
 
-            const gamePoint = screenPointToGamePointWithHeightAdjustment({ x: x, y: y })
+            const gamePoint = screenPointToGamePointWithHeightAdjustmentInternal({ x: x, y: y })
 
-            onPointClicked(gamePoint)
+            onPointClicked && onPointClicked(gamePoint)
         }
-    }
-
-    function screenPointToGamePointWithHeightAdjustment(screenPoint: Point): Point {
-        const unadjustedGamePoint = screenPointToGamePointNoHeightAdjustment(screenPoint)
-
-        let distance = 2000
-        let adjustedGamePoint: Point | undefined
-        const downLeft = getPointDownLeft(unadjustedGamePoint)
-        const downRight = getPointDownRight(unadjustedGamePoint)
-        const down = getPointDown(unadjustedGamePoint)
-        const downDownLeft = getPointDownLeft(down)
-        const downDownRight = getPointDownRight(down)
-        const downDown = getPointDown(down)
-        const upLeft = getPointUpLeft(unadjustedGamePoint)
-        const upRight = getPointUpRight(unadjustedGamePoint)
-        const up = getPointUp(unadjustedGamePoint)
-        const upUpLeft = getPointUpLeft(up)
-        const upUpRight = getPointUpRight(up)
-
-        const candidates = [
-            unadjustedGamePoint,
-            downLeft,
-            downRight,
-            down,
-            downDownLeft,
-            downDownRight,
-            downDown,
-            upLeft,
-            upRight,
-            up,
-            upUpLeft,
-            upUpRight
-        ]
-
-        for (const gamePoint of candidates) {
-            const screenPointCandidate = gamePointToScreenPointInternal(gamePoint)
-            const dx = screenPointCandidate.x - screenPoint.x
-            const dy = screenPointCandidate.y - screenPoint.y
-            const candidateDistance = Math.sqrt(dx * dx + dy * dy)
-
-            if (candidateDistance < distance) {
-                distance = candidateDistance
-                adjustedGamePoint = gamePoint
-            }
-        }
-
-        return adjustedGamePoint ?? unadjustedGamePoint
     }
 
     function onDoubleClickInternal(event: React.MouseEvent): void {
@@ -2464,9 +2495,9 @@ function GameCanvas({
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * overlayCanvasRef.current.width)
             const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * overlayCanvasRef.current.height)
 
-            const gamePoint = screenPointToGamePointWithHeightAdjustment({ x: x, y: y })
+            const gamePoint = screenPointToGamePointWithHeightAdjustmentInternal({ x: x, y: y })
 
-            onDoubleClick(gamePoint)
+            onDoubleClick && onDoubleClick(gamePoint)
         }
     }
 
@@ -2946,16 +2977,31 @@ function GameCanvas({
         }
     }
 
+    function screenPointToGamePointWithHeightAdjustmentInternal(point: Point): Point {
+        return screenPointToGamePointWithHeightAdjustment(
+            point,
+            renderState.translate,
+            renderState.scale,
+            renderState.screenHeight,
+            heightAdjust
+        )
+    }
+
     // When using regular "useState" the screenHeight variable gets remembered as 0 and never updated in the renderGame function
     renderState.screenHeight = screenHeight
+
+    if (view) {
+        renderState.scale = view.scale
+        renderState.translate = view.translate
+    }
 
     return (
         <>
             <canvas
-                className="GameCanvas"
+                className="game-canvas"
                 onKeyDown={onKeyDown}
                 onClick={onClickOrDoubleClick}
-                style={{ cursor: MOUSE_STYLES.get(cursor) }}
+                style={{ cursor: MOUSE_STYLES.get(cursor ?? 'NOTHING') }}
 
                 ref={overlayCanvasRef}
                 onMouseMove={
@@ -2968,12 +3014,14 @@ function GameCanvas({
                             const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * overlayCanvasRef.current.height)
 
                             try {
-                                const hoverPoint = screenPointToGamePointWithHeightAdjustment({ x, y })
+                                const hoverPoint = screenPointToGamePointWithHeightAdjustmentInternal({ x, y })
 
                                 if (hoverPoint &&
                                     hoverPoint.y >= 0 &&
-                                    (!hoverPoint || hoverPoint.x !== hoverPoint.x || hoverPoint.y !== hoverPoint.y)) {
-                                    setHoverPoint(hoverPoint)
+                                    hoverPoint.x >= 0 &&
+                                    (!renderState.hoverPoint ||
+                                        (hoverPoint.x !== renderState.hoverPoint.x || hoverPoint.y !== renderState.hoverPoint.y))) {
+                                    renderState.hoverPoint = hoverPoint
                                 }
                             } catch (error) {
                                 console.error(error)
@@ -2985,7 +3033,7 @@ function GameCanvas({
                 }
             />
 
-            <canvas ref={normalCanvasRef} className="TerrainCanvas" />
+            <canvas ref={normalCanvasRef} className="terrain-canvas" />
         </>
     )
 }

@@ -25,7 +25,7 @@
     flex-direction: column;
     gap: 1em;
     min-height: 10em;
-    height: auto;
+    height: 100%;
     align-items: center;
     justify-content: space-between;
     align-self: stretch;
@@ -65,5 +65,13 @@
 
 .BottomButtons {
     display: flex;
+    justify-content: center;
+}
+
+.button-row {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    flex-wrap: wrap;
     justify-content: center;
 }

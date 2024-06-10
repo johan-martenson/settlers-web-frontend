@@ -1,7 +1,8 @@
 import { getTerrainForMap } from './api/rest-api'
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, TreeType, FireSize, Direction, WorkerAction, Material, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
-import { Monitor } from './api/ws-api'
+import { Monitor, monitor } from './api/ws-api'
 import { ScreenPoint } from './game_render'
+import { STANDARD_HEIGHT } from './render/constants'
 
 const vegetationToInt = new Map<Vegetation, number>()
 
@@ -326,6 +327,8 @@ function getTimestamp(): number {
 }
 
 function loadImageNg(src: string): Promise<HTMLImageElement> {
+    console.log(`Loading ${src}`)
+
     return new Promise((resolve, reject) => {
         const image = new Image()
 
@@ -352,8 +355,8 @@ class TreeAnimation {
         await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-        this.imageAtlasHandler.makeTexture(gl)
+    getImage(): HTMLImageElement | undefined {
+        return this.imageAtlasHandler.getSourceImage()
     }
 
     getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
@@ -378,8 +381,8 @@ class FireAnimation {
         await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-        this.imageAtlasHandler.makeTexture(gl)
+    getImage(): HTMLImageElement | undefined {
+        return this.imageAtlasHandler.getSourceImage()
     }
 
     getAnimationFrame(size: FireSize, animationIndex: number): DrawingInformation[] | undefined {
@@ -404,8 +407,8 @@ class AnimalAnimation {
         await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-        this.imageAtlasHandler.makeTexture(gl)
+    getImage(): HTMLImageElement | undefined {
+        return this.imageAtlasHandler.getSourceImage()
     }
 
     getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
@@ -424,11 +427,9 @@ export interface Dimension {
 
 class WorkerAnimation {
     private imageAtlasHandler: WorkerImageAtlasHandler
-
     private speedAdjust: number
 
     constructor(prefix: string, postfix: string, speedAdjust: number) {
-
         this.imageAtlasHandler = new WorkerImageAtlasHandler(prefix, postfix)
 
         this.speedAdjust = speedAdjust
@@ -438,8 +439,8 @@ class WorkerAnimation {
         await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-        this.imageAtlasHandler.makeTexture(gl)
+    getImage(): HTMLImageElement | undefined {
+        return this.imageAtlasHandler.getSourceImage()
     }
 
     getAnimationFrame(nation: Nation, direction: Direction, color: PlayerColor, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
@@ -504,22 +505,19 @@ class ShipImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-ship.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-ship.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-ship.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-ship.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformationForShip(direction: Direction): DrawingInformation[] | undefined {
@@ -644,26 +642,16 @@ class WorkerImageAtlasHandler {
     }
 
     async load(): Promise<void> {
-        if (this.image) {
-            return
-        }
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
-    }
-
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
         }
     }
 
@@ -947,21 +935,14 @@ class HouseImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-buildings.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-buildings.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-buildings.png")
-    }
-
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-buildings.png")
         }
     }
 
@@ -1159,22 +1140,19 @@ class BorderImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-border.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-border.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-border.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-border.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformation(nation: Nation, color: PlayerColor, type: "LAND" | "COAST"): DrawingInformation | undefined {
@@ -1221,22 +1199,19 @@ class SignImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-signs.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-signs.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-signs.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-signs.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformation(signType: SignTypes, size: Size): DrawingInformation[] | undefined {
@@ -1290,22 +1265,19 @@ class FireImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-fire.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-fire.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-fire.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-fire.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getFireDrawingInformation(size: FireSize, animationIndex: number): DrawingInformation[] | undefined {
@@ -1395,22 +1367,19 @@ class CargoImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-cargos.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-cargos.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-cargos.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-cargos.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformation(nation: Nation, material: Material): DrawingInformation | undefined {
@@ -1475,22 +1444,19 @@ class RoadBuildingImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-road-building.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-road-building.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-road-building.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-road-building.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformationForStartPoint(): DrawingInformation | undefined {
@@ -1594,22 +1560,19 @@ class TreeImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-trees.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-trees.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-trees.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-trees.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformationForGrownTree(treeType: TreeType, animationCounter: number): DrawingInformation[] | undefined {
@@ -1727,22 +1690,19 @@ class StoneImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-stones.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-stones.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-stones.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-stones.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformationFor(stoneType: StoneType, amount: StoneAmount): DrawingInformation[] | undefined {
@@ -1795,21 +1755,19 @@ class DecorationsImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-decorations.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-decorations.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-decorations.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-decorations.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformationFor(decorationType: DecorationType): DrawingInformation[] | undefined {
@@ -1879,22 +1837,19 @@ class CropImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-crops.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-crops.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-crops.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-crops.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformationFor(cropType: CropType, growth: CropGrowth): DrawingInformation[] | undefined {
@@ -1961,22 +1916,19 @@ class AnimalImageAtlasHandler {
     async load(): Promise<void> {
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformationForCargo(material: Material, nation: Nation): DrawingInformation | undefined {
@@ -2155,7 +2107,7 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
     //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
     //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
@@ -2336,9 +2288,69 @@ function canBuildRoad(point: PointInformation): boolean {
     return point.is === "flag"
 }
 
+function screenPointToGamePointWithHeightAdjustment(screenPoint: Point, translate: Point, scale: number, screenHeight: number, heightAdjust: number): Point {
+    const unadjustedGamePoint = screenPointToGamePointNoHeightAdjustment(
+        screenPoint,
+        translate.x,
+        translate.y,
+        scale,
+        screenHeight
+    )
 
-function screenPointToGamePoint(screenPoint: ScreenPoint, translateX: number, translateY: number, scale: number, screenHeight: number): Point {
+    let distance = 2000
+    let adjustedGamePoint: Point | undefined
+    const downLeft = getPointDownLeft(unadjustedGamePoint)
+    const downRight = getPointDownRight(unadjustedGamePoint)
+    const down = getPointDown(unadjustedGamePoint)
+    const downDownLeft = getPointDownLeft(down)
+    const downDownRight = getPointDownRight(down)
+    const downDown = getPointDown(down)
+    const upLeft = getPointUpLeft(unadjustedGamePoint)
+    const upRight = getPointUpRight(unadjustedGamePoint)
+    const up = getPointUp(unadjustedGamePoint)
+    const upUpLeft = getPointUpLeft(up)
+    const upUpRight = getPointUpRight(up)
 
+    const candidates = [
+        unadjustedGamePoint,
+        downLeft,
+        downRight,
+        down,
+        downDownLeft,
+        downDownRight,
+        downDown,
+        upLeft,
+        upRight,
+        up,
+        upUpLeft,
+        upUpRight
+    ]
+
+    for (const gamePoint of candidates) {
+        const screenPointCandidate = gamePointToScreenPointWithHeightAdjustment(
+            gamePoint,
+            monitor.allTiles.get(gamePoint)?.height ?? 0,
+            translate.x,
+            translate.y,
+            scale,
+            screenHeight,
+            heightAdjust,
+            STANDARD_HEIGHT
+        )
+        const dx = screenPointCandidate.x - screenPoint.x
+        const dy = screenPointCandidate.y - screenPoint.y
+        const candidateDistance = Math.sqrt(dx * dx + dy * dy)
+
+        if (candidateDistance < distance) {
+            distance = candidateDistance
+            adjustedGamePoint = gamePoint
+        }
+    }
+
+    return adjustedGamePoint ?? unadjustedGamePoint
+}
+
+function screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint, translateX: number, translateY: number, scale: number, screenHeight: number): Point {
     const gameX = (screenPoint.x - translateX) / scale
     const gameY = (screenHeight - screenPoint.y + translateY) / (scale)
 
@@ -2373,7 +2385,7 @@ function screenPointToGamePoint(screenPoint: ScreenPoint, translateX: number, tr
     return { x: roundedGameX, y: roundedGameY }
 }
 
-function gamePointToScreenPoint(gamePoint: Point, height: number, translateX: number, translateY: number, scale: number, screenHeight: number, heightAdjust: number, standardHeight: number): ScreenPoint {
+function gamePointToScreenPointWithHeightAdjustment(gamePoint: Point, height: number, translateX: number, translateY: number, scale: number, screenHeight: number, heightAdjust: number, standardHeight: number): ScreenPoint {
     const adjustedPoint = {
         x: gamePoint.x,
         y: gamePoint.y + ((height - standardHeight) / heightAdjust)
@@ -2450,7 +2462,8 @@ export {
     canBuildSmallHouse,
     canBuildMine,
     canBuildRoad,
-    screenPointToGamePoint,
-    gamePointToScreenPoint,
-    surroundingPoints
+    screenPointToGamePointNoHeightAdjustment,
+    gamePointToScreenPointWithHeightAdjustment,
+    surroundingPoints,
+    screenPointToGamePointWithHeightAdjustment
 }

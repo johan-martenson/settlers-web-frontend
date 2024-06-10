@@ -5,7 +5,7 @@ import { ConstructionInfo } from './construction_info'
 import FriendlyFlagInfo from './friendly_flag_info'
 import GameMenu from './game_menu'
 import GameMessagesViewer from './game_messages_viewer'
-import { CursorState, DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, GameCanvas } from './game_render'
+import { CursorState, GameCanvas } from './game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
 import { GameListener, getHeadquarterForPlayer, monitor, startMonitoringGame } from './api/ws-api'
@@ -24,6 +24,8 @@ import { Quotas } from './quotas'
 import { animator } from './utils/animator'
 import { RoadInfo } from './road-info'
 import { Debug } from './debug/debug'
+import { Follow } from './follow'
+import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
 
 type HouseWindow = {
     type: 'HOUSE'
@@ -65,6 +67,11 @@ type TransportPriorityWindow = {
     type: 'TRANSPORT_PRIORITY'
 }
 
+type FollowWindow = {
+    type: 'FOLLOW'
+    point: Point
+}
+
 type WindowType = HouseWindow |
     FlagWindow |
     ConstructionWindow |
@@ -73,7 +80,8 @@ type WindowType = HouseWindow |
     DebugWindow |
     QuotaWindow |
     RoadWindow |
-    TransportPriorityWindow
+    TransportPriorityWindow |
+    FollowWindow
 
 type Window = {
     id: number
@@ -218,16 +226,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }
 
     function openWindow(window: WindowType): void {
-        const updatedWindows = [...windows]
-
         const windowWithId = {
             ...window,
             id: nextWindowId()
         }
 
-        updatedWindows.push(windowWithId)
-
-        setWindows(updatedWindows)
+        setWindows((windows: Window[]) => [...windows, windowWithId])
     }
 
     function closeWindow(id: number): void {
@@ -570,6 +574,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 })
                 commands.set("Debug", {
                     action: () => openSingletonWindow({ type: 'DEBUG' })
+                })
+                commands.set("Follow", {
+                    action: (point: Point) => openWindow({ type: 'FOLLOW', point })
                 })
 
                 setCommands(commands)
@@ -1104,6 +1111,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     case 'DEBUG':
                         return <Debug
                             point={selected}
+                            onClose={() => closeWindow(window.id)}
+                            onRaise={() => raiseWindow(window.id)}
+                            key={window.id}
+                        />
+                    case 'FOLLOW':
+                        return <Follow
+                            point={window.point}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
                             key={window.id}

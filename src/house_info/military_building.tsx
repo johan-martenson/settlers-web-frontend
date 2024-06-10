@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
 import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterialUpperCase, rankToMaterial } from "../api/types"
-import { HouseIcon, InventoryIcon, UiIcon } from "../icon"
+import { HouseIcon, InventoryIcon, UiIcon } from '../icon'
 import './house_info.css'
 import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse } from "../api/rest-api"
 import { monitor } from '../api/ws-api'

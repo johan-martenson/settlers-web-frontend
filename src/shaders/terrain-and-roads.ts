@@ -13,8 +13,8 @@ in vec2 a_texture_mapping;
 uniform vec3 u_light_vector; // light vector (x, y, z)
 uniform vec2 u_scale;
 uniform vec2 u_offset;
-uniform float u_screen_height;
 uniform float u_screen_width;
+uniform float u_screen_height;
 uniform float u_height_adjust;
 
 // This is output for the fragment shader - values are interpolated for each pixel

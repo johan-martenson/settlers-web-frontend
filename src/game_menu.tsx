@@ -4,7 +4,7 @@ import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/r
 import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option, SelectionEvents, OptionOnSelectData } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
-import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './game_render'
+import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
 import { sfx } from './sound/sound_effects'
 import { DEFAULT_VOLUME } from './play'
 import { monitor } from './api/ws-api'

@@ -2,7 +2,7 @@ import { DEFAULT_VOLUME, immediateUxState } from "../play"
 import { Action, GameMessage, GameMessageId, HouseId, Point } from "../api/types"
 import { monitor } from "../api/ws-api"
 import { Sound } from "./utils"
-import { screenPointToGamePoint } from "../utils"
+import { screenPointToGamePointNoHeightAdjustment } from "../utils"
 
 export type SoundEffect = 'NEW-MESSAGE' |
     'WOODCUTTER_CUTTING' |
@@ -158,8 +158,8 @@ function startEffects() {
         () => {
 
             // Keep track of what's visible on the screen
-            const upperLeftGamePoint = screenPointToGamePoint({ x: 0, y: 0 }, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, immediateUxState.height)
-            const lowerRightGamePoint = screenPointToGamePoint({ x: immediateUxState.width, y: immediateUxState.height }, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, immediateUxState.height)
+            const upperLeftGamePoint = screenPointToGamePointNoHeightAdjustment({ x: 0, y: 0 }, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, immediateUxState.height)
+            const lowerRightGamePoint = screenPointToGamePointNoHeightAdjustment({ x: immediateUxState.width, y: immediateUxState.height }, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, immediateUxState.height)
 
             visibility = {
                 left: upperLeftGamePoint.x,

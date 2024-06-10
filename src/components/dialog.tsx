@@ -93,5 +93,15 @@ function Window({ onClose, onRaise, ...props }: WindowProps) {
     )
 }
 
-export { Window }
+type ButtonRowProps = {
+    children?: React.ReactNode
+}
+
+function ButtonRow({ children }: ButtonRowProps) {
+    return (
+        <div className='button-row'>{children}</div>
+    )
+}
+
+export { ButtonRow, Window }
 

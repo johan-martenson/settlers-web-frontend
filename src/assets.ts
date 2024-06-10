@@ -1,4 +1,4 @@
-import { Dimension, DrawingInformation, HouseImageAtlasHandler, ImageSeriesInformation, OneImageInformation, WorkerAnimation, loadImageNg, makeTextureFromImage } from "./utils"
+import { Dimension, DrawingInformation, HouseImageAtlasHandler, ImageSeriesInformation, OneImageInformation, WorkerAnimation, loadImageNg } from "./utils"
 import { FlagType, Material, Nation, PlayerColor, WorkerType } from "./api/types"
 import { UiIconType } from "./icon"
 
@@ -69,25 +69,16 @@ class UiElementsImageAtlasHandler {
     }
 
     async load(): Promise<void> {
-        if (this.image && this.imageAtlasInfo) {
-            return
-        }
 
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-ui-elements.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-ui-elements.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-ui-elements.png")
-    }
-
-    makeTexture(gl: WebGL2RenderingContext): void {
-        if (this.image) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null|undefined")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-ui-elements.png")
         }
     }
 
@@ -372,27 +363,20 @@ class FlagImageAtlasHandler {
 
     async load(): Promise<void> {
 
-        if (this.image && this.imageAtlasInfo) {
-            return
-        }
-
         // Get the image atlas information
-        const response = await fetch(this.pathPrefix + "image-atlas-flags.json")
-        const imageAtlasInfo = await response.json()
-
-        this.imageAtlasInfo = imageAtlasInfo
+        if (this.imageAtlasInfo === undefined) {
+            const response = await fetch(this.pathPrefix + "image-atlas-flags.json")
+            this.imageAtlasInfo = await response.json()
+        }
 
         // Download the actual image atlas
-        this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
+        if (this.image === undefined) {
+            this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
+        }
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-
-        if (this.image && !this.texture) {
-            this.texture = makeTextureFromImage(gl, this.image)
-        } else {
-            console.error("Failed to make the texture because image is null | undefined")
-        }
+    getSourceImage(): HTMLImageElement | undefined {
+        return this.image
     }
 
     getDrawingInformationFor(nation: Nation, color: PlayerColor, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
@@ -479,8 +463,8 @@ class FlagAnimation {
         await this.imageAtlasHandler.load()
     }
 
-    makeTexture(gl: WebGL2RenderingContext): void {
-        this.imageAtlasHandler.makeTexture(gl)
+    getImage(): HTMLImageElement | undefined {
+        return this.imageAtlasHandler.getSourceImage()
     }
 
     getAnimationFrame(nation: Nation, color: PlayerColor, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {

@@ -62,7 +62,8 @@ interface GameCanvasProps {
     showHouseTitles: boolean
     showFpsCounter?: boolean
     view?: View
-
+    hideHoverPoint?: boolean
+    hideSelectedPoint?: boolean
     heightAdjust: number
 
     onPointClicked?: ((point: Point) => void)
@@ -144,6 +145,7 @@ type RenderState = {
     scale: number
     translate: Point
 
+    selectedPoint?: Point
     hoverPoint?: Point
     newRoadCurrentLength: number
 
@@ -234,7 +236,8 @@ function GameCanvas({
     view,
     onPointClicked,
     onKeyDown,
-    onDoubleClick }: GameCanvasProps) {
+    onDoubleClick,
+    ...props }: GameCanvasProps) {
     const visiblePoints = new PointMapFast<TrianglesAtPoint>()
 
     const initRenderState = {
@@ -257,6 +260,9 @@ function GameCanvas({
         once: true
     }
 
+    const drawHoverPoint = !(props.hideHoverPoint ?? false)
+    const drawSelectedPoint = !(props.hideSelectedPoint ?? false)
+
     const normalCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const lightVector = [1, 1, -1]
@@ -273,11 +279,13 @@ function GameCanvas({
         }, []
     )
 
+    // Variables get captured by the closure of 'renderGame()' so pass the props in to it through renderState
     useEffect(
         () => {
             renderState.showAvailableConstruction = showAvailableConstruction
+            renderState.selectedPoint = selectedPoint
         },
-        [showAvailableConstruction]
+        [showAvailableConstruction, selectedPoint]
     )
 
     // Run when the cursor is changed (and when the normal canvas is set up)
@@ -2154,67 +2162,71 @@ function GameCanvas({
 
 
         /* Draw the selected point */
-        if (selectedPoint) {
-            const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
+        if (drawSelectedPoint) {
+            if (renderState.selectedPoint) {
+                const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
 
-            toDrawHover.push({
-                source: selectedPointDrawInfo,
-                gamePoint: selectedPoint
-            })
+                toDrawHover.push({
+                    source: selectedPointDrawInfo,
+                    gamePoint: renderState.selectedPoint
+                })
+            }
         }
 
         duration.after("collect selected point")
 
 
         /* Draw the hover point */
-        if (renderState.hoverPoint && renderState.hoverPoint.y > 0 && renderState.hoverPoint.x > 0) {
-            const availableConstructionAtHoverPoint = monitor.availableConstruction.get(renderState.hoverPoint)
+        if (drawHoverPoint) {
+            if (renderState.hoverPoint && renderState.hoverPoint.y > 0 && renderState.hoverPoint.x > 0) {
+                const availableConstructionAtHoverPoint = monitor.availableConstruction.get(renderState.hoverPoint)
 
-            if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
-                if (availableConstructionAtHoverPoint.includes("large")) {
+                if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
+                    if (availableConstructionAtHoverPoint.includes("large")) {
 
-                    const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
+                        const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
+
+                        toDrawHover.push({
+                            source: largeHouseAvailableInfo,
+                            gamePoint: renderState.hoverPoint
+                        })
+                    } else if (availableConstructionAtHoverPoint.includes("medium")) {
+                        const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
+
+                        toDrawHover.push({
+                            source: mediumHouseAvailableInfo,
+                            gamePoint: renderState.hoverPoint
+                        })
+                    } else if (availableConstructionAtHoverPoint.includes("small")) {
+                        const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
+
+                        toDrawHover.push({
+                            source: smallHouseAvailableInfo,
+                            gamePoint: renderState.hoverPoint
+                        })
+                    } else if (availableConstructionAtHoverPoint.includes("mine")) {
+                        const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
+
+                        toDrawHover.push({
+                            source: mineAvailableInfo,
+                            gamePoint: renderState.hoverPoint
+                        })
+                    } else if (availableConstructionAtHoverPoint.includes("flag")) {
+                        const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
+
+                        toDrawHover.push({
+                            source: flagAvailableInfo,
+                            gamePoint: renderState.hoverPoint
+                        })
+                    }
+                } else {
+                    const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
 
                     toDrawHover.push({
-                        source: largeHouseAvailableInfo,
-                        gamePoint: renderState.hoverPoint
-                    })
-                } else if (availableConstructionAtHoverPoint.includes("medium")) {
-                    const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
-
-                    toDrawHover.push({
-                        source: mediumHouseAvailableInfo,
-                        gamePoint: renderState.hoverPoint
-                    })
-                } else if (availableConstructionAtHoverPoint.includes("small")) {
-                    const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
-
-                    toDrawHover.push({
-                        source: smallHouseAvailableInfo,
-                        gamePoint: renderState.hoverPoint
-                    })
-                } else if (availableConstructionAtHoverPoint.includes("mine")) {
-                    const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
-
-                    toDrawHover.push({
-                        source: mineAvailableInfo,
-                        gamePoint: renderState.hoverPoint
-                    })
-                } else if (availableConstructionAtHoverPoint.includes("flag")) {
-                    const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
-
-                    toDrawHover.push({
-                        source: flagAvailableInfo,
+                        source: hoverPointDrawInfo,
                         gamePoint: renderState.hoverPoint
                     })
                 }
-            } else {
-                const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
-
-                toDrawHover.push({
-                    source: hoverPointDrawInfo,
-                    gamePoint: renderState.hoverPoint
-                })
             }
         }
 
@@ -2479,7 +2491,9 @@ function GameCanvas({
 
             const gamePoint = screenPointToGamePointWithHeightAdjustmentInternal({ x: x, y: y })
 
-            onPointClicked && onPointClicked(gamePoint)
+            if (onPointClicked) {
+                onPointClicked(gamePoint)
+            }
         }
     }
 

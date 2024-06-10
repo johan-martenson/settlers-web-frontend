@@ -11,16 +11,16 @@
 }
 
 .large {
-    width: 40em;
-    height: 30em;
+    width: calc(600px * 1.68);
+    height: calc(600px + 150px);
 }
 
 .medium {
-    width: 30em;
-    height: 25em;
+    width: calc(500px * 1.68 + 150px);
+    height: calc(500px + 150px);
 }
 
 .small {
-    width: 20em;
-    height: 15em;
+    width: calc(400px * 1.68 + 150px);
+    height: calc(400px + 150px);
 }

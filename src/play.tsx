@@ -178,6 +178,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [gameState, setGameState] = useState<GameState>('STARTED')
     const [newRoad, setNewRoad] = useState<NewRoad>()
     const [player, setPlayer] = useState<PlayerInformation>()
+    const [windowHeight, setWindowHeight] = useState<number>(0)
 
     const gameMonitorCallbacks: GameListener = {
         onMonitoringStarted: () => {
@@ -397,6 +398,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 if (selfNameRef.current) {
                     immediateUxState.width = selfNameRef.current.clientWidth
                     immediateUxState.height = selfNameRef.current.clientHeight
+
+                    setWindowHeight(selfNameRef.current.clientHeight)
                 }
             }
 
@@ -577,6 +580,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 if (selfNameRef.current) {
                     immediateUxState.width = selfNameRef.current.clientWidth
                     immediateUxState.height = selfNameRef.current.clientHeight
+
+                    setWindowHeight(selfNameRef.current.clientHeight)
 
                     /* Request focus if the game is not blocked */
                     if (!showMenu) {
@@ -986,7 +991,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             tabIndex={1}>
 
             <GameCanvas
-                screenHeight={immediateUxState.height}
+                screenHeight={windowHeight}
                 onKeyDown={onKeyDown}
                 onPointClicked={(point: Point) => onPointClicked(point)}
                 selectedPoint={selected}
@@ -995,7 +1000,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 newRoad={newRoad?.newRoad}
                 possibleRoadConnections={newRoad?.possibleConnections}
                 showAvailableConstruction={showAvailableConstruction}
-                cursorState={cursor}
+                cursor={cursor}
                 heightAdjust={heightAdjust}
             />
 

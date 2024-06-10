@@ -1,10 +1,10 @@
-import React, { Component } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, WildAnimalType, TerrainAtPoint, FlagInformation } from './api/types'
 import { Duration } from './duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from './api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from './stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUp, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, same, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from './utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPoint, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUp, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, makeTextureFromImage, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, screenPointToGamePoint, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from './utils'
 import { PointMapFast, PointSetFast } from './util_types'
 import { flagAnimations, houses, uiElementsImageAtlasHandler, workers } from './assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-war'
@@ -46,7 +46,7 @@ interface MapRenderInformation {
 }
 
 interface GameCanvasProps {
-    cursorState: CursorState
+    cursor: CursorState
     screenHeight: number
     selectedPoint?: Point
     possibleRoadConnections?: Point[]
@@ -60,10 +60,6 @@ interface GameCanvasProps {
     onPointClicked: ((point: Point) => void)
     onDoubleClick: ((point: Point) => void)
     onKeyDown: ((event: React.KeyboardEvent) => void)
-}
-
-interface GameCanvasState {
-    hoverPoint?: Point
 }
 
 interface RenderInformation {
@@ -130,185 +126,194 @@ const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-car
 const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo", 10)
 const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
 
-class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
-    private normalCanvasRef = React.createRef<HTMLCanvasElement>()
-    private overlayCanvasRef = React.createRef<HTMLCanvasElement>()
-    private lightVector: number[]
-    private debuggedPoint: Point | undefined
-    private previousTimestamp?: number
-    private previous: number
-    private overshoot: number
+type RenderState = {
+    previousTimestamp?: number
+    previous: number
+    overshoot: number
 
-    private animationIndex: number = 0
-    private mapRenderInformation?: MapRenderInformation
-    private gl?: WebGL2RenderingContext
+    animationIndex: number
+    mapRenderInformation?: MapRenderInformation
+    gl?: WebGL2RenderingContext
+    screenHeight: number
 
     // Map of the normal for each point on the map
-    private normals: PointMapFast<Vector>
+    normals: PointMapFast<Vector>
 
     // Buffers for drawing the terrain
-    private terrainCoordinatesBuffer?: WebGLBuffer | null
-    private terrainNormalsBuffer?: WebGLBuffer | null
-    private terrainTextureMappingBuffer?: WebGLBuffer | null
+    terrainCoordinatesBuffer?: WebGLBuffer | null
+    terrainNormalsBuffer?: WebGLBuffer | null
+    terrainTextureMappingBuffer?: WebGLBuffer | null
 
     // Buffers for drawing the roads
-    private roadCoordinatesBuffer?: WebGLBuffer | null
-    private roadNormalsBuffer?: WebGLBuffer | null
-    private roadTextureMappingBuffer?: WebGLBuffer | null
-    private roadRenderInformation?: RenderInformation
+    roadCoordinatesBuffer?: WebGLBuffer | null
+    roadNormalsBuffer?: WebGLBuffer | null
+    roadTextureMappingBuffer?: WebGLBuffer | null
+    roadRenderInformation?: RenderInformation
 
     // Define the program to draw things on the ground (terrain, roads)
-    private drawGroundProgram: WebGLProgram | null
+    drawGroundProgram: WebGLProgram | null
 
-    private drawGroundLightVectorUniformLocation?: WebGLUniformLocation | null
-    private drawGroundScaleUniformLocation?: WebGLUniformLocation | null
-    private drawGroundOffsetUniformLocation?: WebGLUniformLocation | null
-    private drawGroundHeightAdjustUniformLocation?: WebGLUniformLocation | null
-    private drawGroundSamplerUniformLocation?: WebGLUniformLocation | null
-    private drawGroundScreenWidthUniformLocation?: WebGLUniformLocation | null
-    private drawGroundScreenHeightUniformLocation?: WebGLUniformLocation | null
+    drawGroundLightVectorUniformLocation?: WebGLUniformLocation | null
+    drawGroundScaleUniformLocation?: WebGLUniformLocation | null
+    drawGroundOffsetUniformLocation?: WebGLUniformLocation | null
+    drawGroundHeightAdjustUniformLocation?: WebGLUniformLocation | null
+    drawGroundSamplerUniformLocation?: WebGLUniformLocation | null
+    drawGroundScreenWidthUniformLocation?: WebGLUniformLocation | null
+    drawGroundScreenHeightUniformLocation?: WebGLUniformLocation | null
 
-    private drawGroundCoordAttributeLocation?: number
-    private drawGroundNormalAttributeLocation?: number
-    private drawGroundTextureMappingAttributeLocation?: number
+    drawGroundCoordAttributeLocation?: number
+    drawGroundNormalAttributeLocation?: number
+    drawGroundTextureMappingAttributeLocation?: number
 
     // Define the fog of war drawing program
-    private fogOfWarRenderProgram: WebGLProgram | null
+    fogOfWarRenderProgram: WebGLProgram | null
 
-    private fogOfWarCoordAttributeLocation?: number
-    private fogOfWarIntensityAttributeLocation?: number
+    fogOfWarCoordAttributeLocation?: number
+    fogOfWarIntensityAttributeLocation?: number
 
-    private fogOfWarScaleUniformLocation?: WebGLUniformLocation | null
-    private fogOfWarOffsetUniformLocation?: WebGLUniformLocation | null
-    private fogOfWarScreenHeightUniformLocation?: WebGLUniformLocation | null
-    private fogOfWarScreenWidthUniformLocation?: WebGLUniformLocation | null
+    fogOfWarScaleUniformLocation?: WebGLUniformLocation | null
+    fogOfWarOffsetUniformLocation?: WebGLUniformLocation | null
+    fogOfWarScreenHeightUniformLocation?: WebGLUniformLocation | null
+    fogOfWarScreenWidthUniformLocation?: WebGLUniformLocation | null
 
     // Buffers for drawing the fog of war
-    private fogOfWarCoordBuffer?: WebGLBuffer | null
-    private fogOfWarIntensityBuffer?: WebGLBuffer | null
+    fogOfWarCoordBuffer?: WebGLBuffer | null
+    fogOfWarIntensityBuffer?: WebGLBuffer | null
 
-    private fogOfWarCoordinates: number[] = []
-    private fogOfWarIntensities: number[] = []
+    fogOfWarCoordinates: number[]
+    fogOfWarIntensities: number[]
 
     // Define the webgl program to draw shadows (it shares buffers with the draw images program)
-    private drawShadowProgram: WebGLProgram | null
+    drawShadowProgram: WebGLProgram | null
 
-    private drawShadowHeightAdjustmentUniformLocation?: WebGLUniformLocation | null
-    private drawShadowHeightUniformLocation?: WebGLUniformLocation | null
+    drawShadowHeightAdjustmentUniformLocation?: WebGLUniformLocation | null
+    drawShadowHeightUniformLocation?: WebGLUniformLocation | null
 
     // Define the webgl draw image program
-    private drawImageProgram: WebGLProgram | null
+    drawImageProgram: WebGLProgram | null
 
-    private drawImagePositionLocation?: number
-    private drawImageTexcoordLocation?: number
+    drawImagePositionLocation?: number
+    drawImageTexcoordLocation?: number
 
-    private drawImageHeightAdjustmentLocation?: WebGLUniformLocation | null
-    private drawImageHeightLocation?: WebGLUniformLocation | null
+    drawImageHeightAdjustmentLocation?: WebGLUniformLocation | null
+    drawImageHeightLocation?: WebGLUniformLocation | null
 
     // The buffers used by the draw image program. They are static and the content is set through uniforms
-    private drawImageTexCoordBuffer?: WebGLBuffer | null
-    private drawImagePositionBuffer?: WebGLBuffer | null
-    private drawShadowTexCoordBuffer?: WebGLBuffer | null
-    private drawShadowPositionBuffer?: WebGLBuffer | null
+    drawImageTexCoordBuffer?: WebGLBuffer | null
+    drawImagePositionBuffer?: WebGLBuffer | null
+    drawShadowTexCoordBuffer?: WebGLBuffer | null
+    drawShadowPositionBuffer?: WebGLBuffer | null
 
-    private allPointsVisibilityTracking = new PointMapFast<TrianglesAtPoint>()
+    allPointsVisibilityTracking: PointMapFast<TrianglesAtPoint>
+}
 
-    constructor(props: GameCanvasProps) {
-        super(props)
+function GameCanvas({
+    cursor,
+    newRoad,
+    selectedPoint,
+    showAvailableConstruction,
+    heightAdjust,
+    possibleRoadConnections,
+    showHouseTitles,
+    showFpsCounter,
+    screenHeight,
+    onPointClicked,
+    onKeyDown,
+    onDoubleClick }: GameCanvasProps) {
+    const visiblePoints = new PointMapFast<TrianglesAtPoint>()
 
-        this.gamePointToScreenPoint = this.gamePointToScreenPoint.bind(this)
-        this.screenPointToGamePointNoHeightAdjustment = this.screenPointToGamePointNoHeightAdjustment.bind(this)
-        this.onClick = this.onClick.bind(this)
-        this.onDoubleClick = this.onDoubleClick.bind(this)
-        this.updateRoadDrawingBuffers = this.updateRoadDrawingBuffers.bind(this)
-        this.onClickOrDoubleClick = this.onClickOrDoubleClick.bind(this)
-
-        this.normals = new PointMapFast()
-
-        /* Define the light vector */
-        const lightVector = { x: 1, y: 1, z: -1 }
-        this.lightVector = [lightVector.x, lightVector.y, lightVector.z]
-
-        addVariableIfAbsent("fps")
-
-        this.state = {}
-
-        this.drawGroundProgram = null
-        this.drawImageProgram = null
-        this.drawShadowProgram = null
-
-        this.previous = performance.now()
-        this.overshoot = 0
-
-        // Start tracking visible triangles
-        monitor.allTiles.forEach(tile => this.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
+    const initRenderState = {
+        previous: performance.now(),
+        overshoot: 0,
+        screenHeight: 0,
+        animationIndex: 0,
+        normals: new PointMapFast<Vector>(),
+        drawGroundProgram: null,
+        fogOfWarRenderProgram: null,
+        fogOfWarCoordinates: [],
+        fogOfWarIntensities: [],
+        drawShadowProgram: null,
+        drawImageProgram: null,
+        allPointsVisibilityTracking: visiblePoints
     }
 
-    componentDidUpdate(prevProps: GameCanvasProps): void {
-        if (prevProps.cursorState !== this.props.cursorState && this?.normalCanvasRef?.current) {
-            if (this.props.cursorState === 'DRAGGING') {
-                this.normalCanvasRef.current.style.cursor = 'move'
-            } else if (this.props.cursorState === 'BUILDING_ROAD') {
-                this.normalCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
-            } else {
-                this.normalCanvasRef.current.style.cursor = "pointer"
-            }
-        }
-    }
+    const normalCanvasRef = useRef<HTMLCanvasElement | null>(null)
+    const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null)
+    const lightVector = [1, 1, -1]
 
     // eslint-disable-next-line
-    shouldComponentUpdate(nextProps: GameCanvasProps, nextState: GameCanvasState): boolean {
-        return this.props.onKeyDown !== nextProps.onKeyDown ||
-            this.props.cursorState !== nextProps.cursorState ||
-            this.props?.selectedPoint?.x !== nextProps?.selectedPoint?.x ||
-            this.props?.selectedPoint?.y !== nextProps?.selectedPoint?.y
-    }
+    const [renderState, setRenderState] = useState<RenderState>(initRenderState)
+    const [hoverPoint, setHoverPoint] = useState<Point>()
 
-    updateRoadDrawingBuffers(): void {
+    // Run once on mount
+    useEffect(
+        () => {
+            addVariableIfAbsent("fps")
+
+            monitor.allTiles.forEach(tile => visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
+        }, []
+    )
+
+    // Run when the cursor is changed (and when the normal canvas is set up)
+    useEffect(
+        () => {
+            if (normalCanvasRef?.current) {
+                if (cursor === 'DRAGGING') {
+                    normalCanvasRef.current.style.cursor = 'move'
+                } else if (cursor === 'BUILDING_ROAD') {
+                    normalCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
+                } else {
+                    normalCanvasRef.current.style.cursor = "pointer"
+                }
+            }
+        }, [cursor, normalCanvasRef]
+    )
+
+    function updateRoadDrawingBuffers(): void {
         console.log("Should update road drawing buffers")
 
-        if (this.gl !== undefined && this.drawGroundProgram !== undefined &&
-            this.roadCoordinatesBuffer !== undefined && this.roadNormalsBuffer !== undefined && this.roadTextureMappingBuffer !== undefined) {
+        if (renderState.gl !== undefined && renderState.drawGroundProgram !== undefined &&
+            renderState.roadCoordinatesBuffer !== undefined && renderState.roadNormalsBuffer !== undefined && renderState.roadTextureMappingBuffer !== undefined) {
 
-            this.roadRenderInformation = this.prepareToRenderRoads(monitor.roads.values(), monitor.flags.values())
+            renderState.roadRenderInformation = prepareToRenderRoads(monitor.roads.values(), monitor.flags.values())
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.coordinates), this.gl.STATIC_DRAW)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.roadCoordinatesBuffer)
+            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.roadRenderInformation.coordinates), renderState.gl.STATIC_DRAW)
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadNormalsBuffer)
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.normals), this.gl.STATIC_DRAW)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.roadNormalsBuffer)
+            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.roadRenderInformation.normals), renderState.gl.STATIC_DRAW)
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.roadRenderInformation.textureMapping), this.gl.STATIC_DRAW)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.roadTextureMappingBuffer)
+            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.roadRenderInformation.textureMapping), renderState.gl.STATIC_DRAW)
         } else {
             console.error("Failed to update road drawing buffers. At least one input is undefined")
         }
     }
 
-    updateFogOfWarRendering() {
+    function updateFogOfWarRendering() {
         const triangles = getTrianglesAffectedByFogOfWar(monitor.discoveredPoints, monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
-        this.fogOfWarCoordinates = []
-        this.fogOfWarIntensities = []
+        renderState.fogOfWarCoordinates = []
+        renderState.fogOfWarIntensities = []
 
         triangles.forEach(triangle => {
-            this.fogOfWarCoordinates.push(triangle[0].point.x)
-            this.fogOfWarCoordinates.push(triangle[0].point.y)
+            renderState.fogOfWarCoordinates.push(triangle[0].point.x)
+            renderState.fogOfWarCoordinates.push(triangle[0].point.y)
 
-            this.fogOfWarCoordinates.push(triangle[1].point.x)
-            this.fogOfWarCoordinates.push(triangle[1].point.y)
+            renderState.fogOfWarCoordinates.push(triangle[1].point.x)
+            renderState.fogOfWarCoordinates.push(triangle[1].point.y)
 
-            this.fogOfWarCoordinates.push(triangle[2].point.x)
-            this.fogOfWarCoordinates.push(triangle[2].point.y)
+            renderState.fogOfWarCoordinates.push(triangle[2].point.x)
+            renderState.fogOfWarCoordinates.push(triangle[2].point.y)
 
-            this.fogOfWarIntensities.push(triangle[0].intensity)
-            this.fogOfWarIntensities.push(triangle[1].intensity)
-            this.fogOfWarIntensities.push(triangle[2].intensity)
+            renderState.fogOfWarIntensities.push(triangle[0].intensity)
+            renderState.fogOfWarIntensities.push(triangle[1].intensity)
+            renderState.fogOfWarIntensities.push(triangle[2].intensity)
         })
 
         // Add triangles to draw black
         monitor.discoveredBelowTiles.forEach(discoveredBelow => {
-            const below = this.allPointsVisibilityTracking.get(discoveredBelow.pointAbove)
+            const below = renderState.allPointsVisibilityTracking.get(discoveredBelow.pointAbove)
 
             if (below) {
                 below.belowVisible = true
@@ -316,441 +321,443 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         })
 
         monitor.discoveredDownRightTiles.forEach(discoveredDownRight => {
-            const downRight = this.allPointsVisibilityTracking.get(discoveredDownRight.pointLeft)
+            const downRight = renderState.allPointsVisibilityTracking.get(discoveredDownRight.pointLeft)
 
             if (downRight) {
                 downRight.downRightVisible = true
             }
         })
 
-        this.allPointsVisibilityTracking.forEach((trianglesAtPoint, point) => {
+        renderState.allPointsVisibilityTracking.forEach((trianglesAtPoint, point) => {
             const downLeft = getPointDownLeft(point)
             const downRight = getPointDownRight(point)
             const right = getPointRight(point)
 
             if (!trianglesAtPoint.belowVisible) {
-                this.fogOfWarCoordinates.push(point.x)
-                this.fogOfWarCoordinates.push(point.y)
+                renderState.fogOfWarCoordinates.push(point.x)
+                renderState.fogOfWarCoordinates.push(point.y)
 
-                this.fogOfWarCoordinates.push(downLeft.x)
-                this.fogOfWarCoordinates.push(downLeft.y)
+                renderState.fogOfWarCoordinates.push(downLeft.x)
+                renderState.fogOfWarCoordinates.push(downLeft.y)
 
-                this.fogOfWarCoordinates.push(downRight.x)
-                this.fogOfWarCoordinates.push(downRight.y)
+                renderState.fogOfWarCoordinates.push(downRight.x)
+                renderState.fogOfWarCoordinates.push(downRight.y)
 
-                this.fogOfWarIntensities.push(0)
-                this.fogOfWarIntensities.push(0)
-                this.fogOfWarIntensities.push(0)
+                renderState.fogOfWarIntensities.push(0)
+                renderState.fogOfWarIntensities.push(0)
+                renderState.fogOfWarIntensities.push(0)
             }
 
             if (!trianglesAtPoint.downRightVisible) {
-                this.fogOfWarCoordinates.push(point.x)
-                this.fogOfWarCoordinates.push(point.y)
+                renderState.fogOfWarCoordinates.push(point.x)
+                renderState.fogOfWarCoordinates.push(point.y)
 
-                this.fogOfWarCoordinates.push(right.x)
-                this.fogOfWarCoordinates.push(right.y)
+                renderState.fogOfWarCoordinates.push(right.x)
+                renderState.fogOfWarCoordinates.push(right.y)
 
-                this.fogOfWarCoordinates.push(downRight.x)
-                this.fogOfWarCoordinates.push(downRight.y)
+                renderState.fogOfWarCoordinates.push(downRight.x)
+                renderState.fogOfWarCoordinates.push(downRight.y)
 
-                this.fogOfWarIntensities.push(0)
-                this.fogOfWarIntensities.push(0)
-                this.fogOfWarIntensities.push(0)
+                renderState.fogOfWarIntensities.push(0)
+                renderState.fogOfWarIntensities.push(0)
+                renderState.fogOfWarIntensities.push(0)
             }
         })
     }
 
-    async componentDidMount(): Promise<void> {
+    useEffect(
+        () => {
+            async function loadAssetsAndSetupGl() {
 
-        /* Load animations */
-        const fileLoading = []
+                const fileLoading = []
 
-        for (const worker of workers.values()) {
-            fileLoading.push(worker.load())
-        }
+                for (const worker of workers.values()) {
+                    fileLoading.push(worker.load())
+                }
 
-        for (const animal of animals.values()) {
-            fileLoading.push(animal.load())
-        }
+                for (const animal of animals.values()) {
+                    fileLoading.push(animal.load())
+                }
 
-        const allThingsToWaitFor = fileLoading.concat([
-            treeAnimations.load(),
-            flagAnimations.load(),
-            houses.load(),
-            fireAnimations.load(),
-            signImageAtlasHandler.load(),
-            uiElementsImageAtlasHandler.load(),
-            cropsImageAtlasHandler.load(),
-            stoneImageAtlasHandler.load(),
-            decorationsImageAtlasHandler.load(),
-            donkeyAnimation.load(),
-            borderImageAtlasHandler.load(),
-            roadBuildingImageAtlasHandler.load(),
-            cargoImageAtlasHandler.load(),
-            fatCarrierWithCargo.load(),
-            thinCarrierWithCargo.load(),
-            fatCarrierNoCargo.load(),
-            thinCarrierNoCargo.load(),
-            shipImageAtlas.load(),
-            decorationsImageAtlasHandler.load()
-        ])
+                const allThingsToWaitFor = fileLoading.concat([
+                    treeAnimations.load(),
+                    flagAnimations.load(),
+                    houses.load(),
+                    fireAnimations.load(),
+                    signImageAtlasHandler.load(),
+                    uiElementsImageAtlasHandler.load(),
+                    cropsImageAtlasHandler.load(),
+                    stoneImageAtlasHandler.load(),
+                    decorationsImageAtlasHandler.load(),
+                    donkeyAnimation.load(),
+                    borderImageAtlasHandler.load(),
+                    roadBuildingImageAtlasHandler.load(),
+                    cargoImageAtlasHandler.load(),
+                    fatCarrierWithCargo.load(),
+                    thinCarrierWithCargo.load(),
+                    fatCarrierNoCargo.load(),
+                    thinCarrierNoCargo.load(),
+                    shipImageAtlas.load(),
+                    decorationsImageAtlasHandler.load()
+                ])
 
-        // Wait for the game data to be read from the backend and the websocket to be established
-        await Promise.all([monitor.waitForConnection(), monitor.waitForGameDataAvailable()])
+                // Wait for the game data to be read from the backend and the websocket to be established
+                await Promise.all([monitor.waitForConnection(), monitor.waitForGameDataAvailable()])
 
-        /* Put together the render information from the discovered tiles */
-        this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                /* Put together the render information from the discovered tiles */
+                calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
-        this.mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
+                renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
-        /*  Initialize webgl2 */
-        if (this.normalCanvasRef?.current) {
-            const canvas = this.normalCanvasRef.current
+                /*  Initialize webgl2 */
+                if (normalCanvasRef?.current) {
+                    const canvas = normalCanvasRef.current
 
-            const gl = canvas.getContext("webgl2", { alpha: false })
+                    const gl = canvas.getContext("webgl2", { alpha: false })
 
-            if (gl) {
+                    if (gl) {
 
-                // Create and compile the shaders
-                const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
-                const lightingFragmentShader = makeShader(gl, textureAndLightingFragmentShader, gl.FRAGMENT_SHADER)
-                const drawImageVertexShader = makeShader(gl, texturedImageVertexShaderPixelPerfect, gl.VERTEX_SHADER)
-                const drawImageFragmentShader = makeShader(gl, textureFragmentShader, gl.FRAGMENT_SHADER)
-                const drawShadowFragmentShader = makeShader(gl, shadowFragmentShader, gl.FRAGMENT_SHADER)
-                const drawFogOfWarVertexShader = makeShader(gl, fogOfWarVertexShader, gl.VERTEX_SHADER)
-                const drawFogOfWarFragmentShader = makeShader(gl, fogOfWarFragmentShader, gl.FRAGMENT_SHADER)
+                        // Create and compile the shaders
+                        const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
+                        const lightingFragmentShader = makeShader(gl, textureAndLightingFragmentShader, gl.FRAGMENT_SHADER)
+                        const drawImageVertexShader = makeShader(gl, texturedImageVertexShaderPixelPerfect, gl.VERTEX_SHADER)
+                        const drawImageFragmentShader = makeShader(gl, textureFragmentShader, gl.FRAGMENT_SHADER)
+                        const drawShadowFragmentShader = makeShader(gl, shadowFragmentShader, gl.FRAGMENT_SHADER)
+                        const drawFogOfWarVertexShader = makeShader(gl, fogOfWarVertexShader, gl.VERTEX_SHADER)
+                        const drawFogOfWarFragmentShader = makeShader(gl, fogOfWarFragmentShader, gl.FRAGMENT_SHADER)
 
-                // Create the programs
-                this.drawGroundProgram = gl.createProgram()
-                this.drawImageProgram = gl.createProgram()
-                this.drawShadowProgram = gl.createProgram()
-                this.fogOfWarRenderProgram = gl.createProgram()
+                        // Create the programs
+                        renderState.drawGroundProgram = gl.createProgram()
+                        renderState.drawImageProgram = gl.createProgram()
+                        renderState.drawShadowProgram = gl.createProgram()
+                        renderState.fogOfWarRenderProgram = gl.createProgram()
 
-                // Setup the program to render the ground
-                if (this.drawGroundProgram && lightingVertexShader && lightingFragmentShader) {
-                    gl.attachShader(this.drawGroundProgram, lightingVertexShader)
-                    gl.attachShader(this.drawGroundProgram, lightingFragmentShader)
-                    gl.linkProgram(this.drawGroundProgram)
-                    gl.useProgram(this.drawGroundProgram)
-                    gl.viewport(0, 0, canvas.width, canvas.height)
+                        // Setup the program to render the ground
+                        if (renderState.drawGroundProgram && lightingVertexShader && lightingFragmentShader) {
+                            gl.attachShader(renderState.drawGroundProgram, lightingVertexShader)
+                            gl.attachShader(renderState.drawGroundProgram, lightingFragmentShader)
+                            gl.linkProgram(renderState.drawGroundProgram)
+                            gl.useProgram(renderState.drawGroundProgram)
+                            gl.viewport(0, 0, canvas.width, canvas.height)
 
-                    const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
+                            const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 
-                    // Get handles
-                    this.drawGroundLightVectorUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_light_vector")
-                    this.drawGroundScaleUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_scale")
-                    this.drawGroundOffsetUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_offset")
-                    this.drawGroundHeightAdjustUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_height_adjust")
-                    this.drawGroundSamplerUniformLocation = gl.getUniformLocation(this.drawGroundProgram, 'u_sampler')
-                    this.drawGroundScreenWidthUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_screen_width")
-                    this.drawGroundScreenHeightUniformLocation = gl.getUniformLocation(this.drawGroundProgram, "u_screen_height")
-                    this.drawGroundCoordAttributeLocation = gl.getAttribLocation(this.drawGroundProgram, "a_coords")
-                    this.drawGroundNormalAttributeLocation = gl.getAttribLocation(this.drawGroundProgram, "a_normal")
-                    this.drawGroundTextureMappingAttributeLocation = gl.getAttribLocation(this.drawGroundProgram, "a_texture_mapping")
+                            // Get handles
+                            renderState.drawGroundLightVectorUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_light_vector")
+                            renderState.drawGroundScaleUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_scale")
+                            renderState.drawGroundOffsetUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_offset")
+                            renderState.drawGroundHeightAdjustUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_height_adjust")
+                            renderState.drawGroundSamplerUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, 'u_sampler')
+                            renderState.drawGroundScreenWidthUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_screen_width")
+                            renderState.drawGroundScreenHeightUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_screen_height")
+                            renderState.drawGroundCoordAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_coords")
+                            renderState.drawGroundNormalAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_normal")
+                            renderState.drawGroundTextureMappingAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_texture_mapping")
 
-                    // Set up the buffer attributes
-                    this.terrainCoordinatesBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
-                    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.coordinates), gl.STATIC_DRAW)
+                            // Set up the buffer attributes
+                            renderState.terrainCoordinatesBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
+                            gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.coordinates), gl.STATIC_DRAW)
 
-                    this.terrainNormalsBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
-                    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 3, gl.STATIC_DRAW)
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.normals), gl.STATIC_DRAW)
+                            renderState.terrainNormalsBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
+                            gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 3, gl.STATIC_DRAW)
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.normals), gl.STATIC_DRAW)
 
-                    this.terrainTextureMappingBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
-                    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.mapRenderInformation.textureMapping), gl.STATIC_DRAW)
+                            renderState.terrainTextureMappingBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
+                            gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.textureMapping), gl.STATIC_DRAW)
 
-                    this.roadCoordinatesBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
+                            renderState.roadCoordinatesBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadCoordinatesBuffer)
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
 
-                    this.roadNormalsBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.roadNormalsBuffer)
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
+                            renderState.roadNormalsBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadNormalsBuffer)
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
 
-                    this.roadTextureMappingBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
+                            renderState.roadTextureMappingBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadTextureMappingBuffer)
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
 
-                    this.gl = gl
+                            renderState.gl = gl
+                        } else {
+                            console.error("Failed to create terrain rendering gl program")
+                        }
+
+                        // Setup the program to render images
+                        if (renderState.drawImageProgram && drawImageVertexShader && drawImageFragmentShader) {
+                            gl.attachShader(renderState.drawImageProgram, drawImageVertexShader)
+                            gl.attachShader(renderState.drawImageProgram, drawImageFragmentShader)
+
+                            gl.linkProgram(renderState.drawImageProgram)
+                            gl.useProgram(renderState.drawImageProgram)
+
+                            gl.viewport(0, 0, canvas.width, canvas.height)
+
+                            // Get attribute and uniform locations
+                            renderState.drawImagePositionLocation = gl.getAttribLocation(renderState.drawImageProgram, "a_position")
+                            renderState.drawImageTexcoordLocation = gl.getAttribLocation(renderState.drawImageProgram, "a_texcoord")
+                            renderState.drawImageHeightAdjustmentLocation = gl.getUniformLocation(renderState.drawImageProgram, "u_height_adjust")
+                            renderState.drawImageHeightLocation = gl.getUniformLocation(renderState.drawImageProgram, "u_height")
+
+                            // Create the position buffer
+                            renderState.drawImagePositionBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
+
+                            const positions = [
+                                0, 0,
+                                0, 1,
+                                1, 0,
+                                1, 0,
+                                0, 1,
+                                1, 1,
+                            ]
+
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
+
+                            // Turn on the attribute
+                            gl.enableVertexAttribArray(renderState.drawImagePositionLocation)
+
+                            // Configure how the attribute gets data
+                            gl.vertexAttribPointer(renderState.drawImagePositionLocation, 2, gl.FLOAT, false, 0, 0)
+
+                            // Handle the tex coord attribute
+                            renderState.drawImageTexCoordBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
+
+                            const texCoords = [
+                                0, 0,
+                                0, 1,
+                                1, 0,
+                                1, 0,
+                                0, 1,
+                                1, 1
+                            ]
+
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
+
+                            // Turn on the attribute
+                            gl.enableVertexAttribArray(renderState.drawImageTexcoordLocation)
+
+                            // Configure how the attribute gets data
+                            gl.vertexAttribPointer(renderState.drawImageTexcoordLocation, 2, gl.FLOAT, false, 0, 0)
+                        } else {
+                            console.error("Failed to create image rendering gl program")
+                        }
+
+                        // Setup the program to render the fog of war
+                        if (renderState.fogOfWarRenderProgram && drawFogOfWarFragmentShader && drawFogOfWarVertexShader) {
+                            gl.attachShader(renderState.fogOfWarRenderProgram, drawFogOfWarVertexShader)
+                            gl.attachShader(renderState.fogOfWarRenderProgram, drawFogOfWarFragmentShader)
+
+                            gl.linkProgram(renderState.fogOfWarRenderProgram)
+                            gl.useProgram(renderState.fogOfWarRenderProgram)
+
+                            // Get attribute locations
+                            renderState.fogOfWarCoordAttributeLocation = gl.getAttribLocation(renderState.fogOfWarRenderProgram, "a_coordinates")
+                            renderState.fogOfWarIntensityAttributeLocation = gl.getAttribLocation(renderState.fogOfWarRenderProgram, "a_intensity")
+                            renderState.fogOfWarScaleUniformLocation = gl.getUniformLocation(renderState.fogOfWarRenderProgram, "u_scale")
+                            renderState.fogOfWarOffsetUniformLocation = gl.getUniformLocation(renderState.fogOfWarRenderProgram, "u_offset")
+                            renderState.fogOfWarScreenHeightUniformLocation = gl.getUniformLocation(renderState.fogOfWarRenderProgram, "u_screen_height")
+                            renderState.fogOfWarScreenWidthUniformLocation = gl.getUniformLocation(renderState.fogOfWarRenderProgram, "u_screen_width")
+
+                            // Create the coordinate buffer
+                            renderState.fogOfWarCoordBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.fogOfWarCoordBuffer)
+
+                            // Create the intensity buffer
+                            renderState.fogOfWarIntensityBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.fogOfWarIntensityBuffer)
+
+                            // Turn on the coordinate attribute and configure it
+                            gl.enableVertexAttribArray(renderState.fogOfWarCoordAttributeLocation)
+
+                            gl.vertexAttribPointer(renderState.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+
+                            // Turn on the intensity attribute and configure it
+                            gl.enableVertexAttribArray(renderState.fogOfWarIntensityAttributeLocation)
+
+                            gl.vertexAttribPointer(renderState.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
+                        }
+
+                        // Setup the program to render shadows
+                        if (renderState.drawShadowProgram && drawImageVertexShader && drawShadowFragmentShader) {
+                            gl.attachShader(renderState.drawShadowProgram, drawImageVertexShader)
+                            gl.attachShader(renderState.drawShadowProgram, drawShadowFragmentShader)
+
+                            gl.linkProgram(renderState.drawShadowProgram)
+                            gl.useProgram(renderState.drawImageProgram)
+
+                            gl.viewport(0, 0, canvas.width, canvas.height)
+
+                            // Get attribute and uniform locations
+                            const positionLocation = gl.getAttribLocation(renderState.drawShadowProgram, "a_position")
+                            const texcoordLocation = gl.getAttribLocation(renderState.drawShadowProgram, "a_texcoord")
+                            renderState.drawShadowHeightAdjustmentUniformLocation = gl.getUniformLocation(renderState.drawShadowProgram, "u_height_adjust")
+                            renderState.drawShadowHeightUniformLocation = gl.getUniformLocation(renderState.drawShadowProgram, "u_height")
+
+                            // Create the position buffer
+                            renderState.drawShadowPositionBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawShadowPositionBuffer)
+
+                            const positions = [
+                                0, 0,
+                                0, 1,
+                                1, 0,
+                                1, 0,
+                                0, 1,
+                                1, 1,
+                            ]
+
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
+
+                            // Turn on the attribute
+                            gl.enableVertexAttribArray(positionLocation)
+
+                            // Configure how the attribute gets data
+                            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+
+                            // Handle the tex coord attribute
+                            renderState.drawShadowTexCoordBuffer = gl.createBuffer()
+                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawShadowTexCoordBuffer)
+
+                            const texCoords = [
+                                0, 0,
+                                0, 1,
+                                1, 0,
+                                1, 0,
+                                0, 1,
+                                1, 1
+                            ]
+
+                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
+
+                            // Turn on the attribute
+                            gl.enableVertexAttribArray(texcoordLocation)
+
+                            // Configure how the attribute gets data
+                            gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
+                        }
+                    } else {
+                        console.error("Failed to create shadow rendering gl program")
+                    }
                 } else {
-                    console.error("Failed to create terrain rendering gl program")
+                    console.error("No canvasRef.current")
                 }
 
-                // Setup the program to render images
-                if (this.drawImageProgram && drawImageVertexShader && drawImageFragmentShader) {
-                    gl.attachShader(this.drawImageProgram, drawImageVertexShader)
-                    gl.attachShader(this.drawImageProgram, drawImageFragmentShader)
-
-                    gl.linkProgram(this.drawImageProgram)
-                    gl.useProgram(this.drawImageProgram)
-
-                    gl.viewport(0, 0, canvas.width, canvas.height)
-
-                    // Get attribute and uniform locations
-                    this.drawImagePositionLocation = gl.getAttribLocation(this.drawImageProgram, "a_position")
-                    this.drawImageTexcoordLocation = gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
-                    this.drawImageHeightAdjustmentLocation = gl.getUniformLocation(this.drawImageProgram, "u_height_adjust")
-                    this.drawImageHeightLocation = gl.getUniformLocation(this.drawImageProgram, "u_height")
-
-                    // Create the position buffer
-                    this.drawImagePositionBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-
-                    const positions = [
-                        0, 0,
-                        0, 1,
-                        1, 0,
-                        1, 0,
-                        0, 1,
-                        1, 1,
-                    ]
-
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
-
-                    // Turn on the attribute
-                    gl.enableVertexAttribArray(this.drawImagePositionLocation)
-
-                    // Configure how the attribute gets data
-                    gl.vertexAttribPointer(this.drawImagePositionLocation, 2, gl.FLOAT, false, 0, 0)
-
-                    // Handle the tex coord attribute
-                    this.drawImageTexCoordBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-
-                    const texCoords = [
-                        0, 0,
-                        0, 1,
-                        1, 0,
-                        1, 0,
-                        0, 1,
-                        1, 1
-                    ]
-
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
-
-                    // Turn on the attribute
-                    gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
-
-                    // Configure how the attribute gets data
-                    gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, gl.FLOAT, false, 0, 0)
-                } else {
-                    console.error("Failed to create image rendering gl program")
+                // Start tracking visible triangles
+                if (renderState.allPointsVisibilityTracking.size === 0) {
+                    monitor.allTiles.forEach(tile => renderState.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
                 }
 
-                // Setup the program to render the fog of war
-                if (this.fogOfWarRenderProgram && drawFogOfWarFragmentShader && drawFogOfWarVertexShader) {
-                    gl.attachShader(this.fogOfWarRenderProgram, drawFogOfWarVertexShader)
-                    gl.attachShader(this.fogOfWarRenderProgram, drawFogOfWarFragmentShader)
+                updateFogOfWarRendering()
 
-                    gl.linkProgram(this.fogOfWarRenderProgram)
-                    gl.useProgram(this.fogOfWarRenderProgram)
+                // Start listeners
+                monitor.listenToRoads(() => {
+                    console.log("Received updated road callback")
+                    updateRoadDrawingBuffers()
+                })
+                monitor.listenToGameState({
+                    onMonitoringStarted: () => {
+                        console.log("Received monitoring started callback. Calculating normals")
+                        calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                        updateRoadDrawingBuffers()
+                    }
+                })
 
-                    // Get attribute locations
-                    this.fogOfWarCoordAttributeLocation = gl.getAttribLocation(this.fogOfWarRenderProgram, "a_coordinates")
-                    this.fogOfWarIntensityAttributeLocation = gl.getAttribLocation(this.fogOfWarRenderProgram, "a_intensity")
-                    this.fogOfWarScaleUniformLocation = gl.getUniformLocation(this.fogOfWarRenderProgram, "u_scale")
-                    this.fogOfWarOffsetUniformLocation = gl.getUniformLocation(this.fogOfWarRenderProgram, "u_offset")
-                    this.fogOfWarScreenHeightUniformLocation = gl.getUniformLocation(this.fogOfWarRenderProgram, "u_screen_height")
-                    this.fogOfWarScreenWidthUniformLocation = gl.getUniformLocation(this.fogOfWarRenderProgram, "u_screen_width")
+                // eslint-disable-next-line
+                monitor.listenToDiscoveredPoints(points => {
 
-                    // Create the coordinate buffer
-                    this.fogOfWarCoordBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
+                    // Update the calculated normals
+                    calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                    console.log("New discovered points - calculated normals")
 
-                    // Create the intensity buffer
-                    this.fogOfWarIntensityBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarIntensityBuffer)
+                    // Update the map rendering buffers
+                    if (renderState.gl && renderState.drawGroundProgram) {
+                        if (renderState.terrainCoordinatesBuffer !== undefined && renderState.terrainNormalsBuffer !== undefined && renderState.terrainTextureMappingBuffer !== undefined) {
 
-                    // Turn on the coordinate attribute and configure it
-                    gl.enableVertexAttribArray(this.fogOfWarCoordAttributeLocation)
+                            const mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
-                    gl.vertexAttribPointer(this.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+                            renderState.mapRenderInformation = mapRenderInformation
 
-                    // Turn on the intensity attribute and configure it
-                    gl.enableVertexAttribArray(this.fogOfWarIntensityAttributeLocation)
+                            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
+                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.coordinates), renderState.gl.STATIC_DRAW)
 
-                    gl.vertexAttribPointer(this.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
+                            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
+                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.normals), renderState.gl.STATIC_DRAW)
+
+                            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
+                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), renderState.gl.STATIC_DRAW)
+                        } else {
+                            console.error("At least one render buffer was undefined")
+                        }
+                    } else {
+                        console.error("Gl or ground render pgrogram is undefined")
+                    }
+
+                    // Update fog of war rendering
+                    updateFogOfWarRendering()
+                })
+
+                console.log('Started listeners')
+
+
+                // Wait for asset loading to finish and for the websocket connection to be established
+                await Promise.all(allThingsToWaitFor)
+
+                console.log("Download image atlases done. Connection to websocket backend established")
+
+
+                // Make textures for the image atlases
+                if (renderState.gl) {
+                    for (const animation of workers.values()) {
+                        animation.makeTexture(renderState.gl)
+                    }
+
+                    for (const animation of animals.values()) {
+                        animation.makeTexture(renderState.gl)
+                    }
+
+                    treeAnimations.makeTexture(renderState.gl)
+                    flagAnimations.makeTexture(renderState.gl)
+                    houses.makeTexture(renderState.gl)
+                    fireAnimations.makeTexture(renderState.gl)
+                    signImageAtlasHandler.makeTexture(renderState.gl)
+                    uiElementsImageAtlasHandler.makeTexture(renderState.gl)
+                    cropsImageAtlasHandler.makeTexture(renderState.gl)
+                    stoneImageAtlasHandler.makeTexture(renderState.gl)
+                    decorationsImageAtlasHandler.makeTexture(renderState.gl)
+                    donkeyAnimation.makeTexture(renderState.gl)
+                    borderImageAtlasHandler.makeTexture(renderState.gl)
+                    roadBuildingImageAtlasHandler.makeTexture(renderState.gl)
+                    cargoImageAtlasHandler.makeTexture(renderState.gl)
+                    fatCarrierWithCargo.makeTexture(renderState.gl)
+                    thinCarrierWithCargo.makeTexture(renderState.gl)
+                    fatCarrierNoCargo.makeTexture(renderState.gl)
+                    thinCarrierNoCargo.makeTexture(renderState.gl)
+                    shipImageAtlas.makeTexture(renderState.gl)
+                    decorationsImageAtlasHandler.makeTexture(renderState.gl)
+
+                    const imageAtlasTerrainAndRoads = await loadImageAsync(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
+                    const textureTerrainAndRoadAtlas = makeTextureFromImage(renderState.gl, imageAtlasTerrainAndRoads)
+
+                    // Bind the terrain and road image atlas texture
+                    renderState.gl.activeTexture(renderState.gl.TEXTURE0 + 1)
+                    renderState.gl.bindTexture(renderState.gl.TEXTURE_2D, textureTerrainAndRoadAtlas)
                 }
 
-                // Setup the program to render shadows
-                if (this.drawShadowProgram && drawImageVertexShader && drawShadowFragmentShader) {
-                    gl.attachShader(this.drawShadowProgram, drawImageVertexShader)
-                    gl.attachShader(this.drawShadowProgram, drawShadowFragmentShader)
-
-                    gl.linkProgram(this.drawShadowProgram)
-                    gl.useProgram(this.drawImageProgram)
-
-                    gl.viewport(0, 0, canvas.width, canvas.height)
-
-                    // Get attribute and uniform locations
-                    const positionLocation = gl.getAttribLocation(this.drawShadowProgram, "a_position")
-                    const texcoordLocation = gl.getAttribLocation(this.drawShadowProgram, "a_texcoord")
-                    this.drawShadowHeightAdjustmentUniformLocation = gl.getUniformLocation(this.drawShadowProgram, "u_height_adjust")
-                    this.drawShadowHeightUniformLocation = gl.getUniformLocation(this.drawShadowProgram, "u_height")
-
-                    // Create the position buffer
-                    this.drawShadowPositionBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.drawShadowPositionBuffer)
-
-                    const positions = [
-                        0, 0,
-                        0, 1,
-                        1, 0,
-                        1, 0,
-                        0, 1,
-                        1, 1,
-                    ]
-
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
-
-                    // Turn on the attribute
-                    gl.enableVertexAttribArray(positionLocation)
-
-                    // Configure how the attribute gets data
-                    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
-
-                    // Handle the tex coord attribute
-                    this.drawShadowTexCoordBuffer = gl.createBuffer()
-                    gl.bindBuffer(gl.ARRAY_BUFFER, this.drawShadowTexCoordBuffer)
-
-                    const texCoords = [
-                        0, 0,
-                        0, 1,
-                        1, 0,
-                        1, 0,
-                        0, 1,
-                        1, 1
-                    ]
-
-                    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
-
-                    // Turn on the attribute
-                    gl.enableVertexAttribArray(texcoordLocation)
-
-                    // Configure how the attribute gets data
-                    gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
-                }
-            } else {
-                console.error("Failed to create shadow rendering gl program")
-            }
-        } else {
-            console.error("No canvasRef.current")
-        }
-
-        // Start tracking visible triangles
-        if (this.allPointsVisibilityTracking.size === 0) {
-            monitor.allTiles.forEach(tile => this.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
-        }
-
-        this.updateFogOfWarRendering()
-
-        // Start listeners
-        monitor.listenToRoads(() => {
-            console.log("Received updated road callback")
-            this.updateRoadDrawingBuffers()
-        })
-        monitor.listenToGameState({
-            onMonitoringStarted: () => {
-                console.log("Received monitoring started callback. Calculating normals")
-                this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-                this.updateRoadDrawingBuffers()
-            }
-        })
-
-        // eslint-disable-next-line
-        monitor.listenToDiscoveredPoints(points => {
-
-            // Update the calculated normals
-            this.calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-            console.log("New discovered points - calculated normals")
-
-            // Update the map rendering buffers
-            if (this.gl && this.drawGroundProgram) {
-                if (this.terrainCoordinatesBuffer !== undefined && this.terrainNormalsBuffer !== undefined && this.terrainTextureMappingBuffer !== undefined) {
-
-                    const mapRenderInformation = this.prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
-
-                    this.mapRenderInformation = mapRenderInformation
-
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.coordinates), this.gl.STATIC_DRAW)
-
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.normals), this.gl.STATIC_DRAW)
-
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mapRenderInformation.textureMapping), this.gl.STATIC_DRAW)
-                } else {
-                    console.error("At least one render buffer was undefined")
-                }
-            } else {
-                console.error("Gl or ground render pgrogram is undefined")
+                /* Prepare to draw roads */
+                updateRoadDrawingBuffers()
             }
 
-            // Update fog of war rendering
-            this.updateFogOfWarRendering()
-        })
+            loadAssetsAndSetupGl().then(() => renderGame())
+        }, []
+    )
 
-        console.log('Started listeners')
-
-
-        // Wait for asset loading to finish and for the websocket connection to be established
-        await Promise.all(allThingsToWaitFor)
-
-        console.log("Download image atlases done. Connection to websocket backend established")
-
-
-        // Make textures for the image atlases
-        if (this.gl) {
-            for (const animation of workers.values()) {
-                animation.makeTexture(this.gl)
-            }
-
-            for (const animation of animals.values()) {
-                animation.makeTexture(this.gl)
-            }
-
-            treeAnimations.makeTexture(this.gl)
-            flagAnimations.makeTexture(this.gl)
-            houses.makeTexture(this.gl)
-            fireAnimations.makeTexture(this.gl)
-            signImageAtlasHandler.makeTexture(this.gl)
-            uiElementsImageAtlasHandler.makeTexture(this.gl)
-            cropsImageAtlasHandler.makeTexture(this.gl)
-            stoneImageAtlasHandler.makeTexture(this.gl)
-            decorationsImageAtlasHandler.makeTexture(this.gl)
-            donkeyAnimation.makeTexture(this.gl)
-            borderImageAtlasHandler.makeTexture(this.gl)
-            roadBuildingImageAtlasHandler.makeTexture(this.gl)
-            cargoImageAtlasHandler.makeTexture(this.gl)
-            fatCarrierWithCargo.makeTexture(this.gl)
-            thinCarrierWithCargo.makeTexture(this.gl)
-            fatCarrierNoCargo.makeTexture(this.gl)
-            thinCarrierNoCargo.makeTexture(this.gl)
-            shipImageAtlas.makeTexture(this.gl)
-            decorationsImageAtlasHandler.makeTexture(this.gl)
-
-            const imageAtlasTerrainAndRoads = await loadImageAsync(TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE)
-            const textureTerrainAndRoadAtlas = makeTextureFromImage(this.gl, imageAtlasTerrainAndRoads)
-
-            // Bind the terrain and road image atlas texture
-            this.gl.activeTexture(this.gl.TEXTURE0 + 1)
-            this.gl.bindTexture(this.gl.TEXTURE_2D, textureTerrainAndRoadAtlas)
-        }
-
-        /* Prepare to draw roads */
-        this.updateRoadDrawingBuffers()
-
-        /* Create the rendering thread */
-        this.renderGame()
-    }
-
-    renderGame(): void {
+    function renderGame(): void {
         const duration = new Duration("GameRender::renderGame")
 
         // Only draw if the game data is available
@@ -760,34 +767,34 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         // Handle the animation counter
         const now = performance.now()
-        const timeSinceLastDraw = now - this.previous + this.overshoot
+        const timeSinceLastDraw = now - renderState.previous + renderState.overshoot
 
-        this.animationIndex = this.animationIndex + Math.floor(timeSinceLastDraw / ANIMATION_PERIOD)
-        this.overshoot = timeSinceLastDraw % ANIMATION_PERIOD
-        this.previous = now
+        renderState.animationIndex = renderState.animationIndex + Math.floor(timeSinceLastDraw / ANIMATION_PERIOD)
+        renderState.overshoot = timeSinceLastDraw % ANIMATION_PERIOD
+        renderState.previous = now
 
         // Check if there are changes to the newRoads props array. In that case the buffers for drawing roads need to be updated.
-        const newRoadsUpdatedLength = this.props.newRoad?.length ?? 0
+        const newRoadsUpdatedLength = newRoad?.length ?? 0
 
         if (newRoadCurrentLength !== newRoadsUpdatedLength) {
             newRoadCurrentLength = newRoadsUpdatedLength
 
-            if (this.props.newRoad !== undefined) {
-                monitor.placeLocalRoad(this.props.newRoad)
+            if (newRoad !== undefined) {
+                monitor.placeLocalRoad(newRoad)
             }
 
-            this.updateRoadDrawingBuffers()
+            updateRoadDrawingBuffers()
         }
 
         /* Ensure that the reference to the canvases are set */
-        if (!this.overlayCanvasRef.current || !this.normalCanvasRef.current) {
+        if (!overlayCanvasRef?.current || !normalCanvasRef?.current) {
             console.error("The canvas references are not set properly")
 
             return
         }
 
         /* Get the rendering context for the overlay canvas */
-        const overlayCtx = this.overlayCanvasRef.current.getContext("2d")
+        const overlayCtx = overlayCanvasRef.current.getContext("2d")
 
         /* Ensure that the canvas rendering context is valid */
         if (!overlayCtx) {
@@ -797,20 +804,20 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
 
         // Set the resolution
-        resizeCanvasToDisplaySize(this.normalCanvasRef.current)
-        resizeCanvasToDisplaySize(this.overlayCanvasRef.current)
+        resizeCanvasToDisplaySize(normalCanvasRef.current)
+        resizeCanvasToDisplaySize(overlayCanvasRef.current)
 
-        const width = this.normalCanvasRef.current.width
-        const height = this.normalCanvasRef.current.height
+        const width = normalCanvasRef.current.width
+        const height = normalCanvasRef.current.height
 
         // Make sure gl is available
-        if (this.gl === undefined) {
+        if (renderState.gl === undefined) {
             console.error("Gl is not available")
 
             return
         }
 
-        this.gl.viewport(0, 0, width, height)
+        renderState.gl.viewport(0, 0, width, height)
 
         /* Clear the drawing list */
         const toDrawNormal: ToDraw[] = []
@@ -820,31 +827,13 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Clear the overlay - make it fully transparent */
         overlayCtx.clearRect(0, 0, width, height)
 
-        let oncePerNewSelectionPoint = false
-
-        const upLeft = this.screenPointToGamePointNoHeightAdjustment({ x: 0, y: 0 })
-        const downRight = this.screenPointToGamePointNoHeightAdjustment({ x: width, y: height })
+        const upLeft = screenPointToGamePointNoHeightAdjustment({ x: 0, y: 0 })
+        const downRight = screenPointToGamePointNoHeightAdjustment({ x: width, y: height })
 
         const minXInGame = upLeft.x
         const maxYInGame = upLeft.y
         const maxXInGame = downRight.x
         const minYInGame = downRight.y
-
-        if (this.props.selectedPoint && (!this.debuggedPoint || (this.debuggedPoint && !same(this.props.selectedPoint, this.debuggedPoint)))) {
-            oncePerNewSelectionPoint = true
-            this.debuggedPoint = this.props.selectedPoint
-        }
-
-        if (oncePerNewSelectionPoint && this.props.selectedPoint !== undefined) {
-            console.log({
-                title: "Information about selection point",
-                point: this.props.selectedPoint,
-                vegetationBelow: monitor.allTiles.get(this.props.selectedPoint)?.below,
-                vegetationDownRight: monitor.allTiles.get(this.props.selectedPoint)?.downRight,
-                discovered: monitor.discoveredPoints.has(this.props.selectedPoint),
-                normal: this.normals.get(this.props.selectedPoint)
-            })
-        }
 
         duration.after("init")
 
@@ -861,59 +850,59 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the terrain layer */
-        if (this.drawGroundProgram &&
-            this.mapRenderInformation &&
-            this.drawGroundScreenWidthUniformLocation !== undefined &&
-            this.drawGroundScreenHeightUniformLocation !== undefined &&
-            this.drawGroundLightVectorUniformLocation !== undefined &&
-            this.drawGroundScaleUniformLocation !== undefined &&
-            this.drawGroundOffsetUniformLocation !== undefined &&
-            this.drawGroundCoordAttributeLocation !== undefined &&
-            this.drawGroundNormalAttributeLocation !== undefined &&
-            this.drawGroundTextureMappingAttributeLocation !== undefined &&
-            this.drawGroundSamplerUniformLocation !== undefined &&
-            this.drawGroundHeightAdjustUniformLocation !== undefined &&
-            this.terrainCoordinatesBuffer !== undefined &&
-            this.terrainNormalsBuffer !== undefined &&
-            this.terrainTextureMappingBuffer !== undefined &&
-            this.mapRenderInformation) {
+        if (renderState.drawGroundProgram &&
+            renderState.mapRenderInformation &&
+            renderState.drawGroundScreenWidthUniformLocation !== undefined &&
+            renderState.drawGroundScreenHeightUniformLocation !== undefined &&
+            renderState.drawGroundLightVectorUniformLocation !== undefined &&
+            renderState.drawGroundScaleUniformLocation !== undefined &&
+            renderState.drawGroundOffsetUniformLocation !== undefined &&
+            renderState.drawGroundCoordAttributeLocation !== undefined &&
+            renderState.drawGroundNormalAttributeLocation !== undefined &&
+            renderState.drawGroundTextureMappingAttributeLocation !== undefined &&
+            renderState.drawGroundSamplerUniformLocation !== undefined &&
+            renderState.drawGroundHeightAdjustUniformLocation !== undefined &&
+            renderState.terrainCoordinatesBuffer !== undefined &&
+            renderState.terrainNormalsBuffer !== undefined &&
+            renderState.terrainTextureMappingBuffer !== undefined &&
+            renderState.mapRenderInformation) {
 
-            const gl = this.gl
+            const gl = renderState.gl
 
-            gl.useProgram(this.drawGroundProgram)
+            gl.useProgram(renderState.drawGroundProgram)
 
             // Configure the drawing context
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
             // Set the constants
-            gl.uniform1f(this.drawGroundScreenWidthUniformLocation, width)
-            gl.uniform1f(this.drawGroundScreenHeightUniformLocation, height)
-            gl.uniform3fv(this.drawGroundLightVectorUniformLocation, this.lightVector)
-            gl.uniform2f(this.drawGroundScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
-            gl.uniform2f(this.drawGroundOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
-            gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, this.props.heightAdjust)
-            gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
+            gl.uniform1f(renderState.drawGroundScreenWidthUniformLocation, width)
+            gl.uniform1f(renderState.drawGroundScreenHeightUniformLocation, height)
+            gl.uniform3fv(renderState.drawGroundLightVectorUniformLocation, lightVector)
+            gl.uniform2f(renderState.drawGroundScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
+            gl.uniform2f(renderState.drawGroundOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+            gl.uniform1f(renderState.drawGroundHeightAdjustUniformLocation, heightAdjust)
+            gl.uniform1i(renderState.drawGroundSamplerUniformLocation, 1)
 
             // Set up the buffers
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainCoordinatesBuffer)
-            gl.vertexAttribPointer(this.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.drawGroundCoordAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
+            gl.vertexAttribPointer(renderState.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(renderState.drawGroundCoordAttributeLocation)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainNormalsBuffer)
-            gl.vertexAttribPointer(this.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.drawGroundNormalAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
+            gl.vertexAttribPointer(renderState.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(renderState.drawGroundNormalAttributeLocation)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.terrainTextureMappingBuffer)
-            gl.vertexAttribPointer(this.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.drawGroundTextureMappingAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
+            gl.vertexAttribPointer(renderState.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(renderState.drawGroundTextureMappingAttributeLocation)
 
             // Fill the screen with black color
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
             gl.clear(gl.COLOR_BUFFER_BIT)
 
             // Draw the triangles: mode, offset (nr vertices), count (nr vertices)
-            gl.drawArrays(gl.TRIANGLES, 0, this.mapRenderInformation.coordinates.length / 3)
+            gl.drawArrays(gl.TRIANGLES, 0, renderState.mapRenderInformation.coordinates.length / 3)
         } else {
             console.error("Did not draw the terrain layer")
         }
@@ -937,49 +926,47 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     source: image[1],
                     gamePoint: decoration,
                 })
-            } else if (oncePerNewSelectionPoint) {
-                console.log({ title: 'No image!', decoration: decoration })
             }
         })
 
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (this.drawImageProgram &&
-            this.drawImagePositionBuffer &&
-            this.drawImageTexCoordBuffer &&
-            this.drawImageHeightAdjustmentLocation &&
-            this.drawImageHeightLocation) {
+        if (renderState.drawImageProgram &&
+            renderState.drawImagePositionBuffer &&
+            renderState.drawImageTexCoordBuffer &&
+            renderState.drawImageHeightAdjustmentLocation &&
+            renderState.drawImageHeightLocation) {
 
-            this.gl.useProgram(this.drawImageProgram)
+            renderState.gl.useProgram(renderState.drawImageProgram)
 
-            this.gl.viewport(0, 0, width, height)
+            renderState.gl.viewport(0, 0, width, height)
 
-            this.gl.enable(this.gl.BLEND)
-            this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
-            this.gl.disable(this.gl.DEPTH_TEST)
+            renderState.gl.enable(renderState.gl.BLEND)
+            renderState.gl.blendFunc(renderState.gl.ONE, renderState.gl.ONE_MINUS_SRC_ALPHA)
+            renderState.gl.disable(renderState.gl.DEPTH_TEST)
 
             // Re-assign the attribute locations
-            const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
-            const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
+            const drawImagePositionLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_position")
+            const drawImageTexcoordLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_texcoord")
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-            this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-            this.gl.enableVertexAttribArray(drawImagePositionLocation)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
+            renderState.gl.vertexAttribPointer(drawImagePositionLocation, 2, renderState.gl.FLOAT, false, 0, 0)
+            renderState.gl.enableVertexAttribArray(drawImagePositionLocation)
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-            this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-            this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
+            renderState.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, renderState.gl.FLOAT, false, 0, 0)
+            renderState.gl.enableVertexAttribArray(drawImageTexcoordLocation)
 
             // Re-assign the uniform locations
-            const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
-            const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
-            const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
-            const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
-            const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
-            const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
-            const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
-            const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+            const drawImageTextureLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_texture")
+            const drawImageGamePointLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_game_point")
+            const drawImageScreenOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_offset")
+            const drawImageOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_image_offset")
+            const drawImageScaleLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_scale")
+            const drawImageSourceCoordinateLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_coordinate")
+            const drawImageSourceDimensionsLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_dimensions")
+            const drawImageScreenDimensionLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_dimensions")
 
-            const gl = this.gl
+            const gl = renderState.gl
 
             // Draw decorations objects
             for (const draw of decorationsToDraw) {
@@ -997,8 +984,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     gl.uniform2f(drawImageScreenDimensionLocation, width, height)
                     gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
                     gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                    gl.uniform1f(this.drawImageHeightAdjustmentLocation, this.props.heightAdjust)
-                    gl.uniform1f(this.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
+                    gl.uniform1f(renderState.drawImageHeightAdjustmentLocation, heightAdjust)
+                    gl.uniform1f(renderState.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
 
                     // Draw the quad (2 triangles = 6 vertices)
                     gl.drawArrays(gl.TRIANGLES, 0, 6)
@@ -1010,57 +997,57 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the road layer */
-        if (this.drawGroundProgram && this.mapRenderInformation &&
-            this.drawGroundScreenWidthUniformLocation !== undefined &&
-            this.drawGroundScreenHeightUniformLocation !== undefined &&
-            this.drawGroundLightVectorUniformLocation !== undefined &&
-            this.drawGroundScaleUniformLocation !== undefined &&
-            this.drawGroundOffsetUniformLocation !== undefined &&
-            this.drawGroundCoordAttributeLocation !== undefined &&
-            this.drawGroundNormalAttributeLocation !== undefined &&
-            this.drawGroundTextureMappingAttributeLocation !== undefined &&
-            this.drawGroundSamplerUniformLocation !== undefined &&
-            this.roadRenderInformation !== undefined &&
-            this.roadCoordinatesBuffer !== undefined &&
-            this.roadNormalsBuffer !== undefined &&
-            this.roadTextureMappingBuffer !== undefined &&
-            this.drawGroundHeightAdjustUniformLocation !== undefined) {
+        if (renderState.drawGroundProgram && renderState.mapRenderInformation &&
+            renderState.drawGroundScreenWidthUniformLocation !== undefined &&
+            renderState.drawGroundScreenHeightUniformLocation !== undefined &&
+            renderState.drawGroundLightVectorUniformLocation !== undefined &&
+            renderState.drawGroundScaleUniformLocation !== undefined &&
+            renderState.drawGroundOffsetUniformLocation !== undefined &&
+            renderState.drawGroundCoordAttributeLocation !== undefined &&
+            renderState.drawGroundNormalAttributeLocation !== undefined &&
+            renderState.drawGroundTextureMappingAttributeLocation !== undefined &&
+            renderState.drawGroundSamplerUniformLocation !== undefined &&
+            renderState.roadRenderInformation !== undefined &&
+            renderState.roadCoordinatesBuffer !== undefined &&
+            renderState.roadNormalsBuffer !== undefined &&
+            renderState.roadTextureMappingBuffer !== undefined &&
+            renderState.drawGroundHeightAdjustUniformLocation !== undefined) {
 
-            const gl = this.gl
+            const gl = renderState.gl
 
-            gl.useProgram(this.drawGroundProgram)
+            gl.useProgram(renderState.drawGroundProgram)
 
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
             // Set screen width and height
-            gl.uniform1f(this.drawGroundScreenWidthUniformLocation, width)
-            gl.uniform1f(this.drawGroundScreenHeightUniformLocation, height)
+            gl.uniform1f(renderState.drawGroundScreenWidthUniformLocation, width)
+            gl.uniform1f(renderState.drawGroundScreenHeightUniformLocation, height)
 
             // Set the light vector
-            gl.uniform3fv(this.drawGroundLightVectorUniformLocation, this.lightVector)
+            gl.uniform3fv(renderState.drawGroundLightVectorUniformLocation, lightVector)
 
             // Set the current values for the scale, offset and the sampler
-            gl.uniform2f(this.drawGroundScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
-            gl.uniform2f(this.drawGroundOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+            gl.uniform2f(renderState.drawGroundScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
+            gl.uniform2f(renderState.drawGroundOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
 
             // Draw the roads
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.roadCoordinatesBuffer)
-            gl.vertexAttribPointer(this.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.drawGroundCoordAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadCoordinatesBuffer)
+            gl.vertexAttribPointer(renderState.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(renderState.drawGroundCoordAttributeLocation)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.roadNormalsBuffer)
-            gl.vertexAttribPointer(this.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.drawGroundNormalAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadNormalsBuffer)
+            gl.vertexAttribPointer(renderState.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(renderState.drawGroundNormalAttributeLocation)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.roadTextureMappingBuffer)
-            gl.vertexAttribPointer(this.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.drawGroundTextureMappingAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadTextureMappingBuffer)
+            gl.vertexAttribPointer(renderState.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(renderState.drawGroundTextureMappingAttributeLocation)
 
-            gl.uniform1i(this.drawGroundSamplerUniformLocation, 1)
-            gl.uniform1f(this.drawGroundHeightAdjustUniformLocation, this.props.heightAdjust)
+            gl.uniform1i(renderState.drawGroundSamplerUniformLocation, 1)
+            gl.uniform1f(renderState.drawGroundHeightAdjustUniformLocation, heightAdjust)
 
-            gl.drawArrays(gl.TRIANGLES, 0, this.roadRenderInformation?.coordinates.length / 3)
+            gl.drawArrays(gl.TRIANGLES, 0, renderState.roadRenderInformation?.coordinates.length / 3)
         } else {
             console.error("Missing information to draw roads")
         }
@@ -1105,7 +1092,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
 
-                const fireDrawInformation = fireAnimations.getAnimationFrame(size, this.animationIndex)
+                const fireDrawInformation = fireAnimations.getAnimationFrame(size, renderState.animationIndex)
 
                 if (fireDrawInformation) {
                     toDrawNormal.push({
@@ -1156,7 +1143,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     })
                 }
             } else {
-                const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
+                const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)        
 
                 if (houseDrawInformation) {
                     toDrawNormal.push({
@@ -1194,7 +1181,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             let treeDrawInfo
 
             if (tree.size === 'FULL_GROWN') {
-                treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, this.animationIndex, treeIndex)
+                treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, renderState.animationIndex, treeIndex)
 
                 if (treeDrawInfo) {
                     toDrawNormal.push({
@@ -1350,7 +1337,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const direction = getDirectionForWalkingWorker(animal.next, animal.previous)
 
-                const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
+                const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex, animal.percentageTraveled)
 
                 if (animationImage) {
                     toDrawNormal.push({
@@ -1377,7 +1364,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 if (animal.previous) {
                     const direction = getDirectionForWalkingWorker(animal, animal.previous)
 
-                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
+                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex, animal.percentageTraveled)
 
                     if (animationImage) {
                         toDrawNormal.push({
@@ -1394,7 +1381,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 } else {
                     const direction = 'EAST'
-                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, this.animationIndex, animal.percentageTraveled)
+                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex, animal.percentageTraveled)
 
                     if (animationImage) {
                         toDrawNormal.push({
@@ -1516,7 +1503,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const interpolatedHeight = interpolateHeight(worker.previous, worker.next, worker.percentageTraveled / 100)
 
                 if (worker.type === "Donkey") {
-                    const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, this.animationIndex, worker.percentageTraveled)
+                    const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, renderState.animationIndex, worker.percentageTraveled)
 
                     if (donkeyImage) {
                         toDrawNormal.push({
@@ -1548,15 +1535,15 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     if (worker.cargo) {
                         if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, this.animationIndex, worker.percentageTraveled)
+                            image = fatCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
                         } else {
-                            image = thinCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, this.animationIndex, worker.percentageTraveled)
+                            image = thinCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
                         }
                     } else {
                         if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, this.animationIndex, worker.percentageTraveled)
+                            image = fatCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
                         } else {
-                            image = thinCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, this.animationIndex, worker.percentageTraveled)
+                            image = thinCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
                         }
                     }
 
@@ -1574,7 +1561,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         })
                     }
                 } else {
-                    const animationImage = workers.get(worker.type)?.getAnimationFrame(worker.nation, worker.direction, worker.color, this.animationIndex, worker.percentageTraveled)
+                    const animationImage = workers.get(worker.type)?.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
 
                     if (animationImage) {
                         toDrawNormal.push({
@@ -1596,9 +1583,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         let cargoDrawInfo
 
                         if (worker?.bodyType === 'FAT') {
-                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
+                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         } else {
-                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
+                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         }
 
                         toDrawNormal.push({
@@ -1607,7 +1594,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             height: interpolatedHeight
                         })
                     } else {
-                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
+                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
 
                         if (cargo) {
                             toDrawNormal.push({
@@ -1744,9 +1731,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                         let cargoDrawInfo
 
                         if (worker?.bodyType === 'FAT') {
-                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
+                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         } else {
-                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
+                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         }
 
                         toDrawNormal.push({
@@ -1754,7 +1741,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                             gamePoint: worker
                         })
                     } else {
-                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, this.animationIndex, worker.percentageTraveled / 10)
+                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
 
                         toDrawNormal.push({
                             source: cargo,
@@ -1775,7 +1762,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 continue
             }
 
-            const flagDrawInfo = flagAnimations.getAnimationFrame(flag.nation, flag.color, flag.type, this.animationIndex, flagCount)
+            const flagDrawInfo = flagAnimations.getAnimationFrame(flag.nation, flag.color, flag.type, renderState.animationIndex, flagCount)
 
             if (flagDrawInfo) {
                 toDrawNormal.push({
@@ -1838,7 +1825,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Collect available construction */
-        if (this.props.showAvailableConstruction) {
+        if (showAvailableConstruction) {
             for (const [gamePoint, available] of monitor.availableConstruction.entries()) {
                 if (available.length === 0) {
                     continue
@@ -1892,6 +1879,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
         // Draw the Shadow layer and the Normal layer
 
+
         // Sort the toDrawList so it first draws things further away
         const sortedToDrawList = toDrawNormal.sort((draw1, draw2) => {
             return draw2.gamePoint.y - draw1.gamePoint.y
@@ -1899,43 +1887,43 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Set up webgl2 with the right shaders to prepare for drawing shadows
-        if (this.drawShadowProgram &&
-            this.drawImagePositionBuffer &&
-            this.drawImageTexCoordBuffer &&
-            this.drawShadowHeightAdjustmentUniformLocation !== undefined &&
-            this.drawShadowHeightUniformLocation !== undefined) {
+        if (renderState.drawShadowProgram &&
+            renderState.drawImagePositionBuffer &&
+            renderState.drawImageTexCoordBuffer &&
+            renderState.drawShadowHeightAdjustmentUniformLocation !== undefined &&
+            renderState.drawShadowHeightUniformLocation !== undefined) {
 
             // Use the shadow drawing gl program
-            this.gl.useProgram(this.drawShadowProgram)
+            renderState.gl.useProgram(renderState.drawShadowProgram)
 
             // Configure the drawing
-            this.gl.viewport(0, 0, width, height)
-            this.gl.enable(this.gl.BLEND)
-            this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
-            this.gl.disable(this.gl.DEPTH_TEST)
+            renderState.gl.viewport(0, 0, width, height)
+            renderState.gl.enable(renderState.gl.BLEND)
+            renderState.gl.blendFunc(renderState.gl.ONE, renderState.gl.ONE_MINUS_SRC_ALPHA)
+            renderState.gl.disable(renderState.gl.DEPTH_TEST)
 
             // Re-assign the attribute locations
-            const drawImagePositionLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_position")
-            const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawShadowProgram, "a_texcoord")
+            const drawImagePositionLocation = renderState.gl.getAttribLocation(renderState.drawShadowProgram, "a_position")
+            const drawImageTexcoordLocation = renderState.gl.getAttribLocation(renderState.drawShadowProgram, "a_texcoord")
 
             // Re-assign the uniform locations
-            const drawImageTextureLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_texture")
-            const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_game_point")
-            const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_offset")
-            const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_image_offset")
-            const drawImageScaleLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_scale")
-            const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_coordinate")
-            const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_source_dimensions")
-            const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawShadowProgram, "u_screen_dimensions")
+            const drawImageTextureLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_texture")
+            const drawImageGamePointLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_game_point")
+            const drawImageScreenOffsetLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_screen_offset")
+            const drawImageOffsetLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_image_offset")
+            const drawImageScaleLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_scale")
+            const drawImageSourceCoordinateLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_source_coordinate")
+            const drawImageSourceDimensionsLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_source_dimensions")
+            const drawImageScreenDimensionLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_screen_dimensions")
 
             // Set the buffers
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-            this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-            this.gl.enableVertexAttribArray(drawImagePositionLocation)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
+            renderState.gl.vertexAttribPointer(drawImagePositionLocation, 2, renderState.gl.FLOAT, false, 0, 0)
+            renderState.gl.enableVertexAttribArray(drawImagePositionLocation)
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-            this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-            this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
+            renderState.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, renderState.gl.FLOAT, false, 0, 0)
+            renderState.gl.enableVertexAttribArray(drawImageTexcoordLocation)
 
             // Draw all shadows
             for (const shadow of shadowsToDraw) {
@@ -1944,68 +1932,68 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 // Set the texture
-                this.gl.activeTexture(this.gl.TEXTURE3)
-                this.gl.bindTexture(this.gl.TEXTURE_2D, shadow.source.texture)
+                renderState.gl.activeTexture(renderState.gl.TEXTURE3)
+                renderState.gl.bindTexture(renderState.gl.TEXTURE_2D, shadow.source.texture)
 
                 // Set the constants
-                this.gl.uniform1i(drawImageTextureLocation, 3)
-                this.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
-                this.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
-                this.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
-                this.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
-                this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-                this.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
-                this.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
-                this.gl.uniform1f(this.drawShadowHeightAdjustmentUniformLocation, this.props.heightAdjust)
+                renderState.gl.uniform1i(drawImageTextureLocation, 3)
+                renderState.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
+                renderState.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
+                renderState.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
+                renderState.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+                renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                renderState.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
+                renderState.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
+                renderState.gl.uniform1f(renderState.drawShadowHeightAdjustmentUniformLocation, heightAdjust)
 
                 if (shadow.height !== undefined) {
-                    this.gl.uniform1f(this.drawShadowHeightUniformLocation, shadow.height)
+                    renderState.gl.uniform1f(renderState.drawShadowHeightUniformLocation, shadow.height)
                 } else {
-                    this.gl.uniform1f(this.drawShadowHeightUniformLocation, monitor.getHeight(shadow.gamePoint))
+                    renderState.gl.uniform1f(renderState.drawShadowHeightUniformLocation, monitor.getHeight(shadow.gamePoint))
                 }
 
                 // Draw the quad (2 triangles = 6 vertices)
-                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                renderState.gl.drawArrays(renderState.gl.TRIANGLES, 0, 6)
             }
         }
 
         // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (this.drawImageProgram &&
-            this.drawImageHeightAdjustmentLocation &&
-            this.drawImageHeightLocation &&
-            this.drawImagePositionBuffer &&
-            this.drawImageTexCoordBuffer) {
+        if (renderState.drawImageProgram &&
+            renderState.drawImageHeightAdjustmentLocation &&
+            renderState.drawImageHeightLocation &&
+            renderState.drawImagePositionBuffer &&
+            renderState.drawImageTexCoordBuffer) {
 
             // Use the draw image program
-            this.gl.useProgram(this.drawImageProgram)
+            renderState.gl.useProgram(renderState.drawImageProgram)
 
             // Configure the drawing
-            this.gl.viewport(0, 0, width, height)
-            this.gl.enable(this.gl.BLEND)
-            this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
-            this.gl.disable(this.gl.DEPTH_TEST)
+            renderState.gl.viewport(0, 0, width, height)
+            renderState.gl.enable(renderState.gl.BLEND)
+            renderState.gl.blendFunc(renderState.gl.ONE, renderState.gl.ONE_MINUS_SRC_ALPHA)
+            renderState.gl.disable(renderState.gl.DEPTH_TEST)
 
             // Re-assign the attribute locations
-            const drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
-            const drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
+            const drawImagePositionLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_position")
+            const drawImageTexcoordLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_texcoord")
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-            this.gl.vertexAttribPointer(drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-            this.gl.enableVertexAttribArray(drawImagePositionLocation)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
+            renderState.gl.vertexAttribPointer(drawImagePositionLocation, 2, renderState.gl.FLOAT, false, 0, 0)
+            renderState.gl.enableVertexAttribArray(drawImagePositionLocation)
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-            this.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-            this.gl.enableVertexAttribArray(drawImageTexcoordLocation)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
+            renderState.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, renderState.gl.FLOAT, false, 0, 0)
+            renderState.gl.enableVertexAttribArray(drawImageTexcoordLocation)
 
             // Re-assign the uniform locations
-            const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
-            const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
-            const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
-            const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
-            const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
-            const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
-            const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
-            const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+            const drawImageTextureLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_texture")
+            const drawImageGamePointLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_game_point")
+            const drawImageScreenOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_offset")
+            const drawImageOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_image_offset")
+            const drawImageScaleLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_scale")
+            const drawImageSourceCoordinateLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_coordinate")
+            const drawImageSourceDimensionsLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_dimensions")
+            const drawImageScreenDimensionLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_dimensions")
 
             // Draw normal objects
             for (const draw of sortedToDrawList) {
@@ -2014,28 +2002,28 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 // Set the texture
-                this.gl.activeTexture(this.gl.TEXTURE3)
-                this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+                renderState.gl.activeTexture(renderState.gl.TEXTURE3)
+                renderState.gl.bindTexture(renderState.gl.TEXTURE_2D, draw.source.texture)
 
                 // Set the constants
-                this.gl.uniform1i(drawImageTextureLocation, 3)
-                this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                this.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
-                this.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
-                this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-                this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, this.props.heightAdjust)
+                renderState.gl.uniform1i(drawImageTextureLocation, 3)
+                renderState.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                renderState.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                renderState.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
+                renderState.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+                renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                renderState.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                renderState.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                renderState.gl.uniform1f(renderState.drawImageHeightAdjustmentLocation, heightAdjust)
 
                 if (draw.height !== undefined) {
-                    this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
+                    renderState.gl.uniform1f(renderState.drawImageHeightLocation, draw.height)
                 } else {
-                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
+                    renderState.gl.uniform1f(renderState.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
                 }
 
                 // Draw the quad (2 triangles = 6 vertices)
-                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                renderState.gl.drawArrays(renderState.gl.TRIANGLES, 0, 6)
             }
         }
 
@@ -2044,9 +2032,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         const toDrawHover: ToDraw[] = []
 
         /* Draw possible road connections */
-        if (this.props.possibleRoadConnections) {
-            if (this.props.newRoad !== undefined) {
-                const center = this.props.newRoad[this.props.newRoad.length - 1]
+        if (possibleRoadConnections) {
+            if (newRoad !== undefined) {
+                const center = newRoad[newRoad.length - 1]
 
                 // Draw the starting point
                 const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForStartPoint()
@@ -2070,9 +2058,9 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     }
                 }
 
-                this.props.possibleRoadConnections.forEach(
+                possibleRoadConnections.forEach(
                     (point) => {
-                        if (this.props.newRoad?.find(newRoadPoint => newRoadPoint.x === point.x && newRoadPoint.y === point.y) === undefined) {
+                        if (newRoad?.find(newRoadPoint => newRoadPoint.x === point.x && newRoadPoint.y === point.y) === undefined) {
                             const height = monitor.getHeight(point)
                             let startPointInfo
 
@@ -2098,12 +2086,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the selected point */
-        if (this.props.selectedPoint) {
+        if (selectedPoint) {
             const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
 
             toDrawHover.push({
                 source: selectedPointDrawInfo,
-                gamePoint: this.props.selectedPoint
+                gamePoint: selectedPoint
             })
         }
 
@@ -2111,8 +2099,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw the hover point */
-        if (this.state.hoverPoint && this.state.hoverPoint.y > 0) {
-            const availableConstructionAtHoverPoint = monitor.availableConstruction.get(this.state.hoverPoint)
+        if (hoverPoint && hoverPoint.y > 0) {
+            const availableConstructionAtHoverPoint = monitor.availableConstruction.get(hoverPoint)
 
             if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
                 if (availableConstructionAtHoverPoint.includes("large")) {
@@ -2121,35 +2109,35 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                     toDrawHover.push({
                         source: largeHouseAvailableInfo,
-                        gamePoint: this.state.hoverPoint
+                        gamePoint: hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("medium")) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
 
                     toDrawHover.push({
                         source: mediumHouseAvailableInfo,
-                        gamePoint: this.state.hoverPoint
+                        gamePoint: hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("small")) {
                     const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
 
                     toDrawHover.push({
                         source: smallHouseAvailableInfo,
-                        gamePoint: this.state.hoverPoint
+                        gamePoint: hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("mine")) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
 
                     toDrawHover.push({
                         source: mineAvailableInfo,
-                        gamePoint: this.state.hoverPoint
+                        gamePoint: hoverPoint
                     })
                 } else if (availableConstructionAtHoverPoint.includes("flag")) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
 
                     toDrawHover.push({
                         source: flagAvailableInfo,
-                        gamePoint: this.state.hoverPoint
+                        gamePoint: hoverPoint
                     })
                 }
             } else {
@@ -2157,7 +2145,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 toDrawHover.push({
                     source: hoverPointDrawInfo,
-                    gamePoint: this.state.hoverPoint
+                    gamePoint: hoverPoint
                 })
             }
         }
@@ -2165,43 +2153,43 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         // Draw the overlay layer. Assume for now that they don't need sorting
 
         // Set up webgl2 with the right shaders
-        if (this.drawImageProgram &&
-            this.drawImageHeightAdjustmentLocation !== undefined &&
-            this.drawImageHeightLocation !== undefined &&
-            this.drawImagePositionBuffer &&
-            this.drawImageTexCoordBuffer) {
+        if (renderState.drawImageProgram &&
+            renderState.drawImageHeightAdjustmentLocation !== undefined &&
+            renderState.drawImageHeightLocation !== undefined &&
+            renderState.drawImagePositionBuffer &&
+            renderState.drawImageTexCoordBuffer) {
 
             // Use the draw image program
-            this.gl.useProgram(this.drawImageProgram)
+            renderState.gl.useProgram(renderState.drawImageProgram)
 
             // Configure the drawing
-            this.gl.viewport(0, 0, width, height)
-            this.gl.enable(this.gl.BLEND)
-            this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
-            this.gl.disable(this.gl.DEPTH_TEST)
+            renderState.gl.viewport(0, 0, width, height)
+            renderState.gl.enable(renderState.gl.BLEND)
+            renderState.gl.blendFunc(renderState.gl.ONE, renderState.gl.ONE_MINUS_SRC_ALPHA)
+            renderState.gl.disable(renderState.gl.DEPTH_TEST)
 
             // Re-assign the attribute locations
-            this.drawImagePositionLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_position")
-            this.drawImageTexcoordLocation = this.gl.getAttribLocation(this.drawImageProgram, "a_texcoord")
+            renderState.drawImagePositionLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_position")
+            renderState.drawImageTexcoordLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_texcoord")
 
             // Set the buffers
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImagePositionBuffer)
-            this.gl.vertexAttribPointer(this.drawImagePositionLocation, 2, this.gl.FLOAT, false, 0, 0)
-            this.gl.enableVertexAttribArray(this.drawImagePositionLocation)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
+            renderState.gl.vertexAttribPointer(renderState.drawImagePositionLocation, 2, renderState.gl.FLOAT, false, 0, 0)
+            renderState.gl.enableVertexAttribArray(renderState.drawImagePositionLocation)
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.drawImageTexCoordBuffer)
-            this.gl.vertexAttribPointer(this.drawImageTexcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
-            this.gl.enableVertexAttribArray(this.drawImageTexcoordLocation)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
+            renderState.gl.vertexAttribPointer(renderState.drawImageTexcoordLocation, 2, renderState.gl.FLOAT, false, 0, 0)
+            renderState.gl.enableVertexAttribArray(renderState.drawImageTexcoordLocation)
 
             // Re-assign the uniform locations
-            const drawImageTextureLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_texture")
-            const drawImageGamePointLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_game_point")
-            const drawImageScreenOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_offset")
-            const drawImageOffsetLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_image_offset")
-            const drawImageScaleLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_scale")
-            const drawImageSourceCoordinateLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_coordinate")
-            const drawImageSourceDimensionsLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_source_dimensions")
-            const drawImageScreenDimensionLocation = this.gl.getUniformLocation(this.drawImageProgram, "u_screen_dimensions")
+            const drawImageTextureLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_texture")
+            const drawImageGamePointLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_game_point")
+            const drawImageScreenOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_offset")
+            const drawImageOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_image_offset")
+            const drawImageScaleLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_scale")
+            const drawImageSourceCoordinateLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_coordinate")
+            const drawImageSourceDimensionsLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_dimensions")
+            const drawImageScreenDimensionLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_dimensions")
 
             // Go through the images to draw
             for (const draw of toDrawHover) {
@@ -2210,28 +2198,28 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 }
 
                 // Set the texture
-                this.gl.activeTexture(this.gl.TEXTURE3)
-                this.gl.bindTexture(this.gl.TEXTURE_2D, draw.source.texture)
+                renderState.gl.activeTexture(renderState.gl.TEXTURE3)
+                renderState.gl.bindTexture(renderState.gl.TEXTURE_2D, draw.source.texture)
 
                 // Set the constants
-                this.gl.uniform1i(drawImageTextureLocation, 3)
-                this.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                this.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                this.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
-                this.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
-                this.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-                this.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                this.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                this.gl.uniform1f(this.drawImageHeightAdjustmentLocation, this.props.heightAdjust)
+                renderState.gl.uniform1i(drawImageTextureLocation, 3)
+                renderState.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
+                renderState.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
+                renderState.gl.uniform1f(drawImageScaleLocation, immediateUxState.scale)
+                renderState.gl.uniform2f(drawImageScreenOffsetLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+                renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
+                renderState.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
+                renderState.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
+                renderState.gl.uniform1f(renderState.drawImageHeightAdjustmentLocation, heightAdjust)
 
                 if (draw.height !== undefined) {
-                    this.gl.uniform1f(this.drawImageHeightLocation, draw.height)
+                    renderState.gl.uniform1f(renderState.drawImageHeightLocation, draw.height)
                 } else {
-                    this.gl.uniform1f(this.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
+                    renderState.gl.uniform1f(renderState.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
                 }
 
                 // Draw the quad (2 triangles = 6 vertices)
-                this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+                renderState.gl.drawArrays(renderState.gl.TRIANGLES, 0, 6)
             }
         }
 
@@ -2239,7 +2227,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         /* Draw house titles */
-        if (this.props.showHouseTitles) {
+        if (showHouseTitles) {
             overlayCtx.font = "bold 12px sans-serif"
             overlayCtx.strokeStyle = 'black'
             overlayCtx.fillStyle = 'yellow'
@@ -2249,7 +2237,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     continue
                 }
 
-                const screenPoint = this.gamePointToScreenPoint(house)
+                const screenPoint = gamePointToScreenPointInternal(house)
 
                 const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
 
@@ -2281,52 +2269,52 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
 
         // Fill in the buffers to draw fog of war
-        if (this.fogOfWarCoordBuffer && this.fogOfWarIntensityBuffer) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.fogOfWarCoordinates), this.gl.STATIC_DRAW)
+        if (renderState.fogOfWarCoordBuffer && renderState.fogOfWarIntensityBuffer) {
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.fogOfWarCoordBuffer)
+            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.fogOfWarCoordinates), renderState.gl.STATIC_DRAW)
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.fogOfWarIntensityBuffer)
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.fogOfWarIntensities), this.gl.STATIC_DRAW)
+            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.fogOfWarIntensityBuffer)
+            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.fogOfWarIntensities), renderState.gl.STATIC_DRAW)
         }
 
         /* Draw the fog of war layer */
-        if (this.fogOfWarRenderProgram &&
-            this.fogOfWarScreenWidthUniformLocation !== undefined &&
-            this.fogOfWarScreenHeightUniformLocation !== undefined &&
-            this.fogOfWarScaleUniformLocation !== undefined &&
-            this.fogOfWarOffsetUniformLocation !== undefined &&
-            this.fogOfWarCoordAttributeLocation !== undefined &&
-            this.fogOfWarIntensityAttributeLocation !== undefined &&
-            this.fogOfWarCoordBuffer !== undefined &&
-            this.fogOfWarIntensityBuffer !== undefined) {
+        if (renderState.fogOfWarRenderProgram &&
+            renderState.fogOfWarScreenWidthUniformLocation !== undefined &&
+            renderState.fogOfWarScreenHeightUniformLocation !== undefined &&
+            renderState.fogOfWarScaleUniformLocation !== undefined &&
+            renderState.fogOfWarOffsetUniformLocation !== undefined &&
+            renderState.fogOfWarCoordAttributeLocation !== undefined &&
+            renderState.fogOfWarIntensityAttributeLocation !== undefined &&
+            renderState.fogOfWarCoordBuffer !== undefined &&
+            renderState.fogOfWarIntensityBuffer !== undefined) {
 
-            const gl = this.gl
+            const gl = renderState.gl
 
             // Use the fog of war program
-            gl.useProgram(this.fogOfWarRenderProgram)
+            gl.useProgram(renderState.fogOfWarRenderProgram)
 
             // Configure drawing
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
             // Set the constants
-            gl.uniform1f(this.fogOfWarScreenWidthUniformLocation, width)
-            gl.uniform1f(this.fogOfWarScreenHeightUniformLocation, height)
-            gl.uniform2f(this.fogOfWarScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
-            gl.uniform2f(this.fogOfWarOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
+            gl.uniform1f(renderState.fogOfWarScreenWidthUniformLocation, width)
+            gl.uniform1f(renderState.fogOfWarScreenHeightUniformLocation, height)
+            gl.uniform2f(renderState.fogOfWarScaleUniformLocation, immediateUxState.scale, immediateUxState.scale)
+            gl.uniform2f(renderState.fogOfWarOffsetUniformLocation, immediateUxState.translate.x, immediateUxState.translate.y)
             gl.clearColor(0.0, 0.0, 0.0, 1.0)
 
             // Set the buffers
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarCoordBuffer)
-            gl.vertexAttribPointer(this.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.fogOfWarCoordAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.fogOfWarCoordBuffer)
+            gl.vertexAttribPointer(renderState.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(renderState.fogOfWarCoordAttributeLocation)
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.fogOfWarIntensityBuffer)
-            gl.vertexAttribPointer(this.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(this.fogOfWarIntensityAttributeLocation)
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.fogOfWarIntensityBuffer)
+            gl.vertexAttribPointer(renderState.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
+            gl.enableVertexAttribArray(renderState.fogOfWarIntensityAttributeLocation)
 
             // Draw the triangles -- mode, offset (nr vertices), count (nr vertices)
-            gl.drawArrays(gl.TRIANGLES, 0, this.fogOfWarCoordinates.length / 2)
+            gl.drawArrays(gl.TRIANGLES, 0, renderState.fogOfWarCoordinates.length / 2)
         } else {
             console.error("Did not draw the fog of war layer")
         }
@@ -2341,7 +2329,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         /* Draw the FPS counter */
         const timestamp = getTimestamp()
 
-        if (this.props.showFpsCounter && this.previousTimestamp) {
+        if (showFpsCounter && renderState.previousTimestamp) {
             const fps = getLatestValueForVariable("GameRender::renderGame.total")
 
             overlayCtx.fillStyle = 'white'
@@ -2355,12 +2343,12 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             overlayCtx.fillText("" + getAverageValueForVariable("GameRender::renderGame.total"), width - 100, 40)
         }
 
-        this.previousTimestamp = timestamp
+        renderState.previousTimestamp = timestamp
 
-        requestAnimationFrame(this.renderGame.bind(this))
+        requestAnimationFrame(renderGame)
     }
 
-    gamePointToScreenPoint(gamePoint: Point): ScreenPoint {
+    function gamePointToScreenPointInternal(gamePoint: Point): ScreenPoint {
         const height = monitor.getHeight(gamePoint)
 
         return gamePointToScreenPoint(
@@ -2369,18 +2357,18 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             immediateUxState.translate.x,
             immediateUxState.translate.y,
             immediateUxState.scale,
-            this.props.screenHeight,
-            this.props.heightAdjust,
+            renderState.screenHeight,
+            heightAdjust,
             //DEFAULT_HEIGHT_ADJUSTMENT,
             STANDARD_HEIGHT
         )
     }
 
-    screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint): Point {
-        return screenPointToGamePoint(screenPoint, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, this.props.screenHeight)
+    function screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint): Point {
+        return screenPointToGamePoint(screenPoint, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, renderState.screenHeight)
     }
 
-    async onClickOrDoubleClick(event: React.MouseEvent): Promise<void> {
+    async function onClickOrDoubleClick(event: React.MouseEvent): Promise<void> {
 
         // Save currentTarget. This field becomes null directly after
         const currentTarget = event.currentTarget
@@ -2390,7 +2378,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             timer = setTimeout(() => {
                 event.currentTarget = currentTarget
 
-                this.onClick(event)
+                onClick(event)
             }, 200)
         } else {
             if (timer) {
@@ -2399,26 +2387,26 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
             event.currentTarget = currentTarget
 
-            this.onDoubleClick(event)
+            onDoubleClickInternal(event)
         }
 
         event.stopPropagation()
     }
 
-    async onClick(event: React.MouseEvent): Promise<void> {
-        if (this.overlayCanvasRef.current) {
+    async function onClick(event: React.MouseEvent): Promise<void> {
+        if (overlayCanvasRef?.current) {
             const rect = event.currentTarget.getBoundingClientRect()
-            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
-            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
+            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * overlayCanvasRef.current.width)
+            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * overlayCanvasRef.current.height)
 
-            const gamePoint = this.screenPointToGamePointWithHeightAdjustment({ x: x, y: y })
+            const gamePoint = screenPointToGamePointWithHeightAdjustment({ x: x, y: y })
 
-            this.props.onPointClicked(gamePoint)
+            onPointClicked(gamePoint)
         }
     }
 
-    screenPointToGamePointWithHeightAdjustment(screenPoint: Point): Point {
-        const unadjustedGamePoint = this.screenPointToGamePointNoHeightAdjustment(screenPoint)
+    function screenPointToGamePointWithHeightAdjustment(screenPoint: Point): Point {
+        const unadjustedGamePoint = screenPointToGamePointNoHeightAdjustment(screenPoint)
 
         let distance = 2000
         let adjustedGamePoint: Point | undefined
@@ -2450,7 +2438,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         ]
 
         for (const gamePoint of candidates) {
-            const screenPointCandidate = this.gamePointToScreenPoint(gamePoint)
+            const screenPointCandidate = gamePointToScreenPointInternal(gamePoint)
             const dx = screenPointCandidate.x - screenPoint.x
             const dy = screenPointCandidate.y - screenPoint.y
             const candidateDistance = Math.sqrt(dx * dx + dy * dy)
@@ -2464,67 +2452,25 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         return adjustedGamePoint ?? unadjustedGamePoint
     }
 
-    onDoubleClick(event: React.MouseEvent): void {
+    function onDoubleClickInternal(event: React.MouseEvent): void {
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
             console.error("Received invalid double click event")
 
             return
         }
 
-        if (this.overlayCanvasRef.current) {
+        if (overlayCanvasRef?.current) {
             const rect = event.currentTarget.getBoundingClientRect()
-            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
-            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
+            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * overlayCanvasRef.current.width)
+            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * overlayCanvasRef.current.height)
 
-            const gamePoint = this.screenPointToGamePointWithHeightAdjustment({ x: x, y: y })
+            const gamePoint = screenPointToGamePointWithHeightAdjustment({ x: x, y: y })
 
-            this.props.onDoubleClick(gamePoint)
+            onDoubleClick(gamePoint)
         }
     }
 
-    render(): JSX.Element {
-        return (
-            <>
-                <canvas
-                    className="GameCanvas"
-                    onKeyDown={this.props.onKeyDown}
-                    onClick={this.onClickOrDoubleClick}
-                    style={{ cursor: MOUSE_STYLES.get(this.props.cursorState) }}
-
-                    ref={this.overlayCanvasRef}
-                    onMouseMove={
-                        (event: React.MouseEvent) => {
-
-                            /* Convert to game coordinates */
-                            if (this.overlayCanvasRef.current) {
-                                const rect = event.currentTarget.getBoundingClientRect()
-                                const x = ((event.clientX - rect.left) / (rect.right - rect.left) * this.overlayCanvasRef.current.width)
-                                const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * this.overlayCanvasRef.current.height)
-
-                                try {
-                                    const hoverPoint = this.screenPointToGamePointWithHeightAdjustment({ x, y })
-
-                                    if (hoverPoint &&
-                                        hoverPoint.y >= 0 &&
-                                        (!this.state.hoverPoint || this.state.hoverPoint.x !== hoverPoint.x || this.state.hoverPoint.y !== hoverPoint.y)) {
-                                        this.setState({ hoverPoint })
-                                    }
-                                } catch (error) {
-                                    console.error(error)
-                                }
-                            }
-
-                            /* Allow the event to propagate to make scrolling work */
-                        }
-                    }
-                />
-
-                <canvas ref={this.normalCanvasRef} className="TerrainCanvas" />
-            </>
-        )
-    }
-
-    prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>, allTiles: PointMapFast<TerrainAtPoint>): MapRenderInformation {
+    function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>, allTiles: PointMapFast<TerrainAtPoint>): MapRenderInformation {
         const coordinates: number[] = []
         const normals: number[] = []
         const textureMappings: number[] = []
@@ -2553,7 +2499,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             triangleBelow.forEach(point => Array.prototype.push.apply(coordinates, [point.x, point.y, allTiles.get(point)?.height ?? 0]))
 
             triangleBelow
-                .map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
+                .map(point => renderState.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
                 .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
 
             Array.prototype.push.apply(textureMappings, vegetationToTextureMapping.get(terrainBelow)?.below ?? [0, 0, 0.5, 1, 1, 0])
@@ -2586,7 +2532,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const points = [pointDownLeft, pointDownRight, pointDown]
 
                 // TODO: interpolate the normal
-                points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                points.map(point => renderState.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
                     normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
                 )
             }
@@ -2610,7 +2556,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const points = [point, pointDownRight, pointRight]
 
                 // TODO: interpolate the normal
-                points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                points.map(point => renderState.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
                     normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
                 )
             }
@@ -2634,7 +2580,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                 const points = [point, pointDownLeft, pointLeft]
 
                 // TODO: interpolate the normal
-                points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                points.map(point => renderState.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
                     normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
                 )
             }
@@ -2664,7 +2610,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             triangleDownRight.forEach(point => Array.prototype.push.apply(coordinates, [point.x, point.y, allTiles.get(point)?.height ?? 0]))
 
             triangleDownRight
-                .map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
+                .map(point => renderState.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
                 .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
 
             Array.prototype.push.apply(textureMappings, vegetationToTextureMapping.get(terrainDownRight)?.downRight ?? [0, 1, 0.5, 0, 1, 1])
@@ -2690,7 +2636,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const points = [pointDownRight, point, pointDownLeft]
 
-                points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                points.map(point => renderState.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
                     normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
                 )
             }
@@ -2712,7 +2658,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const points = [point, pointRight, pointUpRight]
 
-                points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                points.map(point => renderState.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
                     normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
                 )
             }
@@ -2735,7 +2681,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const points = [pointRight, pointDownRight, pointRightDownRight]
 
-                points.map(point => this.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+                points.map(point => renderState.normals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
                     normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
                 )
             }
@@ -2748,7 +2694,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
         }
     }
 
-    calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDownRight: Iterable<TileDownRight>): void {
+    function calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDownRight: Iterable<TileDownRight>): void {
         const straightBelowNormals = new PointMapFast<Vector>()
         const downRightNormals = new PointMapFast<Vector>()
 
@@ -2807,14 +2753,14 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
 
                 const normalized = normalize(combinedVector)
 
-                this.normals.set(point, normalized)
+                renderState.normals.set(point, normalized)
             } else {
-                this.normals.set(point, { x: 0, y: 0, z: 1 })
+                renderState.normals.set(point, { x: 0, y: 0, z: 1 })
             }
         }
     }
 
-    prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<FlagInformation>): RenderInformation {
+    function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<FlagInformation>): RenderInformation {
         console.log("Prepare to render roads")
 
         const coordinates: number[] = []
@@ -2854,8 +2800,8 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
                     right = previous
                 }
 
-                const normalLeft = this.normals?.get(left)
-                const normalRight = this.normals?.get(right)
+                const normalLeft = renderState.normals?.get(left)
+                const normalRight = renderState.normals?.get(right)
 
                 if (normalLeft === undefined || normalRight === undefined) {
                     console.error("Missing normals")
@@ -2964,7 +2910,7 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             }
 
             const height = monitor.allTiles.get(flag)?.height ?? 0
-            const normal = this.normals.get(flag) ?? { x: 0, y: 0, z: 1 }
+            const normal = renderState.normals.get(flag) ?? { x: 0, y: 0, z: 1 }
 
             // TODO: read out height and normals surrounding and then interpolate
 
@@ -2999,7 +2945,75 @@ class GameCanvas extends Component<GameCanvasProps, GameCanvasState> {
             textureMapping
         }
     }
+
+    // When using regular "useState" the screenHeight variable gets remembered as 0 and never updated in the renderGame function
+    renderState.screenHeight = screenHeight
+
+    return (
+        <>
+            <canvas
+                className="GameCanvas"
+                onKeyDown={onKeyDown}
+                onClick={onClickOrDoubleClick}
+                style={{ cursor: MOUSE_STYLES.get(cursor) }}
+
+                ref={overlayCanvasRef}
+                onMouseMove={
+                    (event: React.MouseEvent) => {
+
+                        /* Convert to game coordinates */
+                        if (overlayCanvasRef?.current) {
+                            const rect = event.currentTarget.getBoundingClientRect()
+                            const x = ((event.clientX - rect.left) / (rect.right - rect.left) * overlayCanvasRef.current.width)
+                            const y = ((event.clientY - rect.top) / (rect.bottom - rect.top) * overlayCanvasRef.current.height)
+
+                            try {
+                                const hoverPoint = screenPointToGamePointWithHeightAdjustment({ x, y })
+
+                                if (hoverPoint &&
+                                    hoverPoint.y >= 0 &&
+                                    (!hoverPoint || hoverPoint.x !== hoverPoint.x || hoverPoint.y !== hoverPoint.y)) {
+                                    setHoverPoint(hoverPoint)
+                                }
+                            } catch (error) {
+                                console.error(error)
+                            }
+                        }
+
+                        /* Allow the event to propagate to make scrolling work */
+                    }
+                }
+            />
+
+            <canvas ref={normalCanvasRef} className="TerrainCanvas" />
+        </>
+    )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
     const surrounding = surroundingPoints(point)

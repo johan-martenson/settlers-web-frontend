@@ -160,7 +160,7 @@ interface PlayProps {
     onLeaveGame: (() => void)
 }
 
-type NewRoad = {
+export type NewRoad = {
     newRoad: Point[]
     possibleConnections: Point[]
 }
@@ -184,7 +184,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [animateMapScrolling, setAnimateMapScrolling] = useState<boolean>(true)
     const [animateZoom, setAnimateZoom] = useState<boolean>(true)
     const [gameState, setGameState] = useState<GameState>('STARTED')
-    const [newRoad, setNewRoad] = useState<NewRoad>()
+    const [newRoad, setNewRoad] = useState<Point[]>()
+    const [possibleRoadConnections, setPossibleRoadConnections] = useState<Point[]>()
     const [player, setPlayer] = useState<PlayerInformation>()
     const [windowHeight, setWindowHeight] = useState<number>(0)
 
@@ -222,7 +223,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         updatedWindows.push(windowWithId)
 
-        setWindows(updatedWindows)
+        setWindows((prevWindows) => [...prevWindows.filter(w => w.type !== window.type), windowWithId])
     }
 
     function openWindow(window: WindowType): void {
@@ -479,16 +480,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                                 return
                             }
 
-                            setNewRoad({
-                                newRoad: [pointDownRight],
-                                possibleConnections: pointDownRightInformation.possibleRoadConnections
-                            })
+                            setNewRoad([pointDownRight])
+                            setPossibleRoadConnections(pointDownRightInformation.possibleRoadConnections)
+
                             setCursor('BUILDING_ROAD')
                         } else if (pointInformation.is && pointInformation.is === "flag") {
-                            setNewRoad({
-                                newRoad: [point],
-                                possibleConnections: pointInformation.possibleRoadConnections
-                            })
+                            setNewRoad([point])
+                            setPossibleRoadConnections(pointInformation.possibleRoadConnections)
 
                             setCursor('BUILDING_ROAD')
                         }
@@ -632,14 +630,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         /* A road is being built */
-        if (newRoad && newRoad.possibleConnections) {
-            const recent = newRoad.newRoad[newRoad.newRoad.length - 1]
+        if (newRoad && possibleRoadConnections) {
+            const recent = newRoad[newRoad.length - 1]
 
             /* Create the possible new road including the addition */
-            const possibleNewRoad = newRoad.newRoad
+            const possibleNewRoad = newRoad
 
             /* Handle the case where one of the directly adjacent possible new road connections is selected */
-            if (newRoad.possibleConnections.find(e => e.x === point.x && e.y === point.y)) {
+            if (possibleRoadConnections?.find(e => e.x === point.x && e.y === point.y)) {
                 possibleNewRoad.push(point)
 
                 /* Handle the case where a point further away was clicked */
@@ -647,7 +645,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 /* Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road */
                 // TODO: move to ws API
-                const possibleNewRoadSegment = await findPossibleNewRoad(recent, point, newRoad.newRoad, gameId, selfPlayerId)
+                const possibleNewRoadSegment = await findPossibleNewRoad(recent, point, newRoad, gameId, selfPlayerId)
 
                 if (possibleNewRoadSegment) {
                     possibleNewRoad.push(...possibleNewRoadSegment.possibleNewRoad.slice(1))
@@ -696,11 +694,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 console.log("Possible new road direct adjacent road connections: " + JSON.stringify(pointInformation.possibleRoadConnections))
 
-                setNewRoad({
-                    newRoad: possibleNewRoad,
-                    possibleConnections: pointInformation.possibleRoadConnections
-                })
-
+                setNewRoad(possibleNewRoad)
+                setPossibleRoadConnections(pointInformation.possibleRoadConnections)
                 setCursor('BUILDING_ROAD')
             }
 
@@ -723,8 +718,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 console.log("Can place flag")
 
                 // Keep a reference to the new road so it doesn't get lost when the state is changed
-                const newRoadPoints = newRoad.newRoad
-                const lastPoint = newRoad.newRoad[newRoad.newRoad.length - 1]
+                const newRoadPoints = newRoad
+                const lastPoint = newRoad[newRoad.length - 1]
 
                 // Only add this point to the road points if the distance is acceptable - otherwise let the backend fill in
                 if (Math.abs(lastPoint.x - point.x) <= 2 && Math.abs(lastPoint.y - point.y) <= 2) {
@@ -857,11 +852,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         /* Get the possible connections from the server and draw them */
         const pointInformation = await monitor.getInformationOnPoint(point)
 
-        setNewRoad({
-            newRoad: [{ x: point.x, y: point.y }],
-            possibleConnections: pointInformation.possibleRoadConnections
-        })
-
+        setNewRoad([{ x: point.x, y: point.y }])
+        setPossibleRoadConnections(pointInformation.possibleRoadConnections)
         setCursor('BUILDING_ROAD')
     }
 
@@ -1004,8 +996,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 selectedPoint={selected}
                 onDoubleClick={(point: Point) => onDoubleClick(point)}
                 showHouseTitles={showTitles}
-                newRoad={newRoad?.newRoad}
-                possibleRoadConnections={newRoad?.possibleConnections}
+                newRoad={newRoad}
+                possibleRoadConnections={possibleRoadConnections}
                 showAvailableConstruction={showAvailableConstruction}
                 cursor={cursor}
                 heightAdjust={heightAdjust}

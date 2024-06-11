@@ -10,7 +10,7 @@ import { flagAnimations, houses, uiElementsImageAtlasHandler, workers } from './
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from './shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
-import { immediateUxState } from './play'
+import { NewRoad, immediateUxState } from './play'
 import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './render/constants'
 import { textures } from './render/textures'
 
@@ -139,6 +139,8 @@ type RenderState = {
     animationIndex: number
     mapRenderInformation?: MapRenderInformation
     gl?: WebGL2RenderingContext
+
+    newRoad?: NewRoad
 
     // Draw directions
     screenHeight: number
@@ -284,8 +286,14 @@ function GameCanvas({
         () => {
             renderState.showAvailableConstruction = showAvailableConstruction
             renderState.selectedPoint = selectedPoint
+
+            if (newRoad !== undefined) {
+                renderState.newRoad = { newRoad: newRoad, possibleConnections: possibleRoadConnections ?? [] }
+            } else {
+                renderState.newRoad = undefined
+            }
         },
-        [showAvailableConstruction, selectedPoint]
+        [showAvailableConstruction, selectedPoint, newRoad, possibleRoadConnections]
     )
 
     // Run when the cursor is changed (and when the normal canvas is set up)
@@ -817,13 +825,13 @@ function GameCanvas({
         }
 
         // Check if there are changes to the newRoads props array. In that case the buffers for drawing roads need to be updated.
-        const newRoadsUpdatedLength = newRoad?.length ?? 0
+        const newRoadsUpdatedLength = renderState.newRoad?.newRoad.length ?? 0
 
         if (renderState.newRoadCurrentLength !== newRoadsUpdatedLength) {
             renderState.newRoadCurrentLength = newRoadsUpdatedLength
 
-            if (newRoad !== undefined) {
-                monitor.placeLocalRoad(newRoad)
+            if (renderState.newRoad !== undefined) {
+                monitor.placeLocalRoad(renderState.newRoad.newRoad)
             }
 
             updateRoadDrawingBuffers()
@@ -2108,9 +2116,9 @@ function GameCanvas({
         const toDrawHover: ToDraw[] = []
 
         /* Draw possible road connections */
-        if (possibleRoadConnections) {
-            if (newRoad !== undefined) {
-                const center = newRoad[newRoad.length - 1]
+        if (renderState.newRoad?.possibleConnections) {
+            if (renderState?.newRoad !== undefined) {
+                const center = renderState.newRoad.newRoad[renderState.newRoad.newRoad.length - 1]
 
                 // Draw the starting point
                 const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForStartPoint()
@@ -2134,9 +2142,9 @@ function GameCanvas({
                     }
                 }
 
-                possibleRoadConnections.forEach(
+                renderState.newRoad.possibleConnections.forEach(
                     (point) => {
-                        if (newRoad?.find(newRoadPoint => newRoadPoint.x === point.x && newRoadPoint.y === point.y) === undefined) {
+                        if (renderState.newRoad?.newRoad.find(newRoadPoint => newRoadPoint.x === point.x && newRoadPoint.y === point.y) === undefined) {
                             const height = monitor.getHeight(point)
                             let startPointInfo
 

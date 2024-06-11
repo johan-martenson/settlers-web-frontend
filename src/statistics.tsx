@@ -22,7 +22,7 @@ interface StatisticsProps {
     onClose: () => void
 }
 
-const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClose, ...props }: StatisticsProps) => {
+const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClose }: StatisticsProps) => {
     const landStatsContainerRef = useRef<SVGSVGElement>(null)
     const productionStatsContainerRef = useRef<SVGSVGElement>(null)
     const statsParentRef = useRef<HTMLDivElement>(null)

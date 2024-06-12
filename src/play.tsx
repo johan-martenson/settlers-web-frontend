@@ -95,7 +95,7 @@ function nextWindowId(): number {
     return trackNextWindowId - 1
 }
 
-const MAX_SCALE = 70
+const MAX_SCALE = 150
 const MIN_SCALE = 10
 const ARROW_KEY_MOVE_DISTANCE = 20
 
@@ -113,7 +113,7 @@ export const immediateUxState = {
     width: 0,
     height: 0,
     translate: { x: 0, y: 0 },
-    scale: 35.0//DEFAULT_SCALE
+    scale: DEFAULT_SCALE
 }
 
 /* Track ongoing touches to make touch control work */
@@ -196,6 +196,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         },
         onGameStateChanged: (gameState: GameState) => setGameState(gameState)
     }
+
+    useEffect(
+        () => {
+            if (newRoad === undefined) {
+                setCursor('NOTHING')
+            } else {
+                setCursor('BUILDING_ROAD')
+            }
+        }, [newRoad]
+    )
 
     useEffect(
         () => {
@@ -350,6 +360,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
 
             setCursor('DRAGGING')
+        } else if (event.button === 0 && newRoad !== undefined) {
+            setCursor('BUILDING_ROAD_PRESSED')
         }
 
         event.stopPropagation()
@@ -375,10 +387,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }
 
     function onMouseUp(event: React.MouseEvent): void {
-        immediateUxState.mouseDown = false
-        immediateUxState.mouseMoving = false
+        if (immediateUxState.mouseMoving) {
+            immediateUxState.mouseDown = false
+            immediateUxState.mouseMoving = false
+    
+            setCursor('NOTHING')
+        }
 
-        setCursor('NOTHING')
+        if (newRoad !== undefined) {
+            setCursor('BUILDING_ROAD')
+        }
 
         event.stopPropagation()
     }
@@ -482,13 +500,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                             setNewRoad([pointDownRight])
                             setPossibleRoadConnections(pointDownRightInformation.possibleRoadConnections)
-
-                            setCursor('BUILDING_ROAD')
                         } else if (pointInformation.is && pointInformation.is === "flag") {
                             setNewRoad([point])
                             setPossibleRoadConnections(pointInformation.possibleRoadConnections)
-
-                            setCursor('BUILDING_ROAD')
                         }
                     },
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'building' || pointInformation.is === 'flag'
@@ -696,7 +710,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 setNewRoad(possibleNewRoad)
                 setPossibleRoadConnections(pointInformation.possibleRoadConnections)
-                setCursor('BUILDING_ROAD')
             }
 
             /* Select the point */
@@ -791,8 +804,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         else if (pointInformation.is === "road" && pointInformation.roadId) {
             openWindow({ type: 'ROAD_INFO', roadId: pointInformation.roadId })
-
-            console.log("SHOWING ROAD INFO WINDOW")
         }
 
         /* Open the window to construct houses/flags/roads */
@@ -854,7 +865,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         setNewRoad([{ x: point.x, y: point.y }])
         setPossibleRoadConnections(pointInformation.possibleRoadConnections)
-        setCursor('BUILDING_ROAD')
     }
 
     function copyTouch(touch: React.Touch): StoredTouch {
@@ -1026,7 +1036,20 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 onSetMusicPlayerVisible={(visible: boolean) => setShowMusicPlayer(visible)}
                 onSetTypingControllerVisible={(visible: boolean) => setShowTypingController(visible)}
                 onSetAvailableConstructionVisible={(visible: boolean) => setShowAvailableConstruction(visible)}
-                onSetMusicVolume={(volume: number) => setMusicVolume(volume)}
+                onSetMusicVolume={(newVolume: number) => animator.animate(
+                    'MUSIC_VOLUME',
+                    volume => setMusicVolume(volume),
+                    musicVolume,
+                    newVolume,
+                    0.05
+                )}
+                onSetSoundEffectsVolume={(newVolume: number) => animator.animate(
+                    'EFFECTS_VOLUME',
+                    volume => sfx.setSoundEffectsVolume(volume),
+                    musicVolume,
+                    newVolume,
+                    0.05
+                )}
                 onSetHeightAdjust={(heightAdjust: number) => setHeightAdjust(heightAdjust)}
                 onSetAnimateMapScrolling={(animateMapScrolling) => setAnimateMapScrolling(animateMapScrolling)}
                 onSetAnimateZooming={(animateZoom) => setAnimateZoom(animateZoom)}

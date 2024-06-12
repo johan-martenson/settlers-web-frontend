@@ -24,3 +24,10 @@
     width: calc(400px * 1.68 + 150px);
     height: calc(400px + 150px);
 }
+
+.zoom-buttons {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    z-index: 2;
+}

@@ -23,7 +23,7 @@ export interface ScreenPoint {
     y: number
 }
 
-export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD'
+export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD' | 'BUILDING_ROAD_PRESSED'
 
 type FogOfWarRenderInformation = {
     coordinates: number[]
@@ -82,8 +82,9 @@ const ANIMATION_PERIOD = 100
 const MOUSE_STYLES = new Map<CursorState, string>()
 
 MOUSE_STYLES.set('NOTHING', 'default')
-MOUSE_STYLES.set('DRAGGING', 'move')
-MOUSE_STYLES.set('BUILDING_ROAD', "url(assets/ui-elements/building-road.png), pointer")
+MOUSE_STYLES.set('DRAGGING', 'url(assets/cursors/cursor-move.png), auto')
+MOUSE_STYLES.set('BUILDING_ROAD', "url(assets/cursors/cursor-build-road.png), auto")
+MOUSE_STYLES.set('BUILDING_ROAD_PRESSED', "url(assets/cursors/cursor-build-road-pressed.png), auto")
 
 let timer: ReturnType<typeof setTimeout>
 
@@ -294,21 +295,6 @@ function GameCanvas({
             }
         },
         [showAvailableConstruction, selectedPoint, newRoad, possibleRoadConnections]
-    )
-
-    // Run when the cursor is changed (and when the normal canvas is set up)
-    useEffect(
-        () => {
-            if (normalCanvasRef?.current) {
-                if (cursor === 'DRAGGING') {
-                    normalCanvasRef.current.style.cursor = 'move'
-                } else if (cursor === 'BUILDING_ROAD') {
-                    normalCanvasRef.current.style.cursor = "url(assets/ui-elements/building-road.png), pointer"
-                } else {
-                    normalCanvasRef.current.style.cursor = "pointer"
-                }
-            }
-        }, [cursor, normalCanvasRef]
     )
 
     function updateRoadDrawingBuffers(): void {

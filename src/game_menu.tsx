@@ -5,7 +5,6 @@ import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, S
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
-import { sfx } from './sound/sound_effects'
 import { DEFAULT_VOLUME } from './play'
 import { monitor } from './api/ws-api'
 
@@ -32,6 +31,7 @@ interface GameMenuProps {
     onSetTypingControllerVisible: ((visible: boolean) => void)
     onSetAvailableConstructionVisible: ((visible: boolean) => void)
     onSetMusicVolume: ((volume: number) => void)
+    onSetSoundEffectsVolume: (volume: number) => void
     onSetHeightAdjust: ((heightAdjust: number) => void)
     onSetAnimateMapScrolling: ((shouldAnimate: boolean) => void)
     onSetAnimateZooming: ((shouldAnimate: boolean) => void)
@@ -60,6 +60,7 @@ const GameMenu = (
         onHelp,
         onSetTransportPriority,
         onSetMusicVolume,
+        onSetSoundEffectsVolume,
         onSetHeightAdjust,
         onSetAnimateMapScrolling,
         onSetAnimateZooming,
@@ -195,7 +196,7 @@ const GameMenu = (
                             step={0.1}
                             defaultValue={DEFAULT_VOLUME}
                             onChange={(_event: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
-                                sfx.setSoundEffectsVolume(data.value)
+                                onSetSoundEffectsVolume(data.value)
                             }} />
                     </Field>
 

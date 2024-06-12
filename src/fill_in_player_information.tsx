@@ -61,13 +61,6 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
                     >Go</Button>
                 </div>
             </div>
-            <div id="worker-animation">
-                <WorkerIcon worker='General' animate nation='ROMANS' direction={'WEST'} scale={3} drawShadow />
-            </div>
-
-            <div id="house-icon">
-                <HouseIcon nation="ROMANS" houseType='Fortress' scale={2} drawShadow />
-            </div>
         </>
     )
 }

@@ -5,6 +5,11 @@ import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
 import { GameCanvas } from './game_render'
 import './follow.css'
 import { Button } from '@fluentui/react-components'
+import { animator } from './utils/animator'
+import { calcTranslation } from './render/utils'
+
+const MIN_SCALE = 10
+const MAX_SCALE = 150
 
 type FollowProps = {
     point: Point
@@ -89,6 +94,19 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
                 ref={myRef}
                 className='follow-content'
 
+                onWheel={(event: React.WheelEvent) => setScale((prevScale) => {
+                    let newScale = prevScale - event.deltaY / 20.0
+
+                    newScale = Math.min(newScale, MAX_SCALE)
+                    newScale = Math.max(newScale, MIN_SCALE)
+
+                    const newTranslate = calcTranslation(prevScale, newScale, translate, { width, height })
+
+                    setTranslate(newTranslate)
+
+                    return newScale
+                })}
+
                 // eslint-disable-next-line
                 onMouseUp={(event: React.MouseEvent) => {
                     moving.moving = false
@@ -123,6 +141,60 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
                     hideHoverPoint={true}
                     hideSelectedPoint={true}
                 />
+                <div className='zoom-buttons'>
+                    <Button
+                        appearance='transparent'
+                        onMouseEnter={() => setHoverInfo('Zoom in')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                        onClick={() => setScale(prevScale => {
+                            let newScale = prevScale + 10
+
+                            newScale = Math.min(newScale, MAX_SCALE)
+                            newScale = Math.max(newScale, MIN_SCALE)
+
+                            const newTranslate = calcTranslation(prevScale, newScale, translate, { width, height })
+
+                            animator.animateSeveralNoId(
+                                (values: number[]) => {
+                                    setScale(values[0])
+                                    setTranslate({ x: values[1], y: values[2] })
+                                },
+                                [prevScale, translate.x, translate.y],
+                                [newScale, newTranslate.x, newTranslate.y]
+                            )
+
+                            return prevScale
+                        })}
+                    >
+                        +
+                    </Button>
+                    <Button
+                        appearance='transparent'
+                        onMouseEnter={() => setHoverInfo('Zoom out')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                        onClick={() => setScale(prevScale => {
+                            let newScale = prevScale - 10
+
+                            newScale = Math.min(newScale, MAX_SCALE)
+                            newScale = Math.max(newScale, MIN_SCALE)
+
+                            const newTranslate = calcTranslation(prevScale, newScale, translate, { width, height })
+
+                            animator.animateSeveralNoId(
+                                (values: number[]) => {
+                                    setScale(values[0])
+                                    setTranslate({ x: values[1], y: values[2] })
+                                },
+                                [prevScale, translate.x, translate.y],
+                                [newScale, newTranslate.x, newTranslate.y]
+                            )
+
+                            return prevScale
+                        })}
+                    >
+                        -
+                    </Button>
+                </div>
             </div>
             <ButtonRow>
                 <Button

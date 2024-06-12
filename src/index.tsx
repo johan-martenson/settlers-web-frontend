@@ -41,7 +41,13 @@ function GameInit() {
     )
 
     return (
-        <div>
+        <div style={{
+            backgroundImage: 'url("bg.png")',
+            height: '100vh',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover'
+        }}>
             {state === "ENTER_PLAYER_INFORMATION" &&
                 <FillInPlayerInformation
                     onPlayerInformationDone={

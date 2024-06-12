@@ -64,25 +64,16 @@ const Lobby = ({ playerName }: LobbyProps) => {
                         <GameList onJoinGame={(gameId: GameId) => joinGame(gameId)} />
                         <Button onClick={() => setState("CREATE_GAME")} autoFocus appearance='primary'>Create new game</Button>
                     </div>
-                    <div id="worker-animation">
-                        <WorkerIcon worker='General' animate={true} nation='ROMANS' direction={'WEST'} scale={3} drawShadow />
-                    </div>
                 </>
             }
 
             {state === "PLAY_GAME" && gameId && selfPlayerId &&
-                <>
-                    <Play gameId={gameId}
-                        selfPlayerId={selfPlayerId}
-                        onLeaveGame={
-                            () => setState("LIST_GAMES")
-                        }
-                    />
-                    <div id="worker-animation">
-                        <WorkerIcon worker='General' animate={true} nation='ROMANS' direction={'WEST'} scale={3} drawShadow />
-                    </div>
-
-                </>
+                <Play gameId={gameId}
+                    selfPlayerId={selfPlayerId}
+                    onLeaveGame={
+                        () => setState("LIST_GAMES")
+                    }
+                />
             }
 
             {state === "WAIT_FOR_GAME" &&

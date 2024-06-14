@@ -135,6 +135,7 @@ let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
 
 let drawGroundProgramInstance: ProgramInstance | undefined
 let drawRoadsProgramInstance: ProgramInstance | undefined
+let drawImageProgramInstance: ProgramInstance | undefined
 
 const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 
@@ -162,6 +163,33 @@ const drawGroundProgramDescriptor: ProgramDescriptor = {
         'a_texture_mapping': {
             maxElements: maxNumberTriangles * 3 * 2,
             elementsPerVertex: 2
+        }
+    }
+}
+
+const drawImageProgramDescriptor: ProgramDescriptor = {
+    vertexShaderSource: texturedImageVertexShaderPixelPerfect,
+    fragmentShaderSource: textureFragmentShader,
+    uniforms: {
+        'u_texture': { type: 'INT' },
+        'u_game_point': { type: 'FLOAT' },
+        'u_screen_offset': { type: 'FLOAT' },
+        'u_image_offset': { type: 'FLOAT' },
+        'u_scale': { type: 'FLOAT' },
+        'u_source_coordinate': { type: 'FLOAT' },
+        'u_source_dimensions': { type: 'FLOAT' },
+        'u_screen_dimensions': { type: 'FLOAT' },
+        'u_height_adjust': { type: 'FLOAT' },
+        'u_height': { type: 'FLOAT' },
+    },
+    attributes: {
+        'a_position': {
+            elementsPerVertex: 2,
+            maxElements: 12
+        },
+        'a_texcoord': {
+            elementsPerVertex: 2,
+            maxElements: 12
         }
     }
 }
@@ -454,6 +482,7 @@ function GameCanvas({
                     if (gl) {
                         drawGroundProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
                         drawRoadsProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
+                        drawImageProgramInstance = initProgram(drawImageProgramDescriptor, gl)
 
                         // Create and compile the shaders
                         const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
@@ -484,6 +513,26 @@ function GameCanvas({
                             console.error("Failed to create terrain rendering gl program")
                         }
 
+                        const positions = [
+                            0, 0,
+                            0, 1,
+                            1, 0,
+                            1, 0,
+                            0, 1,
+                            1, 1,
+                        ]
+                        const texCoords = [
+                            0, 0,
+                            0, 1,
+                            1, 0,
+                            1, 0,
+                            0, 1,
+                            1, 1
+                        ]
+
+                        setBuffer(drawImageProgramInstance, 'a_position', positions)
+                        setBuffer(drawImageProgramInstance, 'a_texcoord', texCoords)
+
                         // Setup the program to render images
                         if (renderState.drawImageProgram && drawImageVertexShader && drawImageFragmentShader) {
                             gl.attachShader(renderState.drawImageProgram, drawImageVertexShader)
@@ -504,14 +553,7 @@ function GameCanvas({
                             renderState.drawImagePositionBuffer = gl.createBuffer()
                             gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
 
-                            const positions = [
-                                0, 0,
-                                0, 1,
-                                1, 0,
-                                1, 0,
-                                0, 1,
-                                1, 1,
-                            ]
+
 
                             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
 
@@ -525,14 +567,6 @@ function GameCanvas({
                             renderState.drawImageTexCoordBuffer = gl.createBuffer()
                             gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
 
-                            const texCoords = [
-                                0, 0,
-                                0, 1,
-                                1, 0,
-                                1, 0,
-                                0, 1,
-                                1, 1
-                            ]
 
                             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
 
@@ -879,73 +913,35 @@ function GameCanvas({
             }
         })
 
-        // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (renderState.drawImageProgram &&
-            renderState.drawImagePositionBuffer &&
-            renderState.drawImageTexCoordBuffer &&
-            renderState.drawImageHeightAdjustmentLocation &&
-            renderState.drawImageHeightLocation) {
+        // Draw decorations objects
+        for (const toDraw of decorationsToDraw) {
+            if (toDraw?.source?.image !== undefined && drawImageProgramInstance !== undefined) {
+                const textureSlot = textures.activateTextureForRendering(drawImageProgramInstance.gl, toDraw.source.image)
 
-            renderState.gl.useProgram(renderState.drawImageProgram)
+                if (textureSlot === undefined) {
+                    console.error(`Texture slot is undefined for ${toDraw.source.image}`)
 
-            renderState.gl.viewport(0, 0, width, height)
-
-            renderState.gl.enable(renderState.gl.BLEND)
-            renderState.gl.blendFunc(renderState.gl.ONE, renderState.gl.ONE_MINUS_SRC_ALPHA)
-            renderState.gl.disable(renderState.gl.DEPTH_TEST)
-
-            // Re-assign the attribute locations
-            const drawImagePositionLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_position")
-            const drawImageTexcoordLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_texcoord")
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
-            renderState.gl.vertexAttribPointer(drawImagePositionLocation, 2, renderState.gl.FLOAT, false, 0, 0)
-            renderState.gl.enableVertexAttribArray(drawImagePositionLocation)
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
-            renderState.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, renderState.gl.FLOAT, false, 0, 0)
-            renderState.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-
-            // Re-assign the uniform locations
-            const drawImageTextureLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_texture")
-            const drawImageGamePointLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_game_point")
-            const drawImageScreenOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_offset")
-            const drawImageOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_image_offset")
-            const drawImageScaleLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_scale")
-            const drawImageSourceCoordinateLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_coordinate")
-            const drawImageSourceDimensionsLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_dimensions")
-            const drawImageScreenDimensionLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_dimensions")
-
-            const gl = renderState.gl
-
-            // Draw decorations objects
-            for (const draw of decorationsToDraw) {
-                if (draw?.source?.image !== undefined) {
-                    const textureSlot = textures.activateTextureForRendering(gl, draw.source.image)
-
-                    if (textureSlot === undefined) {
-                        console.error(`Texture slot is undefined for ${draw.source.image}`)
-
-                        continue
-                    }
-
-                    // Set the constants
-                    gl.uniform1i(drawImageTextureLocation, textureSlot)
-                    gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                    gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                    gl.uniform1f(drawImageScaleLocation, renderState.scale)
-                    gl.uniform2f(drawImageScreenOffsetLocation, renderState.translate.x, renderState.translate.y)
-                    gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-                    gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                    gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                    gl.uniform1f(renderState.drawImageHeightAdjustmentLocation, heightAdjust)
-                    gl.uniform1f(renderState.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
-
-                    // Draw the quad (2 triangles = 6 vertices)
-                    gl.drawArrays(gl.TRIANGLES, 0, 6)
-                } else {
-                    console.error(`The texture for ${draw?.source?.image} is undefined`)
+                    continue
                 }
+
+                // Set the constants
+                draw(drawImageProgramInstance,
+                    {
+                        'u_texture': textureSlot,
+                        'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
+                        'u_screen_offset': [renderState.translate.x, renderState.translate.y],
+                        'u_image_offset': [toDraw.source.offsetX, toDraw.source.offsetY],
+                        'u_scale': renderState.scale,
+                        'u_source_coordinate': [toDraw.source.sourceX, toDraw.source.sourceY],
+                        'u_source_dimensions': [toDraw.source.width, toDraw.source.height],
+                        'u_screen_dimensions': [width, height],
+                        'u_height_adjust': heightAdjust,
+                        'u_height': monitor.getHeight(toDraw.gamePoint)
+                    },
+                    'NO_CLEAR_BEFORE_DRAW'
+                )
+            } else {
+                console.error(`The texture for ${toDraw?.source?.image} is undefined`)
             }
         }
 
@@ -1882,77 +1878,37 @@ function GameCanvas({
         }
 
 
-        // Set up webgl2 with the right shaders to prepare for drawing normal objects
-        if (renderState.drawImageProgram &&
-            renderState.drawImageHeightAdjustmentLocation &&
-            renderState.drawImageHeightLocation &&
-            renderState.drawImagePositionBuffer &&
-            renderState.drawImageTexCoordBuffer) {
-
-            // Use the draw image program
-            renderState.gl.useProgram(renderState.drawImageProgram)
-
-            // Configure the drawing
-            renderState.gl.viewport(0, 0, width, height)
-            renderState.gl.enable(renderState.gl.BLEND)
-            renderState.gl.blendFunc(renderState.gl.ONE, renderState.gl.ONE_MINUS_SRC_ALPHA)
-            renderState.gl.disable(renderState.gl.DEPTH_TEST)
-
-            // Re-assign the attribute locations
-            const drawImagePositionLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_position")
-            const drawImageTexcoordLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_texcoord")
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
-            renderState.gl.vertexAttribPointer(drawImagePositionLocation, 2, renderState.gl.FLOAT, false, 0, 0)
-            renderState.gl.enableVertexAttribArray(drawImagePositionLocation)
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
-            renderState.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, renderState.gl.FLOAT, false, 0, 0)
-            renderState.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-
-            // Re-assign the uniform locations
-            const drawImageTextureLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_texture")
-            const drawImageGamePointLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_game_point")
-            const drawImageScreenOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_offset")
-            const drawImageOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_image_offset")
-            const drawImageScaleLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_scale")
-            const drawImageSourceCoordinateLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_coordinate")
-            const drawImageSourceDimensionsLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_dimensions")
-            const drawImageScreenDimensionLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_dimensions")
-
-            // Draw normal objects
-            for (const draw of sortedToDrawList) {
-                if (draw.gamePoint === undefined || draw.source?.image === undefined) {
+        // Draw normal objects
+        if (drawImageProgramInstance !== undefined) {
+            for (const toDraw of sortedToDrawList) {
+                if (toDraw.gamePoint === undefined || toDraw.source?.image === undefined) {
                     continue
                 }
 
-                const textureSlot = textures.activateTextureForRendering(renderState.gl, draw.source.image)
+                const textureSlot = textures.activateTextureForRendering(renderState.gl, toDraw.source.image)
 
                 if (textureSlot === undefined) {
-                    console.error(`Texture slot is undefined for ${draw.source.image}`)
+                    console.error(`Texture slot is undefined for ${toDraw.source.image}`)
 
                     continue
                 }
 
                 // Set the constants
-                renderState.gl.uniform1i(drawImageTextureLocation, textureSlot)
-                renderState.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                renderState.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                renderState.gl.uniform1f(drawImageScaleLocation, renderState.scale)
-                renderState.gl.uniform2f(drawImageScreenOffsetLocation, renderState.translate.x, renderState.translate.y)
-                renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-                renderState.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                renderState.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                renderState.gl.uniform1f(renderState.drawImageHeightAdjustmentLocation, heightAdjust)
-
-                if (draw.height !== undefined) {
-                    renderState.gl.uniform1f(renderState.drawImageHeightLocation, draw.height)
-                } else {
-                    renderState.gl.uniform1f(renderState.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
-                }
-
-                // Draw the quad (2 triangles = 6 vertices)
-                renderState.gl.drawArrays(renderState.gl.TRIANGLES, 0, 6)
+                draw(drawImageProgramInstance,
+                    {
+                        'u_texture': textureSlot,
+                        'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
+                        'u_screen_offset': [renderState.translate.x, renderState.translate.y],
+                        'u_image_offset': [toDraw.source.offsetX, toDraw.source.offsetY],
+                        'u_scale': renderState.scale,
+                        'u_source_coordinate': [toDraw.source.sourceX, toDraw.source.sourceY],
+                        'u_source_dimensions': [toDraw.source.width, toDraw.source.height],
+                        'u_screen_dimensions': [width, height],
+                        'u_height_adjust': heightAdjust,
+                        'u_height': monitor.getHeight(toDraw.gamePoint)
+                    },
+                    'NO_CLEAR_BEFORE_DRAW'
+                )
             }
         }
 
@@ -2083,79 +2039,36 @@ function GameCanvas({
         }
 
         // Draw the overlay layer. Assume for now that they don't need sorting
-
-        // Set up webgl2 with the right shaders
-        if (renderState.drawImageProgram &&
-            renderState.drawImageHeightAdjustmentLocation !== undefined &&
-            renderState.drawImageHeightLocation !== undefined &&
-            renderState.drawImagePositionBuffer &&
-            renderState.drawImageTexCoordBuffer) {
-
-            // Use the draw image program
-            renderState.gl.useProgram(renderState.drawImageProgram)
-
-            // Configure the drawing
-            renderState.gl.viewport(0, 0, width, height)
-            renderState.gl.enable(renderState.gl.BLEND)
-            renderState.gl.blendFunc(renderState.gl.ONE, renderState.gl.ONE_MINUS_SRC_ALPHA)
-            renderState.gl.disable(renderState.gl.DEPTH_TEST)
-
-            // Re-assign the attribute locations
-            renderState.drawImagePositionLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_position")
-            renderState.drawImageTexcoordLocation = renderState.gl.getAttribLocation(renderState.drawImageProgram, "a_texcoord")
-
-            // Set the buffers
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
-            renderState.gl.vertexAttribPointer(renderState.drawImagePositionLocation, 2, renderState.gl.FLOAT, false, 0, 0)
-            renderState.gl.enableVertexAttribArray(renderState.drawImagePositionLocation)
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
-            renderState.gl.vertexAttribPointer(renderState.drawImageTexcoordLocation, 2, renderState.gl.FLOAT, false, 0, 0)
-            renderState.gl.enableVertexAttribArray(renderState.drawImageTexcoordLocation)
-
-            // Re-assign the uniform locations
-            const drawImageTextureLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_texture")
-            const drawImageGamePointLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_game_point")
-            const drawImageScreenOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_offset")
-            const drawImageOffsetLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_image_offset")
-            const drawImageScaleLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_scale")
-            const drawImageSourceCoordinateLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_coordinate")
-            const drawImageSourceDimensionsLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_source_dimensions")
-            const drawImageScreenDimensionLocation = renderState.gl.getUniformLocation(renderState.drawImageProgram, "u_screen_dimensions")
-
-            // Go through the images to draw
-            for (const draw of toDrawHover) {
-                if (draw.gamePoint === undefined || draw.source?.image === undefined) {
+        if (drawImageProgramInstance !== undefined) {
+            for (const toDraw of toDrawHover) {
+                if (toDraw.gamePoint === undefined || toDraw.source?.image === undefined) {
                     continue
                 }
 
-                const textureSlot = textures.activateTextureForRendering(renderState.gl, draw.source.image)
+                const textureSlot = textures.activateTextureForRendering(renderState.gl, toDraw.source.image)
 
                 if (textureSlot === undefined) {
-                    console.error(`Texture slot is undefined for ${draw.source.image}`)
+                    console.error(`Texture slot is undefined for ${toDraw.source.image}`)
 
                     continue
                 }
 
-                // Set the constants
-                renderState.gl.uniform1i(drawImageTextureLocation, textureSlot)
-                renderState.gl.uniform2f(drawImageGamePointLocation, draw.gamePoint.x, draw.gamePoint.y)
-                renderState.gl.uniform2f(drawImageOffsetLocation, draw.source.offsetX, draw.source.offsetY)
-                renderState.gl.uniform1f(drawImageScaleLocation, renderState.scale)
-                renderState.gl.uniform2f(drawImageScreenOffsetLocation, renderState.translate.x, renderState.translate.y)
-                renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-                renderState.gl.uniform2f(drawImageSourceCoordinateLocation, draw.source.sourceX, draw.source.sourceY)
-                renderState.gl.uniform2f(drawImageSourceDimensionsLocation, draw.source.width, draw.source.height)
-                renderState.gl.uniform1f(renderState.drawImageHeightAdjustmentLocation, heightAdjust)
-
-                if (draw.height !== undefined) {
-                    renderState.gl.uniform1f(renderState.drawImageHeightLocation, draw.height)
-                } else {
-                    renderState.gl.uniform1f(renderState.drawImageHeightLocation, monitor.getHeight(draw.gamePoint))
-                }
-
-                // Draw the quad (2 triangles = 6 vertices)
-                renderState.gl.drawArrays(renderState.gl.TRIANGLES, 0, 6)
+                // Set the constants and draw
+                draw(drawImageProgramInstance,
+                    {
+                        'u_texture': textureSlot,
+                        'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
+                        'u_screen_offset': [renderState.translate.x, renderState.translate.y],
+                        'u_image_offset': [toDraw.source.offsetX, toDraw.source.offsetY],
+                        'u_scale': renderState.scale,
+                        'u_source_coordinate': [toDraw.source.sourceX, toDraw.source.sourceY],
+                        'u_source_dimensions': [toDraw.source.width, toDraw.source.height],
+                        'u_screen_dimensions': [width, height],
+                        'u_height_adjust': heightAdjust,
+                        'u_height': toDraw.height ?? monitor.getHeight(toDraw.gamePoint)
+                    },
+                    'NO_CLEAR_BEFORE_DRAW'
+                )
             }
         }
 

@@ -4,7 +4,6 @@ import { Button } from "@fluentui/react-components"
 import { GameCreator } from './game_creator'
 import GameList from './game_list'
 import './lobby.css'
-import { WorkerIcon } from './icon'
 import { GameId, PlayerId } from './api/types'
 import Play from './play'
 

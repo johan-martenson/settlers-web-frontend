@@ -31,3 +31,27 @@
     bottom: 0px;
     z-index: 2;
 }
+
+.small-symbol {
+    width: 10px;
+    height: 10px;
+    border-color: white;
+    border-width: 2px;
+    border-style: solid;
+}
+
+.medium-symbol {
+    width: 15px;
+    height: 15px;
+    border-color: white;
+    border-width: 2px;
+    border-style: solid;
+}
+
+.large-symbol {
+    width: 20px;
+    height: 20px;
+    border-color: white;
+    border-width: 2px;
+    border-style: solid;
+}

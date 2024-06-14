@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES } from './api/types'
 import './construction_info.css'
-import { Window } from './components/dialog'
+import { ButtonRow, Window } from './components/dialog'
 import { monitor } from './api/ws-api'
 import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from './utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
@@ -11,16 +11,19 @@ interface ConstructionInfoProps {
     point: PointInformation
     nation: Nation
 
-    onRaise: (() => void)
-    onClose: (() => void)
-    onStartNewRoad: ((point: Point) => void)
+    onStartMonitor: (point: Point) => void
+    onRaise: () => void
+    onClose: () => void
+    onStartNewRoad: (point: Point) => void
 }
 
-const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }: ConstructionInfoProps) => {
+// TODO: add monitor tab
+
+const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMonitor, ...props }: ConstructionInfoProps) => {
     const [point, setPoint] = useState<PointInformation>(props.point)
-    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads')
+    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads' | 'Monitor'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads')
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<'small' | 'medium' | 'large'>('small')
-    const [hover, setHover] = useState<string | undefined>()
+    const [hoverInfo, setHoverInfo] = useState<string | undefined>()
 
     const constructionOptions = new Map()
     const constructionInitialSelection = canBuildHouse(point) ? "Buildings" : "FlagsAndRoads"
@@ -66,7 +69,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
     }
 
     return (
-        <Window id="ConstructionInfo" className="construction-info-window" heading="Construction" onClose={onClose} hoverInfo={hover} onRaise={onRaise}>
+        <Window id="ConstructionInfo" className="construction-info-window" heading="Construction" onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
 
             <div className='construction-info'>
                 <TabList
@@ -75,7 +78,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
                         (_event: SelectTabEvent, data: SelectTabData) => {
                             const value = data.value
 
-                            if (value === "Buildings" || value === "FlagsAndRoads") {
+                            if (value === "Buildings" || value === "FlagsAndRoads" || value === 'Monitor') {
                                 setSelected(value)
                             }
                         }
@@ -84,12 +87,15 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
                     {Array.from(constructionOptions.entries(), ([key, value], index) => {
                         return <Tab value={key} key={index}>{value}</Tab>
                     })}
+                    <Tab value={'Monitor'}>
+                        Monitor
+                    </Tab>
                 </TabList>
 
                 {selected === "FlagsAndRoads" &&
                     <div className="dialog-section">
 
-                        <div className='button-row'>
+                        <ButtonRow>
                             <Tooltip content={'Raise flag'} relationship='label' withArrow>
                                 <Button
                                     onClick={
@@ -101,8 +107,8 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
                                         }
                                     }
 
-                                    onMouseEnter={() => setHover("Raise flag")}
-                                    onMouseLeave={() => setHover(undefined)}
+                                    onMouseEnter={() => setHoverInfo("Raise flag")}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
                                 >
                                     <FlagIcon type='NORMAL' nation={nation} />
 
@@ -123,7 +129,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
                                     }
                                 >Build road</Button>
                             }
-                        </div>
+                        </ButtonRow>
                     </div>
                 }
 
@@ -162,8 +168,8 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
                                                 }
                                             }
 
-                                            onMouseEnter={() => setHover(house)}
-                                            onMouseLeave={() => setHover(undefined)}
+                                            onMouseEnter={() => setHoverInfo(house)}
+                                            onMouseLeave={() => setHoverInfo(undefined)}
                                         >
                                             <div className='house-construction-button'>
                                                 <HouseIcon nation={nation} houseType={house} drawShadow />
@@ -194,8 +200,8 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
                                                 }
                                             }
 
-                                            onMouseEnter={() => setHover(house)}
-                                            onMouseLeave={() => setHover(undefined)}
+                                            onMouseEnter={() => setHoverInfo(house)}
+                                            onMouseLeave={() => setHoverInfo(undefined)}
                                         >
                                             <div className='house-construction-button'>
                                                 <HouseIcon nation={nation} houseType={house} drawShadow />
@@ -226,8 +232,8 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
                                                 }
                                             }
 
-                                            onMouseEnter={() => setHover(house)}
-                                            onMouseLeave={() => setHover(undefined)}
+                                            onMouseEnter={() => setHoverInfo(house)}
+                                            onMouseLeave={() => setHoverInfo(undefined)}
                                         >
                                             <div className='house-construction-button'>
                                                 <HouseIcon nation={nation} houseType={house} drawShadow />
@@ -240,6 +246,17 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, ...props }
                     </div>
                 }
 
+                {selected === 'Monitor' &&
+                    <ButtonRow>
+                        <Button
+                            onClick={() => onStartMonitor(point)}
+                            onMouseEnter={() => setHoverInfo('Open monitor')}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        >
+                            Monitor
+                        </Button>
+                    </ButtonRow>
+                }
             </div>
         </Window>
     )

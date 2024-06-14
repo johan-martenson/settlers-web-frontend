@@ -191,7 +191,7 @@ export type PlayerColor = 'BLUE' | 'YELLOW' | 'RED' | 'PURPLE' | 'GRAY' | 'GREEN
 export const PLAYER_COLORS: PlayerColor[] = ['BLUE', 'YELLOW', 'RED', 'PURPLE', 'GRAY', 'GREEN', 'BROWN', 'WHITE']
 
 function isPlayerColor(playerColor: unknown): playerColor is PlayerColor {
-    return typeof(playerColor) === 'string' && PLAYER_COLORS.find(e => e === playerColor) !== undefined
+    return typeof (playerColor) === 'string' && PLAYER_COLORS.find(e => e === playerColor) !== undefined
 }
 
 export interface Player {

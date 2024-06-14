@@ -4,7 +4,7 @@ import './friendly_flag_info.css'
 import { monitor } from './api/ws-api'
 import { Button, Field, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, InventoryIcon, UiIcon } from './icon'
-import { Window } from './components/dialog'
+import { ButtonRow, Window } from './components/dialog'
 
 interface FriendlyFlagInfoProps {
     flag: FlagInformation
@@ -14,6 +14,8 @@ interface FriendlyFlagInfoProps {
     onStartNewRoad: ((flag: FlagInformation) => void)
     onClose: (() => void)
 }
+
+// TODO: add monitor tab
 
 const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }: FriendlyFlagInfoProps) => {
     const [flag, setFlag] = useState<FlagInformation>(props.flag)
@@ -37,7 +39,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
 
                 <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate drawShadow />
 
-                <div className="button-row">
+                <ButtonRow>
 
                     <Tooltip content={'Remove flag'} relationship='label' withArrow>
                         <Button
@@ -104,7 +106,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                             </div>
                         </Button>
                     </Tooltip>
-                </div>
+                </ButtonRow>
 
                 {flag.stackedCargo &&
                     <div className='friendly-flag-info-stacked-cargo'>

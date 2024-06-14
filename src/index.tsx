@@ -42,7 +42,7 @@ function GameInit() {
 
     return (
         <div style={{
-            backgroundImage: 'url("bg.png")',
+            backgroundImage: 'url("assets/backgrounds/ship.png")',
             height: '100vh',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',

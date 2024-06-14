@@ -18,8 +18,3 @@
     height: auto;
     min-height: 5em;
 }
-
-.button-row {
-    display: flex;
-    flex-direction: row;
-}

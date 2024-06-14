@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Label, Input, Button, InputOnChangeData } from "@fluentui/react-components"
 import { do_self_test } from './self_test'
-import { HouseIcon, WorkerIcon } from './icon'
 import './fill_in_player_information.css'
 
 interface FillInPlayerInformationProps {

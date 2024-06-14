@@ -26,6 +26,8 @@ import { RoadInfo } from './road-info'
 import { Debug } from './debug/debug'
 import { Follow } from './follow'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
+import { ButtonRow } from './components/dialog'
+import { Button } from '@fluentui/react-components'
 
 type HouseWindow = {
     type: 'HOUSE'
@@ -125,11 +127,21 @@ interface StoredTouch {
     pageY: number
 }
 
-interface PauseSignProps {
-    message: string
+const Expired = () => {
+    return (
+        <div className='expired'>
+            <h1>The game has expired</h1>
+            <p>The game has expired and is frozen in time. You can stay and view the current game or go back to the lobby to start a new game.</p>
+            <ButtonRow>
+                <Button>Stay in game</Button>
+                <Button>Go to lobby</Button>
+            </ButtonRow>
+
+        </div>
+    )
 }
 
-const PauseSign = ({ message }: PauseSignProps) => {
+const PauseSign = () => {
     return (
         <div style={{
             position: "absolute",
@@ -147,7 +159,7 @@ const PauseSign = ({ message }: PauseSignProps) => {
             <div style={{
                 backgroundColor: "black", borderRadius: "5px"
             }}>
-                {message}
+                The game is paused
             </div>
         </div>
     )
@@ -390,7 +402,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         if (immediateUxState.mouseMoving) {
             immediateUxState.mouseDown = false
             immediateUxState.mouseMoving = false
-    
+
             setCursor('NOTHING')
         }
 
@@ -1062,6 +1074,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         return <ConstructionInfo
                             key={window.id}
                             point={window.pointInformation}
+                            onStartMonitor={(point: Point) => openWindow({ type: 'FOLLOW', point })}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
                             onStartNewRoad={startNewRoad.bind(this)}
@@ -1120,6 +1133,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         return <RoadInfo
                             key={window.id}
                             roadId={window.roadId}
+                            onStartMonitor={(point: Point) => openWindow({ type: 'FOLLOW', point })}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
                         />
@@ -1136,6 +1150,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
                             key={window.id}
+                            heightAdjust={heightAdjust}
                         />
                 }
             })}
@@ -1156,11 +1171,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             }
 
             {gameState === 'PAUSED' &&
-                <PauseSign message='PAUSED' />
+                <PauseSign />
             }
 
             {gameState === 'EXPIRED' &&
-                <PauseSign message='EXPIRED' />
+                <Expired />
             }
         </div>
     )

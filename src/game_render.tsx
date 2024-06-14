@@ -2397,12 +2397,6 @@ function GameCanvas({
             console.error("Did not draw the fog of war layer")
         }
 
-        if (renderState.once) {
-            console.log(renderState.gl.getError())
-
-            renderState.once = false
-        }
-
         duration.reportStats()
 
 

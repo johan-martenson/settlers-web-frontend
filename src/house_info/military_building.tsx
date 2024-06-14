@@ -5,7 +5,7 @@ import { HouseIcon, InventoryIcon, UiIcon } from '../icon'
 import './house_info.css'
 import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse } from "../api/rest-api"
 import { monitor } from '../api/ws-api'
-import { Window } from '../components/dialog'
+import { ButtonRow, Window } from '../components/dialog'
 
 interface MilitaryBuildingProps {
     house: HouseInformation
@@ -128,15 +128,15 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }:
                     {Array.from({ length: gapCoins }, () => 1).map(
                         (value, index) => <Tooltip content="Coin" relationship={'label'} withArrow key={index}>
                             <span
-                            onMouseEnter={() => setHoverInfo(`Can hold ${gapCoins} coins more`)}
-                            onMouseLeave={() => setHoverInfo(undefined)}
+                                onMouseEnter={() => setHoverInfo(`Can hold ${gapCoins} coins more`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}
                             ><InventoryIcon material={'COIN'} nation={nation} inline missing /></span>
                         </Tooltip>
                     )}
                 </div>
             </Field>
 
-            <div className='building-button-row'>
+            <ButtonRow>
                 {house.promotionsEnabled &&
                     <Button
                         onClick={() => { disablePromotionsForHouse(gameId, playerId, house.id) }}
@@ -201,7 +201,7 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }:
                     </Button>
                 </Tooltip>
 
-            </div>
+            </ButtonRow>
         </Window>
     )
 }

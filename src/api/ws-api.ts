@@ -151,6 +151,26 @@ interface AvailableConstructionListener {
     onAvailableConstructionChanged: ((availableConstruction: AvailableConstruction[]) => void)
 }
 
+export type MoveUpdate = {
+    id: WorkerId
+} & (
+        {
+            state: 'ON_POINT'
+            point: Point
+        } |
+        {
+            state: 'BETWEEN_POINTS'
+            previous: Point
+            next: Point
+            progress: number
+        }
+    )
+interface WorkerMoveListener {
+    id: WorkerId
+
+    onWorkerMoved: (move: MoveUpdate) => void
+}
+
 interface ReplyMessage {
     requestId: RequestId
 }
@@ -271,11 +291,13 @@ export interface Monitor {
     listenToDiscoveredPoints: ((listener: ((points: PointSetFast) => void)) => void)
     listenToRoads: ((listener: (() => void)) => void)
     listenToHouse: ((houseId: HouseId, houseListenerFn: (house: HouseInformation) => void) => void)
+    listenToMovementForWorker: (listener: WorkerMoveListener) => void
 
     stopListeningToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
     stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
     stopListeningToAvailableConstruction: ((point: Point, listener: AvailableConstructionListener) => void)
     stopListeningToGameState: ((listener: GameListener) => void)
+    stopListeningToMovementForWorker: (listener: WorkerMoveListener) => void
 
     setCoalQuotas: ((mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void)
     setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
@@ -307,6 +329,7 @@ const availableConstructionListeners = new PointMapFast<AvailableConstructionLis
 const actionListeners: ActionListener[] = []
 const houseBurningListeners: HouseBurningListener[] = []
 const gameListeners: GameListener[] = []
+const workerMovedListeners: WorkerMoveListener[] = []
 
 const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[]>()
 
@@ -429,11 +452,13 @@ const monitor: Monitor = {
     listenToDiscoveredPoints,
     listenToRoads,
     listenToHouse,
+    listenToMovementForWorker,
 
     stopListeningToFlag,
     stopListeningToAvailableConstruction,
     stopListeningToMessages,
     stopListeningToGameState,
+    stopListeningToMovementForWorker,
 
     setCoalQuotas,
     setFoodQuotas,
@@ -719,6 +744,30 @@ function startTimers() {
             } else {
                 worker.betweenPoints = true
             }
+
+            workerMovedListeners.forEach(listener => {
+                if (worker.id === listener.id) {
+                    let move: MoveUpdate
+
+                    if (worker.betweenPoints && worker.previous && worker.next) {
+                        move = {
+                            id: worker.id,
+                            state: 'BETWEEN_POINTS',
+                            previous: worker.previous,
+                            next: worker.next,
+                            progress: worker.percentageTraveled
+                        }
+                    } else {
+                        move = {
+                            id: worker.id,
+                            state: 'ON_POINT',
+                            point: { x: worker.x, y: worker.y }
+                        }
+                    }
+
+                    listener.onWorkerMoved(move)
+                }
+            })
         }
 
         for (const wildAnimal of monitor.wildAnimals.values()) {
@@ -1466,6 +1515,16 @@ function stopListeningToGameState(listener: GameListener): void {
     const index = gameListeners.indexOf(listener)
 
     delete gameListeners[index]
+}
+
+function stopListeningToMovementForWorker(listener: WorkerMoveListener): void {
+    const index = workerMovedListeners.indexOf(listener)
+
+    delete workerMovedListeners[index]
+}
+
+function listenToMovementForWorker(listener: WorkerMoveListener): void {
+    workerMovedListeners.push(listener)
 }
 
 function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformation) => void): void {

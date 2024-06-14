@@ -42,6 +42,8 @@ function Window({ onClose, onRaise, ...props }: WindowProps) {
             onMouseDown={(event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
                 if (event.button === 2) {
                     onClose()
+
+                    event.stopPropagation()
                 } else {
                     setDragging({
                         mouseDragStart: { x: event.clientX, y: event.clientY },

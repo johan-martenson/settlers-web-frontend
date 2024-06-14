@@ -1,18 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ButtonRow, Window } from './components/dialog'
-import { Point } from './api/types'
-import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
+import { Point, WorkerId } from './api/types'
+import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, STANDARD_HEIGHT } from './render/constants'
 import { GameCanvas } from './game_render'
 import './follow.css'
 import { Button } from '@fluentui/react-components'
 import { animator } from './utils/animator'
 import { calcTranslation } from './render/utils'
+import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from './utils'
+import { MoveUpdate, monitor } from './api/ws-api'
 
 const MIN_SCALE = 10
 const MAX_SCALE = 150
 
 type FollowProps = {
     point: Point
+    heightAdjust: number
     scale?: number
 
     onRaise: () => void
@@ -27,7 +30,7 @@ type Moving = {
     translate: Point
 }
 
-function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
+function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps) {
     const myRef = useRef<HTMLDivElement | null>(null)
 
     // eslint-disable-next-line
@@ -41,6 +44,28 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
     const [translate, setTranslate] = useState<Point>({ x: 0, y: 0 })
     const [isCentered, setIsCentered] = useState<boolean>(false)
     const [hoverInfo, setHoverInfo] = useState<string>()
+    const [idToFollow, setIdToFollow] = useState<WorkerId>()
+
+    useEffect(
+        () => {
+            if (idToFollow !== undefined) {
+                const moveListener = {
+                    id: idToFollow,
+                    onWorkerMoved: (move: MoveUpdate) => {
+                        if (move.state === 'ON_POINT') {
+                            //goToPoint(move.point)
+                        } else if (move.state === 'BETWEEN_POINTS') {
+                            goToBetweenPoints(move.previous, move.next, move.progress)
+                        }
+                    }
+                }
+
+                monitor.listenToMovementForWorker(moveListener)
+
+                return () => monitor.stopListeningToMovementForWorker(moveListener)
+            }
+        }, [idToFollow]
+    )
 
     useEffect(
         () => {
@@ -76,6 +101,150 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
         }
     )
 
+    function goToBetweenPoints(from: Point, to: Point, progress: number) {
+        const heightAtFrom = monitor.allTiles.get(from)?.height ?? 0
+        const heightAtTo = monitor.allTiles.get(to)?.height ?? 0
+
+        const screenPointFrom = gamePointToScreenPointWithHeightAdjustment(
+            from,
+            heightAtFrom,
+            translate.x,
+            translate.y,
+            scale,
+            height,
+            heightAdjust,
+            STANDARD_HEIGHT)
+
+        const screenPointTo = gamePointToScreenPointWithHeightAdjustment(
+            to,
+            heightAtTo,
+            translate.x,
+            translate.y,
+            scale,
+            height,
+            heightAdjust,
+            STANDARD_HEIGHT)
+
+        const screenPoint = {
+            x: screenPointFrom.x + (screenPointTo.x - screenPointFrom.x) * (progress / 100),
+            y: screenPointFrom.y + (screenPointTo.y - screenPointFrom.y) * progress / 100
+        }
+
+        setTranslate({
+            x: translate.x - screenPoint.x + width / 2,
+            y: translate.y - screenPoint.y + height / 2
+        })
+    }
+
+    // eslint-disable-next-line
+    function goToPoint(point: Point) {
+        const heightAtPoint = monitor.allTiles.get(point)?.height ?? 0
+
+        const screenPoint = gamePointToScreenPointWithHeightAdjustment(
+            point,
+            heightAtPoint,
+            translate.x,
+            translate.y,
+            scale,
+            height,
+            heightAdjust,
+            STANDARD_HEIGHT)
+
+        setTranslate({
+            x: translate.x - screenPoint.x + width / 2,
+            y: translate.y - screenPoint.y + height / 2
+        })
+    }
+
+    function findHeightAdjustedCenterGamePoint(translate: Point, scale: number) {
+        const screenPoint = { x: width / 2, y: height / 2 }
+        return screenPointToGamePointWithHeightAdjustment(screenPoint, translate, scale, height, heightAdjust)
+    }
+
+    function startMonitor(gamePoint: Point) {
+        let distance = 2000
+        let newIdToFollow
+
+        for (const [id, worker] of monitor.workers) {
+            let position
+
+            if (worker.betweenPoints && worker.previous && worker.next) {
+                position = {
+                    x: worker.previous.x + (worker.next.x - worker.previous.x) * (worker.percentageTraveled / 100.0),
+                    y: worker.previous.y + (worker.next.y - worker.previous.y) * (worker.percentageTraveled / 100.0)
+                }
+            } else {
+                position = { x: worker.x, y: worker.y }
+            }
+
+            if (position.x === gamePoint.x && position.y === gamePoint.y) {
+                newIdToFollow = id
+                distance = 0
+
+                break
+            }
+
+            const tempDistance = calcDistance(gamePoint, position)
+
+            if (tempDistance < distance) {
+                distance = tempDistance
+
+                newIdToFollow = id
+            }
+        }
+
+        if (distance > 0) {
+            for (const [id, animal] of monitor.wildAnimals) {
+                let position
+
+                if (animal.betweenPoints && animal.previous && animal.next) {
+                    position = {
+                        x: animal.previous.x + (animal.next.x - animal.previous.x) * (animal.percentageTraveled / 100.0),
+                        y: animal.previous.y + (animal.next.y - animal.previous.y) * (animal.percentageTraveled / 100.0)
+                    }
+                } else {
+                    position = { x: animal.x, y: animal.y }
+                }
+
+                if (position.x === gamePoint.x && position.y === gamePoint.y) {
+                    newIdToFollow = id
+                    distance = 0
+
+                    break
+                }
+
+                const tempDistance = calcDistance(gamePoint, position)
+
+                if (tempDistance < distance) {
+                    distance = tempDistance
+
+                    newIdToFollow = id
+                }
+            }
+        }
+
+        if (newIdToFollow) {
+            setIdToFollow(newIdToFollow)
+
+            const worker = monitor.workers.get(newIdToFollow) ?? monitor.wildAnimals.get(newIdToFollow)
+
+            if (worker) {
+                let position
+
+                if (worker.betweenPoints && worker.previous && worker.next) {
+                    position = {
+                        x: worker.previous.x + (worker.next.x - worker.previous.x) * (worker.percentageTraveled / 100.0),
+                        y: worker.previous.y + (worker.next.y - worker.previous.y) * (worker.percentageTraveled / 100.0)
+                    }
+                } else {
+                    position = { x: worker.x, y: worker.y }
+                }
+
+                goToPoint(position)
+            }
+        }
+    }
+
     const view = { point, translate, scale }
 
     let className
@@ -89,7 +258,7 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
     }
 
     return (
-        <Window className={className} heading='Follow' onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
+        <Window className={className} heading='Monitor' onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
             <div
                 ref={myRef}
                 className='follow-content'
@@ -126,6 +295,8 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
                         moving.mouseAt = { x: event.clientX, y: event.clientY }
                         moving.translate = translate
 
+                        setIdToFollow(undefined)
+
                         event.stopPropagation()
                     }
                 }}
@@ -143,7 +314,7 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
                 />
                 <div className='zoom-buttons'>
                     <Button
-                        appearance='transparent'
+                        appearance='subtle'
                         onMouseEnter={() => setHoverInfo('Zoom in')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                         onClick={() => setScale(prevScale => {
@@ -169,7 +340,7 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
                         +
                     </Button>
                     <Button
-                        appearance='transparent'
+                        appearance='subtle'
                         onMouseEnter={() => setHoverInfo('Zoom out')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                         onClick={() => setScale(prevScale => {
@@ -202,22 +373,42 @@ function Follow({ point, onRaise, onClose, ...props }: FollowProps) {
                     onMouseEnter={() => setHoverInfo('Small window')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    Small
+                    <div className='small-symbol' />
                 </Button>
                 <Button
                     onClick={() => setSize('MEDIUM')}
                     onMouseEnter={() => setHoverInfo('Medium window')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    Medium
+                    <div className='medium-symbol' />
                 </Button>
                 <Button
                     onClick={() => setSize('LARGE')}
                     onMouseEnter={() => setHoverInfo('Large window')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    Large
+                    <div className='large-symbol' />
                 </Button>
+
+                {idToFollow === undefined &&
+                    <Button onClick={() => startMonitor(findHeightAdjustedCenterGamePoint(translate, scale))}
+                        onMouseEnter={() => setHoverInfo('Start monitoring')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        Monitor
+                    </Button>
+                }
+
+                {idToFollow !== undefined &&
+                    <Button onClick={() => setIdToFollow(undefined)}
+                        onMouseEnter={() => setHoverInfo('Stop monitoring')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        Stop monitoring
+                    </Button>
+                }
+
+
             </ButtonRow>
         </Window>
     )

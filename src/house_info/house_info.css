@@ -52,10 +52,3 @@
     align-items: flex-start;
     gap: 10px;
 }
-
-.building-button-row {
-    display: flex;
-    flex-direction: row;
-    gap: 1em;
-    flex-wrap: wrap;
-}

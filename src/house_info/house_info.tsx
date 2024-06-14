@@ -8,7 +8,7 @@ import { HeadquarterInfo } from "./headquarter"
 import { attackBuilding, houseIsReady, isMilitaryBuilding, pauseProductionForHouse, removeHouse, resumeProductionForHouse } from "../api/rest-api"
 import { MilitaryBuilding } from "./military_building"
 import { monitor } from '../api/ws-api'
-import { Window } from '../components/dialog'
+import { ButtonRow, Window } from '../components/dialog'
 
 interface HouseInfoProps {
     house: HouseInformation
@@ -305,7 +305,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise 
 
             </div>
 
-            <div className="building-button-row">
+            <ButtonRow>
                 {house.productionEnabled &&
                     <Tooltip content={'Pause production'} relationship='label' withArrow>
                         <Button
@@ -341,7 +341,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise 
                         <UiIcon type='DESTROY_BUILDING' />
                     </Button>
                 </Tooltip>
-            </div>
+            </ButtonRow>
         </Window >
     )
 }

@@ -11,15 +11,15 @@ function stringToPoint(pointAsString: string): Point {
 
 function pointToFastKey(point: Point): number {
     if (point.y >= 1000) {
-        throw new Error("Cannot handle y values larger or equals to 1000")
+        throw new Error(`Cannot handle y values larger or equals to 1000. Value is: ${point.y}`)
     }
 
     if (point.y < 0) {
-        throw new Error("Cannot handle y values under 0")
+        throw new Error(`Cannot handle y values under 0. Value is ${point.y}`)
     }
 
     if (point.x < 0) {
-        throw new Error("Cannot handle x values under 0")
+        throw new Error(`Cannot handle x values under 0. Value is ${point.x}`)
     }
 
     return 1000 * point.x + point.y
@@ -29,7 +29,7 @@ function keyToFastPoint(key: number): Point {
     const y = key % 1000
 
     if (y < 0) {
-        throw new Error("Got a negative y when doing key % 1000")
+        throw new Error(`Got a negative y when doing key % 1000. Value is ${y}`)
     }
 
     const x = (key - y) / 1000

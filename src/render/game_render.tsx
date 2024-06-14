@@ -13,6 +13,7 @@ import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from
 import { NewRoad, immediateUxState } from '../play'
 import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './constants'
 import { textures } from '../render/textures'
+import { ProgramDescriptor, ProgramInstance, draw, initProgram, setBuffer } from './utils'
 
 const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
 
@@ -132,6 +133,39 @@ const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo",
 
 let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
 
+let drawGroundProgramInstance: ProgramInstance | undefined
+let drawRoadsProgramInstance: ProgramInstance | undefined
+
+const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
+
+const drawGroundProgramDescriptor: ProgramDescriptor = {
+    vertexShaderSource: textureAndLightingVertexShader,
+    fragmentShaderSource: textureAndLightingFragmentShader,
+    uniforms: {
+        'u_light_vector': { type: 'FLOAT' },
+        'u_scale': { type: 'FLOAT' },
+        'u_offset': { type: 'FLOAT' },
+        'u_screen_width': { type: 'FLOAT' },
+        'u_screen_height': { type: 'FLOAT' },
+        'u_height_adjust': { type: 'FLOAT' },
+        'u_sampler': { type: 'INT' }
+    },
+    attributes: {
+        'a_coords': {
+            maxElements: maxNumberTriangles * 3 * 3,
+            elementsPerVertex: 3
+        },
+        'a_normal': {
+            maxElements: maxNumberTriangles * 3 * 3,
+            elementsPerVertex: 3
+        },
+        'a_texture_mapping': {
+            maxElements: maxNumberTriangles * 3 * 2,
+            elementsPerVertex: 2
+        }
+    }
+}
+
 type RenderState = {
     previousTimestamp?: number
     previous: number
@@ -156,32 +190,6 @@ type RenderState = {
 
     // Map of the normal for each point on the map
     normals: PointMapFast<Vector>
-
-    // Buffers for drawing the terrain
-    terrainCoordinatesBuffer?: WebGLBuffer | null
-    terrainNormalsBuffer?: WebGLBuffer | null
-    terrainTextureMappingBuffer?: WebGLBuffer | null
-
-    // Buffers for drawing the roads
-    roadCoordinatesBuffer?: WebGLBuffer | null
-    roadNormalsBuffer?: WebGLBuffer | null
-    roadTextureMappingBuffer?: WebGLBuffer | null
-    roadRenderInformation?: RenderInformation
-
-    // Define the program to draw things on the ground (terrain, roads)
-    drawGroundProgram: WebGLProgram | null
-
-    drawGroundLightVectorUniformLocation?: WebGLUniformLocation | null
-    drawGroundScaleUniformLocation?: WebGLUniformLocation | null
-    drawGroundOffsetUniformLocation?: WebGLUniformLocation | null
-    drawGroundHeightAdjustUniformLocation?: WebGLUniformLocation | null
-    drawGroundSamplerUniformLocation?: WebGLUniformLocation | null
-    drawGroundScreenWidthUniformLocation?: WebGLUniformLocation | null
-    drawGroundScreenHeightUniformLocation?: WebGLUniformLocation | null
-
-    drawGroundCoordAttributeLocation?: number
-    drawGroundNormalAttributeLocation?: number
-    drawGroundTextureMappingAttributeLocation?: number
 
     // Define the fog of war drawing program
     fogOfWarRenderProgram: WebGLProgram | null
@@ -253,7 +261,6 @@ function GameCanvas({
         newRoadCurrentLength: 0,
         animationIndex: 0,
         normals: new PointMapFast<Vector>(),
-        drawGroundProgram: null,
         fogOfWarRenderProgram: null,
         fogOfWarCoordinates: [],
         fogOfWarIntensities: [],
@@ -299,22 +306,14 @@ function GameCanvas({
 
     function updateRoadDrawingBuffers(): void {
         console.log("Should update road drawing buffers")
+        if (drawRoadsProgramInstance) {
+            const roadRenderInformation = prepareToRenderRoads(monitor.roads.values(), monitor.flags.values())
 
-        if (renderState.gl !== undefined && renderState.drawGroundProgram !== undefined &&
-            renderState.roadCoordinatesBuffer !== undefined && renderState.roadNormalsBuffer !== undefined && renderState.roadTextureMappingBuffer !== undefined) {
-
-            renderState.roadRenderInformation = prepareToRenderRoads(monitor.roads.values(), monitor.flags.values())
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.roadCoordinatesBuffer)
-            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.roadRenderInformation.coordinates), renderState.gl.STATIC_DRAW)
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.roadNormalsBuffer)
-            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.roadRenderInformation.normals), renderState.gl.STATIC_DRAW)
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.roadTextureMappingBuffer)
-            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.roadRenderInformation.textureMapping), renderState.gl.STATIC_DRAW)
+            setBuffer(drawRoadsProgramInstance, 'a_coords', roadRenderInformation?.coordinates)
+            setBuffer(drawRoadsProgramInstance, 'a_normal', roadRenderInformation.normals)
+            setBuffer(drawRoadsProgramInstance, 'a_texture_mapping', roadRenderInformation.textureMapping)
         } else {
-            console.error("Failed to update road drawing buffers. At least one input is undefined")
+            console.error(`Failed to update road drawing buffers`)
         }
     }
 
@@ -453,6 +452,8 @@ function GameCanvas({
                     const gl = canvas.getContext("webgl2", { alpha: false })
 
                     if (gl) {
+                        drawGroundProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
+                        drawRoadsProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
 
                         // Create and compile the shaders
                         const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
@@ -464,61 +465,19 @@ function GameCanvas({
                         const drawFogOfWarFragmentShader = makeShader(gl, fogOfWarFragmentShader, gl.FRAGMENT_SHADER)
 
                         // Create the programs
-                        renderState.drawGroundProgram = gl.createProgram()
                         renderState.drawImageProgram = gl.createProgram()
                         renderState.drawShadowProgram = gl.createProgram()
                         renderState.fogOfWarRenderProgram = gl.createProgram()
 
                         // Setup the program to render the ground
-                        if (renderState.drawGroundProgram && lightingVertexShader && lightingFragmentShader) {
-                            gl.attachShader(renderState.drawGroundProgram, lightingVertexShader)
-                            gl.attachShader(renderState.drawGroundProgram, lightingFragmentShader)
-                            gl.linkProgram(renderState.drawGroundProgram)
-                            gl.useProgram(renderState.drawGroundProgram)
-                            gl.viewport(0, 0, canvas.width, canvas.height)
+                        if (lightingVertexShader && lightingFragmentShader) {
+                            setBuffer(drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
+                            setBuffer(drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
+                            setBuffer(drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
 
-                            const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
-
-                            // Get handles
-                            renderState.drawGroundCoordAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_coords")
-                            renderState.drawGroundNormalAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_normal")
-                            renderState.drawGroundTextureMappingAttributeLocation = gl.getAttribLocation(renderState.drawGroundProgram, "a_texture_mapping")
-
-                            renderState.drawGroundLightVectorUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_light_vector")
-                            renderState.drawGroundScaleUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_scale")
-                            renderState.drawGroundOffsetUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_offset")
-                            renderState.drawGroundScreenWidthUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_screen_width")
-                            renderState.drawGroundScreenHeightUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_screen_height")
-                            renderState.drawGroundHeightAdjustUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, "u_height_adjust")
-                            renderState.drawGroundSamplerUniformLocation = gl.getUniformLocation(renderState.drawGroundProgram, 'u_sampler')
-
-                            // Set up the buffer attributes
-                            renderState.terrainCoordinatesBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
-                            gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.coordinates), gl.STATIC_DRAW)
-
-                            renderState.terrainNormalsBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
-                            gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 3, gl.STATIC_DRAW)
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.normals), gl.STATIC_DRAW)
-
-                            renderState.terrainTextureMappingBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
-                            gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * maxNumberTriangles * 3 * 2, gl.STATIC_DRAW)
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.textureMapping), gl.STATIC_DRAW)
-
-                            renderState.roadCoordinatesBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadCoordinatesBuffer)
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
-
-                            renderState.roadNormalsBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadNormalsBuffer)
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
-
-                            renderState.roadTextureMappingBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadTextureMappingBuffer)
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
+                            setBuffer(drawRoadsProgramInstance, 'a_coords', [])
+                            setBuffer(drawRoadsProgramInstance, 'a_normal', [])
+                            setBuffer(drawRoadsProgramInstance, 'a_texture_mapping', [])
 
                             renderState.gl = gl
                         } else {
@@ -714,24 +673,14 @@ function GameCanvas({
                     console.log("New discovered points - calculated normals")
 
                     // Update the map rendering buffers
-                    if (renderState.gl && renderState.drawGroundProgram) {
-                        if (renderState.terrainCoordinatesBuffer !== undefined && renderState.terrainNormalsBuffer !== undefined && renderState.terrainTextureMappingBuffer !== undefined) {
+                    renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
-                            renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
-
-                            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
-                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.coordinates), renderState.gl.STATIC_DRAW)
-
-                            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
-                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.normals), renderState.gl.STATIC_DRAW)
-
-                            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
-                            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.mapRenderInformation.textureMapping), renderState.gl.STATIC_DRAW)
-                        } else {
-                            console.error("At least one render buffer was undefined")
-                        }
+                    if (drawGroundProgramInstance) {
+                        setBuffer(drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
+                        setBuffer(drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
+                        setBuffer(drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
                     } else {
-                        console.error("Gl or ground render pgrogram is undefined")
+                        console.error(`The terrain drawing program instance is undefined`)
                     }
 
                     // Update fog of war rendering
@@ -889,71 +838,23 @@ function GameCanvas({
 
 
         /* Draw the terrain layer */
-        if (renderState.drawGroundProgram &&
-            renderState.mapRenderInformation &&
-            renderState.drawGroundScreenWidthUniformLocation !== undefined &&
-            renderState.drawGroundScreenHeightUniformLocation !== undefined &&
-            renderState.drawGroundLightVectorUniformLocation !== undefined &&
-            renderState.drawGroundScaleUniformLocation !== undefined &&
-            renderState.drawGroundOffsetUniformLocation !== undefined &&
-            renderState.drawGroundCoordAttributeLocation !== undefined &&
-            renderState.drawGroundNormalAttributeLocation !== undefined &&
-            renderState.drawGroundTextureMappingAttributeLocation !== undefined &&
-            renderState.drawGroundSamplerUniformLocation !== undefined &&
-            renderState.drawGroundHeightAdjustUniformLocation !== undefined &&
-            renderState.terrainCoordinatesBuffer !== undefined &&
-            renderState.terrainNormalsBuffer !== undefined &&
-            renderState.terrainTextureMappingBuffer !== undefined &&
-            renderState.mapRenderInformation &&
-            imageAtlasTerrainAndRoads !== undefined) {
-
-            const gl = renderState.gl
-
-            gl.useProgram(renderState.drawGroundProgram)
-
+        if (imageAtlasTerrainAndRoads) {
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
-            if (textureSlot !== undefined) {
-
-                // Configure the drawing context
-                gl.enable(gl.BLEND)
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-
-                // Set the constants
-                gl.uniform1f(renderState.drawGroundScreenWidthUniformLocation, width)
-                gl.uniform1f(renderState.drawGroundScreenHeightUniformLocation, height)
-                gl.uniform3fv(renderState.drawGroundLightVectorUniformLocation, lightVector)
-                gl.uniform2f(renderState.drawGroundScaleUniformLocation, renderState.scale, renderState.scale)
-                gl.uniform2f(renderState.drawGroundOffsetUniformLocation, renderState.translate.x, renderState.translate.y)
-                gl.uniform1f(renderState.drawGroundHeightAdjustUniformLocation, heightAdjust)
-
-                gl.uniform1i(renderState.drawGroundSamplerUniformLocation, textureSlot)
-
-                // Set up the buffers
-                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainCoordinatesBuffer)
-                gl.vertexAttribPointer(renderState.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(renderState.drawGroundCoordAttributeLocation)
-
-                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainNormalsBuffer)
-                gl.vertexAttribPointer(renderState.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(renderState.drawGroundNormalAttributeLocation)
-
-                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.terrainTextureMappingBuffer)
-                gl.vertexAttribPointer(renderState.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(renderState.drawGroundTextureMappingAttributeLocation)
-
-                // Fill the screen with black color
-                gl.clearColor(0.0, 0.0, 0.0, 1.0)
-                gl.clear(gl.COLOR_BUFFER_BIT)
-
-                // Draw the triangles: mode, offset (nr vertices), count (nr vertices)
-                gl.drawArrays(gl.TRIANGLES, 0, renderState.mapRenderInformation.coordinates.length / 3)
-            } else {
-                console.error(`Texture slot is undefined`)
+            if (textureSlot !== undefined && drawGroundProgramInstance && renderState.mapRenderInformation) {
+                draw(drawGroundProgramInstance,
+                    {
+                        'u_light_vector': lightVector,
+                        'u_scale': [renderState.scale, renderState.scale],
+                        'u_offset': [renderState.translate.x, renderState.translate.y],
+                        'u_screen_width': width,
+                        'u_screen_height': height,
+                        'u_height_adjust': heightAdjust,
+                        'u_sampler': textureSlot
+                    },
+                    'CLEAR_BEFORE_DRAW'
+                )
             }
-
-        } else {
-            console.error("Did not draw the terrain layer")
         }
 
         duration.after("draw terrain")
@@ -1052,66 +953,23 @@ function GameCanvas({
 
 
         /* Draw the road layer */
-        if (renderState.drawGroundProgram && renderState.mapRenderInformation &&
-            renderState.drawGroundScreenWidthUniformLocation !== undefined &&
-            renderState.drawGroundScreenHeightUniformLocation !== undefined &&
-            renderState.drawGroundLightVectorUniformLocation !== undefined &&
-            renderState.drawGroundScaleUniformLocation !== undefined &&
-            renderState.drawGroundOffsetUniformLocation !== undefined &&
-            renderState.drawGroundCoordAttributeLocation !== undefined &&
-            renderState.drawGroundNormalAttributeLocation !== undefined &&
-            renderState.drawGroundTextureMappingAttributeLocation !== undefined &&
-            renderState.drawGroundSamplerUniformLocation !== undefined &&
-            renderState.roadRenderInformation !== undefined &&
-            renderState.roadCoordinatesBuffer !== undefined &&
-            renderState.roadNormalsBuffer !== undefined &&
-            renderState.roadTextureMappingBuffer !== undefined &&
-            renderState.drawGroundHeightAdjustUniformLocation !== undefined &&
-            imageAtlasTerrainAndRoads !== undefined) {
-
-            const gl = renderState.gl
-
-            gl.useProgram(renderState.drawGroundProgram)
-
+        if (imageAtlasTerrainAndRoads) {
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
-            if (textureSlot !== undefined) {
-                gl.enable(gl.BLEND)
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-
-                // Set screen width and height
-                gl.uniform1f(renderState.drawGroundScreenWidthUniformLocation, width)
-                gl.uniform1f(renderState.drawGroundScreenHeightUniformLocation, height)
-
-                // Set the light vector
-                gl.uniform3fv(renderState.drawGroundLightVectorUniformLocation, lightVector)
-
-                // Set the current values for the scale, offset and the sampler
-                gl.uniform2f(renderState.drawGroundScaleUniformLocation, renderState.scale, renderState.scale)
-                gl.uniform2f(renderState.drawGroundOffsetUniformLocation, renderState.translate.x, renderState.translate.y)
-
-                // Draw the roads
-                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadCoordinatesBuffer)
-                gl.vertexAttribPointer(renderState.drawGroundCoordAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(renderState.drawGroundCoordAttributeLocation)
-
-                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadNormalsBuffer)
-                gl.vertexAttribPointer(renderState.drawGroundNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(renderState.drawGroundNormalAttributeLocation)
-
-                gl.bindBuffer(gl.ARRAY_BUFFER, renderState.roadTextureMappingBuffer)
-                gl.vertexAttribPointer(renderState.drawGroundTextureMappingAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-                gl.enableVertexAttribArray(renderState.drawGroundTextureMappingAttributeLocation)
-
-                gl.uniform1i(renderState.drawGroundSamplerUniformLocation, textureSlot)
-                gl.uniform1f(renderState.drawGroundHeightAdjustUniformLocation, heightAdjust)
-
-                gl.drawArrays(gl.TRIANGLES, 0, renderState.roadRenderInformation?.coordinates.length / 3)
-            } else {
-                console.error(`Texture slot is undefined for ${imageAtlasTerrainAndRoads.src}`)
+            if (textureSlot !== undefined && drawRoadsProgramInstance && renderState.mapRenderInformation) {
+                draw(drawRoadsProgramInstance,
+                    {
+                        'u_light_vector': lightVector,
+                        'u_scale': [renderState.scale, renderState.scale],
+                        'u_offset': [renderState.translate.x, renderState.translate.y],
+                        'u_screen_width': width,
+                        'u_screen_height': height,
+                        'u_height_adjust': heightAdjust,
+                        'u_sampler': textureSlot
+                    },
+                    'NO_CLEAR_BEFORE_DRAW'
+                )
             }
-        } else {
-            console.error("Missing information to draw roads")
         }
 
         duration.after("draw roads")

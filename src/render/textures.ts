@@ -13,7 +13,7 @@ function registerTexture(gl: WebGL2RenderingContext, image: HTMLImageElement | u
         return
     }
 
-    console.log(`REGISTER TEXTURE FOR ${image.src}`)
+    //console.log(`REGISTER TEXTURE FOR ${image.src}`)
 
     if (!textures.has(gl)) {
         textures.set(gl, new Map())

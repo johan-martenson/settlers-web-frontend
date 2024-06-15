@@ -4,7 +4,7 @@ import { Duration } from '../duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, makeShader, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from '../utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
 import { flagAnimations, houses, uiElementsImageAtlasHandler, workers } from '../assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
@@ -133,10 +133,6 @@ const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo",
 
 let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
 
-let drawGroundProgramInstance: ProgramInstance | undefined
-let drawRoadsProgramInstance: ProgramInstance | undefined
-let drawImageProgramInstance: ProgramInstance | undefined
-
 const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 
 const drawGroundProgramDescriptor: ProgramDescriptor = {
@@ -194,6 +190,54 @@ const drawImageProgramDescriptor: ProgramDescriptor = {
     }
 }
 
+const drawShadowProgramDescriptor: ProgramDescriptor = {
+    vertexShaderSource: texturedImageVertexShaderPixelPerfect,
+    fragmentShaderSource: shadowFragmentShader,
+    uniforms: {
+        'u_texture': { type: 'INT' },
+        'u_game_point': { type: 'FLOAT' },
+        'u_screen_offset': { type: 'FLOAT' },
+        'u_image_offset': { type: 'FLOAT' },
+        'u_scale': { type: 'FLOAT' },
+        'u_source_coordinate': { type: 'FLOAT' },
+        'u_source_dimensions': { type: 'FLOAT' },
+        'u_screen_dimensions': { type: 'FLOAT' },
+        'u_height_adjust': { type: 'FLOAT' },
+        'u_height': { type: 'FLOAT' },
+    },
+    attributes: {
+        'a_position': {
+            elementsPerVertex: 2,
+            maxElements: 12
+        },
+        'a_texcoord': {
+            elementsPerVertex: 2,
+            maxElements: 12
+        }
+    }
+}
+
+const fogOfWarProgramDescriptor: ProgramDescriptor = {
+    vertexShaderSource: fogOfWarVertexShader,
+    fragmentShaderSource: fogOfWarFragmentShader,
+    uniforms: {
+        'u_scale': { type: 'FLOAT' },
+        'u_offset': { type: 'FLOAT' },
+        'u_screen_height': { type: 'FLOAT' },
+        'u_screen_width': { type: 'FLOAT' }
+    },
+    attributes: {
+        'a_coordinates': {
+            elementsPerVertex: 2,
+            maxElements: 500
+        },
+        'a_intensity': {
+            elementsPerVertex: 1,
+            maxElements: 500
+        }
+    }
+}
+
 type RenderState = {
     previousTimestamp?: number
     previous: number
@@ -219,44 +263,12 @@ type RenderState = {
     // Map of the normal for each point on the map
     normals: PointMapFast<Vector>
 
-    // Define the fog of war drawing program
-    fogOfWarRenderProgram: WebGLProgram | null
-
-    fogOfWarCoordAttributeLocation?: number
-    fogOfWarIntensityAttributeLocation?: number
-
-    fogOfWarScaleUniformLocation?: WebGLUniformLocation | null
-    fogOfWarOffsetUniformLocation?: WebGLUniformLocation | null
-    fogOfWarScreenHeightUniformLocation?: WebGLUniformLocation | null
-    fogOfWarScreenWidthUniformLocation?: WebGLUniformLocation | null
-
-    // Buffers for drawing the fog of war
-    fogOfWarCoordBuffer?: WebGLBuffer | null
-    fogOfWarIntensityBuffer?: WebGLBuffer | null
-
-    fogOfWarCoordinates: number[]
-    fogOfWarIntensities: number[]
-
-    // Define the webgl program to draw shadows (it shares buffers with the draw images program)
-    drawShadowProgram: WebGLProgram | null
-
-    drawShadowHeightAdjustmentUniformLocation?: WebGLUniformLocation | null
-    drawShadowHeightUniformLocation?: WebGLUniformLocation | null
-
-    // Define the webgl draw image program
-    drawImageProgram: WebGLProgram | null
-
-    drawImagePositionLocation?: number
-    drawImageTexcoordLocation?: number
-
-    drawImageHeightAdjustmentLocation?: WebGLUniformLocation | null
-    drawImageHeightLocation?: WebGLUniformLocation | null
-
-    // The buffers used by the draw image program. They are static and the content is set through uniforms
-    drawImageTexCoordBuffer?: WebGLBuffer | null
-    drawImagePositionBuffer?: WebGLBuffer | null
-    drawShadowTexCoordBuffer?: WebGLBuffer | null
-    drawShadowPositionBuffer?: WebGLBuffer | null
+    // Drawing program instances
+    drawGroundProgramInstance?: ProgramInstance
+    drawRoadsProgramInstance?: ProgramInstance
+    drawImageProgramInstance?: ProgramInstance
+    drawShadowProgramInstance?: ProgramInstance
+    fogOfWarProgramInstance?: ProgramInstance
 
     allPointsVisibilityTracking: PointMapFast<TrianglesAtPoint>
     once: boolean
@@ -334,12 +346,12 @@ function GameCanvas({
 
     function updateRoadDrawingBuffers(): void {
         console.log("Should update road drawing buffers")
-        if (drawRoadsProgramInstance) {
+        if (renderState.drawRoadsProgramInstance) {
             const roadRenderInformation = prepareToRenderRoads(monitor.roads.values(), monitor.flags.values())
 
-            setBuffer(drawRoadsProgramInstance, 'a_coords', roadRenderInformation?.coordinates)
-            setBuffer(drawRoadsProgramInstance, 'a_normal', roadRenderInformation.normals)
-            setBuffer(drawRoadsProgramInstance, 'a_texture_mapping', roadRenderInformation.textureMapping)
+            setBuffer(renderState.drawRoadsProgramInstance, 'a_coords', roadRenderInformation?.coordinates)
+            setBuffer(renderState.drawRoadsProgramInstance, 'a_normal', roadRenderInformation.normals)
+            setBuffer(renderState.drawRoadsProgramInstance, 'a_texture_mapping', roadRenderInformation.textureMapping)
         } else {
             console.error(`Failed to update road drawing buffers`)
         }
@@ -348,22 +360,22 @@ function GameCanvas({
     function updateFogOfWarRendering(): FogOfWarRenderInformation {
         const triangles = getTrianglesAffectedByFogOfWar(monitor.discoveredPoints, monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
 
-        renderState.fogOfWarCoordinates = []
-        renderState.fogOfWarIntensities = []
+        const fogOfWarCoordinates: number[] = []
+        const fogOfWarIntensities: number[] = []
 
         triangles.forEach(triangle => {
-            renderState.fogOfWarCoordinates.push(triangle[0].point.x)
-            renderState.fogOfWarCoordinates.push(triangle[0].point.y)
+            fogOfWarCoordinates.push(triangle[0].point.x)
+            fogOfWarCoordinates.push(triangle[0].point.y)
 
-            renderState.fogOfWarCoordinates.push(triangle[1].point.x)
-            renderState.fogOfWarCoordinates.push(triangle[1].point.y)
+            fogOfWarCoordinates.push(triangle[1].point.x)
+            fogOfWarCoordinates.push(triangle[1].point.y)
 
-            renderState.fogOfWarCoordinates.push(triangle[2].point.x)
-            renderState.fogOfWarCoordinates.push(triangle[2].point.y)
+            fogOfWarCoordinates.push(triangle[2].point.x)
+            fogOfWarCoordinates.push(triangle[2].point.y)
 
-            renderState.fogOfWarIntensities.push(triangle[0].intensity)
-            renderState.fogOfWarIntensities.push(triangle[1].intensity)
-            renderState.fogOfWarIntensities.push(triangle[2].intensity)
+            fogOfWarIntensities.push(triangle[0].intensity)
+            fogOfWarIntensities.push(triangle[1].intensity)
+            fogOfWarIntensities.push(triangle[2].intensity)
         })
 
         // Add triangles to draw black
@@ -389,37 +401,37 @@ function GameCanvas({
             const right = getPointRight(point)
 
             if (!trianglesAtPoint.belowVisible) {
-                renderState.fogOfWarCoordinates.push(point.x)
-                renderState.fogOfWarCoordinates.push(point.y)
+                fogOfWarCoordinates.push(point.x)
+                fogOfWarCoordinates.push(point.y)
 
-                renderState.fogOfWarCoordinates.push(downLeft.x)
-                renderState.fogOfWarCoordinates.push(downLeft.y)
+                fogOfWarCoordinates.push(downLeft.x)
+                fogOfWarCoordinates.push(downLeft.y)
 
-                renderState.fogOfWarCoordinates.push(downRight.x)
-                renderState.fogOfWarCoordinates.push(downRight.y)
+                fogOfWarCoordinates.push(downRight.x)
+                fogOfWarCoordinates.push(downRight.y)
 
-                renderState.fogOfWarIntensities.push(0)
-                renderState.fogOfWarIntensities.push(0)
-                renderState.fogOfWarIntensities.push(0)
+                fogOfWarIntensities.push(0)
+                fogOfWarIntensities.push(0)
+                fogOfWarIntensities.push(0)
             }
 
             if (!trianglesAtPoint.downRightVisible) {
-                renderState.fogOfWarCoordinates.push(point.x)
-                renderState.fogOfWarCoordinates.push(point.y)
+                fogOfWarCoordinates.push(point.x)
+                fogOfWarCoordinates.push(point.y)
 
-                renderState.fogOfWarCoordinates.push(right.x)
-                renderState.fogOfWarCoordinates.push(right.y)
+                fogOfWarCoordinates.push(right.x)
+                fogOfWarCoordinates.push(right.y)
 
-                renderState.fogOfWarCoordinates.push(downRight.x)
-                renderState.fogOfWarCoordinates.push(downRight.y)
+                fogOfWarCoordinates.push(downRight.x)
+                fogOfWarCoordinates.push(downRight.y)
 
-                renderState.fogOfWarIntensities.push(0)
-                renderState.fogOfWarIntensities.push(0)
-                renderState.fogOfWarIntensities.push(0)
+                fogOfWarIntensities.push(0)
+                fogOfWarIntensities.push(0)
+                fogOfWarIntensities.push(0)
             }
         })
 
-        return { coordinates: renderState.fogOfWarCoordinates, intensities: renderState.fogOfWarIntensities }
+        return { coordinates: fogOfWarCoordinates, intensities: fogOfWarIntensities }
     }
 
     useEffect(
@@ -480,38 +492,22 @@ function GameCanvas({
                     const gl = canvas.getContext("webgl2", { alpha: false })
 
                     if (gl) {
-                        drawGroundProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
-                        drawRoadsProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
-                        drawImageProgramInstance = initProgram(drawImageProgramDescriptor, gl)
-
-                        // Create and compile the shaders
-                        const lightingVertexShader = makeShader(gl, textureAndLightingVertexShader, gl.VERTEX_SHADER)
-                        const lightingFragmentShader = makeShader(gl, textureAndLightingFragmentShader, gl.FRAGMENT_SHADER)
-                        const drawImageVertexShader = makeShader(gl, texturedImageVertexShaderPixelPerfect, gl.VERTEX_SHADER)
-                        const drawImageFragmentShader = makeShader(gl, textureFragmentShader, gl.FRAGMENT_SHADER)
-                        const drawShadowFragmentShader = makeShader(gl, shadowFragmentShader, gl.FRAGMENT_SHADER)
-                        const drawFogOfWarVertexShader = makeShader(gl, fogOfWarVertexShader, gl.VERTEX_SHADER)
-                        const drawFogOfWarFragmentShader = makeShader(gl, fogOfWarFragmentShader, gl.FRAGMENT_SHADER)
-
-                        // Create the programs
-                        renderState.drawImageProgram = gl.createProgram()
-                        renderState.drawShadowProgram = gl.createProgram()
-                        renderState.fogOfWarRenderProgram = gl.createProgram()
+                        renderState.drawGroundProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
+                        renderState.drawRoadsProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
+                        renderState.drawImageProgramInstance = initProgram(drawImageProgramDescriptor, gl)
+                        renderState.drawShadowProgramInstance = initProgram(drawShadowProgramDescriptor, gl)
+                        renderState.fogOfWarProgramInstance = initProgram(fogOfWarProgramDescriptor, gl)
 
                         // Setup the program to render the ground
-                        if (lightingVertexShader && lightingFragmentShader) {
-                            setBuffer(drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
-                            setBuffer(drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
-                            setBuffer(drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
+                        setBuffer(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
+                        setBuffer(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
+                        setBuffer(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
 
-                            setBuffer(drawRoadsProgramInstance, 'a_coords', [])
-                            setBuffer(drawRoadsProgramInstance, 'a_normal', [])
-                            setBuffer(drawRoadsProgramInstance, 'a_texture_mapping', [])
+                        setBuffer(renderState.drawRoadsProgramInstance, 'a_coords', [])
+                        setBuffer(renderState.drawRoadsProgramInstance, 'a_normal', [])
+                        setBuffer(renderState.drawRoadsProgramInstance, 'a_texture_mapping', [])
 
-                            renderState.gl = gl
-                        } else {
-                            console.error("Failed to create terrain rendering gl program")
-                        }
+                        renderState.gl = gl
 
                         const positions = [
                             0, 0,
@@ -530,148 +526,11 @@ function GameCanvas({
                             1, 1
                         ]
 
-                        setBuffer(drawImageProgramInstance, 'a_position', positions)
-                        setBuffer(drawImageProgramInstance, 'a_texcoord', texCoords)
+                        setBuffer(renderState.drawImageProgramInstance, 'a_position', positions)
+                        setBuffer(renderState.drawImageProgramInstance, 'a_texcoord', texCoords)
 
-                        // Setup the program to render images
-                        if (renderState.drawImageProgram && drawImageVertexShader && drawImageFragmentShader) {
-                            gl.attachShader(renderState.drawImageProgram, drawImageVertexShader)
-                            gl.attachShader(renderState.drawImageProgram, drawImageFragmentShader)
-
-                            gl.linkProgram(renderState.drawImageProgram)
-                            gl.useProgram(renderState.drawImageProgram)
-
-                            gl.viewport(0, 0, canvas.width, canvas.height)
-
-                            // Get attribute and uniform locations
-                            renderState.drawImagePositionLocation = gl.getAttribLocation(renderState.drawImageProgram, "a_position")
-                            renderState.drawImageTexcoordLocation = gl.getAttribLocation(renderState.drawImageProgram, "a_texcoord")
-                            renderState.drawImageHeightAdjustmentLocation = gl.getUniformLocation(renderState.drawImageProgram, "u_height_adjust")
-                            renderState.drawImageHeightLocation = gl.getUniformLocation(renderState.drawImageProgram, "u_height")
-
-                            // Create the position buffer
-                            renderState.drawImagePositionBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
-
-
-
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
-
-                            // Turn on the attribute
-                            gl.enableVertexAttribArray(renderState.drawImagePositionLocation)
-
-                            // Configure how the attribute gets data
-                            gl.vertexAttribPointer(renderState.drawImagePositionLocation, 2, gl.FLOAT, false, 0, 0)
-
-                            // Handle the tex coord attribute
-                            renderState.drawImageTexCoordBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
-
-
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
-
-                            // Turn on the attribute
-                            gl.enableVertexAttribArray(renderState.drawImageTexcoordLocation)
-
-                            // Configure how the attribute gets data
-                            gl.vertexAttribPointer(renderState.drawImageTexcoordLocation, 2, gl.FLOAT, false, 0, 0)
-                        } else {
-                            console.error("Failed to create image rendering gl program")
-                        }
-
-                        // Setup the program to render the fog of war
-                        if (renderState.fogOfWarRenderProgram && drawFogOfWarFragmentShader && drawFogOfWarVertexShader) {
-                            gl.attachShader(renderState.fogOfWarRenderProgram, drawFogOfWarVertexShader)
-                            gl.attachShader(renderState.fogOfWarRenderProgram, drawFogOfWarFragmentShader)
-
-                            gl.linkProgram(renderState.fogOfWarRenderProgram)
-                            gl.useProgram(renderState.fogOfWarRenderProgram)
-
-                            // Get attribute locations
-                            renderState.fogOfWarCoordAttributeLocation = gl.getAttribLocation(renderState.fogOfWarRenderProgram, "a_coordinates")
-                            renderState.fogOfWarIntensityAttributeLocation = gl.getAttribLocation(renderState.fogOfWarRenderProgram, "a_intensity")
-                            renderState.fogOfWarScaleUniformLocation = gl.getUniformLocation(renderState.fogOfWarRenderProgram, "u_scale")
-                            renderState.fogOfWarOffsetUniformLocation = gl.getUniformLocation(renderState.fogOfWarRenderProgram, "u_offset")
-                            renderState.fogOfWarScreenHeightUniformLocation = gl.getUniformLocation(renderState.fogOfWarRenderProgram, "u_screen_height")
-                            renderState.fogOfWarScreenWidthUniformLocation = gl.getUniformLocation(renderState.fogOfWarRenderProgram, "u_screen_width")
-
-                            // Create the coordinate buffer
-                            renderState.fogOfWarCoordBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.fogOfWarCoordBuffer)
-
-                            // Create the intensity buffer
-                            renderState.fogOfWarIntensityBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.fogOfWarIntensityBuffer)
-
-                            // Turn on the coordinate attribute and configure it
-                            gl.enableVertexAttribArray(renderState.fogOfWarCoordAttributeLocation)
-
-                            gl.vertexAttribPointer(renderState.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-
-                            // Turn on the intensity attribute and configure it
-                            gl.enableVertexAttribArray(renderState.fogOfWarIntensityAttributeLocation)
-
-                            gl.vertexAttribPointer(renderState.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
-                        }
-
-                        // Setup the program to render shadows
-                        if (renderState.drawShadowProgram && drawImageVertexShader && drawShadowFragmentShader) {
-                            gl.attachShader(renderState.drawShadowProgram, drawImageVertexShader)
-                            gl.attachShader(renderState.drawShadowProgram, drawShadowFragmentShader)
-
-                            gl.linkProgram(renderState.drawShadowProgram)
-                            gl.useProgram(renderState.drawImageProgram)
-
-                            gl.viewport(0, 0, canvas.width, canvas.height)
-
-                            // Get attribute and uniform locations
-                            const positionLocation = gl.getAttribLocation(renderState.drawShadowProgram, "a_position")
-                            const texcoordLocation = gl.getAttribLocation(renderState.drawShadowProgram, "a_texcoord")
-                            renderState.drawShadowHeightAdjustmentUniformLocation = gl.getUniformLocation(renderState.drawShadowProgram, "u_height_adjust")
-                            renderState.drawShadowHeightUniformLocation = gl.getUniformLocation(renderState.drawShadowProgram, "u_height")
-
-                            // Create the position buffer
-                            renderState.drawShadowPositionBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawShadowPositionBuffer)
-
-                            const positions = [
-                                0, 0,
-                                0, 1,
-                                1, 0,
-                                1, 0,
-                                0, 1,
-                                1, 1,
-                            ]
-
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
-
-                            // Turn on the attribute
-                            gl.enableVertexAttribArray(positionLocation)
-
-                            // Configure how the attribute gets data
-                            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
-
-                            // Handle the tex coord attribute
-                            renderState.drawShadowTexCoordBuffer = gl.createBuffer()
-                            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.drawShadowTexCoordBuffer)
-
-                            const texCoords = [
-                                0, 0,
-                                0, 1,
-                                1, 0,
-                                1, 0,
-                                0, 1,
-                                1, 1
-                            ]
-
-                            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW)
-
-                            // Turn on the attribute
-                            gl.enableVertexAttribArray(texcoordLocation)
-
-                            // Configure how the attribute gets data
-                            gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
-                        }
+                        setBuffer(renderState.drawShadowProgramInstance, 'a_position', positions)
+                        setBuffer(renderState.drawShadowProgramInstance, 'a_texcoord', texCoords)
                     } else {
                         console.error("Failed to create shadow rendering gl program")
                     }
@@ -684,7 +543,12 @@ function GameCanvas({
                     monitor.allTiles.forEach(tile => renderState.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
                 }
 
-                updateFogOfWarRendering()
+                if (renderState.fogOfWarProgramInstance) {
+                    const fogOfWarRenderInformation = updateFogOfWarRendering()
+
+                    setBuffer(renderState.fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
+                    setBuffer(renderState.fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
+                }
 
                 // Start listeners
                 monitor.listenToRoads(() => {
@@ -709,16 +573,21 @@ function GameCanvas({
                     // Update the map rendering buffers
                     renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
-                    if (drawGroundProgramInstance) {
-                        setBuffer(drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
-                        setBuffer(drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
-                        setBuffer(drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
+                    if (renderState.drawGroundProgramInstance) {
+                        setBuffer(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
+                        setBuffer(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
+                        setBuffer(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
                     } else {
                         console.error(`The terrain drawing program instance is undefined`)
                     }
 
                     // Update fog of war rendering
-                    updateFogOfWarRendering()
+                    if (renderState.fogOfWarProgramInstance) {
+                        const fogOfWarRenderInformation = updateFogOfWarRendering()
+
+                        setBuffer(renderState.fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
+                        setBuffer(renderState.fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
+                    }
                 })
 
                 console.log('Started listeners')
@@ -875,8 +744,8 @@ function GameCanvas({
         if (imageAtlasTerrainAndRoads) {
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
-            if (textureSlot !== undefined && drawGroundProgramInstance && renderState.mapRenderInformation) {
-                draw(drawGroundProgramInstance,
+            if (textureSlot !== undefined && renderState.drawGroundProgramInstance && renderState.mapRenderInformation) {
+                draw(renderState.drawGroundProgramInstance,
                     {
                         'u_light_vector': lightVector,
                         'u_scale': [renderState.scale, renderState.scale],
@@ -915,8 +784,8 @@ function GameCanvas({
 
         // Draw decorations objects
         for (const toDraw of decorationsToDraw) {
-            if (toDraw?.source?.image !== undefined && drawImageProgramInstance !== undefined) {
-                const textureSlot = textures.activateTextureForRendering(drawImageProgramInstance.gl, toDraw.source.image)
+            if (toDraw?.source?.image !== undefined && renderState.drawImageProgramInstance !== undefined) {
+                const textureSlot = textures.activateTextureForRendering(renderState.drawImageProgramInstance.gl, toDraw.source.image)
 
                 if (textureSlot === undefined) {
                     console.error(`Texture slot is undefined for ${toDraw.source.image}`)
@@ -925,7 +794,7 @@ function GameCanvas({
                 }
 
                 // Set the constants
-                draw(drawImageProgramInstance,
+                draw(renderState.drawImageProgramInstance,
                     {
                         'u_texture': textureSlot,
                         'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
@@ -952,8 +821,8 @@ function GameCanvas({
         if (imageAtlasTerrainAndRoads) {
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
-            if (textureSlot !== undefined && drawRoadsProgramInstance && renderState.mapRenderInformation) {
-                draw(drawRoadsProgramInstance,
+            if (textureSlot !== undefined && renderState.drawRoadsProgramInstance && renderState.mapRenderInformation) {
+                draw(renderState.drawRoadsProgramInstance,
                     {
                         'u_light_vector': lightVector,
                         'u_scale': [renderState.scale, renderState.scale],
@@ -1794,54 +1663,7 @@ function GameCanvas({
 
 
         // Draw the Shadow layer and the Normal layer
-
-
-        // Sort the toDrawList so it first draws things further away
-        const sortedToDrawList = toDrawNormal.sort((draw1, draw2) => {
-            return draw2.gamePoint.y - draw1.gamePoint.y
-        })
-
-
-        // Set up webgl2 with the right shaders to prepare for drawing shadows
-        if (renderState.drawShadowProgram &&
-            renderState.drawImagePositionBuffer &&
-            renderState.drawImageTexCoordBuffer &&
-            renderState.drawShadowHeightAdjustmentUniformLocation !== undefined &&
-            renderState.drawShadowHeightUniformLocation !== undefined) {
-
-            // Use the shadow drawing gl program
-            renderState.gl.useProgram(renderState.drawShadowProgram)
-
-            // Configure the drawing
-            renderState.gl.viewport(0, 0, width, height)
-            renderState.gl.enable(renderState.gl.BLEND)
-            renderState.gl.blendFunc(renderState.gl.ONE, renderState.gl.ONE_MINUS_SRC_ALPHA)
-            renderState.gl.disable(renderState.gl.DEPTH_TEST)
-
-            // Re-assign the attribute locations
-            const drawImagePositionLocation = renderState.gl.getAttribLocation(renderState.drawShadowProgram, "a_position")
-            const drawImageTexcoordLocation = renderState.gl.getAttribLocation(renderState.drawShadowProgram, "a_texcoord")
-
-            // Re-assign the uniform locations
-            const drawImageTextureLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_texture")
-            const drawImageGamePointLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_game_point")
-            const drawImageScreenOffsetLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_screen_offset")
-            const drawImageOffsetLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_image_offset")
-            const drawImageScaleLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_scale")
-            const drawImageSourceCoordinateLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_source_coordinate")
-            const drawImageSourceDimensionsLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_source_dimensions")
-            const drawImageScreenDimensionLocation = renderState.gl.getUniformLocation(renderState.drawShadowProgram, "u_screen_dimensions")
-
-            // Set the buffers
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImagePositionBuffer)
-            renderState.gl.vertexAttribPointer(drawImagePositionLocation, 2, renderState.gl.FLOAT, false, 0, 0)
-            renderState.gl.enableVertexAttribArray(drawImagePositionLocation)
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.drawImageTexCoordBuffer)
-            renderState.gl.vertexAttribPointer(drawImageTexcoordLocation, 2, renderState.gl.FLOAT, false, 0, 0)
-            renderState.gl.enableVertexAttribArray(drawImageTexcoordLocation)
-
-            // Draw all shadows
+        if (renderState.drawShadowProgramInstance) {
             for (const shadow of shadowsToDraw) {
                 if (shadow.gamePoint === undefined || shadow.source?.image === undefined) {
                     continue
@@ -1856,30 +1678,32 @@ function GameCanvas({
                 }
 
                 // Set the constants
-                renderState.gl.uniform1i(drawImageTextureLocation, textureSlot)
-                renderState.gl.uniform2f(drawImageGamePointLocation, shadow.gamePoint.x, shadow.gamePoint.y)
-                renderState.gl.uniform2f(drawImageOffsetLocation, shadow.source.offsetX, shadow.source.offsetY)
-                renderState.gl.uniform1f(drawImageScaleLocation, renderState.scale)
-                renderState.gl.uniform2f(drawImageScreenOffsetLocation, renderState.translate.x, renderState.translate.y)
-                renderState.gl.uniform2f(drawImageScreenDimensionLocation, width, height)
-                renderState.gl.uniform2f(drawImageSourceCoordinateLocation, shadow.source.sourceX, shadow.source.sourceY)
-                renderState.gl.uniform2f(drawImageSourceDimensionsLocation, shadow.source.width, shadow.source.height)
-                renderState.gl.uniform1f(renderState.drawShadowHeightAdjustmentUniformLocation, heightAdjust)
-
-                if (shadow.height !== undefined) {
-                    renderState.gl.uniform1f(renderState.drawShadowHeightUniformLocation, shadow.height)
-                } else {
-                    renderState.gl.uniform1f(renderState.drawShadowHeightUniformLocation, monitor.getHeight(shadow.gamePoint))
-                }
-
-                // Draw the quad (2 triangles = 6 vertices)
-                renderState.gl.drawArrays(renderState.gl.TRIANGLES, 0, 6)
+                draw(renderState.drawShadowProgramInstance,
+                    {
+                        'u_texture': textureSlot,
+                        'u_game_point': [shadow.gamePoint.x, shadow.gamePoint.y],
+                        'u_screen_offset': [renderState.translate.x, renderState.translate.y],
+                        'u_image_offset': [shadow.source.offsetX, shadow.source.offsetY],
+                        'u_scale': renderState.scale,
+                        'u_source_coordinate': [shadow.source.sourceX, shadow.source.sourceY],
+                        'u_source_dimensions': [shadow.source.width, shadow.source.height],
+                        'u_screen_dimensions': [width, height],
+                        'u_height_adjust': heightAdjust,
+                        'u_height': shadow.height ?? monitor.getHeight(shadow.gamePoint)
+                    },
+                    'NO_CLEAR_BEFORE_DRAW'
+                )
             }
         }
 
+        // Sort the toDrawList so it first draws things further away
+        const sortedToDrawList = toDrawNormal.sort((draw1, draw2) => {
+            return draw2.gamePoint.y - draw1.gamePoint.y
+        })
+
 
         // Draw normal objects
-        if (drawImageProgramInstance !== undefined) {
+        if (renderState.drawImageProgramInstance !== undefined) {
             for (const toDraw of sortedToDrawList) {
                 if (toDraw.gamePoint === undefined || toDraw.source?.image === undefined) {
                     continue
@@ -1894,7 +1718,7 @@ function GameCanvas({
                 }
 
                 // Set the constants
-                draw(drawImageProgramInstance,
+                draw(renderState.drawImageProgramInstance,
                     {
                         'u_texture': textureSlot,
                         'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
@@ -2039,7 +1863,7 @@ function GameCanvas({
         }
 
         // Draw the overlay layer. Assume for now that they don't need sorting
-        if (drawImageProgramInstance !== undefined) {
+        if (renderState.drawImageProgramInstance !== undefined) {
             for (const toDraw of toDrawHover) {
                 if (toDraw.gamePoint === undefined || toDraw.source?.image === undefined) {
                     continue
@@ -2054,7 +1878,7 @@ function GameCanvas({
                 }
 
                 // Set the constants and draw
-                draw(drawImageProgramInstance,
+                draw(renderState.drawImageProgramInstance,
                     {
                         'u_texture': textureSlot,
                         'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
@@ -2118,54 +1942,16 @@ function GameCanvas({
 
 
         // Fill in the buffers to draw fog of war
-        if (renderState.fogOfWarCoordBuffer && renderState.fogOfWarIntensityBuffer) {
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.fogOfWarCoordBuffer)
-            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.fogOfWarCoordinates), renderState.gl.STATIC_DRAW)
-
-            renderState.gl.bindBuffer(renderState.gl.ARRAY_BUFFER, renderState.fogOfWarIntensityBuffer)
-            renderState.gl.bufferData(renderState.gl.ARRAY_BUFFER, new Float32Array(renderState.fogOfWarIntensities), renderState.gl.STATIC_DRAW)
-        }
-
-        /* Draw the fog of war layer */
-        if (renderState.fogOfWarRenderProgram &&
-            renderState.fogOfWarScreenWidthUniformLocation !== undefined &&
-            renderState.fogOfWarScreenHeightUniformLocation !== undefined &&
-            renderState.fogOfWarScaleUniformLocation !== undefined &&
-            renderState.fogOfWarOffsetUniformLocation !== undefined &&
-            renderState.fogOfWarCoordAttributeLocation !== undefined &&
-            renderState.fogOfWarIntensityAttributeLocation !== undefined &&
-            renderState.fogOfWarCoordBuffer !== undefined &&
-            renderState.fogOfWarIntensityBuffer !== undefined) {
-
-            const gl = renderState.gl
-
-            // Use the fog of war program
-            gl.useProgram(renderState.fogOfWarRenderProgram)
-
-            // Configure drawing
-            gl.enable(gl.BLEND)
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-
-            // Set the constants
-            gl.uniform1f(renderState.fogOfWarScreenWidthUniformLocation, width)
-            gl.uniform1f(renderState.fogOfWarScreenHeightUniformLocation, height)
-            gl.uniform2f(renderState.fogOfWarScaleUniformLocation, renderState.scale, renderState.scale)
-            gl.uniform2f(renderState.fogOfWarOffsetUniformLocation, renderState.translate.x, renderState.translate.y)
-            gl.clearColor(0.0, 0.0, 0.0, 1.0)
-
-            // Set the buffers
-            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.fogOfWarCoordBuffer)
-            gl.vertexAttribPointer(renderState.fogOfWarCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(renderState.fogOfWarCoordAttributeLocation)
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, renderState.fogOfWarIntensityBuffer)
-            gl.vertexAttribPointer(renderState.fogOfWarIntensityAttributeLocation, 1, gl.FLOAT, false, 0, 0)
-            gl.enableVertexAttribArray(renderState.fogOfWarIntensityAttributeLocation)
-
-            // Draw the triangles -- mode, offset (nr vertices), count (nr vertices)
-            gl.drawArrays(gl.TRIANGLES, 0, renderState.fogOfWarCoordinates.length / 2)
-        } else {
-            console.error("Did not draw the fog of war layer")
+        if (renderState.fogOfWarProgramInstance) {
+            draw(renderState.fogOfWarProgramInstance,
+                {
+                    'u_scale': [renderState.scale, renderState.scale],
+                    'u_offset': [renderState.translate.x, renderState.translate.y],
+                    'u_screen_width': width,
+                    'u_screen_height': height
+                },
+                'NO_CLEAR_BEFORE_DRAW'
+            )
         }
 
         duration.reportStats()

@@ -65,9 +65,9 @@ function setBuffer(program: ProgramInstance, attributeName: AttributeName, conte
     }
 }
 
-function draw(
+function draw<Uniforms extends object>(
     program: ProgramInstance,
-    uniforms: { [key in string]: number | number[] },
+    uniforms: Uniforms,
     clearMode: 'NO_CLEAR_BEFORE_DRAW' | 'CLEAR_BEFORE_DRAW'
 ): void {
     if (program.program === undefined) {

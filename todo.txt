@@ -93,6 +93,25 @@ Todo 1.0
 
 30. Inventory in the headquarters should update when its window is open
 
+31. Bug
+    ON MESSAGE: {"command":"FULL_SYNC","playerId":"52"}
+    Exception during game loop: java.util.ConcurrentModificationException
+    java.util.ConcurrentModificationException
+      at java.base/java.util.HashMap$HashIterator.nextNode(HashMap.java:1605)
+      at java.base/java.util.HashMap$KeyIterator.next(HashMap.java:1628)
+      at java.base/java.lang.Iterable.forEach(Iterable.java:74)
+      at org.appland.settlers.model.Player.sendMonitoringEvents(Player.java:1176)
+      at org.appland.settlers.model.GameMap.stepTime(GameMap.java:751)
+      at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:92)
+      at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+      at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358)
+      at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
+      at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+      at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+      at java.base/java.lang.Thread.run(Thread.java:1570)
+    null
+    org.appland.settlers.model.GameMap@5b78798d
+
 Todo 2.0
 ========
 

@@ -163,6 +163,16 @@ const drawGroundProgramDescriptor: ProgramDescriptor = {
     }
 }
 
+type DrawGroundUniforms = {
+    u_light_vector: number[]
+    u_scale: number[]
+    u_offset: number[]
+    u_screen_width: number
+    u_screen_height: number
+    u_height_adjust: number
+    u_sampler: number
+}
+
 const drawImageProgramDescriptor: ProgramDescriptor = {
     vertexShaderSource: texturedImageVertexShaderPixelPerfect,
     fragmentShaderSource: textureFragmentShader,
@@ -188,6 +198,19 @@ const drawImageProgramDescriptor: ProgramDescriptor = {
             maxElements: 12
         }
     }
+}
+
+type DrawImageUniforms = {
+    u_texture: number
+    u_game_point: number[]
+    u_screen_offset: number[]
+    u_image_offset: number[]
+    u_scale: number
+    u_source_coordinate: number[]
+    u_source_dimensions: number[]
+    u_screen_dimensions: number[]
+    u_height_adjust: number
+    u_height: number
 }
 
 const drawShadowProgramDescriptor: ProgramDescriptor = {
@@ -217,6 +240,19 @@ const drawShadowProgramDescriptor: ProgramDescriptor = {
     }
 }
 
+type DrawShadowUniforms = {
+    u_texture: number
+    u_game_point: number[]
+    u_screen_offset: number[]
+    u_image_offset: number[]
+    u_scale: number
+    u_source_coordinate: number[]
+    u_source_dimensions: number[]
+    u_screen_dimensions: number[]
+    u_height_adjust: number
+    u_height: number
+}
+
 const fogOfWarProgramDescriptor: ProgramDescriptor = {
     vertexShaderSource: fogOfWarVertexShader,
     fragmentShaderSource: fogOfWarFragmentShader,
@@ -236,6 +272,13 @@ const fogOfWarProgramDescriptor: ProgramDescriptor = {
             maxElements: 500
         }
     }
+}
+
+type FogOfWarUniforms = {
+    u_scale: number[]
+    u_offset: number[]
+    u_screen_height: number
+    u_screen_width: number
 }
 
 type RenderState = {
@@ -745,15 +788,15 @@ function GameCanvas({
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
             if (textureSlot !== undefined && renderState.drawGroundProgramInstance && renderState.mapRenderInformation) {
-                draw(renderState.drawGroundProgramInstance,
+                draw<DrawGroundUniforms>(renderState.drawGroundProgramInstance,
                     {
-                        'u_light_vector': lightVector,
-                        'u_scale': [renderState.scale, renderState.scale],
-                        'u_offset': [renderState.translate.x, renderState.translate.y],
-                        'u_screen_width': width,
-                        'u_screen_height': height,
-                        'u_height_adjust': heightAdjust,
-                        'u_sampler': textureSlot
+                        u_light_vector: lightVector,
+                        u_scale: [renderState.scale, renderState.scale],
+                        u_offset: [renderState.translate.x, renderState.translate.y],
+                        u_screen_width: width,
+                        u_screen_height: height,
+                        u_height_adjust: heightAdjust,
+                        u_sampler: textureSlot
                     },
                     'CLEAR_BEFORE_DRAW'
                 )
@@ -794,18 +837,18 @@ function GameCanvas({
                 }
 
                 // Set the constants
-                draw(renderState.drawImageProgramInstance,
+                draw<DrawImageUniforms>(renderState.drawImageProgramInstance,
                     {
-                        'u_texture': textureSlot,
-                        'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
-                        'u_screen_offset': [renderState.translate.x, renderState.translate.y],
-                        'u_image_offset': [toDraw.source.offsetX, toDraw.source.offsetY],
-                        'u_scale': renderState.scale,
-                        'u_source_coordinate': [toDraw.source.sourceX, toDraw.source.sourceY],
-                        'u_source_dimensions': [toDraw.source.width, toDraw.source.height],
-                        'u_screen_dimensions': [width, height],
-                        'u_height_adjust': heightAdjust,
-                        'u_height': monitor.getHeight(toDraw.gamePoint)
+                        u_texture: textureSlot,
+                        u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
+                        u_screen_offset: [renderState.translate.x, renderState.translate.y],
+                        u_image_offset: [toDraw.source.offsetX, toDraw.source.offsetY],
+                        u_scale: renderState.scale,
+                        u_source_coordinate: [toDraw.source.sourceX, toDraw.source.sourceY],
+                        u_source_dimensions: [toDraw.source.width, toDraw.source.height],
+                        u_screen_dimensions: [width, height],
+                        u_height_adjust: heightAdjust,
+                        u_height: monitor.getHeight(toDraw.gamePoint)
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -822,15 +865,15 @@ function GameCanvas({
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
             if (textureSlot !== undefined && renderState.drawRoadsProgramInstance && renderState.mapRenderInformation) {
-                draw(renderState.drawRoadsProgramInstance,
+                draw<DrawGroundUniforms>(renderState.drawRoadsProgramInstance,
                     {
-                        'u_light_vector': lightVector,
-                        'u_scale': [renderState.scale, renderState.scale],
-                        'u_offset': [renderState.translate.x, renderState.translate.y],
-                        'u_screen_width': width,
-                        'u_screen_height': height,
-                        'u_height_adjust': heightAdjust,
-                        'u_sampler': textureSlot
+                        u_light_vector: lightVector,
+                        u_scale: [renderState.scale, renderState.scale],
+                        u_offset: [renderState.translate.x, renderState.translate.y],
+                        u_screen_width: width,
+                        u_screen_height: height,
+                        u_height_adjust: heightAdjust,
+                        u_sampler: textureSlot
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -1678,18 +1721,18 @@ function GameCanvas({
                 }
 
                 // Set the constants
-                draw(renderState.drawShadowProgramInstance,
+                draw<DrawShadowUniforms>(renderState.drawShadowProgramInstance,
                     {
-                        'u_texture': textureSlot,
-                        'u_game_point': [shadow.gamePoint.x, shadow.gamePoint.y],
-                        'u_screen_offset': [renderState.translate.x, renderState.translate.y],
-                        'u_image_offset': [shadow.source.offsetX, shadow.source.offsetY],
-                        'u_scale': renderState.scale,
-                        'u_source_coordinate': [shadow.source.sourceX, shadow.source.sourceY],
-                        'u_source_dimensions': [shadow.source.width, shadow.source.height],
-                        'u_screen_dimensions': [width, height],
-                        'u_height_adjust': heightAdjust,
-                        'u_height': shadow.height ?? monitor.getHeight(shadow.gamePoint)
+                        u_texture: textureSlot,
+                        u_game_point: [shadow.gamePoint.x, shadow.gamePoint.y],
+                        u_screen_offset: [renderState.translate.x, renderState.translate.y],
+                        u_image_offset: [shadow.source.offsetX, shadow.source.offsetY],
+                        u_scale: renderState.scale,
+                        u_source_coordinate: [shadow.source.sourceX, shadow.source.sourceY],
+                        u_source_dimensions: [shadow.source.width, shadow.source.height],
+                        u_screen_dimensions: [width, height],
+                        u_height_adjust: heightAdjust,
+                        u_height: shadow.height ?? monitor.getHeight(shadow.gamePoint)
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -1718,18 +1761,18 @@ function GameCanvas({
                 }
 
                 // Set the constants
-                draw(renderState.drawImageProgramInstance,
+                draw<DrawImageUniforms>(renderState.drawImageProgramInstance,
                     {
-                        'u_texture': textureSlot,
-                        'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
-                        'u_screen_offset': [renderState.translate.x, renderState.translate.y],
-                        'u_image_offset': [toDraw.source.offsetX, toDraw.source.offsetY],
-                        'u_scale': renderState.scale,
-                        'u_source_coordinate': [toDraw.source.sourceX, toDraw.source.sourceY],
-                        'u_source_dimensions': [toDraw.source.width, toDraw.source.height],
-                        'u_screen_dimensions': [width, height],
-                        'u_height_adjust': heightAdjust,
-                        'u_height': monitor.getHeight(toDraw.gamePoint)
+                        u_texture: textureSlot,
+                        u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
+                        u_screen_offset: [renderState.translate.x, renderState.translate.y],
+                        u_image_offset: [toDraw.source.offsetX, toDraw.source.offsetY],
+                        u_scale: renderState.scale,
+                        u_source_coordinate: [toDraw.source.sourceX, toDraw.source.sourceY],
+                        u_source_dimensions: [toDraw.source.width, toDraw.source.height],
+                        u_screen_dimensions: [width, height],
+                        u_height_adjust: heightAdjust,
+                        u_height: toDraw.height ?? monitor.getHeight(toDraw.gamePoint)
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -1878,18 +1921,18 @@ function GameCanvas({
                 }
 
                 // Set the constants and draw
-                draw(renderState.drawImageProgramInstance,
+                draw<DrawImageUniforms>(renderState.drawImageProgramInstance,
                     {
-                        'u_texture': textureSlot,
-                        'u_game_point': [toDraw.gamePoint.x, toDraw.gamePoint.y],
-                        'u_screen_offset': [renderState.translate.x, renderState.translate.y],
-                        'u_image_offset': [toDraw.source.offsetX, toDraw.source.offsetY],
-                        'u_scale': renderState.scale,
-                        'u_source_coordinate': [toDraw.source.sourceX, toDraw.source.sourceY],
-                        'u_source_dimensions': [toDraw.source.width, toDraw.source.height],
-                        'u_screen_dimensions': [width, height],
-                        'u_height_adjust': heightAdjust,
-                        'u_height': toDraw.height ?? monitor.getHeight(toDraw.gamePoint)
+                        u_texture: textureSlot,
+                        u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
+                        u_screen_offset: [renderState.translate.x, renderState.translate.y],
+                        u_image_offset: [toDraw.source.offsetX, toDraw.source.offsetY],
+                        u_scale: renderState.scale,
+                        u_source_coordinate: [toDraw.source.sourceX, toDraw.source.sourceY],
+                        u_source_dimensions: [toDraw.source.width, toDraw.source.height],
+                        u_screen_dimensions: [width, height],
+                        u_height_adjust: heightAdjust,
+                        u_height: toDraw.height ?? monitor.getHeight(toDraw.gamePoint)
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -1943,12 +1986,12 @@ function GameCanvas({
 
         // Fill in the buffers to draw fog of war
         if (renderState.fogOfWarProgramInstance) {
-            draw(renderState.fogOfWarProgramInstance,
+            draw<FogOfWarUniforms>(renderState.fogOfWarProgramInstance,
                 {
-                    'u_scale': [renderState.scale, renderState.scale],
-                    'u_offset': [renderState.translate.x, renderState.translate.y],
-                    'u_screen_width': width,
-                    'u_screen_height': height
+                    u_scale: [renderState.scale, renderState.scale],
+                    u_offset: [renderState.translate.x, renderState.translate.y],
+                    u_screen_width: width,
+                    u_screen_height: height
                 },
                 'NO_CLEAR_BEFORE_DRAW'
             )
@@ -2596,31 +2639,6 @@ function GameCanvas({
         </>
     )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
     const surrounding = surroundingPoints(point)

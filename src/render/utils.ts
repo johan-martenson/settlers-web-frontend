@@ -44,7 +44,7 @@ export type ProgramInstance = {
     gl: WebGL2RenderingContext
 }
 
-function setBuffer(program: ProgramInstance, attributeName: AttributeName, content: number[]): void {
+function setBuffer<Attribute extends string>(program: ProgramInstance, attributeName: Attribute, content: number[]): void {
     const attributeInstance = program.attributes.get(attributeName)
 
     if (attributeInstance === undefined) {

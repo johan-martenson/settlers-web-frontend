@@ -173,6 +173,8 @@ type DrawGroundUniforms = {
     u_sampler: number
 }
 
+type DrawGroundAttributes = 'a_coords' | 'a_normal' | 'a_texture_mapping'
+
 const drawImageProgramDescriptor: ProgramDescriptor = {
     vertexShaderSource: texturedImageVertexShaderPixelPerfect,
     fragmentShaderSource: textureFragmentShader,
@@ -212,6 +214,8 @@ type DrawImageUniforms = {
     u_height_adjust: number
     u_height: number
 }
+
+type DrawImageAttributes = 'a_position' | 'a_texcoord'
 
 const drawShadowProgramDescriptor: ProgramDescriptor = {
     vertexShaderSource: texturedImageVertexShaderPixelPerfect,
@@ -253,6 +257,8 @@ type DrawShadowUniforms = {
     u_height: number
 }
 
+type DrawShadowAttributes = 'a_position' | 'a_texcoord'
+
 const fogOfWarProgramDescriptor: ProgramDescriptor = {
     vertexShaderSource: fogOfWarVertexShader,
     fragmentShaderSource: fogOfWarFragmentShader,
@@ -280,6 +286,8 @@ type FogOfWarUniforms = {
     u_screen_height: number
     u_screen_width: number
 }
+
+type FogOfWarAttributes = 'a_coordinates' | 'a_intensity'
 
 type RenderState = {
     previousTimestamp?: number
@@ -392,9 +400,9 @@ function GameCanvas({
         if (renderState.drawRoadsProgramInstance) {
             const roadRenderInformation = prepareToRenderRoads(monitor.roads.values(), monitor.flags.values())
 
-            setBuffer(renderState.drawRoadsProgramInstance, 'a_coords', roadRenderInformation?.coordinates)
-            setBuffer(renderState.drawRoadsProgramInstance, 'a_normal', roadRenderInformation.normals)
-            setBuffer(renderState.drawRoadsProgramInstance, 'a_texture_mapping', roadRenderInformation.textureMapping)
+            setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_coords', roadRenderInformation?.coordinates)
+            setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_normal', roadRenderInformation.normals)
+            setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_texture_mapping', roadRenderInformation.textureMapping)
         } else {
             console.error(`Failed to update road drawing buffers`)
         }
@@ -542,13 +550,13 @@ function GameCanvas({
                         renderState.fogOfWarProgramInstance = initProgram(fogOfWarProgramDescriptor, gl)
 
                         // Setup the program to render the ground
-                        setBuffer(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
-                        setBuffer(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
-                        setBuffer(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
+                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
+                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
+                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
 
-                        setBuffer(renderState.drawRoadsProgramInstance, 'a_coords', [])
-                        setBuffer(renderState.drawRoadsProgramInstance, 'a_normal', [])
-                        setBuffer(renderState.drawRoadsProgramInstance, 'a_texture_mapping', [])
+                        setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_coords', [])
+                        setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_normal', [])
+                        setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_texture_mapping', [])
 
                         renderState.gl = gl
 
@@ -569,11 +577,11 @@ function GameCanvas({
                             1, 1
                         ]
 
-                        setBuffer(renderState.drawImageProgramInstance, 'a_position', positions)
-                        setBuffer(renderState.drawImageProgramInstance, 'a_texcoord', texCoords)
+                        setBuffer<DrawImageAttributes>(renderState.drawImageProgramInstance, 'a_position', positions)
+                        setBuffer<DrawImageAttributes>(renderState.drawImageProgramInstance, 'a_texcoord', texCoords)
 
-                        setBuffer(renderState.drawShadowProgramInstance, 'a_position', positions)
-                        setBuffer(renderState.drawShadowProgramInstance, 'a_texcoord', texCoords)
+                        setBuffer<DrawShadowAttributes>(renderState.drawShadowProgramInstance, 'a_position', positions)
+                        setBuffer<DrawShadowAttributes>(renderState.drawShadowProgramInstance, 'a_texcoord', texCoords)
                     } else {
                         console.error("Failed to create shadow rendering gl program")
                     }
@@ -589,8 +597,8 @@ function GameCanvas({
                 if (renderState.fogOfWarProgramInstance) {
                     const fogOfWarRenderInformation = updateFogOfWarRendering()
 
-                    setBuffer(renderState.fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
-                    setBuffer(renderState.fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
+                    setBuffer<FogOfWarAttributes>(renderState.fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
+                    setBuffer<FogOfWarAttributes>(renderState.fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
                 }
 
                 // Start listeners
@@ -617,9 +625,9 @@ function GameCanvas({
                     renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
 
                     if (renderState.drawGroundProgramInstance) {
-                        setBuffer(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
-                        setBuffer(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
-                        setBuffer(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
+                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
+                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
+                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
                     } else {
                         console.error(`The terrain drawing program instance is undefined`)
                     }
@@ -628,8 +636,8 @@ function GameCanvas({
                     if (renderState.fogOfWarProgramInstance) {
                         const fogOfWarRenderInformation = updateFogOfWarRendering()
 
-                        setBuffer(renderState.fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
-                        setBuffer(renderState.fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
+                        setBuffer<FogOfWarAttributes>(renderState.fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
+                        setBuffer<FogOfWarAttributes>(renderState.fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
                     }
                 })
 

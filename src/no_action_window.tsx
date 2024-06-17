@@ -3,6 +3,7 @@ import { Button } from "@fluentui/react-components"
 import { ButtonRow, Window } from "./components/dialog"
 import { Point } from "./api/types"
 import { useState } from "react"
+import './no_action_window.css'
 
 type NoActionWindowProps = {
     point: Point
@@ -33,7 +34,7 @@ function NoActionWindow({
     const [hoverInfo, setHoverInfo] = useState<string>()
 
     return (
-        <Window heading='Monitor' onRaise={onRaise} onClose={onClose} hoverInfo={hoverInfo}>
+        <Window className='no-action-window' heading='Monitor' onRaise={onRaise} onClose={onClose} hoverInfo={hoverInfo}>
             <ButtonRow>
                 {!areHouseTitlesVisible &&
                     <Button

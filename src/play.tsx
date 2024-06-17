@@ -28,6 +28,7 @@ import { Follow } from './follow'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
 import { ButtonRow } from './components/dialog'
 import { Button } from '@fluentui/react-components'
+import { NoActionWindow } from './no_action_window'
 
 type HouseWindow = {
     type: 'HOUSE'
@@ -74,6 +75,11 @@ type FollowWindow = {
     point: Point
 }
 
+type NoActionWindow = {
+    type: 'NO_ACTION'
+    point: Point
+}
+
 type WindowType = HouseWindow |
     FlagWindow |
     ConstructionWindow |
@@ -83,7 +89,8 @@ type WindowType = HouseWindow |
     QuotaWindow |
     RoadWindow |
     TransportPriorityWindow |
-    FollowWindow
+    FollowWindow |
+    NoActionWindow
 
 type Window = {
     id: number
@@ -732,7 +739,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }
 
-    async function onDoubleClick(point: Point): Promise<void> {
+    async function onPointDoubleClicked(point: Point): Promise<void> {
         console.info("Double click on " + point.x + ", " + point.y)
 
         /* First, handle double clicks differently if a new road is being created */
@@ -766,9 +773,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             return
         }
 
-        /* Ignore double clicks on undiscovered land */
+        /* Show 'no action' window if the point is not discovered */
         if (!monitor.discoveredPoints.has(point)) {
-            console.info("Ignoring un-discovered point")
+            openWindow({ type: 'NO_ACTION', point })
+
             return
         }
 
@@ -821,6 +829,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         /* Open the window to construct houses/flags/roads */
         else if (pointInformation.canBuild && pointInformation.canBuild.length !== 0) {
             openWindow({ type: 'CONSTRUCTION_WINDOW', pointInformation: pointInformation })
+        } else {
+            openWindow({ type: 'NO_ACTION', point })
         }
     }
 
@@ -1016,7 +1026,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 onKeyDown={onKeyDown}
                 onPointClicked={(point: Point) => onPointClicked(point)}
                 selectedPoint={selected}
-                onDoubleClick={(point: Point) => onDoubleClick(point)}
+                onDoubleClick={(point: Point) => onPointDoubleClicked(point)}
                 showHouseTitles={showTitles}
                 newRoad={newRoad}
                 possibleRoadConnections={possibleRoadConnections}
@@ -1152,6 +1162,19 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             key={window.id}
                             heightAdjust={heightAdjust}
                         />
+                    case 'NO_ACTION':
+                        return <NoActionWindow
+                            point={window.point}
+                            onClose={() => closeWindow(window.id)}
+                            onRaise={() => raiseWindow(window.id)}
+                            key={window.id}
+                            areHouseTitlesVisible={showTitles}
+                            isAvailableConstructionVisible={showAvailableConstruction}
+                            onShowTitles={() => setShowTitles(true)}
+                            onHideTitles={() => setShowTitles(false)}
+                            onShowAvailableConstruction={() => setShowAvailableConstruction(true)}
+                            onHideAvailableConstruction={() => setShowAvailableConstruction(false)}
+                            onStartMonitor={(point: Point) => openWindow({ type: 'FOLLOW', point })} />
                 }
             })}
 

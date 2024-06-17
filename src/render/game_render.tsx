@@ -309,6 +309,7 @@ type RenderState = {
     hoverPoint?: Point
     newRoadCurrentLength: number
 
+    showHouseTitles: boolean
     showAvailableConstruction: boolean
 
     // Map of the normal for each point on the map
@@ -346,6 +347,7 @@ function GameCanvas({
         previous: performance.now(),
         overshoot: 0,
         screenHeight: 0,
+        showHouseTitles,
         showAvailableConstruction,
         scale: 0,
         translate: { x: 0, y: 0 },
@@ -385,6 +387,7 @@ function GameCanvas({
         () => {
             renderState.showAvailableConstruction = showAvailableConstruction
             renderState.selectedPoint = selectedPoint
+            renderState.showHouseTitles = showHouseTitles
 
             if (newRoad !== undefined) {
                 renderState.newRoad = { newRoad: newRoad, possibleConnections: possibleRoadConnections ?? [] }
@@ -392,7 +395,7 @@ function GameCanvas({
                 renderState.newRoad = undefined
             }
         },
-        [showAvailableConstruction, selectedPoint, newRoad, possibleRoadConnections]
+        [showAvailableConstruction, selectedPoint, newRoad, possibleRoadConnections, showHouseTitles]
     )
 
     function updateRoadDrawingBuffers(): void {
@@ -1951,7 +1954,7 @@ function GameCanvas({
 
 
         /* Draw house titles */
-        if (showHouseTitles) {
+        if (renderState.showHouseTitles) {
             overlayCtx.font = "bold 12px sans-serif"
             overlayCtx.strokeStyle = 'black'
             overlayCtx.fillStyle = 'yellow'

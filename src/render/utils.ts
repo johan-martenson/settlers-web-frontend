@@ -171,8 +171,6 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
                 location: gl.getUniformLocation(programInstance.program, uniformName) ?? undefined
             }
 
-            console.log(`Set uniform instance ${uniformName}`)
-
             programInstance.uniforms.set(uniformName, uniformInstance)
         }
 

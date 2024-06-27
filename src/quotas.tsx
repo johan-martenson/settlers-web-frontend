@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { HouseIcon } from "./icon"
+import { HouseIcon } from "./icons/icon"
 import './quotas.css'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components"
 import { Nation } from "./api/types"

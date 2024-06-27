@@ -14,7 +14,9 @@ import { GameId, GameInformation } from './api/types'
 
 const statusToText = {
     STARTED: 'Started',
-    NOT_STARTED: 'Not started'
+    NOT_STARTED: 'Not started',
+    PAUSED: 'Paused',
+    EXPIRED: 'Expired'
 }
 
 const columns = [

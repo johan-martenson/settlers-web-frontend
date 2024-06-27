@@ -316,7 +316,8 @@ export interface PlayerInformation {
 export interface GameInformation {
     players: PlayerInformation[]
     id: GameId
-    status: "STARTED" | "NOT_STARTED"
+    title: string
+    status: GameState
     name: string
     map: MapInformation
     othersCanJoin: boolean
@@ -583,7 +584,7 @@ export interface Decoration {
     decoration: DecorationType
 }
 
-export type GameState = "STARTED" | "PAUSED" | "EXPIRED"
+export type GameState = 'NOT_STARTED' | "STARTED" | "PAUSED" | "EXPIRED"
 
 export interface PlayerViewInformation {
     borders: BorderInformation[]
@@ -602,6 +603,7 @@ export interface PlayerViewInformation {
     decorations: Decoration[]
     messages: GameMessage[]
     gameState: GameState
+    players: PlayerInformation[]
 }
 
 export interface PossibleNewRoadInformation {
@@ -637,70 +639,126 @@ export interface LandStatistics {
 
 export type TransportPriorityInformation = Material[]
 
-
-type GameMessageType = "MILITARY_BUILDING_READY" | "NO_MORE_RESOURCES" | 'MILITARY_BUILDING_OCCUPIED' | 'UNDER_ATTACK' | 'GEOLOGIST_FIND' | 'BUILDING_LOST' | 'BUILDING_CAPTURED' | 'STORE_HOUSE_IS_READY' | 'TREE_CONSERVATION_PROGRAM_ACTIVATED' | 'TREE_CONSERVATION_PROGRAM_DEACTIVATED' | 'MILITARY_BUILDING_CAUSED_LOST_LAND'
-
-export interface GameMessage {
-    type: GameMessageType
-    id: GameMessageId
+export type GameEndedMessage = {
+    type: 'GAME_ENDED'
+    winnerPlayerId: PlayerId
 }
 
-export interface TreeConservationProgramActivatedMessage extends GameMessage { }
+export type ShipHasReachedDestinationMessage = {
+    type: 'SHIP_HAS_REACHED_DESTINATION'
+    shipId: ShipId
+    point: Point
+}
 
-export interface TreeConservationProgramDeactivatedMessage extends GameMessage { }
+export type ShipReadyForExpeditionMessage = {
+    type: 'SHIP_READY_FOR_EXPEDITION'
+    shipId: ShipId
+    point: Point
+}
 
-export interface MilitaryBuildingCausedLostLandMessage extends GameMessage {
+export type HarborIsFinishedMessage = {
+    type: 'HARBOR_IS_FINISHED'
+    houseId: HouseId
+    point: Point
+}
+
+export type BombardedByCatapultMessage = {
+    type: 'BOMBARDED_BY_CATAPULT'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
 
-export interface MilitaryBuildingReadyMessage extends GameMessage {
+export type TreeConservationProgramActivatedMessage = {
+    type: 'TREE_CONSERVATION_PROGRAM_ACTIVATED'
+}
+
+export type TreeConservationProgramDeactivatedMessage = {
+    type: 'TREE_CONSERVATION_PROGRAM_DEACTIVATED'
+}
+
+export type MilitaryBuildingCausedLostLandMessage = {
+    type: 'MILITARY_BUILDING_CAUSED_LOST_LAND'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
 
-export interface NoMoreResourcesMessage extends GameMessage {
+export type MilitaryBuildingReadyMessage = {
+    type: "MILITARY_BUILDING_READY"
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
 
-export interface MilitaryBuildingOccupiedMessage extends GameMessage {
+export type NoMoreResourcesMessage = {
+    type: "NO_MORE_RESOURCES"
+    houseId: HouseId
+    houseType: AnyBuilding
+    point: Point
+}
+export type MilitaryBuildingOccupiedMessage = {
+    type: 'MILITARY_BUILDING_OCCUPIED'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
 
-export interface UnderAttackMessage extends GameMessage {
+export type UnderAttackMessage = {
+    type: 'UNDER_ATTACK'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
 
-export interface BuildingLostMessage extends GameMessage {
+export type BuildingLostMessage = {
+    type: 'BUILDING_LOST'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
 
-export interface BuildingCapturedMessage extends GameMessage {
+export type BuildingCapturedMessage = {
+    type: 'BUILDING_CAPTURED'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
 
-export interface GeologistFindMessage extends GameMessage {
+export type GeologistFindMessage = {
+    type: 'GEOLOGIST_FIND'
     point: Point
     material: "IRON" | "WATER" | "COAL" | "STONE" | "GOLD"
 }
 
-export interface StoreHouseIsReadyMessage extends GameMessage {
+export type StoreHouseIsReadyMessage = {
+    type: 'STORE_HOUSE_IS_READY'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
+
+export type GameMessage = {
+    id: GameMessageId
+} & (
+        GameEndedMessage |
+        ShipHasReachedDestinationMessage |
+        ShipReadyForExpeditionMessage |
+        HarborIsFinishedMessage |
+        BombardedByCatapultMessage |
+        TreeConservationProgramActivatedMessage |
+        TreeConservationProgramDeactivatedMessage |
+        MilitaryBuildingCausedLostLandMessage |
+        MilitaryBuildingReadyMessage |
+        NoMoreResourcesMessage |
+        MilitaryBuildingOccupiedMessage |
+        UnderAttackMessage |
+        BuildingLostMessage |
+        BuildingCapturedMessage |
+        GeologistFindMessage |
+        StoreHouseIsReadyMessage
+    )
+
 
 function isHeadquarterInformation(houseInformation: HouseInformation): houseInformation is HeadquarterInformation {
     return 'reserved' in houseInformation
@@ -763,50 +821,6 @@ function getSoldierDisplayName(soldierType: SoldierType): string {
     }
 }
 
-function isMilitaryBuildingCausedLostLandMessage(message: GameMessage): message is MilitaryBuildingCausedLostLandMessage {
-    return message.type === 'MILITARY_BUILDING_CAUSED_LOST_LAND'
-}
-
-function isTreeConservationProgramActivatedMessage(message: GameMessage): message is TreeConservationProgramActivatedMessage {
-    return message.type === 'TREE_CONSERVATION_PROGRAM_ACTIVATED'
-}
-
-function isTreeConservationProgramDeactivatedMessage(message: GameMessage): message is TreeConservationProgramDeactivatedMessage {
-    return message.type === 'TREE_CONSERVATION_PROGRAM_DEACTIVATED'
-}
-
-function isMilitaryBuildingReadyMessage(message: GameMessage): message is MilitaryBuildingReadyMessage {
-    return message.type === "MILITARY_BUILDING_READY"
-}
-
-function isNoMoreResourcesMessage(message: GameMessage): message is NoMoreResourcesMessage {
-    return message.type === "NO_MORE_RESOURCES"
-}
-
-function isMilitaryBuildingOccupiedMessage(message: GameMessage): message is MilitaryBuildingOccupiedMessage {
-    return message.type === "MILITARY_BUILDING_OCCUPIED"
-}
-
-function isUnderAttackMessage(message: GameMessage): message is UnderAttackMessage {
-    return message.type === "UNDER_ATTACK"
-}
-
-function isGeologistFindMessage(message: GameMessage): message is GeologistFindMessage {
-    return message.type === "GEOLOGIST_FIND"
-}
-
-function isBuildingLostMessage(message: GameMessage): message is BuildingLostMessage {
-    return message.type === "BUILDING_LOST"
-}
-
-function isBuildingCapturedMessage(message: GameMessage): message is BuildingCapturedMessage {
-    return message.type === "BUILDING_CAPTURED"
-}
-
-function isStoreHouseIsReadyMessage(message: GameMessage): message is StoreHouseIsReadyMessage {
-    return message.type === 'STORE_HOUSE_IS_READY'
-}
-
 function isBuilding(aString: string): aString is AnyBuilding {
     return SMALL_HOUSES_AS_STRINGS.includes(aString) || MEDIUM_HOUSES_AS_STRINGS.includes(aString) || LARGE_HOUSES_AS_STRINGS.includes(aString)
 }
@@ -816,18 +830,7 @@ export {
     rankToMaterial,
     isToolUpperCase,
     isWildAnimal,
-    isMilitaryBuildingCausedLostLandMessage,
-    isTreeConservationProgramActivatedMessage,
-    isTreeConservationProgramDeactivatedMessage,
-    isMilitaryBuildingReadyMessage,
-    isNoMoreResourcesMessage,
-    isMilitaryBuildingOccupiedMessage,
-    isUnderAttackMessage,
-    isGeologistFindMessage,
     isMaterialUpperCase,
-    isBuildingLostMessage,
-    isBuildingCapturedMessage,
-    isStoreHouseIsReadyMessage,
     getSoldierDisplayName,
     isBuilding,
     isNation,

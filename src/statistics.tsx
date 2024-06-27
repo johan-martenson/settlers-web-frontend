@@ -5,7 +5,7 @@ import { Window } from './components/dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerInformation } from './api/types'
-import { InventoryIcon } from './icon'
+import { InventoryIcon } from './icons/icon'
 import { monitor } from './api/ws-api'
 import { ColorBox } from './components/utils'
 

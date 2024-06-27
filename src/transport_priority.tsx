@@ -4,7 +4,7 @@ import { Window } from './components/dialog'
 import './transport_priority.css'
 import { GameId, PlayerId, Material, Nation, TransportCategories, TRANSPORT_CATEGORIES } from './api/types'
 import { Tooltip } from '@fluentui/react-components'
-import { InventoryIcon } from './icon'
+import { InventoryIcon } from './icons/icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
 
 interface SetTransportPriorityProps {

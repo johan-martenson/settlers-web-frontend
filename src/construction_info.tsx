@@ -5,7 +5,7 @@ import { ButtonRow, Window } from './components/dialog'
 import { monitor } from './api/ws-api'
 import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from './utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
-import { FlagIcon, HouseIcon } from './icon'
+import { FlagIcon, HouseIcon } from './icons/icon'
 
 interface ConstructionInfoProps {
     point: PointInformation

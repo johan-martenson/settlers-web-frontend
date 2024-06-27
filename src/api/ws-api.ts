@@ -1,16 +1,18 @@
-import { getPlayers, getTerrain, getViewForPlayer } from './rest-api'
+import { createGame } from './rest-api'
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, FlagDebugInfo } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, FlagDebugInfo, GameInformation, MapInformation, Player, MapId, ResourceLevel, PlayerType, Vegetation } from './types'
 
 let gameTickLength = 200;
 
 const MAX_WAIT_FOR_REPLY = 1000; // milliseconds
-const MAX_WAIT_FOR_CONNECTION = 10_000;
+const MAX_WAIT_FOR_CONNECTION = 10_000; // milliseconds
 
 type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
+type WalkingTimerState = 'RUNNING' | 'NOT_RUNNING'
 
 let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
+let walkingTimerState: WalkingTimerState = 'NOT_RUNNING'
 
 interface MonitoredBorderForPlayer {
     color: PlayerColor
@@ -105,15 +107,26 @@ interface FullSyncMessage {
     discoveredPoints: Point[]
     signs: SignInformation[]
     players: PlayerInformation[]
-    availableConstruction: Map<string, AvailableConstruction[]>
+    availableConstruction: { [key in `${number},${number}`]: AvailableConstruction[] }
     messages: GameMessage[]
     deadTrees: Point[]
     wildAnimals: WildAnimalInformation[]
     decorations: Decoration[]
+    gameState: GameState
+    width: number
+    height: number
+    straightBelow: Vegetation[]
+    belowToTheRight: Vegetation[]
+    heights: number[]
 }
 
-interface PauseResumeMessage {
-    gameState: "PAUSED" | "STARTED"
+interface GameChangedMessage {
+    gameState?: GameState
+    othersCanJoin?: 'TRUE' | 'FALSE'
+    map?: MapInformation
+    initialResources?: ResourceLevel
+    gameName?: string
+    players?: PlayerInformation[]
 }
 
 type MilitarySettings = {
@@ -142,9 +155,14 @@ interface FlagListener {
 }
 
 export interface GameListener {
-    onMonitoringStarted?: (() => void)
-    onGameStateChanged?: ((gameState: GameState) => void)
-    onGameSpeedChanged?: ((gameSpeed: GameSpeed) => void)
+    onMonitoringStarted?: () => void
+    onGameStateChanged?: (gameState: GameState) => void
+    onGameSpeedChanged?: (gameSpeed: GameSpeed) => void
+    onMapChanged?: (map: MapInformation) => void
+    onTitleChanged?: (title: string) => void
+    onInitialResourcesChanged?: (resources: ResourceLevel) => void
+    onAllowOthersJoinChanged?: (othersCanJoin: boolean) => void
+    onPlayersChanged?: (players: PlayerInformation[]) => void
 }
 
 interface AvailableConstructionListener {
@@ -165,6 +183,7 @@ export type MoveUpdate = {
             progress: number
         }
     )
+
 interface WorkerMoveListener {
     id: WorkerId
 
@@ -226,6 +245,10 @@ export interface Monitor {
     gameState: GameState
     housesAt: PointMapFast<HouseInformation>
     gameSpeed: GameSpeed
+    gameName?: string
+    map?: MapInformation,
+    othersCanJoin?: boolean,
+    initialResources?: ResourceLevel,
 
     placeHouse: ((houseType: AnyBuilding, point: Point) => void)
     placeRoad: ((points: Point[]) => void)
@@ -246,7 +269,6 @@ export interface Monitor {
     isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
     isGameDataAvailable: (() => boolean)
 
-    getLoadingPromise: (() => Promise<void> | undefined)
     getInformationOnPointLocal: ((point: Point) => PointInformationLocal)
     getHouseAtPointLocal: ((point: Point) => HouseInformation | undefined)
     getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
@@ -267,9 +289,15 @@ export interface Monitor {
     setMilitaryPopulationCloseToBorder: ((amount: number) => void)
     setSoldiersAvailableForAttack: ((amount: number) => void)
 
+    addPlayerToGame: (name: string, color: PlayerColor, nation: Nation, type: PlayerType) => Promise<PlayerInformation>
     upgrade: ((houseId: HouseId) => void)
+    setGameSpeed: (a: GameSpeed) => void
+    setTitle: (title: string) => void
+    setInitialResources: (resources: ResourceLevel) => void
+    setOthersCanJoin: (othersCanJoin: boolean) => void
+    setMap: (map: MapId) => void
 
-    setGameSpeed: ((a: GameSpeed) => void)
+    startGame: () => void
 
     getStrengthWhenPopulatingMilitaryBuildings: (() => Promise<number>)
     getDefenseStrength: (() => Promise<number>)
@@ -280,7 +308,11 @@ export interface Monitor {
     getSoldiersAvailableForAttack: (() => Promise<number>)
     getMilitarySettings: (() => Promise<MilitarySettings>)
 
+    getGameInformation: (gameId: GameId) => Promise<GameInformation>
+
     addDetailedMonitoring: ((id: HouseId | FlagId) => void)
+
+    readFullGameState: (gameId: GameId, playerId: PlayerId) => Promise<void>
 
     listenToFlag: ((flagId: FlagId, listener: FlagListener) => void)
     listenToGameState: ((listener: GameListener) => void)
@@ -319,6 +351,7 @@ export interface Monitor {
     killWebsocket: (() => void)
     waitForConnection: (() => Promise<void>)
     waitForGameDataAvailable: (() => Promise<void>)
+    connectToNewGame: (title: string, mapId: MapId, players: Player[]) => Promise<GameInformation>
 }
 
 const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)[] = []
@@ -333,7 +366,6 @@ const workerMovedListeners: WorkerMoveListener[] = []
 
 const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[]>()
 
-let loadingPromise: Promise<void> | undefined = undefined
 let websocket: WebSocket | undefined = undefined
 
 let workerWalkingTimer: undefined | NodeJS.Timeout
@@ -381,8 +413,9 @@ const monitor: Monitor = {
     deadTrees: new PointSetFast(),
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
     decorations: new PointMapFast<Decoration>(),
-    gameState: 'STARTED',
+    gameState: 'NOT_STARTED',
     gameSpeed: 'NORMAL',
+    gameName: '',
 
     housesAt: new PointMapFast<HouseInformation>(),
 
@@ -406,7 +439,7 @@ const monitor: Monitor = {
 
     isAvailable,
     isGameDataAvailable,
-    getLoadingPromise,
+
     getInformationOnPointLocal,
     getHouseAtPointLocal,
     getFlagAtPointLocal,
@@ -427,8 +460,15 @@ const monitor: Monitor = {
     setMilitaryPopulationCloseToBorder,
     setSoldiersAvailableForAttack,
 
+    addPlayerToGame,
     upgrade,
     setGameSpeed,
+    setTitle,
+    setInitialResources: setAvailableResources,
+    setOthersCanJoin,
+    setMap,
+
+    startGame,
 
     getStrengthWhenPopulatingMilitaryBuildings,
     getDefenseStrength,
@@ -439,9 +479,13 @@ const monitor: Monitor = {
     getSoldiersAvailableForAttack,
     getMilitarySettings,
 
+    getGameInformation,
+
     addDetailedMonitoring,
 
     removeDetailedMonitoring,
+
+    readFullGameState,
 
     listenToGameState,
     listenToFlag,
@@ -479,34 +523,28 @@ const monitor: Monitor = {
 
     killWebsocket,
     waitForConnection,
-    waitForGameDataAvailable
+    waitForGameDataAvailable,
+    connectToNewGame
 }
 
 function isFullSyncMessage(message: unknown): message is FullSyncMessage {
     return message !== null &&
         message !== undefined &&
         typeof message === 'object' &&
-        ('workers' in message ||
-            'ships' in message ||
-            'houses' in message ||
-            'flags' in message ||
-            'roads' in message ||
-            'borders' in message ||
-            'trees' in message ||
-            'stones' in message ||
-            'crops' in message ||
-            'discoveredPoints' in message ||
-            'signs' in message ||
-            'players' in message ||
-            'availableConstruction' in message ||
-            'messages' in message ||
-            'deadTrees' in message ||
-            'wildAnimals' in message ||
-            'decorations' in message)
+        'type' in message &&
+        message.type === 'FULL_SYNC'
 }
 
-function isPauseResumeMessage(message: unknown): message is PauseResumeMessage {
-    return message !== null && message !== null && typeof message === 'object' && 'gameState' in message
+function isGameChangeMessage(message: unknown): message is GameChangedMessage {
+    return message !== null &&
+        message !== null &&
+        typeof message === 'object' &&
+        ('gameState' in message ||
+            'othersCanJoin' in message ||
+            'map' in message ||
+            'initialResources' in message ||
+            'gameName' in message ||
+            'players' in message)
 }
 
 function isGameChangesMessage(message: unknown): message is ChangesMessage {
@@ -546,58 +584,110 @@ function isGameChangesMessage(message: unknown): message is ChangesMessage {
 }
 
 async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<void> {
-    loadingPromise = startMonitoringGame_internal(gameId, playerId)
+    monitor.gameId = gameId
+    monitor.playerId = playerId
 
-    return loadingPromise
-}
+    if (connectionStatus === 'NOT_CONNECTED') {
+        console.log('Connecting to existing game')
 
-async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId): Promise<void> {
+        connectToExistingGame(gameId, playerId)
 
-    /* Get the list of players */
-    const players = await getPlayers(gameId)
+        console.log('Waiting for connection...')
 
-    players.forEach(player => monitor.players.set(player.id, player))
+        await waitForConnection()
 
-    /* Get the messages */
-
-    /* Get initial game data to then continuously monitor */
-    const view = await getViewForPlayer(gameId, playerId)
-
-    if (view.gameState === 'PAUSED') {
-        monitor.gameState = 'PAUSED'
+        console.log('Got connection')
     }
 
-    view.availableConstruction.forEach((availableAtPoint, point) => monitor.availableConstruction.set(point, availableAtPoint))
+    console.log('Get game information')
+    const gameInformation = await getGameInformation()
 
-    view.signs.forEach(sign => monitor.signs.set(sign.id, sign))
+    gameInformation.players.forEach(player => monitor.players.set(player.id, player))
+    monitor.gameState = gameInformation.status
+    monitor.gameName = gameInformation.name
+    monitor.map = gameInformation.map
+    monitor.othersCanJoin = gameInformation.othersCanJoin
 
-    view.stones.forEach(stone => monitor.stones.set(stone.id, stone))
+    // TODO: make game information get pushed automatically by the backend. For now, just request it
+    if (gameInformation.status === 'STARTED' || gameInformation.status === 'PAUSED') {
+        console.log('Reading full game state')
 
-    view.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
+        await readFullGameState()
 
-    view.workers.forEach(worker => monitor.workers.set(worker.id, serverWorkerToLocalWorker(worker)))
+        startTimers()
 
-    view.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
+        walkingTimerState = 'RUNNING'
+    }
+}
 
-    view.houses.forEach(house => {
+function connectToExistingGame(gameId: GameId, playerId: PlayerId) {
+    const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
+
+    console.info("Websocket url: " + websocketUrl)
+
+    websocket = new WebSocket(websocketUrl)
+
+    connectionStatus = 'CONNECTING'
+
+    websocket.onopen = () => {
+        console.info("Websocket for subscription is open")
+
+        connectionStatus = 'CONNECTED'
+
+        gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
+    }
+    websocket.onclose = (e) => {
+        websocketDisconnected(e)
+        connectionStatus = 'NOT_CONNECTED'
+    }
+    websocket.onerror = (e) => {
+        websocketError(e)
+        connectionStatus = 'NOT_CONNECTED'
+    }
+
+    websocket.onmessage = (message) => websocketMessageReceived(message)
+}
+
+function readFromFullSync(message: FullSyncMessage): void {
+    const previousGameState = monitor.gameState
+
+    monitor.gameState = message.gameState
+
+    gameStateMightHaveChanged(monitor.gameState)
+
+    message.players.forEach(player => monitor.players.set(player.id, player))
+
+    Object.entries(message.availableConstruction).forEach(
+        ([pointAsString, availableConstruction]) => monitor.availableConstruction.set(pointStringToPoint(pointAsString), availableConstruction))
+
+    message.signs.forEach(sign => monitor.signs.set(sign.id, sign))
+
+    message.stones.forEach(stone => monitor.stones.set(stone.id, stone))
+
+    message.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
+
+    message.workers.forEach(worker => monitor.workers.set(worker.id, serverWorkerToLocalWorker(worker)))
+
+    message.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
+
+    message.houses.forEach(house => {
         monitor.houses.set(house.id, house)
         monitor.housesAt.set(house, house)
     })
 
-    view.flags.forEach(flag => monitor.flags.set(flag.id, flag))
+    message.flags.forEach(flag => monitor.flags.set(flag.id, flag))
 
-    view.roads.forEach(road => monitor.roads.set(road.id, road))
+    message.roads.forEach(road => monitor.roads.set(road.id, road))
 
-    view.trees.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
+    message.trees.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
 
-    view.crops.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+    message.crops.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
 
-    view.deadTrees.forEach(deadTree => monitor.deadTrees.add(deadTree))
+    message.deadTrees.forEach(deadTree => monitor.deadTrees.add(deadTree))
 
-    view.decorations.forEach(decoration => monitor.decorations.set({ x: decoration.x, y: decoration.y }, decoration))
+    message.decorations.forEach(decoration => monitor.decorations.set({ x: decoration.x, y: decoration.y }, decoration))
 
-    for (const borderInformation of view.borders) {
-
+    for (const borderInformation of message.borders) {
         const player = monitor.players.get(borderInformation.playerId)
 
         if (!player) {
@@ -615,59 +705,45 @@ async function startMonitoringGame_internal(gameId: GameId, playerId: PlayerId):
         )
     }
 
-    /* Store the full terrain */
-    const terrain = await getTerrain(gameId)
-
-    const terrainPointList = terrainInformationToTerrainAtPointList(terrain)
+    // Convert the terrain to a point-list format and store it
+    const terrainPointList = terrainInformationToTerrainAtPointList(message)
 
     terrainPointList.forEach(terrainAtPoint => monitor.allTiles.set(terrainAtPoint.point, terrainAtPoint))
 
-    /* Store the discovered tiles */
     storeDiscoveredTiles(monitor.discoveredPoints)
 
-    /* Remember the game id and player id */
-    monitor.gameId = gameId
-    monitor.playerId = playerId
-
-    /* Finally notify the listeners, after all data has been stored */
+    // Call the listeners after all the data has been set
     discoveredPointListeners.forEach(listener => listener(monitor.discoveredPoints))
     roadListeners.forEach(roadListener => roadListener())
 
-    if (view.messages) {
-        view.messages.forEach(message => monitor.messages.set(message.id, message))
+    message?.messages.forEach(message => monitor.messages.set(message.id, message))
 
-        messageListeners.forEach(messageListener => messageListener(view.messages, []))
+    if (message.messages) {
+        messageListeners.forEach(messageListener => messageListener(message.messages, []))
     }
 
-    /* Subscribe to changes */
-    const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
-
-    console.info("Websocket url: " + websocketUrl)
-
-    websocket = new WebSocket(websocketUrl)
-
-    connectionStatus = 'CONNECTING'
-
-    websocket.onopen = () => {
-        console.info("Websocket for subscription is open")
-
-        connectionStatus = 'CONNECTED'
-
-        gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
+    if (previousGameState !== monitor.gameState) {
+        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(monitor.gameState))
     }
-    websocket.onclose = (e) => {
-        websocketDisconnected(gameId, playerId, e)
-        connectionStatus = 'NOT_CONNECTED'
-    }
-    websocket.onerror = (e) => {
-        websocketError(e)
-        connectionStatus = 'NOT_CONNECTED'
+}
+
+async function readFullGameState(): Promise<void> {
+
+    // Ensure we have the information needed to connect
+    if (monitor.gameId === undefined) {
+        console.error(`Game id is undefined`)
+
+        return
     }
 
-    websocket.onmessage = (message) => websocketMessageReceived(message)
+    if (monitor.playerId === undefined) {
+        console.error('Player id is undefined')
 
-    // Start timers to run game some logic locally to minimize the communication with the backend
-    startTimers()
+        return
+    }
+
+    // Read the state
+    readFromFullSync(await sendRequestAndWaitForReply<FullSyncMessage>('FULL_SYNC'))
 }
 
 function startTimers() {
@@ -697,7 +773,6 @@ function startTimers() {
 
     // Move workers locally to reduce the amount of messages from the server
     workerWalkingTimer = setInterval(async () => {
-
         for (const worker of monitor.workers.values()) {
 
             /* Filter workers without any planned path */
@@ -851,7 +926,7 @@ function websocketError(error: unknown): void {
     console.error(error)
 }
 
-function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent): void {
+function websocketDisconnected(e: CloseEvent): void {
     console.log("Disconnected from backend")
 
     if (monitor.gameState === 'EXPIRED') {
@@ -869,7 +944,19 @@ function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent
         gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged("EXPIRED"))
     } else {
         setTimeout(() => {
-            const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + gameId + "/players/" + playerId
+            if (monitor.gameId === undefined) {
+                console.error('Game id is not set')
+
+                return
+            }
+
+            if (monitor.playerId === undefined) {
+                console.error('Player id is not set')
+
+                return
+            }
+
+            const websocketUrl = "ws://" + window.location.hostname + ":8080/ws/monitor/games/" + monitor.gameId + "/players/" + monitor.playerId
 
             console.info("Websocket url: " + websocketUrl)
 
@@ -881,11 +968,11 @@ function websocketDisconnected(gameId: GameId, playerId: PlayerId, e: CloseEvent
                 if (websocket) {
                     websocket.send(JSON.stringify({
                         command: "FULL_SYNC",
-                        playerId
+                        playerId: monitor.playerId
                     }))
                 }
             }
-            websocket.onclose = e => websocketDisconnected(gameId, playerId, e)
+            websocket.onclose = e => websocketDisconnected(e)
             websocket.onerror = e => websocketError(e)
             websocket.onmessage = message => websocketMessageReceived(message)
         }, 1000)
@@ -903,8 +990,8 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
             receivedFullSyncMessage(message)
         } else if (isReplyMessage(message)) {
             replies.set(message.requestId, message)
-        } else if (isPauseResumeMessage(message)) {
-            receivedPauseResumeMessage(message)
+        } else if (isGameChangeMessage(message)) {
+            receivedGameChangedMessage(message)
         }
     } catch (e) {
         console.error(e)
@@ -913,20 +1000,60 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
     }
 }
 
-function receivedPauseResumeMessage(message: PauseResumeMessage): void {
-    if (message.gameState === 'PAUSED') {
-        monitor.gameState = 'PAUSED'
+function receivedGameChangedMessage(message: GameChangedMessage): void {
+    if (message?.gameState !== undefined) {
+        const gameState = message.gameState
 
-        console.log("Got game paused message. Pausing.")
+        monitor.gameState = gameState
 
-        stopTimers()
-    } else {
-        monitor.gameState = 'STARTED'
+        if (gameState === 'STARTED') {
+            readFullGameState()
+        }
 
-        startTimers()
+        gameStateMightHaveChanged(gameState)
+
+        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(gameState))
     }
 
-    gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(message.gameState))
+    if (message?.othersCanJoin !== undefined) {
+        const othersCanJoin = message.othersCanJoin === 'TRUE'
+
+        monitor.othersCanJoin = othersCanJoin
+
+        gameListeners.forEach(listener => listener.onAllowOthersJoinChanged && listener.onAllowOthersJoinChanged(othersCanJoin))
+    }
+
+    if (message?.map !== undefined) {
+        const map = message.map
+
+        monitor.map = map
+
+        gameListeners.forEach(listener => listener.onMapChanged && listener.onMapChanged(map))
+    }
+
+    if (message?.initialResources !== undefined) {
+        const initialResources = message.initialResources
+
+        monitor.initialResources = initialResources
+
+        gameListeners.forEach(listener => listener.onInitialResourcesChanged && listener.onInitialResourcesChanged(initialResources))
+    }
+
+    if (message?.gameName !== undefined) {
+        const gameName = message.gameName
+
+        monitor.gameName = gameName
+
+        gameListeners.forEach(listener => listener.onTitleChanged && listener.onTitleChanged(gameName))
+    }
+
+    if (message?.players !== undefined) {
+        const players = message.players
+
+        players.forEach(player => monitor.players.set(player.id, player))
+
+        gameListeners.forEach(listener => listener.onPlayersChanged && listener.onPlayersChanged(players))
+    }
 }
 
 function stopTimers() {
@@ -940,9 +1067,9 @@ function stopTimers() {
 }
 
 function receivedFullSyncMessage(message: FullSyncMessage): void {
-
     console.log("Handling full sync message")
 
+    // Clear the local state
     monitor.availableConstruction.clear()
     monitor.signs.clear()
     monitor.stones.clear()
@@ -958,67 +1085,20 @@ function receivedFullSyncMessage(message: FullSyncMessage): void {
     monitor.decorations.clear()
     monitor.housesAt.clear()
 
-    message.availableConstruction.forEach((availableAtPoint, pointString) => {
-        const point = pointStringToPoint(pointString)
+    // Read the full state from the backend
+    readFromFullSync(message)
+}
 
-        monitor.availableConstruction.set(point, availableAtPoint)
-    })
+function gameStateMightHaveChanged(gameState: GameState): void {
+    if (gameState === 'STARTED' && walkingTimerState !== 'RUNNING') {
+        startTimers()
 
-    message.signs.forEach(sign => monitor.signs.set(sign.id, sign))
+        walkingTimerState = 'RUNNING'
+    } else if (gameState === 'PAUSED' && walkingTimerState === 'RUNNING') {
+        stopTimers()
 
-    message.stones.forEach(stone => monitor.stones.set(stone.id, stone))
-
-    message.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
-
-    message.workers.forEach(worker => monitor.workers.set(worker.id, serverWorkerToLocalWorker(worker)))
-
-    message.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
-
-    message.houses.forEach(house => {
-        monitor.houses.set(house.id, house)
-        monitor.housesAt.set(house, house)
-    })
-
-    message.flags.forEach(flag => {
-        monitor.flags.set(flag.id, flag)
-        flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
-    })
-
-    message.roads.forEach(road => monitor.roads.set(road.id, road))
-
-    message.trees.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
-
-    message.crops.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
-
-    message.deadTrees.forEach(deadTree => monitor.deadTrees.add(deadTree))
-
-    message.decorations.forEach(decoration => monitor.decorations.set({ x: decoration.x, y: decoration.y }, decoration))
-
-    for (const borderInformation of message.borders) {
-
-        const player = monitor.players.get(borderInformation.playerId)
-
-        if (!player) {
-            console.error("UNKNOWN PLAYER: " + borderInformation.playerId)
-
-            continue
-        }
-
-        monitor.border.set(borderInformation.playerId,
-            {
-                color: player.color,
-                nation: monitor.players.get(borderInformation.playerId)?.nation ?? 'ROMANS',
-                points: new PointSetFast(borderInformation.points)
-            }
-        )
+        walkingTimerState = 'NOT_RUNNING'
     }
-
-    /* Store the discovered tiles */
-    storeDiscoveredTiles(monitor.discoveredPoints)
-
-    /* Finally notify the listeners, after all data has been stored */
-    discoveredPointListeners.forEach(listener => listener(monitor.discoveredPoints))
-    roadListeners.forEach(roadListener => roadListener())
 }
 
 function receivedGameChangesMessage(message: ChangesMessage): void {
@@ -1548,17 +1628,9 @@ function listenToRoads(listenerFn: (() => void)): void {
 }
 
 function notifyHouseListeners(houses: HouseInformation[]): void {
-    for (const house of houses) {
-        const listeners = houseListeners.get(house.id)
-
-        if (!listeners) {
-            return
-        }
-
-        for (const listener of listeners) {
-            listener(house)
-        }
-    }
+    houses.forEach(house => {
+        houseListeners.get(house.id)?.forEach(listener => listener(house))
+    })
 }
 
 function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefined {
@@ -1647,10 +1719,6 @@ function undoRemoveLocalRoad(roadId: RoadId): void {
 
         monitor.localRemovedRoads.delete(roadId)
     }
-}
-
-function getLoadingPromise(): Promise<void> | undefined {
-    return loadingPromise
 }
 
 function isGameDataAvailable(): boolean {
@@ -2100,6 +2168,68 @@ function setIronBarQuotas(armory: number, metalworks: number) {
     ))
 }
 
+async function connectToNewGame(name: string, mapId: MapId, players: Player[]): Promise<GameInformation> {
+
+    // Create the game using REST
+    const gameInformation = await createGame(name, mapId, players)
+
+    console.log(gameInformation)
+
+    monitor.gameId = gameInformation.id
+    monitor.playerId = gameInformation.players[0].id
+
+    // Connect without specifying an existing game (because we want to create a new game)
+    const websocketUrl = "ws://" + window.location.hostname + `:8080/ws/monitor/games/${gameInformation.id}/players/${gameInformation.players[0].id}`
+
+    console.info("Websocket url: " + websocketUrl)
+
+    websocket = new WebSocket(websocketUrl)
+
+    connectionStatus = 'CONNECTING'
+
+    websocket.onopen = () => {
+        console.info("Websocket for subscription is open")
+
+        connectionStatus = 'CONNECTED'
+
+        gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
+    }
+
+    websocket.onclose = (e) => {
+        websocketDisconnected(e)
+        connectionStatus = 'NOT_CONNECTED'
+    }
+
+    websocket.onerror = (e) => {
+        websocketError(e)
+        connectionStatus = 'NOT_CONNECTED'
+    }
+
+    websocket.onmessage = (message) => websocketMessageReceived(message)
+
+    // Wait for the connection to be established
+    await waitForConnection()
+
+    // Create the game
+    console.log('Returning game information')
+
+    return gameInformation
+}
+
+type CreateNewGameOptions = {
+    title: string
+    mapId: MapId
+    players: Player[]
+}
+
+async function createGameWs(name: string, mapId: MapId, players: Player[]): Promise<GameInformation> {
+    return await sendRequestAndWaitForReplyWithOptions<GameInformation, CreateNewGameOptions>('CREATE_GAME', {
+        title: name,
+        mapId,
+        players
+    })
+}
+
 function pauseGame() {
     websocket?.send(JSON.stringify(
         {
@@ -2309,7 +2439,39 @@ function getSoldiersAvailableForAttack(): Promise<number> {
     return getAmountForCommand('GET_SOLDIERS_AVAILABLE_FOR_ATTACK')
 }
 
-function setGameSpeed(speed: GameSpeed) {
+function startGame(): void {
+    websocket?.send(JSON.stringify({ command: 'START_GAME' }))
+}
+
+function setMap(mapId: MapId): void {
+    websocket?.send(JSON.stringify({
+        command: 'SET_MAP',
+        mapId
+    }))
+}
+
+function setOthersCanJoin(othersCanJoin: boolean): void {
+    websocket?.send(JSON.stringify({
+        command: 'SET_OTHERS_CAN_JOIN',
+        othersCanJoin
+    }))
+}
+
+function setAvailableResources(resources: ResourceLevel): void {
+    websocket?.send(JSON.stringify({
+        command: 'SET_INITIAL_RESOURCES',
+        resources
+    }))
+}
+
+function setTitle(title: string): void {
+    websocket?.send(JSON.stringify({
+        command: 'SET_GAME_NAME',
+        name: title
+    }))
+}
+
+function setGameSpeed(speed: GameSpeed): void {
     console.log("Set game speed: " + speed)
 
     websocket?.send(JSON.stringify(
@@ -2368,6 +2530,24 @@ async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
     const options = { flagId }
 
     return sendRequestAndWaitForReplyWithOptions<FlagDebugInfo, typeof options>('FLAG_DEBUG_INFORMATION', options)
+}
+
+async function getGameInformation(): Promise<GameInformation> {
+    return sendRequestAndWaitForReply<GameInformation>('GET_GAME_INFORMATION')
+}
+
+type AddPlayerOptions = Player & { type: PlayerType }
+
+async function addPlayerToGame(name: string, color: PlayerColor, nation: Nation, type: PlayerType): Promise<PlayerInformation> {
+    return sendRequestAndWaitForReplyWithOptions<PlayerInformation, AddPlayerOptions>(
+        'ADD_PLAYER',
+        {
+            name,
+            color,
+            nation,
+            type
+        }
+    )
 }
 
 function waitForGameDataAvailable(): Promise<void> {

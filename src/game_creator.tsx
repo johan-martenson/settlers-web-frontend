@@ -1,112 +1,104 @@
-import React, { useState } from 'react'
-import { createGame, deleteGame, setMapForGame, startGame, setResourceLevelForGame, getMaps, setOthersCanJoinGame, getGameInformation } from './api/rest-api'
+import React, { useEffect, useState } from 'react'
+import { deleteGame, getMaps } from './api/rest-api'
 import { Input, Button, Field, InputOnChangeData } from "@fluentui/react-components"
 import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
 import './game_creator.css'
 import ManagePlayers from './manage_players'
-import { WorkerIcon } from './icon'
-import { GameId, PlayerId, MapInformation, GameInformation, PlayerInformation, ResourceLevel } from './api/types'
+import { GameId, PlayerId, MapInformation, PlayerInformation, ResourceLevel, GameState } from './api/types'
+import { GameListener, monitor } from './api/ws-api'
 
 const DEFAULT_COLOR = 'RED'
 const DEFAULT_NATION = 'JAPANESE'
 
 interface GameCreatorProps {
     playerName: string
+
     onGameStarted: ((gameId: GameId, selfPlayerId: PlayerId) => void)
     onGameCreateCanceled: (() => void)
 }
 
 const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCreatorProps) => {
     const [state, setState] = useState<'GET_NAME_FOR_GAME' | 'CREATE_GAME'>('GET_NAME_FOR_GAME')
+    const [gameId, setGameId] = useState<GameId>()
     const [map, setMap] = useState<MapInformation>()
-    const [game, setGame] = useState<GameInformation>()
-    const [selfPlayer, setSelfPlayer] = useState<PlayerInformation>()
-    const [title, setTitle] = useState<string>()
+    const [selfPlayerId, setSelfPlayerId] = useState<PlayerId>()
+    const [othersCanJoin, setOthersCanJoin] = useState<boolean>(true)
+    const [name, setName] = useState<string>('')
+    const [initialResources, setInitialResources] = useState<ResourceLevel>('MEDIUM')
+    const [players, setPlayers] = useState<PlayerInformation[]>([])
+    const [candidateTitle, setCandidateTitle] = useState<string>()
 
-    async function onMapSelected(map: MapInformation): Promise<void> {
-        if (game) {
-            await setMapForGame(map.id, game.id)
+    useEffect(
+        () => {
+            const listener: GameListener = {
+                onMapChanged: (map: MapInformation) => setMap(map),
+                onAllowOthersJoinChanged: (othersCanJoin: boolean) => setOthersCanJoin(othersCanJoin),
+                onTitleChanged: (title: string) => setName(title),
+                onInitialResourcesChanged: (resources: ResourceLevel) => setInitialResources(resources),
+                onPlayersChanged: (players: PlayerInformation[]) => setPlayers(players),
+                onGameStateChanged: (gameState: GameState) => {
+                    if (gameState === 'STARTED') {
+                        if (monitor.gameId === undefined) {
+                            console.error('Game id is undefined')
 
-            setMap(map)
-        }
-    }
+                            return
+                        }
 
-    async function onStartGame(): Promise<void> {
-        if (game && selfPlayer) {
-            await startGame(game.id)
+                        if (monitor.playerId === undefined) {
+                            console.error("Player id is undefined")
 
-            onGameStarted(game.id, selfPlayer.id)
-        } else {
-            console.error("Game or selfPlayer is not set")
-        }
-    }
+                            return
+                        }
 
-    function onDeleteGame(): void {
-        if (game) {
-            deleteGame(game.id)
-        } else {
-            console.error("Can't delete when no game is set")
-        }
-    }
-
-    async function setOthersCanJoin(othersCanJoin: boolean): Promise<void> {
-        if (game) {
-            setOthersCanJoinGame(game.id, (othersCanJoin) ? "CAN_JOIN" : "CANNOT_JOIN")
-        } else {
-            console.error("No game created!")
-        }
-    }
-
-    async function setAvailableResources(level: ResourceLevel): Promise<void> {
-        if (game) {
-            await setResourceLevelForGame(level, game.id)
-        }
-    }
-
-    async function startCreatingGame(): Promise<void> {
-        if (title) {
-
-            /* Assign a default map */
-            const maps = await getMaps()
-
-            const greenIslandsMap = maps.find(map => map.title === 'Green Islands')
-            let defaultMap = greenIslandsMap
-
-            if (!defaultMap && maps.length > 0) {
-                defaultMap = maps[0]
+                        onGameStarted(monitor.gameId, monitor.playerId)
+                    }
+                },
             }
 
-            const defaultMapId = defaultMap ? defaultMap.id : undefined
+            async function createEmptyGameAndStartListening() {
+                const maps = await getMaps()
 
-            /* Create the new game */
-            const game: GameInformation = await createGame(title, defaultMapId, [
-                {
-                    name: playerName,
-                    color: DEFAULT_COLOR,
-                    nation: DEFAULT_NATION
+                const greenIslandsMap = maps.find(map => map.title === 'Green Islands')
+                let defaultMap = greenIslandsMap
+
+                if (!defaultMap && maps.length > 0) {
+                    defaultMap = maps[0]
                 }
-            ])
 
-            setGame(game)
-            setMap(defaultMap)
-            setSelfPlayer(game.players[0])
-            setState('CREATE_GAME')
-        } else {
-            console.error("No title set")
-        }
-    }
+                if (defaultMap !== undefined) {
+                    const game = await monitor.connectToNewGame(
+                        '',
+                        defaultMap.id,
+                        [
+                            {
+                                name: playerName,
+                                color: DEFAULT_COLOR,
+                                nation: DEFAULT_NATION
+                            }
+                        ],
+                    )
 
-    async function refreshGame() {
-        if (game) {
-            const updatedGame = await getGameInformation(game.id)
+                    console.log('Created game')
+                    console.log(game)
 
-            setGame(updatedGame)
-        } else {
-            console.error("Game id not available")
-        }
-    }
+                    setSelfPlayerId(game.players[0].id)
+                    setPlayers(game.players)
+                    setMap(defaultMap)
+                    setGameId(game.id)
+
+                    monitor.listenToGameState(listener)
+                } else {
+                    console.error('Failed to load the default map')
+                }
+            }
+
+            createEmptyGameAndStartListening()
+
+            return () => monitor.stopListeningToGameState(listener)
+        }, []
+    )
 
     return (
         <>
@@ -120,61 +112,87 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
                                 autoFocus
                                 onChange={
                                     (_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
-                                        setTitle(data.value)
+                                        setCandidateTitle(data.value)
                                     }
                                 }
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' && candidateTitle !== undefined) {
+                                        monitor.setTitle(candidateTitle)
 
-                                onKeyDown={
-                                    (event) => {
-                                        if (event.key === "Enter" && title !== undefined && title !== "") {
-                                            startCreatingGame()
-                                        }
+                                        setState('CREATE_GAME')
                                     }
-                                }
+                                }}
 
                                 tabIndex={-1}
                             />
                         </Field>
-                        <Button onClick={onGameCreateCanceled} >Cancel</Button>
-                        <Button
-                            disabled={!title && !map}
-                            appearance='primary'
-                            onClick={
-                                async () => {
-                                    await startCreatingGame()
-                                }
+                        <Button onClick={() => {
+                            if (monitor.gameId !== undefined) {
+                                deleteGame(monitor.gameId)
+                            } else {
+                                console.error('Game id is not set')
                             }
+
+                            onGameCreateCanceled()
+                        }} >Cancel</Button>
+                        <Button
+                            disabled={!candidateTitle}
+                            appearance='primary'
+                            onClick={() => {
+                                if (candidateTitle !== undefined) {
+                                    monitor.setTitle(candidateTitle)
+
+                                    setState('CREATE_GAME')
+                                }
+                            }}
                         >Create game</Button>
                     </div>
                 </div>
             }
 
-            {state === "CREATE_GAME" && game && selfPlayer &&
+            {state === "CREATE_GAME" && gameId && selfPlayerId &&
                 <div className="game-creation-screen">
+
+                    <h1>{name}</h1>
 
                     <div className="create-game-columns">
 
                         <div className='options-column'>
-                            <GameOptions setAvailableResources={setAvailableResources.bind(this)} setOthersCanJoin={setOthersCanJoin.bind(this)} />
+                            <GameOptions
+                                initialResources={initialResources}
+                                othersCanJoin={othersCanJoin}
+                                setAvailableResources={(resources) => monitor.setInitialResources(resources)}
+                                setOthersCanJoin={(othersCanJoin: boolean) => monitor.setOthersCanJoin(othersCanJoin)}
+                            />
                         </div>
 
                         <div className='players-column'>
                             <ManagePlayers
-                                gameId={game.id}
-                                selfPlayer={selfPlayer}
+                                gameId={gameId}
+                                selfPlayerId={selfPlayerId}
                                 maxPlayers={map?.maxPlayers ?? 3}
-                                onPlayerAdded={() => refreshGame()}
-                                onPlayerRemoved={() => refreshGame()}
+                                players={players}
                             />
                         </div>
 
                         <div className='map-column'>
-                            <MapSelection onMapSelected={onMapSelected} minPlayers={game.players.length} />
+                            <MapSelection onMapSelected={(map: MapInformation) => monitor.setMap(map.id)} minPlayers={players.length} />
                         </div>
                     </div>
                     <div className='start-or-cancel'>
-                        <Button onClick={onDeleteGame} >Discard game</Button>
-                        <Button onClick={onStartGame}
+                        <Button onClick={() => {
+                            if (monitor.gameId !== undefined) {
+                                deleteGame(monitor.gameId)
+                            } else {
+                                console.error('Game id is not set')
+                            }
+
+                            onGameCreateCanceled()
+
+                        }} >Discard game</Button>
+                        <Button onClick={async () => {
+                            monitor.startGame()
+                        }}
                             disabled={!map}
 
                             appearance='primary'
@@ -182,10 +200,6 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled }: GameCr
                     </div>
                 </div>
             }
-
-            <div id="worker-animation">
-                <WorkerIcon worker='General' animate nation='ROMANS' direction={'WEST'} scale={3} drawShadow />
-            </div>
 
         </>
     )

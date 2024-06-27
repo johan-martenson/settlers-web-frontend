@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
 import { PauseRegular, PlayRegular } from '@fluentui/react-icons'
 import { AttackType, GameId, HouseInformation, Nation, PlayerId, isMaterialUpperCase } from "../api/types"
-import { HouseIcon, InventoryIcon, UiIcon } from "../icon"
+import { HouseIcon, InventoryIcon, UiIcon } from "../icons/icon"
 import './house_info.css'
 import { HeadquarterInfo } from "./headquarter"
 import { attackBuilding, houseIsReady, isMilitaryBuilding, pauseProductionForHouse, removeHouse, resumeProductionForHouse } from "../api/rest-api"

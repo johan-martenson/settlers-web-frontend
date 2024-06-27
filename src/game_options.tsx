@@ -4,6 +4,9 @@ import { Switch, Select, SelectOnChangeData, Subtitle1, Field, SwitchOnChangeDat
 import { ResourceLevel } from './api/types'
 
 interface GameOptionsProps {
+    initialResources: ResourceLevel
+    othersCanJoin: boolean
+
     setAvailableResources: ((level: ResourceLevel) => void)
     setOthersCanJoin: ((otherCanJoin: boolean) => void)
 }
@@ -14,7 +17,15 @@ OPTIONS.set("LOW", "Sparse")
 OPTIONS.set("MEDIUM", "Medium")
 OPTIONS.set("HIGH", "Plenty")
 
-const GameOptions = ({ setAvailableResources, setOthersCanJoin }: GameOptionsProps) => {
+const GameOptions = ({ othersCanJoin, setAvailableResources, setOthersCanJoin, ...props }: GameOptionsProps) => {
+    let initialResources = 'High'
+
+    if (props.initialResources === 'MEDIUM') {
+        initialResources = 'Medium'
+    } else if (props.initialResources === 'LOW') {
+        initialResources = 'Low'
+    }
+
     return (
         <div className="settings">
 
@@ -22,7 +33,7 @@ const GameOptions = ({ setAvailableResources, setOthersCanJoin }: GameOptionsPro
 
             <Field label="Allow others to join?">
                 <Switch
-                    defaultChecked={true}
+                    checked={othersCanJoin}
                     onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => setOthersCanJoin(data.checked)}
                 />
             </Field>
@@ -30,6 +41,7 @@ const GameOptions = ({ setAvailableResources, setOthersCanJoin }: GameOptionsPro
             <Field label="Initial resources">
                 <Select
                     className="ResourceButtons"
+                    value={initialResources}
                     onChange={
                         (_event: ChangeEvent<HTMLSelectElement>, data: SelectOnChangeData) => {
                             const value = data.value

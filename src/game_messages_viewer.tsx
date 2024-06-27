@@ -4,8 +4,9 @@ import ExpandCollapseToggle from './expand_collapse_toggle'
 import './game_messages_viewer.css'
 import { monitor } from './api/ws-api'
 import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
-import { PlayerId, HouseId, Point, GameMessage, Nation, isMilitaryBuildingOccupiedMessage, isNoMoreResourcesMessage, isMilitaryBuildingReadyMessage, isUnderAttackMessage, isGeologistFindMessage, isBuildingLostMessage, isBuildingCapturedMessage, isStoreHouseIsReadyMessage, isMilitaryBuildingCausedLostLandMessage, isTreeConservationProgramActivatedMessage, isTreeConservationProgramDeactivatedMessage, GameMessageId } from './api/types'
-import { HouseIcon, WorkerIcon } from './icon'
+import { PlayerId, HouseId, Point, GameMessage, Nation, GameMessageId } from './api/types'
+import { HouseIcon, WorkerIcon } from './icons/icon'
+import { ShipIcon } from './icons/ship'
 
 interface GameMessagesViewerProps {
     playerId: PlayerId
@@ -50,7 +51,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
 
                             return (
                                 <div className="game-message" key={index}>
-                                    {isMilitaryBuildingOccupiedMessage(message) &&
+                                    {message.type === 'MILITARY_BUILDING_OCCUPIED' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Military building occupied
@@ -61,7 +62,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
 
-                                    {isNoMoreResourcesMessage(message) &&
+                                    {message.type === 'NO_MORE_RESOURCES' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             No more resources
@@ -71,7 +72,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
 
-                                    {isMilitaryBuildingReadyMessage(message) &&
+                                    {message.type === 'MILITARY_BUILDING_READY' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Military building is ready
@@ -81,7 +82,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
 
-                                    {isUnderAttackMessage(message) &&
+                                    {message.type === 'UNDER_ATTACK' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             We&apos;re under attack!
@@ -90,7 +91,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                                 icon={<ArrowStepInRight24Regular />} />
                                         </>
                                     }
-                                    {isGeologistFindMessage(message) &&
+                                    {message.type === 'GEOLOGIST_FIND' &&
                                         <>
                                             <WorkerIcon worker='Geologist' nation={nation} scale={0.5} />
                                             Geologist has found {message.material.toLowerCase()}!
@@ -100,7 +101,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
 
-                                    {isBuildingLostMessage(message) &&
+                                    {message.type === 'BUILDING_LOST' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Building lost to enemy
@@ -110,7 +111,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
 
-                                    {isBuildingCapturedMessage(message) &&
+                                    {message.type === 'BUILDING_CAPTURED' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Building captured
@@ -120,7 +121,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
 
-                                    {isStoreHouseIsReadyMessage(message) &&
+                                    {message.type === 'STORE_HOUSE_IS_READY' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             A store house is ready
@@ -130,7 +131,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
 
-                                    {isMilitaryBuildingCausedLostLandMessage(message) &&
+                                    {message.type === 'MILITARY_BUILDING_CAUSED_LOST_LAND' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             This building has caused you to lose land
@@ -140,17 +141,64 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                                         </>
                                     }
 
-                                    {isTreeConservationProgramActivatedMessage(message) &&
+                                    {message.type === 'TREE_CONSERVATION_PROGRAM_ACTIVATED' &&
                                         <>
                                             The tree conservation program has been activated. Only Woodcutters, Sawmills, and Forester huts will get planks.
                                         </>
                                     }
 
-                                    {isTreeConservationProgramDeactivatedMessage(message) &&
+                                    {message.type === 'TREE_CONSERVATION_PROGRAM_DEACTIVATED' &&
                                         <>
                                             The tree conservation program has been deactivated.
                                         </>
                                     }
+
+                                    {message.type === 'BOMBARDED_BY_CATAPULT' &&
+                                        <>
+                                            <HouseIcon houseType={'Catapult'} nation={nation} scale={0.5} />
+                                            {"We're being bombarded by a catapult"}
+                                            <Button onClick={() => onGoToPoint(message.point)}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
+
+                                    {message.type === 'HARBOR_IS_FINISHED' &&
+                                        <>
+                                            <HouseIcon houseType={'Harbor'} nation={nation} scale={0.5} />
+                                            A harbor is finished
+                                            <Button onClick={() => onGoToPoint(message.point)}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
+
+                                    {message.type === 'SHIP_READY_FOR_EXPEDITION' &&
+                                        <>
+                                            <ShipIcon scale={0.5} />
+                                            A ship is ready to start an expedition
+                                            <Button onClick={() => onGoToPoint(message.point)}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
+
+                                    {message.type === 'SHIP_HAS_REACHED_DESTINATION' &&
+                                        <>
+                                            <ShipIcon scale={0.5} />
+                                            A ship has reached its destination
+                                            <Button onClick={() => onGoToPoint(message.point)}
+                                                appearance='transparent'
+                                                icon={<ArrowStepInRight24Regular />} />
+                                        </>
+                                    }
+
+                                    {message.type === 'GAME_ENDED' &&
+                                        <>
+                                            Player {message.winnerPlayerId} is the winner!
+                                        </>
+                                    }
+
                                     <Button icon={<Delete24Filled />}
                                         onClick={() => {
                                             removeMessage(message)

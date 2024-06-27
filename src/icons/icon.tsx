@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from './api/types'
-import { FlagAnimation, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from './assets'
-import { Dimension, WorkerAnimation, resizeCanvasToDisplaySize } from './utils'
+import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../api/types'
+import { FlagAnimation, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets'
+import { Dimension, WorkerAnimation, resizeCanvasToDisplaySize } from '../utils'
 import './icon.css'
 
-const SHADOW_COLOR = "#333333"
+export const SHADOW_COLOR = "#333333"
 
 interface WorkerIconProps {
     worker: WorkerType

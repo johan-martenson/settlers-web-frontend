@@ -3,7 +3,7 @@ import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Fie
 import './player.css'
 import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation } from './api/types'
 import { MoreHorizontal20Regular } from "@fluentui/react-icons"
-import { WorkerIcon } from './icon'
+import { WorkerIcon } from './icons/icon'
 
 interface PlayerProps {
     isSelf?: boolean

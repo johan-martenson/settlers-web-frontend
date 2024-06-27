@@ -487,106 +487,6 @@ export interface DrawingInformation {
     texture?: WebGLTexture | null
 }
 
-interface ShipImageAtlasFormat {
-    ready: Record<Direction, Record<'image' | 'shadowImage', OneImageInformation>>
-    underConstruction: Record<ShipConstructionProgress, Record<'image' | 'shadowImage', OneImageInformation>>
-}
-
-class ShipImageAtlasHandler {
-    private pathPrefix: string
-    private imageAtlasInfo?: ShipImageAtlasFormat
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
-
-    constructor(prefix: string) {
-
-        this.pathPrefix = prefix
-    }
-
-    async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-ship.json")
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-ship.png")
-        }
-    }
-
-    getSourceImage(): HTMLImageElement | undefined {
-        return this.image
-    }
-
-    getDrawingInformationForShip(direction: Direction): DrawingInformation[] | undefined {
-        if (this.imageAtlasInfo === undefined || this.image === undefined) {
-            return undefined
-        }
-
-        const imageInfo = this.imageAtlasInfo.ready[direction].image
-        const shadowImageInfo = this.imageAtlasInfo.ready[direction].shadowImage
-
-        return [
-            {
-                sourceX: imageInfo.x,
-                sourceY: imageInfo.y,
-                width: imageInfo.width,
-                height: imageInfo.height,
-                offsetX: imageInfo.offsetX,
-                offsetY: imageInfo.offsetY,
-                image: this.image,
-                texture: this.texture
-            },
-            {
-                sourceX: shadowImageInfo.x,
-                sourceY: shadowImageInfo.y,
-                width: shadowImageInfo.width,
-                height: shadowImageInfo.height,
-                offsetX: shadowImageInfo.offsetX,
-                offsetY: shadowImageInfo.offsetY,
-                image: this.image,
-                texture: this.texture
-            }
-        ]
-    }
-
-    getDrawingInformationForShipUnderConstruction(constructionProgress: ShipConstructionProgress): DrawingInformation[] | undefined {
-        if (this.imageAtlasInfo === undefined || this.image === undefined) {
-            return undefined
-        }
-
-        const image = this.imageAtlasInfo.underConstruction[constructionProgress].image
-        const shadowImage = this.imageAtlasInfo.underConstruction[constructionProgress].shadowImage
-
-
-        return [
-            {
-                sourceX: image.x,
-                sourceY: image.y,
-                width: image.width,
-                height: image.height,
-                offsetX: image.offsetX,
-                offsetY: image.offsetY,
-                image: this.image,
-                texture: this.texture
-            },
-            {
-                sourceX: shadowImage.x,
-                sourceY: shadowImage.y,
-                width: shadowImage.width,
-                height: shadowImage.height,
-                offsetX: shadowImage.offsetX,
-                offsetY: shadowImage.offsetY,
-                image: this.image,
-                texture: this.texture
-            }
-        ]
-    }
-}
-
 export type AnimationType = 'SINGLE_THEN_FREEZE' | 'REPEAT' | 'SINGLE_THEN_STOP'
 
 const actionAnimationType = new Map<WorkerAction, AnimationType>()
@@ -2139,9 +2039,6 @@ function pointStringToPoint(pointString: string): Point {
     const x = pointString.substring(0, indexOfComma)
     const y = pointString.substring(indexOfComma + 1, pointString.length)
 
-    console.log(x)
-    console.log(y)
-
     return { x: parseInt(x), y: parseInt(y) }
 }
 
@@ -2470,7 +2367,6 @@ export {
     makeShader,
     makeTextureFromImage,
     resizeCanvasToDisplaySize,
-    ShipImageAtlasHandler,
     removeHouseOrFlagOrRoadAtPointWebsocket,
     pointStringToPoint,
     makeImageFromMap,

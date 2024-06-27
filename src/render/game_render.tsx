@@ -4,9 +4,9 @@ import { Duration } from '../duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, ShipImageAtlasHandler, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from '../utils'
+import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { flagAnimations, houses, uiElementsImageAtlasHandler, workers } from '../assets'
+import { flagAnimations, houses, shipImageAtlas, uiElementsImageAtlasHandler, workers } from '../assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from '../shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from '../shaders/terrain-and-roads'
@@ -31,9 +31,10 @@ type FogOfWarRenderInformation = {
     intensities: number[]
 }
 
-interface TrianglesAtPoint {
-    belowVisible: boolean
-    downRightVisible: boolean
+interface MapRenderInformation {
+    coordinates: number[]
+    normals: number[]
+    textureMapping: number[]
 }
 
 interface ToDraw {
@@ -42,10 +43,9 @@ interface ToDraw {
     height?: number
 }
 
-interface MapRenderInformation {
-    coordinates: number[]
-    normals: number[]
-    textureMapping: number[]
+interface TrianglesAtPoint {
+    belowVisible: boolean
+    downRightVisible: boolean
 }
 
 type View = {
@@ -123,8 +123,6 @@ animals.set("SHEEP", new AnimalAnimation("assets/nature/animals/", "sheep", 10))
 animals.set("STAG", new AnimalAnimation("assets/nature/animals/", "stag", 10))
 
 const donkeyAnimation = new AnimalAnimation("assets/nature/animals/", "donkey", 10)
-
-const shipImageAtlas = new ShipImageAtlasHandler("assets/")
 
 const thinCarrierWithCargo = new WorkerAnimation("assets/", "thin-carrier-with-cargo", 10)
 const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-cargo", 10)

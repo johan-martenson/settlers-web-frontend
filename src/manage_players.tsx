@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Button, Subtitle1 } from "@fluentui/react-components"
 import { Player } from './player'
 import './manage_players.css'
-import { addComputerPlayerToGame, getPlayers, updatePlayer, removePlayerFromGame } from './api/rest-api'
-import { PlayerType, PlayerInformation, GameId, Nation, PlayerColor, PLAYER_COLORS } from './api/types'
+import { updatePlayer, removePlayerFromGame } from './api/rest-api'
+import { PlayerType, PlayerInformation, GameId, Nation, PlayerColor, PLAYER_COLORS, PlayerId } from './api/types'
+import { monitor } from './api/ws-api'
 
 export interface PlayerCandidateType {
     name: string
@@ -12,29 +13,22 @@ export interface PlayerCandidateType {
 }
 
 interface ManagePlayersProps {
-    selfPlayer: PlayerInformation
+    selfPlayerId: PlayerId
     gameId: GameId
     maxPlayers: number
+    players: PlayerInformation[]
     onPlayerAdded?: ((player: PlayerInformation) => void)
     onPlayerRemoved?: ((player: PlayerInformation) => void)
 }
 
-const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlayerAdded }: ManagePlayersProps) => {
-    const [players, setPlayers] = useState<PlayerInformation[]>([selfPlayer])
-
+const ManagePlayers = ({ selfPlayerId, gameId, players, maxPlayers, onPlayerRemoved, onPlayerAdded }: ManagePlayersProps) => {
     async function onPlayerUpdated(name: string, nation: Nation, color: PlayerColor, index: number): Promise<void> {
         const playerToUpdate = players[index]
         await updatePlayer(gameId, playerToUpdate.id, name, nation, color)
-
-        const updatedPlayers = await getPlayers(gameId)
-        setPlayers(updatedPlayers)
     }
 
     async function removePlayer(player: PlayerInformation): Promise<void> {
         await removePlayerFromGame(gameId, player.id)
-
-        const updatedPlayers = await getPlayers(gameId)
-        setPlayers(updatedPlayers)
 
         onPlayerRemoved && onPlayerRemoved(player)
     }
@@ -61,16 +55,11 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
         const nextColor = colorsRemaining.values().next()
 
         if (nextColor.value) {
-            const newComputerPlayer: PlayerCandidateType = {
-                name: "Computer Player " + nextPlayer,
-                type: "COMPUTER",
-                color: nextColor.value
-            }
-
-            const addedPlayer = await addComputerPlayerToGame(gameId, newComputerPlayer.name, newComputerPlayer.color, 'ROMANS')
-
-            const updatedPlayers = await getPlayers(gameId)
-            setPlayers(updatedPlayers)
+            const addedPlayer = await monitor.addPlayerToGame(
+                "Computer Player " + nextPlayer,
+                nextColor.value,
+                'ROMANS',
+                'COMPUTER')
 
             onPlayerAdded && onPlayerAdded(addedPlayer)
         } else {
@@ -94,7 +83,7 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
                     return (
                         <div key={index}>
 
-                            {player.id === selfPlayer.id &&
+                            {player.id === selfPlayerId &&
                                 <Player key={index} isSelf={true}
                                     availableColors={availableColors}
                                     onPlayerUpdated={
@@ -106,7 +95,7 @@ const ManagePlayers = ({ selfPlayer, gameId, maxPlayers, onPlayerRemoved, onPlay
                                 />
                             }
 
-                            {player.id !== selfPlayer.id &&
+                            {player.id !== selfPlayerId &&
                                 <Player key={index} player={player}
                                     availableColors={availableColors}
                                     onPlayerUpdated={

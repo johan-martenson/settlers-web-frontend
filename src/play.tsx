@@ -17,7 +17,7 @@ import { TypeControl, Command } from './type_control'
 import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState, RoadId } from './api/types'
 import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
-import { FlagIcon, HouseIcon } from './icon'
+import { FlagIcon, HouseIcon } from './icons/icon'
 import { HouseInfo } from './house_info/house_info'
 import { sfx } from './sound/sound_effects'
 import { Quotas } from './quotas'
@@ -462,9 +462,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     useEffect(
         () => {
-            console.log('Use effect: set commands')
-
-            if (monitoringReady && commands.size === 0) {
+            function setTypingCommands() {
                 const player = monitor.players.get(selfPlayerId)
                 const nation = player?.nation ?? 'VIKINGS'
                 const color = player?.color ?? 'GREEN'
@@ -611,32 +609,36 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 })
 
                 setCommands(commands)
-
-                // Store information about the player
-                setPlayer(monitor.players.get(selfPlayerId))
-
-                if (selfNameRef.current) {
-                    immediateUxState.width = selfNameRef.current.clientWidth
-                    immediateUxState.height = selfNameRef.current.clientHeight
-
-                    setWindowHeight(selfNameRef.current.clientHeight)
-
-                    /* Request focus if the game is not blocked */
-                    if (!showMenu) {
-                        selfNameRef.current.focus()
-                    }
-                }
-
-                /* Center the view on the headquarter on the first update */
-                const headquarter = getHeadquarterForPlayer(selfPlayerId)
-
-                console.log(['Time to go to headquarters', headquarter])
-
-                if (headquarter) {
-                    goToHouse(headquarter.id)
-                }
-
             }
+
+            console.log('Use effect: set commands')
+
+            monitor.waitForGameDataAvailable().then(
+                () => {
+                    setTypingCommands()
+
+                    // Store information about the player
+                    setPlayer(monitor.players.get(selfPlayerId))
+
+                    if (selfNameRef.current) {
+                        immediateUxState.width = selfNameRef.current.clientWidth
+                        immediateUxState.height = selfNameRef.current.clientHeight
+
+                        setWindowHeight(selfNameRef.current.clientHeight)
+
+                        /* Request focus if the game is not blocked */
+                        if (!showMenu) {
+                            selfNameRef.current.focus()
+                        }
+                    }
+
+                    /* Center the view on the headquarter on the first update */
+                    const headquarter = getHeadquarterForPlayer(selfPlayerId)
+
+                    if (headquarter) {
+                        goToHouse(headquarter.id)
+                    }
+                })
         }, [monitoringReady]
     )
 

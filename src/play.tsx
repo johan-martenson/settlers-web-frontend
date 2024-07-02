@@ -231,13 +231,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId) {
                 await monitor.connectAndWaitForConnection()
 
-                await monitor.setGame(gameId)
-
-                await monitor.setSelfPlayer(selfPlayerId)
-
                 monitor.listenToGameState(gameMonitorCallbacks)
 
-                await monitor.followGame()
+                await monitor.followGame(gameId, selfPlayerId)
             }
 
             console.log("Use effect: Start listening to game")

@@ -18,13 +18,10 @@ function GameInit() {
             async function connectToExistingGame(gameId: GameId, playerId: PlayerId) {
                 await monitor.connectAndWaitForConnection()
 
-                monitor.setGame(gameId)
-                monitor.setSelfPlayer(playerId)
+                await monitor.followGame(gameId, playerId)
 
-                const selfPlayer = await monitor.setSelfPlayer(playerId)
-
-                setPlayer(selfPlayer)
                 setGameId(gameId)
+                setPlayer(monitor.players.get(playerId))
             }
 
             async function connectWithoutGame() {

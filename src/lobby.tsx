@@ -26,12 +26,6 @@ const Lobby = ({ player }: LobbyProps) => {
         await monitor.connectAndWaitForConnection()
         console.log('Done')
 
-        // Set game
-        await monitor.setGame(gameId)
-
-        //console.log('Set game')
-        //console.log(game)
-
         // Add self player
         const colorsRemaining = new Set<PlayerColor>(PLAYER_COLORS)
 
@@ -47,10 +41,8 @@ const Lobby = ({ player }: LobbyProps) => {
         monitor.addPlayerToGame(player.id)
         console.log(`Done`)
 
-        monitor.setSelfPlayer(player.id)
-
         console.log('Start monitoring')
-        await monitor.startMonitoring()
+        await monitor.followGame(gameId, player.id)
         console.log('Done')
 
         setGameId(gameId)

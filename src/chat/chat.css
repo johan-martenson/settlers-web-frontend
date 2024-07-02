@@ -1,0 +1,16 @@
+.chat-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-log {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.chat-type-and-send {
+    flex-grow: 0;
+}

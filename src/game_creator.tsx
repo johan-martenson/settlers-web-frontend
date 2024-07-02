@@ -95,8 +95,6 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, ...props
                     console.log(`Created game`)
                     console.log(game)
 
-                    monitor.setGame(game.id)
-
                     // Set the default map
                     const maps = await monitor.getMaps()
 
@@ -129,14 +127,11 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, ...props
 
                     await monitor.addPlayerToGame(selfPlayer.id)
 
-                    monitor.setSelfPlayer(selfPlayer.id)
-
                     console.log('Player added')
                     console.log(selfPlayer)
 
-
                     console.log('Starting to monitor')
-                    monitor.startMonitoring()
+                    monitor.followGame(game.id, selfPlayer.id)
 
                     console.log('Monitoring started')
 

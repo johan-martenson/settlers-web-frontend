@@ -15,8 +15,6 @@ let gamesListeningStatus: GamesListeningState = 'NOT_LISTENING'
 let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
 let walkingTimerState: WalkingTimerState = 'NOT_RUNNING'
 
-let selfPlayerReceived: PlayerInformation | undefined
-
 interface MonitoredBorderForPlayer {
     color: PlayerColor
     nation: Nation
@@ -57,11 +55,6 @@ interface PointAndDecoration {
     x: number
     y: number
     decoration: DecorationType
-}
-
-type NewSelfPlayerMessage = {
-    type: 'NEW_PLAYER'
-    player: PlayerInformation
 }
 
 interface ChangesMessage {
@@ -165,18 +158,18 @@ type MilitarySettings = {
 type GameListListener = (gameInformations: GameInformation[]) => void
 
 interface ActionListener {
-    actionStarted: ((id: string, point: Point, action: Action) => void)
-    actionEnded: ((id: string, point: Point, action: Action) => void)
+    actionStarted: (id: string, point: Point, action: Action) => void
+    actionEnded: (id: string, point: Point, action: Action) => void
 }
 
 interface HouseBurningListener {
-    houseStartedToBurn: ((id: string, point: Point) => void)
-    houseStoppedBurning: ((id: string, point: Point) => void)
+    houseStartedToBurn: (id: string, point: Point) => void
+    houseStoppedBurning: (id: string, point: Point) => void
 }
 
 interface FlagListener {
-    onUpdate: ((flag: FlagInformation) => void)
-    onRemove: (() => void)
+    onUpdate: (flag: FlagInformation) => void
+    onRemove: () => void
 }
 
 export interface GameListener {
@@ -191,7 +184,7 @@ export interface GameListener {
 }
 
 interface AvailableConstructionListener {
-    onAvailableConstructionChanged: ((availableConstruction: AvailableConstruction[]) => void)
+    onAvailableConstructionChanged: (availableConstruction: AvailableConstruction[]) => void
 }
 
 export type MoveUpdate = {
@@ -278,50 +271,50 @@ export interface Monitor {
     initialResources?: ResourceLevel,
     chatMessages: ChatMessage[]
 
-    placeHouse: ((houseType: AnyBuilding, point: Point) => void)
-    placeRoad: ((points: Point[]) => void)
-    placeFlag: ((point: Point) => void)
-    placeRoadWithFlag: ((point: Point, points: Point[]) => void)
-    placeLocalRoad: ((points: Point[]) => void)
+    placeHouse: (houseType: AnyBuilding, point: Point) => void
+    placeRoad: (points: Point[]) => void
+    placeFlag: (point: Point) => void
+    placeRoadWithFlag: (point: Point, points: Point[]) => void
+    placeLocalRoad: (points: Point[]) => void
 
-    removeFlag: ((flagId: FlagId) => void)
-    removeRoad: ((roadId: FlagId) => void)
-    removeBuilding: ((houseId: HouseId) => void)
-    removeLocalRoad: ((roadId: RoadId) => void)
-    removeDetailedMonitoring: ((houseId: HouseId) => void)
-    removeMessage: ((messageId: GameMessageId) => void)
-    removeMessages: ((messages: GameMessage[]) => void)
+    removeFlag: (flagId: FlagId) => void
+    removeRoad: (roadId: FlagId) => void
+    removeBuilding: (houseId: HouseId) => void
+    removeLocalRoad: (roadId: RoadId) => void
+    removeDetailedMonitoring: (houseId: HouseId) => void
+    removeMessage: (messageId: GameMessageId) => void
+    removeMessages: (messages: GameMessage[]) => void
 
-    undoRemoveLocalRoad: ((roadId: RoadId) => void)
+    undoRemoveLocalRoad: (roadId: RoadId) => void
 
-    isAvailable: ((point: Point, whatToBuild: 'FLAG') => boolean)
-    isGameDataAvailable: (() => boolean)
+    isAvailable: (point: Point, whatToBuild: 'FLAG') => boolean
+    isGameDataAvailable: () => boolean
 
-    getInformationOnPointLocal: ((point: Point) => PointInformationLocal)
-    getHouseAtPointLocal: ((point: Point) => HouseInformation | undefined)
-    getFlagAtPointLocal: ((point: Point) => FlagInformation | undefined)
-    getInformationOnPoint: ((point: Point) => Promise<PointInformation>)
-    getInformationOnPoints: ((points: Point[]) => Promise<PointMapFast<PointInformation>>)
-    getHeight: ((point: Point) => number)
-    getFlagDebugInfo: ((flagId: FlagId) => Promise<FlagDebugInfo>)
+    getInformationOnPointLocal: (point: Point) => PointInformationLocal
+    getHouseAtPointLocal: (point: Point) => HouseInformation | undefined
+    getFlagAtPointLocal: (point: Point) => FlagInformation | undefined
+    getInformationOnPoint: (point: Point) => Promise<PointInformation>
+    getInformationOnPoints: (points: Point[]) => Promise<PointMapFast<PointInformation>>
+    getHeight: (point: Point) => number
+    getFlagDebugInfo: (flagId: FlagId) => Promise<FlagDebugInfo>
 
-    callScout: ((point: Point) => void)
-    callGeologist: ((point: Point) => void)
+    callScout: (point: Point) => void
+    callGeologist: (point: Point) => void
 
-    setReservedSoldiers: ((rank: SoldierType, amount: number) => void)
-    setStrengthWhenPopulatingMilitaryBuildings: ((strength: number) => void)
-    setDefenseStrength: ((strength: number) => void)
-    setDefenseFromSurroundingBuildings: ((strength: number) => void)
-    setMilitaryPopulationFarFromBorder: ((amount: number) => void)
-    setMilitaryPopulationCloserToBorder: ((amount: number) => void)
-    setMilitaryPopulationCloseToBorder: ((amount: number) => void)
-    setSoldiersAvailableForAttack: ((amount: number) => void)
+    setReservedSoldiers: (rank: SoldierType, amount: number) => void
+    setStrengthWhenPopulatingMilitaryBuildings: (strength: number) => void
+    setDefenseStrength: (strength: number) => void
+    setDefenseFromSurroundingBuildings: (strength: number) => void
+    setMilitaryPopulationFarFromBorder: (amount: number) => void
+    setMilitaryPopulationCloserToBorder: (amount: number) => void
+    setMilitaryPopulationCloseToBorder: (amount: number) => void
+    setSoldiersAvailableForAttack: (amount: number) => void
 
     createPlayer: (name: string, color: PlayerColor, nation: Nation, type: PlayerType) => Promise<PlayerInformation>
     addPlayerToGame: (playerId: PlayerId) => Promise<GameInformation>
     updatePlayer: (playerId: PlayerId, name: string, color: PlayerColor, nation: Nation) => Promise<PlayerInformation>
     removePlayer: (id: PlayerId) => void
-    upgrade: ((houseId: HouseId) => void)
+    upgrade: (houseId: HouseId) => void
     setGameSpeed: (a: GameSpeed) => void
     setTitle: (title: string) => void
     setInitialResources: (resources: ResourceLevel) => void
@@ -331,70 +324,66 @@ export interface Monitor {
 
     startGame: () => void
 
-    getStrengthWhenPopulatingMilitaryBuildings: (() => Promise<number>)
-    getDefenseStrength: (() => Promise<number>)
-    getDefenseFromSurroundingBuildings: (() => Promise<number>)
-    getPopulateMilitaryFarFromBorder: (() => Promise<number>)
-    getPopulateMilitaryCloserToBorder: (() => Promise<number>)
-    getPopulateMilitaryCloseToBorder: (() => Promise<number>)
-    getSoldiersAvailableForAttack: (() => Promise<number>)
-    getMilitarySettings: (() => Promise<MilitarySettings>)
+    getStrengthWhenPopulatingMilitaryBuildings: () => Promise<number>
+    getDefenseStrength: () => Promise<number>
+    getDefenseFromSurroundingBuildings: () => Promise<number>
+    getPopulateMilitaryFarFromBorder: () => Promise<number>
+    getPopulateMilitaryCloserToBorder: () => Promise<number>
+    getPopulateMilitaryCloseToBorder: () => Promise<number>
+    getSoldiersAvailableForAttack: () => Promise<number>
+    getMilitarySettings: () => Promise<MilitarySettings>
 
     getGameInformation: () => Promise<GameInformation>
 
-    addDetailedMonitoring: ((id: HouseId | FlagId) => void)
+    addDetailedMonitoring: (id: HouseId | FlagId) => void
 
-    readFullGameState: (gameId: GameId, playerId: PlayerId) => Promise<void>
+    readFullGameState: (gameId: GameId, playerId: PlayerId) => Promise<void> // TODO: remove gameId & playerId parameters?
 
     listenToGames: (gamesListener: GameListListener) => void
-    listenToFlag: ((flagId: FlagId, listener: FlagListener) => void)
-    listenToGameState: ((listener: GameListener) => void)
-    listenToAvailableConstruction: ((point: Point, listener: AvailableConstructionListener) => void)
-    listenToActions: ((listener: ActionListener) => void)
-    listenToBurningHouses: ((listener: HouseBurningListener) => void)
-    listenToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
-    listenToDiscoveredPoints: ((listener: ((points: PointSetFast) => void)) => void)
-    listenToRoads: ((listener: (() => void)) => void)
-    listenToHouse: ((houseId: HouseId, houseListenerFn: (house: HouseInformation) => void) => void)
+    listenToFlag: (flagId: FlagId, listener: FlagListener) => void
+    listenToGameState: (listener: GameListener) => void
+    listenToAvailableConstruction: (point: Point, listener: AvailableConstructionListener) => void
+    listenToActions: (listener: ActionListener) => void
+    listenToBurningHouses: (listener: HouseBurningListener) => void
+    listenToMessages: (listener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void) => void
+    listenToDiscoveredPoints: (listener: (points: PointSetFast) => void) => void
+    listenToRoads: (listener: () => void) => void
+    listenToHouse: (houseId: HouseId, houseListenerFn: (house: HouseInformation) => void) => void
     listenToMovementForWorker: (listener: WorkerMoveListener) => void
     listenToChatMessages: (listener: ChatListener, playerId: PlayerId) => void
 
     stopListeningToGames: (gamesListener: GameListListener) => void
-    stopListeningToMessages: ((listener: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)) => void)
-    stopListeningToFlag: ((flagId: FlagId, listener: FlagListener) => void)
-    stopListeningToAvailableConstruction: ((point: Point, listener: AvailableConstructionListener) => void)
-    stopListeningToGameState: ((listener: GameListener) => void)
+    stopListeningToMessages: (listener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void) => void
+    stopListeningToFlag: (flagId: FlagId, listener: FlagListener) => void
+    stopListeningToAvailableConstruction: (point: Point, listener: AvailableConstructionListener) => void
+    stopListeningToGameState: (listener: GameListener) => void
     stopListeningToMovementForWorker: (listener: WorkerMoveListener) => void
     stopListeningToChatMessages: (listener: ChatListener) => void
 
-    setCoalQuotas: ((mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void)
-    setFoodQuotas: ((ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void)
-    setWheatQuotas: ((donkeyFarm: number, pigFarm: number, mill: number, brewery: number) => void)
-    setWaterQuotas: ((bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) => void)
-    setIronBarQuotas: ((armory: number, metalworks: number) => void)
+    setCoalQuotas: (mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void
+    setFoodQuotas: (ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void
+    setWheatQuotas: (donkeyFarm: number, pigFarm: number, mill: number, brewery: number) => void
+    setWaterQuotas: (bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) => void
+    setIronBarQuotas: (armory: number, metalworks: number) => void
 
-    getCoalQuotas: (() => Promise<CoalQuotas>)
-    getFoodQuotas: (() => Promise<FoodQuotas>)
-    getWheatQuotas: (() => Promise<WheatQuotas>)
-    getWaterQuotas: (() => Promise<WaterQuotas>)
-    getIronBarQuotas: (() => Promise<IronBarQuotas>)
+    getCoalQuotas: () => Promise<CoalQuotas>
+    getFoodQuotas: () => Promise<FoodQuotas>
+    getWheatQuotas: () => Promise<WheatQuotas>
+    getWaterQuotas: () => Promise<WaterQuotas>
+    getIronBarQuotas: () => Promise<IronBarQuotas>
 
-    pauseGame: (() => void)
-    resumeGame: (() => void)
+    pauseGame: () => void
+    resumeGame: () => void
 
-    houseAt: ((point: Point) => HouseInformation | undefined)
+    houseAt: (point: Point) => HouseInformation | undefined
 
-    killWebsocket: (() => void)
-    waitForConnection: (() => Promise<void>)
-    waitForGameDataAvailable: (() => Promise<void>)
-    connectToJoinExistingGame: (gameId: GameId) => Promise<PlayerInformation>
+    killWebsocket: () => void
+    waitForConnection: () => Promise<void>
+    waitForGameDataAvailable: () => Promise<void>
     connectAndWaitForConnection: () => Promise<void>
     createGame: (name: string, players: PlayerInformation[]) => Promise<GameInformation>
-    startMonitoring: () => Promise<GameInformation>
     getGames: () => Promise<GameInformation[]>
-    setGame: (gameId: GameId) => Promise<GameInformation>
-    setSelfPlayer: (selfPlayeId: PlayerId) => Promise<PlayerInformation>
-    followGame: () => Promise<GameInformation>
+    followGame: (gameId: GameId, playerId: PlayerId) => Promise<GameInformation>
     sendChatMessageToRoom: (text: string, room: RoomId, from: PlayerId) => void
 }
 
@@ -579,13 +568,9 @@ const monitor: Monitor = {
     killWebsocket,
     waitForConnection,
     waitForGameDataAvailable,
-    connectToJoinExistingGame,
     connectAndWaitForConnection,
     createGame,
-    startMonitoring,
     getGames,
-    setGame,
-    setSelfPlayer,
     followGame,
     sendChatMessageToRoom
 }
@@ -596,10 +581,6 @@ function isFullSyncMessage(message: unknown): message is PlayerViewInformation {
         typeof message === 'object' &&
         'type' in message &&
         message.type === 'FULL_SYNC'
-}
-
-function isNewSelfPlayerMessage(message: unknown): message is NewSelfPlayerMessage {
-    return message !== null && typeof message === 'object' && 'type' in message && message.type === 'NEW_PLAYER'
 }
 
 function isGameInformationChangedMessage(message: unknown): message is GameInformationChangedMessage {
@@ -672,72 +653,7 @@ function makeWsConnectUrl(gameId: GameId | undefined, playerId: PlayerId | undef
     return `ws://${window.location.hostname}:8080/ws/monitor/games?gameId=${gameId}&playerId=${playerId}`
 }
 
-async function startMonitoringGame(gameId: GameId, playerId: PlayerId): Promise<void> {
-    monitor.gameId = gameId
-    monitor.playerId = playerId
-
-    if (connectionStatus === 'NOT_CONNECTED') {
-        console.log('Connecting to existing game')
-
-        connectToExistingGame(gameId, playerId)
-
-        console.log('Waiting for connection...')
-
-        await waitForConnection()
-
-        console.log('Got connection')
-    }
-
-    console.log('Get game information')
-    const gameInformation = await getGameInformation()
-
-    gameInformation.players.forEach(player => monitor.players.set(player.id, player))
-    monitor.gameState = gameInformation.status
-    monitor.gameName = gameInformation.name
-    monitor.map = gameInformation.map
-    monitor.othersCanJoin = gameInformation.othersCanJoin
-
-    // TODO: make game information get pushed automatically by the backend. For now, just request it
-    if (gameInformation.status === 'STARTED' || gameInformation.status === 'PAUSED') {
-        console.log('Reading full game state')
-
-        await readFullGameState()
-
-        startTimers()
-
-        walkingTimerState = 'RUNNING'
-    }
-}
-
-function connectToExistingGame(gameId: GameId, playerId: PlayerId) {
-    const websocketUrl = makeWsConnectUrl(gameId, playerId)
-
-    console.info("Websocket url: " + websocketUrl)
-
-    websocket = new WebSocket(websocketUrl)
-
-    connectionStatus = 'CONNECTING'
-
-    websocket.onopen = () => {
-        console.info("Websocket for subscription is open")
-
-        connectionStatus = 'CONNECTED'
-
-        gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
-    }
-    websocket.onclose = (e) => {
-        websocketDisconnected(e)
-        connectionStatus = 'NOT_CONNECTED'
-    }
-    websocket.onerror = (e) => {
-        websocketError(e)
-        connectionStatus = 'NOT_CONNECTED'
-    }
-
-    websocket.onmessage = (message) => websocketMessageReceived(message)
-}
-
-function loadPlayerView(message: PlayerViewInformation): void {
+function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     const previousGameState = monitor.gameState
 
     message.players.forEach(player => monitor.players.set(player.id, player))
@@ -841,7 +757,7 @@ async function readFullGameState(): Promise<void> {
     }
 
     // Read the state
-    loadPlayerView(await sendRequestAndWaitForReply<PlayerViewInformation>('FULL_SYNC'))
+    loadPlayerViewAndCallListeners(await sendRequestAndWaitForReply<PlayerViewInformation>('FULL_SYNC'))
 }
 
 function startTimers() {
@@ -1100,14 +1016,10 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
             console.log('Handling game changed message')
 
             receivedGameChangedMessage(message)
-        } else if (isNewSelfPlayerMessage(message)) {
-            console.log('Handling new self player message')
-
-            receivedNewSelfPlayer(message)
         } else if (isGameInformationChangedMessage(message)) {
             console.log('Handling game information changed message')
 
-            loadGameInformation(message.gameInformation)
+            loadGameInformationAndCallListeners(message.gameInformation)
         } else if (isGameListChangedMessage(message)) {
             console.log('Handling game list changed messgae')
 
@@ -1138,9 +1050,11 @@ function containsPlayer(players: PlayerInformation[], player: PlayerInformation)
     return players.find(p => p.id === player.id) !== undefined
 }
 
-function loadGameInformation(gameInformation: GameInformation): void {
+function loadGameInformationAndCallListeners(gameInformation: GameInformation): void {
 
     console.log(gameInformation)
+
+    // TODO: assign the game information before calling listeners
 
     // Call listeners
     if (monitor.gameName !== gameInformation.name) {
@@ -1178,8 +1092,8 @@ function loadGameInformation(gameInformation: GameInformation): void {
     assignGameInformation(gameInformation)
 }
 
-function receivedNewSelfPlayer(message: NewSelfPlayerMessage): void {
-    selfPlayerReceived = message.player
+async function listenToGameMetadata(): Promise<GameInformation> {
+    return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('LISTEN_TO_GAME_INFO')).gameInformation
 }
 
 function receivedGameChangedMessage(message: GameChangedMessage): void {
@@ -1281,7 +1195,7 @@ function clearAndLoadPlayerView(playerView: PlayerViewInformation): void {
     monitor.housesAt.clear()
 
     // Read the full state from the backend
-    loadPlayerView(playerView)
+    loadPlayerViewAndCallListeners(playerView)
 }
 
 function gameStateMightHaveChanged(gameState: GameState): void {
@@ -1832,11 +1746,11 @@ function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformati
     listenersForHouseId.push(houseListenerFn)
 }
 
-function listenToDiscoveredPoints(listenerFn: ((discoveredPoints: PointSetFast) => void)): void {
+function listenToDiscoveredPoints(listenerFn: (discoveredPoints: PointSetFast) => void): void {
     discoveredPointListeners.push(listenerFn)
 }
 
-function listenToRoads(listenerFn: (() => void)): void {
+function listenToRoads(listenerFn: () => void): void {
     roadListeners.push(listenerFn)
 }
 
@@ -2446,70 +2360,6 @@ async function connectAndWaitForConnection(): Promise<void> {
     console.log(`Connected. ${connectionStatus}`)
 }
 
-async function connectToJoinExistingGame(gameId: GameId): Promise<PlayerInformation> {
-    const websocketUrl = makeWsConnectUrl(gameId, undefined)
-
-    console.info("Websocket url: " + websocketUrl)
-
-    websocket = new WebSocket(websocketUrl)
-
-    connectionStatus = 'CONNECTING'
-
-    websocket.onopen = () => {
-        console.info("Websocket for subscription is open")
-
-        connectionStatus = 'CONNECTED'
-
-        gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
-    }
-
-    websocket.onclose = (e) => {
-        websocketDisconnected(e)
-        connectionStatus = 'NOT_CONNECTED'
-    }
-
-    websocket.onerror = (e) => {
-        websocketError(e)
-        connectionStatus = 'NOT_CONNECTED'
-    }
-
-    websocket.onmessage = (message) => websocketMessageReceived(message)
-
-    // Wait for the connection to be established
-    await waitForConnection()
-
-    const timestampSent = (new Date()).getTime()
-
-    // eslint-disable-next-line
-    return await new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const timestampSawReply = (new Date()).getTime()
-
-            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
-                clearInterval(timer)
-            }
-
-            if (selfPlayerReceived) {
-                clearInterval(timer)
-
-                console.log(`Got self player: ${selfPlayerReceived}`)
-
-                result(selfPlayerReceived)
-            }
-        }, 5)
-    })
-}
-
-async function startMonitoring(): Promise<GameInformation> {
-    const { gameInformation } = await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('LISTEN_TO_GAME_INFO')
-
-    loadGameInformation(gameInformation)
-
-    await sendRequestAndWaitForReply<GameInformation>('START_MONITORING_GAME')
-
-    return gameInformation
-}
-
 type CreateNewGameOptions = {
     name: string
     players: Player[]
@@ -2838,13 +2688,16 @@ async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
     return sendRequestAndWaitForReplyWithOptions<FlagDebugInfo, typeof options>('FLAG_DEBUG_INFORMATION', options)
 }
 
+async function setPlayerId(playerId: PlayerId): Promise<PlayerInformation> {
+    return (
+        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, { playerId: PlayerId }>('SET_SELF_PLAYER', { playerId })
+    ).playerInformation
+}
+
 async function setGame(gameId: GameId): Promise<GameInformation> {
-    const gameInformation = (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId }>('SET_GAME', { gameId })
+    return (
+        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId }>('SET_GAME', { gameId })
     ).gameInformation
-
-    assignGameInformation(gameInformation)
-
-    return gameInformation
 }
 
 function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): void {
@@ -2856,26 +2709,39 @@ function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): vo
     }))
 }
 
-async function followGame(): Promise<GameInformation> {
-    const gameInformation = (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('START_MONITORING_GAME')).gameInformation
+async function listenToGameViewForPlayer(): Promise<PlayerViewInformation> {
+    return (await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('START_MONITORING_GAME')).playerView
+}
 
-    loadGameInformation(gameInformation)
+/**
+ * Starts following a game with the given gameId and from the perspective of the given playerId. All members of the monitor will be kept in sync with the backend.
+ *
+ * @param {GameId} gameId - The id of the game to follow.
+ * @param {PlayerId} playerId - The id of the player.
+ * @returns {Promise<GameInformation>} The metadata of the game.
+ */
+async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation> {
+    monitor.gameId = gameId
+    monitor.playerId = playerId
 
-    const playerView = (await sendRequestAndWaitForReply<{ gameInformation: GameInformation, playerView: PlayerViewInformation }>('FULL_SYNC')).playerView
+    // Register the gameId and playerId with the backend
+    await setGame(gameId)
+    await setPlayerId(playerId)
 
-    loadPlayerView(playerView)
+    // Start listening to the game's metadata
+    const gameInformation = await listenToGameMetadata()
+
+    // Sync the received metadata
+    loadGameInformationAndCallListeners(gameInformation)
+
+    // Start listening to the actual game state from the player's point of view
+    const playerView = await listenToGameViewForPlayer()
+
+    // Sync the received view
+    loadPlayerViewAndCallListeners(playerView)
 
     return gameInformation
 }
-
-async function setSelfPlayer(selfPlayerId: PlayerId): Promise<PlayerInformation> {
-    monitor.playerId = selfPlayerId
-
-    return (
-        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, { playerId: PlayerId }>('SET_SELF_PLAYER', { playerId: selfPlayerId })
-    ).playerInformation
-}
-
 
 type GetGamesReply = {
     games: GameInformation[]
@@ -2898,7 +2764,7 @@ async function getMaps(): Promise<MapInformation[]> {
 async function getGameInformation(): Promise<GameInformation> {
     const gameInformation = (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('GET_GAME_INFORMATION')).gameInformation
 
-    loadGameInformation(gameInformation)
+    loadGameInformationAndCallListeners(gameInformation)
 
     return gameInformation
 }
@@ -2989,6 +2855,5 @@ function waitForConnection(): Promise<void> {
 
 export {
     getHeadquarterForPlayer,
-    startMonitoringGame,
     monitor
 }

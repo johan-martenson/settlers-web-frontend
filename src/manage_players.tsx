@@ -1,10 +1,9 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button, Subtitle1 } from "@fluentui/react-components"
 import { Player } from './player'
 import './manage_players.css'
-import { updatePlayer, removePlayerFromGame } from './api/rest-api'
-import { PlayerType, PlayerInformation, GameId, Nation, PlayerColor, PLAYER_COLORS, PlayerId } from './api/types'
-import { monitor } from './api/ws-api'
+import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId } from './api/types'
+import { GameListener, monitor } from './api/ws-api'
 
 export interface PlayerCandidateType {
     name: string
@@ -14,24 +13,33 @@ export interface PlayerCandidateType {
 
 interface ManagePlayersProps {
     selfPlayerId: PlayerId
-    gameId: GameId
     maxPlayers: number
-    players: PlayerInformation[]
-    onPlayerAdded?: ((player: PlayerInformation) => void)
-    onPlayerRemoved?: ((player: PlayerInformation) => void)
 }
 
-const ManagePlayers = ({ selfPlayerId, gameId, players, maxPlayers, onPlayerRemoved, onPlayerAdded }: ManagePlayersProps) => {
-    async function onPlayerUpdated(name: string, nation: Nation, color: PlayerColor, index: number): Promise<void> {
-        const playerToUpdate = players[index]
-        await updatePlayer(gameId, playerToUpdate.id, name, nation, color)
-    }
+const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
+    const [players, setPlayers] = useState<PlayerInformation[]>(Array.from(monitor.players.values()))
 
-    async function removePlayer(player: PlayerInformation): Promise<void> {
-        await removePlayerFromGame(gameId, player.id)
+    useEffect(
+        () => {
+            const listener: GameListener = {
+                onPlayersChanged: (players: PlayerInformation[]) => setPlayers(players)
+            }
 
-        onPlayerRemoved && onPlayerRemoved(player)
-    }
+            async function startListening() {
+                const { players } = await monitor.getGameInformation()
+
+                console.log(players)
+
+                setPlayers(players)
+
+                monitor.listenToGameState(listener)
+            }
+
+            startListening()
+
+            return () => monitor.stopListeningToGameState(listener)
+        }, []
+    )
 
     async function addComputerPlayer(): Promise<void> {
         let nextPlayer = undefined
@@ -55,13 +63,12 @@ const ManagePlayers = ({ selfPlayerId, gameId, players, maxPlayers, onPlayerRemo
         const nextColor = colorsRemaining.values().next()
 
         if (nextColor.value) {
-            const addedPlayer = await monitor.addPlayerToGame(
-                "Computer Player " + nextPlayer,
+            const newPlayer = await monitor.createPlayer("Computer Player " + nextPlayer,
                 nextColor.value,
                 'ROMANS',
                 'COMPUTER')
 
-            onPlayerAdded && onPlayerAdded(addedPlayer)
+            await monitor.addPlayerToGame(newPlayer.id)
         } else {
             console.error("No color available for computer player")
         }
@@ -72,6 +79,8 @@ const ManagePlayers = ({ selfPlayerId, gameId, players, maxPlayers, onPlayerRemo
     PLAYER_COLORS.forEach(color => availableColors.add(color))
 
     players.forEach(player => availableColors.delete(player.color))
+
+    console.log(players)
 
     return (
         <div className="player-list">
@@ -88,7 +97,7 @@ const ManagePlayers = ({ selfPlayerId, gameId, players, maxPlayers, onPlayerRemo
                                     availableColors={availableColors}
                                     onPlayerUpdated={
                                         (name: string, nation: Nation, color: PlayerColor) => {
-                                            onPlayerUpdated(name, nation, color, index)
+                                            monitor.updatePlayer(player.id, name, color, nation)
                                         }
                                     }
                                     player={player}
@@ -100,10 +109,10 @@ const ManagePlayers = ({ selfPlayerId, gameId, players, maxPlayers, onPlayerRemo
                                     availableColors={availableColors}
                                     onPlayerUpdated={
                                         (name: string, nation: Nation, color: PlayerColor) => {
-                                            onPlayerUpdated(name, nation, color, index)
+                                            monitor.updatePlayer(player.id, name, color, nation)
                                         }
                                     }
-                                    onPlayerRemoved={() => { removePlayer(player) }}
+                                    onPlayerRemoved={() => { monitor.removePlayer(player.id) }}
                                 />
                             }
                         </div>

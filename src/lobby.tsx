@@ -1,49 +1,60 @@
 import React, { useState } from 'react'
-import { addHumanPlayerToGame, getGameInformation } from './api/rest-api'
 import { Button } from "@fluentui/react-components"
 import { GameCreator } from './game_creator'
 import GameList from './game_list'
 import './lobby.css'
-import { GameId, PlayerId } from './api/types'
+import { GameId, PLAYER_COLORS, PlayerColor, PlayerInformation } from './api/types'
 import Play from './play'
+import { monitor } from './api/ws-api'
+import { ChatBox } from './chat/chat'
 
 type LobbyStates = "LIST_GAMES" | "CREATE_GAME" | "PLAY_GAME" | "WAIT_FOR_GAME"
 
 interface LobbyProps {
-    playerName: string
+    player: PlayerInformation
 }
 
-const Lobby = ({ playerName }: LobbyProps) => {
+const Lobby = ({ player }: LobbyProps) => {
     const [state, setState] = useState<LobbyStates>("LIST_GAMES")
     const [gameId, setGameId] = useState<GameId>()
-    const [selfPlayerId, setSelfPlayerId] = useState<PlayerId>()
-
-    async function waitForGameToStart(gameId: GameId): Promise<void> {
-        if (gameId) {
-            const game = await getGameInformation(gameId)
-
-            if (game.status === "STARTED") {
-                window.location.href = "?gameId=" + game.id + "&playerId=" + selfPlayerId
-            } else {
-                setTimeout(() => waitForGameToStart(gameId), 100)
-            }
-        }
-    }
 
     async function joinGame(gameId: GameId): Promise<void> {
-        console.log("Joining game " + gameId + " as player " + JSON.stringify(playerName))
+        console.log("Joining game " + gameId + " as player " + JSON.stringify(player.name))
 
-        try {
-            const player = await addHumanPlayerToGame(gameId, playerName, "#123456", "ROMANS")
+        // Connect
+        console.log('Connect and wait')
+        await monitor.connectAndWaitForConnection()
+        console.log('Done')
 
-            setGameId(gameId)
-            setSelfPlayerId(player.id)
-            setState("WAIT_FOR_GAME")
+        // Set game
+        await monitor.setGame(gameId)
 
-            waitForGameToStart(gameId)
-        } catch (err) {
-            console.log(err)
-        }
+        //console.log('Set game')
+        //console.log(game)
+
+        // Add self player
+        const colorsRemaining = new Set<PlayerColor>(PLAYER_COLORS)
+
+        Array.from(monitor.players.values()).forEach(player => colorsRemaining.delete(player.color))
+
+        const nextColor = colorsRemaining.values().next().value
+
+        const updatedPlayer = await monitor.updatePlayer(player.id, player.name, nextColor, player.nation)
+
+        console.log(updatedPlayer)
+
+        console.log('Add self player')
+        monitor.addPlayerToGame(player.id)
+        console.log(`Done`)
+
+        monitor.setSelfPlayer(player.id)
+
+        console.log('Start monitoring')
+        await monitor.startMonitoring()
+        console.log('Done')
+
+        setGameId(gameId)
+        setState('CREATE_GAME')
     }
 
     return (
@@ -51,8 +62,10 @@ const Lobby = ({ playerName }: LobbyProps) => {
 
             {state === "CREATE_GAME" &&
                 <GameCreator
-                    playerName={playerName}
+                    playerName={player.name}
                     onGameCreateCanceled={() => setState("LIST_GAMES")}
+                    gameId={gameId}
+                    selfPlayerId={player.id}
                     onGameStarted={(gameId, selfPlayerId) => window.location.href = "?gameId=" + gameId + "&playerId=" + selfPlayerId}
                 />
             }
@@ -60,15 +73,20 @@ const Lobby = ({ playerName }: LobbyProps) => {
             {state === "LIST_GAMES" &&
                 <>
                     <div id="list-games-or-create-new">
+                        <h1>Available games</h1>
                         <GameList onJoinGame={(gameId: GameId) => joinGame(gameId)} />
                         <Button onClick={() => setState("CREATE_GAME")} autoFocus appearance='primary'>Create new game</Button>
+                    </div>
+                    <div className='lobby-chat'>
+                        <h1>Chat</h1>
+                        <ChatBox player={player} />
                     </div>
                 </>
             }
 
-            {state === "PLAY_GAME" && gameId && selfPlayerId &&
+            {state === "PLAY_GAME" && gameId &&
                 <Play gameId={gameId}
-                    selfPlayerId={selfPlayerId}
+                    selfPlayerId={player.id}
                     onLeaveGame={
                         () => setState("LIST_GAMES")
                     }

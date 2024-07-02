@@ -41,7 +41,7 @@ function MapInformationCard(props: MapInformationCardProps) {
             <Card>
                 <CardHeader
                     image={<img src={(mapImage) ? mapImage.src : ""} />}
-                    header={<Text weight="semibold">{props.map.title}</Text>}
+                    header={<Text weight="semibold">{props.map.name}</Text>}
                     description={
                         <Caption1>{props.map.maxPlayers} players, {props.map.width}x{props.map.height}, by {props.map.author}</Caption1>
                     }
@@ -59,7 +59,7 @@ function MapInformationCard(props: MapInformationCardProps) {
             <Card>
                 <CardHeader
                     image={<img src={(mapImage) ? mapImage.src : ""} />}
-                    header={<Text weight="semibold">{props.map.title}</Text>}
+                    header={<Text weight="semibold">{props.map.name}</Text>}
                     description={
                         <Caption1>{props.map.maxPlayers} players, {props.map.width}x{props.map.height}, by {props.map.author}</Caption1>
                     }

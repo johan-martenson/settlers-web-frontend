@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
 import { PauseRegular, PlayRegular } from '@fluentui/react-icons'
-import { AttackType, GameId, HouseInformation, Nation, PlayerId, isMaterialUpperCase } from "../api/types"
+import { AttackType, GameId, HouseInformation, Nation, PlayerId, isMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon, UiIcon } from "../icons/icon"
 import './house_info.css'
 import { HeadquarterInfo } from "./headquarter"
@@ -185,13 +185,13 @@ const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose, onRaise
             <div>Under construction ...</div>
             <meter max={100} value={house.constructionProgress} />
 
-            {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined).length > 0 &&
+            {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
                 <Field label="Resources">
                     <div>
-                        {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined)
+                        {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
                             .map(material => {
 
-                                if (isMaterialUpperCase(material)) {
+                                if (isMaterial(material)) {
                                     const has = house.resources[material].has ?? 0
                                     const canHold = house.resources[material].canHold ?? 0
                                     const gap = Math.max(canHold - has, 0)
@@ -254,13 +254,13 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise 
 
                 {!house.productionEnabled && <div>Production disabled</div>}
 
-                {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined).length > 0 &&
+                {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
                     <Field label="Resources">
                         <div>
-                            {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined)
+                            {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
                                 .map(material => {
 
-                                    if (isMaterialUpperCase(material)) {
+                                    if (isMaterial(material)) {
                                         const has = house.resources[material].has ?? 0
                                         const canHold = house.resources[material].canHold ?? 0
                                         const gap = Math.max(canHold - has, 0)

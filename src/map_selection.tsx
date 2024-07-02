@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { MapInformation } from './api/types'
 import { MapList } from './map_list'
 import './map_selection.css'
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, InputOnChangeData, SearchBox, SearchBoxChangeEvent, Slider, SliderOnChangeData, Subtitle1 } from '@fluentui/react-components'
 import MapInformationCard from './map_information_card'
+import { GameListener, monitor } from './api/ws-api'
 
 interface MapSelectionProps {
     minPlayers: number
@@ -16,6 +17,21 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
     const [filterAuthor, setSearchAuthor] = useState<string>("")
     const [filterMinPlayers, setFilterMinPlayers] = useState<number>(1)
     const [filterMaxPlayers, setFilterMaxPlayers] = useState<number>(8)
+
+    useEffect(
+        () => {
+            function mapChanged(map: MapInformation) {
+                setMap(map)
+            }
+
+            const listener: GameListener = {
+                onMapChanged: mapChanged
+            }
+
+            monitor.listenToGameState(listener)
+
+            return () => monitor.stopListeningToGameState(listener)
+        }, [])
 
     return (
         <div className="select-map">

@@ -30,7 +30,7 @@ const MapList = ({ minPlayers, defaultSelect, filterTitle, filterAuthor, filterM
 
     const matches = maps
         .filter(map => map.maxPlayers >= minPlayers)
-        .filter(map => filterTitle === undefined || filterTitle === "" || map.title.toLowerCase().includes(filterTitle.toLowerCase()))
+        .filter(map => filterTitle === undefined || filterTitle === "" || map.name.toLowerCase().includes(filterTitle.toLowerCase()))
         .filter(map => filterAuthor === undefined || filterAuthor === "" || map.author.toLowerCase().includes(filterAuthor.toLowerCase()))
         .filter(map => (filterMinPlayers ?? 0) <= map.maxPlayers)
         .filter(map => (filterMaxPlayers ?? 8) >= map.maxPlayers)

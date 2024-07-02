@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Field, Tooltip } from "@fluentui/react-components"
-import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterialUpperCase, rankToMaterial } from "../api/types"
+import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterial, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon, UiIcon } from '../icons/icon'
 import './house_info.css'
 import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse } from "../api/rest-api"
@@ -44,13 +44,13 @@ const MilitaryBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }:
             {house.upgrading && <div>Upgrading ...</div>}
 
             {house.upgrading &&
-                Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined).length > 0 &&
+                Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
                 <Field label="Resources">
                     <div>
-                        {Object.keys(house.resources).filter(material => isMaterialUpperCase(material) && house.resources[material].canHold !== undefined)
+                        {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
                             .map(material => {
 
-                                if (isMaterialUpperCase(material)) {
+                                if (isMaterial(material)) {
                                     const has = house.resources[material].has ?? 0
                                     const canHold = house.resources[material].canHold ?? 0
                                     const gap = Math.max(canHold - has, 0)

@@ -8,7 +8,7 @@ import GameMessagesViewer from './game_messages_viewer'
 import { CursorState, GameCanvas } from './render/game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
-import { GameListener, getHeadquarterForPlayer, monitor, startMonitoringGame } from './api/ws-api'
+import { GameListener, getHeadquarterForPlayer, monitor } from './api/ws-api'
 import MusicPlayer from './sound/music_player'
 import Statistics from './statistics'
 import { printVariables } from './stats'
@@ -141,7 +141,7 @@ const Expired = () => {
             <p>The game has expired and is frozen in time. You can stay and view the current game or go back to the lobby to start a new game.</p>
             <ButtonRow>
                 <Button>Stay in game</Button>
-                <Button>Go to lobby</Button>
+                <Button onClick={() => window.location.href = ''}>Go to lobby</Button>
             </ButtonRow>
 
         </div>
@@ -228,11 +228,21 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     useEffect(
         () => {
+            async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId) {
+                await monitor.connectAndWaitForConnection()
+
+                await monitor.setGame(gameId)
+
+                await monitor.setSelfPlayer(selfPlayerId)
+
+                monitor.listenToGameState(gameMonitorCallbacks)
+
+                await monitor.followGame()
+            }
+
             console.log("Use effect: Start listening to game")
 
-            monitor.listenToGameState(gameMonitorCallbacks)
-
-            startMonitoringGame(gameId, selfPlayerId)
+            connectAndFollow(gameId, selfPlayerId)
 
             return () => {
                 console.log('Use effect: Stop listening to game')

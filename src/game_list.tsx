@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { getGames } from './api/rest-api'
 import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton, Skeleton, SkeletonItem } from "@fluentui/react-components"
 import {
     TableBody,
@@ -11,6 +10,7 @@ import {
 } from "@fluentui/react-components"
 import './game_list.css'
 import { GameId, GameInformation } from './api/types'
+import { monitor } from './api/ws-api'
 
 const statusToText = {
     STARTED: 'Started',
@@ -37,18 +37,27 @@ const GameList = ({ onJoinGame }: GameListProps) => {
 
     useEffect(
         () => {
-            (async () => {
-                while (!games) {
-                    try {
-                        const updatedGames = await getGames()
-                        setGames(updatedGames)
-                    } catch (error) {
-                        await new Promise(r => setTimeout(r, 2000))
-                    }
-                }
-            })().then()
-        }, [])
+            function gameListChanged(gameInformations: GameInformation[]) {
+                setGames(gameInformations)
+            }
 
+            async function connectAndHandleList() {
+                await monitor.connectAndWaitForConnection()
+
+                monitor.listenToGames(gameListChanged)
+
+                const games = await monitor.getGames()
+
+                console.log(games)
+
+                setGames(games)
+            }
+
+            connectAndHandleList()
+
+            return () => monitor.stopListeningToGames(gameListChanged)
+        }, []
+    )
     return (
         <>
             {<div className='games-list'>
@@ -67,7 +76,7 @@ const GameList = ({ onJoinGame }: GameListProps) => {
                         {games && games.map(game => (
                             <TableRow key={game.id}>
                                 <TableCell>{game.name}</TableCell>
-                                <TableCell>{(game?.map) ? game.map.title : '-'}</TableCell>
+                                <TableCell>{(game?.map) ? game.map.name : '-'}</TableCell>
                                 <TableCell>{game.players.length}</TableCell>
                                 <TableCell>{(game?.map) ? game.map.maxPlayers : '-'}</TableCell>
                                 <TableCell>{statusToText[game.status]}</TableCell>
@@ -84,7 +93,7 @@ const GameList = ({ onJoinGame }: GameListProps) => {
                                                 }
                                                 {game.players.filter(player => player.type === 'HUMAN')
                                                     .map(player => <MenuItem
-                                                        key={game.id}
+                                                        key={player.id}
                                                         onClick={() => window.location.href = "?gameId=" + game.id + "&playerId=" + player.id}
                                                     >Play as {player.name}</MenuItem>)}
                                             </MenuList>

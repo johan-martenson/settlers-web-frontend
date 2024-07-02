@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react'
-import { isBuilding, isMaterialUpperCase } from './api/types'
+import { isBuilding, isMaterial } from './api/types'
 import { HouseIcon, InventoryIcon } from './icons/icon'
 
 export interface PageType {
@@ -48,7 +48,7 @@ const HELP_PAGES: PageType[] = [
     {
         page: 'ranksAndPromotion',
         title: 'Ranks and promotion',
-        pictures: ['PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL'].map(material => isMaterialUpperCase(material) && <InventoryIcon material={material} nation='ROMANS' inline key={material}/>),
+        pictures: ['PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL'].map(material => isMaterial(material) && <InventoryIcon material={material} nation='ROMANS' inline key={material}/>),
         description: ["Soldiers can have different ranks: private, private first class, sergeant, officer, general. All militaries start out as privates and can then be promoted to higher classes. A higher rank means that the military can survive more fights and cause more damage to opponents. Militaries in a building are promoted when a coin is delivered to the building.", "A mint produces coins and it needs coal and gold."]
     },
 

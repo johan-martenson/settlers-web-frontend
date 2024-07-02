@@ -70,7 +70,7 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
                 <AccordionPanel>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                         <div>Id: <Value>{gameInformation?.map.id}</Value></div>
-                        <div>Name: <Value>{gameInformation?.map.title}</Value></div>
+                        <div>Name: <Value>{gameInformation?.map.name}</Value></div>
                         <div>Author: <Value>{gameInformation?.map.author}</Value></div>
                         <div>Size: <Value>{gameInformation?.map.width}</Value>x<Value>{gameInformation?.map.height}</Value></div>
                         <div>Max players: <Value>{gameInformation?.map.maxPlayers}</Value></div>

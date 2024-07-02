@@ -19,9 +19,7 @@
 }
 
 .games-list {
-    width: 60vw;
-    height: 60vh;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 .loader-skeleton {

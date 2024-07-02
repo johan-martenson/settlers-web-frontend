@@ -15,6 +15,22 @@ export type CropId = string
 export type ShipId = string
 export type GameMessageId = string
 export type StoneId = string
+export type RoomId = string
+
+type Time = {
+    hour: number
+    minute: number
+    second: number
+}
+
+export type ChatMessage = {
+    fromPlayerId: PlayerId
+    fromName: string
+    toPlayers: PlayerId[]
+    toRoomId: RoomId
+    text: string
+    time: Time
+}
 
 export type GameSpeed = 'FAST' | 'NORMAL' | 'SLOW'
 
@@ -60,7 +76,6 @@ export type CropGrowth = 'JUST_PLANTED' | 'SMALL' | 'ALMOST_GROWN' | 'FULL_GROWN
 export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST_FULL' | 'FULL'
 
 export type HouseResources = { [key in Material]?: HouseResourceItem }
-
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
 
@@ -176,7 +191,6 @@ const LARGE_HOUSES_AS_STRINGS: string[] = [
 export type WildAnimalType = "RABBIT" | "FOX" | "STAG" | "DEER" | "DUCK" | "SHEEP" | "DEER_2" | "DUCK_2" | "PACK_DONKEY"
 const WILD_ANIMAL_TYPES = ["RABBIT", "FOX", "STAG", "DEER", "DUCK", "SHEEP", "DEER_2", "DUCK_2", "PACK_DONKEY"]
 
-
 export interface WildAnimalInformation extends Point {
     id: WildAnimalId
     type: WildAnimalType
@@ -222,17 +236,6 @@ export type PointInformation = {
     is: 'road'
     roadId: RoadId
 })
-
-/*export interface PointInformation {
-    readonly canBuild: AvailableConstruction[]
-    readonly is?: "building" | "flag" | "road"
-    readonly x: number
-    readonly y: number
-    readonly possibleRoadConnections: Point[]
-    readonly buildingId?: HouseId
-    readonly flagId?: FlagId
-    readonly roadId?: RoadId
-}*/
 
 export type TreeType = "PINE" | "BIRCH" | "OAK" | "PALM_1" | "PALM_2" | "PINE_APPLE" | "CYPRESS" | "CHERRY" | "FIR"
 
@@ -314,18 +317,18 @@ export interface PlayerInformation {
 }
 
 export interface GameInformation {
-    players: PlayerInformation[]
     id: GameId
-    title: string
-    status: GameState
     name: string
+    players: PlayerInformation[]
+    status: GameState
     map: MapInformation
     othersCanJoin: boolean
+    initialResources: ResourceLevel
 }
 
 export interface MapInformation {
-    title: string
     id: MapId
+    name: string
     maxPlayers: number
     author: string
     width: number
@@ -506,7 +509,6 @@ export interface ServerWorkerInformation extends Point {
     cargo?: Material
     bodyType?: BodyType
     action?: WorkerAction
-    actionAnimationIndex?: number
 }
 
 export interface ShipInformation extends Point {
@@ -781,25 +783,23 @@ function rankToMaterial(rank: SoldierType): Material {
         return 'GENERAL'
     }
 
-    console.error("Can't translate rank to material! Rank was: " + rank)
+    console.error(`Can't translate rank to material! Rank was: ${rank}`)
 
-    return 'STONE'
+    throw new Error(`Can't translate rank to material! Rank was: ${rank}`)
 }
 
 function isToolUpperCase(material: Material): material is Tool {
     return TOOLS_STRING.has(material)
 }
 
-
 function isWildAnimal(animal: unknown): animal is WildAnimalInformation {
     return animal !== null &&
         typeof animal === 'object' &&
         'type' in animal &&
-        typeof animal.type === 'string' &&
         WILD_ANIMAL_TYPES.findIndex(type => type === animal.type) !== -1
 }
 
-function isMaterialUpperCase(material: unknown): material is Material {
+function isMaterial(material: unknown): material is Material {
     return material !== null &&
         material !== undefined &&
         typeof material === 'string' &&
@@ -807,7 +807,6 @@ function isMaterialUpperCase(material: unknown): material is Material {
 }
 
 function getSoldierDisplayName(soldierType: SoldierType): string {
-
     if (soldierType === "PRIVATE_RANK") {
         return "Private"
     } else if (soldierType === "PRIVATE_FIRST_CLASS_RANK") {
@@ -830,7 +829,7 @@ export {
     rankToMaterial,
     isToolUpperCase,
     isWildAnimal,
-    isMaterialUpperCase,
+    isMaterial,
     getSoldierDisplayName,
     isBuilding,
     isNation,

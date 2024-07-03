@@ -53,13 +53,20 @@ const Lobby = ({ player }: LobbyProps) => {
         <div id="center-on-screen">
 
             {state === "CREATE_GAME" &&
-                <GameCreator
-                    playerName={player.name}
-                    onGameCreateCanceled={() => setState("LIST_GAMES")}
-                    gameId={gameId}
-                    selfPlayerId={player.id}
-                    onGameStarted={(gameId, selfPlayerId) => window.location.href = "?gameId=" + gameId + "&playerId=" + selfPlayerId}
-                />
+                <>
+                    <GameCreator
+                        playerName={player.name}
+                        onGameCreateCanceled={() => setState("LIST_GAMES")}
+                        gameId={gameId}
+                        selfPlayerId={player.id}
+                        onGameStarted={(gameId, selfPlayerId) => window.location.href = "?gameId=" + gameId + "&playerId=" + selfPlayerId}
+                        onGameIdSet={(gameId: GameId) => setGameId(gameId)}
+                    />
+                    <div className='game-create-chat'>
+                        <h1>Chat</h1>
+                        <ChatBox player={player} roomId={`game-${gameId}`}/>
+                    </div>
+                </>
             }
 
             {state === "LIST_GAMES" &&
@@ -71,7 +78,7 @@ const Lobby = ({ player }: LobbyProps) => {
                     </div>
                     <div className='lobby-chat'>
                         <h1>Chat</h1>
-                        <ChatBox player={player} />
+                        <ChatBox player={player} roomId='lobby' />
                     </div>
                 </>
             }

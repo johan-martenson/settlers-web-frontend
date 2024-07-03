@@ -354,7 +354,7 @@ export interface WsApi {
     listenToRoads: (listener: () => void) => void
     listenToHouse: (houseId: HouseId, houseListenerFn: (house: HouseInformation) => void) => void
     listenToMovementForWorker: (listener: WorkerMoveListener) => void
-    listenToChatMessages: (listener: ChatListener, playerId: PlayerId) => void
+    listenToChatMessages: (listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]) => void
 
     stopListeningToGames: (gamesListener: GameListListener) => void
     stopListeningToMessages: (listener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void) => void
@@ -1660,8 +1660,8 @@ function stopListeningToMovementForWorker(listener: WorkerMoveListener): void {
     delete workerMovedListeners[index]
 }
 
-function listenToChatMessages(listener: ChatListener, playerId: PlayerId): void {
-    sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>('LISTEN_TO_CHAT_MESSAGES', { playerId, roomIds: ['lobby'] })
+function listenToChatMessages(listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]): void {
+    sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>('LISTEN_TO_CHAT_MESSAGES', { playerId, roomIds })
 
     chatListeners.push(listener)
 }
@@ -2198,7 +2198,7 @@ type CreateNewGameOptions = {
  * @returns {GameInformation} Metadata about the game
  */
 async function createGame(name: string, players: PlayerInformation[]): Promise<GameInformation> {
-    const gameInformation = (await sendRequestAndWaitForReplyWithOptions<{gameInformation: GameInformation}, CreateNewGameOptions>('CREATE_GAME', {
+    const gameInformation = (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, CreateNewGameOptions>('CREATE_GAME', {
         name,
         players
     })).gameInformation
@@ -2456,7 +2456,7 @@ function upgrade(houseId: HouseId): void {
 async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
     const options = { flagId }
 
-    return (await sendRequestAndWaitForReplyWithOptions<{flag: FlagDebugInfo}, typeof options>('FLAG_DEBUG_INFORMATION', options)).flag
+    return (await sendRequestAndWaitForReplyWithOptions<{ flag: FlagDebugInfo }, typeof options>('FLAG_DEBUG_INFORMATION', options)).flag
 }
 
 /**
@@ -2506,8 +2506,8 @@ function sendWithOptions<Options>(command: string, options: Options): void {
  * Instructs the backend to start sending updates on any changes to the game visible to the player set through followGame. Internal function that is not exposed outside of the module.
  * @returns {Promise<PlayerViewInformation>} The current view of the game visible to the player.
  */
-async function listenToGameViewForPlayer(): Promise<PlayerViewInformation> {
-    return (await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('START_MONITORING_GAME')).playerView
+async function listenToGameViewForPlayer(): Promise<PlayerViewInformation | undefined> {
+    return (await sendRequestAndWaitForReply<{ playerView?: PlayerViewInformation }>('START_MONITORING_GAME'))?.playerView
 }
 
 /**
@@ -2535,7 +2535,9 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
     const playerView = await listenToGameViewForPlayer()
 
     // Sync the received view
-    loadPlayerViewAndCallListeners(playerView)
+    if (playerView !== undefined) {
+        loadPlayerViewAndCallListeners(playerView)
+    }
 
     return gameInformation
 }

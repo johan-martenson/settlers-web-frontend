@@ -17,11 +17,12 @@ interface GameCreatorProps {
     gameId?: GameId
     selfPlayerId?: PlayerId
 
-    onGameStarted: ((gameId: GameId, selfPlayerId: PlayerId) => void)
-    onGameCreateCanceled: (() => void)
+    onGameStarted: (gameId: GameId, selfPlayerId: PlayerId) => void
+    onGameCreateCanceled: () => void
+    onGameIdSet: (gameId: GameId) => void
 }
 
-const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, ...props }: GameCreatorProps) => {
+const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, onGameIdSet, ...props }: GameCreatorProps) => {
     const [state, setState] = useState<'GET_NAME_FOR_GAME' | 'CREATE_GAME'>('GET_NAME_FOR_GAME')
     const [gameId, setGameId] = useState<GameId | undefined>(props?.gameId)
     const [map, setMap] = useState<MapInformation>()
@@ -94,6 +95,8 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, ...props
 
                     console.log(`Created game`)
                     console.log(game)
+
+                    onGameIdSet(game.id)
 
                     // Set the default map
                     const maps = await monitor.getMaps()

@@ -1,6 +1,6 @@
 import { getTerrainForMap } from './api/rest-api'
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, TreeType, FireSize, Direction, WorkerAction, Material, Nation, ShipConstructionProgress, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
-import { Monitor, monitor } from './api/ws-api'
+import { WsApi, monitor } from './api/ws-api'
 import { ScreenPoint } from './render/game_render'
 import { STANDARD_HEIGHT } from './render/constants'
 import { PointMapFast } from './util_types'
@@ -297,7 +297,7 @@ function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boole
     return found
 }
 
-async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: Monitor): Promise<void> {
+async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: WsApi): Promise<void> {
 
     const pointInformation = monitor.getInformationOnPointLocal(point)
 

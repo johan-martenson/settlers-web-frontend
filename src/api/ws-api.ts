@@ -234,7 +234,7 @@ export interface TileDownRight {
     vegetation: VegetationIntegers
 }
 
-export interface Monitor {
+export interface WsApi {
     gameId?: GameId
     playerId?: PlayerId
     workers: Map<WorkerId, WorkerInformation>
@@ -285,8 +285,6 @@ export interface Monitor {
     removeMessage: (messageId: GameMessageId) => void
     removeMessages: (messages: GameMessage[]) => void
 
-    undoRemoveLocalRoad: (roadId: RoadId) => void
-
     isAvailable: (point: Point, whatToBuild: 'FLAG') => boolean
     isGameDataAvailable: () => boolean
 
@@ -336,8 +334,6 @@ export interface Monitor {
     getGameInformation: () => Promise<GameInformation>
 
     addDetailedMonitoring: (id: HouseId | FlagId) => void
-
-    readFullGameState: (gameId: GameId, playerId: PlayerId) => Promise<void> // TODO: remove gameId & playerId parameters?
 
     listenToGames: (gamesListener: GameListListener) => void
     listenToFlag: (flagId: FlagId, listener: FlagListener) => void
@@ -424,7 +420,7 @@ function isNumberReplyMessage(message: ReplyMessage): message is NumberReplyMess
 const replies: Map<RequestId, ReplyMessage> = new Map()
 let nextRequestId = 0
 
-const monitor: Monitor = {
+const monitor: WsApi = {
     workers: new Map<WorkerId, WorkerInformation>(),
     ships: new Map<ShipId, ShipInformation>(),
     houses: new Map<HouseId, HouseInformation>(),
@@ -470,8 +466,6 @@ const monitor: Monitor = {
     removeLocalRoad,
     removeMessage,
     removeMessages,
-
-    undoRemoveLocalRoad,
 
     isAvailable,
     isGameDataAvailable,
@@ -524,8 +518,6 @@ const monitor: Monitor = {
     addDetailedMonitoring,
 
     removeDetailedMonitoring,
-
-    readFullGameState,
 
     listenToGames,
     listenToGameState,
@@ -643,14 +635,8 @@ function isGameChangesMessage(message: unknown): message is ChangesMessage {
             'workersWithStartedActions' in message)
 }
 
-function makeWsConnectUrl(gameId: GameId | undefined, playerId: PlayerId | undefined): string {
-    if (gameId === undefined) {
-        return `ws://${window.location.hostname}:8080/ws/monitor/games`
-    } else if (playerId === undefined) {
-        return `ws://${window.location.hostname}:8080/ws/monitor/games?gameId=${gameId}`
-    }
-
-    return `ws://${window.location.hostname}:8080/ws/monitor/games?gameId=${gameId}&playerId=${playerId}`
+function makeWsConnectUrl(): string {
+    return `ws://${window.location.hostname}:8080/ws/monitor/games`
 }
 
 function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
@@ -667,9 +653,7 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
         return
     }
 
-
     gameStateMightHaveChanged(monitor.gameState)
-
 
     Object.entries(message.availableConstruction).forEach(
         ([pointAsString, availableConstruction]) => monitor.availableConstruction.set(pointStringToPoint(pointAsString), availableConstruction))
@@ -739,25 +723,6 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     if (previousGameState !== monitor.gameState) {
         gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(monitor.gameState))
     }
-}
-
-async function readFullGameState(): Promise<void> {
-
-    // Ensure we have the information needed to connect
-    if (monitor.gameId === undefined) {
-        console.error(`Game id is undefined`)
-
-        return
-    }
-
-    if (monitor.playerId === undefined) {
-        console.error('Player id is undefined')
-
-        return
-    }
-
-    // Read the state
-    loadPlayerViewAndCallListeners(await sendRequestAndWaitForReply<PlayerViewInformation>('FULL_SYNC'))
 }
 
 function startTimers() {
@@ -970,7 +935,7 @@ function websocketDisconnected(e: CloseEvent): void {
                 return
             }
 
-            const websocketUrl = makeWsConnectUrl(monitor.gameId, monitor.playerId)
+            const websocketUrl = makeWsConnectUrl()
 
             console.info("Websocket url: " + websocketUrl)
 
@@ -1096,14 +1061,21 @@ async function listenToGameMetadata(): Promise<GameInformation> {
     return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('LISTEN_TO_GAME_INFO')).gameInformation
 }
 
-function receivedGameChangedMessage(message: GameChangedMessage): void {
+async function getViewForPlayer(): Promise<PlayerViewInformation> {
+    return (
+        await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('FULL_SYNC')
+    ).playerView
+}
+
+// TODO: merge with loadGameInformationAndCallListeners
+async function receivedGameChangedMessage(message: GameChangedMessage): Promise<void> {
     if (message?.gameState !== undefined) {
         const gameState = message.gameState
 
         monitor.gameState = gameState
 
         if (gameState === 'STARTED') {
-            readFullGameState()
+            loadPlayerViewAndCallListeners(await getViewForPlayer())
         }
 
         gameStateMightHaveChanged(gameState)
@@ -1838,16 +1810,6 @@ function removeLocalRoad(roadId: RoadId): void {
     }
 }
 
-function undoRemoveLocalRoad(roadId: RoadId): void {
-    const roadToRestore = monitor.localRemovedRoads.get(roadId)
-
-    if (roadToRestore !== undefined) {
-        monitor.roads.set(roadId, roadToRestore)
-
-        monitor.localRemovedRoads.delete(roadId)
-    }
-}
-
 function isGameDataAvailable(): boolean {
     return monitor.discoveredBelowTiles.size > 0
 }
@@ -2324,7 +2286,7 @@ async function connectAndWaitForConnection(): Promise<void> {
         return
     }
 
-    const websocketUrl = makeWsConnectUrl(undefined, undefined)
+    const websocketUrl = makeWsConnectUrl()
 
     console.info("Websocket url: " + websocketUrl)
 
@@ -2688,12 +2650,24 @@ async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
     return sendRequestAndWaitForReplyWithOptions<FlagDebugInfo, typeof options>('FLAG_DEBUG_INFORMATION', options)
 }
 
+/**
+ * Tells the backend which player the monitor should be connected to. All instructions that don't take a player as an explicit parameter
+ * operate on the set player. Internal function that is not exposed outside of the module.
+ * @param {PlayerId} playerId - The id of the player.
+ * @returns {Promise<PlayerInformation>} Information about the player
+ */
 async function setPlayerId(playerId: PlayerId): Promise<PlayerInformation> {
     return (
         await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, { playerId: PlayerId }>('SET_SELF_PLAYER', { playerId })
     ).playerInformation
 }
 
+/**
+ * Tells the backend what game the monitor should be connected to. All instructions that don't take a game as an explicit parameter
+ * operate on the set game. Internal function that is not exposed outside of the module.
+ * @param {GameId} gameId - The id of the game-
+ * @returns {Promise<GameInformation>} Metadata about the game
+ */
 async function setGame(gameId: GameId): Promise<GameInformation> {
     return (
         await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId }>('SET_GAME', { gameId })
@@ -2709,6 +2683,10 @@ function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): vo
     }))
 }
 
+/**
+ * Instructs the backend to start sending updates on any changes to the game visible to the player set through followGame. Internal function that is not exposed outside of the module.
+ * @returns {Promise<PlayerViewInformation>} The current view of the game visible to the player.
+ */
 async function listenToGameViewForPlayer(): Promise<PlayerViewInformation> {
     return (await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('START_MONITORING_GAME')).playerView
 }
@@ -2718,7 +2696,7 @@ async function listenToGameViewForPlayer(): Promise<PlayerViewInformation> {
  *
  * @param {GameId} gameId - The id of the game to follow.
  * @param {PlayerId} playerId - The id of the player.
- * @returns {Promise<GameInformation>} The metadata of the game.
+ * @returns {Promise<GameInformation>} Metadata about the game.
  */
 async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation> {
     monitor.gameId = gameId

@@ -1685,11 +1685,7 @@ function stopListeningToMovementForWorker(listener: WorkerMoveListener): void {
 }
 
 function listenToChatMessages(listener: ChatListener, playerId: PlayerId): void {
-    websocket?.send(JSON.stringify({
-        command: 'LISTEN_TO_CHAT_MESSAGES',
-        playerId,
-        roomIds: ['lobby']
-    }))
+    sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>('LISTEN_TO_CHAT_MESSAGES', { playerId, roomIds: ['lobby'] })
 
     chatListeners.push(listener)
 }
@@ -1840,95 +1836,41 @@ function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): Worke
     return worker
 }
 
-function placeBuildingWebsocket(houseType: AnyBuilding, point: Point): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'PLACE_BUILDING',
-            x: point.x,
-            y: point.y,
-            type: houseType
-        }
-    ))
+function placeBuildingWebsocket(type: AnyBuilding, point: Point): void {
+    sendWithOptions<{ x: number, y: number, type: AnyBuilding }>('PLACE_BUILDING', { ...point, type })
 }
 
 function placeRoadWebsocket(points: Point[]): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'PLACE_ROAD',
-            road: points
-        })
-    )
+    sendWithOptions<{ road: Point[] }>('PLACE_ROAD', { road: points })
 }
 
-function placeFlagWebsocket(flagPoint: Point): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'PLACE_FLAG',
-            flag: {
-                x: flagPoint.x,
-                y: flagPoint.y
-            },
-        })
-    )
+function placeFlagWebsocket(flag: Point): void {
+    sendWithOptions<{ flag: Point }>('PLACE_FLAG', { flag })
 }
 
 
-function placeRoadWithFlagWebsocket(flagPoint: Point, points: Point[]): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'PLACE_FLAG_AND_ROAD',
-            flag: {
-                x: flagPoint.x,
-                y: flagPoint.y
-            },
-            road: points
-        })
-    )
+function placeRoadWithFlagWebsocket(flag: Point, points: Point[]): void {
+    sendWithOptions<{ flag: Point, road: Point[] }>('PLACE_FLAG_AND_ROAD', { flag, road: points })
 }
 
-function removeFlagWebsocket(flagId: FlagId): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'REMOVE_FLAG',
-            id: flagId
-        })
-    )
+function removeFlagWebsocket(id: FlagId): void {
+    sendWithOptions<{ id: FlagId }>('REMOVE_FLAG', { id })
 }
 
-function removeRoadWebsocket(roadId: RoadId): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'REMOVE_ROAD',
-            id: roadId
-        })
-    )
+function removeRoadWebsocket(id: RoadId): void {
+    sendWithOptions<{ id: RoadId }>('REMOVE_ROAD', { id })
 }
 
-function removeBuildingWebsocket(houseId: HouseId): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'REMOVE_BUILDING',
-            id: houseId
-        })
-    )
+function removeBuildingWebsocket(id: HouseId): void {
+    sendWithOptions<{ id: HouseId }>('REMOVE_BUILDING', { id })
 }
 
 function callScoutWebsocket(point: Point): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'CALL_SCOUT',
-            point: { x: point.x, y: point.y }
-        }
-    ))
+    sendWithOptions<{ point: Point }>('CALL_SCOUT', { point })
 }
 
 function callGeologistWebsocket(point: Point): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'CALL_GEOLOGIST',
-            point: { x: point.x, y: point.y }
-        }
-    ))
+    sendWithOptions<{ point: Point }>('CALL_GEOLOGIST', { point })
 }
 
 export type PointInformationLocal = {
@@ -2040,50 +1982,23 @@ async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<Poi
 }
 
 function setReservedSoldiers(rank: SoldierType, amount: number): void {
-    console.log("Set number of reserved soldiers for " + rank + " to: " + amount)
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_RESERVED_IN_HEADQUARTERS',
-            [rank]: amount
-        }
-    ))
+    sendWithOptions<Partial<{ [key in SoldierType]: number }>>('SET_RESERVED_IN_HEADQUARTERS', { [rank]: amount })
 }
 
 function addDetailedMonitoring(id: HouseId | FlagId): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'START_DETAILED_MONITORING',
-            id: id
-        }
-    ))
+    sendWithOptions<{ id: HouseId | FlagId }>('START_DETAILED_MONITORING', { id })
 }
 
 function removeDetailedMonitoring(houseId: HouseId): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'STOP_DETAILED_MONITORING',
-            buildingId: houseId
-        }
-    ))
+    sendWithOptions<{ buildingId: HouseId }>('STOP_DETAILED_MONITORING', { buildingId: houseId })
 }
 
 function removeMessage(messageId: GameMessageId): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'REMOVE_MESSAGE',
-            messageId
-        }
-    ))
+    sendWithOptions<{ messageId: GameMessageId }>('REMOVE_MESSAGE', { messageId })
 }
 
 function removeMessages(messages: GameMessage[]): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'REMOVE_MESSAGES',
-            messageIds: messages.map(message => message.id)
-        }
-    ))
+    sendWithOptions<{ messageIds: GameMessageId[] }>('REMOVE_MESSAGES', { messageIds: messages.map(message => message.id) })
 }
 
 function getRequestId(): number {
@@ -2146,9 +2061,7 @@ function listenToActions(listener: ActionListener) {
 
 function listenToGames(listener: GameListListener): void {
     if (gamesListeningStatus === 'NOT_LISTENING') {
-        websocket?.send(JSON.stringify({
-            command: 'LISTEN_TO_GAME_LIST'
-        }))
+        send('LISTEN_TO_GAME_LIST')
 
         gamesListeningStatus = 'LISTENING'
     }
@@ -2168,15 +2081,11 @@ function killWebsocket(): void {
     websocket?.close()
 }
 
-function setCoalQuotas(mintAmount: number, armoryAmount: number, ironSmelterAmount: number): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_COAL_QUOTAS',
-            mint: mintAmount,
-            armory: armoryAmount,
-            ironSmelter: ironSmelterAmount
-        }
-    ))
+function setCoalQuotas(mint: number, armory: number, ironSmelter: number): void {
+    sendWithOptions<{ mint: number, armory: number, ironSmelter: number }>(
+        'SET_COAL_QUOTAS',
+        { mint, armory, ironSmelter }
+    )
 }
 
 interface CoalQuotas {
@@ -2216,17 +2125,12 @@ function getFoodQuotas(): Promise<FoodQuotas> {
 }
 
 function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number) {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_WHEAT_QUOTAS',
-            donkeyFarm,
-            pigFarm,
-            mill,
-            brewery
-        }
-    ))
-
+    sendWithOptions<{ donkeyFarm: number, pigFarm: number, mill: number, brewery: number }>(
+        'SET_WHEAT_QUOTAS',
+        { donkeyFarm, pigFarm, mill, brewery }
+    )
 }
+
 function getWheatQuotas(): Promise<WheatQuotas> {
     return sendRequestAndWaitForReply<WheatQuotas>("GET_WHEAT_QUOTAS")
 }
@@ -2243,41 +2147,25 @@ function getIronBarQuotas(): Promise<IronBarQuotas> {
     return sendRequestAndWaitForReply<IronBarQuotas>("GET_IRON_BAR_QUOTAS")
 }
 
-function setFoodQuotas(ironMineAmount: number, coalMineAmount: number, goldMineAmount: number, graniteMineAmount: number) {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_FOOD_QUOTAS',
-            ironMine: ironMineAmount,
-            coalMine: coalMineAmount,
-            goldMine: goldMineAmount,
-            graniteMine: graniteMineAmount
-        }
-    ))
+function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, graniteMine: number) {
+    sendWithOptions<{ ironMine: number, coalMine: number, goldMine: number, graniteMine: number }>(
+        'SET_FOOD_QUOTAS',
+        { ironMine, coalMine, goldMine, graniteMine }
+    )
 }
 
 function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_WATER_QUOTAS',
-            bakery,
-            donkeyFarm,
-            pigFarm,
-            brewery
-        }
-    ))
+    sendWithOptions<{ bakery: number, donkeyFarm: number, pigFarm: number, brewery: number }>(
+        'SET_WATER_QUOTAS',
+        { bakery, donkeyFarm, pigFarm, brewery })
 }
 
 function setIronBarQuotas(armory: number, metalworks: number) {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_IRON_BAR_QUOTAS',
-            armory,
-            metalworks
-        }
-    ))
+    sendWithOptions<{ armory: number, metalworks: number }>('SET_IRON_BAR_QUOTAS', { armory, metalworks })
 }
 
 async function connectAndWaitForConnection(): Promise<void> {
+    console.log('Connect and wait until the connection is ready.')
 
     // Re-use the existing connection if possible
     if (connectionStatus === 'CONNECTED') {
@@ -2302,19 +2190,19 @@ async function connectAndWaitForConnection(): Promise<void> {
         gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
     }
 
-    websocket.onclose = (e) => {
+    websocket.onclose = event => {
         console.error('Websocket was closed')
         connectionStatus = 'NOT_CONNECTED'
-        websocketDisconnected(e)
+        websocketDisconnected(event)
     }
 
-    websocket.onerror = (e) => {
+    websocket.onerror = event => {
         console.error('Websocket got error')
         connectionStatus = 'NOT_CONNECTED'
-        websocketError(e)
+        websocketError(event)
     }
 
-    websocket.onmessage = (message) => websocketMessageReceived(message)
+    websocket.onmessage = message => websocketMessageReceived(message)
 
     // Wait for the connection to be established
     await waitForConnection()
@@ -2327,6 +2215,12 @@ type CreateNewGameOptions = {
     players: Player[]
 }
 
+/**
+ * Creates a new game with the given name and players.
+ * @param {string} name - The name of the game
+ * @param {PlayerInformation[]} players - The players in the game
+ * @returns {GameInformation} Metadata about the game
+ */
 async function createGame(name: string, players: PlayerInformation[]): Promise<GameInformation> {
     const gameInformation = await sendRequestAndWaitForReplyWithOptions<GameInformation, CreateNewGameOptions>('CREATE_GAME', {
         name,
@@ -2350,79 +2244,54 @@ function assignGameInformation(gameInformation: GameInformation): void {
 }
 
 function pauseGame() {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'PAUSE_GAME'
-        }
-    ))
+    send('PAUSE_GAME')
 }
 
-function resumeGame() {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'RESUME_GAME'
-        }
-    ))
+function resumeGame(): void {
+    send('RESUME_GAME')
 }
 
 function getHeight(point: Point): number {
     return monitor.allTiles.get(point)?.height ?? 0
 }
 
-function setStrengthWhenPopulatingMilitaryBuildings(strength: number) {
-    console.log("Setting the strength")
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
-            strength
-        }
-    ))
+function setStrengthWhenPopulatingMilitaryBuildings(strength: number): void {
+    sendWithOptions<{ strength: number }>('SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING', { strength })
 }
 
-function getStrengthWhenPopulatingMilitaryBuildings(): Promise<number> {
-    return getAmountForCommand('GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING')
+async function getStrengthWhenPopulatingMilitaryBuildings(): Promise<number> {
+    return await getAmountForCommand('GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING')
 }
 
-function setDefenseStrength(strength: number) {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_DEFENSE_STRENGTH',
-            strength
-        }
-    ))
+function setDefenseStrength(strength: number): void {
+    sendWithOptions<{ strength: number }>('SET_DEFENSE_STRENGTH', { strength })
 }
 
-function getDefenseStrength(): Promise<number> {
-    return getAmountForCommand('GET_DEFENSE_STRENGTH')
+async function getDefenseStrength(): Promise<number> {
+    return await getAmountForCommand('GET_DEFENSE_STRENGTH')
 }
 
-function setDefenseFromSurroundingBuildings(strength: number) {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
-            strength
-        }
-    ))
+function setDefenseFromSurroundingBuildings(strength: number): void {
+    sendWithOptions<{ strength: number }>('SET_DEFENSE_FROM_SURROUNDING_BUILDINGS', { strength })
 }
 
-function getDefenseFromSurroundingBuildings(): Promise<number> {
-    return getAmountForCommand('GET_DEFENSE_FROM_SURROUNDING_BUILDINGS')
+async function getDefenseFromSurroundingBuildings(): Promise<number> {
+    return await getAmountForCommand('GET_DEFENSE_FROM_SURROUNDING_BUILDINGS')
 }
 
-function getPopulateMilitaryFarFromBorder(): Promise<number> {
-    return getAmountForCommand('GET_POPULATE_MILITARY_FAR_FROM_BORDER')
+async function getPopulateMilitaryFarFromBorder(): Promise<number> {
+    return await getAmountForCommand('GET_POPULATE_MILITARY_FAR_FROM_BORDER')
 }
 
-function getPopulateMilitaryCloserToBorder(): Promise<number> {
-    return getAmountForCommand('GET_POPULATE_MILITARY_CLOSER_TO_BORDER')
+async function getPopulateMilitaryCloserToBorder(): Promise<number> {
+    return await getAmountForCommand('GET_POPULATE_MILITARY_CLOSER_TO_BORDER')
 }
 
-function getPopulateMilitaryCloseToBorder(): Promise<number> {
-    return getAmountForCommand('GET_POPULATE_MILITARY_CLOSE_TO_BORDER')
+async function getPopulateMilitaryCloseToBorder(): Promise<number> {
+    return await getAmountForCommand('GET_POPULATE_MILITARY_CLOSE_TO_BORDER')
 }
 
-function getAmountForCommand(command: string): Promise<number> {
+async function getAmountForCommand(command: string): Promise<number> {
     const requestId = getRequestId()
 
     websocket?.send(JSON.stringify(
@@ -2434,11 +2303,11 @@ function getAmountForCommand(command: string): Promise<number> {
 
     console.log(`Send request: ${command} with id: ${requestId}`)
 
-    return waitForNumberReply(requestId)
+    return await waitForNumberReply(requestId)
 }
 
-function getMilitarySettings(): Promise<MilitarySettings> {
-    return sendRequestAndWaitForReply<MilitarySettings>("GET_MILITARY_SETTINGS")
+async function getMilitarySettings(): Promise<MilitarySettings> {
+    return await sendRequestAndWaitForReply<MilitarySettings>("GET_MILITARY_SETTINGS")
 }
 
 function waitForNumberReply(requestId: number): Promise<number> {
@@ -2554,19 +2423,16 @@ function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyTy
     })
 }
 
-function getSoldiersAvailableForAttack(): Promise<number> {
-    return getAmountForCommand('GET_SOLDIERS_AVAILABLE_FOR_ATTACK')
+async function getSoldiersAvailableForAttack(): Promise<number> {
+    return await getAmountForCommand('GET_SOLDIERS_AVAILABLE_FOR_ATTACK')
 }
 
 function startGame(): void {
-    websocket?.send(JSON.stringify({ command: 'START_GAME' }))
+    send('START_GAME')
 }
 
 function setMap(mapId: MapId): void {
-    websocket?.send(JSON.stringify({
-        command: 'SET_MAP',
-        mapId
-    }))
+    sendWithOptions<{ mapId: MapId }>('SET_MAP', { mapId })
 }
 
 async function setOthersCanJoin(othersCanJoin: boolean): Promise<GameInformation> {
@@ -2576,64 +2442,31 @@ async function setOthersCanJoin(othersCanJoin: boolean): Promise<GameInformation
 }
 
 function setAvailableResources(resources: ResourceLevel): void {
-    websocket?.send(JSON.stringify({
-        command: 'SET_INITIAL_RESOURCES',
-        resources
-    }))
+    sendWithOptions<{ resources: ResourceLevel }>('SET_INITIAL_RESOURCES', { resources })
 }
 
-function setTitle(title: string): void {
-    websocket?.send(JSON.stringify({
-        command: 'SET_GAME_NAME',
-        name: title
-    }))
+function setTitle(name: string): void {
+    sendWithOptions<{ name: string }>('SET_GAME_NAME', { name })
 }
 
 function setGameSpeed(speed: GameSpeed): void {
-    console.log("Set game speed: " + speed)
-
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_GAME_SPEED',
-            speed
-        }
-    ))
+    sendWithOptions<{ speed: GameSpeed }>('SET_GAME_SPEED', { speed })
 }
 
 function setMilitaryPopulationFarFromBorder(population: number): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_MILITARY_POPULATION_FAR_FROM_BORDER',
-            population
-        }
-    ))
+    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_FAR_FROM_BORDER', { population })
 }
 
 function setMilitaryPopulationCloserToBorder(population: number): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_MILITARY_POPULATION_CLOSER_TO_BORDER',
-            population
-        }
-    ))
+    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_CLOSER_TO_BORDER', { population })
 }
 
 function setMilitaryPopulationCloseToBorder(population: number): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_MILITARY_POPULATION_CLOSE_TO_BORDER',
-            population
-        }
-    ))
+    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_CLOSE_TO_BORDER', { population })
 }
 
 function setSoldiersAvailableForAttack(amount: number): void {
-    websocket?.send(JSON.stringify(
-        {
-            command: 'SET_SOLDIERS_AVAILABLE_FOR_ATTACK',
-            amount
-        }
-    ))
+    sendWithOptions<{ amount: number }>('SET_SOLDIERS_AVAILABLE_FOR_ATTACK', { amount })
 }
 
 function houseAt(point: Point): HouseInformation | undefined {
@@ -2641,7 +2474,7 @@ function houseAt(point: Point): HouseInformation | undefined {
 }
 
 function upgrade(houseId: HouseId): void {
-    websocket?.send(JSON.stringify({ command: 'UPGRADE', houseId }))
+    sendWithOptions<{houseId: HouseId}>('UPGRADE', {houseId})
 }
 
 async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
@@ -2675,12 +2508,22 @@ async function setGame(gameId: GameId): Promise<GameInformation> {
 }
 
 function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): void {
-    websocket?.send(JSON.stringify({
-        command: 'SEND_CHAT_MESSAGE_TO_ROOM',
-        text,
-        roomId,
-        from
-    }))
+    sendWithOptions<{ text: string, roomId: RoomId, from: PlayerId }>(
+        'SEND_CHAT_MESSAGE_TO_ROOM',
+        { text, roomId, from }
+    )
+}
+
+function send(command: string): void {
+    console.log(`SEND: ${command}`)
+
+    websocket?.send(JSON.stringify({ command }))
+}
+
+function sendWithOptions<Options>(command: string, options: Options): void {
+    console.log('SEND: ' + JSON.stringify({ command, ...options }))
+
+    websocket?.send(JSON.stringify({ command, ...options }))
 }
 
 /**
@@ -2721,30 +2564,20 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
     return gameInformation
 }
 
-type GetGamesReply = {
-    games: GameInformation[]
-}
-
+/**
+ * Returns a list of the games available in the backend.
+ * @returns {Promise<GameInformation[]} List of all games, regardless of status
+ */
 async function getGames(): Promise<GameInformation[]> {
-    return (await sendRequestAndWaitForReply<GetGamesReply>('GET_GAMES')).games
-}
-
-type GetMapsReply = {
-    maps: MapInformation[]
+    return (await sendRequestAndWaitForReply<{ games: GameInformation[] }>('GET_GAMES')).games
 }
 
 async function getMaps(): Promise<MapInformation[]> {
-    const mapsReply = await sendRequestAndWaitForReply<GetMapsReply>('GET_MAPS')
-
-    return mapsReply.maps
+    return (await sendRequestAndWaitForReply<{ maps: MapInformation[] }>('GET_MAPS')).maps
 }
 
 async function getGameInformation(): Promise<GameInformation> {
-    const gameInformation = (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('GET_GAME_INFORMATION')).gameInformation
-
-    loadGameInformationAndCallListeners(gameInformation)
-
-    return gameInformation
+    return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('GET_GAME_INFORMATION')).gameInformation
 }
 
 type AddPlayerOptions = Player & { type: PlayerType }
@@ -2761,9 +2594,7 @@ async function createPlayer(name: string, color: PlayerColor, nation: Nation, ty
 async function addPlayerToGame(playerId: PlayerId): Promise<GameInformation> {
     return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { playerId: PlayerId }>(
         'ADD_PLAYER_TO_GAME',
-        {
-            playerId
-        }
+        { playerId }
     )).gameInformation
 }
 
@@ -2775,8 +2606,8 @@ async function updatePlayer(playerId: PlayerId, name: string, color: PlayerColor
     ).playerInformation
 }
 
-function removePlayer(id: PlayerId): void {
-    websocket?.send(JSON.stringify({ command: 'REMOVE_PLAYER', playerId: id }))
+function removePlayer(playerId: PlayerId): void {
+    sendWithOptions<{ playerId: PlayerId }>('REMOVE_PLAYER', { playerId })
 }
 
 function waitForGameDataAvailable(): Promise<void> {

@@ -1,6 +1,12 @@
 import { Point } from "../api/types"
 import { Dimension, makeShader } from "../utils"
 
+export const glUtilsDebug = {
+    setBuffer: false,
+    draw: false,
+    initProgram: false
+}
+
 type UniformName = string
 type AttributeName = string
 
@@ -59,7 +65,7 @@ function setBuffer<Attribute extends string>(program: ProgramInstance, attribute
 
         attributeInstance.numberElements = content.length
 
-        console.log(`Set buffer ${attributeName} to size ${content.length}`)
+        glUtilsDebug.setBuffer && console.log(`Set buffer ${attributeName} to size ${content.length}`)
     } else {
         console.error(`Buffer is invalid for ${attributeName}`)
     }
@@ -195,7 +201,7 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
                 buffer
             })
 
-            console.log(`Set attribute instance ${attributeName}`)
+            glUtilsDebug.initProgram && console.log(`Set attribute instance ${attributeName}`)
         }
     }
 

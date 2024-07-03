@@ -43,3 +43,8 @@ a {
     color: white;
     font-weight: bold;
 }
+
+.debug-logs {
+    display: flex;
+    flex-direction: column;
+}

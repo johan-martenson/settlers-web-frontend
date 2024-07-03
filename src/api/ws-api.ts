@@ -2,6 +2,11 @@ import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getP
 import { PointMapFast, PointSetFast } from '../util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, FlagDebugInfo, GameInformation, MapInformation, Player, MapId, ResourceLevel, PlayerType, Vegetation, RoomId, ChatMessage } from './types'
 
+export const wsApiDebug = {
+    receive: false,
+    send: false
+}
+
 let gameTickLength = 200;
 
 const MAX_WAIT_FOR_REPLY = 1000; // milliseconds
@@ -40,9 +45,7 @@ interface BorderChange {
     removedBorder: Point[]
 }
 
-interface ChangedAvailableConstruction extends Point {
-    available: AvailableConstruction[]
-}
+type ChangedAvailableConstruction = Point & { available: AvailableConstruction[] }
 
 interface WorkerNewAction {
     id: WorkerId
@@ -57,7 +60,12 @@ interface PointAndDecoration {
     decoration: DecorationType
 }
 
-interface ChangesMessage {
+type PlayerViewChangedMessage = {
+    type: 'PLAYER_VIEW_CHANGED'
+    playerViewChanges: PlayerViewChanges
+}
+
+type PlayerViewChanges = {
     tick: number
     gameSpeed?: GameSpeed
     workersWithNewTargets?: WalkerTargetChange[]
@@ -394,7 +402,6 @@ const gameListeners: GameListener[] = []
 const gamesListeners: GameListListener[] = []
 const workerMovedListeners: WorkerMoveListener[] = []
 const chatListeners: ChatListener[] = []
-
 const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[]>()
 
 let websocket: WebSocket | undefined = undefined
@@ -599,40 +606,8 @@ function isGameChangeMessage(message: unknown): message is GameChangedMessage {
             'players' in message)
 }
 
-function isGameChangesMessage(message: unknown): message is ChangesMessage {
-    return message !== null &&
-        message !== undefined &&
-        typeof message === 'object' &&
-        ('tick' in message ||
-            'changedStones' in message ||
-            'workersWithNewTargets' in message ||
-            'removedWorkers' in message ||
-            'newFlags' in message ||
-            'changedFlags' in message ||
-            'removedFlags' in message ||
-            'newBuildings' in message ||
-            'changedBuildings' in message ||
-            'removedBuildings' in message ||
-            'newRoads' in message ||
-            'removedRoads' in message ||
-            'changedBorders' in message ||
-            'newTrees' in message ||
-            'removedTrees' in message ||
-            'newCrops' in message ||
-            'harvestedCrops' in message ||
-            'removedCrops' in message ||
-            'newStones' in message ||
-            'removedStones' in message ||
-            'newSigns' in message ||
-            'removedSigns' in message ||
-            'newDiscoveredLand' in message ||
-            'changedAvailableConstruction' in message ||
-            'newMessages' in message ||
-            'discoveredDeadTrees' in message ||
-            'removedDeadTrees' in message ||
-            'wildAnimalsWithNewTargets' in message ||
-            'removedWildAnimals' in message ||
-            'workersWithStartedActions' in message)
+function isGameChangesMessage(message: unknown): message is PlayerViewChangedMessage {
+    return message !== null && typeof message === 'object' && 'type' in message && message.type === 'PLAYER_VIEW_CHANGED'
 }
 
 function makeWsConnectUrl(): string {
@@ -905,6 +880,7 @@ function websocketError(error: unknown): void {
     console.error(error)
 }
 
+// TODO: review and fix the handling of when the websocket gets disconnected
 function websocketDisconnected(e: CloseEvent): void {
     console.log("Disconnected from backend")
 
@@ -962,35 +938,35 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
     try {
         const message = JSON.parse(messageFromServer.data)
 
-        console.log(`Received message`)
-        console.log(message)
+        wsApiDebug.receive && console.log(`Received message`)
+        wsApiDebug.receive && console.log(message)
 
         if (isGameChangesMessage(message)) {
-            console.log('Handling game changes message')
+            wsApiDebug.receive && console.log('Handling player view changed message')
 
-            receivedGameChangesMessage(message)
+            loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
         } else if (isFullSyncMessage(message)) {
-            console.log('Handling full sync message')
+            wsApiDebug.receive && console.log('Handling full sync message')
 
             clearAndLoadPlayerView(message)
         } else if (isReplyMessage(message)) {
-            console.log('Handling reply message')
+            wsApiDebug.receive && console.log('Handling reply message')
 
             replies.set(message.requestId, message)
         } else if (isGameChangeMessage(message)) {
-            console.log('Handling game changed message')
+            wsApiDebug.receive && console.log('Handling game changed message')
 
             receivedGameChangedMessage(message)
         } else if (isGameInformationChangedMessage(message)) {
-            console.log('Handling game information changed message')
+            wsApiDebug.receive && console.log('Handling game information changed message')
 
             loadGameInformationAndCallListeners(message.gameInformation)
         } else if (isGameListChangedMessage(message)) {
-            console.log('Handling game list changed messgae')
+            wsApiDebug.receive && console.log('Handling game list changed messgae')
 
             receivedGameListChangedMessage(message)
         } else if (isChatMessage(message)) {
-            console.log('Handling chat message')
+            wsApiDebug.receive && console.log('Handling chat message')
 
             loadChatMessage(message.chatMessage)
         }
@@ -1182,7 +1158,7 @@ function gameStateMightHaveChanged(gameState: GameState): void {
     }
 }
 
-function receivedGameChangesMessage(message: ChangesMessage): void {
+function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChanges): void {
     // Start by handling locally cached changes
 
     // Clear local additions
@@ -1191,35 +1167,35 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     monitor.houses.delete('LOCAL')
 
     // Update game tick
-    if (message.tick !== undefined) {
+    if (playerViewChanges.tick !== undefined) {
         stopTimers()
 
-        gameTickLength = message.tick
+        gameTickLength = playerViewChanges.tick
 
         startTimers()
     }
 
     // Update game speed
-    if (message.gameSpeed) {
-        monitor.gameSpeed = message.gameSpeed
+    if (playerViewChanges.gameSpeed) {
+        monitor.gameSpeed = playerViewChanges.gameSpeed
 
         gameListeners.forEach(listener => listener.onGameSpeedChanged && listener.onGameSpeedChanged(monitor.gameSpeed))
     }
 
     // Confirm local removals if they are part of the message
-    message.removedFlags?.forEach(removedFlagId => monitor.localRemovedFlags.delete(removedFlagId))
+    playerViewChanges.removedFlags?.forEach(removedFlagId => monitor.localRemovedFlags.delete(removedFlagId))
 
     // Digest all changes from the message
-    message.newDiscoveredLand?.forEach(point => monitor.discoveredPoints.add(point))
+    playerViewChanges.newDiscoveredLand?.forEach(point => monitor.discoveredPoints.add(point))
 
-    if (message.newDiscoveredLand) {
+    if (playerViewChanges.newDiscoveredLand) {
         console.log("Got new discovered points")
 
-        storeDiscoveredTiles(message.newDiscoveredLand)
+        storeDiscoveredTiles(playerViewChanges.newDiscoveredLand)
     }
 
-    if (message.workersWithNewTargets) {
-        message.workersWithNewTargets.forEach(worker => {
+    if (playerViewChanges.workersWithNewTargets) {
+        playerViewChanges.workersWithNewTargets.forEach(worker => {
             const monitoredWorker = monitor.workers.get(worker.id)
 
             if (monitoredWorker && monitoredWorker.action) {
@@ -1231,15 +1207,15 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
             }
         })
 
-        syncWorkersWithNewTargets(message.workersWithNewTargets)
+        syncWorkersWithNewTargets(playerViewChanges.workersWithNewTargets)
     }
 
-    if (message.workersWithStartedActions) {
-        if (message.workersWithStartedActions.find(w => w.startedAction === 'HIT' || w.startedAction === 'GET_HIT' || w.startedAction === 'STAND_ASIDE' || w.startedAction === 'JUMP_BACK' || w.startedAction === 'DIE')) {
-            console.log(message.workersWithStartedActions)
+    if (playerViewChanges.workersWithStartedActions) {
+        if (playerViewChanges.workersWithStartedActions.find(w => w.startedAction === 'HIT' || w.startedAction === 'GET_HIT' || w.startedAction === 'STAND_ASIDE' || w.startedAction === 'JUMP_BACK' || w.startedAction === 'DIE')) {
+            console.log(playerViewChanges.workersWithStartedActions)
         }
 
-        message.workersWithStartedActions.forEach(workerWithNewAction => {
+        playerViewChanges.workersWithStartedActions.forEach(workerWithNewAction => {
             const worker = monitor.workers.get(workerWithNewAction.id)
 
             if (worker) {
@@ -1257,17 +1233,17 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
                 worker.actionAnimationIndex = 0
             }
 
-            message.workersWithStartedActions?.forEach(worker => {
+            playerViewChanges.workersWithStartedActions?.forEach(worker => {
                 actionListeners.forEach(listener => listener.actionStarted(worker.id, { x: worker.x, y: worker.y }, worker.startedAction ?? ""))
             })
         })
     }
 
-    if (message.wildAnimalsWithNewTargets) {
-        syncNewOrUpdatedWildAnimals(message.wildAnimalsWithNewTargets)
+    if (playerViewChanges.wildAnimalsWithNewTargets) {
+        syncNewOrUpdatedWildAnimals(playerViewChanges.wildAnimalsWithNewTargets)
     }
 
-    message.removedWorkers?.forEach(id => {
+    playerViewChanges.removedWorkers?.forEach(id => {
         const worker = monitor.workers.get(id)
 
         if (worker?.action) {
@@ -1281,15 +1257,15 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
         monitor.workers.delete(id)
     })
 
-    message.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
+    playerViewChanges.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
 
-    message.newBuildings?.forEach(house => {
+    playerViewChanges.newBuildings?.forEach(house => {
         monitor.houses.set(house.id, house)
         monitor.housesAt.set(house, house)
     })
 
-    if (message.changedBuildings) {
-        message.changedBuildings.forEach(house => {
+    if (playerViewChanges.changedBuildings) {
+        playerViewChanges.changedBuildings.forEach(house => {
             const oldHouse = monitor.houses.get(house.id)
 
             if (oldHouse && oldHouse.state !== 'BURNING' && house.state === 'BURNING') {
@@ -1304,7 +1280,7 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
         })
     }
 
-    message.removedBuildings?.forEach(id => {
+    playerViewChanges.removedBuildings?.forEach(id => {
         const house = monitor.houses.get(id)
         monitor.houses.delete(id)
 
@@ -1313,28 +1289,28 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
         }
     })
 
-    message.newDecorations?.forEach(pointAndDecoration => monitor.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
-    message.removedDecorations?.forEach(point => monitor.decorations.delete(point))
+    playerViewChanges.newDecorations?.forEach(pointAndDecoration => monitor.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
+    playerViewChanges.removedDecorations?.forEach(point => monitor.decorations.delete(point))
 
-    message.newFlags?.forEach(flag => {
+    playerViewChanges.newFlags?.forEach(flag => {
         monitor.flags.set(flag.id, flag)
         flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
     })
-    message.changedFlags?.forEach(flag => {
+    playerViewChanges.changedFlags?.forEach(flag => {
         monitor.flags.set(flag.id, flag)
         flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
     })
-    message.removedFlags?.forEach(id => {
+    playerViewChanges.removedFlags?.forEach(id => {
         monitor.flags.delete(id)
         flagListeners.get(id)?.forEach(listener => listener.onRemove())
     })
 
-    message.newRoads?.forEach(road => monitor.roads.set(road.id, road))
-    message.changedRoads?.forEach(road => monitor.roads.set(road.id, road))
-    message.removedRoads?.forEach(id => monitor.roads.delete(id))
+    playerViewChanges.newRoads?.forEach(road => monitor.roads.set(road.id, road))
+    playerViewChanges.changedRoads?.forEach(road => monitor.roads.set(road.id, road))
+    playerViewChanges.removedRoads?.forEach(id => monitor.roads.delete(id))
 
-    message.newTrees?.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
-    message.removedTrees?.forEach(treeId => {
+    playerViewChanges.newTrees?.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
+    playerViewChanges.removedTrees?.forEach(treeId => {
         const treeToRemove = monitor.trees.get(treeId)
 
         if (treeToRemove) {
@@ -1353,20 +1329,20 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
         }
     })
 
-    message.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
-    message.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
+    playerViewChanges.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
+    playerViewChanges.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
 
-    message.newStones?.forEach(stone => monitor.stones.set(stone.id, stone))
-    message.changedStones?.forEach(stone => monitor.stones.set(stone.id, stone))
-    message.removedStones?.forEach(stoneId => monitor.stones.delete(stoneId))
+    playerViewChanges.newStones?.forEach(stone => monitor.stones.set(stone.id, stone))
+    playerViewChanges.changedStones?.forEach(stone => monitor.stones.set(stone.id, stone))
+    playerViewChanges.removedStones?.forEach(stoneId => monitor.stones.delete(stoneId))
 
-    if (message.changedBorders) {
-        syncChangedBorders(message.changedBorders)
+    if (playerViewChanges.changedBorders) {
+        syncChangedBorders(playerViewChanges.changedBorders)
     }
 
-    message.newCrops?.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+    playerViewChanges.newCrops?.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
 
-    message.harvestedCrops?.forEach(cropId => {
+    playerViewChanges.harvestedCrops?.forEach(cropId => {
         const crop = monitor.crops.get(cropId)
 
         if (crop !== undefined) {
@@ -1374,13 +1350,13 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
         }
     })
 
-    message.removedCrops?.forEach(cropId => monitor.crops.delete(cropId))
+    playerViewChanges.removedCrops?.forEach(cropId => monitor.crops.delete(cropId))
 
-    message.newSigns?.forEach(sign => monitor.signs.set(sign.id, sign))
-    message.removedSigns?.forEach(id => monitor.signs.delete(id))
+    playerViewChanges.newSigns?.forEach(sign => monitor.signs.set(sign.id, sign))
+    playerViewChanges.removedSigns?.forEach(id => monitor.signs.delete(id))
 
-    if (message.changedAvailableConstruction) {
-        for (const change of message.changedAvailableConstruction) {
+    if (playerViewChanges.changedAvailableConstruction) {
+        for (const change of playerViewChanges.changedAvailableConstruction) {
             const point = { x: change.x, y: change.y }
 
             if (change.available.length === 0) {
@@ -1394,36 +1370,36 @@ function receivedGameChangesMessage(message: ChangesMessage): void {
     }
 
     /* Finally, notify listeners when all data is updated */
-    if (message.newDiscoveredLand) {
-        const newDiscoveredLand = new PointSetFast(message.newDiscoveredLand)
+    if (playerViewChanges.newDiscoveredLand) {
+        const newDiscoveredLand = new PointSetFast(playerViewChanges.newDiscoveredLand)
         discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
     }
 
     let receivedMessages: GameMessage[] = []
     let removedMessages: GameMessageId[] = []
 
-    if (message.newMessages) {
-        message.newMessages.forEach(message => monitor.messages.set(message.id, message))
+    if (playerViewChanges.newMessages) {
+        playerViewChanges.newMessages.forEach(message => monitor.messages.set(message.id, message))
 
-        receivedMessages = message.newMessages
+        receivedMessages = playerViewChanges.newMessages
     }
 
-    if (message.removedMessages) {
-        message.removedMessages.forEach(messageId => monitor.messages.delete(messageId))
+    if (playerViewChanges.removedMessages) {
+        playerViewChanges.removedMessages.forEach(messageId => monitor.messages.delete(messageId))
 
-        removedMessages = message.removedMessages
+        removedMessages = playerViewChanges.removedMessages
     }
 
     if (receivedMessages.length !== 0 || removedMessages.length !== 0) {
         messageListeners.forEach(listener => listener(receivedMessages, removedMessages))
     }
 
-    if (message.newRoads !== undefined || message.removedRoads !== undefined) {
+    if (playerViewChanges.newRoads !== undefined || playerViewChanges.removedRoads !== undefined) {
         roadListeners.forEach(roadListener => roadListener())
     }
 
-    if (message.changedBuildings) {
-        notifyHouseListeners(message.changedBuildings)
+    if (playerViewChanges.changedBuildings) {
+        notifyHouseListeners(playerViewChanges.changedBuildings)
     }
 }
 
@@ -2222,10 +2198,10 @@ type CreateNewGameOptions = {
  * @returns {GameInformation} Metadata about the game
  */
 async function createGame(name: string, players: PlayerInformation[]): Promise<GameInformation> {
-    const gameInformation = await sendRequestAndWaitForReplyWithOptions<GameInformation, CreateNewGameOptions>('CREATE_GAME', {
+    const gameInformation = (await sendRequestAndWaitForReplyWithOptions<{gameInformation: GameInformation}, CreateNewGameOptions>('CREATE_GAME', {
         name,
         players
-    })
+    })).gameInformation
 
     assignGameInformation(gameInformation)
 
@@ -2351,7 +2327,7 @@ function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command: stri
         }
     ))
 
-    console.log(`Send request: ${command} with id: ${requestId}`)
+    wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
 
     const timestampSent = (new Date()).getTime()
 
@@ -2392,7 +2368,7 @@ function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyTy
         }
     ))
 
-    console.log(`Send request: ${command} with id: ${requestId}`)
+    wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
 
     const timestampSent = (new Date()).getTime()
 
@@ -2474,13 +2450,13 @@ function houseAt(point: Point): HouseInformation | undefined {
 }
 
 function upgrade(houseId: HouseId): void {
-    sendWithOptions<{houseId: HouseId}>('UPGRADE', {houseId})
+    sendWithOptions<{ houseId: HouseId }>('UPGRADE', { houseId })
 }
 
 async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
     const options = { flagId }
 
-    return sendRequestAndWaitForReplyWithOptions<FlagDebugInfo, typeof options>('FLAG_DEBUG_INFORMATION', options)
+    return (await sendRequestAndWaitForReplyWithOptions<{flag: FlagDebugInfo}, typeof options>('FLAG_DEBUG_INFORMATION', options)).flag
 }
 
 /**
@@ -2498,7 +2474,7 @@ async function setPlayerId(playerId: PlayerId): Promise<PlayerInformation> {
 /**
  * Tells the backend what game the monitor should be connected to. All instructions that don't take a game as an explicit parameter
  * operate on the set game. Internal function that is not exposed outside of the module.
- * @param {GameId} gameId - The id of the game-
+ * @param {GameId} gameId - The id of the game
  * @returns {Promise<GameInformation>} Metadata about the game
  */
 async function setGame(gameId: GameId): Promise<GameInformation> {
@@ -2508,20 +2484,20 @@ async function setGame(gameId: GameId): Promise<GameInformation> {
 }
 
 function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): void {
-    sendWithOptions<{ text: string, roomId: RoomId, from: PlayerId }>(
+    wsApiDebug.send && sendWithOptions<{ text: string, roomId: RoomId, from: PlayerId }>(
         'SEND_CHAT_MESSAGE_TO_ROOM',
         { text, roomId, from }
     )
 }
 
 function send(command: string): void {
-    console.log(`SEND: ${command}`)
+    wsApiDebug.send && console.log(`SEND: ${command}`)
 
     websocket?.send(JSON.stringify({ command }))
 }
 
 function sendWithOptions<Options>(command: string, options: Options): void {
-    console.log('SEND: ' + JSON.stringify({ command, ...options }))
+    wsApiDebug.send && console.log('SEND: ' + JSON.stringify({ command, ...options }))
 
     websocket?.send(JSON.stringify({ command, ...options }))
 }

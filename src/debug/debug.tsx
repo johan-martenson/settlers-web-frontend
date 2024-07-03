@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react"
 import { FlagDebugInfo, GameInformation, Point, PointInformation } from "../api/types"
-import { monitor } from "../api/ws-api"
+import { monitor, wsApiDebug } from "../api/ws-api"
 import './debug.css'
-import { Accordion, AccordionHeader, AccordionItem, AccordionPanel } from "@fluentui/react-components"
+import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, Switch } from "@fluentui/react-components"
 import { VEGETATION } from "./translate"
 import { getGameInformation } from "../api/rest-api"
 import { Window } from '../components/dialog'
+import { glUtilsDebug } from "../render/utils"
 
 function Value({ children }: { children?: React.ReactNode }) {
     return (
@@ -24,6 +25,26 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
     const [flagInformation, setFlagInformation] = useState<FlagDebugInfo>()
     const [pointInformation, setPointInformation] = useState<PointInformation>()
     const [gameInformation, setGameInformation] = useState<GameInformation>()
+    const [wsApiReceiveDebug, setWsApiReceiveDebug] = useState<boolean>(wsApiDebug.receive)
+    const [wsApiSendDebug, setWsApiSendDebug] = useState<boolean>(wsApiDebug.send)
+    const [glUtilsDebugSetBuffer, setGlUtilsDebugSetBuffer] = useState<boolean>(glUtilsDebug.setBuffer)
+    const [glUtilsDebugDraw, setGlUtilsDebugDraw] = useState<boolean>(glUtilsDebug.draw)
+    const [glUtilsDebugInitProgram, setGlUtilsDebugInitProgram] = useState<boolean>(glUtilsDebug.initProgram)
+
+    useEffect(
+        () => {
+            wsApiDebug.receive = wsApiReceiveDebug
+            wsApiDebug.send = wsApiSendDebug
+        }, [wsApiReceiveDebug, wsApiSendDebug]
+    )
+
+    useEffect(
+        () => {
+            glUtilsDebug.setBuffer = glUtilsDebugSetBuffer
+            glUtilsDebug.draw = glUtilsDebugDraw
+            glUtilsDebug.initProgram = glUtilsDebugInitProgram
+        }, [glUtilsDebugSetBuffer, glUtilsDebugDraw, glUtilsDebugInitProgram]
+    )
 
     useEffect(
         () => {
@@ -95,7 +116,30 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
                 </AccordionPanel>
             </AccordionItem>
 
-            <AccordionItem value="4">
+            <AccordionItem value='4'>
+                <AccordionHeader>Debug logs</AccordionHeader>
+                <AccordionPanel>
+                    <div className='debug-logs'>
+                        <Field label='WS API receive'>
+                            <Switch checked={wsApiReceiveDebug} onChange={() => setWsApiReceiveDebug(prev => !prev)} />
+                        </Field>
+                        <Field label='WS API send'>
+                            <Switch checked={wsApiSendDebug} onChange={() => setWsApiSendDebug(prev => !prev)} />
+                        </Field>
+                        <Field label='GL utils set buffer'>
+                            <Switch checked={glUtilsDebugSetBuffer} onChange={() => setGlUtilsDebugSetBuffer(prev => !prev)} />
+                        </Field>
+                        <Field label='GL utils draw'>
+                            <Switch checked={glUtilsDebugDraw} onChange={() => setGlUtilsDebugDraw(prev => !prev)} />
+                        </Field>
+                        <Field label='GL utils init rogram'>
+                            <Switch checked={glUtilsDebugInitProgram} onChange={() => setGlUtilsDebugInitProgram(prev => !prev)} />
+                        </Field>
+                    </div>
+                </AccordionPanel>
+            </AccordionItem>
+
+            <AccordionItem value="5">
                 <AccordionHeader>Point</AccordionHeader>
                 <AccordionPanel>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>

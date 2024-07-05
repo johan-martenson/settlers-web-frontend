@@ -4,49 +4,35 @@ import { Input, Button, Field, InputOnChangeData } from "@fluentui/react-compone
 import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
-import './game_creator.css'
 import ManagePlayers from './manage_players'
-import { GameId, PlayerId, MapInformation, PlayerInformation, ResourceLevel, GameState, GameInformation } from './api/types'
+import { GameId, PlayerId, MapInformation, GameInformation } from './api/types'
 import { GameListener, monitor } from './api/ws-api'
-
-const DEFAULT_COLOR = 'RED'
-const DEFAULT_NATION = 'JAPANESE'
+import { ChatBox } from './chat/chat'
+import { Center } from './components/center'
 
 interface GameCreatorProps {
-    playerName: string
-    gameId?: GameId
-    selfPlayerId?: PlayerId
+    selfPlayerId: PlayerId
 
     onGameStarted: (gameId: GameId, selfPlayerId: PlayerId) => void
     onGameCreateCanceled: () => void
-    onGameIdSet: (gameId: GameId) => void
 }
 
-const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, onGameIdSet, ...props }: GameCreatorProps) => {
+const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: GameCreatorProps) => {
     const [state, setState] = useState<'GET_NAME_FOR_GAME' | 'CREATE_GAME'>('GET_NAME_FOR_GAME')
-    const [gameId, setGameId] = useState<GameId | undefined>(props?.gameId)
-    const [map, setMap] = useState<MapInformation>()
-    const [selfPlayerId, setSelfPlayerId] = useState<PlayerId | undefined>(props?.selfPlayerId)
-    const [othersCanJoin, setOthersCanJoin] = useState<boolean>(true)
-    const [gameName, setGameName] = useState<string>('')
-    const [initialResources, setInitialResources] = useState<ResourceLevel>('MEDIUM')
-    const [players, setPlayers] = useState<PlayerInformation[]>([])
     const [candidateTitle, setCandidateTitle] = useState<string>()
+    const [gameInformation, setGameInformation] = useState<GameInformation>()
 
+    // Depends on the parent component:
+    //  - Creating the game
+    //  - Creating the player and adding it to the game
+    //  - Starting to follow the game
     useEffect(
         () => {
-            const listener: GameListener = {
-                onMapChanged: (map: MapInformation) => setMap(map),
-                onAllowOthersJoinChanged: (othersCanJoin: boolean) => {
-                    console.log(`Setting others can join to ${othersCanJoin}`)
 
-                    setOthersCanJoin(othersCanJoin)
-                },
-                onTitleChanged: (title: string) => setGameName(title),
-                onInitialResourcesChanged: (resources: ResourceLevel) => setInitialResources(resources),
-                onPlayersChanged: (players: PlayerInformation[]) => setPlayers(players),
-                onGameStateChanged: (gameState: GameState) => {
-                    if (gameState === 'STARTED') {
+            // Listen to the game meta data
+            const listener: GameListener = {
+                onGameInformationChanged: (changedGameInformation: GameInformation) => {
+                    if (changedGameInformation.status === 'STARTED' && gameInformation?.status !== 'STARTED') {
                         if (monitor.gameId === undefined) {
                             console.error('Game id is undefined')
 
@@ -61,98 +47,35 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, onGameId
 
                         onGameStarted(monitor.gameId, monitor.playerId)
                     }
-                },
+
+                    setGameInformation(changedGameInformation)
+                }
             }
 
-            async function createEmptyGameAndStartListening() {
-                let game: GameInformation | undefined
+            monitor.listenToGameState(listener);
 
-                console.log('Create game (if needed)')
-                console.log(`Game id: ${gameId}`)
+            // Connect to an existing game or create a new one
+            (async () => {
+                const gameInformation = await monitor.getGameInformation()
 
-                if (gameId !== undefined) {
-                    console.log('Already have game id. Joining existing game')
+                setGameInformation(gameInformation)
+                setState('CREATE_GAME')
 
-                    setState('CREATE_GAME')
-
-                    // Fill in state from the game
-                    setPlayers(Array.from(monitor.players.values()))
-                    setMap(monitor.map)
-                    setOthersCanJoin(monitor.othersCanJoin ?? true)
-                    setGameName(monitor.gameName ?? '')
-                    setMap(game?.map)
-                    setInitialResources(monitor?.initialResources ?? 'MEDIUM')
-                } else {
-                    console.log('No game id. Creating new game')
-
-                    // Connect
-                    await monitor.connectAndWaitForConnection()
-
-                    console.log('Connected. Creating game')
-
-                    // Create an empty game
-                    const game = await monitor.createGame(gameName, players)
-
-                    console.log(`Created game`)
-                    console.log(game)
-
-                    onGameIdSet(game.id)
-
-                    // Set the default map
+                // Set the default map is there is no map set
+                if (gameInformation?.map === undefined) {
                     const maps = await monitor.getMaps()
 
-                    console.log('Got maps')
-                    console.log(maps)
-
                     const greenIslandsMap = maps.find(map => map.name === 'Green Islands')
-                    let defaultMap = greenIslandsMap
-
-                    if (!defaultMap && maps.length > 0) {
-                        defaultMap = maps[0]
-                    }
-
-                    if (defaultMap !== undefined) {
-                        console.log(`Setting map to map id: ${defaultMap.id}`)
-
-                        monitor.setMap(defaultMap.id)
-
-                        setMap(defaultMap)
-
-                        console.log('Map set')
-                    } else {
-                        console.error(`Failed to find default map`)
-                    }
-
-                    // Add the self player
-                    console.log('Adding player')
-
-                    const selfPlayer = await monitor.createPlayer(playerName, DEFAULT_COLOR, DEFAULT_NATION, 'HUMAN')
-
-                    await monitor.addPlayerToGame(selfPlayer.id)
-
-                    console.log('Player added')
-                    console.log(selfPlayer)
-
-                    console.log('Starting to monitor')
-                    monitor.followGame(game.id, selfPlayer.id)
-
-                    console.log('Monitoring started')
-
-                    setSelfPlayerId(selfPlayer.id)
-                    setPlayers([selfPlayer])
-                    setGameId(game.id)
-                    setOthersCanJoin(game.othersCanJoin)
-                    setGameName(game.name)
-                    setMap(game?.map)
-                    setInitialResources(game.initialResources)
-
-                    console.log(game)
+                    monitor.setMap(greenIslandsMap?.id ?? maps[0].id)
                 }
 
-                monitor.listenToGameState(listener)
-            }
-
-            createEmptyGameAndStartListening()
+                // Get a name for the game if none is set, otherwise go directly to the create screen
+                if (gameInformation?.name === undefined || gameInformation.name === '') {
+                    setState('GET_NAME_FOR_GAME')
+                } else {
+                    setState('CREATE_GAME')
+                }
+            })().then()
 
             return () => monitor.stopListeningToGameState(listener)
         }, []
@@ -161,7 +84,7 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, onGameId
     return (
         <>
             {state === "GET_NAME_FOR_GAME" &&
-                <div>
+                <Center>
 
                     <div className="set-game-name-label">
 
@@ -205,20 +128,20 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, onGameId
                             }}
                         >Create game</Button>
                     </div>
-                </div>
+                </Center>
             }
 
-            {state === "CREATE_GAME" && gameId && selfPlayerId &&
+            {state === "CREATE_GAME" && gameInformation?.id && selfPlayerId &&
                 <div className="game-creation-screen">
 
-                    <h1>{gameName}</h1>
+                    <h1>{gameInformation?.name ?? ''}</h1>
 
                     <div className="create-game-columns">
 
                         <div className='options-column'>
                             <GameOptions
-                                initialResources={initialResources}
-                                othersCanJoin={othersCanJoin}
+                                initialResources={gameInformation?.initialResources ?? 'MEDIUM'}
+                                othersCanJoin={gameInformation?.othersCanJoin ?? true}
                                 setAvailableResources={(resources) => monitor.setInitialResources(resources)}
                                 setOthersCanJoin={(othersCanJoin: boolean) => monitor.setOthersCanJoin(othersCanJoin)}
                             />
@@ -227,12 +150,17 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, onGameId
                         <div className='players-column'>
                             <ManagePlayers
                                 selfPlayerId={selfPlayerId}
-                                maxPlayers={map?.maxPlayers ?? 3}
+                                maxPlayers={gameInformation?.map?.maxPlayers ?? 3}
                             />
                         </div>
 
                         <div className='map-column'>
-                            <MapSelection onMapSelected={(map: MapInformation) => monitor.setMap(map.id)} minPlayers={players.length} />
+                            <MapSelection onMapSelected={(map: MapInformation) => monitor.setMap(map.id)} minPlayers={gameInformation?.players.length ?? 0} />
+                        </div>
+
+                        <div className='game-create-chat'>
+                            <h2>Chat</h2>
+                            <ChatBox playerId={selfPlayerId} roomId={`game-${gameInformation?.id}`} />
                         </div>
                     </div>
                     <div className='start-or-cancel'>
@@ -248,9 +176,10 @@ const GameCreator = ({ playerName, onGameStarted, onGameCreateCanceled, onGameId
                         }} >Discard game</Button>
                         <Button onClick={async () => {
                             monitor.startGame()
-                        }}
-                            disabled={!map}
 
+                            onGameStarted(gameInformation?.id, selfPlayerId)
+                        }}
+                            disabled={!gameInformation?.map}
                             appearance='primary'
                         >Launch game</Button>
                     </div>

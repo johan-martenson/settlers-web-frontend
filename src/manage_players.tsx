@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Button, Subtitle1 } from "@fluentui/react-components"
 import { Player } from './player'
 import './manage_players.css'
-import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId } from './api/types'
+import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId, GameInformation } from './api/types'
 import { GameListener, monitor } from './api/ws-api'
 
 export interface PlayerCandidateType {
@@ -22,7 +22,7 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
     useEffect(
         () => {
             const listener: GameListener = {
-                onPlayersChanged: (players: PlayerInformation[]) => setPlayers(players)
+                onGameInformationChanged: (gameInformation: GameInformation) => setPlayers(gameInformation.players)
             }
 
             async function startListening() {
@@ -68,7 +68,7 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
                 'ROMANS',
                 'COMPUTER')
 
-            await monitor.addPlayerToGame(newPlayer.id)
+            await monitor.addPlayerToGame(monitor.gameId ?? '', newPlayer.id)
         } else {
             console.error("No color available for computer player")
         }

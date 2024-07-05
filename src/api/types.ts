@@ -18,9 +18,9 @@ export type StoneId = string
 export type RoomId = string
 
 type Time = {
-    hour: number
-    minute: number
-    second: number
+    hours: number
+    minutes: number
+    seconds: number
 }
 
 export type ChatMessage = {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Label, Input, Button, InputOnChangeData } from "@fluentui/react-components"
 import { do_self_test } from './self_test'
 import './fill_in_player_information.css'
+import { Center } from './components/center'
 
 interface FillInPlayerInformationProps {
     onPlayerInformationDone: ((name: string) => void)
@@ -21,7 +22,7 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
 
     return (
         <>
-            <div id="center-on-screen">
+            <Center>
                 <div id="set-player-name-dialog">
 
                     <div id="label-and-input">
@@ -59,7 +60,7 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
                         appearance='primary'
                     >Go</Button>
                 </div>
-            </div>
+            </Center>
         </>
     )
 }

@@ -7,46 +7,91 @@ import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/re
 import { GameId, PlayerId, PlayerInformation } from './api/types'
 import Play from './play'
 import { monitor } from './api/ws-api'
+import { GameCreator } from './game_creator'
+import { getFreeColor } from './utils'
+
+type PlayState = 'ENTER_PLAYER_INFORMATION' | 'LOBBY' | 'PLAY_GAME' | 'CREATE_GAME'
 
 function GameInit() {
-    const [state, setState] = useState<"ENTER_PLAYER_INFORMATION" | "LOBBY" | "PLAY_GAME">("ENTER_PLAYER_INFORMATION")
+    const [state, setState] = useState<PlayState>('ENTER_PLAYER_INFORMATION')
     const [player, setPlayer] = useState<PlayerInformation>()
     const [gameId, setGameId] = useState<GameId>()
 
     useEffect(
         () => {
-            async function connectToExistingGame(gameId: GameId, playerId: PlayerId) {
+            (async () => {
+                const urlParams = new URLSearchParams(window.location.search)
+
+                const gameId = urlParams.get('gameId')
+                const playerId = urlParams.get('playerId')
+
                 await monitor.connectAndWaitForConnection()
 
-                await monitor.followGame(gameId, playerId)
+                if (gameId !== null && playerId !== null) {
+                    await monitor.followGame(gameId, playerId)
 
-                setGameId(gameId)
-                setPlayer(monitor.players.get(playerId))
-            }
+                    setGameId(gameId)
+                    setPlayer(monitor.players.get(playerId))
+                    setState('PLAY_GAME')
+                } else {
+                    const selfPlayer = await monitor.createPlayer('', 'BROWN', 'AFRICANS', 'HUMAN')
 
-            async function connectWithoutGame() {
-                await monitor.connectAndWaitForConnection()
+                    console.log(selfPlayer)
 
-                const selfPlayer = await monitor.createPlayer('', 'BROWN', 'AFRICANS', 'HUMAN')
-
-                console.log(selfPlayer)
-
-                setPlayer(selfPlayer)
-            }
-
-            const urlParams = new URLSearchParams(window.location.search)
-
-            const gameId = urlParams.get("gameId")
-            const playerId = urlParams.get("playerId")
-
-            if (gameId !== null && playerId !== null) {
-                connectToExistingGame(gameId, playerId)
-
-                setState('PLAY_GAME')
-            } else {
-                connectWithoutGame()
-            }
+                    setPlayer(selfPlayer)
+                    setState('ENTER_PLAYER_INFORMATION')
+                }
+            })().then()
         }, [])
+
+    async function onCreateNewGame(): Promise<void> {
+        console.log('Creating empty game, then going to create game screen')
+
+        if (player === undefined) {
+            console.error('Player is undefined')
+
+            return
+        }
+
+        const game = await monitor.createGame('', [player])
+
+        monitor.followGame(game.id, player.id)
+
+        setGameId(game.id)
+        setState('CREATE_GAME')
+    }
+
+    async function onJoinExistingGame(gameId: GameId): Promise<void> {
+        console.log(`Joining game ${gameId} as player ${JSON.stringify(player)}`)
+
+        if (player === undefined) {
+            console.error('The player is not set')
+
+            return
+        }
+
+        await monitor.connectAndWaitForConnection()
+
+        const nextColor = getFreeColor(Array.from(monitor.players.values()))
+        const updatedPlayer = await monitor.updatePlayer(player.id, player.name, nextColor, player.nation)
+
+        monitor.addPlayerToGame(gameId, player.id)
+
+        await monitor.followGame(gameId, player.id)
+
+        console.log(gameId)
+        console.log(updatedPlayer)
+
+        setGameId(gameId)
+        setPlayer(updatedPlayer)
+        setState('CREATE_GAME')
+    }
+
+    function onGameStarted(gameId: GameId, selfPlayerId: PlayerId): void {
+        history.pushState(null, 'Settlers 2', `/?gameId=${gameId}&playerId=${selfPlayerId}`)
+
+        setState('PLAY_GAME')
+    }
 
     return (
         <div style={{
@@ -56,11 +101,11 @@ function GameInit() {
             backgroundRepeat: 'no-repeat',
             backgroundSize: 'cover'
         }}>
-            {state === "ENTER_PLAYER_INFORMATION" &&
+            {state === 'ENTER_PLAYER_INFORMATION' &&
                 <FillInPlayerInformation
                     onPlayerInformationDone={
                         async (name) => {
-                            console.log("Set player name: " + name)
+                            console.log(`Set player name: ${name}`)
 
                             if (player !== undefined) {
                                 const updatedPlayer = await monitor.updatePlayer(player.id, name, player.color, player.nation)
@@ -78,13 +123,30 @@ function GameInit() {
                 />
             }
 
-            {state === "LOBBY" && player && <Lobby player={player} />}
+            {state === 'LOBBY' && player &&
+                <Lobby player={player} onJoinExistingGame={onJoinExistingGame} onCreateNewGame={onCreateNewGame} />
+            }
 
-            {state === "PLAY_GAME" && gameId && player &&
-                <Play gameId={gameId}
+            {state === 'CREATE_GAME' && player && gameId &&
+                <GameCreator
+                    onGameCreateCanceled={() => {
+                        setState('LOBBY')
+                        setGameId(undefined)
+                    }}
+                    selfPlayerId={player.id}
+                    onGameStarted={onGameStarted}
+                />
+            }
+
+            {state === 'PLAY_GAME' && gameId && player &&
+                <Play
+                    gameId={gameId}
                     selfPlayerId={player.id}
                     onLeaveGame={
-                        () => setState("LOBBY")
+                        () => {
+                            setGameId(undefined)
+                            setState('LOBBY')
+                        }
                     }
                 />
             }
@@ -108,8 +170,8 @@ if (container) {
 const useStyles = makeStyles({
     wrapper: {
         backgroundColor: tokens.colorNeutralBackground2,
-        width: "100%",
-        height: "100%"
+        width: '100%',
+        height: '100%'
     }
 })
 

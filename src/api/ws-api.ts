@@ -189,6 +189,7 @@ export interface GameListener {
     onInitialResourcesChanged?: (resources: ResourceLevel) => void
     onAllowOthersJoinChanged?: (othersCanJoin: boolean) => void
     onPlayersChanged?: (players: PlayerInformation[]) => void
+    onGameInformationChanged?: (gameInformation: GameInformation) => void
 }
 
 interface AvailableConstructionListener {
@@ -317,7 +318,7 @@ export interface WsApi {
     setSoldiersAvailableForAttack: (amount: number) => void
 
     createPlayer: (name: string, color: PlayerColor, nation: Nation, type: PlayerType) => Promise<PlayerInformation>
-    addPlayerToGame: (playerId: PlayerId) => Promise<GameInformation>
+    addPlayerToGame: (gameId: GameId, playerId: PlayerId) => Promise<GameInformation>
     updatePlayer: (playerId: PlayerId, name: string, color: PlayerColor, nation: Nation) => Promise<PlayerInformation>
     removePlayer: (id: PlayerId) => void
     upgrade: (houseId: HouseId) => void
@@ -1028,6 +1029,9 @@ function loadGameInformationAndCallListeners(gameInformation: GameInformation): 
     if (anyPlayerAdded || anyPlayerRemoved) {
         gameListeners.forEach(listener => listener.onPlayersChanged && listener.onPlayersChanged(gameInformation.players))
     }
+
+    // Tell all listeners unconditionally that something changed (but not what)
+    gameListeners.forEach(listener => listener.onGameInformationChanged && listener.onGameInformationChanged(gameInformation))
 
     // Store the updated values
     assignGameInformation(gameInformation)
@@ -2143,6 +2147,9 @@ function setIronBarQuotas(armory: number, metalworks: number) {
 async function connectAndWaitForConnection(): Promise<void> {
     console.log('Connect and wait until the connection is ready.')
 
+    console.log(connectionStatus)
+    console.log(websocket)
+
     // Re-use the existing connection if possible
     if (connectionStatus === 'CONNECTED') {
         console.log('Already connected')
@@ -2484,7 +2491,7 @@ async function setGame(gameId: GameId): Promise<GameInformation> {
 }
 
 function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): void {
-    wsApiDebug.send && sendWithOptions<{ text: string, roomId: RoomId, from: PlayerId }>(
+    sendWithOptions<{ text: string, roomId: RoomId, from: PlayerId }>(
         'SEND_CHAT_MESSAGE_TO_ROOM',
         { text, roomId, from }
     )
@@ -2569,10 +2576,10 @@ async function createPlayer(name: string, color: PlayerColor, nation: Nation, ty
     ).playerInformation
 }
 
-async function addPlayerToGame(playerId: PlayerId): Promise<GameInformation> {
-    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { playerId: PlayerId }>(
+async function addPlayerToGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId, playerId: PlayerId }>(
         'ADD_PLAYER_TO_GAME',
-        { playerId }
+        { gameId, playerId }
     )).gameInformation
 }
 

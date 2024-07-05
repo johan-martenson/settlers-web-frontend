@@ -1,5 +1,5 @@
 import { getTerrainForMap } from './api/rest-api'
-import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, TreeType, FireSize, Direction, WorkerAction, Material, Nation, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor } from './api/types'
+import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, TreeType, FireSize, Direction, WorkerAction, Material, Nation, AnyBuilding, SignTypes, Size, TreeSize, StoneType, StoneAmount, DecorationType, CropType, CropGrowth, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation } from './api/types'
 import { WsApi, monitor } from './api/ws-api'
 import { ScreenPoint } from './render/game_render'
 import { STANDARD_HEIGHT } from './render/constants'
@@ -2325,6 +2325,14 @@ function surroundingPoints(point: Point) {
     ]
 }
 
+function getFreeColor(players: PlayerInformation[]): PlayerColor {
+    const colorsRemaining = new Set<PlayerColor>(PLAYER_COLORS)
+
+    players.forEach(player => colorsRemaining.delete(player.color))
+
+    return colorsRemaining.values().next().value
+}
+
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
@@ -2382,5 +2390,6 @@ export {
     gamePointToScreenPointWithHeightAdjustment,
     surroundingPoints,
     screenPointToGamePointWithHeightAdjustment,
-    calcDistance
+    calcDistance,
+    getFreeColor
 }

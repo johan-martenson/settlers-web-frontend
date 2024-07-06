@@ -29,6 +29,7 @@ import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
 import { ButtonRow } from './components/dialog'
 import { Button } from '@fluentui/react-components'
 import { NoActionWindow } from './no_action_window'
+import { ExpandChatBox } from './chat/chat'
 
 type HouseWindow = {
     type: 'HOUSE'
@@ -1196,6 +1197,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 onGoToHouse={(houseId: HouseId) => goToHouse(houseId)}
                 onGoToPoint={(point: Point) => goToPoint(point)}
             />
+
+            <ExpandChatBox playerId={selfPlayerId} roomId={`game-${gameId}`}/>
 
             {showMusicPlayer &&
                 <MusicPlayer volume={musicVolume} />

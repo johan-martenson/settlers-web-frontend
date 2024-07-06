@@ -3,6 +3,7 @@ import React, { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { monitor } from '../api/ws-api'
 import { ChatMessage, PlayerId, RoomId } from '../api/types'
 import './chat.css'
+import ExpandCollapseToggle from '../expand_collapse_toggle'
 
 type ChatBoxProps = {
     playerId: PlayerId
@@ -86,4 +87,23 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
     )
 }
 
-export { ChatBox }
+type ExpandChatBoxProps = {
+    playerId: PlayerId
+    roomId: RoomId
+}
+
+function ExpandChatBox({ playerId, roomId }: ExpandChatBoxProps) {
+    const [isExpanded, setIsExpanded] = useState<boolean>(false)
+
+    return (
+        <div className='expand-chat-box'>
+            <ExpandCollapseToggle onExpand={() => setIsExpanded(true)} onCollapse={() => setIsExpanded(false)} />
+
+            {isExpanded && <ChatBox playerId={playerId} roomId={roomId} />}
+
+            <div><b>Chat</b></div>
+        </div>
+    )
+}
+
+export { ChatBox, ExpandChatBox }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { MapInformation } from './api/types'
+import { GameInformation, MapInformation } from './api/types'
 import { MapList } from './map_list'
 import './map_selection.css'
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, InputOnChangeData, SearchBox, SearchBoxChangeEvent, Slider, SliderOnChangeData, Subtitle1 } from '@fluentui/react-components'
@@ -20,12 +20,12 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
 
     useEffect(
         () => {
-            function mapChanged(map: MapInformation) {
-                setMap(map)
+            function gameInformationChanged(gameInformation: GameInformation) {
+                setMap(gameInformation.map)
             }
 
             const listener: GameListener = {
-                onMapChanged: mapChanged
+                onGameInformationChanged: gameInformationChanged
             }
 
             monitor.listenToGameState(listener)

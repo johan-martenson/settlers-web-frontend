@@ -14,3 +14,13 @@
 .chat-type-and-send {
     flex-grow: 0;
 }
+
+.expand-chat-box {
+    position: absolute;
+    left: 20em;
+    bottom: 0px;
+    z-index: 99;
+    background-color: darkslategray;
+    border-radius: 0.5em;
+    padding: 0.7em;
+}

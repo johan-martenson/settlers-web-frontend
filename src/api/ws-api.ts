@@ -144,15 +144,6 @@ type GameListChangedMessage = {
     games: GameInformation[]
 }
 
-interface GameChangedMessage {
-    gameState?: GameState
-    othersCanJoin?: 'TRUE' | 'FALSE'
-    map?: MapInformation
-    initialResources?: ResourceLevel
-    gameName?: string
-    players?: PlayerInformation[]
-}
-
 type MilitarySettings = {
     defenseStrength: number
     defenseFromSurroundingBuildings: number
@@ -184,11 +175,6 @@ export interface GameListener {
     onMonitoringStarted?: () => void
     onGameStateChanged?: (gameState: GameState) => void
     onGameSpeedChanged?: (gameSpeed: GameSpeed) => void
-    onMapChanged?: (map: MapInformation) => void
-    onTitleChanged?: (title: string) => void
-    onInitialResourcesChanged?: (resources: ResourceLevel) => void
-    onAllowOthersJoinChanged?: (othersCanJoin: boolean) => void
-    onPlayersChanged?: (players: PlayerInformation[]) => void
     onGameInformationChanged?: (gameInformation: GameInformation) => void
 }
 
@@ -595,18 +581,6 @@ function isChatMessage(message: unknown): message is NewChatMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'NEW_CHAT_MESSAGES'
 }
 
-function isGameChangeMessage(message: unknown): message is GameChangedMessage {
-    return message !== null &&
-        message !== null &&
-        typeof message === 'object' &&
-        ('gameState' in message ||
-            'othersCanJoin' in message ||
-            'map' in message ||
-            'initialResources' in message ||
-            'gameName' in message ||
-            'players' in message)
-}
-
 function isGameChangesMessage(message: unknown): message is PlayerViewChangedMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'PLAYER_VIEW_CHANGED'
 }
@@ -954,10 +928,6 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
             wsApiDebug.receive && console.log('Handling reply message')
 
             replies.set(message.requestId, message)
-        } else if (isGameChangeMessage(message)) {
-            wsApiDebug.receive && console.log('Handling game changed message')
-
-            receivedGameChangedMessage(message)
         } else if (isGameInformationChangedMessage(message)) {
             wsApiDebug.receive && console.log('Handling game information changed message')
 
@@ -988,53 +958,22 @@ function receivedGameListChangedMessage(message: GameListChangedMessage): void {
     gamesListeners.forEach(listener => listener(message.games))
 }
 
-function containsPlayer(players: PlayerInformation[], player: PlayerInformation): boolean {
-    return players.find(p => p.id === player.id) !== undefined
-}
-
 function loadGameInformationAndCallListeners(gameInformation: GameInformation): void {
 
     console.log(gameInformation)
 
-    // TODO: assign the game information before calling listeners
+    const prevState = monitor.gameState
+
+    // Store the updated values
+    assignGameInformation(gameInformation)
 
     // Call listeners
-    if (monitor.gameName !== gameInformation.name) {
-        gameListeners.forEach(listener => listener.onTitleChanged && listener.onTitleChanged(gameInformation.name))
-    }
-
-    if (monitor.othersCanJoin !== gameInformation.othersCanJoin) {
-        gameListeners.forEach(listener => listener.onAllowOthersJoinChanged && listener.onAllowOthersJoinChanged(gameInformation.othersCanJoin))
-    }
-
-    if (monitor.initialResources !== gameInformation.initialResources) {
-        gameListeners.forEach(listener => listener.onInitialResourcesChanged && listener.onInitialResourcesChanged(gameInformation.initialResources))
-    }
-
-    if (monitor.gameState !== gameInformation.status) {
+    if (prevState !== gameInformation.status) {
         gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(gameInformation.status))
-    }
-
-    if (monitor.map !== gameInformation.map) {
-        gameListeners.forEach(listener => listener.onMapChanged && listener.onMapChanged(gameInformation.map))
-    }
-
-    const anyPlayerRemoved = Array.from(monitor.players.values()).find(player => !containsPlayer(gameInformation.players, player)) !== undefined
-
-    console.log(monitor.players.values())
-    console.log(gameInformation.players)
-
-    const anyPlayerAdded = gameInformation.players.find(player => !containsPlayer(Array.from(monitor.players.values()), player)) !== undefined
-
-    if (anyPlayerAdded || anyPlayerRemoved) {
-        gameListeners.forEach(listener => listener.onPlayersChanged && listener.onPlayersChanged(gameInformation.players))
     }
 
     // Tell all listeners unconditionally that something changed (but not what)
     gameListeners.forEach(listener => listener.onGameInformationChanged && listener.onGameInformationChanged(gameInformation))
-
-    // Store the updated values
-    assignGameInformation(gameInformation)
 }
 
 async function listenToGameMetadata(): Promise<GameInformation> {
@@ -1045,76 +984,6 @@ async function getViewForPlayer(): Promise<PlayerViewInformation> {
     return (
         await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('FULL_SYNC')
     ).playerView
-}
-
-// TODO: merge with loadGameInformationAndCallListeners
-async function receivedGameChangedMessage(message: GameChangedMessage): Promise<void> {
-    if (message?.gameState !== undefined) {
-        const gameState = message.gameState
-
-        monitor.gameState = gameState
-
-        if (gameState === 'STARTED') {
-            loadPlayerViewAndCallListeners(await getViewForPlayer())
-        }
-
-        gameStateMightHaveChanged(gameState)
-
-        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(gameState))
-    }
-
-    console.log(message?.othersCanJoin)
-
-    if (message?.othersCanJoin !== undefined) {
-        console.log('Handling others can join')
-
-        const othersCanJoin = (message.othersCanJoin === 'TRUE')
-
-        monitor.othersCanJoin = othersCanJoin
-
-        console.log('Telling listeners')
-        gameListeners.forEach(listener => {
-            console.log('A listener')
-
-            if (listener.onAllowOthersJoinChanged !== undefined) {
-                console.log('Notifying the listener')
-
-                listener.onAllowOthersJoinChanged(othersCanJoin)
-            }
-        })
-    }
-
-    if (message?.map !== undefined) {
-        const map = message.map
-
-        monitor.map = map
-
-        gameListeners.forEach(listener => listener.onMapChanged && listener.onMapChanged(map))
-    }
-
-    if (message?.initialResources !== undefined) {
-        const initialResources = message.initialResources
-
-        monitor.initialResources = initialResources
-
-        gameListeners.forEach(listener => listener.onInitialResourcesChanged && listener.onInitialResourcesChanged(initialResources))
-    }
-
-    if (message?.gameName !== undefined) {
-        const gameName = message.gameName
-
-        monitor.gameName = gameName
-
-        gameListeners.forEach(listener => listener.onTitleChanged && listener.onTitleChanged(gameName))
-    }
-
-    if (message?.players !== undefined) {
-        const players = message.players
-
-        players.forEach(player => monitor.players.set(player.id, player))
-
-        gameListeners.forEach(listener => listener.onPlayersChanged && listener.onPlayersChanged(players))
-    }
 }
 
 function stopTimers() {

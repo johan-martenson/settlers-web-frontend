@@ -13,19 +13,16 @@ type ChatBoxProps = {
 function ChatBox({ playerId, roomId }: ChatBoxProps) {
     const myRef = useRef<HTMLInputElement | null>(null)
 
-    const [chatLog, setChatLog] = useState<ChatMessage[]>([])
+    const [chatLog, setChatLog] = useState<ChatMessage[]>(monitor.chatRoomMessages)
     const [text, setText] = useState<string>('')
 
     useEffect(
         () => {
             function changedChatLog() {
-                console.log('Got new chat messages')
-                console.log(monitor.chatMessages)
-
-                setChatLog([...monitor.chatMessages])
+                setChatLog([...monitor.chatRoomMessages])
             }
 
-            setChatLog(monitor.chatMessages)
+            setChatLog(monitor.chatRoomMessages)
 
             monitor.listenToChatMessages(changedChatLog, playerId, [roomId])
 

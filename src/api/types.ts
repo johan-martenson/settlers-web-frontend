@@ -16,6 +16,7 @@ export type ShipId = string
 export type GameMessageId = string
 export type StoneId = string
 export type RoomId = string
+export type ChatMessageId = `chat-message-${string}`
 
 type Time = {
     hours: number
@@ -24,6 +25,7 @@ type Time = {
 }
 
 export type ChatMessage = {
+    id: ChatMessageId
     fromPlayerId: PlayerId
     fromName: string
     toPlayers: PlayerId[]

@@ -15,10 +15,14 @@ const MAX_WAIT_FOR_CONNECTION = 10_000; // milliseconds
 type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
 type WalkingTimerState = 'RUNNING' | 'NOT_RUNNING'
 type GamesListeningState = 'NOT_LISTENING' | 'LISTENING'
+type RequestedFollowingState = 'NO_FOLLLOW' | 'FOLLOW'
+type FollowingState = 'NOT_FOLLOWING' | 'STARTING_TO_FOLLOW' | 'FOLLOWING'
 
 let gamesListeningStatus: GamesListeningState = 'NOT_LISTENING'
 let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
 let walkingTimerState: WalkingTimerState = 'NOT_RUNNING'
+let requestedFollowingState: RequestedFollowingState = 'NO_FOLLLOW'
+let followingState: FollowingState = 'NOT_FOLLOWING'
 
 interface MonitoredBorderForPlayer {
     color: PlayerColor
@@ -264,7 +268,7 @@ export interface WsApi {
     map?: MapInformation,
     othersCanJoin?: boolean,
     initialResources?: ResourceLevel,
-    chatMessages: ChatMessage[]
+    chatRoomMessages: ChatMessage[]
 
     placeHouse: (houseType: AnyBuilding, point: Point) => void
     placeRoad: (points: Point[]) => void
@@ -374,7 +378,7 @@ export interface WsApi {
     connectAndWaitForConnection: () => Promise<void>
     createGame: (name: string, players: PlayerInformation[]) => Promise<GameInformation>
     getGames: () => Promise<GameInformation[]>
-    followGame: (gameId: GameId, playerId: PlayerId) => Promise<GameInformation>
+    followGame: (gameId: GameId, playerId: PlayerId) => Promise<GameInformation | undefined>
     sendChatMessageToRoom: (text: string, room: RoomId, from: PlayerId) => void
 }
 
@@ -441,7 +445,7 @@ const monitor: WsApi = {
     gameState: 'NOT_STARTED',
     gameSpeed: 'NORMAL',
     gameName: '',
-    chatMessages: [],
+    chatRoomMessages: [],
 
     housesAt: new PointMapFast<HouseInformation>(),
 
@@ -949,7 +953,7 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
 }
 
 function loadChatMessage(chatMessage: ChatMessage): void {
-    monitor.chatMessages.push(chatMessage)
+    monitor.chatRoomMessages.push(chatMessage)
 
     chatListeners.forEach(listener => listener())
 }
@@ -958,21 +962,25 @@ function receivedGameListChangedMessage(message: GameListChangedMessage): void {
     gamesListeners.forEach(listener => listener(message.games))
 }
 
-function loadGameInformationAndCallListeners(gameInformation: GameInformation): void {
-
-    console.log(gameInformation)
-
+async function loadGameInformationAndCallListeners(gameInformation: GameInformation): Promise<void> {
     const prevState = monitor.gameState
 
     // Store the updated values
     assignGameInformation(gameInformation)
 
-    // Call listeners
+    // Did the game just start? Then read the full player view
+    const playerView = await listenToGameViewForPlayer()
+
+    if (playerView !== undefined) {
+        loadPlayerViewAndCallListeners(playerView)
+    }
+
+    // Call game state change listener
     if (prevState !== gameInformation.status) {
         gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(gameInformation.status))
     }
 
-    // Tell all listeners unconditionally that something changed (but not what)
+    // Call other listeners
     gameListeners.forEach(listener => listener.onGameInformationChanged && listener.onGameInformationChanged(gameInformation))
 }
 
@@ -2393,29 +2401,62 @@ async function listenToGameViewForPlayer(): Promise<PlayerViewInformation | unde
  * @param {PlayerId} playerId - The id of the player.
  * @returns {Promise<GameInformation>} Metadata about the game.
  */
-async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation> {
-    monitor.gameId = gameId
-    monitor.playerId = playerId
+async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation | undefined> {
+    if (followingState === 'NOT_FOLLOWING') {
+        requestedFollowingState = 'FOLLOW'
+        followingState = 'STARTING_TO_FOLLOW'
 
-    // Register the gameId and playerId with the backend
-    await setGame(gameId)
-    await setPlayerId(playerId)
+        monitor.gameId = gameId
+        monitor.playerId = playerId
 
-    // Start listening to the game's metadata
-    const gameInformation = await listenToGameMetadata()
+        // Register the gameId and playerId with the backend
+        await setGame(gameId)
+        await setPlayerId(playerId)
 
-    // Sync the received metadata
-    loadGameInformationAndCallListeners(gameInformation)
+        // Start listening to the game's metadata
+        const gameInformation = await listenToGameMetadata()
 
-    // Start listening to the actual game state from the player's point of view
-    const playerView = await listenToGameViewForPlayer()
+        // Sync the received metadata
+        loadGameInformationAndCallListeners(gameInformation)
 
-    // Sync the received view
-    if (playerView !== undefined) {
-        loadPlayerViewAndCallListeners(playerView)
+        // Get the chat history for the game's chat room
+        const chatRoomHistory = await getChatRoomHistory(`game-${gameId}`)
+
+        loadChatRoomHistoryAndCallListeners(chatRoomHistory)
+
+        // Start listening to the actual game state from the player's point of view
+        const playerView = await listenToGameViewForPlayer()
+
+        // Sync the received view
+        if (playerView !== undefined) {
+            loadPlayerViewAndCallListeners(playerView)
+        }
+
+        followingState = 'FOLLOWING'
+
+        return gameInformation
+    } else {
+        console.log(`Can't start to follow when following state is: ${followingState}. Previously requested state is: ${requestedFollowingState}`)
     }
+}
 
-    return gameInformation
+function loadChatRoomHistoryAndCallListeners(chatRoomHistory: ChatMessage[]): void {
+    chatRoomHistory.forEach(chatMessage => monitor.chatRoomMessages.push(chatMessage))
+
+    console.log(monitor.chatRoomMessages)
+
+    chatListeners.forEach(listener => listener())
+}
+
+/**
+ * Gets the chat history for a chat room
+ * @param {RoomId} roomId - The id of the chat room
+ * @returns {Promise<ChatMessage[]>} The chat history as a list of chat messages
+ */
+async function getChatRoomHistory(roomId: RoomId): Promise<ChatMessage[]> {
+    return (
+        await sendRequestAndWaitForReplyWithOptions<{ chatHistory: ChatMessage[] }, { roomId: RoomId }>('GET_CHAT_HISTORY_FOR_ROOM', { roomId })
+    ).chatHistory
 }
 
 /**

@@ -32,12 +32,12 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
 
                 setPlayers(players)
 
-                monitor.listenToGameState(listener)
+                monitor.addGameStateListener(listener)
             }
 
             startListening()
 
-            return () => monitor.stopListeningToGameState(listener)
+            return () => monitor.removeGameStateListener(listener)
         }, []
     )
 

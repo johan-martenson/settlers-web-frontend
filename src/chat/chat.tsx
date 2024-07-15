@@ -24,9 +24,9 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
             setChatLog(monitor.chatRoomMessages)
 
-            monitor.listenToChatMessages(changedChatLog, playerId, [roomId])
+            monitor.addChatMessagesListener(changedChatLog, playerId, [roomId])
 
-            return () => monitor.stopListeningToChatMessages(changedChatLog)
+            return () => monitor.removeChatMessagesListener(changedChatLog)
         }, [roomId]
     )
 

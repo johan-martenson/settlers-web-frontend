@@ -32,9 +32,9 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
         }
 
         // Subscribe to received messages
-        monitor.listenToMessages(messageReceiver)
+        monitor.addMessagesListener(messageReceiver)
 
-        return () => monitor.stopListeningToMessages(messageReceiver)
+        return () => monitor.removeMessagesListener(messageReceiver)
     }, [playerId])
 
     return (

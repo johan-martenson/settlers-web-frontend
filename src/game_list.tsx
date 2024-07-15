@@ -44,7 +44,7 @@ const GameList = ({ onJoinGame }: GameListProps) => {
             async function connectAndHandleList() {
                 await monitor.connectAndWaitForConnection()
 
-                monitor.listenToGames(gameListChanged)
+                monitor.addGamesListener(gameListChanged)
 
                 const games = await monitor.getGames()
 
@@ -55,7 +55,7 @@ const GameList = ({ onJoinGame }: GameListProps) => {
 
             connectAndHandleList()
 
-            return () => monitor.stopListeningToGames(gameListChanged)
+            return () => monitor.removeGamesListener(gameListChanged)
         }, []
     )
     return (

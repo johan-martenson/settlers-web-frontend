@@ -232,7 +232,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId) {
                 await monitor.connectAndWaitForConnection()
 
-                monitor.listenToGameState(gameMonitorCallbacks)
+                monitor.addGameStateListener(gameMonitorCallbacks)
 
                 await monitor.followGame(gameId, selfPlayerId)
             }
@@ -244,7 +244,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             return () => {
                 console.log('Use effect: Stop listening to game')
 
-                monitor.stopListeningToGameState(gameMonitorCallbacks)
+                monitor.removeGameStateListener(gameMonitorCallbacks)
             }
         }, [gameId, selfPlayerId]
     )

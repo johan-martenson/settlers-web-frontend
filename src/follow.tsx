@@ -60,9 +60,9 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
                     }
                 }
 
-                monitor.listenToMovementForWorker(moveListener)
+                monitor.addMovementForWorkerListener(moveListener)
 
-                return () => monitor.stopListeningToMovementForWorker(moveListener)
+                return () => monitor.removeMovementForWorkerListener(moveListener)
             }
         }, [idToFollow]
     )

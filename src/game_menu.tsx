@@ -77,9 +77,9 @@ const GameMenu = (
                 onGameSpeedChanged: (gameSpeed: GameSpeed) => setGameSpeed(gameSpeed)
             }
 
-            monitor.listenToGameState(callback)
+            monitor.addGameStateListener(callback)
 
-            return () => monitor.stopListeningToGameState(callback)
+            return () => monitor.removeGameStateListener(callback)
         },
         []
     )

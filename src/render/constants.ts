@@ -9,6 +9,15 @@ interface BelowAndDownRight {
     downRight: number[]
 }
 
+// Geometric constants
+export const UNIT_SQUARE = [
+    0, 0,
+    0, 1,
+    1, 0,
+    1, 0,
+    0, 1,
+    1, 1,
+]
 
 // Road constants
 const ALL_ROADS_LEFT = 192.0 / 255

@@ -160,7 +160,7 @@ type MilitarySettings = {
 
 // Listener types
 export type GameListListener = (gameInformations: GameInformation[]) => void
-export type MessageListener = (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void
+export type MessagesListener = (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void
 export type HouseListener = ((house: HouseInformation) => void)
 export type DiscoveredPointListener = (discoveredPoints: PointSetFast) => void
 export type RoadListener = () => void
@@ -199,7 +199,7 @@ export type WorkerMoveListener = {
 }
 
 // Listeners
-const messageListeners: Set<MessageListener> = new Set<MessageListener>()
+const messageListeners: Set<MessagesListener> = new Set<MessagesListener>()
 const houseListeners: Map<HouseId, HouseListener[]> = new Map<HouseId, HouseListener[]>()
 const discoveredPointListeners: Set<DiscoveredPointListener> = new Set<DiscoveredPointListener>()
 const roadListeners: Set<RoadListener> = new Set<RoadListener>()
@@ -213,37 +213,41 @@ const chatListeners: Set<ChatListener> = new Set<ChatListener>()
 const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagListener>>()
 
 // Functions to add/remove listeners
-function listenToMessages(messageListener: MessageListener): void {
-    messageListeners.add(messageListener)
+function addMessagesListener(listener: MessagesListener): void {
+    messageListeners.add(listener)
 }
 
-function stopListeningToMessages(messageListener: MessageListener): void {
-    messageListeners.delete(messageListener)
+function removeMessagesListener(listener: MessagesListener): void {
+    messageListeners.delete(listener)
 }
 
-function stopListeningToGameState(listener: GameListener): void {
+function removeRoadsListener(listener: RoadListener): void {
+    roadListeners.delete(listener)
+}
+
+function removeGameStateListener(listener: GameListener): void {
     gameListeners.delete(listener)
 }
 
-function stopListeningToMovementForWorker(listener: WorkerMoveListener): void {
+function removeMovementForWorkerListener(listener: WorkerMoveListener): void {
     workerMovedListeners.delete(listener)
 }
 
-function listenToChatMessages(listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]): void {
+function addChatMessagesListener(listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]): void {
     sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>('LISTEN_TO_CHAT_MESSAGES', { playerId, roomIds })
 
     chatListeners.add(listener)
 }
 
-function stopListeningToChatMessages(listener: ChatListener): void {
+function removeChatMessagesListener(listener: ChatListener): void {
     chatListeners.delete(listener)
 }
 
-function listenToMovementForWorker(listener: WorkerMoveListener): void {
+function addMovementForWorkerListener(listener: WorkerMoveListener): void {
     workerMovedListeners.add(listener)
 }
 
-function listenToHouse(houseId: HouseId, houseListener: HouseListener): void {
+function addHouseListener(houseId: HouseId, houseListener: HouseListener): void {
     let listenersForHouseId = houseListeners.get(houseId)
 
     if (!listenersForHouseId) {
@@ -255,15 +259,19 @@ function listenToHouse(houseId: HouseId, houseListener: HouseListener): void {
     listenersForHouseId.push(houseListener)
 }
 
-function listenToDiscoveredPoints(listener: DiscoveredPointListener): void {
+function addDiscoveredPointsListener(listener: DiscoveredPointListener): void {
     discoveredPointListeners.add(listener)
 }
 
-function listenToRoads(listener: RoadListener): void {
+function removeDiscoveredPointsListener(listener: DiscoveredPointListener): void {
+    discoveredPointListeners.delete(listener)
+}
+
+function addRoadsListener(listener: RoadListener): void {
     roadListeners.add(listener)
 }
 
-function listenToFlag(flagId: FlagId, listener: FlagListener): void {
+function addFlagListener(flagId: FlagId, listener: FlagListener): void {
     if (!flagListeners.has(flagId)) {
         flagListeners.set(flagId, new Set())
     }
@@ -271,15 +279,15 @@ function listenToFlag(flagId: FlagId, listener: FlagListener): void {
     flagListeners.get(flagId)?.add(listener)
 }
 
-function stopListeningToGames(listener: GameListListener): void {
+function removeGamesListener(listener: GameListListener): void {
     gamesListeners.delete(listener)
 }
 
-function stopListeningToFlag(flagId: FlagId, listener: FlagListener): void {
+function removeFlagListener(flagId: FlagId, listener: FlagListener): void {
     flagListeners.get(flagId)?.delete(listener)
 }
 
-function listenToAvailableConstruction(point: Point, listener: AvailableConstructionListener): void {
+function addAvailableConstructionListener(point: Point, listener: AvailableConstructionListener): void {
     if (availableConstructionListeners.has(point)) {
         availableConstructionListeners.set(point, new Set())
     }
@@ -287,15 +295,15 @@ function listenToAvailableConstruction(point: Point, listener: AvailableConstruc
     availableConstructionListeners.get(point)?.add(listener)
 }
 
-function stopListeningToAvailableConstruction(point: Point, listener: AvailableConstructionListener) {
+function removeAvailableConstructionListener(point: Point, listener: AvailableConstructionListener) {
     availableConstructionListeners.get(point)?.delete(listener)
 }
 
-function listenToActions(listener: ActionListener) {
+function addActionsListener(listener: ActionListener) {
     actionListeners.add(listener)
 }
 
-function listenToGames(listener: GameListListener): void {
+function addGamesListener(listener: GameListListener): void {
     if (gamesListeningStatus === 'NOT_LISTENING') {
         send('LISTEN_TO_GAME_LIST')
 
@@ -305,11 +313,11 @@ function listenToGames(listener: GameListListener): void {
     gamesListeners.add(listener)
 }
 
-function listenToGameState(listener: GameListener) {
+function addGameStateListener(listener: GameListener) {
     gameListeners.add(listener)
 }
 
-function listenToBurningHouses(listener: HouseBurningListener) {
+function addBurningHousesListener(listener: HouseBurningListener) {
     houseBurningListeners.add(listener)
 }
 
@@ -454,26 +462,28 @@ export interface WsApi {
 
     addDetailedMonitoring: (id: HouseId | FlagId) => void
 
-    listenToGames: (gamesListener: GameListListener) => void
-    listenToFlag: (flagId: FlagId, listener: FlagListener) => void
-    listenToGameState: (listener: GameListener) => void
-    listenToAvailableConstruction: (point: Point, listener: AvailableConstructionListener) => void
-    listenToActions: (listener: ActionListener) => void
-    listenToBurningHouses: (listener: HouseBurningListener) => void
-    listenToMessages: (listener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void) => void
-    listenToDiscoveredPoints: (listener: (points: PointSetFast) => void) => void
-    listenToRoads: (listener: () => void) => void
-    listenToHouse: (houseId: HouseId, houseListenerFn: (house: HouseInformation) => void) => void
-    listenToMovementForWorker: (listener: WorkerMoveListener) => void
-    listenToChatMessages: (listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]) => void
+    addGamesListener: (listener: GameListListener) => void
+    addFlagListener: (flagId: FlagId, listener: FlagListener) => void
+    addGameStateListener: (listener: GameListener) => void
+    addAvailableConstructionListener: (point: Point, listener: AvailableConstructionListener) => void
+    addActionsListener: (listener: ActionListener) => void
+    addBurningHousesListener: (listener: HouseBurningListener) => void
+    addMessagesListener: (listener: MessagesListener) => void
+    addDiscoveredPointsListener: (listener: (points: PointSetFast) => void) => void
+    addRoadsListener: (listener: () => void) => void
+    addHouseListener: (houseId: HouseId, listener: (house: HouseInformation) => void) => void
+    addMovementForWorkerListener: (listener: WorkerMoveListener) => void
+    addChatMessagesListener: (listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]) => void
 
-    stopListeningToGames: (gamesListener: GameListListener) => void
-    stopListeningToMessages: (listener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void) => void
-    stopListeningToFlag: (flagId: FlagId, listener: FlagListener) => void
-    stopListeningToAvailableConstruction: (point: Point, listener: AvailableConstructionListener) => void
-    stopListeningToGameState: (listener: GameListener) => void
-    stopListeningToMovementForWorker: (listener: WorkerMoveListener) => void
-    stopListeningToChatMessages: (listener: ChatListener) => void
+    removeGamesListener: (gamesListener: GameListListener) => void
+    removeMessagesListener: (listener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void) => void
+    removeRoadsListener: (listener: RoadListener) => void
+    removeFlagListener: (flagId: FlagId, listener: FlagListener) => void
+    removeAvailableConstructionListener: (point: Point, listener: AvailableConstructionListener) => void
+    removeGameStateListener: (listener: GameListener) => void
+    removeMovementForWorkerListener: (listener: WorkerMoveListener) => void
+    removeChatMessagesListener: (listener: ChatListener) => void
+    removeDiscoveredPointsListener: (listener: DiscoveredPointListener) => void
 
     setCoalQuotas: (mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void
     setFoodQuotas: (ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void
@@ -624,26 +634,28 @@ const monitor: WsApi = {
 
     removeDetailedMonitoring,
 
-    listenToGames,
-    listenToGameState,
-    listenToFlag,
-    listenToAvailableConstruction,
-    listenToActions,
-    listenToBurningHouses,
-    listenToMessages,
-    listenToDiscoveredPoints,
-    listenToRoads,
-    listenToHouse,
-    listenToMovementForWorker,
-    listenToChatMessages,
+    addGamesListener,
+    addGameStateListener,
+    addFlagListener,
+    addAvailableConstructionListener,
+    addActionsListener,
+    addBurningHousesListener,
+    addMessagesListener,
+    addDiscoveredPointsListener,
+    addRoadsListener,
+    addHouseListener,
+    addMovementForWorkerListener,
+    addChatMessagesListener,
 
-    stopListeningToGames,
-    stopListeningToFlag,
-    stopListeningToAvailableConstruction,
-    stopListeningToMessages,
-    stopListeningToGameState,
-    stopListeningToMovementForWorker,
-    stopListeningToChatMessages,
+    removeGamesListener,
+    removeFlagListener,
+    removeAvailableConstructionListener,
+    removeMessagesListener,
+    removeGameStateListener,
+    removeMovementForWorkerListener,
+    removeChatMessagesListener,
+    removeDiscoveredPointsListener,
+    removeRoadsListener,
 
     setCoalQuotas,
     setFoodQuotas,

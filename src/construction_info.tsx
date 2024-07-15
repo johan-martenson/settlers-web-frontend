@@ -41,9 +41,9 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                 }
             }
 
-            monitor.listenToAvailableConstruction(point, listener)
+            monitor.addAvailableConstructionListener(point, listener)
 
-            return () => monitor.stopListeningToAvailableConstruction(point, listener)
+            return () => monitor.removeAvailableConstructionListener(point, listener)
         }, [point])
 
     if (canBuildHouse(point)) {

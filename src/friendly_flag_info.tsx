@@ -28,9 +28,9 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                 onRemove: () => onClose()
             }
 
-            monitor.listenToFlag(flag.id, listener)
+            monitor.addFlagListener(flag.id, listener)
 
-            return () => { monitor.stopListeningToFlag(flag.id, listener) }
+            return () => { monitor.removeFlagListener(flag.id, listener) }
         }, [])
 
     return (

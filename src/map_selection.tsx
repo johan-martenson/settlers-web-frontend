@@ -28,9 +28,9 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                 onGameInformationChanged: gameInformationChanged
             }
 
-            monitor.listenToGameState(listener)
+            monitor.addGameStateListener(listener)
 
-            return () => monitor.stopListeningToGameState(listener)
+            return () => monitor.removeGameStateListener(listener)
         }, [])
 
     return (

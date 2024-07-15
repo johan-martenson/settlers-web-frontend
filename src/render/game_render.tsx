@@ -11,7 +11,7 @@ import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from '../shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from '../shaders/terrain-and-roads'
 import { NewRoad, immediateUxState } from '../play'
-import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, vegetationToTextureMapping } from './constants'
+import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, UNIT_SQUARE, vegetationToTextureMapping } from './constants'
 import { textures } from '../render/textures'
 import { ProgramDescriptor, ProgramInstance, draw, initProgram, setBuffer } from './utils'
 
@@ -488,6 +488,54 @@ function GameCanvas({
 
     useEffect(
         () => {
+
+            // Callback when monitoring is started
+            function monitoringStarted() {
+                console.log("Received monitoring started callback. Calculating normals")
+
+                calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+
+                updateRoadDrawingBuffers()
+            }
+
+            // Callback when roads are updated
+            function roadsUpdated() {
+                console.log("Received updated road callback")
+
+                updateRoadDrawingBuffers()
+            }
+
+            // Callback when discovered points are updated
+            function discoveredPointsUpdated(points: PointSetFast) {
+
+                // Update the calculated normals
+                calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                console.log("New discovered points - calculated normals")
+
+                // Update the map rendering buffers
+                renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
+
+                if (renderState.drawGroundProgramInstance) {
+                    setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
+                    setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
+                    setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
+                } else {
+                    console.error(`The terrain drawing program instance is undefined`)
+                }
+
+                // Update fog of war rendering
+                if (renderState.fogOfWarProgramInstance) {
+                    const fogOfWarRenderInformation = updateFogOfWarRendering()
+
+                    setBuffer<FogOfWarAttributes>(renderState.fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
+                    setBuffer<FogOfWarAttributes>(renderState.fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
+                }
+            }
+
+            const gameStateListener = {
+                onMonitoringStarted: monitoringStarted
+            }
+
             async function loadAssetsAndSetupGl() {
                 const fileLoading = []
 
@@ -561,22 +609,8 @@ function GameCanvas({
 
                         renderState.gl = gl
 
-                        const positions = [
-                            0, 0,
-                            0, 1,
-                            1, 0,
-                            1, 0,
-                            0, 1,
-                            1, 1,
-                        ]
-                        const texCoords = [
-                            0, 0,
-                            0, 1,
-                            1, 0,
-                            1, 0,
-                            0, 1,
-                            1, 1
-                        ]
+                        const positions = UNIT_SQUARE
+                        const texCoords = UNIT_SQUARE
 
                         setBuffer<DrawImageAttributes>(renderState.drawImageProgramInstance, 'a_position', positions)
                         setBuffer<DrawImageAttributes>(renderState.drawImageProgramInstance, 'a_texcoord', texCoords)
@@ -603,44 +637,9 @@ function GameCanvas({
                 }
 
                 // Start listeners
-                monitor.listenToRoads(() => {
-                    console.log("Received updated road callback")
-                    updateRoadDrawingBuffers()
-                })
-                monitor.listenToGameState({
-                    onMonitoringStarted: () => {
-                        console.log("Received monitoring started callback. Calculating normals")
-                        calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-                        updateRoadDrawingBuffers()
-                    }
-                })
-
-                // eslint-disable-next-line
-                monitor.listenToDiscoveredPoints(points => {
-
-                    // Update the calculated normals
-                    calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
-                    console.log("New discovered points - calculated normals")
-
-                    // Update the map rendering buffers
-                    renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
-
-                    if (renderState.drawGroundProgramInstance) {
-                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
-                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
-                        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
-                    } else {
-                        console.error(`The terrain drawing program instance is undefined`)
-                    }
-
-                    // Update fog of war rendering
-                    if (renderState.fogOfWarProgramInstance) {
-                        const fogOfWarRenderInformation = updateFogOfWarRendering()
-
-                        setBuffer<FogOfWarAttributes>(renderState.fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
-                        setBuffer<FogOfWarAttributes>(renderState.fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
-                    }
-                })
+                monitor.addRoadsListener(roadsUpdated)
+                monitor.addGameStateListener(gameStateListener)
+                monitor.addDiscoveredPointsListener(discoveredPointsUpdated)
 
                 console.log('Started listeners')
 
@@ -690,6 +689,12 @@ function GameCanvas({
             }
 
             loadAssetsAndSetupGl().then(() => renderGame())
+
+            return () => {
+                monitor.removeGameStateListener(gameStateListener)
+                monitor.removeRoadsListener(roadsUpdated)
+                monitor.removeDiscoveredPointsListener(discoveredPointsUpdated)
+            }
         }, []
     )
 

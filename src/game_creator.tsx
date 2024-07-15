@@ -52,7 +52,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                 }
             }
 
-            monitor.listenToGameState(listener);
+            monitor.addGameStateListener(listener);
 
             // Connect to an existing game or create a new one
             (async () => {
@@ -77,7 +77,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                 }
             })().then()
 
-            return () => monitor.stopListeningToGameState(listener)
+            return () => monitor.removeGameStateListener(listener)
         }, []
     )
 

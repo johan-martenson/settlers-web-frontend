@@ -158,32 +158,159 @@ type MilitarySettings = {
     soldierAmountsAvailableForAttack: number
 }
 
-type GameListListener = (gameInformations: GameInformation[]) => void
+// Listener types
+export type GameListListener = (gameInformations: GameInformation[]) => void
+export type MessageListener = (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void
+export type HouseListener = ((house: HouseInformation) => void)
+export type DiscoveredPointListener = (discoveredPoints: PointSetFast) => void
+export type RoadListener = () => void
+export type ChatListener = () => void
 
-interface ActionListener {
+export type ActionListener = {
     actionStarted: (id: string, point: Point, action: Action) => void
     actionEnded: (id: string, point: Point, action: Action) => void
 }
 
-interface HouseBurningListener {
+export type HouseBurningListener = {
     houseStartedToBurn: (id: string, point: Point) => void
     houseStoppedBurning: (id: string, point: Point) => void
 }
 
-interface FlagListener {
+export type FlagListener = {
     onUpdate: (flag: FlagInformation) => void
     onRemove: () => void
 }
 
-export interface GameListener {
+export type GameListener = {
     onMonitoringStarted?: () => void
     onGameStateChanged?: (gameState: GameState) => void
     onGameSpeedChanged?: (gameSpeed: GameSpeed) => void
     onGameInformationChanged?: (gameInformation: GameInformation) => void
 }
 
-interface AvailableConstructionListener {
+export type AvailableConstructionListener = {
     onAvailableConstructionChanged: (availableConstruction: AvailableConstruction[]) => void
+}
+
+export type WorkerMoveListener = {
+    id: WorkerId
+
+    onWorkerMoved: (move: MoveUpdate) => void
+}
+
+// Listeners
+const messageListeners: Set<MessageListener> = new Set<MessageListener>()
+const houseListeners: Map<HouseId, HouseListener[]> = new Map<HouseId, HouseListener[]>()
+const discoveredPointListeners: Set<DiscoveredPointListener> = new Set<DiscoveredPointListener>()
+const roadListeners: Set<RoadListener> = new Set<RoadListener>()
+const availableConstructionListeners = new PointMapFast<Set<AvailableConstructionListener>>()
+const actionListeners: Set<ActionListener> = new Set<ActionListener>()
+const houseBurningListeners: Set<HouseBurningListener> = new Set<HouseBurningListener>()
+const gameListeners: Set<GameListener> = new Set<GameListener>()
+const gamesListeners: Set<GameListListener> = new Set<GameListListener>()
+const workerMovedListeners: Set<WorkerMoveListener> = new Set<WorkerMoveListener>()
+const chatListeners: Set<ChatListener> = new Set<ChatListener>()
+const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagListener>>()
+
+// Functions to add/remove listeners
+function listenToMessages(messageListener: MessageListener): void {
+    messageListeners.add(messageListener)
+}
+
+function stopListeningToMessages(messageListener: MessageListener): void {
+    messageListeners.delete(messageListener)
+}
+
+function stopListeningToGameState(listener: GameListener): void {
+    gameListeners.delete(listener)
+}
+
+function stopListeningToMovementForWorker(listener: WorkerMoveListener): void {
+    workerMovedListeners.delete(listener)
+}
+
+function listenToChatMessages(listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]): void {
+    sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>('LISTEN_TO_CHAT_MESSAGES', { playerId, roomIds })
+
+    chatListeners.add(listener)
+}
+
+function stopListeningToChatMessages(listener: ChatListener): void {
+    chatListeners.delete(listener)
+}
+
+function listenToMovementForWorker(listener: WorkerMoveListener): void {
+    workerMovedListeners.add(listener)
+}
+
+function listenToHouse(houseId: HouseId, houseListener: HouseListener): void {
+    let listenersForHouseId = houseListeners.get(houseId)
+
+    if (!listenersForHouseId) {
+        listenersForHouseId = []
+
+        houseListeners.set(houseId, listenersForHouseId)
+    }
+
+    listenersForHouseId.push(houseListener)
+}
+
+function listenToDiscoveredPoints(listener: DiscoveredPointListener): void {
+    discoveredPointListeners.add(listener)
+}
+
+function listenToRoads(listener: RoadListener): void {
+    roadListeners.add(listener)
+}
+
+function listenToFlag(flagId: FlagId, listener: FlagListener): void {
+    if (!flagListeners.has(flagId)) {
+        flagListeners.set(flagId, new Set())
+    }
+
+    flagListeners.get(flagId)?.add(listener)
+}
+
+function stopListeningToGames(listener: GameListListener): void {
+    gamesListeners.delete(listener)
+}
+
+function stopListeningToFlag(flagId: FlagId, listener: FlagListener): void {
+    flagListeners.get(flagId)?.delete(listener)
+}
+
+function listenToAvailableConstruction(point: Point, listener: AvailableConstructionListener): void {
+    if (availableConstructionListeners.has(point)) {
+        availableConstructionListeners.set(point, new Set())
+    }
+
+    availableConstructionListeners.get(point)?.add(listener)
+}
+
+function stopListeningToAvailableConstruction(point: Point, listener: AvailableConstructionListener) {
+    availableConstructionListeners.get(point)?.delete(listener)
+}
+
+function listenToActions(listener: ActionListener) {
+    actionListeners.add(listener)
+}
+
+function listenToGames(listener: GameListListener): void {
+    if (gamesListeningStatus === 'NOT_LISTENING') {
+        send('LISTEN_TO_GAME_LIST')
+
+        gamesListeningStatus = 'LISTENING'
+    }
+
+    gamesListeners.add(listener)
+}
+
+function listenToGameState(listener: GameListener) {
+    gameListeners.add(listener)
+}
+
+function listenToBurningHouses(listener: HouseBurningListener) {
+    houseBurningListeners.add(listener)
 }
 
 export type MoveUpdate = {
@@ -201,13 +328,6 @@ export type MoveUpdate = {
         }
     )
 
-type ChatListener = () => void
-
-interface WorkerMoveListener {
-    id: WorkerId
-
-    onWorkerMoved: (move: MoveUpdate) => void
-}
 
 interface ReplyMessage {
     requestId: RequestId
@@ -381,19 +501,6 @@ export interface WsApi {
     followGame: (gameId: GameId, playerId: PlayerId) => Promise<GameInformation | undefined>
     sendChatMessageToRoom: (text: string, room: RoomId, from: PlayerId) => void
 }
-
-const messageListeners: ((messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void)[] = []
-const houseListeners: Map<HouseId, ((house: HouseInformation) => void)[]> = new Map<HouseId, ((house: HouseInformation) => void)[]>()
-const discoveredPointListeners: ((discoveredPoints: PointSetFast) => void)[] = []
-const roadListeners: (() => void)[] = []
-const availableConstructionListeners = new PointMapFast<AvailableConstructionListener[]>()
-const actionListeners: ActionListener[] = []
-const houseBurningListeners: HouseBurningListener[] = []
-const gameListeners: GameListener[] = []
-const gamesListeners: GameListListener[] = []
-const workerMovedListeners: WorkerMoveListener[] = []
-const chatListeners: ChatListener[] = []
-const flagListeners: Map<FlagId, FlagListener[]> = new Map<FlagId, FlagListener[]>()
 
 let websocket: WebSocket | undefined = undefined
 
@@ -1519,66 +1626,6 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     }
 }
 
-function listenToMessages(messageListener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void): void {
-    messageListeners.push(messageListener)
-}
-
-function stopListeningToMessages(messageListenerFn: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void): void {
-    const index = messageListeners.indexOf(messageListenerFn)
-
-    delete messageListeners[index]
-}
-
-function stopListeningToGameState(listener: GameListener): void {
-    const index = gameListeners.indexOf(listener)
-
-    delete gameListeners[index]
-}
-
-function stopListeningToMovementForWorker(listener: WorkerMoveListener): void {
-    const index = workerMovedListeners.indexOf(listener)
-
-    delete workerMovedListeners[index]
-}
-
-function listenToChatMessages(listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]): void {
-    sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>('LISTEN_TO_CHAT_MESSAGES', { playerId, roomIds })
-
-    chatListeners.push(listener)
-}
-
-function stopListeningToChatMessages(listener: ChatListener): void {
-    const index = chatListeners.findIndex(listener)
-
-    if (index > -1) {
-        delete chatListeners[index]
-    }
-}
-
-function listenToMovementForWorker(listener: WorkerMoveListener): void {
-    workerMovedListeners.push(listener)
-}
-
-function listenToHouse(houseId: HouseId, houseListenerFn: (house: HouseInformation) => void): void {
-    let listenersForHouseId = houseListeners.get(houseId)
-
-    if (!listenersForHouseId) {
-        listenersForHouseId = []
-
-        houseListeners.set(houseId, listenersForHouseId)
-    }
-
-    listenersForHouseId.push(houseListenerFn)
-}
-
-function listenToDiscoveredPoints(listenerFn: (discoveredPoints: PointSetFast) => void): void {
-    discoveredPointListeners.push(listenerFn)
-}
-
-function listenToRoads(listenerFn: () => void): void {
-    roadListeners.push(listenerFn)
-}
-
 function notifyHouseListeners(houses: HouseInformation[]): void {
     houses.forEach(house => {
         houseListeners.get(house.id)?.forEach(listener => listener(house))
@@ -1862,76 +1909,6 @@ function getRequestId(): number {
     nextRequestId += 1
 
     return nextRequestId - 1
-}
-
-function listenToFlag(flagId: FlagId, listener: FlagListener): void {
-    if (!flagListeners.has(flagId)) {
-        flagListeners.set(flagId, [])
-    }
-
-    flagListeners.get(flagId)?.push(listener)
-}
-
-function stopListeningToGames(listener: GameListListener): void {
-    const index = gamesListeners.indexOf(listener)
-
-    if (index > -1) {
-        delete gamesListeners[index]
-    }
-}
-
-function stopListeningToFlag(flagId: FlagId, listener: FlagListener): void {
-    const listeners = flagListeners.get(flagId)
-
-    if (listeners) {
-        const index = listeners.indexOf(listener)
-
-        if (index > -1) {
-            delete listeners[index]
-        }
-    }
-}
-
-function listenToAvailableConstruction(point: Point, listener: AvailableConstructionListener): void {
-    if (availableConstructionListeners.has(point)) {
-        availableConstructionListeners.set(point, [])
-    }
-
-    availableConstructionListeners.get(point)?.push(listener)
-}
-
-function stopListeningToAvailableConstruction(point: Point, listener: AvailableConstructionListener) {
-    const listeners = availableConstructionListeners.get(point)
-
-    if (listeners) {
-        const index = listeners.indexOf(listener)
-
-        if (index > -1) {
-            delete listeners[index]
-        }
-    }
-}
-
-function listenToActions(listener: ActionListener) {
-    actionListeners.push(listener)
-}
-
-function listenToGames(listener: GameListListener): void {
-    if (gamesListeningStatus === 'NOT_LISTENING') {
-        send('LISTEN_TO_GAME_LIST')
-
-        gamesListeningStatus = 'LISTENING'
-    }
-
-    gamesListeners.push(listener)
-}
-
-function listenToGameState(listener: GameListener) {
-    gameListeners.push(listener)
-}
-
-function listenToBurningHouses(listener: HouseBurningListener) {
-    houseBurningListeners.push(listener)
 }
 
 function killWebsocket(): void {

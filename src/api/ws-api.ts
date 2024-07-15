@@ -2,24 +2,15 @@ import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getP
 import { PointMapFast, PointSetFast } from '../util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, FlagDebugInfo, GameInformation, MapInformation, Player, MapId, ResourceLevel, PlayerType, Vegetation, RoomId, ChatMessage } from './types'
 
-export const wsApiDebug = {
-    receive: false,
-    send: false
-}
-
 let gameTickLength = 200;
 
-const MAX_WAIT_FOR_REPLY = 1000; // milliseconds
-const MAX_WAIT_FOR_CONNECTION = 10_000; // milliseconds
 
-type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
 type WalkingTimerState = 'RUNNING' | 'NOT_RUNNING'
 type GamesListeningState = 'NOT_LISTENING' | 'LISTENING'
 type RequestedFollowingState = 'NO_FOLLLOW' | 'FOLLOW'
 type FollowingState = 'NOT_FOLLOWING' | 'STARTING_TO_FOLLOW' | 'FOLLOWING'
 
 let gamesListeningStatus: GamesListeningState = 'NOT_LISTENING'
-let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
 let walkingTimerState: WalkingTimerState = 'NOT_RUNNING'
 let requestedFollowingState: RequestedFollowingState = 'NO_FOLLLOW'
 let followingState: FollowingState = 'NOT_FOLLOWING'
@@ -337,14 +328,6 @@ export type MoveUpdate = {
     )
 
 
-interface ReplyMessage {
-    requestId: RequestId
-}
-
-interface NumberReplyMessage extends ReplyMessage {
-    amount: number
-}
-
 export interface TileBelow {
     pointAbove: Point
     heightDownLeft: number
@@ -512,28 +495,10 @@ export interface WsApi {
     sendChatMessageToRoom: (text: string, room: RoomId, from: PlayerId) => void
 }
 
-let websocket: WebSocket | undefined = undefined
-
 let workerWalkingTimer: undefined | NodeJS.Timeout
 let workerAnimationsTimer: undefined | NodeJS.Timeout
 let cropGrowerTimer: undefined | NodeJS.Timeout
 let treeGrowerTimer: undefined | NodeJS.Timeout
-
-type RequestId = number
-
-function isReplyMessage(message: unknown): message is ReplyMessage {
-    return message !== undefined &&
-        message !== null &&
-        typeof message === 'object' &&
-        'requestId' in message
-}
-
-function isNumberReplyMessage(message: ReplyMessage): message is NumberReplyMessage {
-    return 'amount' in message
-}
-
-const replies: Map<RequestId, ReplyMessage> = new Map()
-let nextRequestId = 0
 
 const monitor: WsApi = {
     workers: new Map<WorkerId, WorkerInformation>(),
@@ -706,10 +671,6 @@ function isChatMessage(message: unknown): message is NewChatMessage {
 
 function isGameChangesMessage(message: unknown): message is PlayerViewChangedMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'PLAYER_VIEW_CHANGED'
-}
-
-function makeWsConnectUrl(): string {
-    return `ws://${window.location.hostname}:8080/ws/monitor/games`
 }
 
 function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
@@ -974,103 +935,6 @@ function startTimers() {
     }, gameTickLength * 10)
 }
 
-function websocketError(error: unknown): void {
-    console.error(error)
-}
-
-// TODO: review and fix the handling of when the websocket gets disconnected
-function websocketDisconnected(e: CloseEvent): void {
-    console.log("Disconnected from backend")
-
-    if (monitor.gameState === 'EXPIRED') {
-        return
-    }
-
-    console.info("Websocket closed: " + JSON.stringify(e))
-    console.info(e)
-
-    if (e.code === 1003) {
-        console.error("The game has been removed from the backend")
-
-        monitor.gameState = "EXPIRED"
-
-        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged("EXPIRED"))
-    } else {
-        setTimeout(() => {
-            if (monitor.gameId === undefined) {
-                console.error('Game id is not set')
-
-                return
-            }
-
-            if (monitor.playerId === undefined) {
-                console.error('Player id is not set')
-
-                return
-            }
-
-            const websocketUrl = makeWsConnectUrl()
-
-            console.info("Websocket url: " + websocketUrl)
-
-            websocket = new WebSocket(websocketUrl)
-
-            websocket.onopen = () => {
-                console.info("Websocket for subscription is open. Requesting full sync.")
-
-                connectionStatus = 'CONNECTED'
-
-                if (websocket) {
-                    sendRequestAndWaitForReply<PlayerViewInformation>('FULL_SYNC')
-                }
-            }
-            websocket.onclose = e => websocketDisconnected(e)
-            websocket.onerror = e => websocketError(e)
-            websocket.onmessage = message => websocketMessageReceived(message)
-        }, 1000)
-    }
-}
-
-// eslint-disable-next-line
-function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
-    try {
-        const message = JSON.parse(messageFromServer.data)
-
-        wsApiDebug.receive && console.log(`Received message`)
-        wsApiDebug.receive && console.log(message)
-
-        if (isGameChangesMessage(message)) {
-            wsApiDebug.receive && console.log('Handling player view changed message')
-
-            loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
-        } else if (isFullSyncMessage(message)) {
-            wsApiDebug.receive && console.log('Handling full sync message')
-
-            clearAndLoadPlayerView(message)
-        } else if (isReplyMessage(message)) {
-            wsApiDebug.receive && console.log('Handling reply message')
-
-            replies.set(message.requestId, message)
-        } else if (isGameInformationChangedMessage(message)) {
-            wsApiDebug.receive && console.log('Handling game information changed message')
-
-            loadGameInformationAndCallListeners(message.gameInformation)
-        } else if (isGameListChangedMessage(message)) {
-            wsApiDebug.receive && console.log('Handling game list changed messgae')
-
-            receivedGameListChangedMessage(message)
-        } else if (isChatMessage(message)) {
-            wsApiDebug.receive && console.log('Handling chat message')
-
-            loadChatMessage(message.chatMessage)
-        }
-    } catch (e) {
-        console.error(e)
-        console.error(JSON.stringify(e))
-        console.info(messageFromServer.data)
-    }
-}
-
 function loadChatMessage(chatMessage: ChatMessage): void {
     monitor.chatRoomMessages.push(chatMessage)
 
@@ -1107,6 +971,7 @@ async function listenToGameMetadata(): Promise<GameInformation> {
     return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('LISTEN_TO_GAME_INFO')).gameInformation
 }
 
+// eslint-disable-next-line
 async function getViewForPlayer(): Promise<PlayerViewInformation> {
     return (
         await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('FULL_SYNC')
@@ -1917,16 +1782,6 @@ function removeMessages(messages: GameMessage[]): void {
     sendWithOptions<{ messageIds: GameMessageId[] }>('REMOVE_MESSAGES', { messageIds: messages.map(message => message.id) })
 }
 
-function getRequestId(): number {
-    nextRequestId += 1
-
-    return nextRequestId - 1
-}
-
-function killWebsocket(): void {
-    websocket?.close()
-}
-
 function setCoalQuotas(mint: number, armory: number, ironSmelter: number): void {
     sendWithOptions<{ mint: number, armory: number, ironSmelter: number }>(
         'SET_COAL_QUOTAS',
@@ -2010,55 +1865,6 @@ function setIronBarQuotas(armory: number, metalworks: number) {
     sendWithOptions<{ armory: number, metalworks: number }>('SET_IRON_BAR_QUOTAS', { armory, metalworks })
 }
 
-async function connectAndWaitForConnection(): Promise<void> {
-    console.log('Connect and wait until the connection is ready.')
-
-    console.log(connectionStatus)
-    console.log(websocket)
-
-    // Re-use the existing connection if possible
-    if (connectionStatus === 'CONNECTED') {
-        console.log('Already connected')
-
-        return
-    }
-
-    const websocketUrl = makeWsConnectUrl()
-
-    console.info("Websocket url: " + websocketUrl)
-
-    websocket = new WebSocket(websocketUrl)
-
-    connectionStatus = 'CONNECTING'
-
-    websocket.onopen = () => {
-        console.info("Websocket for subscription is open")
-
-        connectionStatus = 'CONNECTED'
-
-        gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
-    }
-
-    websocket.onclose = event => {
-        console.error('Websocket was closed')
-        connectionStatus = 'NOT_CONNECTED'
-        websocketDisconnected(event)
-    }
-
-    websocket.onerror = event => {
-        console.error('Websocket got error')
-        connectionStatus = 'NOT_CONNECTED'
-        websocketError(event)
-    }
-
-    websocket.onmessage = message => websocketMessageReceived(message)
-
-    // Wait for the connection to be established
-    await waitForConnection()
-
-    console.log(`Connected. ${connectionStatus}`)
-}
-
 type CreateNewGameOptions = {
     name: string
     players: Player[]
@@ -2140,136 +1946,8 @@ async function getPopulateMilitaryCloseToBorder(): Promise<number> {
     return await getAmountForCommand('GET_POPULATE_MILITARY_CLOSE_TO_BORDER')
 }
 
-async function getAmountForCommand(command: string): Promise<number> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command,
-            requestId
-        }
-    ))
-
-    console.log(`Send request: ${command} with id: ${requestId}`)
-
-    return await waitForNumberReply(requestId)
-}
-
 async function getMilitarySettings(): Promise<MilitarySettings> {
     return await sendRequestAndWaitForReply<MilitarySettings>("GET_MILITARY_SETTINGS")
-}
-
-function waitForNumberReply(requestId: number): Promise<number> {
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isNumberReplyMessage(reply)) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                console.log(`Got number reply: ${reply.amount}`)
-
-                result(reply.amount)
-            }
-        }, 10)
-    })
-}
-
-function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command: string, options: Options): Promise<ReplyType> {
-    const requestId = getRequestId()
-
-    console.log({
-        command,
-        requestId,
-        ...options
-    })
-
-    websocket?.send(JSON.stringify(
-        {
-            command,
-            requestId,
-            ...options
-        }
-    ))
-
-    wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
-
-    const timestampSent = (new Date()).getTime()
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const timestampSawReply = (new Date()).getTime()
-
-            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
-                clearInterval(timer)
-            }
-
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-
-                return
-            }
-
-            replies.delete(requestId)
-
-            clearInterval(timer)
-
-            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
-
-            result(reply as ReplyType)
-        }, 5)
-    })
-}
-
-function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyType> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command,
-            requestId
-        }
-    ))
-
-    wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
-
-    const timestampSent = (new Date()).getTime()
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const timestampSawReply = (new Date()).getTime()
-
-            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
-                clearInterval(timer)
-            }
-
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-
-                return
-            }
-
-            replies.delete(requestId)
-
-            clearInterval(timer)
-
-            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
-
-            result(reply as ReplyType)
-        }, 5)
-    })
 }
 
 async function getSoldiersAvailableForAttack(): Promise<number> {
@@ -2361,18 +2039,6 @@ function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): vo
         'SEND_CHAT_MESSAGE_TO_ROOM',
         { text, roomId, from }
     )
-}
-
-function send(command: string): void {
-    wsApiDebug.send && console.log(`SEND: ${command}`)
-
-    websocket?.send(JSON.stringify({ command }))
-}
-
-function sendWithOptions<Options>(command: string, options: Options): void {
-    wsApiDebug.send && console.log('SEND: ' + JSON.stringify({ command, ...options }))
-
-    websocket?.send(JSON.stringify({ command, ...options }))
 }
 
 /**
@@ -2520,6 +2186,49 @@ function waitForGameDataAvailable(): Promise<void> {
     })
 }
 
+
+// RPC Core
+
+// Constants
+const MAX_WAIT_FOR_REPLY = 1000; // milliseconds
+const MAX_WAIT_FOR_CONNECTION = 10_000; // milliseconds
+
+// Types
+type RequestId = number
+type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
+type ReplyMessage = { requestId: RequestId }
+type NumberReplyMessage = ReplyMessage & { amount: number }
+
+// Type functions
+function isReplyMessage(message: unknown): message is ReplyMessage {
+    return message !== undefined &&
+        message !== null &&
+        typeof message === 'object' &&
+        'requestId' in message
+}
+
+function isNumberReplyMessage(message: ReplyMessage): message is NumberReplyMessage {
+    return 'amount' in message
+}
+
+// Configuration
+export const wsApiDebug = {
+    receive: false,
+    send: false
+}
+
+// State
+const replies: Map<RequestId, ReplyMessage> = new Map()
+
+let websocket: WebSocket | undefined = undefined
+let nextRequestId = 0
+let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
+
+// Functions exposed as part of WS API
+/**
+ * Waits for a connection to get established to the WS backend. Will not initiate any connection on its own.
+ * @returns {Promise<void>}
+ */
 function waitForConnection(): Promise<void> {
     const timestampWaitStarted = (new Date()).getTime()
 
@@ -2544,6 +2253,347 @@ function waitForConnection(): Promise<void> {
             }
         }, 5)
     })
+}
+
+/**
+ * Starts a connection to the WS backend and waits for it to finish. If the connection is already established
+ * it will simply return.
+ * @returns {Promise<void>}
+ */
+async function connectAndWaitForConnection(): Promise<void> {
+    console.log('Connect and wait until the connection is ready.')
+    console.log(connectionStatus)
+    console.log(websocket)
+
+    // Re-use the existing connection if possible
+    if (connectionStatus === 'CONNECTED') {
+        console.log('Already connected')
+        return
+    }
+
+    try {
+        const websocketUrl = makeWsConnectUrl()
+
+        console.info(`Websocket url: ${websocketUrl}`)
+
+        websocket = new WebSocket(websocketUrl)
+        connectionStatus = 'CONNECTING'
+
+        websocket.onopen = handleOpen
+        websocket.onclose = handleClose
+        websocket.onerror = handleError
+        websocket.onmessage = handleMessage
+
+        // Wait for the connection to be established
+        await waitForConnection()
+
+        console.log(`Connected. ${connectionStatus}`)
+    } catch (error) {
+        console.error('Failed to establish a connection:', error)
+        connectionStatus = 'NOT_CONNECTED'
+    }
+}
+
+// Assuming the function `waitForConnection` is defined elsewhere
+// It should ensure the connection status is 'CONNECTED' before resolving
+
+/**
+ * Closes the connection to the WS backend.
+ */
+function killWebsocket(): void {
+    websocket?.close()
+}
+
+
+// Functions used within WS API
+/**
+ * Sends a command with specified options over a WebSocket and waits for a reply.
+ * The function returns a promise that resolves with the reply of type `ReplyType`.
+ * 
+ * @template ReplyType - The expected type of the reply.
+ * @template Options - The type of the options to be sent with the command.
+ * @param {string} command - The command to be sent over the WebSocket.
+ * @param {Options} options - The options to be included with the command.
+ * @returns {Promise<ReplyType>} - A promise that resolves with the reply of type `ReplyType`.
+ */
+async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command: string, options: Options): Promise<ReplyType> {
+    const requestId = getRequestId()
+
+    const message = {
+        command,
+        requestId,
+        ...options
+    }
+
+    console.log(message)
+
+    websocket?.send(JSON.stringify(message))
+
+    wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
+
+    const timestampSent = Date.now()
+
+    // eslint-disable-next-line
+    return new Promise((resolve: (value: ReplyType) => void, reject: (reason?: any) => void) => {
+        const timer = setInterval(() => {
+            const timestampSawReply = Date.now()
+
+            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
+                clearInterval(timer)
+                reject(new Error(`Timeout waiting for reply to command: ${command}`))
+
+                return
+            }
+
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            replies.delete(requestId)
+
+            clearInterval(timer)
+
+            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
+
+            resolve(reply as ReplyType)
+        }, 5)
+    })
+}
+
+/**
+ * Sends a command over a WebSocket and waits for a reply.
+ * The function returns a promise that resolves with the reply of type `ReplyType`.
+ * 
+ * @template ReplyType - The expected type of the reply.
+ * @param {string} command - The command to be sent over the WebSocket.
+ * @returns {Promise<ReplyType>} - A promise that resolves with the reply of type `ReplyType`.
+ */
+async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyType> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command,
+            requestId
+        }
+    ))
+
+    wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
+
+    const timestampSent = (new Date()).getTime()
+
+    // eslint-disable-next-line
+    return new Promise((resolve: (value: ReplyType) => void, reject: (reason?: any) => void) => {
+        const timer = setInterval(() => {
+            const timestampSawReply = (new Date()).getTime()
+
+            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
+                clearInterval(timer)
+                reject(new Error(`Timeout waiting for reply to command: ${command}`))
+
+                return
+            }
+
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            replies.delete(requestId)
+
+            clearInterval(timer)
+
+            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
+
+            resolve(reply as ReplyType)
+        }, 5)
+    })
+}
+
+function send(command: string): void {
+    wsApiDebug.send && console.log(`SEND: ${command}`)
+
+    websocket?.send(JSON.stringify({ command }))
+}
+
+function sendWithOptions<Options>(command: string, options: Options): void {
+    wsApiDebug.send && console.log('SEND: ' + JSON.stringify({ command, ...options }))
+
+    websocket?.send(JSON.stringify({ command, ...options }))
+}
+
+function waitForNumberReply(requestId: number): Promise<number> {
+
+    // eslint-disable-next-line
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const reply = replies.get(requestId)
+
+            if (!reply) {
+                return
+            }
+
+            if (isNumberReplyMessage(reply)) {
+                replies.delete(requestId)
+
+                clearInterval(timer)
+
+                console.log(`Got number reply: ${reply.amount}`)
+
+                result(reply.amount)
+            }
+        }, 10)
+    })
+}
+
+async function getAmountForCommand(command: string): Promise<number> {
+    const requestId = getRequestId()
+
+    websocket?.send(JSON.stringify(
+        {
+            command,
+            requestId
+        }
+    ))
+
+    console.log(`Send request: ${command} with id: ${requestId}`)
+
+    return await waitForNumberReply(requestId)
+}
+
+// eslint-disable-next-line
+function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
+    try {
+        const message = JSON.parse(messageFromServer.data)
+
+        if (wsApiDebug.receive) {
+            console.log(`Received message: ${message}`)
+        }
+
+        if (isGameChangesMessage(message)) {
+            wsApiDebug.receive && console.log('Handling player view changed message')
+
+            loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
+        } else if (isFullSyncMessage(message)) {
+            wsApiDebug.receive && console.log('Handling full sync message')
+
+            clearAndLoadPlayerView(message)
+        } else if (isReplyMessage(message)) {
+            wsApiDebug.receive && console.log('Handling reply message')
+
+            replies.set(message.requestId, message)
+        } else if (isGameInformationChangedMessage(message)) {
+            wsApiDebug.receive && console.log('Handling game information changed message')
+
+            loadGameInformationAndCallListeners(message.gameInformation)
+        } else if (isGameListChangedMessage(message)) {
+            wsApiDebug.receive && console.log('Handling game list changed messgae')
+
+            receivedGameListChangedMessage(message)
+        } else if (isChatMessage(message)) {
+            wsApiDebug.receive && console.log('Handling chat message')
+
+            loadChatMessage(message.chatMessage)
+        }
+    } catch (e) {
+        console.error(e)
+        console.error(JSON.stringify(e))
+        console.info(messageFromServer.data)
+    }
+}
+
+// Functions used within RPC Core
+function makeWsConnectUrl(): string {
+    return `ws://${window.location.hostname}:8080/ws/monitor/games`
+}
+
+function getRequestId(): number {
+    nextRequestId += 1
+
+    return nextRequestId - 1
+}
+
+
+function handleOpen(): void {
+    console.info('Websocket for subscription is open')
+    connectionStatus = 'CONNECTED'
+    gameListeners.forEach(listener => listener.onMonitoringStarted?.())
+}
+
+function handleClose(event: CloseEvent): void {
+    console.error('Websocket was closed')
+    connectionStatus = 'NOT_CONNECTED'
+    websocketDisconnected(event)
+}
+
+function handleError(event: Event): void {
+    console.error('Websocket encountered an error')
+    connectionStatus = 'NOT_CONNECTED'
+    websocketError(event)
+}
+
+function handleMessage(message: MessageEvent): void {
+    websocketMessageReceived(message)
+}
+
+function websocketError(error: unknown): void {
+    console.error(error)
+}
+
+// TODO: review and fix the handling of when the websocket gets disconnected
+function websocketDisconnected(e: CloseEvent): void {
+    console.log("Disconnected from backend")
+
+    if (monitor.gameState === 'EXPIRED') {
+        return
+    }
+
+    console.info("Websocket closed: " + JSON.stringify(e))
+    console.info(e)
+
+    if (e.code === 1003) {
+        console.error("The game has been removed from the backend")
+
+        monitor.gameState = "EXPIRED"
+
+        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged("EXPIRED"))
+    } else {
+        setTimeout(() => {
+            if (monitor.gameId === undefined) {
+                console.error('Game id is not set')
+
+                return
+            }
+
+            if (monitor.playerId === undefined) {
+                console.error('Player id is not set')
+
+                return
+            }
+
+            const websocketUrl = makeWsConnectUrl()
+
+            console.info("Websocket url: " + websocketUrl)
+
+            websocket = new WebSocket(websocketUrl)
+
+            websocket.onopen = () => {
+                console.info("Websocket for subscription is open. Requesting full sync.")
+
+                connectionStatus = 'CONNECTED'
+
+                if (websocket) {
+                    sendRequestAndWaitForReply<PlayerViewInformation>('FULL_SYNC')
+                }
+            }
+            websocket.onclose = e => websocketDisconnected(e)
+            websocket.onerror = e => websocketError(e)
+            websocket.onmessage = message => websocketMessageReceived(message)
+        }, 1000)
+    }
 }
 
 export {

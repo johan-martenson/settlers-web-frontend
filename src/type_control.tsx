@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState } from 'react'
+import React, { useCallback, useEffect, useReducer, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import { PointInformation, Point } from './api/types'
@@ -21,7 +21,6 @@ interface TypeControlKey {
     ctrlKey: boolean
     metaKey: boolean
     shiftKey: boolean
-
 }
 
 function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeControlKey> {
@@ -95,6 +94,13 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
             return () => document.removeEventListener("key", listener)
         }, [])
 
+
+    function commandChosen(commandName: string): void {
+        console.log(`Command: ${commandName}`)
+
+        commands.get(commandName)?.action(selectedPoint)
+    }
+
     function reducer(state: InputState, action: InputAction): InputState {
         switch (action.type) {
             case "set":
@@ -102,17 +108,9 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
             case "add":
                 return { input: state.input + action.payload }
             case "run": {
-                let commandHit = undefined
+                const commandHit = Array.from(commands.keys())
+                    .find(command => command.toLowerCase().startsWith(state.input.toLowerCase()))
 
-                for (const command of Array.from(commands.keys())) {
-                    if (command.toLowerCase().startsWith(state.input.toLowerCase())) {
-                        commandHit = command
-
-                        break
-                    }
-                }
-
-                /* Run the command */
                 if (commandHit) {
                     commandChosen(commandHit)
                 } else {
@@ -122,7 +120,9 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
                 return { input: '' }
             }
             case "remove_last":
-                return { input: state.input.substring(0, state.input.length - 1) }
+                return { input: state.input.slice(0, -1) }
+            default:
+                return state
         }
     }
 
@@ -147,18 +147,6 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
                     addToInput(key)
                 }
             }
-        }
-    }
-
-    function commandChosen(commandName: string): void {
-
-        /* Run the command */
-        console.log("Command: " + commandName)
-
-        const command = commands.get(commandName)
-
-        if (command) {
-            command.action(selectedPoint)
         }
     }
 
@@ -191,7 +179,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
         className += " closed"
     }
 
-    const invalidSelectedPointInformation = selectedPointInformation === undefined || ! ('canBuild' in selectedPointInformation)
+    const invalidSelectedPointInformation = selectedPointInformation === undefined || !('canBuild' in selectedPointInformation)
 
     return (
         <div className="type-control" onWheel={(event) => event.stopPropagation()}>

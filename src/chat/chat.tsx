@@ -11,7 +11,7 @@ type ChatBoxProps = {
 }
 
 function ChatBox({ playerId, roomId }: ChatBoxProps) {
-    const myRef = useRef<HTMLInputElement | null>(null)
+    const inputRef = useRef<HTMLInputElement | null>(null)
 
     const [chatLog, setChatLog] = useState<ChatMessage[]>(monitor.chatRoomMessages)
     const [text, setText] = useState<string>('')
@@ -27,53 +27,53 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
             monitor.addChatMessagesListener(changedChatLog, playerId, [roomId])
 
             return () => monitor.removeChatMessagesListener(changedChatLog)
-        }, [roomId]
+        }, [roomId, playerId]
     )
 
     return (
         <div className='chat-box'>
             <div className='chat-log'>
-                {chatLog.filter(chatMessage => chatMessage?.toRoomId === roomId || (chatMessage?.toPlayers !== undefined && chatMessage.toPlayers.find(p => p === playerId) !== undefined))
-                    .map((chatMessage, index) => <div
-                        key={index}
-                        className='chat-entry'
-                    >
-                        [{chatMessage.time.hours.toString().padStart(2, '0')}:{chatMessage.time.minutes.toString().padStart(2, '0')}] {chatMessage.fromName}: {chatMessage.text}
-                    </div>)}
+                {chatLog
+                    .filter(chatMessage =>
+                        chatMessage?.toRoomId === roomId ||
+                        chatMessage?.toPlayers?.some(p => p === playerId)
+                    )
+                    .map((chatMessage, index) => (
+                        <div key={index} className='chat-entry'>
+                            [{chatMessage.time.hours.toString().padStart(2, '0')}:{chatMessage.time.minutes.toString().padStart(2, '0')}] {chatMessage.fromName}: {chatMessage.text}
+                        </div>))}
             </div>
             <div className='chat-type-and-send'>
                 <Input
                     value={text}
-                    ref={myRef}
+                    ref={inputRef}
                     onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setText(data.value)}
                     onKeyDown={(event: React.KeyboardEvent) => {
                         if (event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) {
                             return
                         }
 
-                        if (event.key === 'Enter') {
-                            const text = myRef.current?.value
+                        if (event.key === 'Enter' && inputRef.current?.value) {
+                            const message = inputRef.current.value
 
-                            console.log(text)
+                            console.log(message)
                             setText('')
 
-                            if (text) {
-                                monitor.sendChatMessageToRoom(text, roomId, playerId)
-                            }
+                            monitor.sendChatMessageToRoom(message, roomId, playerId)
                         }
                     }} />
                 <Button
                     onClick={() => {
-                        const text = myRef.current?.value
+                        const message = inputRef.current?.value
 
-                        console.log(text)
+                        console.log(message)
                         console.log(`Send to: ${roomId}`)
 
                         setText('')
 
-                        if (text) {
+                        if (message) {
                             console.log('sending')
-                            monitor.sendChatMessageToRoom(text, roomId, playerId)
+                            monitor.sendChatMessageToRoom(message, roomId, playerId)
                         }
                     }}
                 >

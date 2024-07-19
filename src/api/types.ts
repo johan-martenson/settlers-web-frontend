@@ -590,26 +590,6 @@ export interface Decoration {
 
 export type GameState = 'NOT_STARTED' | "STARTED" | "PAUSED" | "EXPIRED"
 
-export interface PlayerViewInformation {
-    borders: BorderInformation[]
-    houses: HouseInformation[]
-    workers: ServerWorkerInformation[]
-    roads: RoadInformation[]
-    trees: TreeInformation[]
-    flags: FlagInformation[]
-    stones: StoneInformation[]
-    signs: SignInformation[]
-    crops: CropInformation[]
-    wildAnimals: WildAnimalInformation[]
-    discoveredPoints: Point[]
-    availableConstruction: PointMapFast<AvailableConstruction[]>
-    deadTrees: Point[]
-    decorations: Decoration[]
-    messages: GameMessage[]
-    gameState: GameState
-    players: PlayerInformation[]
-}
-
 export interface PossibleNewRoadInformation {
     possibleNewRoad: Point[]
     closesRoad: boolean

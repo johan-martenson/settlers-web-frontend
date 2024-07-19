@@ -1,5 +1,6 @@
-import { GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PlayerViewInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, Player, TransportCategories, AttackType } from './types'
+import { GameMessage, HouseId, Point, GameId, LandStatistics, ProductionStatistics, GameInformation, Nation, PlayerInformation, PlayerId, MapInformation, MapId, ResourceLevel, HouseInformation, FlagId, RoadId, AnyBuilding, RoadInformation, FlagInformation, TransportPriorityInformation, PointInformation, TerrainInformation, PossibleNewRoadInformation, Player, TransportCategories, AttackType } from './types'
 import { PointMapFast } from '../util_types'
+import { PlayerViewInformation } from './ws/commands'
 
 function printTimestamp(message: string): void {
     const date = new Date()

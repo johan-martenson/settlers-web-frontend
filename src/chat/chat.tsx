@@ -14,7 +14,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
     const inputRef = useRef<HTMLInputElement | null>(null)
 
     const [chatLog, setChatLog] = useState<ChatMessage[]>(monitor.chatRoomMessages)
-    const [text, setText] = useState<string>('')
+    const [messageText, setMessageText] = useState<string>('')
 
     useEffect(
         () => {
@@ -38,16 +38,16 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                         chatMessage?.toRoomId === roomId ||
                         chatMessage?.toPlayers?.some(p => p === playerId)
                     )
-                    .map((chatMessage, index) => (
-                        <div key={index} className='chat-entry'>
+                    .map((chatMessage) => (
+                        <div key={chatMessage.id} className='chat-entry'>
                             [{chatMessage.time.hours.toString().padStart(2, '0')}:{chatMessage.time.minutes.toString().padStart(2, '0')}] {chatMessage.fromName}: {chatMessage.text}
                         </div>))}
             </div>
             <div className='chat-type-and-send'>
                 <Input
-                    value={text}
+                    value={messageText}
                     ref={inputRef}
-                    onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setText(data.value)}
+                    onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setMessageText(data.value)}
                     onKeyDown={(event: React.KeyboardEvent) => {
                         if (event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) {
                             return
@@ -57,7 +57,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                             const message = inputRef.current.value
 
                             console.log(message)
-                            setText('')
+                            setMessageText('')
 
                             monitor.sendChatMessageToRoom(message, roomId, playerId)
                         }
@@ -69,7 +69,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                         console.log(message)
                         console.log(`Send to: ${roomId}`)
 
-                        setText('')
+                        setMessageText('')
 
                         if (message) {
                             console.log('sending')

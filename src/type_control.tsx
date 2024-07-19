@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useReducer, useState } from 'react'
+import React, { useEffect, useReducer, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import { PointInformation, Point } from './api/types'

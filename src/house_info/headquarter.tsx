@@ -99,7 +99,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     setStrengthWhenPopulatingBuildings(settings.soldierStrengthWhenPopulatingBuildings)
                     setDefenseFromSurroundingBuildings(settings.defenseFromSurroundingBuildings)
                     setDefenseStrength(settings.defenseStrength)
-                    setSoldiersAvailableForAttack(soldiersAvailableForAttack)
+                    setSoldiersAvailableForAttack(settings.soldierAmountsAvailableForAttack)
                     setPopulateFarFromBorder(settings.soldierAmountWhenPopulatingFarFromBorder)
                     setPopulateCloserToBorder(settings.soldierAmountWhenPopulatingAwayFromBorder)
                     setPopulateCloseToBorder(settings.soldierAmountWhenPopulatingCloseToBorder)

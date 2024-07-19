@@ -90,10 +90,10 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
             {players.map(
                 (player, index) => {
                     return (
-                        <div key={index}>
+                        <div key={player.id}>
 
                             {player.id === selfPlayerId &&
-                                <Player key={index} isSelf={true}
+                                <Player key={player.id} isSelf={true}
                                     availableColors={availableColors}
                                     onPlayerUpdated={
                                         (name: string, nation: Nation, color: PlayerColor) => {
@@ -105,7 +105,7 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
                             }
 
                             {player.id !== selfPlayerId &&
-                                <Player key={index} player={player}
+                                <Player key={player.id} player={player}
                                     availableColors={availableColors}
                                     onPlayerUpdated={
                                         (name: string, nation: Nation, color: PlayerColor) => {

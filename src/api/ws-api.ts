@@ -971,13 +971,6 @@ async function listenToGameMetadata(): Promise<GameInformation> {
     return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('LISTEN_TO_GAME_INFO')).gameInformation
 }
 
-// eslint-disable-next-line
-async function getViewForPlayer(): Promise<PlayerViewInformation> {
-    return (
-        await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('FULL_SYNC')
-    ).playerView
-}
-
 function stopTimers() {
     const timers = [workerAnimationsTimer, workerWalkingTimer, cropGrowerTimer, treeGrowerTimer]
 
@@ -1617,43 +1610,6 @@ function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): Worke
     return worker
 }
 
-function placeBuildingWebsocket(type: AnyBuilding, point: Point): void {
-    sendWithOptions<{ x: number, y: number, type: AnyBuilding }>('PLACE_BUILDING', { ...point, type })
-}
-
-function placeRoadWebsocket(points: Point[]): void {
-    sendWithOptions<{ road: Point[] }>('PLACE_ROAD', { road: points })
-}
-
-function placeFlagWebsocket(flag: Point): void {
-    sendWithOptions<{ flag: Point }>('PLACE_FLAG', { flag })
-}
-
-
-function placeRoadWithFlagWebsocket(flag: Point, points: Point[]): void {
-    sendWithOptions<{ flag: Point, road: Point[] }>('PLACE_FLAG_AND_ROAD', { flag, road: points })
-}
-
-function removeFlagWebsocket(id: FlagId): void {
-    sendWithOptions<{ id: FlagId }>('REMOVE_FLAG', { id })
-}
-
-function removeRoadWebsocket(id: RoadId): void {
-    sendWithOptions<{ id: RoadId }>('REMOVE_ROAD', { id })
-}
-
-function removeBuildingWebsocket(id: HouseId): void {
-    sendWithOptions<{ id: HouseId }>('REMOVE_BUILDING', { id })
-}
-
-function callScoutWebsocket(point: Point): void {
-    sendWithOptions<{ point: Point }>('CALL_SCOUT', { point })
-}
-
-function callGeologistWebsocket(point: Point): void {
-    sendWithOptions<{ point: Point }>('CALL_GEOLOGIST', { point })
-}
-
 export type PointInformationLocal = {
     x: number
     y: number
@@ -1738,155 +1694,6 @@ function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
     return undefined
 }
 
-type InformationOnPointsReply = {
-    pointsWithInformation: PointInformation[]
-}
-
-async function getInformationOnPoint(point: Point): Promise<PointInformation> {
-    const options = { points: [point] }
-
-    const reply = await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, typeof options>("INFORMATION_ON_POINTS", options)
-
-    return reply.pointsWithInformation[0]
-}
-
-async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<PointInformation>> {
-    const options = { points }
-
-    const reply = await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, typeof options>("INFORMATION_ON_POINTS", options)
-
-    const map = new PointMapFast<PointInformation>()
-
-    reply.pointsWithInformation.forEach(pointInformation => map.set({ x: pointInformation.x, y: pointInformation.y }, pointInformation))
-
-    return map
-}
-
-function setReservedSoldiers(rank: SoldierType, amount: number): void {
-    sendWithOptions<Partial<{ [key in SoldierType]: number }>>('SET_RESERVED_IN_HEADQUARTERS', { [rank]: amount })
-}
-
-function addDetailedMonitoring(id: HouseId | FlagId): void {
-    sendWithOptions<{ id: HouseId | FlagId }>('START_DETAILED_MONITORING', { id })
-}
-
-function removeDetailedMonitoring(houseId: HouseId): void {
-    sendWithOptions<{ buildingId: HouseId }>('STOP_DETAILED_MONITORING', { buildingId: houseId })
-}
-
-function removeMessage(messageId: GameMessageId): void {
-    sendWithOptions<{ messageId: GameMessageId }>('REMOVE_MESSAGE', { messageId })
-}
-
-function removeMessages(messages: GameMessage[]): void {
-    sendWithOptions<{ messageIds: GameMessageId[] }>('REMOVE_MESSAGES', { messageIds: messages.map(message => message.id) })
-}
-
-function setCoalQuotas(mint: number, armory: number, ironSmelter: number): void {
-    sendWithOptions<{ mint: number, armory: number, ironSmelter: number }>(
-        'SET_COAL_QUOTAS',
-        { mint, armory, ironSmelter }
-    )
-}
-
-interface CoalQuotas {
-    mint: number
-    armory: number
-    ironSmelter: number
-}
-
-interface FoodQuotas {
-    ironMine: number
-    coalMine: number
-    goldMine: number
-    graniteMine: number
-}
-
-interface WheatQuotas {
-    donkeyFarm: number
-    pigFarm: number
-    mill: number
-    brewery: number
-}
-
-interface WaterQuotas {
-    bakery: number
-    donkeyFarm: number
-    pigFarm: number
-    brewery: number
-}
-
-interface IronBarQuotas {
-    armory: number
-    metalworks: number
-}
-
-function getFoodQuotas(): Promise<FoodQuotas> {
-    return sendRequestAndWaitForReply<FoodQuotas>("GET_FOOD_QUOTAS")
-}
-
-function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number) {
-    sendWithOptions<{ donkeyFarm: number, pigFarm: number, mill: number, brewery: number }>(
-        'SET_WHEAT_QUOTAS',
-        { donkeyFarm, pigFarm, mill, brewery }
-    )
-}
-
-function getWheatQuotas(): Promise<WheatQuotas> {
-    return sendRequestAndWaitForReply<WheatQuotas>("GET_WHEAT_QUOTAS")
-}
-
-function getWaterQuotas(): Promise<WaterQuotas> {
-    return sendRequestAndWaitForReply<WaterQuotas>("GET_WATER_QUOTAS")
-}
-
-function getCoalQuotas(): Promise<CoalQuotas> {
-    return sendRequestAndWaitForReply<CoalQuotas>("GET_COAL_QUOTAS")
-}
-
-function getIronBarQuotas(): Promise<IronBarQuotas> {
-    return sendRequestAndWaitForReply<IronBarQuotas>("GET_IRON_BAR_QUOTAS")
-}
-
-function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, graniteMine: number) {
-    sendWithOptions<{ ironMine: number, coalMine: number, goldMine: number, graniteMine: number }>(
-        'SET_FOOD_QUOTAS',
-        { ironMine, coalMine, goldMine, graniteMine }
-    )
-}
-
-function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) {
-    sendWithOptions<{ bakery: number, donkeyFarm: number, pigFarm: number, brewery: number }>(
-        'SET_WATER_QUOTAS',
-        { bakery, donkeyFarm, pigFarm, brewery })
-}
-
-function setIronBarQuotas(armory: number, metalworks: number) {
-    sendWithOptions<{ armory: number, metalworks: number }>('SET_IRON_BAR_QUOTAS', { armory, metalworks })
-}
-
-type CreateNewGameOptions = {
-    name: string
-    players: Player[]
-}
-
-/**
- * Creates a new game with the given name and players.
- * @param {string} name - The name of the game
- * @param {PlayerInformation[]} players - The players in the game
- * @returns {GameInformation} Metadata about the game
- */
-async function createGame(name: string, players: PlayerInformation[]): Promise<GameInformation> {
-    const gameInformation = (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, CreateNewGameOptions>('CREATE_GAME', {
-        name,
-        players
-    })).gameInformation
-
-    assignGameInformation(gameInformation)
-
-    return gameInformation
-}
-
 function assignGameInformation(gameInformation: GameInformation): void {
     monitor.gameId = gameInformation.id
     monitor.gameName = gameInformation.name
@@ -1898,155 +1705,12 @@ function assignGameInformation(gameInformation: GameInformation): void {
 
 }
 
-function pauseGame() {
-    send('PAUSE_GAME')
-}
-
-function resumeGame(): void {
-    send('RESUME_GAME')
-}
-
 function getHeight(point: Point): number {
     return monitor.allTiles.get(point)?.height ?? 0
 }
 
-function setStrengthWhenPopulatingMilitaryBuildings(strength: number): void {
-    sendWithOptions<{ strength: number }>('SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING', { strength })
-}
-
-async function getStrengthWhenPopulatingMilitaryBuildings(): Promise<number> {
-    return await getAmountForCommand('GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING')
-}
-
-function setDefenseStrength(strength: number): void {
-    sendWithOptions<{ strength: number }>('SET_DEFENSE_STRENGTH', { strength })
-}
-
-async function getDefenseStrength(): Promise<number> {
-    return await getAmountForCommand('GET_DEFENSE_STRENGTH')
-}
-
-function setDefenseFromSurroundingBuildings(strength: number): void {
-    sendWithOptions<{ strength: number }>('SET_DEFENSE_FROM_SURROUNDING_BUILDINGS', { strength })
-}
-
-async function getDefenseFromSurroundingBuildings(): Promise<number> {
-    return await getAmountForCommand('GET_DEFENSE_FROM_SURROUNDING_BUILDINGS')
-}
-
-async function getPopulateMilitaryFarFromBorder(): Promise<number> {
-    return await getAmountForCommand('GET_POPULATE_MILITARY_FAR_FROM_BORDER')
-}
-
-async function getPopulateMilitaryCloserToBorder(): Promise<number> {
-    return await getAmountForCommand('GET_POPULATE_MILITARY_CLOSER_TO_BORDER')
-}
-
-async function getPopulateMilitaryCloseToBorder(): Promise<number> {
-    return await getAmountForCommand('GET_POPULATE_MILITARY_CLOSE_TO_BORDER')
-}
-
-async function getMilitarySettings(): Promise<MilitarySettings> {
-    return await sendRequestAndWaitForReply<MilitarySettings>("GET_MILITARY_SETTINGS")
-}
-
-async function getSoldiersAvailableForAttack(): Promise<number> {
-    return await getAmountForCommand('GET_SOLDIERS_AVAILABLE_FOR_ATTACK')
-}
-
-function startGame(): void {
-    send('START_GAME')
-}
-
-function setMap(mapId: MapId): void {
-    sendWithOptions<{ mapId: MapId }>('SET_MAP', { mapId })
-}
-
-async function setOthersCanJoin(othersCanJoin: boolean): Promise<GameInformation> {
-    return (
-        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { othersCanJoin: boolean }>('SET_OTHERS_CAN_JOIN', { othersCanJoin })
-    ).gameInformation
-}
-
-function setAvailableResources(resources: ResourceLevel): void {
-    sendWithOptions<{ resources: ResourceLevel }>('SET_INITIAL_RESOURCES', { resources })
-}
-
-function setTitle(name: string): void {
-    sendWithOptions<{ name: string }>('SET_GAME_NAME', { name })
-}
-
-function setGameSpeed(speed: GameSpeed): void {
-    sendWithOptions<{ speed: GameSpeed }>('SET_GAME_SPEED', { speed })
-}
-
-function setMilitaryPopulationFarFromBorder(population: number): void {
-    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_FAR_FROM_BORDER', { population })
-}
-
-function setMilitaryPopulationCloserToBorder(population: number): void {
-    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_CLOSER_TO_BORDER', { population })
-}
-
-function setMilitaryPopulationCloseToBorder(population: number): void {
-    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_CLOSE_TO_BORDER', { population })
-}
-
-function setSoldiersAvailableForAttack(amount: number): void {
-    sendWithOptions<{ amount: number }>('SET_SOLDIERS_AVAILABLE_FOR_ATTACK', { amount })
-}
-
 function houseAt(point: Point): HouseInformation | undefined {
     return monitor.housesAt.get(point)
-}
-
-function upgrade(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>('UPGRADE', { houseId })
-}
-
-async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
-    const options = { flagId }
-
-    return (await sendRequestAndWaitForReplyWithOptions<{ flag: FlagDebugInfo }, typeof options>('FLAG_DEBUG_INFORMATION', options)).flag
-}
-
-/**
- * Tells the backend which player the monitor should be connected to. All instructions that don't take a player as an explicit parameter
- * operate on the set player. Internal function that is not exposed outside of the module.
- * @param {PlayerId} playerId - The id of the player.
- * @returns {Promise<PlayerInformation>} Information about the player
- */
-async function setPlayerId(playerId: PlayerId): Promise<PlayerInformation> {
-    return (
-        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, { playerId: PlayerId }>('SET_SELF_PLAYER', { playerId })
-    ).playerInformation
-}
-
-/**
- * Tells the backend what game the monitor should be connected to. All instructions that don't take a game as an explicit parameter
- * operate on the set game. Internal function that is not exposed outside of the module.
- * @param {GameId} gameId - The id of the game
- * @returns {Promise<GameInformation>} Metadata about the game
- */
-async function setGame(gameId: GameId): Promise<GameInformation> {
-    return (
-        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId }>('SET_GAME', { gameId })
-    ).gameInformation
-}
-
-function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): void {
-    sendWithOptions<{ text: string, roomId: RoomId, from: PlayerId }>(
-        'SEND_CHAT_MESSAGE_TO_ROOM',
-        { text, roomId, from }
-    )
-}
-
-/**
- * Instructs the backend to start sending updates on any changes to the game visible to the player set through followGame. Internal function that is not exposed outside of the module.
- * @returns {Promise<PlayerViewInformation>} The current view of the game visible to the player.
- */
-async function listenToGameViewForPlayer(): Promise<PlayerViewInformation | undefined> {
-    return (await sendRequestAndWaitForReply<{ playerView?: PlayerViewInformation }>('START_MONITORING_GAME'))?.playerView
 }
 
 /**
@@ -2103,6 +1767,212 @@ function loadChatRoomHistoryAndCallListeners(chatRoomHistory: ChatMessage[]): vo
     chatListeners.forEach(listener => listener())
 }
 
+function waitForGameDataAvailable(): Promise<void> {
+    const timestampWaitStarted = (new Date()).getTime()
+
+    return new Promise((result, reject) => {
+        const timer = setInterval(() => {
+            const timestampNow = (new Date()).getTime()
+
+            if (timestampNow - timestampWaitStarted > MAX_WAIT_FOR_CONNECTION) {
+                clearInterval(timer)
+
+                console.error('Timed out waiting for game data to be available.')
+
+                reject('Timed out')
+            }
+
+            if (monitor.allTiles.size > 0) {
+                clearInterval(timer)
+
+                console.log('Game data is available')
+
+                result()
+            }
+        }, 5)
+    })
+}
+
+
+
+// RPC Commands
+
+// Constants
+
+// Types
+type AddPlayerOptions = Player & { type: PlayerType }
+type AddPlayerReply = { playerInformation: PlayerInformation }
+type UpdatePlayerOptions = { playerId: PlayerId, name: string, color: PlayerColor, nation: Nation }
+
+interface CoalQuotas {
+    mint: number
+    armory: number
+    ironSmelter: number
+}
+
+interface FoodQuotas {
+    ironMine: number
+    coalMine: number
+    goldMine: number
+    graniteMine: number
+}
+
+interface WheatQuotas {
+    donkeyFarm: number
+    pigFarm: number
+    mill: number
+    brewery: number
+}
+
+interface WaterQuotas {
+    bakery: number
+    donkeyFarm: number
+    pigFarm: number
+    brewery: number
+}
+
+interface IronBarQuotas {
+    armory: number
+    metalworks: number
+}
+
+type CreateNewGameOptions = {
+    name: string
+    players: Player[]
+}
+
+type InformationOnPointsReply = { pointsWithInformation: PointInformation[] }
+
+// Type functions
+
+// Configuration
+
+// State
+
+// Functions exposed as part of WS API
+function setStrengthWhenPopulatingMilitaryBuildings(strength: number): void {
+    sendWithOptions<{ strength: number }>('SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING', { strength })
+}
+
+async function getStrengthWhenPopulatingMilitaryBuildings(): Promise<number> {
+    //return await getAmountForCommand('GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING')
+
+    return (await sendRequestAndWaitForReply<{ amount: number }>('GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING')).amount
+}
+
+function setDefenseStrength(strength: number): void {
+    sendWithOptions<{ strength: number }>('SET_DEFENSE_STRENGTH', { strength })
+}
+
+async function getDefenseStrength(): Promise<number> {
+    //return await getAmountForCommand('GET_DEFENSE_STRENGTH')
+
+    return (await sendRequestAndWaitForReply<{ amount: number }>('GET_DEFENSE_STRENGTH')).amount
+}
+
+function setDefenseFromSurroundingBuildings(strength: number): void {
+    sendWithOptions<{ strength: number }>('SET_DEFENSE_FROM_SURROUNDING_BUILDINGS', { strength })
+}
+
+async function getDefenseFromSurroundingBuildings(): Promise<number> {
+    //return await getAmountForCommand('GET_DEFENSE_FROM_SURROUNDING_BUILDINGS')
+
+    return (await sendRequestAndWaitForReply<{ amount: number }>('GET_DEFENSE_FROM_SURROUNDING_BUILDINGS')).amount
+}
+
+async function getPopulateMilitaryFarFromBorder(): Promise<number> {
+    //return await getAmountForCommand('GET_POPULATE_MILITARY_FAR_FROM_BORDER')
+
+    return (await sendRequestAndWaitForReply<{ amount: number }>('GET_POPULATE_MILITARY_FAR_FROM_BORDER')).amount
+}
+
+async function getPopulateMilitaryCloserToBorder(): Promise<number> {
+    //return await getAmountForCommand('GET_POPULATE_MILITARY_CLOSER_TO_BORDER')
+
+    return (await sendRequestAndWaitForReply<{ amount: number }>('GET_POPULATE_MILITARY_CLOSER_TO_BORDER')).amount
+}
+
+async function getPopulateMilitaryCloseToBorder(): Promise<number> {
+    //return await getAmountForCommand('GET_POPULATE_MILITARY_CLOSE_TO_BORDER')
+
+    return (await sendRequestAndWaitForReply<{ amount: number }>('GET_POPULATE_MILITARY_CLOSE_TO_BORDER')).amount
+}
+
+async function getMilitarySettings(): Promise<MilitarySettings> {
+    return await sendRequestAndWaitForReply<MilitarySettings>('GET_MILITARY_SETTINGS')
+}
+
+async function getSoldiersAvailableForAttack(): Promise<number> {
+    //return await getAmountForCommand('GET_SOLDIERS_AVAILABLE_FOR_ATTACK')
+
+    return (await sendRequestAndWaitForReply<{ amount: number }>('GET_SOLDIERS_AVAILABLE_FOR_ATTACK')).amount
+}
+
+function startGame(): void {
+    send('START_GAME')
+}
+
+function setMap(mapId: MapId): void {
+    sendWithOptions<{ mapId: MapId }>('SET_MAP', { mapId })
+}
+
+async function setOthersCanJoin(othersCanJoin: boolean): Promise<GameInformation> {
+    return (
+        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { othersCanJoin: boolean }>('SET_OTHERS_CAN_JOIN', { othersCanJoin })
+    ).gameInformation
+}
+
+function setAvailableResources(resources: ResourceLevel): void {
+    sendWithOptions<{ resources: ResourceLevel }>('SET_INITIAL_RESOURCES', { resources })
+}
+
+function setTitle(name: string): void {
+    sendWithOptions<{ name: string }>('SET_GAME_NAME', { name })
+}
+
+function setGameSpeed(speed: GameSpeed): void {
+    sendWithOptions<{ speed: GameSpeed }>('SET_GAME_SPEED', { speed })
+}
+
+function setMilitaryPopulationFarFromBorder(population: number): void {
+    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_FAR_FROM_BORDER', { population })
+}
+
+function setMilitaryPopulationCloserToBorder(population: number): void {
+    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_CLOSER_TO_BORDER', { population })
+}
+
+function setMilitaryPopulationCloseToBorder(population: number): void {
+    sendWithOptions<{ population: number }>('SET_MILITARY_POPULATION_CLOSE_TO_BORDER', { population })
+}
+
+function setSoldiersAvailableForAttack(amount: number): void {
+    sendWithOptions<{ amount: number }>('SET_SOLDIERS_AVAILABLE_FOR_ATTACK', { amount })
+}
+
+async function createPlayer(name: string, color: PlayerColor, nation: Nation, type: PlayerType): Promise<PlayerInformation> {
+    return (
+        await sendRequestAndWaitForReplyWithOptions<AddPlayerReply, AddPlayerOptions>('CREATE_PLAYER', { name, color, nation, type })
+    ).playerInformation
+}
+
+async function addPlayerToGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId, playerId: PlayerId }>(
+        'ADD_PLAYER_TO_GAME',
+        { gameId, playerId }
+    )).gameInformation
+}
+
+async function updatePlayer(playerId: PlayerId, name: string, color: PlayerColor, nation: Nation): Promise<PlayerInformation> {
+    return (
+        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, UpdatePlayerOptions>('UPDATE_PLAYER', { playerId, name, color, nation })
+    ).playerInformation
+}
+
+function removePlayer(playerId: PlayerId): void {
+    sendWithOptions<{ playerId: PlayerId }>('REMOVE_PLAYER', { playerId })
+}
+
 /**
  * Gets the chat history for a chat room
  * @param {RoomId} roomId - The id of the chat room
@@ -2130,60 +2000,197 @@ async function getGameInformation(): Promise<GameInformation> {
     return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('GET_GAME_INFORMATION')).gameInformation
 }
 
-type AddPlayerOptions = Player & { type: PlayerType }
-type AddPlayerReply = {
-    playerInformation: PlayerInformation
+function upgrade(houseId: HouseId): void {
+    sendWithOptions<{ houseId: HouseId }>('UPGRADE', { houseId })
 }
 
-async function createPlayer(name: string, color: PlayerColor, nation: Nation, type: PlayerType): Promise<PlayerInformation> {
+async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ flag: FlagDebugInfo }, { flagId: FlagId }>('FLAG_DEBUG_INFORMATION', { flagId })).flag
+}
+
+/**
+ * Tells the backend which player the monitor should be connected to. All instructions that don't take a player as an explicit parameter
+ * operate on the set player. Internal function that is not exposed outside of the module.
+ * @param {PlayerId} playerId - The id of the player.
+ * @returns {Promise<PlayerInformation>} Information about the player
+ */
+async function setPlayerId(playerId: PlayerId): Promise<PlayerInformation> {
     return (
-        await sendRequestAndWaitForReplyWithOptions<AddPlayerReply, AddPlayerOptions>('CREATE_PLAYER', { name, color, nation, type })
+        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, { playerId: PlayerId }>('SET_SELF_PLAYER', { playerId })
     ).playerInformation
 }
 
-async function addPlayerToGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation> {
-    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId, playerId: PlayerId }>(
-        'ADD_PLAYER_TO_GAME',
-        { gameId, playerId }
-    )).gameInformation
-}
-
-type UpdatePlayerOptions = { playerId: PlayerId, name: string, color: PlayerColor, nation: Nation }
-
-async function updatePlayer(playerId: PlayerId, name: string, color: PlayerColor, nation: Nation): Promise<PlayerInformation> {
+/**
+ * Tells the backend what game the monitor should be connected to. All instructions that don't take a game as an explicit parameter
+ * operate on the set game. Internal function that is not exposed outside of the module.
+ * @param {GameId} gameId - The id of the game
+ * @returns {Promise<GameInformation>} Metadata about the game
+ */
+async function setGame(gameId: GameId): Promise<GameInformation> {
     return (
-        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, UpdatePlayerOptions>('UPDATE_PLAYER', { playerId, name, color, nation })
-    ).playerInformation
+        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId }>('SET_GAME', { gameId })
+    ).gameInformation
 }
 
-function removePlayer(playerId: PlayerId): void {
-    sendWithOptions<{ playerId: PlayerId }>('REMOVE_PLAYER', { playerId })
+function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): void {
+    sendWithOptions<{ text: string, roomId: RoomId, from: PlayerId }>('SEND_CHAT_MESSAGE_TO_ROOM', { text, roomId, from })
 }
 
-function waitForGameDataAvailable(): Promise<void> {
-    const timestampWaitStarted = (new Date()).getTime()
+/**
+ * Instructs the backend to start sending updates on any changes to the game visible to the player set through followGame. Internal function that is not exposed outside of the module.
+ * @returns {Promise<PlayerViewInformation>} The current view of the game visible to the player.
+ */
+async function listenToGameViewForPlayer(): Promise<PlayerViewInformation | undefined> {
+    return (await sendRequestAndWaitForReply<{ playerView?: PlayerViewInformation }>('START_MONITORING_GAME'))?.playerView
+}
 
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const timestampNow = (new Date()).getTime()
+async function getInformationOnPoint(point: Point): Promise<PointInformation> {
+    return (
+        await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, { points: Point[] }>("INFORMATION_ON_POINTS", { points: [point] })
+    ).pointsWithInformation[0]
+}
 
-            if (timestampNow - timestampWaitStarted > MAX_WAIT_FOR_CONNECTION) {
-                clearInterval(timer)
+async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<PointInformation>> {
+    const reply = await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, { points: Point[] }>("INFORMATION_ON_POINTS", { points })
 
-                console.error('Timed out waiting for game data to be available.')
+    const map = new PointMapFast<PointInformation>()
 
-                reject('Timed out')
-            }
+    reply.pointsWithInformation.forEach(pointInformation => map.set({ x: pointInformation.x, y: pointInformation.y }, pointInformation))
 
-            if (monitor.allTiles.size > 0) {
-                clearInterval(timer)
+    return map
+}
 
-                console.log('Game data is available')
+function setReservedSoldiers(rank: SoldierType, amount: number): void {
+    sendWithOptions<Partial<{ [key in SoldierType]: number }>>('SET_RESERVED_IN_HEADQUARTERS', { [rank]: amount })
+}
 
-                result()
-            }
-        }, 5)
-    })
+function addDetailedMonitoring(id: HouseId | FlagId): void {
+    sendWithOptions<{ id: HouseId | FlagId }>('START_DETAILED_MONITORING', { id })
+}
+
+function removeDetailedMonitoring(houseId: HouseId): void {
+    sendWithOptions<{ buildingId: HouseId }>('STOP_DETAILED_MONITORING', { buildingId: houseId })
+}
+
+function removeMessage(messageId: GameMessageId): void {
+    sendWithOptions<{ messageId: GameMessageId }>('REMOVE_MESSAGE', { messageId })
+}
+
+function removeMessages(messages: GameMessage[]): void {
+    sendWithOptions<{ messageIds: GameMessageId[] }>('REMOVE_MESSAGES', { messageIds: messages.map(message => message.id) })
+}
+
+function setCoalQuotas(mint: number, armory: number, ironSmelter: number): void {
+    sendWithOptions<{ mint: number, armory: number, ironSmelter: number }>(
+        'SET_COAL_QUOTAS',
+        { mint, armory, ironSmelter }
+    )
+}
+
+function getFoodQuotas(): Promise<FoodQuotas> {
+    return sendRequestAndWaitForReply<FoodQuotas>("GET_FOOD_QUOTAS")
+}
+
+function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number) {
+    sendWithOptions<{ donkeyFarm: number, pigFarm: number, mill: number, brewery: number }>(
+        'SET_WHEAT_QUOTAS',
+        { donkeyFarm, pigFarm, mill, brewery }
+    )
+}
+
+function getWheatQuotas(): Promise<WheatQuotas> {
+    return sendRequestAndWaitForReply<WheatQuotas>("GET_WHEAT_QUOTAS")
+}
+
+function getWaterQuotas(): Promise<WaterQuotas> {
+    return sendRequestAndWaitForReply<WaterQuotas>("GET_WATER_QUOTAS")
+}
+
+function getCoalQuotas(): Promise<CoalQuotas> {
+    return sendRequestAndWaitForReply<CoalQuotas>("GET_COAL_QUOTAS")
+}
+
+function getIronBarQuotas(): Promise<IronBarQuotas> {
+    return sendRequestAndWaitForReply<IronBarQuotas>("GET_IRON_BAR_QUOTAS")
+}
+
+function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, graniteMine: number) {
+    sendWithOptions<{ ironMine: number, coalMine: number, goldMine: number, graniteMine: number }>(
+        'SET_FOOD_QUOTAS',
+        { ironMine, coalMine, goldMine, graniteMine }
+    )
+}
+
+function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) {
+    sendWithOptions<{ bakery: number, donkeyFarm: number, pigFarm: number, brewery: number }>(
+        'SET_WATER_QUOTAS',
+        { bakery, donkeyFarm, pigFarm, brewery })
+}
+
+function setIronBarQuotas(armory: number, metalworks: number) {
+    sendWithOptions<{ armory: number, metalworks: number }>('SET_IRON_BAR_QUOTAS', { armory, metalworks })
+}
+
+/**
+ * Creates a new game with the given name and players.
+ * @param {string} name - The name of the game
+ * @param {PlayerInformation[]} players - The players in the game
+ * @returns {GameInformation} Metadata about the game
+ */
+async function createGame(name: string, players: PlayerInformation[]): Promise<GameInformation> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, CreateNewGameOptions>('CREATE_GAME', {
+        name,
+        players
+    })).gameInformation
+}
+
+function pauseGame() {
+    send('PAUSE_GAME')
+}
+
+function resumeGame(): void {
+    send('RESUME_GAME')
+}
+
+function placeBuildingWebsocket(type: AnyBuilding, point: Point): void {
+    sendWithOptions<{ x: number, y: number, type: AnyBuilding }>('PLACE_BUILDING', { ...point, type })
+}
+
+function placeRoadWebsocket(points: Point[]): void {
+    sendWithOptions<{ road: Point[] }>('PLACE_ROAD', { road: points })
+}
+
+function placeFlagWebsocket(flag: Point): void {
+    sendWithOptions<{ flag: Point }>('PLACE_FLAG', { flag })
+}
+
+function placeRoadWithFlagWebsocket(flag: Point, points: Point[]): void {
+    sendWithOptions<{ flag: Point, road: Point[] }>('PLACE_FLAG_AND_ROAD', { flag, road: points })
+}
+
+function removeFlagWebsocket(id: FlagId): void {
+    sendWithOptions<{ id: FlagId }>('REMOVE_FLAG', { id })
+}
+
+function removeRoadWebsocket(id: RoadId): void {
+    sendWithOptions<{ id: RoadId }>('REMOVE_ROAD', { id })
+}
+
+function removeBuildingWebsocket(id: HouseId): void {
+    sendWithOptions<{ id: HouseId }>('REMOVE_BUILDING', { id })
+}
+
+function callScoutWebsocket(point: Point): void {
+    sendWithOptions<{ point: Point }>('CALL_SCOUT', { point })
+}
+
+function callGeologistWebsocket(point: Point): void {
+    sendWithOptions<{ point: Point }>('CALL_GEOLOGIST', { point })
+}
+
+// eslint-disable-next-line
+async function getViewForPlayer(): Promise<PlayerViewInformation> {
+    return (await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('FULL_SYNC')).playerView
 }
 
 
@@ -2382,12 +2389,12 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
 
     wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
 
-    const timestampSent = (new Date()).getTime()
+    const timestampSent = Date.now()
 
     // eslint-disable-next-line
     return new Promise((resolve: (value: ReplyType) => void, reject: (reason?: any) => void) => {
         const timer = setInterval(() => {
-            const timestampSawReply = (new Date()).getTime()
+            const timestampSawReply = Date.now()
 
             if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
                 clearInterval(timer)
@@ -2398,70 +2405,40 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
 
             const reply = replies.get(requestId)
 
-            if (!reply) {
-                return
-            }
-
-            replies.delete(requestId)
-
-            clearInterval(timer)
-
-            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
-
-            resolve(reply as ReplyType)
-        }, 5)
-    })
-}
-
-function send(command: string): void {
-    wsApiDebug.send && console.log(`SEND: ${command}`)
-
-    websocket?.send(JSON.stringify({ command }))
-}
-
-function sendWithOptions<Options>(command: string, options: Options): void {
-    wsApiDebug.send && console.log('SEND: ' + JSON.stringify({ command, ...options }))
-
-    websocket?.send(JSON.stringify({ command, ...options }))
-}
-
-function waitForNumberReply(requestId: number): Promise<number> {
-
-    // eslint-disable-next-line
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            if (isNumberReplyMessage(reply)) {
+            if (reply) {
                 replies.delete(requestId)
 
                 clearInterval(timer)
 
-                console.log(`Got number reply: ${reply.amount}`)
+                console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
 
-                result(reply.amount)
+                resolve(reply as ReplyType)
             }
-        }, 10)
+        }, 5)
+
+        // Cleanup function to clear the interval if the promise is settled
+        return () => clearInterval(timer)
     })
 }
 
-async function getAmountForCommand(command: string): Promise<number> {
-    const requestId = getRequestId()
+function send(command: string): void {
+    const message = JSON.stringify({ command })
 
-    websocket?.send(JSON.stringify(
-        {
-            command,
-            requestId
-        }
-    ))
+    if (wsApiDebug) {
+        console.log(`SEND: ${message}`)
+    }
 
-    console.log(`Send request: ${command} with id: ${requestId}`)
+    websocket?.send(message)
+}
 
-    return await waitForNumberReply(requestId)
+function sendWithOptions<Options>(command: string, options: Options): void {
+    const message = JSON.stringify({ command, ...options })
+
+    if (wsApiDebug) {
+        console.log(`SEND: ${message}`)
+    }
+
+    websocket?.send(message)
 }
 
 // eslint-disable-next-line

@@ -105,7 +105,7 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose, onRaise }: Se
                                 <ArrowSortDown24Filled onClick={async () => decreasePriority(selected)} /></div>
                         }
 
-                        return <div onClick={() => setSelected(category)} key={index}>{icon}</div>
+                        return <div onClick={() => setSelected(category)} key={category}>{icon}</div>
                     }
                 )
                 }

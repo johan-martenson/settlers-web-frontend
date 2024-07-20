@@ -506,7 +506,7 @@ function GameCanvas({
             }
 
             // Callback when discovered points are updated
-            function discoveredPointsUpdated(points: PointSetFast) {
+            function discoveredPointsUpdated() {
 
                 // Update the calculated normals
                 calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)

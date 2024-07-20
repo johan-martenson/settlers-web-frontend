@@ -1,5 +1,3 @@
-import { PointMapFast } from "../util_types"
-
 // Identities
 export type GameId = string
 export type PlayerId = string

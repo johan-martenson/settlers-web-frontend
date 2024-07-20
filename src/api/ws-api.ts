@@ -1,8 +1,9 @@
 import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, PointInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, AnyBuilding, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, BorderInformation, StoneInformation, Direction, SoldierType, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, FlagDebugInfo, GameInformation, MapInformation, Player, MapId, ResourceLevel, PlayerType, Vegetation, RoomId, ChatMessage } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, placeBuildingWebsocket, placeRoadWebsocket, placeFlagWebsocket, placeRoadWithFlagWebsocket, removeFlagWebsocket, removeRoadWebsocket, removeBuildingWebsocket, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, callScoutWebsocket, callGeologistWebsocket, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setAvailableResources, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, MilitarySettings, CoalQuotas, FoodQuotas, IronBarQuotas, WaterQuotas, WheatQuotas, PlayerViewInformation } from './ws/commands';
-import { simpleDirectionToCompassDirection } from './utils';
+import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage } from './types'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, placeBuildingWebsocket, placeRoadWebsocket, placeFlagWebsocket, placeRoadWithFlagWebsocket, removeFlagWebsocket, removeRoadWebsocket, removeBuildingWebsocket, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, callScoutWebsocket, callGeologistWebsocket, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setAvailableResources, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages } from './ws/commands'
+import { simpleDirectionToCompassDirection } from './utils'
+import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
 // Using the monitor
 
@@ -288,14 +289,6 @@ export type PointInformationLocal = {
 
 
 // Type functions
-function isFullSyncMessage(message: unknown): message is PlayerViewInformation {
-    return message !== null &&
-        message !== undefined &&
-        typeof message === 'object' &&
-        'type' in message &&
-        message.type === 'FULL_SYNC'
-}
-
 function isGameInformationChangedMessage(message: unknown): message is GameInformationChangedMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'GAME_INFO_CHANGED'
 }
@@ -466,14 +459,14 @@ const monitor = {
 
     houseAt,
 
-    killWebsocket,
-    waitForConnection,
     waitForGameDataAvailable,
-    connectAndWaitForConnection,
+    waitForConnection,
     createGame,
     getGames,
     followGame,
-    sendChatMessageToRoom
+    sendChatMessageToRoom,
+    connectAndWaitForConnection,
+    killWebsocket
 }
 
 // State - listeners
@@ -489,6 +482,63 @@ const gamesListeners: Set<GameListListener> = new Set<GameListListener>()
 const workerMovedListeners: Set<WorkerMoveListener> = new Set<WorkerMoveListener>()
 const chatListeners: Set<ChatListener> = new Set<ChatListener>()
 const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagListener>>()
+
+// Initialization
+function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
+    if (connectionStatus === 'CONNECTED' && followingState === 'FOLLOWING') {
+        (async () => {
+            try {
+                const gameInformation = await getGameInformation()
+                clearAndLoadGameInformationAndCallListeners(gameInformation)
+
+                if (gameInformation.status !== 'NOT_STARTED') {
+                    clearAndLoadPlayerViewAndCallListeners(await getViewForPlayer())
+                }
+            } catch (error) {
+                console.error(`Failed to sync the game with the backend: ${error}`)
+
+                monitor.gameState = 'EXPIRED'
+
+                gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged('EXPIRED'))
+            }
+        })().then()
+    }
+}
+
+// eslint-disable-next-line
+function onMessageReceived(message: any): void {
+    console.log(`WS API: Got message: ${JSON.stringify(message)}`)
+
+    try {
+        if (isGameChangesMessage(message)) {
+            console.log('Handling player view changed message')
+
+            loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
+        } else if (isGameInformationChangedMessage(message)) {
+            console.log('Handling game information changed message')
+
+            handleGameInformationChangedMessage(message.gameInformation)
+        } else if (isGameListChangedMessage(message)) {
+            console.log('Handling game list changed messgae')
+
+            receivedGameListChangedMessage(message)
+        } else if (isChatMessage(message)) {
+            console.log('Handling chat message')
+
+            loadChatMessage(message.chatMessage)
+        } else {
+            console.error('Do not know how to handle this')
+        }
+    } catch (e) {
+        console.error(e)
+        console.error(JSON.stringify(e))
+        console.info(message.data)
+    }
+}
+
+
+addConnectionStatusListener(onConnectionStatusChanged)
+addMessageListener(onMessageReceived)
 
 // Functions exposed as part of WS API
 // Functions to add/remove listeners
@@ -513,7 +563,7 @@ function removeMovementForWorkerListener(listener: WorkerMoveListener): void {
 }
 
 function addChatMessagesListener(listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]): void {
-    sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>('LISTEN_TO_CHAT_MESSAGES', { playerId, roomIds })
+    listenToChatMessages(playerId, roomIds)
 
     chatListeners.add(listener)
 }
@@ -584,7 +634,7 @@ function addActionsListener(listener: ActionListener) {
 
 function addGamesListener(listener: GameListListener): void {
     if (gamesListeningStatus === 'NOT_LISTENING') {
-        send('LISTEN_TO_GAME_LIST')
+        listenToGamesList()
 
         gamesListeningStatus = 'LISTENING'
     }
@@ -603,6 +653,19 @@ function addBurningHousesListener(listener: HouseBurningListener) {
 // Functions used within WS API
 
 // Functions used within monitoring
+function handleGameInformationChangedMessage(gameInformation: GameInformation): void {
+    if (monitor.gameState === 'NOT_STARTED' && gameInformation.status !== 'NOT_STARTED') {
+        (async () => {
+            loadPlayerViewAndCallListeners(await getViewForPlayer())
+
+            gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
+        }
+        )().then()
+    }
+
+    loadGameInformationAndCallListeners(gameInformation)
+}
+
 function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     const previousGameState = monitor.gameState
 
@@ -875,18 +938,23 @@ function receivedGameListChangedMessage(message: GameListChangedMessage): void {
     gamesListeners.forEach(listener => listener(message.games))
 }
 
+function clearAndLoadGameInformationAndCallListeners(gameInformation: GameInformation): void {
+
+    // Clear
+    monitor.gameId = undefined
+    monitor.othersCanJoin = undefined
+    monitor.initialResources = undefined
+    monitor.map = undefined
+
+    // Load and call listeners
+    loadGameInformationAndCallListeners(gameInformation)
+}
+
 async function loadGameInformationAndCallListeners(gameInformation: GameInformation): Promise<void> {
     const prevState = monitor.gameState
 
     // Store the updated values
     assignGameInformation(gameInformation)
-
-    // Did the game just start? Then read the full player view
-    const playerView = await listenToGameViewForPlayer()
-
-    if (playerView !== undefined) {
-        loadPlayerViewAndCallListeners(playerView)
-    }
 
     // Call game state change listener
     if (prevState !== gameInformation.status) {
@@ -895,10 +963,6 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
 
     // Call other listeners
     gameListeners.forEach(listener => listener.onGameInformationChanged && listener.onGameInformationChanged(gameInformation))
-}
-
-async function listenToGameMetadata(): Promise<GameInformation> {
-    return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('LISTEN_TO_GAME_INFO')).gameInformation
 }
 
 function stopTimers() {
@@ -911,7 +975,7 @@ function stopTimers() {
     })
 }
 
-function clearAndLoadPlayerView(playerView: PlayerViewInformation): void {
+function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformation): void {
     console.log("Handling full sync message")
 
     // Clear the local state
@@ -1541,7 +1605,11 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
 
         // Sync the received view
         if (playerView !== undefined) {
+            console.log('WS API: Loading player view')
+
             loadPlayerViewAndCallListeners(playerView)
+        } else {
+            console.log('WS API: Not loading player view')
         }
 
         followingState = 'FOLLOWING'
@@ -1588,418 +1656,8 @@ function waitForGameDataAvailable(): Promise<void> {
 
 
 
-// RPC Core
-
-// Constants
-const MAX_WAIT_FOR_REPLY = 1000; // milliseconds
-const MAX_WAIT_FOR_CONNECTION = 10_000; // milliseconds
-
-// Types
-type RequestId = number
-type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
-type ReplyMessage = { requestId: RequestId }
-type ConnectionListener = (connectionState: ConnectionStatus) => void
-
-// Type functions
-function isReplyMessage(message: unknown): message is ReplyMessage {
-    return message !== undefined &&
-        message !== null &&
-        typeof message === 'object' &&
-        'requestId' in message
-}
-
-// Configuration
-export const wsApiDebug = {
-    receive: false,
-    send: false
-}
-
-// State
-const replies: Map<RequestId, ReplyMessage> = new Map()
-const connectionListeners: Set<ConnectionListener> = new Set()
-
-let websocket: WebSocket | undefined = undefined
-let nextRequestId = 0
-let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
-
-// Functions exposed as part of WS API
-/**
- * Adds the given function as a listener for connection status changes.
- * @param {ConnectionListener} listener A function that will be called when the connection status changes
- */
-function addConnectionStatusListener(listener: ConnectionListener): void {
-    connectionListeners.add(listener)
-}
-
-/**
- * Removes the given function from the set of listeners so that it will no longer get called when the connection status changes
- * @param listener A function that is registered as a listener and should stop being called when the status changes
- */
-function removeConnectionStatusListener(listener: ConnectionListener): void {
-    connectionListeners.delete(listener)
-}
-
-/**
- * Waits for a connection to get established to the WS backend. Will not initiate any connection on its own.
- * @returns {Promise<void>}
- */
-function waitForConnection(): Promise<void> {
-    const timestampWaitStarted = (new Date()).getTime()
-
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const timestampNow = (new Date()).getTime()
-
-            if (timestampNow - timestampWaitStarted > MAX_WAIT_FOR_CONNECTION) {
-                clearInterval(timer)
-
-                console.error('Failed to connect to websocket backend')
-
-                reject('Timed out')
-            }
-
-            if (connectionStatus === 'CONNECTED') {
-                clearInterval(timer)
-
-                console.log('Connection is established')
-
-                result()
-            }
-        }, 5)
-    })
-}
-
-/**
- * Starts a connection to the WS backend and waits for it to finish. If the connection is already established
- * it will simply return.
- * @returns {Promise<void>}
- */
-async function connectAndWaitForConnection(): Promise<void> {
-    console.log('Connect and wait until the connection is ready.')
-    console.log(connectionStatus)
-    console.log(websocket)
-
-    // Re-use the existing connection if possible
-    if (connectionStatus === 'CONNECTED') {
-        console.log('Already connected')
-        return
-    }
-
-    try {
-        const websocketUrl = makeWsConnectUrl()
-
-        console.info(`Websocket url: ${websocketUrl}`)
-
-        websocket = new WebSocket(websocketUrl)
-
-        connectionStatus = 'CONNECTING'
-        notifyConnectionListeners(connectionStatus)
-
-        websocket.onopen = handleOpen
-        websocket.onclose = handleClose
-        websocket.onerror = handleError
-        websocket.onmessage = handleMessage
-
-        // Wait for the connection to be established
-        await waitForConnection()
-
-        console.log(`Connected. ${connectionStatus}`)
-    } catch (error) {
-        console.error('Failed to establish a connection:', error)
-        connectionStatus = 'NOT_CONNECTED'
-    }
-}
-
-// Assuming the function `waitForConnection` is defined elsewhere
-// It should ensure the connection status is 'CONNECTED' before resolving
-
-/**
- * Closes the connection to the WS backend.
- */
-function killWebsocket(): void {
-    websocket?.close()
-}
-
-
-// Functions used within WS API
-/**
- * Sends a command with specified options over a WebSocket and waits for a reply.
- * The function returns a promise that resolves with the reply of type `ReplyType`.
- * 
- * @template ReplyType - The expected type of the reply.
- * @template Options - The type of the options to be sent with the command.
- * @param {string} command - The command to be sent over the WebSocket.
- * @param {Options} options - The options to be included with the command.
- * @returns {Promise<ReplyType>} - A promise that resolves with the reply of type `ReplyType`.
- */
-async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command: string, options: Options): Promise<ReplyType> {
-    const requestId = getRequestId()
-
-    const message = {
-        command,
-        requestId,
-        ...options
-    }
-
-    console.log(message)
-
-    websocket?.send(JSON.stringify(message))
-
-    wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
-
-    const timestampSent = Date.now()
-
-    // eslint-disable-next-line
-    return new Promise((resolve: (value: ReplyType) => void, reject: (reason?: any) => void) => {
-        const timer = setInterval(() => {
-            const timestampSawReply = Date.now()
-
-            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
-                clearInterval(timer)
-                reject(new Error(`Timeout waiting for reply to command: ${command}`))
-
-                return
-            }
-
-            const reply = replies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
-            replies.delete(requestId)
-
-            clearInterval(timer)
-
-            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
-
-            resolve(reply as ReplyType)
-        }, 5)
-    })
-}
-
-/**
- * Sends a command over a WebSocket and waits for a reply.
- * The function returns a promise that resolves with the reply of type `ReplyType`.
- * 
- * @template ReplyType - The expected type of the reply.
- * @param {string} command - The command to be sent over the WebSocket.
- * @returns {Promise<ReplyType>} - A promise that resolves with the reply of type `ReplyType`.
- */
-async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyType> {
-    const requestId = getRequestId()
-
-    websocket?.send(JSON.stringify(
-        {
-            command,
-            requestId
-        }
-    ))
-
-    wsApiDebug.send && console.log(`Send request: ${command} with id: ${requestId}`)
-
-    const timestampSent = Date.now()
-
-    // eslint-disable-next-line
-    return new Promise((resolve: (value: ReplyType) => void, reject: (reason?: any) => void) => {
-        const timer = setInterval(() => {
-            const timestampSawReply = Date.now()
-
-            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
-                clearInterval(timer)
-                reject(new Error(`Timeout waiting for reply to command: ${command}`))
-
-                return
-            }
-
-            const reply = replies.get(requestId)
-
-            if (reply) {
-                replies.delete(requestId)
-
-                clearInterval(timer)
-
-                console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
-
-                resolve(reply as ReplyType)
-            }
-        }, 5)
-
-        // Cleanup function to clear the interval if the promise is settled
-        // TODO: verify that this is correct
-        return () => clearInterval(timer)
-    })
-}
-
-function send(command: string): void {
-    const message = JSON.stringify({ command })
-
-    if (wsApiDebug) {
-        console.log(`SEND: ${message}`)
-    }
-
-    websocket?.send(message)
-}
-
-function sendWithOptions<Options>(command: string, options: Options): void {
-    const message = JSON.stringify({ command, ...options })
-
-    if (wsApiDebug) {
-        console.log(`SEND: ${message}`)
-    }
-
-    websocket?.send(message)
-}
-
-// eslint-disable-next-line
-function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
-    try {
-        const message = JSON.parse(messageFromServer.data)
-
-        if (wsApiDebug.receive) {
-            console.log(`Received message: ${message}`)
-        }
-
-        if (isGameChangesMessage(message)) {
-            wsApiDebug.receive && console.log('Handling player view changed message')
-
-            loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
-        } else if (isFullSyncMessage(message)) {
-            wsApiDebug.receive && console.log('Handling full sync message')
-
-            clearAndLoadPlayerView(message)
-        } else if (isReplyMessage(message)) {
-            wsApiDebug.receive && console.log('Handling reply message')
-
-            replies.set(message.requestId, message)
-        } else if (isGameInformationChangedMessage(message)) {
-            wsApiDebug.receive && console.log('Handling game information changed message')
-
-            loadGameInformationAndCallListeners(message.gameInformation)
-        } else if (isGameListChangedMessage(message)) {
-            wsApiDebug.receive && console.log('Handling game list changed messgae')
-
-            receivedGameListChangedMessage(message)
-        } else if (isChatMessage(message)) {
-            wsApiDebug.receive && console.log('Handling chat message')
-
-            loadChatMessage(message.chatMessage)
-        }
-    } catch (e) {
-        console.error(e)
-        console.error(JSON.stringify(e))
-        console.info(messageFromServer.data)
-    }
-}
-
-// Functions used within RPC Core
-function makeWsConnectUrl(): string {
-    return `ws://${window.location.hostname}:8080/ws/monitor/games`
-}
-
-function getRequestId(): number {
-    nextRequestId += 1
-
-    return nextRequestId - 1
-}
-
-function handleOpen(): void {
-    console.info('Websocket for subscription is open')
-
-    connectionStatus = 'CONNECTED'
-    notifyConnectionListeners('CONNECTED')
-
-    gameListeners.forEach(listener => listener.onMonitoringStarted?.())
-}
-
-function handleClose(event: CloseEvent): void {
-    console.error('Websocket was closed')
-
-    connectionStatus = 'NOT_CONNECTED'
-    notifyConnectionListeners('NOT_CONNECTED')
-
-    websocketDisconnected(event)
-}
-
-function handleError(event: Event): void {
-    console.error('Websocket encountered an error')
-
-    connectionStatus = 'NOT_CONNECTED'
-    notifyConnectionListeners('NOT_CONNECTED')
-
-    websocketError(event)
-}
-
-function handleMessage(message: MessageEvent): void {
-    websocketMessageReceived(message)
-}
-
-function websocketError(error: unknown): void {
-    console.error(error)
-}
-
-// TODO: review and fix the handling of when the websocket gets disconnected
-function websocketDisconnected(e: CloseEvent): void {
-    console.log("Disconnected from backend")
-
-    if (monitor.gameState === 'EXPIRED') {
-        return
-    }
-
-    console.info("Websocket closed: " + JSON.stringify(e))
-    console.info(e)
-
-    if (e.code === 1003) {
-        console.error("The game has been removed from the backend")
-
-        monitor.gameState = "EXPIRED"
-
-        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged("EXPIRED"))
-    } else {
-        setTimeout(() => {
-            if (monitor.gameId === undefined) {
-                console.error('Game id is not set')
-
-                return
-            }
-
-            if (monitor.playerId === undefined) {
-                console.error('Player id is not set')
-
-                return
-            }
-
-            const websocketUrl = makeWsConnectUrl()
-
-            console.info("Websocket url: " + websocketUrl)
-
-            websocket = new WebSocket(websocketUrl)
-
-            websocket.onopen = () => {
-                console.info("Websocket for subscription is open. Requesting full sync.")
-
-                connectionStatus = 'CONNECTED'
-
-                if (websocket) {
-                    sendRequestAndWaitForReply<PlayerViewInformation>('FULL_SYNC')
-                }
-            }
-            websocket.onclose = e => websocketDisconnected(e)
-            websocket.onerror = e => websocketError(e)
-            websocket.onmessage = message => websocketMessageReceived(message)
-        }, 1000)
-    }
-}
-
-function notifyConnectionListeners(connectionStatus: ConnectionStatus): void {
-    connectionListeners.forEach(listener => listener(connectionStatus))
-}
 
 export {
     getHeadquarterForPlayer,
-    sendWithOptions,
-    sendRequestAndWaitForReplyWithOptions,
-    sendRequestAndWaitForReply,
-    send,
     monitor
 }

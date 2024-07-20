@@ -1,6 +1,6 @@
 import { PointMapFast } from "../../util_types"
 import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, Vegetation, WildAnimalInformation } from "../types"
-import { send, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions, sendWithOptions } from "../ws-api"
+import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
 // RPC Commands
@@ -426,6 +426,19 @@ async function getViewForPlayer(): Promise<PlayerViewInformation> {
     return (await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>('FULL_SYNC')).playerView
 }
 
+// Functions internal to WS API
+async function listenToGameMetadata(): Promise<GameInformation> {
+    return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>('LISTEN_TO_GAME_INFO')).gameInformation
+}
+
+function listenToGamesList(): void {
+    send('LISTEN_TO_GAME_LIST')
+}
+
+function listenToChatMessages(playerId: PlayerId, roomIds: RoomId[]): void {
+    sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>('LISTEN_TO_CHAT_MESSAGES', { playerId, roomIds })
+}
+
 export {
     setStrengthWhenPopulatingMilitaryBuildings,
     getStrengthWhenPopulatingMilitaryBuildings,
@@ -492,4 +505,7 @@ export {
     callScoutWebsocket,
     callGeologistWebsocket,
     getViewForPlayer,
+    listenToGameMetadata,
+    listenToGamesList,
+    listenToChatMessages
 }

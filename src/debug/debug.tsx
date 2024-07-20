@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react"
 import { FlagDebugInfo, GameInformation, Point, PointInformation } from "../api/types"
-import { monitor, wsApiDebug } from "../api/ws-api"
+import { monitor } from "../api/ws-api"
 import './debug.css'
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, Switch } from "@fluentui/react-components"
 import { VEGETATION } from "./translate"
 import { getGameInformation } from "../api/rest-api"
 import { Window } from '../components/dialog'
 import { glUtilsDebug } from "../render/utils"
+import { wsApiDebugSettings } from "../api/ws/core"
 
 function Value({ children }: { children?: React.ReactNode }) {
     return (
@@ -25,16 +26,16 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
     const [flagInformation, setFlagInformation] = useState<FlagDebugInfo>()
     const [pointInformation, setPointInformation] = useState<PointInformation>()
     const [gameInformation, setGameInformation] = useState<GameInformation>()
-    const [wsApiReceiveDebug, setWsApiReceiveDebug] = useState<boolean>(wsApiDebug.receive)
-    const [wsApiSendDebug, setWsApiSendDebug] = useState<boolean>(wsApiDebug.send)
+    const [wsApiReceiveDebug, setWsApiReceiveDebug] = useState<boolean>(wsApiDebugSettings.receive)
+    const [wsApiSendDebug, setWsApiSendDebug] = useState<boolean>(wsApiDebugSettings.send)
     const [glUtilsDebugSetBuffer, setGlUtilsDebugSetBuffer] = useState<boolean>(glUtilsDebug.setBuffer)
     const [glUtilsDebugDraw, setGlUtilsDebugDraw] = useState<boolean>(glUtilsDebug.draw)
     const [glUtilsDebugInitProgram, setGlUtilsDebugInitProgram] = useState<boolean>(glUtilsDebug.initProgram)
 
     useEffect(
         () => {
-            wsApiDebug.receive = wsApiReceiveDebug
-            wsApiDebug.send = wsApiSendDebug
+            wsApiDebugSettings.receive = wsApiReceiveDebug
+            wsApiDebugSettings.send = wsApiSendDebug
         }, [wsApiReceiveDebug, wsApiSendDebug]
     )
 

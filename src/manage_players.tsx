@@ -88,7 +88,7 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
             <Subtitle1 as="h4" block>Players</Subtitle1>
 
             {players.map(
-                (player, index) => {
+                player => {
                     return (
                         <div key={player.id}>
 

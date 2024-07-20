@@ -135,7 +135,7 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose, 
     const availableAttackers = house.availableAttackers ?? 0
 
     return (
-        <Window className="house-info" onClose={onClose} heading={`Military enemy building: {house.type}`} onRaise={onRaise}>
+        <Window className="house-info" onClose={onClose} heading={`Military enemy building: ${house.type}`} onRaise={onRaise}>
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             {house.availableAttackers === 0 && <div>No attack possible</div>}

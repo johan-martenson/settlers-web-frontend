@@ -224,157 +224,6 @@ export type TileDownRight = {
     vegetation: VegetationIntegers
 }
 
-export type WsApi = {
-    gameId?: GameId
-    playerId?: PlayerId
-    workers: Map<WorkerId, WorkerInformation>
-    ships: Map<ShipId, ShipInformation>
-    houses: Map<HouseId, HouseInformation>
-    flags: Map<FlagId, FlagInformation>
-    roads: Map<RoadId, RoadInformation>
-    border: Map<PlayerId, MonitoredBorderForPlayer>
-    trees: Map<TreeId, TreeInformationLocal>
-    fallingTrees: Map<TreeId, FallingTreeInformation>
-    stones: Map<StoneId, StoneInformation>
-    crops: Map<CropId, CropInformationLocal>
-    discoveredPoints: PointSetFast
-    signs: Map<SignId, SignInformation>
-    players: Map<PlayerId, PlayerInformation>
-    availableConstruction: PointMapFast<AvailableConstruction[]>
-    messages: Map<GameMessageId, GameMessage>
-    allTiles: PointMapFast<TerrainAtPoint>
-    discoveredBelowTiles: Set<TileBelow>
-    discoveredDownRightTiles: Set<TileDownRight>
-    pointsWithBelowTileDiscovered: PointSetFast
-    pointsWithDownRightTileDiscovered: PointSetFast
-    deadTrees: PointSetFast
-    wildAnimals: Map<WildAnimalId, WildAnimalInformation>
-    decorations: PointMapFast<Decoration>
-    localRemovedFlags: Map<FlagId, FlagInformation>
-    localRemovedRoads: Map<RoadId, RoadInformation>
-    gameState: GameState
-    housesAt: PointMapFast<HouseInformation>
-    gameSpeed: GameSpeed
-    gameName?: string
-    map?: MapInformation,
-    othersCanJoin?: boolean,
-    initialResources?: ResourceLevel,
-    chatRoomMessages: ChatMessage[]
-
-    placeHouse: (houseType: AnyBuilding, point: Point) => void
-    placeRoad: (points: Point[]) => void
-    placeFlag: (point: Point) => void
-    placeRoadWithFlag: (point: Point, points: Point[]) => void
-    placeLocalRoad: (points: Point[]) => void
-
-    removeFlag: (flagId: FlagId) => void
-    removeRoad: (roadId: FlagId) => void
-    removeBuilding: (houseId: HouseId) => void
-    removeLocalRoad: (roadId: RoadId) => void
-    removeDetailedMonitoring: (houseId: HouseId) => void
-    removeMessage: (messageId: GameMessageId) => void
-    removeMessages: (messages: GameMessage[]) => void
-
-    isAvailable: (point: Point, whatToBuild: 'FLAG') => boolean
-    isGameDataAvailable: () => boolean
-
-    getInformationOnPointLocal: (point: Point) => PointInformationLocal
-    getHouseAtPointLocal: (point: Point) => HouseInformation | undefined
-    getFlagAtPointLocal: (point: Point) => FlagInformation | undefined
-    getInformationOnPoint: (point: Point) => Promise<PointInformation>
-    getInformationOnPoints: (points: Point[]) => Promise<PointMapFast<PointInformation>>
-    getHeight: (point: Point) => number
-    getFlagDebugInfo: (flagId: FlagId) => Promise<FlagDebugInfo>
-
-    callScout: (point: Point) => void
-    callGeologist: (point: Point) => void
-
-    setReservedSoldiers: (rank: SoldierType, amount: number) => void
-    setStrengthWhenPopulatingMilitaryBuildings: (strength: number) => void
-    setDefenseStrength: (strength: number) => void
-    setDefenseFromSurroundingBuildings: (strength: number) => void
-    setMilitaryPopulationFarFromBorder: (amount: number) => void
-    setMilitaryPopulationCloserToBorder: (amount: number) => void
-    setMilitaryPopulationCloseToBorder: (amount: number) => void
-    setSoldiersAvailableForAttack: (amount: number) => void
-
-    createPlayer: (name: string, color: PlayerColor, nation: Nation, type: PlayerType) => Promise<PlayerInformation>
-    addPlayerToGame: (gameId: GameId, playerId: PlayerId) => Promise<GameInformation>
-    updatePlayer: (playerId: PlayerId, name: string, color: PlayerColor, nation: Nation) => Promise<PlayerInformation>
-    removePlayer: (id: PlayerId) => void
-    upgrade: (houseId: HouseId) => void
-    setGameSpeed: (a: GameSpeed) => void
-    setTitle: (title: string) => void
-    setInitialResources: (resources: ResourceLevel) => void
-    setOthersCanJoin: (othersCanJoin: boolean) => Promise<GameInformation>
-    setMap: (map: MapId) => void
-    getMaps: () => Promise<MapInformation[]>
-
-    startGame: () => void
-
-    getStrengthWhenPopulatingMilitaryBuildings: () => Promise<number>
-    getDefenseStrength: () => Promise<number>
-    getDefenseFromSurroundingBuildings: () => Promise<number>
-    getPopulateMilitaryFarFromBorder: () => Promise<number>
-    getPopulateMilitaryCloserToBorder: () => Promise<number>
-    getPopulateMilitaryCloseToBorder: () => Promise<number>
-    getSoldiersAvailableForAttack: () => Promise<number>
-    getMilitarySettings: () => Promise<MilitarySettings>
-
-    getGameInformation: () => Promise<GameInformation>
-
-    addDetailedMonitoring: (id: HouseId | FlagId) => void
-
-    addGamesListener: (listener: GameListListener) => void
-    addFlagListener: (flagId: FlagId, listener: FlagListener) => void
-    addGameStateListener: (listener: GameListener) => void
-    addAvailableConstructionListener: (point: Point, listener: AvailableConstructionListener) => void
-    addActionsListener: (listener: ActionListener) => void
-    addBurningHousesListener: (listener: HouseBurningListener) => void
-    addMessagesListener: (listener: MessagesListener) => void
-    addDiscoveredPointsListener: (listener: (points: PointSetFast) => void) => void
-    addRoadsListener: (listener: () => void) => void
-    addHouseListener: (houseId: HouseId, listener: (house: HouseInformation) => void) => void
-    addMovementForWorkerListener: (listener: WorkerMoveListener) => void
-    addChatMessagesListener: (listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]) => void
-
-    removeGamesListener: (gamesListener: GameListListener) => void
-    removeMessagesListener: (listener: (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void) => void
-    removeRoadsListener: (listener: RoadListener) => void
-    removeFlagListener: (flagId: FlagId, listener: FlagListener) => void
-    removeAvailableConstructionListener: (point: Point, listener: AvailableConstructionListener) => void
-    removeGameStateListener: (listener: GameListener) => void
-    removeMovementForWorkerListener: (listener: WorkerMoveListener) => void
-    removeChatMessagesListener: (listener: ChatListener) => void
-    removeDiscoveredPointsListener: (listener: DiscoveredPointListener) => void
-
-    setCoalQuotas: (mintAmount: number, armoryAmount: number, ironSmelterAmount: number) => void
-    setFoodQuotas: (ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => void
-    setWheatQuotas: (donkeyFarm: number, pigFarm: number, mill: number, brewery: number) => void
-    setWaterQuotas: (bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) => void
-    setIronBarQuotas: (armory: number, metalworks: number) => void
-
-    getCoalQuotas: () => Promise<CoalQuotas>
-    getFoodQuotas: () => Promise<FoodQuotas>
-    getWheatQuotas: () => Promise<WheatQuotas>
-    getWaterQuotas: () => Promise<WaterQuotas>
-    getIronBarQuotas: () => Promise<IronBarQuotas>
-
-    pauseGame: () => void
-    resumeGame: () => void
-
-    houseAt: (point: Point) => HouseInformation | undefined
-
-    killWebsocket: () => void
-    waitForConnection: () => Promise<void>
-    waitForGameDataAvailable: () => Promise<void>
-    connectAndWaitForConnection: () => Promise<void>
-    createGame: (name: string, players: PlayerInformation[]) => Promise<GameInformation>
-    getGames: () => Promise<GameInformation[]>
-    followGame: (gameId: GameId, playerId: PlayerId) => Promise<GameInformation | undefined>
-    sendChatMessageToRoom: (text: string, room: RoomId, from: PlayerId) => void
-}
-
 let workerWalkingTimer: undefined | NodeJS.Timeout
 let workerAnimationsTimer: undefined | NodeJS.Timeout
 let cropGrowerTimer: undefined | NodeJS.Timeout
@@ -473,7 +322,12 @@ let walkingTimerState: WalkingTimerState = 'NOT_RUNNING'
 let requestedFollowingState: RequestedFollowingState = 'NO_FOLLLOW'
 let followingState: FollowingState = 'NOT_FOLLOWING'
 
-const monitor: WsApi = {
+const monitor = {
+    gameId: undefined as GameId | undefined,
+    playerId: undefined as PlayerId | undefined,
+    othersCanJoin: undefined as boolean | undefined,
+    initialResources: undefined as ResourceLevel | undefined,
+    map: undefined as MapInformation | undefined,
     workers: new Map<WorkerId, WorkerInformation>(),
     ships: new Map<ShipId, ShipInformation>(),
     houses: new Map<HouseId, HouseInformation>(),
@@ -497,10 +351,10 @@ const monitor: WsApi = {
     deadTrees: new PointSetFast(),
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
     decorations: new PointMapFast<Decoration>(),
-    gameState: 'NOT_STARTED',
-    gameSpeed: 'NORMAL',
+    gameState: 'NOT_STARTED' as GameState,
+    gameSpeed: 'NORMAL' as GameSpeed,
     gameName: '',
-    chatRoomMessages: [],
+    chatRoomMessages: [] as ChatMessage[],
 
     housesAt: new PointMapFast<HouseInformation>(),
 
@@ -1744,7 +1598,7 @@ const MAX_WAIT_FOR_CONNECTION = 10_000; // milliseconds
 type RequestId = number
 type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
 type ReplyMessage = { requestId: RequestId }
-type NumberReplyMessage = ReplyMessage & { amount: number }
+type ConnectionListener = (connectionState: ConnectionStatus) => void
 
 // Type functions
 function isReplyMessage(message: unknown): message is ReplyMessage {
@@ -1762,12 +1616,29 @@ export const wsApiDebug = {
 
 // State
 const replies: Map<RequestId, ReplyMessage> = new Map()
+const connectionListeners: Set<ConnectionListener> = new Set()
 
 let websocket: WebSocket | undefined = undefined
 let nextRequestId = 0
 let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
 
 // Functions exposed as part of WS API
+/**
+ * Adds the given function as a listener for connection status changes.
+ * @param {ConnectionListener} listener A function that will be called when the connection status changes
+ */
+function addConnectionStatusListener(listener: ConnectionListener): void {
+    connectionListeners.add(listener)
+}
+
+/**
+ * Removes the given function from the set of listeners so that it will no longer get called when the connection status changes
+ * @param listener A function that is registered as a listener and should stop being called when the status changes
+ */
+function removeConnectionStatusListener(listener: ConnectionListener): void {
+    connectionListeners.delete(listener)
+}
+
 /**
  * Waits for a connection to get established to the WS backend. Will not initiate any connection on its own.
  * @returns {Promise<void>}
@@ -1820,7 +1691,9 @@ async function connectAndWaitForConnection(): Promise<void> {
         console.info(`Websocket url: ${websocketUrl}`)
 
         websocket = new WebSocket(websocketUrl)
+
         connectionStatus = 'CONNECTING'
+        notifyConnectionListeners(connectionStatus)
 
         websocket.onopen = handleOpen
         websocket.onclose = handleClose
@@ -2030,22 +1903,30 @@ function getRequestId(): number {
     return nextRequestId - 1
 }
 
-
 function handleOpen(): void {
     console.info('Websocket for subscription is open')
+
     connectionStatus = 'CONNECTED'
+    notifyConnectionListeners('CONNECTED')
+
     gameListeners.forEach(listener => listener.onMonitoringStarted?.())
 }
 
 function handleClose(event: CloseEvent): void {
     console.error('Websocket was closed')
+
     connectionStatus = 'NOT_CONNECTED'
+    notifyConnectionListeners('NOT_CONNECTED')
+
     websocketDisconnected(event)
 }
 
 function handleError(event: Event): void {
     console.error('Websocket encountered an error')
+
     connectionStatus = 'NOT_CONNECTED'
+    notifyConnectionListeners('NOT_CONNECTED')
+
     websocketError(event)
 }
 
@@ -2108,6 +1989,10 @@ function websocketDisconnected(e: CloseEvent): void {
             websocket.onmessage = message => websocketMessageReceived(message)
         }, 1000)
     }
+}
+
+function notifyConnectionListeners(connectionStatus: ConnectionStatus): void {
+    connectionListeners.forEach(listener => listener(connectionStatus))
 }
 
 export {

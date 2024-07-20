@@ -12,34 +12,34 @@ type AddPlayerOptions = Player & { type: PlayerType }
 type AddPlayerReply = { playerInformation: PlayerInformation }
 type UpdatePlayerOptions = { playerId: PlayerId, name: string, color: PlayerColor, nation: Nation }
 
-export interface CoalQuotas {
+export type CoalQuotas = {
     mint: number
     armory: number
     ironSmelter: number
 }
 
-export interface FoodQuotas {
+export type FoodQuotas = {
     ironMine: number
     coalMine: number
     goldMine: number
     graniteMine: number
 }
 
-export interface WheatQuotas {
+export type WheatQuotas = {
     donkeyFarm: number
     pigFarm: number
     mill: number
     brewery: number
 }
 
-export interface WaterQuotas {
+export type WaterQuotas = {
     bakery: number
     donkeyFarm: number
     pigFarm: number
     brewery: number
 }
 
-export interface IronBarQuotas {
+export type IronBarQuotas = {
     armory: number
     metalworks: number
 }
@@ -61,7 +61,7 @@ export type MilitarySettings = {
     soldierAmountsAvailableForAttack: number
 }
 
-export interface PlayerViewInformation {
+export type PlayerViewInformation = {
     workers: ServerWorkerInformation[]
     ships: ShipInformation[]
     houses: HouseInformation[]

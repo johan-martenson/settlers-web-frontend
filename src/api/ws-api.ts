@@ -1,4 +1,4 @@
-import { getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
+import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage } from './types'
 import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, placeBuildingWebsocket, placeRoadWebsocket, placeFlagWebsocket, placeRoadWithFlagWebsocket, removeFlagWebsocket, removeRoadWebsocket, removeBuildingWebsocket, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, callScoutWebsocket, callGeologistWebsocket, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setAvailableResources, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages } from './ws/commands'
@@ -1628,34 +1628,23 @@ function loadChatRoomHistoryAndCallListeners(chatRoomHistory: ChatMessage[]): vo
     chatListeners.forEach(listener => listener())
 }
 
-function waitForGameDataAvailable(): Promise<void> {
-    const timestampWaitStarted = (new Date()).getTime()
+async function waitForGameDataAvailable(): Promise<void> {
+    const startTime = Date.now()
 
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const timestampNow = (new Date()).getTime()
+    while (true) {
+        if (Date.now() - startTime > MAX_WAIT_FOR_CONNECTION) {
+            console.error('Timed out waiting for game data to be available.')
+            throw new Error('Timed out')
+        }
 
-            if (timestampNow - timestampWaitStarted > MAX_WAIT_FOR_CONNECTION) {
-                clearInterval(timer)
+        if (monitor.allTiles.size > 0) {
+            console.log('Game data is available')
+            return
+        }
 
-                console.error('Timed out waiting for game data to be available.')
-
-                reject('Timed out')
-            }
-
-            if (monitor.allTiles.size > 0) {
-                clearInterval(timer)
-
-                console.log('Game data is available')
-
-                result()
-            }
-        }, 5)
-    })
+        await delay(5)
+    }
 }
-
-
-
 
 export {
     getHeadquarterForPlayer,

@@ -1,5 +1,7 @@
 // RPC Core
 
+import { delay } from "../../utils";
+
 // Constants
 export const MAX_WAIT_FOR_CONNECTION = 10_000; // milliseconds
 
@@ -14,6 +16,11 @@ type ConnectionListener = (connectionState: ConnectionStatus) => void
 type MessageListener = (message: unknown) => void
 
 // Type functions
+/**
+ * Determines if a given message is a valid reply message based on its structure.
+ * @param message The message to check.
+ * @returns {boolean} True if the message is a reply message, false otherwise.
+ */
 function isReplyMessage(message: unknown): message is ReplyMessage {
     return message !== undefined &&
         message !== null &&
@@ -32,7 +39,7 @@ const pendingReplies: Map<RequestId, ReplyMessage> = new Map()
 const connectionListeners: Set<ConnectionListener> = new Set()
 const messageListeners: Set<MessageListener> = new Set()
 
-let websocket: WebSocket | undefined = undefined
+let websocket: WebSocket | undefined
 let nextRequestId = 0
 let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
 
@@ -54,10 +61,18 @@ function removeConnectionStatusListener(listener: ConnectionListener): void {
     connectionListeners.delete(listener)
 }
 
+/**
+ * Adds a listener function that will be called whenever a new message is received.
+ * @param {MessageListener} listener The function to be called when a new message arrives.
+ */
 function addMessageListener(listener: MessageListener): void {
     messageListeners.add(listener)
 }
 
+/**
+ * Removes a previously added message listener so that it no longer receives message updates.
+ * @param {MessageListener} listener The listener function to remove.
+ */
 // eslint-disable-next-line
 function removeMessageListener(listener: MessageListener): void {
     messageListeners.delete(listener)
@@ -67,30 +82,27 @@ function removeMessageListener(listener: MessageListener): void {
  * Waits for a connection to get established to the WS backend. Will not initiate any connection on its own.
  * @returns {Promise<void>}
  */
-function waitForConnection(): Promise<void> {
-    const timestampWaitStarted = (new Date()).getTime()
+async function waitForConnection(): Promise<void> {
+    const startTime = Date.now()
+    let elapsed = 0
 
-    return new Promise((result, reject) => {
-        const timer = setInterval(() => {
-            const timestampNow = (new Date()).getTime()
+    while (elapsed < MAX_WAIT_FOR_CONNECTION) {
+        if (connectionStatus === 'CONNECTED') {
+            console.log('Connection is established')
 
-            if (timestampNow - timestampWaitStarted > MAX_WAIT_FOR_CONNECTION) {
-                clearInterval(timer)
+            return
+        }
 
-                console.error('Failed to connect to websocket backend')
+        // Wait a bit before checking again to reduce CPU usage
+        await delay(100) // Wait 100 milliseconds before the next check
 
-                reject('Timed out')
-            }
+        elapsed = Date.now() - startTime
+    }
 
-            if (connectionStatus === 'CONNECTED') {
-                clearInterval(timer)
+    // If we exit the loop, it means we've timed out
+    console.error('Failed to connect to websocket backend')
 
-                console.log('Connection is established')
-
-                result()
-            }
-        }, 5)
-    })
+    throw new Error('Timed out waiting for connection')
 }
 
 /**
@@ -171,35 +183,29 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
 
     wsApiDebugSettings.send && console.log(`Send request: ${command} with id: ${requestId}`)
 
-    const timestampSent = Date.now()
+    const startTime = Date.now()
+    let elapsed = 0
 
-    // eslint-disable-next-line
-    return new Promise((resolve: (value: ReplyType) => void, reject: (reason?: any) => void) => {
-        const timer = setInterval(() => {
-            const timestampSawReply = Date.now()
+    while (elapsed < MAX_WAIT_FOR_REPLY) {
+        await delay(5)
+        elapsed = Date.now() - startTime
 
-            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
-                clearInterval(timer)
-                reject(new Error(`Timeout waiting for reply to command: ${command}`))
+        const reply = pendingReplies.get(requestId)
 
-                return
-            }
-
-            const reply = pendingReplies.get(requestId)
-
-            if (!reply) {
-                return
-            }
-
+        if (reply) {
             pendingReplies.delete(requestId)
 
-            clearInterval(timer)
+            console.log(`Got reply: ${JSON.stringify(reply)} in ${elapsed} ms`)
 
-            console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
+            if (reply?.error) {
+                throw new Error(reply.error)
+            } else {
+                return reply as ReplyType
+            }
+        }
+    }
 
-            resolve(reply as ReplyType)
-        }, 5)
-    })
+    throw new Error(`Timeout waiting for reply to command: ${command}`)
 }
 
 /**
@@ -213,52 +219,39 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
 async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyType> {
     const requestId = makeRequestId()
 
-    websocket?.send(JSON.stringify(
-        {
-            command,
-            requestId
-        }
-    ))
+    websocket?.send(JSON.stringify({ command, requestId }))
 
     wsApiDebugSettings.send && console.log(`Send request: ${command} with id: ${requestId}`)
 
-    const timestampSent = Date.now()
+    const startTime = Date.now()
+    let elapsed = 0
 
-    // eslint-disable-next-line
-    return new Promise((resolve: (value: ReplyType) => void, reject: (reason?: any) => void) => {
-        const timer = setInterval(() => {
-            const timestampSawReply = Date.now()
+    while (elapsed < MAX_WAIT_FOR_REPLY) {
+        await delay(5)
+        elapsed = Date.now() - startTime
 
-            if (timestampSawReply - timestampSent > MAX_WAIT_FOR_REPLY) {
-                clearInterval(timer)
-                reject(new Error(`Timeout waiting for reply to command: ${command}`))
+        const reply = pendingReplies.get(requestId)
 
-                return
+        if (reply) {
+            pendingReplies.delete(requestId)
+
+            console.log(`Got reply: ${JSON.stringify(reply)} in ${elapsed} ms`)
+
+            if (reply?.error) {
+                throw new Error(reply.error)
+            } else {
+                return reply as ReplyType
             }
+        }
+    }
 
-            const reply = pendingReplies.get(requestId)
-
-            if (reply) {
-                pendingReplies.delete(requestId)
-
-                clearInterval(timer)
-
-                console.log(`Got reply: ${JSON.stringify(reply)} in ${timestampSawReply - timestampSent} ms`)
-
-                if (reply?.error) {
-                    reject(reply.error)
-                } else {
-                    resolve(reply as ReplyType)
-                }
-            }
-        }, 5)
-
-        // Cleanup function to clear the interval if the promise is settled
-        // TODO: verify that this is correct
-        return () => clearInterval(timer)
-    })
+    throw new Error(`Timeout waiting for reply to command: ${command}`)
 }
 
+/**
+ * Sends a command over the WebSocket connection without additional options.
+ * @param {string} command The command to send.
+ */
 function send(command: string): void {
     const message = JSON.stringify({ command })
 
@@ -269,6 +262,11 @@ function send(command: string): void {
     websocket?.send(message)
 }
 
+/**
+ * Sends a command with additional options over the WebSocket connection.
+ * @param {string} command The command to send.
+ * @param {Options} options The additional options to include with the command.
+ */
 function sendWithOptions<Options>(command: string, options: Options): void {
     const message = JSON.stringify({ command, ...options })
 
@@ -279,6 +277,10 @@ function sendWithOptions<Options>(command: string, options: Options): void {
     websocket?.send(message)
 }
 
+/**
+ * Handles incoming messages from the WebSocket server.
+ * @param {MessageEvent<any>} messageFromServer The message event received from the server.
+ */
 // eslint-disable-next-line
 function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
     try {
@@ -305,16 +307,27 @@ function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
 }
 
 // Functions used within RPC Core
+/**
+ * Constructs the WebSocket connection URL based on the current window location.
+ * @returns {string} The WebSocket URL to connect to.
+ */
 function makeWsConnectUrl(): string {
     return `ws://${window.location.hostname}:8080/ws/monitor/games`
 }
 
+/**
+ * Generates a new request ID for WebSocket communications.
+ * @returns {number} A new unique request ID.
+ */
 function makeRequestId(): number {
     nextRequestId += 1
 
     return nextRequestId - 1
 }
 
+/**
+ * Handles the open event for the WebSocket connection, setting the connection status to 'CONNECTED'.
+ */
 function handleOpen(): void {
     console.info('Websocket for subscription is open')
 
@@ -322,6 +335,10 @@ function handleOpen(): void {
     notifyConnectionListeners('CONNECTED')
 }
 
+/**
+ * Handles the close event for the WebSocket connection, setting the connection status to 'NOT_CONNECTED' and attempting to reconnect.
+ * @param {CloseEvent} event The close event object.
+ */
 function handleClose(event: CloseEvent): void {
     console.error('Websocket was closed')
 
@@ -337,7 +354,7 @@ async function attemptReconnect(): Promise<void> {
             connectAndWaitForConnection()
 
             console.log('Succeeded to reconnect')
-            
+
             break
         } catch (error) {
             console.error(`Failed to reconnect: ${error}`)
@@ -345,6 +362,10 @@ async function attemptReconnect(): Promise<void> {
     }
 }
 
+/**
+ * Handles errors that occur during WebSocket communication.
+ * @param {Event} event The error event object.
+ */
 function handleError(event: Event): void {
     console.error('Websocket encountered an error')
 
@@ -358,6 +379,10 @@ function handleMessage(message: MessageEvent): void {
     websocketMessageReceived(message)
 }
 
+/**
+ * Notifies all registered connection listeners about a change in connection status.
+ * @param {ConnectionStatus} connectionStatus The new connection status.
+ */
 function notifyConnectionListeners(connectionStatus: ConnectionStatus): void {
     connectionListeners.forEach(listener => listener(connectionStatus))
 }

@@ -1,5 +1,6 @@
 import { Point } from "../api/types"
-import { Dimension, makeShader } from "../utils"
+import { Dimension } from "../assets"
+import { makeShader } from "../utils"
 
 export const glUtilsDebug = {
     setBuffer: false,

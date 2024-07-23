@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, WildAnimalType, TerrainAtPoint, FlagInformation } from '../api/types'
+import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, TerrainAtPoint, FlagInformation } from '../api/types'
 import { Duration } from '../duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../stats'
-import { AnimalAnimation, BorderImageAtlasHandler, camelCaseToWords, CargoImageAtlasHandler, CropImageAtlasHandler, DecorationsImageAtlasHandler, DrawingInformation, FireAnimation, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, RoadBuildingImageAtlasHandler, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, SignImageAtlasHandler, StoneImageAtlasHandler, sumVectors, surroundingPoints, TreeAnimation, Vector, WorkerAnimation } from '../utils'
+import { camelCaseToWords, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { flagAnimations, houses, shipImageAtlas, uiElementsImageAtlasHandler, workers } from '../assets'
+import { animals, borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, donkeyAnimation, DrawingInformation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, fireImageAtlas, flagAnimations, houses, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, treeImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from '../shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from '../shaders/terrain-and-roads'
@@ -19,7 +19,7 @@ const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
 
 const OVERLAP_FACTOR = (16.0 / 47.0)
 
-export interface ScreenPoint {
+export type ScreenPoint = {
     x: number
     y: number
 }
@@ -31,19 +31,19 @@ type FogOfWarRenderInformation = {
     intensities: number[]
 }
 
-interface MapRenderInformation {
+type MapRenderInformation = {
     coordinates: number[]
     normals: number[]
     textureMapping: number[]
 }
 
-interface ToDraw {
+type ToDraw = {
     source: DrawingInformation | undefined
     gamePoint: Point
     height?: number
 }
 
-interface TrianglesAtPoint {
+type TrianglesAtPoint = {
     belowVisible: boolean
     downRightVisible: boolean
 }
@@ -53,7 +53,7 @@ type View = {
     translate: Point
 }
 
-interface GameCanvasProps {
+type GameCanvasProps = {
     cursor?: CursorState
     screenHeight: number
     selectedPoint?: Point
@@ -72,7 +72,7 @@ interface GameCanvasProps {
     onKeyDown?: ((event: React.KeyboardEvent) => void)
 }
 
-interface RenderInformation {
+type RenderInformation = {
     coordinates: number[]
     normals: number[]
     textureMapping: number[]
@@ -89,45 +89,7 @@ MOUSE_STYLES.set('BUILDING_ROAD_PRESSED', "url(assets/cursors/cursor-build-road-
 
 let timer: ReturnType<typeof setTimeout>
 
-const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
-
-const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler("assets/")
-
-const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
-
-const cropsImageAtlasHandler = new CropImageAtlasHandler("assets/")
-
-const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler("assets/")
-
-const borderImageAtlasHandler = new BorderImageAtlasHandler("assets/")
-
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
-
-const treeAnimations = new TreeAnimation("assets/nature/", 2)
-const treeImageAtlasHandler = treeAnimations.getImageAtlasHandler()
-
-const fireAnimations = new FireAnimation("assets/", 2)
-const fireImageAtlas = fireAnimations.getImageAtlasHandler()
-
-const stoneImageAtlasHandler = new StoneImageAtlasHandler("assets/")
-
-const animals = new Map<WildAnimalType, AnimalAnimation>()
-
-animals.set("DEER", new AnimalAnimation("assets/nature/animals/", "deer", 10))
-animals.set("DEER_2", new AnimalAnimation("assets/nature/animals/", "deer2", 10))
-animals.set("DUCK", new AnimalAnimation("assets/nature/animals/", "duck", 10))
-animals.set("DUCK_2", new AnimalAnimation("assets/nature/animals/", "duck", 10))
-animals.set("FOX", new AnimalAnimation("assets/nature/animals/", "fox", 10))
-animals.set("RABBIT", new AnimalAnimation("assets/nature/animals/", "rabbit", 10))
-animals.set("SHEEP", new AnimalAnimation("assets/nature/animals/", "sheep", 10))
-animals.set("STAG", new AnimalAnimation("assets/nature/animals/", "stag", 10))
-
-const donkeyAnimation = new AnimalAnimation("assets/nature/animals/", "donkey", 10)
-
-const thinCarrierWithCargo = new WorkerAnimation("assets/", "thin-carrier-with-cargo", 10)
-const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-cargo", 10)
-const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo", 10)
-const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
 
 let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
 
@@ -2664,7 +2626,7 @@ function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
     return foundInside && foundOutside
 }
 
-interface ShadedPoint {
+type ShadedPoint = {
     point: Point
     intensity: number
 }

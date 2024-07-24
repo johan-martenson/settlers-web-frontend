@@ -170,13 +170,6 @@ function getDotProduct(v1: Vector, v2: Vector): number {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
 
-function getLineBetweenPoints(p1: Point, p2: Point): Line {
-    const k = (p1.y - p2.y) / (p1.x - p2.x)
-    const m = p1.y - (k * p1.x)
-
-    return { k, m }
-}
-
 function sumVectors(v1: Vector | undefined, v2: Vector | undefined): Vector {
     const vector1: Vector = v1 ?? { x: 0, y: 0, z: 0 }
     const vector2: Vector = v2 ?? { x: 0, y: 0, z: 0 }
@@ -274,13 +267,6 @@ async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: an
 
 function same(point1: Point, point2: Point): boolean {
     return point1.x === point2.x && point1.y === point2.y
-}
-
-function getTimestamp(): number {
-    const date = new Date()
-    const timestamp = date.getTime()
-
-    return timestamp
 }
 
 function loadImageNg(src: string): Promise<HTMLImageElement> {
@@ -692,7 +678,6 @@ function delay(ms: number): Promise<void> {
 export {
     getHouseSize,
     getDirectionForWalkingWorker,
-    getTimestamp,
     normalize,
     same,
     isRoadAtPoint,
@@ -707,7 +692,6 @@ export {
     getPointUpRight,
     getPointDown,
     getPointUp,
-    getLineBetweenPoints,
     getDotProduct,
     getNormalForTriangle,
     camelCaseToWords,

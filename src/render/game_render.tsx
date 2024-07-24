@@ -4,7 +4,7 @@ import { Duration } from '../duration'
 import './game_render.css'
 import { monitor, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../stats'
-import { camelCaseToWords, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, getTimestamp, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils'
+import { camelCaseToWords, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
 import { animals, borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, donkeyAnimation, DrawingInformation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, fireImageAtlas, flagAnimations, houses, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, treeImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
@@ -297,6 +297,8 @@ function GameCanvas({
     showFpsCounter,
     screenHeight,
     view,
+    hideHoverPoint = false,
+    hideSelectedPoint = false,
     onPointClicked,
     onKeyDown,
     onDoubleClick,
@@ -322,9 +324,6 @@ function GameCanvas({
         allPointsVisibilityTracking: visiblePoints,
         once: true
     }
-
-    const drawHoverPoint = !(props.hideHoverPoint ?? false)
-    const drawSelectedPoint = !(props.hideSelectedPoint ?? false)
 
     const normalCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -715,8 +714,7 @@ function GameCanvas({
         resizeCanvasToDisplaySize(normalCanvasRef.current)
         resizeCanvasToDisplaySize(overlayCanvasRef.current)
 
-        const width = normalCanvasRef.current.width
-        const height = normalCanvasRef.current.height
+        const { width, height } = normalCanvasRef.current ?? { width: 0, height: 0 }
 
         renderState.screenHeight = height
 
@@ -1813,7 +1811,7 @@ function GameCanvas({
 
 
         /* Draw the selected point */
-        if (drawSelectedPoint) {
+        if (!hideSelectedPoint) {
             if (renderState.selectedPoint) {
                 const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
 
@@ -1828,7 +1826,7 @@ function GameCanvas({
 
 
         /* Draw the hover point */
-        if (drawHoverPoint) {
+        if (!hideHoverPoint) {
             if (renderState.hoverPoint && renderState.hoverPoint.y > 0 && renderState.hoverPoint.x > 0) {
                 const availableConstructionAtHoverPoint = monitor.availableConstruction.get(renderState.hoverPoint)
 
@@ -1982,7 +1980,7 @@ function GameCanvas({
         }
 
         /* Draw the FPS counter */
-        const timestamp = getTimestamp()
+        const timestamp = Date.now()
 
         if (showFpsCounter && renderState.previousTimestamp) {
             const fps = getLatestValueForVariable("GameRender::renderGame.total")
@@ -2022,31 +2020,6 @@ function GameCanvas({
         return screenPointToGamePointNoHeightAdjustment(screenPoint, renderState.translate.x, renderState.translate.y, renderState.scale, renderState.screenHeight)
     }
 
-    async function onClickOrDoubleClick(event: React.MouseEvent): Promise<void> {
-
-        // Save currentTarget. This field becomes null directly after
-        const currentTarget = event.currentTarget
-
-        // Distinguish between single and doubleclick
-        if (event.detail === 1) {
-            timer = setTimeout(() => {
-                event.currentTarget = currentTarget
-
-                onClick(event)
-            }, 200)
-        } else {
-            if (timer) {
-                clearTimeout(timer)
-            }
-
-            event.currentTarget = currentTarget
-
-            onDoubleClickInternal(event)
-        }
-
-        event.stopPropagation()
-    }
-
     async function onClick(event: React.MouseEvent): Promise<void> {
         if (overlayCanvasRef?.current) {
             const rect = event.currentTarget.getBoundingClientRect()
@@ -2077,6 +2050,31 @@ function GameCanvas({
 
             onDoubleClick && onDoubleClick(gamePoint)
         }
+    }
+
+    async function onClickOrDoubleClick(event: React.MouseEvent): Promise<void> {
+
+        // Save currentTarget. This field becomes null directly after
+        const currentTarget = event.currentTarget
+
+        // Distinguish between single and doubleclick
+        if (event.detail === 1) {
+            timer = setTimeout(() => {
+                event.currentTarget = currentTarget
+
+                onClick(event)
+            }, 200)
+        } else {
+            if (timer) {
+                clearTimeout(timer)
+            }
+
+            event.currentTarget = currentTarget
+
+            onDoubleClickInternal(event)
+        }
+
+        event.stopPropagation()
     }
 
     function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>, allTiles: PointMapFast<TerrainAtPoint>): MapRenderInformation {

@@ -301,8 +301,7 @@ function GameCanvas({
     hideSelectedPoint = false,
     onPointClicked,
     onKeyDown,
-    onDoubleClick,
-    ...props }: GameCanvasProps) {
+    onDoubleClick }: GameCanvasProps) {
     const visiblePoints = new PointMapFast<TrianglesAtPoint>()
 
     const initRenderState = {

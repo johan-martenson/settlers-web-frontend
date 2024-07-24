@@ -55,12 +55,7 @@ export const SHADOW_COLOR = "#333333"
 const imageCache = new Map<HTMLImageElement, ImageBitmap>()
 
 // React components
-const WorkerIcon = ({ worker, nation, ...props }: WorkerIconProps) => {
-    const animate = props.animate ?? false
-    const direction = props.direction ?? 'WEST'
-    const scale = props.scale ?? 1
-    const color = props.color ?? 'BLUE'
-    const drawShadow = props.drawShadow ?? false
+const WorkerIcon = ({ worker, nation, animate = false, direction = 'WEST', scale = 1, color = 'BLUE', drawShadow = false }: WorkerIconProps) => {
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
@@ -184,10 +179,7 @@ const WorkerIcon = ({ worker, nation, ...props }: WorkerIconProps) => {
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }
 
-const HouseIcon = ({ nation, houseType, ...props }: HouseProps) => {
-    const scale = props.scale ?? 1
-    const drawShadow = props.drawShadow ?? false
-
+const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false }: HouseProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
@@ -292,12 +284,11 @@ const HouseIcon = ({ nation, houseType, ...props }: HouseProps) => {
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }
 
-const InventoryIcon = ({ nation, material, ...props }: InventoryIconProps) => {
+const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false }: InventoryIconProps) => {
     const url = materialImageAtlasHandler.getInventoryIconUrl(nation, material)
-    const scale = props.scale ?? 1.0
 
-    const displayStyle = (props.inline) ? 'inline' : 'block'
-    const transparency = (props.missing) ? '0.5' : '1.0'
+    const displayStyle = inline ? 'inline' : 'block'
+    const transparency = missing ? '0.5' : '1.0'
 
     return (<div className="inventory-icon" style={{ display: displayStyle, opacity: transparency }} >
         <img
@@ -313,9 +304,7 @@ const InventoryIcon = ({ nation, material, ...props }: InventoryIconProps) => {
     </div>)
 }
 
-const UiIcon = ({ type, ...props }: UiIconProps) => {
-    const scale = props.scale ?? 1.0
-
+const UiIcon = ({ type, scale = 1 }: UiIconProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
@@ -405,12 +394,7 @@ const UiIcon = ({ type, ...props }: UiIconProps) => {
     />
 }
 
-const FlagIcon = ({ type, nation, ...props }: FlagIconProps) => {
-    const animate = props.animate ?? false
-    const scale = props.scale ?? 1
-    const color = props.color ?? 'BLUE'
-    const drawShadow = props.drawShadow ?? false
-
+const FlagIcon = ({ type, nation, animate = false, scale = 1, color = 'BLUE', drawShadow = false }: FlagIconProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
     const [animationIndex, setAnimationIndex] = useState<number>(0)

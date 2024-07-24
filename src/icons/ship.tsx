@@ -9,11 +9,7 @@ type ShipIconProps = {
     direction?: Direction
 }
 
-const ShipIcon = ({ ...props }: ShipIconProps) => {
-    const scale = props.scale ?? 1
-    const drawShadow = props.drawShadow ?? false
-    const direction = props.direction ?? 'EAST'
-
+const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIconProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
@@ -103,7 +99,7 @@ const ShipIcon = ({ ...props }: ShipIconProps) => {
             }
         })().then()
 
-    }, [ scale, sourceImage, drawShadow])
+    }, [scale, sourceImage, drawShadow])
 
     return <canvas
         ref={canvasRef}

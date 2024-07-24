@@ -12,43 +12,41 @@ interface MapInformationCardProps {
     onMapSelected?: ((map: MapInformation) => void)
 }
 
-function MapInformationCard(props: MapInformationCardProps) {
+function MapInformationCard({ map, onMapSelected }: MapInformationCardProps) {
     const [mapImage, setMapImage] = useState<HTMLImageElement>()
 
     useEffect(
         () => {
-            const cachedImage = cachedMapImages.get(props.map.id)
+            const cachedImage = cachedMapImages.get(map.id)
 
             if (cachedImage) {
                 setMapImage(cachedImage)
             } else {
-                makeImageFromMap(props.map, 4, 2).then(
+                makeImageFromMap(map, 4, 2).then(
                     (image) => {
                         if (image) {
                             setMapImage(image)
 
-                            cachedMapImages.set(props.map.id, image)
+                            cachedMapImages.set(map.id, image)
                         }
                     }
                 )
             }
         },
-        [props.map.id]
+        [map.id]
     )
 
-    if (props.onMapSelected) {
+    if (onMapSelected) {
         return (
             <Card>
                 <CardHeader
                     image={<img src={(mapImage) ? mapImage.src : ""} />}
-                    header={<Text weight="semibold">{props.map.name}</Text>}
+                    header={<Text weight="semibold">{map.name}</Text>}
                     description={
-                        <Caption1>{props.map.maxPlayers} players, {props.map.width}x{props.map.height}, by {props.map.author}</Caption1>
+                        <Caption1>{map.maxPlayers} players, {map.width}x{map.height}, by {map.author}</Caption1>
                     }
                     action={<Button onClick={() => {
-                        if (props.onMapSelected) {
-                            props.onMapSelected(props.map)
-                        }
+                        onMapSelected(map)
                     }
                     }>Select</Button>}
                 />
@@ -59,9 +57,9 @@ function MapInformationCard(props: MapInformationCardProps) {
             <Card>
                 <CardHeader
                     image={<img src={(mapImage) ? mapImage.src : ""} />}
-                    header={<Text weight="semibold">{props.map.name}</Text>}
+                    header={<Text weight="semibold">{map.name}</Text>}
                     description={
-                        <Caption1>{props.map.maxPlayers} players, {props.map.width}x{props.map.height}, by {props.map.author}</Caption1>
+                        <Caption1>{map.maxPlayers} players, {map.width}x{map.height}, by {map.author}</Caption1>
                     }
                 />
             </Card>

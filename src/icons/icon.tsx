@@ -4,8 +4,7 @@ import { Dimension, FlagAnimation, flagAnimations, houses, materialImageAtlasHan
 import { resizeCanvasToDisplaySize } from '../utils'
 import './icon.css'
 
-export const SHADOW_COLOR = "#333333"
-
+// Types
 interface WorkerIconProps {
     worker: WorkerType
     animate?: boolean
@@ -16,6 +15,46 @@ interface WorkerIconProps {
     drawShadow?: boolean
 }
 
+interface InventoryIconProps {
+    nation: Nation
+    material: Material
+    label?: string
+    scale?: number
+    inline?: boolean
+    missing?: boolean
+}
+
+interface HouseProps {
+    nation: Nation
+    houseType: AnyBuilding
+    scale?: number
+    inline?: boolean
+    drawShadow?: boolean
+}
+
+export type UiIconType = 'DESTROY_BUILDING' | 'SCISSORS' | 'INFORMATION' | 'GEOLOGIST' | 'ATTACK'
+
+interface UiIconProps {
+    type: UiIconType
+    scale?: number
+}
+
+interface FlagIconProps {
+    type: FlagType
+    animate?: boolean
+    nation: Nation
+    scale?: number
+    color?: PlayerColor
+    drawShadow?: boolean
+}
+
+// Constants
+export const SHADOW_COLOR = "#333333"
+
+// State
+const imageCache = new Map<HTMLImageElement, ImageBitmap>()
+
+// React components
 const WorkerIcon = ({ worker, nation, ...props }: WorkerIconProps) => {
     const animate = props.animate ?? false
     const direction = props.direction ?? 'WEST'
@@ -24,38 +63,50 @@ const WorkerIcon = ({ worker, nation, ...props }: WorkerIconProps) => {
     const drawShadow = props.drawShadow ?? false
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
     const [animationIndex, setAnimationIndex] = useState<number>(0)
-    const [animationHandler, setAnimationHandler] = useState<WorkerAnimation>()
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
     const [sourceImage, setSourceImage] = useState<ImageBitmap>()
 
     useEffect(() => {
-        const animationHandler = workers.get(worker)
+        const loadAnimation = async () => {
+            const animationHandler = workers.get(worker)
+            if (!animationHandler) {
+                return
+            }
 
-        if (animationHandler) {
-            (async () => {
-                await animationHandler.load()
+            await animationHandler.load()
+            const image = animationHandler.getImageAtlasHandler().getSourceImage()
+            //const cacheKey = `${worker}-${nation}-${direction}-${color}`
 
-                const image = animationHandler?.getImageAtlasHandler().getSourceImage()
-                const drawArray = animationHandler?.getAnimationFrame(nation, direction, color, 0, animationIndex)
+            if (image) {
+                let imageBitmap = imageCache.get(image)
+                if (!imageBitmap) {
+                    console.log('Not in cache')
 
-                if (image && drawArray) {
-                    const imageBitmap = await createImageBitmap(image)
-
-                    setSourceImage(imageBitmap)
-
-                    setDimension({
-                        width: Math.max(drawArray[0].offsetX, drawArray[1].offsetX) + Math.max(drawArray[0].width - drawArray[0].offsetX, drawArray[1].width - drawArray[1].offsetX),
-                        height: Math.max(drawArray[0].offsetY, drawArray[1].offsetY) + Math.max(drawArray[0].height - drawArray[0].offsetY, drawArray[1].height - drawArray[1].offsetY)
-                    })
+                    imageBitmap = await createImageBitmap(image)
+                    imageCache.set(image, imageBitmap)
                 } else {
-                    console.error("No image")
+                    console.log('Already in cache')
                 }
-            })().then(() => {
-                setAnimationHandler(animationHandler)
-            })
+
+                setSourceImage(imageBitmap)
+
+                const drawArray = animationHandler.getAnimationFrame(nation, direction, color, 0, animationIndex)
+
+                if (drawArray) {
+                    setDimension({
+                        width: Math.max(...drawArray.map(draw => draw.offsetX + draw.width)),
+                        height: Math.max(...drawArray.map(draw => draw.offsetY + draw.height))
+                    })
+                }
+            } else {
+                console.error("No image available")
+            }
         }
-    }, [worker])
+
+        loadAnimation()
+    }, [worker, nation, direction, color, animationIndex])
 
     useEffect(() => {
         if (animate) {
@@ -89,6 +140,8 @@ const WorkerIcon = ({ worker, nation, ...props }: WorkerIconProps) => {
             resizeCanvasToDisplaySize(canvas)
 
             context.clearRect(0, 0, canvas.width, canvas.height)
+
+            const animationHandler = workers.get(worker)
 
             const drawArray = animationHandler?.getAnimationFrame(nation, direction, color, 0, animationIndex)
 
@@ -126,17 +179,9 @@ const WorkerIcon = ({ worker, nation, ...props }: WorkerIconProps) => {
             }
         })().then()
 
-    }, [animationIndex, animate, worker, nation, direction, scale, animationHandler, sourceImage])
+    }, [animationIndex, animate, worker, nation, direction, scale, sourceImage])
 
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
-}
-
-interface HouseProps {
-    nation: Nation
-    houseType: AnyBuilding
-    scale?: number
-    inline?: boolean
-    drawShadow?: boolean
 }
 
 const HouseIcon = ({ nation, houseType, ...props }: HouseProps) => {
@@ -153,13 +198,25 @@ const HouseIcon = ({ nation, houseType, ...props }: HouseProps) => {
             await houses.load()
 
             const image = houses.getSourceImage()
-            const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
 
-            if (image && drawArray) {
-                const imageBitmap = await createImageBitmap(image)
+            if (image) {
+                let imageBitmap = imageCache.get(image)
+
+                if (!imageBitmap) {
+                    console.log('Not in cache')
+
+                    imageBitmap = await createImageBitmap(image)
+                    imageCache.set(image, imageBitmap)
+                } else {
+                    console.log('Already in cache')
+                }
 
                 setSourceImage(imageBitmap)
+            }
 
+            const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
+
+            if (drawArray) {
                 setDimension({
                     width: Math.max(drawArray[0].offsetX, drawArray[1].offsetX) + Math.max(drawArray[0].width - drawArray[0].offsetX, drawArray[1].width - drawArray[1].offsetX),
                     height: Math.max(drawArray[0].offsetY, drawArray[1].offsetY) + Math.max(drawArray[0].height - drawArray[0].offsetY, drawArray[1].height - drawArray[1].offsetY)
@@ -235,15 +292,6 @@ const HouseIcon = ({ nation, houseType, ...props }: HouseProps) => {
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }
 
-interface InventoryIconProps {
-    nation: Nation
-    material: Material
-    label?: string
-    scale?: number
-    inline?: boolean
-    missing?: boolean
-}
-
 const InventoryIcon = ({ nation, material, ...props }: InventoryIconProps) => {
     const url = materialImageAtlasHandler.getInventoryIconUrl(nation, material)
     const scale = props.scale ?? 1.0
@@ -262,16 +310,7 @@ const InventoryIcon = ({ nation, material, ...props }: InventoryIconProps) => {
                 img.height = img.naturalHeight * scale
             }}
         />
-
     </div>)
-}
-
-
-export type UiIconType = 'DESTROY_BUILDING' | 'SCISSORS' | 'INFORMATION' | 'GEOLOGIST' | 'ATTACK'
-
-interface UiIconProps {
-    type: UiIconType
-    scale?: number
 }
 
 const UiIcon = ({ type, ...props }: UiIconProps) => {
@@ -289,18 +328,24 @@ const UiIcon = ({ type, ...props }: UiIconProps) => {
             const image = uiElementsImageAtlasHandler.getImage()
 
             if (image) {
-                const imageBitmap = await createImageBitmap(image)
+                let imageBitmap = imageCache.get(image)
 
-                const drawInfo = uiElementsImageAtlasHandler.getUiElement(type)
+                if (!imageBitmap) {
+                    console.log('Not in cache')
 
-                if (drawInfo) {
-                    setSourceImage(imageBitmap)
-                    setDimension({ width: drawInfo.width, height: drawInfo.height })
+                    imageBitmap = await createImageBitmap(image)
+                    imageCache.set(image, imageBitmap)
+                } else {
+                    console.log('Already in cache')
                 }
 
-                console.log("Set image")
-            } else {
-                console.error("No image")
+                setSourceImage(imageBitmap)
+            }
+
+            const drawInfo = uiElementsImageAtlasHandler.getUiElement(type)
+
+            if (drawInfo) {
+                setDimension({ width: drawInfo.width, height: drawInfo.height })
             }
         })().then()
     }, [type])
@@ -360,16 +405,6 @@ const UiIcon = ({ type, ...props }: UiIconProps) => {
     />
 }
 
-
-interface FlagIconProps {
-    type: FlagType
-    animate?: boolean
-    nation: Nation
-    scale?: number
-    color?: PlayerColor
-    drawShadow?: boolean
-}
-
 const FlagIcon = ({ type, nation, ...props }: FlagIconProps) => {
     const animate = props.animate ?? false
     const scale = props.scale ?? 1
@@ -393,11 +428,18 @@ const FlagIcon = ({ type, nation, ...props }: FlagIconProps) => {
                 const image = flagAnimations?.getImageAtlasHandler().getImage()
 
                 if (image) {
-                    const imageBitmap = await createImageBitmap(image)
+                    let imageBitmap = imageCache.get(image)
+
+                    if (!imageBitmap) {
+                        console.log('Not in cache')
+
+                        imageBitmap = await createImageBitmap(image)
+                        imageCache.set(image, imageBitmap)
+                    } else {
+                        console.log('Already in cache')
+                    }
 
                     setSourceImage(imageBitmap)
-                } else {
-                    console.error("No image")
                 }
             })().then(() => {
                 setAnimationHandler(flagAnimations)

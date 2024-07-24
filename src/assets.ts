@@ -423,12 +423,11 @@ class MaterialImageAtlasHandler {
     }
 
     getInventoryIconUrl(nation: Nation, material: Material): string {
-
         if (material === "SHIELD") {
-            return this.pathPrefix + "/inventory-icons/" + nation + "/" + material + ".png"
+            return `${this.pathPrefix}/inventory-icons/${nation}/${material}.png`
         }
 
-        return this.pathPrefix + "/inventory-icons/" + material + ".png"
+        return `${this.pathPrefix}/inventory-icons/${material}.png`
     }
 }
 

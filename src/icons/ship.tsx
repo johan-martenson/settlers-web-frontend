@@ -1,14 +1,19 @@
-import React, { useRef, useState, useEffect } from "react"
-import { Direction } from "../api/types"
-import { Dimension, shipImageAtlas } from "../assets"
-import { SHADOW_COLOR } from "./icon"
+import React, { useRef, useState, useEffect } from 'react'
+import { Direction } from '../api/types'
+import { Dimension, shipImageAtlas } from '../assets'
+import { SHADOW_COLOR } from './icon'
 
+// Types
 type ShipIconProps = {
     scale?: number
     drawShadow?: boolean
     direction?: Direction
 }
 
+// State
+const imageCache = new Map<HTMLImageElement, ImageBitmap>()
+
+// React components
 const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIconProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
@@ -24,21 +29,30 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
             const image = shipImageAtlas.getSourceImage()
 
             if (image) {
-                const imageBitmap = await createImageBitmap(image)
+                let imageBitmap = imageCache.get(image)
+
+                if (!imageBitmap) {
+                    console.log('Not in cache')
+
+                    imageBitmap = await createImageBitmap(image)
+                    imageCache.set(image, imageBitmap)
+                } else {
+                    console.log('Already in cache')
+                }
 
                 setSourceImage(imageBitmap)
             } else {
-                console.error("No image")
+                console.error('No image')
             }
-        })().then(() => {
+
             const dimension = shipImageAtlas.getSize(direction)
 
             if (dimension) {
                 setDimension(dimension)
             } else {
-                console.error("Failed to set dimension")
+                console.error('Failed to set dimension')
             }
-        })
+        })().then()
     }, [])
 
     // Drawing
@@ -47,7 +61,7 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
             const canvas = canvasRef.current
 
             if (!canvas) {
-                console.error("No canvas ref set")
+                console.error('No canvas ref set')
 
                 return
             }
@@ -55,7 +69,7 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
             const context = canvas.getContext('2d')
 
             if (!context) {
-                console.error("No context")
+                console.error('No context')
 
                 return
             }
@@ -89,11 +103,11 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
                         shadow.width * scale, shadow.height * scale)
                 }
 
-                context.globalCompositeOperation = "source-in"
+                context.globalCompositeOperation = 'source-in'
 
                 context.fillStyle = SHADOW_COLOR
                 context.fillRect((draw.offsetX - shadow.offsetX) * scale, (draw.offsetY - shadow.offsetY) * scale, shadow.width * scale, shadow.height * scale)
-                context.globalCompositeOperation = "source-over"
+                context.globalCompositeOperation = 'source-over'
 
                 context.drawImage(sourceImage, draw.sourceX, draw.sourceY, draw.width, draw.height, 0, 0, width, height)
             }

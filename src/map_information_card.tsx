@@ -5,13 +5,16 @@ import { Card, CardHeader } from "@fluentui/react-components"
 import './map_information_card.css'
 import { makeImageFromMap } from './utils'
 
-const cachedMapImages = new Map<MapId, HTMLImageElement>()
-
-interface MapInformationCardProps {
+// Types
+type MapInformationCardProps = {
     map: MapInformation
     onMapSelected?: ((map: MapInformation) => void)
 }
 
+// State
+const cachedMapImages = new Map<MapId, HTMLImageElement>()
+
+// React components
 function MapInformationCard({ map, onMapSelected }: MapInformationCardProps) {
     const [mapImage, setMapImage] = useState<HTMLImageElement>()
 

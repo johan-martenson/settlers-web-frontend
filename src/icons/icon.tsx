@@ -5,7 +5,9 @@ import { resizeCanvasToDisplaySize } from '../utils'
 import './icon.css'
 
 // Types
-interface WorkerIconProps {
+export type UiIconType = 'DESTROY_BUILDING' | 'SCISSORS' | 'INFORMATION' | 'GEOLOGIST' | 'ATTACK'
+
+type WorkerIconProps = {
     worker: WorkerType
     animate?: boolean
     nation: Nation
@@ -15,7 +17,7 @@ interface WorkerIconProps {
     drawShadow?: boolean
 }
 
-interface InventoryIconProps {
+type InventoryIconProps = {
     nation: Nation
     material: Material
     label?: string
@@ -24,7 +26,7 @@ interface InventoryIconProps {
     missing?: boolean
 }
 
-interface HouseProps {
+type HouseProps = {
     nation: Nation
     houseType: AnyBuilding
     scale?: number
@@ -32,14 +34,12 @@ interface HouseProps {
     drawShadow?: boolean
 }
 
-export type UiIconType = 'DESTROY_BUILDING' | 'SCISSORS' | 'INFORMATION' | 'GEOLOGIST' | 'ATTACK'
-
-interface UiIconProps {
+type UiIconProps = {
     type: UiIconType
     scale?: number
 }
 
-interface FlagIconProps {
+type FlagIconProps = {
     type: FlagType
     animate?: boolean
     nation: Nation

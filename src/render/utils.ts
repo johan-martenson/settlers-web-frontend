@@ -169,6 +169,12 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
 
         gl.linkProgram(programInstance.program)
 
+        gl.detachShader(programInstance.program, compiledVertexShader)
+        gl.detachShader(programInstance.program, compiledFragmentShader)
+
+        gl.deleteShader(compiledVertexShader)
+        gl.deleteShader(compiledFragmentShader)
+
         gl.useProgram(programInstance.program)
 
         // Fill in uniform locations

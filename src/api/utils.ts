@@ -1,4 +1,4 @@
-import { Direction, SimpleDirection } from "./types"
+import { Direction, HouseInformation, SimpleDirection } from "./types"
 
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
     let compassDirection: Direction = 'NORTH_WEST'
@@ -18,6 +18,31 @@ function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Di
     return compassDirection
 }
 
+function isMilitaryBuilding(house: HouseInformation): boolean {
+    return house.type === "Headquarter" || house.type === "Fortress" || house.type === "WatchTower" || house.type === "GuardHouse" || house.type === "Barracks"
+}
+
+function canBeEvacuated(house: HouseInformation): boolean {
+    return isMilitaryBuilding(house) && houseIsReady(house)
+}
+
+function canBeUpgraded(house: HouseInformation): boolean {
+    return isMilitaryBuilding(house) && house.type !== "Fortress" && house.type !== "Headquarter"
+}
+
+function houseIsReady(house: HouseInformation): boolean {
+    return (house.state === "UNOCCUPIED" || house.state === "OCCUPIED")
+}
+
+function houseIsOccupied(house: HouseInformation): boolean {
+    return house.state === "OCCUPIED"
+}
+
 export {
-    simpleDirectionToCompassDirection
+    simpleDirectionToCompassDirection,
+    houseIsOccupied,
+    houseIsReady,
+    canBeEvacuated,
+    canBeUpgraded,
+    isMilitaryBuilding
 }

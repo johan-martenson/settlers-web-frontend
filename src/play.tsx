@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { canBeUpgraded, evacuateHouseOnPoint, findPossibleNewRoad, upgradeMilitaryBuilding } from './api/rest-api'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import FriendlyFlagInfo from './friendly_flag_info'
@@ -30,7 +29,9 @@ import { ButtonRow } from './components/dialog'
 import { Button } from '@fluentui/react-components'
 import { NoActionWindow } from './no_action_window'
 import { ExpandChatBox } from './chat/chat'
+import { canBeUpgraded } from './api/utils'
 
+// Types
 type HouseWindow = {
     type: 'HOUSE'
     house: HouseInformation
@@ -97,6 +98,9 @@ type Window = {
     id: number
 } & WindowType
 
+// Constants
+
+// State
 let trackNextWindowId = 0
 
 function nextWindowId(): number {
@@ -559,7 +563,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
                 })
                 commands.set("Evacuate building", {
-                    action: (point: Point) => evacuateHouseOnPoint(point, gameId, selfPlayerId), // TODO: replace this with a call to monitor.evacuate...
+                    action: (point: Point) => {
+                        const house = monitor.houseAt(point)
+
+                        if (house !== undefined) {
+                            monitor.evacuateHouse(house.id)
+                        }
+                    },
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
                 })
                 commands.set("Transport priority", {
@@ -573,7 +583,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         const houseInformation = monitor.getHouseAtPointLocal(point)
 
                         if (houseInformation && canBeUpgraded(houseInformation)) {
-                            upgradeMilitaryBuilding(gameId, selfPlayerId, houseInformation.id)
+                            monitor.upgradeHouse(houseInformation.id)
                         }
                     },
                     filter: (pointInformation: PointInformation) => {
@@ -687,10 +697,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 /* Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road */
                 // TODO: move to ws API
-                const possibleNewRoadSegment = await findPossibleNewRoad(recent, point, newRoad, gameId, selfPlayerId)
+                const possibleNewRoadSegment = (await monitor.findPossibleNewRoad(recent, point, newRoad)).possibleRoad
 
                 if (possibleNewRoadSegment) {
-                    possibleNewRoad.push(...possibleNewRoadSegment.possibleNewRoad.slice(1))
+                    possibleNewRoad.push(...possibleNewRoadSegment.slice(1))
                 } else {
 
                     /* Ignore the click if no possible road is available */

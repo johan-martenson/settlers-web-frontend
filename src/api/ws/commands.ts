@@ -1,5 +1,5 @@
 import { PointMapFast } from "../../util_types"
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, Vegetation, WildAnimalInformation } from "../types"
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, Vegetation, WildAnimalInformation, AttackType } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
@@ -90,6 +90,11 @@ export type PlayerViewInformation = {
     initialResources: ResourceLevel
 }
 
+type PossibleNewRoad = {
+    possibleRoad: Point[]
+    closesRoad: boolean
+}
+
 enum Command {
     SetStrength = 'SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
     GetStrength = 'GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
@@ -157,8 +162,13 @@ enum Command {
     SetMilitaryAwayFromBorder = 'SET_MILITARY_POPULATION_CLOSER_TO_BORDER',
     SetMilitaryCloseToBorder = 'SET_MILITARY_POPULATION_CLOSE_TO_BORDER',
     SetSoldiersAvailableForAttack = 'SET_SOLDIERS_AVAILABLE_FOR_ATTACK',
-    GetInformationOnPoint = 'INFORMATION_ON_POINTS'
+    GetInformationOnPoint = 'INFORMATION_ON_POINTS',
+    Attack = 'ATTACK_HOUSE',
+    EvacuateHouse = 'EVACUATE_HOUSE',
+    UpgradeHouse = 'UPGRADE_HOUSE',
+    FindPossibleNewRoad = 'FIND_NEW_ROAD'
 }
+
 // Type functions
 
 // Configuration
@@ -166,6 +176,31 @@ enum Command {
 // State
 
 // Functions exposed as part of WS API
+async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[] | undefined): Promise<PossibleNewRoad> {
+    return (await sendRequestAndWaitForReplyWithOptions<PossibleNewRoad, { from: Point, to: Point, avoid: Point[] | undefined }>(
+        Command.FindPossibleNewRoad,
+        { from, to, avoid }
+    ))
+}
+
+function upgradeHouse(houseId: HouseId): void {
+    sendWithOptions<{ houseId: HouseId }>(Command.UpgradeHouse, { houseId })
+}
+
+function evacuateHouse(houseId: HouseId): void {
+    sendWithOptions<{ houseId: HouseId }>(Command.EvacuateHouse, { houseId })
+}
+
+/**
+ * Orders an attack on the given house.
+ * @param {HouseId} houseId - The id of the military building to be attacked
+ * @param {number} attackers - The number of attackers
+ * @param {AttackType} attackType - Strong or weak attackers prefered
+ */
+function attackHouse(houseId: HouseId, attackers: number, attackType: AttackType): void {
+    sendWithOptions<{ houseId: HouseId, attackers: number, attackType: AttackType }>(Command.Attack, { houseId, attackers, attackType })
+}
+
 /**
  * Sets the strength for populating military buildings.
  * @param {number} strength - The strength value to be set.
@@ -637,5 +672,9 @@ export {
     getViewForPlayer,
     listenToGameMetadata,
     listenToGamesList,
-    listenToChatMessages
+    listenToChatMessages,
+    attackHouse,
+    evacuateHouse,
+    upgradeHouse,
+    findPossibleNewRoad
 }

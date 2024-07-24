@@ -695,26 +695,6 @@ async function evacuateHouseOnPoint(point: Point, gameId: GameId, playerId: Play
     await evacuateHouse(gameId, playerId, pointInformation.buildingId)
 }
 
-function isMilitaryBuilding(house: HouseInformation): boolean {
-    return house.type === "Headquarter" || house.type === "Fortress" || house.type === "WatchTower" || house.type === "GuardHouse" || house.type === "Barracks"
-}
-
-function canBeEvacuated(house: HouseInformation): boolean {
-    return isMilitaryBuilding(house) && houseIsReady(house)
-}
-
-function canBeUpgraded(house: HouseInformation): boolean {
-    return isMilitaryBuilding(house) && house.type !== "Fortress" && house.type !== "Headquarter"
-}
-
-function houseIsReady(house: HouseInformation): boolean {
-    return (house.state === "UNOCCUPIED" || house.state === "OCCUPIED")
-}
-
-function houseIsOccupied(house: HouseInformation): boolean {
-    return house.state === "OCCUPIED"
-}
-
 /*
 const signToColor = new Map<SignTypes, string>()
 
@@ -732,22 +712,17 @@ export {
     printTimestamp,
     setTransportPriorityForMaterial,
     getTransportPriorityForPlayer,
-    canBeUpgraded,
     upgradeMilitaryBuilding,
     getHouseInformationWithAttackPossibility,
-    houseIsOccupied,
     addHumanPlayerToGame,
     getMessagesForPlayer,
     enablePromotionsForHouse,
     disablePromotionsForHouse,
     evacuateHouseOnPoint,
     removeRoad,
-    houseIsReady,
-    isMilitaryBuilding,
     cancelEvacuationForHouse,
     isEvacuated,
     evacuateHouse,
-    canBeEvacuated,
     getLandStatistics,
     getGameStatistics,
     removePlayerFromGame,

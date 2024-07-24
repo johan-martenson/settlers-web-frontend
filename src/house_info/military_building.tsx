@@ -3,9 +3,10 @@ import { Button, Field, Tooltip } from "@fluentui/react-components"
 import { GameId, HouseInformation, Nation, PlayerId, SoldierType, getSoldierDisplayName, isMaterial, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon, UiIcon } from '../icons/icon'
 import './house_info.css'
-import { canBeUpgraded, cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse } from "../api/rest-api"
+import { cancelEvacuationForHouse, disablePromotionsForHouse, enablePromotionsForHouse, evacuateHouse, isEvacuated, removeHouse } from "../api/rest-api"
 import { monitor } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
+import { canBeUpgraded } from '../api/utils'
 
 interface MilitaryBuildingProps {
     house: HouseInformation

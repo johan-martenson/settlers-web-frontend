@@ -38,11 +38,16 @@ function houseIsOccupied(house: HouseInformation): boolean {
     return house.state === "OCCUPIED"
 }
 
+function isEvacuated(house: HouseInformation): boolean {
+    return house.evacuated
+}
+
 export {
     simpleDirectionToCompassDirection,
     houseIsOccupied,
     houseIsReady,
     canBeEvacuated,
     canBeUpgraded,
-    isMilitaryBuilding
+    isMilitaryBuilding,
+    isEvacuated
 }

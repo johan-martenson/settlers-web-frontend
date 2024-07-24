@@ -1121,7 +1121,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     case 'HOUSE':
                         return <HouseInfo
                             key={window.id}
-                            gameId={gameId}
                             selfPlayerId={selfPlayerId}
                             house={window.house}
                             nation={player?.nation ?? 'ROMANS'}

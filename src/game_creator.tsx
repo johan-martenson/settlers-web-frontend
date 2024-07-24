@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { deleteGame } from './api/rest-api'
 import { Input, Button, Field, InputOnChangeData } from "@fluentui/react-components"
 import './game_creator.css'
 import GameOptions from './game_options'
@@ -109,7 +108,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         </Field>
                         <Button onClick={() => {
                             if (monitor.gameId !== undefined) {
-                                deleteGame(monitor.gameId)
+                                monitor.deleteGame()
                             } else {
                                 console.error('Game id is not set')
                             }
@@ -166,7 +165,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                     <div className='start-or-cancel'>
                         <Button onClick={() => {
                             if (monitor.gameId !== undefined) {
-                                deleteGame(monitor.gameId)
+                                monitor.deleteGame()
                             } else {
                                 console.error('Game id is not set')
                             }

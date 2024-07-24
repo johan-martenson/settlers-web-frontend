@@ -140,6 +140,7 @@ enum Command {
     CreateGame = 'CREATE_GAME',
     PauseGame = 'PAUSE_GAME',
     ResumeGame = 'RESUME_GAME',
+    DeleteGame = 'DELETE_GAME',
     PlaceBuilding = 'PLACE_BUILDING',
     PlaceRoad = 'PLACE_ROAD',
     PlaceFlag = 'PLACE_FLAG',
@@ -166,7 +167,12 @@ enum Command {
     Attack = 'ATTACK_HOUSE',
     EvacuateHouse = 'EVACUATE_HOUSE',
     UpgradeHouse = 'UPGRADE_HOUSE',
-    FindPossibleNewRoad = 'FIND_NEW_ROAD'
+    FindPossibleNewRoad = 'FIND_NEW_ROAD',
+    PauseProduction = 'PAUSE_PRODUCTION',
+    ResumeProduction = 'RESUME_PRODUCTION',
+    DisablePromotions = 'DISABLE_PROMOTIONS',
+    EnablePromotions = 'ENABLE_PROMOTIONS',
+    CancelEvacuation = 'CANCEL_EVACUATION'
 }
 
 // Type functions
@@ -176,11 +182,31 @@ enum Command {
 // State
 
 // Functions exposed as part of WS API
+function cancelEvacuationForHouse(houseId: HouseId): void {
+    sendWithOptions<{ houseId: HouseId }>(Command.CancelEvacuation, { houseId })
+}
+
+function disablePromotionsForHouse(houseId: HouseId): void {
+    sendWithOptions<{ houseId: HouseId }>(Command.DisablePromotions, { houseId })
+}
+
+function enablePromotionsForHouse(houseId: HouseId): void {
+    sendWithOptions<{ houseId: HouseId }>(Command.EnablePromotions, { houseId })
+}
+
 async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[] | undefined): Promise<PossibleNewRoad> {
     return (await sendRequestAndWaitForReplyWithOptions<PossibleNewRoad, { from: Point, to: Point, avoid: Point[] | undefined }>(
         Command.FindPossibleNewRoad,
         { from, to, avoid }
     ))
+}
+
+function pauseProductionForHouse(houseId: HouseId): void {
+    sendWithOptions<{ houseId: HouseId }>(Command.PauseProduction, { houseId })
+}
+
+function resumeProductionForHouse(houseId: HouseId): void {
+    sendWithOptions<{ houseId: HouseId }>(Command.ResumeProduction, { houseId })
 }
 
 function upgradeHouse(houseId: HouseId): void {
@@ -542,6 +568,10 @@ async function createGame(name: string, players: PlayerInformation[]): Promise<G
     })).gameInformation
 }
 
+function deleteGame(): void {
+    send(Command.DeleteGame)
+}
+
 function pauseGame() {
     send(Command.PauseGame)
 }
@@ -676,5 +706,11 @@ export {
     attackHouse,
     evacuateHouse,
     upgradeHouse,
-    findPossibleNewRoad
+    findPossibleNewRoad,
+    deleteGame,
+    disablePromotionsForHouse,
+    enablePromotionsForHouse,
+    pauseProductionForHouse,
+    resumeProductionForHouse,
+    cancelEvacuationForHouse
 }

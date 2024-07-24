@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { getMaps } from './api/rest-api'
 import MapInformationCard from './map_information_card'
 import './map_list.css'
 import { MapInformation } from './api/types'
+import { monitor } from './api/ws-api'
 
 interface MapListProps {
     onMapSelected: ((map: MapInformation) => void)
@@ -20,7 +20,7 @@ const MapList = ({ minPlayers, defaultSelect, filterTitle, filterAuthor, filterM
     useEffect(
         () => {
             (async () => {
-                const maps = await getMaps()
+                const maps = await monitor.getMaps()
 
                 defaultSelect && onMapSelected(maps[0])
 

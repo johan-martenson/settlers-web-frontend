@@ -4,7 +4,6 @@ import { monitor } from "../api/ws-api"
 import './debug.css'
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, Switch } from "@fluentui/react-components"
 import { VEGETATION } from "./translate"
-import { getGameInformation } from "../api/rest-api"
 import { Window } from '../components/dialog'
 import { glUtilsDebug } from "../render/utils"
 import { wsApiDebugSettings } from "../api/ws/core"
@@ -55,7 +54,7 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
 
                 setPointInformation(pointInformation)
 
-                const gameInformation = await getGameInformation(monitor.gameId ?? "0")
+                const gameInformation = await monitor.getGameInformation()
 
                 console.log(gameInformation)
 

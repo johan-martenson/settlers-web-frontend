@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Field, Tooltip } from '@fluentui/react-components'
 import { PauseRegular, PlayRegular } from '@fluentui/react-icons'
-import { AttackType, GameId, HouseInformation, Nation, PlayerId, isMaterial } from '../api/types'
+import { AttackType, HouseInformation, Nation, PlayerId, isMaterial } from '../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../icons/icon'
 import './house_info.css'
 import { HeadquarterInfo } from './headquarter'
-import { pauseProductionForHouse, removeHouse, resumeProductionForHouse } from '../api/rest-api'
 import { MilitaryBuilding } from './military_building'
 import { monitor } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
@@ -15,7 +14,6 @@ import { houseIsReady, isMilitaryBuilding } from '../api/utils'
 type HouseInfoProps = {
     house: HouseInformation
     selfPlayerId: PlayerId
-    gameId: GameId
     nation: Nation
 
     onRaise: () => void
@@ -24,8 +22,6 @@ type HouseInfoProps = {
 
 type PlannedHouseInfoProps = {
     house: HouseInformation
-    playerId: PlayerId
-    gameId: GameId
     nation: Nation
 
     onRaise: () => void
@@ -42,8 +38,6 @@ type EnemyHouseInfoProps = {
 
 type MilitaryEnemyHouseInfoProps = {
     house: HouseInformation
-    gameId: GameId
-    selfPlayerId: PlayerId
     nation: Nation
 
     onRaise: () => void
@@ -52,8 +46,6 @@ type MilitaryEnemyHouseInfoProps = {
 
 type UnfinishedHouseInfo = {
     house: HouseInformation
-    playerId: PlayerId
-    gameId: GameId
     nation: Nation
 
     onRaise: () => void
@@ -62,8 +54,6 @@ type UnfinishedHouseInfo = {
 
 type ProductionBuildingProps = {
     house: HouseInformation
-    playerId: PlayerId
-    gameId: GameId
     nation: Nation
 
     onRaise: () => void
@@ -71,7 +61,7 @@ type ProductionBuildingProps = {
 }
 
 // React components
-const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, onRaise, ...props }: HouseInfoProps) => {
+const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseInfoProps) => {
     const [house, setHouse] = useState<HouseInformation>(props.house)
 
     const isOwnHouse = (house.playerId === selfPlayerId)
@@ -98,19 +88,19 @@ const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, onRaise, ...props }:
             }
 
             {isOwnHouse && house.state === 'PLANNED' &&
-                <PlannedHouseInfo house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <PlannedHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {isOwnHouse && house.state === 'UNFINISHED' &&
-                <UnfinishedHouseInfo house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <UnfinishedHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {isOwnHouse && house.type !== 'Headquarter' && houseIsReady(house) && isMilitaryBuilding(house) &&
-                <MilitaryBuilding house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <MilitaryBuilding house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {isOwnHouse && (house.state === 'OCCUPIED' || house.state === 'UNOCCUPIED') && !isMilitaryBuilding(house) &&
-                <ProductionBuilding house={house} gameId={gameId} playerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <ProductionBuilding house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {!isOwnHouse && !isMilitaryBuilding(house) &&
@@ -118,20 +108,20 @@ const HouseInfo = ({ selfPlayerId, nation, gameId, onClose, onRaise, ...props }:
             }
 
             {!isOwnHouse && isMilitaryBuilding(house) &&
-                <MilitaryEnemyHouseInfo house={house} gameId={gameId} selfPlayerId={selfPlayerId} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <MilitaryEnemyHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
         </>
     )
 }
 
-const PlannedHouseInfo = ({ house, playerId, gameId, nation, onClose, onRaise }: PlannedHouseInfoProps) => {
+const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoProps) => {
     return (
         <Window className='house-info' heading={'Planned ' + house.type} onClose={onClose} onRaise={onRaise}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             <Button onClick={() => {
-                removeHouse(house.id, playerId, gameId)
+                monitor.removeBuilding(house.id)
 
                 onClose()
             }}
@@ -151,7 +141,7 @@ const EnemyHouseInfo = ({ house, nation, onClose, onRaise }: EnemyHouseInfoProps
     )
 }
 
-const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose, onRaise }: MilitaryEnemyHouseInfoProps) => {
+const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEnemyHouseInfoProps) => {
     const [chosenAttackers, setChosenAttackers] = useState<number>(0)
     const [attackType, setAttackType] = useState<AttackType>('STRONG')
 
@@ -191,7 +181,7 @@ const MilitaryEnemyHouseInfo = ({ house, gameId, selfPlayerId, nation, onClose, 
     )
 }
 
-const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose, onRaise }: UnfinishedHouseInfo) => {
+const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHouseInfo) => {
     return (
         <Window className='house-info' heading={house.type} onClose={onClose} onRaise={onRaise}>
 
@@ -231,7 +221,7 @@ const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose, onRaise
             }
 
             <Button onClick={() => {
-                removeHouse(house.id, playerId, gameId)
+                monitor.removeBuilding(house.id)
 
                 onClose()
             }}
@@ -243,7 +233,7 @@ const UnfinishedHouseInfo = ({ house, playerId, gameId, nation, onClose, onRaise
     )
 }
 
-const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise }: ProductionBuildingProps) => {
+const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuildingProps) => {
     const producedMaterial = house.produces
 
     const [hoverInfo, setHoverInfo] = useState<string>()
@@ -314,7 +304,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise 
                 {house.productionEnabled &&
                     <Tooltip content={'Pause production'} relationship='label' withArrow>
                         <Button
-                            onClick={() => pauseProductionForHouse(gameId, playerId, house.id)}
+                            onClick={() => monitor.pauseProductionForHouse(house.id)}
                             onMouseEnter={() => setHoverInfo('Pause production')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         ><PauseRegular />
@@ -325,7 +315,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise 
                 {!house.productionEnabled &&
                     <Tooltip content={'Resume production'} relationship='label' withArrow>
                         <Button
-                            onClick={() => resumeProductionForHouse(gameId, playerId, house.id)}
+                            onClick={() => monitor.resumeProductionForHouse(house.id)}
                             onMouseEnter={() => setHoverInfo('Resume production')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
@@ -336,7 +326,7 @@ const ProductionBuilding = ({ house, playerId, gameId, nation, onClose, onRaise 
 
                 <Tooltip content={'Remove'} relationship='label' withArrow>
                     <Button onClick={() => {
-                        removeHouse(house.id, playerId, gameId)
+                        monitor.removeBuilding(house.id)
 
                         onClose()
                     }}

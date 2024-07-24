@@ -564,10 +564,6 @@ async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[], gameI
 
 }
 
-function isEvacuated(house: HouseInformation): boolean {
-    return house.evacuated
-}
-
 async function cancelEvacuationForHouse(gameId: GameId, playerId: PlayerId, houseId: HouseId): Promise<void> {
     await fetch('/settlers/api/games/' + gameId + '/players/' + playerId + '/houses/' + houseId,
         {
@@ -721,7 +717,6 @@ export {
     evacuateHouseOnPoint,
     removeRoad,
     cancelEvacuationForHouse,
-    isEvacuated,
     evacuateHouse,
     getLandStatistics,
     getGameStatistics,

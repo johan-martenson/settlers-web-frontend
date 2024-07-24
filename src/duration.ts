@@ -1,4 +1,3 @@
-import { getTimestamp } from "./utils"
 import { addVariableIfAbsent, reportValueForVariable } from './stats'
 
 interface Timestamp {
@@ -13,13 +12,13 @@ class Duration {
 
     constructor(name: string) {
         this.name = name
-        this.timestampAtStart = getTimestamp()
+        this.timestampAtStart = Date.now()
 
         this.stamps = []
     }
 
     after(name: string): void {
-        const time = getTimestamp()
+        const time = Date.now()
 
         this.stamps.push({ time, name })
     }
@@ -59,7 +58,7 @@ class AggregatedDuration {
 
     constructor(name: string) {
         this.name = name
-        this.timestampAtStart = getTimestamp()
+        this.timestampAtStart = Date.now()
         this.previousTimestamp = this.timestampAtStart
 
         this.stamps = new Map<string, number>()
@@ -68,7 +67,7 @@ class AggregatedDuration {
     after(name: string): void {
         const current = this.stamps.get(name)
 
-        const timeNow = getTimestamp()
+        const timeNow = Date.now()
         const timePassed = timeNow - this.previousTimestamp
 
         if (current) {

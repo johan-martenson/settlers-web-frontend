@@ -1,6 +1,6 @@
-import { loadImageNg } from "./utils"
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, StoneAmount, StoneType, TreeSize, TreeType, WildAnimalType, WorkerAction, WorkerType } from "./api/types"
-import { UiIconType } from "./icons/icon"
+import { loadImageNg } from './utils'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, StoneAmount, StoneType, TreeSize, TreeType, WildAnimalType, WorkerAction, WorkerType } from './api/types'
+import { UiIconType } from './icons/icon'
 
 // Types
 export type Dimension = {
@@ -155,13 +155,13 @@ class UiElementsImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-ui-elements.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-ui-elements.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-ui-elements.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-ui-elements.png')
         }
     }
 
@@ -423,7 +423,7 @@ class MaterialImageAtlasHandler {
     }
 
     getInventoryIconUrl(nation: Nation, material: Material): string {
-        if (material === "SHIELD") {
+        if (material === 'SHIELD') {
             return `${this.pathPrefix}/inventory-icons/${nation}/${material}.png`
         }
 
@@ -445,13 +445,13 @@ class FlagImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-flags.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-flags.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-flags.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-flags.png')
         }
     }
 
@@ -461,7 +461,7 @@ class FlagImageAtlasHandler {
 
     getDrawingInformationFor(nation: Nation, color: PlayerColor, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
-            console.error("Image or image atlas undefined")
+            console.error('Image or image atlas undefined')
             console.error([this.imageAtlasInfo, this.image])
 
             return undefined
@@ -504,7 +504,6 @@ class FlagImageAtlasHandler {
                 width: drawingInfo[0].width,
                 height: drawingInfo[0].height
             }
-
         }
 
         return undefined
@@ -521,7 +520,6 @@ class FlagImageAtlasHandler {
         }
 
         return undefined
-
     }
 
     getImage(): HTMLImageElement | undefined {
@@ -577,13 +575,13 @@ class ShipImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-ship.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-ship.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-ship.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-ship.png')
         }
     }
 
@@ -801,13 +799,13 @@ class WorkerImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-' + this.name + '.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-' + this.name + '.png')
         }
     }
 
@@ -880,7 +878,7 @@ class WorkerImageAtlasHandler {
 
     getDrawingInformationForAction(nation: Nation, direction: Direction, action: WorkerAction, color: PlayerColor, animationIndex: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
-            console.error("Undefined!")
+            console.error('Undefined!')
             console.error([action, direction])
 
             return undefined
@@ -1017,7 +1015,7 @@ class WorkerImageAtlasHandler {
         } else {
             if (!reported.has(action)) {
 
-                console.error("FOUND NO ACTION: ")
+                console.error('FOUND NO ACTION: ')
                 console.error([this.name, action, direction])
 
                 reported.add(action)
@@ -1061,7 +1059,6 @@ class WorkerImageAtlasHandler {
                 width: drawingInfo[0].width,
                 height: drawingInfo[0].height
             }
-
         }
 
         return undefined
@@ -1086,13 +1083,13 @@ class HouseImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-buildings.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-buildings.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-buildings.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-buildings.png')
         }
     }
 
@@ -1173,7 +1170,7 @@ class HouseImageAtlasHandler {
     getDrawingInformationForOpenDoor(nation: Nation, houseType: AnyBuilding): DrawingInformation | undefined {
 
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
-            console.error("Image or image atlas is undefined")
+            console.error('Image or image atlas is undefined')
             console.error([this.image, this.imageAtlasInfo])
 
             return undefined
@@ -1199,7 +1196,7 @@ class HouseImageAtlasHandler {
 
     getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
-            console.error("Image or image atlas is undefined")
+            console.error('Image or image atlas is undefined')
             console.error([this.image, this.imageAtlasInfo])
 
             return undefined
@@ -1264,13 +1261,13 @@ class HouseImageAtlasHandler {
     }
 
     getUrlForIndividualBuilding(nation: Nation, houseType: AnyBuilding): string {
-        return "assets/" + nation + "/" + houseType + ".png"
+        return 'assets/' + nation + '/' + houseType + '.png'
     }
 }
 
 class BorderImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<PlayerColor, Record<"landBorder" | "coastBorder", OneImageInformation>>>
+    private imageAtlasInfo?: Record<Nation, Record<PlayerColor, Record<'landBorder' | 'coastBorder', OneImageInformation>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1282,13 +1279,13 @@ class BorderImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-border.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-border.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-border.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-border.png')
         }
     }
 
@@ -1296,15 +1293,15 @@ class BorderImageAtlasHandler {
         return this.image
     }
 
-    getDrawingInformation(nation: Nation, color: PlayerColor, type: "LAND" | "COAST"): DrawingInformation | undefined {
+    getDrawingInformation(nation: Nation, color: PlayerColor, type: 'LAND' | 'COAST'): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
         let imageInfo
 
-        if (type === "COAST") {
-            imageInfo = this.imageAtlasInfo[nation][color]["coastBorder"]
+        if (type === 'COAST') {
+            imageInfo = this.imageAtlasInfo[nation][color]['coastBorder']
         } else {
             imageInfo = this.imageAtlasInfo[nation][color]['landBorder']
         }
@@ -1336,13 +1333,13 @@ class SignImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-signs.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-signs.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-signs.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-signs.png')
         }
     }
 
@@ -1397,13 +1394,13 @@ class FireImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-fire.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-fire.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-fire.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-fire.png')
         }
     }
 
@@ -1494,13 +1491,13 @@ class CargoImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-cargos.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-cargos.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-cargos.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-cargos.png')
         }
     }
 
@@ -1531,7 +1528,6 @@ class CargoImageAtlasHandler {
         const nationSpecificInfo = this.imageAtlasInfo.nationSpecific[nation]
 
         if (nationSpecificInfo !== undefined && nationSpecificInfo[material] !== undefined) {
-
             const drawInfo = nationSpecificInfo[material]
 
             return {
@@ -1564,13 +1560,13 @@ class RoadBuildingImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-road-building.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-road-building.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-road-building.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-road-building.png')
         }
     }
 
@@ -1671,13 +1667,13 @@ class TreeImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-trees.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-trees.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-trees.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-trees.png')
         }
     }
 
@@ -1801,13 +1797,13 @@ class StoneImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-stones.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-stones.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-stones.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-stones.png')
         }
     }
 
@@ -1866,13 +1862,13 @@ class DecorationsImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-decorations.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-decorations.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-decorations.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-decorations.png')
         }
     }
 
@@ -1948,13 +1944,13 @@ class CropImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-crops.json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-crops.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-crops.png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-crops.png')
         }
     }
 
@@ -2011,13 +2007,13 @@ class AnimalImageAtlasHandler {
 
         // Get the image atlas information
         if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + "image-atlas-" + this.name + ".json")
+            const response = await fetch(this.pathPrefix + 'image-atlas-' + this.name + '.json')
             this.imageAtlasInfo = await response.json()
         }
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + "image-atlas-" + this.name + ".png")
+            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-' + this.name + '.png')
         }
     }
 
@@ -2134,39 +2130,39 @@ class AnimalImageAtlasHandler {
 // Constants
 const workers = new Map<WorkerType, WorkerAnimation>()
 
-workers.set("Farmer", new WorkerAnimation("assets/", "farmer", 10))
-workers.set("Fisherman", new WorkerAnimation("assets/", "fisher", 10))
-workers.set("Courier", new WorkerAnimation("assets/", "helper", 10))
-workers.set("StorehouseWorker", new WorkerAnimation("assets/", "helper", 10))
-workers.set("Hunter", new WorkerAnimation("assets/", "hunter", 10))
-workers.set("IronFounder", new WorkerAnimation("assets/", "iron_founder", 10))
-workers.set("Metalworker", new WorkerAnimation("assets/", "metalworker", 10))
-workers.set("Miller", new WorkerAnimation("assets/", "miller", 10))
-workers.set("Miner", new WorkerAnimation("assets/", "miner", 10))
-workers.set("Minter", new WorkerAnimation("assets/", "minter", 10))
-workers.set("PigBreeder", new WorkerAnimation("assets/", "pig_breeder", 10))
-workers.set("Planer", new WorkerAnimation("assets/", "planer", 10))
-workers.set("Scout", new WorkerAnimation("assets/", "scout", 10))
-workers.set("ShipWright", new WorkerAnimation("assets/", "ship_wright", 10))
-workers.set("DonkeyBreeder", new WorkerAnimation("assets/", "donkey_breeder", 10))
-workers.set("Butcher", new WorkerAnimation("assets/", "butcher", 10))
-workers.set("Builder", new WorkerAnimation("assets/", "builder", 10))
-workers.set("Brewer", new WorkerAnimation("assets/", "brewer", 10))
-workers.set("Baker", new WorkerAnimation("assets/", "baker", 10))
-workers.set("Armorer", new WorkerAnimation("assets/", "armorer", 10))
-workers.set("WoodcutterWorker", new WorkerAnimation("assets/", "woodcutter", 10))
-workers.set("Forester", new WorkerAnimation("assets/", "forester", 10))
-workers.set("SawmillWorker", new WorkerAnimation("assets/", "carpenter", 10))
-workers.set("Stonemason", new WorkerAnimation("assets/", "stonemason", 10))
-workers.set("Scout", new WorkerAnimation("assets/", "scout", 10))
-workers.set("Private", new WorkerAnimation("assets/", "private", 10))
-workers.set("Private_first_class", new WorkerAnimation("assets/", "private_first_class", 10))
-workers.set("Sergeant", new WorkerAnimation("assets/", "sergeant", 10))
-workers.set("Officer", new WorkerAnimation("assets/", "officer", 10))
-workers.set("General", new WorkerAnimation("assets/", "general", 10))
-workers.set("Geologist", new WorkerAnimation("assets/", "geologist", 10))
+workers.set('Farmer', new WorkerAnimation('assets/', 'farmer', 10))
+workers.set('Fisherman', new WorkerAnimation('assets/', 'fisher', 10))
+workers.set('Courier', new WorkerAnimation('assets/', 'helper', 10))
+workers.set('StorehouseWorker', new WorkerAnimation('assets/', 'helper', 10))
+workers.set('Hunter', new WorkerAnimation('assets/', 'hunter', 10))
+workers.set('IronFounder', new WorkerAnimation('assets/', 'iron_founder', 10))
+workers.set('Metalworker', new WorkerAnimation('assets/', 'metalworker', 10))
+workers.set('Miller', new WorkerAnimation('assets/', 'miller', 10))
+workers.set('Miner', new WorkerAnimation('assets/', 'miner', 10))
+workers.set('Minter', new WorkerAnimation('assets/', 'minter', 10))
+workers.set('PigBreeder', new WorkerAnimation('assets/', 'pig_breeder', 10))
+workers.set('Planer', new WorkerAnimation('assets/', 'planer', 10))
+workers.set('Scout', new WorkerAnimation('assets/', 'scout', 10))
+workers.set('ShipWright', new WorkerAnimation('assets/', 'ship_wright', 10))
+workers.set('DonkeyBreeder', new WorkerAnimation('assets/', 'donkey_breeder', 10))
+workers.set('Butcher', new WorkerAnimation('assets/', 'butcher', 10))
+workers.set('Builder', new WorkerAnimation('assets/', 'builder', 10))
+workers.set('Brewer', new WorkerAnimation('assets/', 'brewer', 10))
+workers.set('Baker', new WorkerAnimation('assets/', 'baker', 10))
+workers.set('Armorer', new WorkerAnimation('assets/', 'armorer', 10))
+workers.set('WoodcutterWorker', new WorkerAnimation('assets/', 'woodcutter', 10))
+workers.set('Forester', new WorkerAnimation('assets/', 'forester', 10))
+workers.set('SawmillWorker', new WorkerAnimation('assets/', 'carpenter', 10))
+workers.set('Stonemason', new WorkerAnimation('assets/', 'stonemason', 10))
+workers.set('Scout', new WorkerAnimation('assets/', 'scout', 10))
+workers.set('Private', new WorkerAnimation('assets/', 'private', 10))
+workers.set('Private_first_class', new WorkerAnimation('assets/', 'private_first_class', 10))
+workers.set('Sergeant', new WorkerAnimation('assets/', 'sergeant', 10))
+workers.set('Officer', new WorkerAnimation('assets/', 'officer', 10))
+workers.set('General', new WorkerAnimation('assets/', 'general', 10))
+workers.set('Geologist', new WorkerAnimation('assets/', 'geologist', 10))
 
-const uiElementsImageAtlasHandler = new UiElementsImageAtlasHandler("assets/", 0)
+const uiElementsImageAtlasHandler = new UiElementsImageAtlasHandler('assets/', 0)
 
 const actionAnimationType = new Map<WorkerAction, AnimationType>()
 
@@ -2193,47 +2189,47 @@ ANIMAL_FALLBACK_DIRECTION.set('WEST', 'EAST')
 ANIMAL_FALLBACK_DIRECTION.set('NORTH_WEST', 'SOUTH_EAST')
 ANIMAL_FALLBACK_DIRECTION.set('NORTH_EAST', 'SOUTH_WEST')
 
-const houses = new HouseImageAtlasHandler("assets/")
-const materialImageAtlasHandler = new MaterialImageAtlasHandler("assets/")
-const flagAnimations = new FlagAnimation("assets/", 2)
-const shipImageAtlas = new ShipImageAtlasHandler("assets/")
+const houses = new HouseImageAtlasHandler('assets/')
+const materialImageAtlasHandler = new MaterialImageAtlasHandler('assets/')
+const flagAnimations = new FlagAnimation('assets/', 2)
+const shipImageAtlas = new ShipImageAtlasHandler('assets/')
 
-const cargoImageAtlasHandler = new CargoImageAtlasHandler("assets/")
+const cargoImageAtlasHandler = new CargoImageAtlasHandler('assets/')
 
-const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler("assets/")
+const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler('assets/')
 
-const signImageAtlasHandler = new SignImageAtlasHandler("assets/")
+const signImageAtlasHandler = new SignImageAtlasHandler('assets/')
 
-const cropsImageAtlasHandler = new CropImageAtlasHandler("assets/")
+const cropsImageAtlasHandler = new CropImageAtlasHandler('assets/')
 
-const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler("assets/")
+const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler('assets/')
 
-const borderImageAtlasHandler = new BorderImageAtlasHandler("assets/")
+const borderImageAtlasHandler = new BorderImageAtlasHandler('assets/')
 
-const treeAnimations = new TreeAnimation("assets/nature/", 2)
+const treeAnimations = new TreeAnimation('assets/nature/', 2)
 const treeImageAtlasHandler = treeAnimations.getImageAtlasHandler()
 
-const fireAnimations = new FireAnimation("assets/", 2)
+const fireAnimations = new FireAnimation('assets/', 2)
 const fireImageAtlas = fireAnimations.getImageAtlasHandler()
 
-const stoneImageAtlasHandler = new StoneImageAtlasHandler("assets/")
+const stoneImageAtlasHandler = new StoneImageAtlasHandler('assets/')
 
 const animals = new Map<WildAnimalType, AnimalAnimation>()
 
-animals.set("DEER", new AnimalAnimation("assets/nature/animals/", "deer", 10))
-animals.set("DEER_2", new AnimalAnimation("assets/nature/animals/", "deer2", 10))
-animals.set("DUCK", new AnimalAnimation("assets/nature/animals/", "duck", 10))
-animals.set("DUCK_2", new AnimalAnimation("assets/nature/animals/", "duck", 10))
-animals.set("FOX", new AnimalAnimation("assets/nature/animals/", "fox", 10))
-animals.set("RABBIT", new AnimalAnimation("assets/nature/animals/", "rabbit", 10))
-animals.set("SHEEP", new AnimalAnimation("assets/nature/animals/", "sheep", 10))
-animals.set("STAG", new AnimalAnimation("assets/nature/animals/", "stag", 10))
+animals.set('DEER', new AnimalAnimation('assets/nature/animals/', 'deer', 10))
+animals.set('DEER_2', new AnimalAnimation('assets/nature/animals/', 'deer2', 10))
+animals.set('DUCK', new AnimalAnimation('assets/nature/animals/', 'duck', 10))
+animals.set('DUCK_2', new AnimalAnimation('assets/nature/animals/', 'duck', 10))
+animals.set('FOX', new AnimalAnimation('assets/nature/animals/', 'fox', 10))
+animals.set('RABBIT', new AnimalAnimation('assets/nature/animals/', 'rabbit', 10))
+animals.set('SHEEP', new AnimalAnimation('assets/nature/animals/', 'sheep', 10))
+animals.set('STAG', new AnimalAnimation('assets/nature/animals/', 'stag', 10))
 
-const donkeyAnimation = new AnimalAnimation("assets/nature/animals/", "donkey", 10)
-const thinCarrierWithCargo = new WorkerAnimation("assets/", "thin-carrier-with-cargo", 10)
-const fatCarrierWithCargo = new WorkerAnimation("assets/", "fat-carrier-with-cargo", 10)
-const thinCarrierNoCargo = new WorkerAnimation("assets/", "thin-carrier-no-cargo", 10)
-const fatCarrierNoCargo = new WorkerAnimation("assets/", "fat-carrier-no-cargo", 10)
+const donkeyAnimation = new AnimalAnimation('assets/nature/animals/', 'donkey', 10)
+const thinCarrierWithCargo = new WorkerAnimation('assets/', 'thin-carrier-with-cargo', 10)
+const fatCarrierWithCargo = new WorkerAnimation('assets/', 'fat-carrier-with-cargo', 10)
+const thinCarrierNoCargo = new WorkerAnimation('assets/', 'thin-carrier-no-cargo', 10)
+const fatCarrierNoCargo = new WorkerAnimation('assets/', 'fat-carrier-no-cargo', 10)
 
 export {
     WorkerAnimation,

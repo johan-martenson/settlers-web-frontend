@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { Label, Input, Button, InputOnChangeData } from "@fluentui/react-components"
-import { do_self_test } from './self_test'
 import './fill_in_player_information.css'
 import { Center } from './components/center'
 
@@ -12,13 +11,6 @@ const defaultUserName = localStorage.getItem("mostRecentPlayer") ?? ""
 
 const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInformationProps) => {
     const [userName, setUserName] = useState<string>(defaultUserName)
-
-    useEffect(
-        () => {
-            do_self_test()
-
-            return () => { }
-        }, [])
 
     return (
         <>

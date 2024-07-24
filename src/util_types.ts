@@ -178,6 +178,24 @@ class PointSetFast implements IterableIterator<Point> {
             arg0(point, index)
         })
     }
+
+    filter(predicate: (point: Point) => boolean): PointSetFast {
+        const filtered = new PointSetFast()
+        this.forEach(point => {
+            if (predicate(point)) {
+                filtered.add(point)
+            }
+        })
+        return filtered
+    }
+
+    map(transform: (point: Point) => Point): PointSetFast {
+        const mapped = new PointSetFast()
+        this.forEach(point => {
+            mapped.add(transform(point))
+        })
+        return mapped
+    }
 }
 
 class PointMapFast<T> implements Map<Point, T> {

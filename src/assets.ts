@@ -30,6 +30,15 @@ export type DrawingInformation = {
     texture?: WebGLTexture | null
 }
 
+export type OneImageInformation = {
+    x: number
+    y: number
+    width: number
+    height: number
+    offsetX: number
+    offsetY: number
+}
+
 type UiElementsImageAtlasInfo = {
     selectedPoint: OneImageInformation
     hoverPoint: OneImageInformation
@@ -82,15 +91,6 @@ type HouseImageAtlasInformation = {
     buildings: Record<Nation, Record<AnyBuilding, Record<'ready' | 'underConstruction' | 'underConstructionShadow' | 'readyShadow' | 'openDoor', OneImageInformation>>>
     constructionPlanned: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
     constructionJustStarted: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
-}
-
-export type OneImageInformation = {
-    x: number
-    y: number
-    width: number
-    height: number
-    offsetX: number
-    offsetY: number
 }
 
 type SignImageAtlasFormat = {

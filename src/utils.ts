@@ -5,6 +5,29 @@ import { ScreenPoint } from './render/game_render'
 import { STANDARD_HEIGHT } from './render/constants'
 import { PointMapFast } from './util_types'
 
+// Types
+export type Point3D = {
+    x: number
+    y: number
+    z: number
+}
+
+export type Vector = {
+    x: number
+    y: number
+    z: number
+}
+
+export type NormalizedVector = Vector
+
+export type Line = {
+    k: number
+    m: number
+}
+
+export type RgbColorArray = [number, number, number]
+
+// Constants
 const vegetationToInt = new Map<Vegetation, number>()
 
 vegetationToInt.set("SA", 0)    // Savannah
@@ -31,8 +54,6 @@ vegetationToInt.set("L2", 20)   // Lava 2
 vegetationToInt.set("L3", 21)   // Lava 3
 vegetationToInt.set("L4", 22)   // Lava 4
 vegetationToInt.set("BM", 23)   // Buildable mountain
-
-export type RgbColorArray = [number, number, number]
 
 const intToVegetationColor = new Map<number, RgbColorArray>()
 
@@ -61,9 +82,11 @@ intToVegetationColor.set(21, [110, 57, 48])      // Lava 3
 intToVegetationColor.set(22, [110, 57, 48])      // Lava 4
 intToVegetationColor.set(23, [140, 140, 140])  // Buildable mountain
 
+// Functions
+
 // FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {
-    return camelCaseStr
+    return camelCaseStr.replace(/([A-Z])/g, ' $1').trim();
 }
 
 function isContext2D(context: RenderingContext): context is CanvasRenderingContext2D {
@@ -78,7 +101,6 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
 
     for (let y = 1; y < terrainInformation.height; y++) {
         for (let x = start; x + 1 < terrainInformation.width; x += 2) {
-
             const point: Point = {
                 x: Number(x),
                 y: Number(y)
@@ -104,20 +126,6 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
 
     return terrain
 }
-
-export interface Point3D {
-    x: number
-    y: number
-    z: number
-}
-
-export interface Vector {
-    x: number
-    y: number
-    z: number
-}
-
-export interface NormalizedVector extends Vector { }
 
 function vectorFromPoints(p1: Point3D, p2: Point3D): Vector {
     return {
@@ -150,60 +158,28 @@ function normalize(vector: Vector): NormalizedVector {
 }
 
 function getNormalForTriangle(p1: Point3D, p2: Point3D, p3: Point3D): NormalizedVector {
-
     const vector1 = vectorFromPoints(p1, p2)
     const vector2 = vectorFromPoints(p1, p3)
 
     const normal = crossProduct(vector1, vector2)
 
-    const normalized = normalize(normal)
-
-    return normalized
+    return normalize(normal)
 }
 
 function getDotProduct(v1: Vector, v2: Vector): number {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
 
-export interface Line {
-    k: number
-    m: number
-}
-
 function getLineBetweenPoints(p1: Point, p2: Point): Line {
     const k = (p1.y - p2.y) / (p1.x - p2.x)
     const m = p1.y - (k * p1.x)
 
-    return {
-        k: k,
-        m: m
-    }
+    return { k, m }
 }
 
 function sumVectors(v1: Vector | undefined, v2: Vector | undefined): Vector {
-
-    let vector1: Vector
-    let vector2: Vector
-
-    if (v1) {
-        vector1 = v1
-    } else {
-        vector1 = {
-            x: 0,
-            y: 0,
-            z: 0
-        }
-    }
-
-    if (v2) {
-        vector2 = v2
-    } else {
-        vector2 = {
-            x: 0,
-            y: 0,
-            z: 0
-        }
-    }
+    const vector1: Vector = v1 ?? { x: 0, y: 0, z: 0 }
+    const vector2: Vector = v2 ?? { x: 0, y: 0, z: 0 }
 
     return {
         x: vector1.x + vector2.x,
@@ -269,30 +245,13 @@ function getPointDown(point: Point): Point {
 }
 
 function arrayToRgbStyle(rgb: number[]): string {
-    return 'rgb(' + Math.floor(rgb[0]) + ', ' + Math.floor(rgb[1]) + ', ' + Math.floor(rgb[2]) + ')'
+    return `rgb(${Math.floor(rgb[0])}, ${Math.floor(rgb[1])}, ${Math.floor(rgb[2])})`
 }
 
 function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boolean {
-
-    let found = false
-
-    for (const road of roads.values()) {
-
-        if (road.id === 'LOCAL') {
-            continue
-        }
-
-        road.points.forEach(
-            roadPoint => {
-
-                if (point.x === roadPoint.x && point.y === roadPoint.y) {
-                    found = true
-                }
-            }
-        )
-    }
-
-    return found
+    return Array.from(roads.values()).some(road =>
+        road.id !== 'LOCAL' && road.points.some(roadPoint => roadPoint.x === point.x && roadPoint.y === point.y)
+    )
 }
 
 async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: any): Promise<void> {
@@ -581,6 +540,7 @@ function canBuildRoad(point: PointInformation): boolean {
 function calcDistance(point0: Point, point1: Point): number {
     const dx = point0.x - point1.x
     const dy = point0.y - point1.y
+
     return Math.sqrt(dx * dx + dy * dy)
 }
 
@@ -725,7 +685,6 @@ function getFreeColor(players: PlayerInformation[]): PlayerColor {
     return colorsRemaining.values().next().value
 }
 
-// Internal utility functions
 function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
 }

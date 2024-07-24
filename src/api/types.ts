@@ -191,7 +191,7 @@ const LARGE_HOUSES_AS_STRINGS: string[] = [
 export type WildAnimalType = "RABBIT" | "FOX" | "STAG" | "DEER" | "DUCK" | "SHEEP" | "DEER_2" | "DUCK_2" | "PACK_DONKEY"
 const WILD_ANIMAL_TYPES = ["RABBIT", "FOX", "STAG", "DEER", "DUCK", "SHEEP", "DEER_2", "DUCK_2", "PACK_DONKEY"]
 
-export interface WildAnimalInformation extends Point {
+export type WildAnimalInformation = Point & {
     id: WildAnimalId
     type: WildAnimalType
     betweenPoints: boolean
@@ -208,13 +208,13 @@ function isPlayerColor(playerColor: unknown): playerColor is PlayerColor {
     return typeof (playerColor) === 'string' && PLAYER_COLORS.find(e => e === playerColor) !== undefined
 }
 
-export interface Player {
+export type Player = {
     name: string
     color: PlayerColor
     nation: Nation
 }
 
-export interface Point {
+export type Point = {
     x: number
     y: number
 }
@@ -241,7 +241,7 @@ export type TreeType = "PINE" | "BIRCH" | "OAK" | "PALM_1" | "PALM_2" | "PINE_AP
 
 export type TreeSize = 'NEWLY_PLANTED' | 'SMALL' | 'MEDIUM' | 'FULL_GROWN'
 
-export interface TreeInformation extends Point {
+export type TreeInformation = Point & {
     id: TreeId
     type: TreeType
     size: TreeSize
@@ -283,14 +283,14 @@ export const LAVA_4 = 22
 export const BUILDABLE_MOUNTAIN = 23
 
 
-export interface TerrainAtPoint {
+export type TerrainAtPoint = {
     point: Point
     below: VegetationIntegers
     downRight: VegetationIntegers
     height: number
 }
 
-export interface TerrainInformation {
+export type TerrainInformation = {
     width: number
     height: number
     straightBelow: Vegetation[]
@@ -298,7 +298,7 @@ export interface TerrainInformation {
     heights: HeightInformation[]
 }
 
-export interface RoadInformation {
+export type RoadInformation = {
     readonly id: RoadId
     readonly points: Point[]
     readonly type: 'NORMAL' | 'MAIN'
@@ -306,7 +306,7 @@ export interface RoadInformation {
 
 export type PlayerType = "HUMAN" | "COMPUTER"
 
-export interface PlayerInformation {
+export type PlayerInformation = {
     readonly name: string
     readonly id: PlayerId
     readonly type: PlayerType
@@ -316,7 +316,7 @@ export interface PlayerInformation {
     readonly nation: Nation
 }
 
-export interface GameInformation {
+export type GameInformation = {
     id: GameId
     name: string
     players: PlayerInformation[]
@@ -326,7 +326,7 @@ export interface GameInformation {
     initialResources: ResourceLevel
 }
 
-export interface MapInformation {
+export type MapInformation = {
     id: MapId
     name: string
     maxPlayers: number
@@ -336,21 +336,21 @@ export interface MapInformation {
     startingPoints: Point[]
 }
 
-export interface CropInformation extends Point {
+export type CropInformation = Point & {
     id: CropId
     state: CropGrowth
     type: CropType
 }
 
-export interface CropInformationLocal extends CropInformation {
+export type CropInformationLocal = CropInformation & {
     growth: number
 }
 
-export interface TreeInformationLocal extends TreeInformation {
+export type TreeInformationLocal = TreeInformation & {
     growth: number
 }
 
-export interface FallingTreeInformation extends Point {
+export type FallingTreeInformation = Point & {
     id: TreeId
     type: TreeType
     animation: number
@@ -362,13 +362,13 @@ export type Size = 'SMALL' | 'MEDIUM' | 'LARGE'
 
 export type FlagType = 'MAIN' | 'MARINE' | 'NORMAL'
 
-export interface SignInformation extends Point {
+export type SignInformation = Point & {
     id: SignId
     type?: SignTypes
     amount?: Size
 }
 
-export interface StoneInformation extends Point {
+export type StoneInformation = Point & {
     id: StoneId
     type: StoneType
     amount: StoneAmount
@@ -478,7 +478,7 @@ export type DecorationType = 'BROWN_MUSHROOM' |
 
 export type SimpleDirection = 'UP_LEFT' | 'UP_RIGHT' | 'RIGHT' | 'DOWN_RIGHT' | 'DOWN_LEFT' | 'LEFT'
 
-export interface WorkerInformation extends Point {
+export type WorkerInformation = Point & {
     id: WorkerId
     type: WorkerType
     color: PlayerColor
@@ -495,7 +495,7 @@ export interface WorkerInformation extends Point {
     actionAnimationIndex?: number
 }
 
-export interface ServerWorkerInformation extends Point {
+export type ServerWorkerInformation = Point & {
     id: WorkerId
     type: WorkerType
     color: PlayerColor
@@ -511,7 +511,7 @@ export interface ServerWorkerInformation extends Point {
     action?: WorkerAction
 }
 
-export interface ShipInformation extends Point {
+export type ShipInformation = Point & {
     id: ShipId
     betweenPoints: boolean
     previous?: Point
@@ -524,14 +524,14 @@ export interface ShipInformation extends Point {
 export type SoldierType = "PRIVATE_RANK" | "PRIVATE_FIRST_CLASS_RANK" | "SERGEANT_RANK" | "OFFICER_RANK" | "GENERAL_RANK"
 const SOLDIER_TYPES: SoldierType[] = ["PRIVATE_RANK", "PRIVATE_FIRST_CLASS_RANK", "SERGEANT_RANK", "OFFICER_RANK", "GENERAL_RANK"]
 
-interface HouseResourceItem {
+type HouseResourceItem = {
     has: number
     canHold?: number
 }
 
 type HouseState = "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED" | "PLANNED"
 
-export interface HouseInformation extends Point {
+export type HouseInformation = Point & {
     id: HouseId
     playerId: PlayerId
     type: AnyBuilding
@@ -551,12 +551,12 @@ export interface HouseInformation extends Point {
     nation: Nation
 }
 
-export interface HeadquarterInformation extends HouseInformation {
+export type HeadquarterInformation = HouseInformation & {
     inReserve: { [key in SoldierType]: number }
     reserved: { [key in SoldierType]: number }
 }
 
-export interface FlagInformation extends Point {
+export type FlagInformation = Point & {
     id: FlagId
     playerId: PlayerId
     type: FlagType
@@ -575,45 +575,43 @@ export type FlagDebugInfo = FlagInformation & {
     cargos: CargoInformation[]
 }
 
-export interface BorderInformation {
+export type BorderInformation = {
     playerId: PlayerId
     points: Point[]
 }
 
-export interface Decoration {
-    x: number
-    y: number
+export type Decoration = Point & {
     decoration: DecorationType
 }
 
 export type GameState = 'NOT_STARTED' | "STARTED" | "PAUSED" | "EXPIRED"
 
-export interface PossibleNewRoadInformation {
+export type PossibleNewRoadInformation = {
     possibleNewRoad: Point[]
     closesRoad: boolean
 }
 
-export interface Measurement {
+export type Measurement = {
     time: number
     values: number[]
 }
 
-export interface PlayerInformationLight {
+export type PlayerInformationLight = {
     name: string
     color: PlayerColor
 }
 
-export interface ProductionStatistics {
+export type ProductionStatistics = {
     players: PlayerInformationLight[]
     materialStatistics: { [key in Material]: Measurement[] }
 }
 
-export interface LandDataPoint {
+export type LandDataPoint = {
     time: number
     values: number[]
 }
 
-export interface LandStatistics {
+export type LandStatistics = {
     players: PlayerInformationLight[]
     currentTime: number
     landStatistics: LandDataPoint[]

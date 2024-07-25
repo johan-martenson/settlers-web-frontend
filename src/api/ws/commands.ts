@@ -600,39 +600,39 @@ function resumeGame(): void {
     send(Command.ResumeGame)
 }
 
-function placeBuildingWebsocket(type: AnyBuilding, point: Point): void {
+function placeHouse(type: AnyBuilding, point: Point): void {
     sendWithOptions<{ x: number, y: number, type: AnyBuilding }>(Command.PlaceBuilding, { ...point, type })
 }
 
-function placeRoadWebsocket(points: Point[]): void {
+function placeRoad(points: Point[]): void {
     sendWithOptions<{ road: Point[] }>(Command.PlaceRoad, { road: points })
 }
 
-function placeFlagWebsocket(flag: Point): void {
+function placeFlag(flag: Point): void {
     sendWithOptions<{ flag: Point }>(Command.PlaceFlag, { flag })
 }
 
-function placeRoadWithFlagWebsocket(flag: Point, points: Point[]): void {
+function placeRoadWithFlag(flag: Point, points: Point[]): void {
     sendWithOptions<{ flag: Point, road: Point[] }>(Command.PlaceFlagAndRoad, { flag, road: points })
 }
 
-function removeFlagWebsocket(id: FlagId): void {
+function removeFlag(id: FlagId): void {
     sendWithOptions<{ id: FlagId }>(Command.RemoveFlag, { id })
 }
 
-function removeRoadWebsocket(id: RoadId): void {
+function removeRoad(id: RoadId): void {
     sendWithOptions<{ id: RoadId }>(Command.RemoveRoad, { id })
 }
 
-function removeBuildingWebsocket(id: HouseId): void {
+function removeBuilding(id: HouseId): void {
     sendWithOptions<{ id: HouseId }>(Command.RemoveBuilding, { id })
 }
 
-function callScoutWebsocket(point: Point): void {
+function callScout(point: Point): void {
     sendWithOptions<{ point: Point }>(Command.CallScout, { point })
 }
 
-function callGeologistWebsocket(point: Point): void {
+function callGeologist(point: Point): void {
     sendWithOptions<{ point: Point }>(Command.CallGeologist, { point })
 }
 
@@ -710,15 +710,15 @@ export {
     createGame,
     pauseGame,
     resumeGame,
-    placeBuildingWebsocket,
-    placeRoadWebsocket,
-    placeFlagWebsocket,
-    placeRoadWithFlagWebsocket,
-    removeFlagWebsocket,
-    removeRoadWebsocket,
-    removeBuildingWebsocket,
-    callScoutWebsocket,
-    callGeologistWebsocket,
+    placeHouse,
+    placeRoad,
+    placeFlag,
+    placeRoadWithFlag,
+    removeFlag,
+    removeRoad,
+    removeBuilding,
+    callScout,
+    callGeologist,
     getViewForPlayer,
     listenToGameMetadata,
     listenToGamesList,

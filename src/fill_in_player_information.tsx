@@ -4,7 +4,7 @@ import './fill_in_player_information.css'
 import { Center } from './components/center'
 
 // Types
-type FillInPlayerInformationProps {
+type FillInPlayerInformationProps = {
     onPlayerInformationDone: ((name: string) => void)
 }
 

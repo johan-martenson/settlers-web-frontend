@@ -11,7 +11,7 @@ type GuideProps = {
 }
 
 
-type PageProps {
+type PageProps = {
     page: PageType
 }
 

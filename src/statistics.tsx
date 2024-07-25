@@ -5,7 +5,7 @@ import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { GameId, ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerInformation } from './api/types'
 import { InventoryIcon } from './icons/icon'
-import { monitor } from './api/ws-api'
+import { api } from './api/ws-api'
 import { ColorBox } from './components/utils'
 
 // Types
@@ -34,12 +34,12 @@ const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClos
     const [state, setState] = useState<"PRODUCTION" | "LAND">("PRODUCTION")
     const [hoverInfo, setHoverInfo] = useState<string>()
     const [graphHover, setGraphHover] = useState<GraphHover>()
-    const [playersToShow, setPlayersToShow] = useState<PlayerInformation[]>(Array.from(monitor.players.values()))
+    const [playersToShow, setPlayersToShow] = useState<PlayerInformation[]>(Array.from(api.players.values()))
 
     useEffect(() => {
         async function fetchData() {
-            const productionStats = await monitor.getProductionStatistics()
-            const landStats = await monitor.getLandStatistics()
+            const productionStats = await api.getProductionStatistics()
+            const landStats = await api.getLandStatistics()
 
             setProductionStatistics(productionStats)
             setLandStatistics(landStats)
@@ -397,7 +397,7 @@ const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClos
 
                     {state === 'LAND' &&
                         <div className='select-players'>
-                            {Array.from(monitor.players.values()).map(player => <div
+                            {Array.from(api.players.values()).map(player => <div
                                 key={player.id}
                             >
                                 <Tooltip content={player.name} relationship='label'>

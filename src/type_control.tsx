@@ -2,7 +2,7 @@ import React, { useEffect, useReducer, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import { PointInformation, Point } from './api/types'
-import { monitor } from './api/ws-api'
+import { api } from './api/ws-api'
 
 // Types
 export type Command = {
@@ -70,7 +70,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
                 // Use try-catch because this can be called before the websocket is setup and will then fail
                 try {
-                    const updatedPointInformation = await monitor.getInformationOnPoint(selectedPoint)
+                    const updatedPointInformation = await api.getInformationOnPoint(selectedPoint)
 
                     setSelectedPointInformation(updatedPointInformation)
                 } catch (error) {

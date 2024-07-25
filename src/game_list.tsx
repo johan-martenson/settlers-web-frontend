@@ -10,7 +10,7 @@ import {
 } from "@fluentui/react-components"
 import './game_list.css'
 import { GameId, GameInformation } from './api/types'
-import { monitor } from './api/ws-api'
+import { api } from './api/ws-api'
 
 // Types
 type GameListProps = {
@@ -45,11 +45,11 @@ const GameList = ({ onJoinGame }: GameListProps) => {
             }
 
             async function connectAndHandleList() {
-                await monitor.connectAndWaitForConnection()
+                await api.connectAndWaitForConnection()
 
-                monitor.addGamesListener(gameListChanged)
+                api.addGamesListener(gameListChanged)
 
-                const games = await monitor.getGames()
+                const games = await api.getGames()
 
                 console.log(games)
 
@@ -58,7 +58,7 @@ const GameList = ({ onJoinGame }: GameListProps) => {
 
             connectAndHandleList()
 
-            return () => monitor.removeGamesListener(gameListChanged)
+            return () => api.removeGamesListener(gameListChanged)
         }, []
     )
 

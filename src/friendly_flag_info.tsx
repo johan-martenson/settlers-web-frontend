@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { FlagInformation, Nation } from './api/types'
 import './friendly_flag_info.css'
-import { monitor } from './api/ws-api'
+import { api } from './api/ws-api'
 import { Button, Field, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, InventoryIcon, UiIcon } from './icons/icon'
 import { ButtonRow, Window } from './components/dialog'
@@ -30,9 +30,9 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                 onRemove: () => onClose()
             }
 
-            monitor.addFlagListener(flag.id, listener)
+            api.addFlagListener(flag.id, listener)
 
-            return () => { monitor.removeFlagListener(flag.id, listener) }
+            return () => { api.removeFlagListener(flag.id, listener) }
         }, [])
 
     return (
@@ -47,7 +47,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         <Button
                             onClick={
                                 async () => {
-                                    monitor.removeFlag(flag.id)
+                                    api.removeFlag(flag.id)
 
                                     onClose()
                                 }
@@ -77,7 +77,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         <Button
                             onClick={
                                 async () => {
-                                    monitor.callGeologist(flag)
+                                    api.callGeologist(flag)
 
                                     onClose()
                                 }
@@ -95,7 +95,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         <Button
                             onClick={
                                 async () => {
-                                    monitor.callScout(flag)
+                                    api.callScout(flag)
 
                                     onClose()
                                 }

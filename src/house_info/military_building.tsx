@@ -3,7 +3,7 @@ import { Button, Field, Tooltip } from "@fluentui/react-components"
 import { HouseInformation, Nation, SoldierType, getSoldierDisplayName, isMaterial, rankToMaterial } from "../api/types"
 import { HouseIcon, InventoryIcon, UiIcon } from '../icons/icon'
 import './house_info.css'
-import { monitor } from '../api/ws-api'
+import { api } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
 import { canBeUpgraded, isEvacuated } from '../api/utils'
 
@@ -139,7 +139,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
             <ButtonRow>
                 {house.promotionsEnabled &&
                     <Button
-                        onClick={() => { monitor.disablePromotionsForHouse(house.id) }}
+                        onClick={() => { api.disablePromotionsForHouse(house.id) }}
                         onMouseEnter={() => setHoverInfo("Disable promotions")}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
@@ -149,7 +149,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
 
                 {!house.promotionsEnabled &&
                     <Button
-                        onClick={() => { monitor.enablePromotionsForHouse(house.id) }}
+                        onClick={() => { api.enablePromotionsForHouse(house.id) }}
                         onMouseEnter={() => setHoverInfo("Enable promotions")}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
@@ -159,7 +159,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
 
                 {isEvacuated(house) &&
                     <Button
-                        onClick={() => { monitor.cancelEvacuationForHouse(house.id) }}
+                        onClick={() => { api.cancelEvacuationForHouse(house.id) }}
                         onMouseEnter={() => setHoverInfo("Cancel evacuation")}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
@@ -169,7 +169,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
 
                 {!isEvacuated(house) &&
                     <Button
-                        onClick={() => { monitor.evacuateHouse(house.id) }}
+                        onClick={() => { api.evacuateHouse(house.id) }}
                         onMouseEnter={() => setHoverInfo("Evacuate")}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >Evacuate</Button>
@@ -177,7 +177,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
 
                 {canBeUpgraded(house) && !house.upgrading &&
                     <Button
-                        onClick={() => monitor.upgrade(house.id)}
+                        onClick={() => api.upgrade(house.id)}
                         onMouseEnter={() => setHoverInfo("Upgrade")}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
@@ -190,7 +190,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
 
                 <Tooltip content={'Remove'} relationship='label' withArrow>
                     <Button onClick={() => {
-                        monitor.removeBuilding(house.id)
+                        api.removeBuilding(house.id)
 
                         onClose()
                     }}

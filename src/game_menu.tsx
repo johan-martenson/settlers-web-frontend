@@ -6,7 +6,7 @@ import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
 import { DEFAULT_VOLUME } from './play'
-import { monitor } from './api/ws-api'
+import { api } from './api/ws-api'
 
 // Types
 type GameMenuProps = {
@@ -73,15 +73,15 @@ const GameMenu = (
 
     useEffect(
         () => {
-            setGameSpeed(monitor.gameSpeed)
+            setGameSpeed(api.gameSpeed)
 
             const callback = {
                 onGameSpeedChanged: (gameSpeed: GameSpeed) => setGameSpeed(gameSpeed)
             }
 
-            monitor.addGameStateListener(callback)
+            api.addGameStateListener(callback)
 
-            return () => monitor.removeGameStateListener(callback)
+            return () => api.removeGameStateListener(callback)
         },
         []
     )
@@ -115,11 +115,11 @@ const GameMenu = (
                     <Field label='Set game speed'>
                         <Dropdown value={gameSpeed.charAt(0).toUpperCase() + gameSpeed.substring(1).toLocaleLowerCase()} onOptionSelect={(_event: SelectionEvents, data: OptionOnSelectData) => {
                             if (data.optionValue === 'Fast') {
-                                monitor.setGameSpeed('FAST')
+                                api.setGameSpeed('FAST')
                             } else if (data.optionValue === 'Normal') {
-                                monitor.setGameSpeed('NORMAL')
+                                api.setGameSpeed('NORMAL')
                             } else {
-                                monitor.setGameSpeed('SLOW')
+                                api.setGameSpeed('SLOW')
                             }
                         }}>
                             <Option>Fast</Option>
@@ -225,12 +225,12 @@ const GameMenu = (
                         />
                     </Field>
 
-                    {monitor.gameState === 'STARTED' &&
-                        <Button onClick={() => monitor.pauseGame()} >Pause</Button>
+                    {api.gameState === 'STARTED' &&
+                        <Button onClick={() => api.pauseGame()} >Pause</Button>
                     }
 
-                    {monitor.gameState === 'PAUSED' &&
-                        <Button onClick={() => monitor.resumeGame()} >Resume</Button>
+                    {api.gameState === 'PAUSED' &&
+                        <Button onClick={() => api.resumeGame()} >Resume</Button>
                     }
 
                     <Divider />

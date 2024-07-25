@@ -5,7 +5,7 @@ import GameOptions from './game_options'
 import MapSelection from './map_selection'
 import ManagePlayers from './manage_players'
 import { GameId, PlayerId, MapInformation, GameInformation } from './api/types'
-import { GameListener, monitor } from './api/ws-api'
+import { GameListener, api } from './api/ws-api'
 import { ChatBox } from './chat/chat'
 import { Center } from './components/center'
 
@@ -34,40 +34,40 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
             const listener: GameListener = {
                 onGameInformationChanged: (changedGameInformation: GameInformation) => {
                     if (changedGameInformation.status === 'STARTED' && gameInformation?.status !== 'STARTED') {
-                        if (monitor.gameId === undefined) {
+                        if (api.gameId === undefined) {
                             console.error('Game id is undefined')
 
                             return
                         }
 
-                        if (monitor.playerId === undefined) {
+                        if (api.playerId === undefined) {
                             console.error("Player id is undefined")
 
                             return
                         }
 
-                        onGameStarted(monitor.gameId, monitor.playerId)
+                        onGameStarted(api.gameId, api.playerId)
                     }
 
                     setGameInformation(changedGameInformation)
                 }
             }
 
-            monitor.addGameStateListener(listener);
+            api.addGameStateListener(listener);
 
             // Connect to an existing game or create a new one
             (async () => {
-                const gameInformation = await monitor.getGameInformation()
+                const gameInformation = await api.getGameInformation()
 
                 setGameInformation(gameInformation)
                 setState('CREATE_GAME')
 
                 // Set the default map is there is no map set
                 if (gameInformation?.map === undefined) {
-                    const maps = await monitor.getMaps()
+                    const maps = await api.getMaps()
 
                     const greenIslandsMap = maps.find(map => map.name === 'Green Islands')
-                    monitor.setMap(greenIslandsMap?.id ?? maps[0].id)
+                    api.setMap(greenIslandsMap?.id ?? maps[0].id)
                 }
 
                 // Get a name for the game if none is set, otherwise go directly to the create screen
@@ -78,7 +78,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                 }
             })().then()
 
-            return () => monitor.removeGameStateListener(listener)
+            return () => api.removeGameStateListener(listener)
         }, []
     )
 
@@ -99,7 +99,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                                 }
                                 onKeyDown={(event) => {
                                     if (event.key === 'Enter' && candidateTitle !== undefined) {
-                                        monitor.setTitle(candidateTitle)
+                                        api.setTitle(candidateTitle)
 
                                         setState('CREATE_GAME')
                                     }
@@ -109,8 +109,8 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                             />
                         </Field>
                         <Button onClick={() => {
-                            if (monitor.gameId !== undefined) {
-                                monitor.deleteGame()
+                            if (api.gameId !== undefined) {
+                                api.deleteGame()
                             } else {
                                 console.error('Game id is not set')
                             }
@@ -122,7 +122,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                             appearance='primary'
                             onClick={() => {
                                 if (candidateTitle !== undefined) {
-                                    monitor.setTitle(candidateTitle)
+                                    api.setTitle(candidateTitle)
 
                                     setState('CREATE_GAME')
                                 }
@@ -143,8 +143,8 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                             <GameOptions
                                 initialResources={gameInformation?.initialResources ?? 'MEDIUM'}
                                 othersCanJoin={gameInformation?.othersCanJoin ?? true}
-                                setAvailableResources={(resources) => monitor.setInitialResources(resources)}
-                                setOthersCanJoin={(othersCanJoin: boolean) => monitor.setOthersCanJoin(othersCanJoin)}
+                                setAvailableResources={(resources) => api.setInitialResources(resources)}
+                                setOthersCanJoin={(othersCanJoin: boolean) => api.setOthersCanJoin(othersCanJoin)}
                             />
                         </div>
 
@@ -156,7 +156,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         </div>
 
                         <div className='map-column'>
-                            <MapSelection onMapSelected={(map: MapInformation) => monitor.setMap(map.id)} minPlayers={gameInformation?.players.length ?? 0} />
+                            <MapSelection onMapSelected={(map: MapInformation) => api.setMap(map.id)} minPlayers={gameInformation?.players.length ?? 0} />
                         </div>
 
                         <div className='game-create-chat'>
@@ -166,8 +166,8 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                     </div>
                     <div className='start-or-cancel'>
                         <Button onClick={() => {
-                            if (monitor.gameId !== undefined) {
-                                monitor.deleteGame()
+                            if (api.gameId !== undefined) {
+                                api.deleteGame()
                             } else {
                                 console.error('Game id is not set')
                             }
@@ -176,7 +176,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
                         }} >Discard game</Button>
                         <Button onClick={async () => {
-                            monitor.startGame()
+                            api.startGame()
 
                             onGameStarted(gameInformation?.id, selfPlayerId)
                         }}

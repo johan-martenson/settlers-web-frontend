@@ -1,7 +1,7 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setAvailableResources, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse } from './ws/commands'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
@@ -19,58 +19,61 @@ import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION,
 
 // Functions exposed as part of WS API
 function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
-    return whatToBuild === 'FLAG' && monitor.availableConstruction.get(point)?.indexOf('flag') !== -1
+    return whatToBuild === 'FLAG' && api.availableConstruction.get(point)?.indexOf('flag') !== -1
 }
 
 function getHeight(point: Point): number {
-    return monitor.allTiles.get(point)?.height ?? 0
+    return api.allTiles.get(point)?.height ?? 0
 }
 
 function houseAt(point: Point): HouseInformation | undefined {
-    return monitor.housesAt.get(point)
+    return api.housesAt.get(point)
 }
 
 function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefined {
-    return Array.from(monitor.houses.values())
+    return Array.from(api.houses.values())
         .find(house => house.type === 'Headquarter' && house.playerId === playerId)
 }
 
 function getInformationOnPointLocal(point: Point): PointInformationLocal {
-    const canBuild = monitor.availableConstruction.get(point)
+    const canBuild = api.availableConstruction.get(point)
 
-    for (const building of monitor.houses.values()) {
-        if (building.x === point.x && building.y === point.y) {
-            return {
-                x: point.x,
-                y: point.y,
-                canBuild: canBuild ?? [],
-                buildingId: building.id,
-                is: 'building'
-            }
+    const house = Array.from(api.houses.values())
+        .find(house => house.x === point.x && house.y === point.y)
+
+    if (house) {
+        return {
+            ...point,
+            canBuild: canBuild ?? [],
+            buildingId: house.id,
+            is: 'building'
         }
     }
 
-    for (const flag of monitor.flags.values()) {
-        if (flag.x === point.x && flag.y === point.y) {
-            return {
-                x: point.x,
-                y: point.y,
-                canBuild: canBuild ?? [],
-                flagId: flag.id,
-                is: 'flag'
-            }
+    const flag = Array.from(api.flags.values())
+        .find(flag => flag.x === point.x && flag.y === point.y)
+
+    if (flag) {
+        return {
+            x: point.x,
+            y: point.y,
+            canBuild: canBuild ?? [],
+            flagId: flag.id,
+            is: 'flag'
         }
     }
 
-    for (const [candidateRoadId, road] of monitor.roads) {
-        if (road.points.find(roadPoint => roadPoint.x === point.x && roadPoint.y === point.y)) {
-            return {
-                x: point.x,
-                y: point.y,
-                canBuild: canBuild ?? [],
-                roadId: candidateRoadId,
-                is: 'road'
-            }
+    const road = Array.from(api.roads.values())
+        .find(road => road.points
+            .find(roadPoint => roadPoint.x === point.x && roadPoint.y === point.y))
+
+    if (road) {
+        return {
+            x: point.x,
+            y: point.y,
+            canBuild: canBuild ?? [],
+            roadId: road.id,
+            is: 'road'
         }
     }
 
@@ -83,11 +86,11 @@ function getInformationOnPointLocal(point: Point): PointInformationLocal {
 }
 
 function getFlagAtPointLocal(point: Point): FlagInformation | undefined {
-    return Array.from(monitor.flags.values()).find(flag => flag.x === point.x && flag.y === point.y)
+    return Array.from(api.flags.values()).find(flag => flag.x === point.x && flag.y === point.y)
 }
 
 function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
-    return Array.from(monitor.houses.values()).find(house => house.x === point.x && house.y === point.y)
+    return Array.from(api.houses.values()).find(house => house.x === point.x && house.y === point.y)
 }
 
 // Functions used within WS
@@ -315,7 +318,7 @@ let walkingTimerState: WalkingTimerState = 'NOT_RUNNING'
 let requestedFollowingState: RequestedFollowingState = 'NO_FOLLLOW'
 let followingState: FollowingState = 'NOT_FOLLOWING'
 
-const monitor = {
+const api = {
     gameId: undefined as GameId | undefined,
     playerId: undefined as PlayerId | undefined,
     othersCanJoin: undefined as boolean | undefined,
@@ -354,33 +357,50 @@ const monitor = {
     localRemovedFlags: new Map<FlagId, FlagInformation>(),
     localRemovedRoads: new Map<RoadId, RoadInformation>(),
 
-    placeHouse,
-    placeRoad,
-    placeFlag,
-    placeRoadWithFlag,
-    placeLocalRoad,
+    // Connection
+    connectAndWaitForConnection,
+    waitForConnection,
+    killWebsocket,
 
-    removeFlag,
-    removeRoad,
-    removeBuilding,
-    removeLocalRoad,
+    // Games
+    getGames,
+    addGamesListener,
+    removeGamesListener,
+    removeGameStateListener,
+
+    // Maps
+    getMaps,
+
+    // Map
+    getTerrainForMap,
+
+    // Game
+    createGame,
+    startGame,
+    pauseGame,
+    resumeGame,
+    deleteGame,
+    waitForGameDataAvailable,
+    getGameInformation,
+    addGameStateListener,
+    isGameDataAvailable,
+    addPlayerToGame,
+    setGameSpeed,
+    setTitle,
+    setInitialResources,
+    setOthersCanJoin,
+    setMap,
+    getProductionStatistics,
+    getLandStatistics,
+    followGame,
+
+    // Player
+    createPlayer,
+    updatePlayer,
+    removePlayer,
+    addActionsListener,
     removeMessage,
     removeMessages,
-
-    isAvailable,
-    isGameDataAvailable,
-
-    getInformationOnPointLocal,
-    getHouseAtPointLocal,
-    getFlagAtPointLocal,
-    getInformationOnPoint,
-    getInformationOnPoints,
-    getHeight,
-    getFlagDebugInfo,
-
-    callScout,
-    callGeologist,
-
     setReservedSoldiers,
     setStrengthWhenPopulatingMilitaryBuildings,
     setDefenseStrength,
@@ -389,24 +409,6 @@ const monitor = {
     setMilitaryPopulationCloserToBorder,
     setMilitaryPopulationCloseToBorder,
     setSoldiersAvailableForAttack,
-
-    createPlayer,
-    addPlayerToGame,
-    updatePlayer,
-    removePlayer,
-    upgrade,
-    setGameSpeed,
-    setTitle,
-    setInitialResources: setAvailableResources,
-    setOthersCanJoin,
-    setMap,
-    getMaps,
-
-    getTerrainForMap,
-
-    getProductionStatistics,
-    getLandStatistics,
-
     getStrengthWhenPopulatingMilitaryBuildings,
     getDefenseStrength,
     getDefenseFromSurroundingBuildings,
@@ -415,35 +417,6 @@ const monitor = {
     getPopulateMilitaryCloseToBorder,
     getSoldiersAvailableForAttack,
     getMilitarySettings,
-
-    getGameInformation,
-
-    addDetailedMonitoring,
-
-    removeDetailedMonitoring,
-
-    addGamesListener,
-    addGameStateListener,
-    addFlagListener,
-    addAvailableConstructionListener,
-    addActionsListener,
-    addBurningHousesListener,
-    addMessagesListener,
-    addDiscoveredPointsListener,
-    addRoadsListener,
-    addHouseListener,
-    addMovementForWorkerListener,
-    addChatMessagesListener,
-
-    removeGamesListener,
-    removeFlagListener,
-    removeAvailableConstructionListener,
-    removeMessagesListener,
-    removeGameStateListener,
-    removeMovementForWorkerListener,
-    removeChatMessagesListener,
-    removeDiscoveredPointsListener,
-    removeRoadsListener,
 
     setCoalQuotas,
     setFoodQuotas,
@@ -459,6 +432,14 @@ const monitor = {
 
     setTransportPriorityForMaterial,
 
+    // House
+    placeHouse,
+    removeBuilding,
+    getHouseAtPointLocal,
+    upgrade,
+    addDetailedMonitoring,
+    removeDetailedMonitoring,
+    houseAt,
     attackHouse,
     evacuateHouse,
     upgradeHouse,
@@ -467,24 +448,53 @@ const monitor = {
     disablePromotionsForHouse,
     enablePromotionsForHouse,
     cancelEvacuationForHouse,
+    addHouseListener,
 
-    findPossibleNewRoad,
+    // Flag
+    placeFlag,
+    removeFlag,
+    getFlagAtPointLocal,
+    getFlagDebugInfo,
+    callScout,
+    callGeologist,
+    addFlagListener,
+    removeFlagListener,
 
-    createGame,
-    startGame,
-    pauseGame,
-    resumeGame,
-    deleteGame,
+    // Road
+    placeRoad,
+    placeRoadWithFlag,
+    placeLocalRoad,
+    removeRoad,
+    removeLocalRoad,
+    addRoadsListener,
+    removeRoadsListener,
 
-    houseAt,
+    // Point
+    getInformationOnPointLocal,
+    getInformationOnPoint,
+    getInformationOnPoints,
+    getHeight,
 
-    waitForGameDataAvailable,
-    waitForConnection,
-    getGames,
-    followGame,
+    // Chat messages
     sendChatMessageToRoom,
-    connectAndWaitForConnection,
-    killWebsocket
+    addChatMessagesListener,
+    removeChatMessagesListener,
+
+    // Construction
+    findPossibleNewRoad,
+    isAvailable,
+    addAvailableConstructionListener,
+
+    // To-be-sorted
+    addBurningHousesListener,
+    addMessagesListener,
+    addDiscoveredPointsListener,
+    addMovementForWorkerListener,
+
+    removeAvailableConstructionListener,
+    removeMessagesListener,
+    removeMovementForWorkerListener,
+    removeDiscoveredPointsListener,
 }
 
 // State - listeners
@@ -515,7 +525,7 @@ function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
             } catch (error) {
                 console.error(`Failed to sync the game with the backend: ${error}`)
 
-                monitor.gameState = 'EXPIRED'
+                api.gameState = 'EXPIRED'
 
                 gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged('EXPIRED'))
             }
@@ -672,7 +682,7 @@ function addBurningHousesListener(listener: HouseBurningListener) {
 
 // Functions used within monitoring
 function handleGameInformationChangedMessage(gameInformation: GameInformation): void {
-    if (monitor.gameState === 'NOT_STARTED' && gameInformation.status !== 'NOT_STARTED') {
+    if (api.gameState === 'NOT_STARTED' && gameInformation.status !== 'NOT_STARTED') {
         (async () => {
             loadPlayerViewAndCallListeners(await getViewForPlayer())
 
@@ -685,53 +695,53 @@ function handleGameInformationChangedMessage(gameInformation: GameInformation): 
 }
 
 function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
-    const previousGameState = monitor.gameState
+    const previousGameState = api.gameState
 
-    message.players.forEach(player => monitor.players.set(player.id, player))
+    message.players.forEach(player => api.players.set(player.id, player))
 
-    monitor.gameState = message.gameState
-    monitor.othersCanJoin = message.othersCanJoin
-    monitor.initialResources = message.initialResources
-    monitor.map = message.map
+    api.gameState = message.gameState
+    api.othersCanJoin = message.othersCanJoin
+    api.initialResources = message.initialResources
+    api.map = message.map
 
-    if (monitor.gameState === 'NOT_STARTED') {
+    if (api.gameState === 'NOT_STARTED') {
         return
     }
 
-    gameStateMightHaveChanged(monitor.gameState)
+    gameStateMightHaveChanged(api.gameState)
 
     Object.entries(message.availableConstruction).forEach(
-        ([pointAsString, availableConstruction]) => monitor.availableConstruction.set(pointStringToPoint(pointAsString), availableConstruction))
+        ([pointAsString, availableConstruction]) => api.availableConstruction.set(pointStringToPoint(pointAsString), availableConstruction))
 
-    message.signs.forEach(sign => monitor.signs.set(sign.id, sign))
+    message.signs.forEach(sign => api.signs.set(sign.id, sign))
 
-    message.stones.forEach(stone => monitor.stones.set(stone.id, stone))
+    message.stones.forEach(stone => api.stones.set(stone.id, stone))
 
-    message.discoveredPoints.forEach(point => monitor.discoveredPoints.add(point))
+    message.discoveredPoints.forEach(point => api.discoveredPoints.add(point))
 
-    message.workers.forEach(worker => monitor.workers.set(worker.id, serverWorkerToLocalWorker(worker)))
+    message.workers.forEach(worker => api.workers.set(worker.id, serverWorkerToLocalWorker(worker)))
 
-    message.wildAnimals.forEach(wildAnimal => monitor.wildAnimals.set(wildAnimal.id, wildAnimal))
+    message.wildAnimals.forEach(wildAnimal => api.wildAnimals.set(wildAnimal.id, wildAnimal))
 
     message.houses.forEach(house => {
-        monitor.houses.set(house.id, house)
-        monitor.housesAt.set(house, house)
+        api.houses.set(house.id, house)
+        api.housesAt.set(house, house)
     })
 
-    message.flags.forEach(flag => monitor.flags.set(flag.id, flag))
+    message.flags.forEach(flag => api.flags.set(flag.id, flag))
 
-    message.roads.forEach(road => monitor.roads.set(road.id, road))
+    message.roads.forEach(road => api.roads.set(road.id, road))
 
-    message.trees.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
+    message.trees.forEach(tree => api.trees.set(tree.id, serverSentTreeToLocal(tree)))
 
-    message.crops.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+    message.crops.forEach(crop => api.crops.set(crop.id, serverSentCropToLocal(crop)))
 
-    message.deadTrees.forEach(deadTree => monitor.deadTrees.add(deadTree))
+    message.deadTrees.forEach(deadTree => api.deadTrees.add(deadTree))
 
-    message.decorations.forEach(decoration => monitor.decorations.set({ x: decoration.x, y: decoration.y }, decoration))
+    message.decorations.forEach(decoration => api.decorations.set({ x: decoration.x, y: decoration.y }, decoration))
 
     for (const borderInformation of message.borders) {
-        const player = monitor.players.get(borderInformation.playerId)
+        const player = api.players.get(borderInformation.playerId)
 
         if (!player) {
             console.error("UNKNOWN PLAYER: " + borderInformation.playerId)
@@ -739,7 +749,7 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
             continue
         }
 
-        monitor.border.set(borderInformation.playerId,
+        api.border.set(borderInformation.playerId,
             {
                 color: player.color,
                 nation: player.nation,
@@ -751,22 +761,22 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     // Convert the terrain to a point-list format and store it
     const terrainPointList = terrainInformationToTerrainAtPointList(message)
 
-    terrainPointList.forEach(terrainAtPoint => monitor.allTiles.set(terrainAtPoint.point, terrainAtPoint))
+    terrainPointList.forEach(terrainAtPoint => api.allTiles.set(terrainAtPoint.point, terrainAtPoint))
 
-    storeDiscoveredTiles(monitor.discoveredPoints)
+    storeDiscoveredTiles(api.discoveredPoints)
 
     // Call the listeners after all the data has been set
-    discoveredPointListeners.forEach(listener => listener(monitor.discoveredPoints))
+    discoveredPointListeners.forEach(listener => listener(api.discoveredPoints))
     roadListeners.forEach(roadListener => roadListener())
 
-    message?.messages.forEach(message => monitor.messages.set(message.id, message))
+    message?.messages.forEach(message => api.messages.set(message.id, message))
 
     if (message.messages) {
         messageListeners.forEach(messageListener => messageListener(message.messages, []))
     }
 
-    if (previousGameState !== monitor.gameState) {
-        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(monitor.gameState))
+    if (previousGameState !== api.gameState) {
+        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(api.gameState))
     }
 }
 
@@ -774,7 +784,7 @@ function startTimers() {
 
     // Drive worker animations
     workerAnimationsTimer = setInterval(async () => {
-        for (const worker of monitor.workers.values()) {
+        for (const worker of api.workers.values()) {
             if (worker.action && worker.actionAnimationIndex !== undefined) {
                 worker.actionAnimationIndex = worker.actionAnimationIndex + 1
             }
@@ -782,7 +792,7 @@ function startTimers() {
 
         const treesToRemove: TreeId[] = []
 
-        monitor.fallingTrees.forEach(fallingTree => {
+        api.fallingTrees.forEach(fallingTree => {
             fallingTree.animation += 1
 
             if (fallingTree.animation === 4) {
@@ -791,13 +801,13 @@ function startTimers() {
                 actionListeners.forEach(actionListener => actionListener.actionEnded(fallingTree.id, fallingTree, 'FALLING_TREE'))
             }
 
-            treesToRemove.forEach(id => monitor.fallingTrees.delete(id))
+            treesToRemove.forEach(id => api.fallingTrees.delete(id))
         })
     }, gameTickLength)
 
     // Move workers locally to reduce the amount of messages from the server
     workerWalkingTimer = setInterval(async () => {
-        for (const worker of monitor.workers.values()) {
+        for (const worker of api.workers.values()) {
 
             /* Filter workers without any planned path */
             if (!worker.plannedPath || worker.plannedPath.length === 0) {
@@ -869,7 +879,7 @@ function startTimers() {
             })
         }
 
-        for (const wildAnimal of monitor.wildAnimals.values()) {
+        for (const wildAnimal of api.wildAnimals.values()) {
 
             /* Filter workers without any planned path */
             if (!wildAnimal.path || wildAnimal.path.length === 0) {
@@ -913,7 +923,7 @@ function startTimers() {
 
     // Grow the crops locally to avoid the need for the server to send messages when crops change growth state
     cropGrowerTimer = setInterval(() => {
-        monitor.crops.forEach(crop => {
+        api.crops.forEach(crop => {
             if (crop.state !== 'FULL_GROWN' && crop.state !== 'HARVESTED') {
                 crop.growth = crop.growth + 1
 
@@ -930,7 +940,7 @@ function startTimers() {
 
     // Grow the trees locally to minimize the need for messages from the backend
     treeGrowerTimer = setInterval(() => {
-        monitor.trees.forEach(tree => {
+        api.trees.forEach(tree => {
             if (tree.size !== 'FULL_GROWN') {
                 tree.growth = tree.growth + 1
 
@@ -947,7 +957,7 @@ function startTimers() {
 }
 
 function loadChatMessage(chatMessage: ChatMessage): void {
-    monitor.chatRoomMessages.push(chatMessage)
+    api.chatRoomMessages.push(chatMessage)
 
     chatListeners.forEach(listener => listener())
 }
@@ -959,17 +969,17 @@ function receivedGameListChangedMessage(message: GameListChangedMessage): void {
 function clearAndLoadGameInformationAndCallListeners(gameInformation: GameInformation): void {
 
     // Clear
-    monitor.gameId = undefined
-    monitor.othersCanJoin = undefined
-    monitor.initialResources = undefined
-    monitor.map = undefined
+    api.gameId = undefined
+    api.othersCanJoin = undefined
+    api.initialResources = undefined
+    api.map = undefined
 
     // Load and call listeners
     loadGameInformationAndCallListeners(gameInformation)
 }
 
 async function loadGameInformationAndCallListeners(gameInformation: GameInformation): Promise<void> {
-    const prevState = monitor.gameState
+    const prevState = api.gameState
 
     // Store the updated values
     assignGameInformation(gameInformation)
@@ -997,20 +1007,20 @@ function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformatio
     console.log("Handling full sync message")
 
     // Clear the local state
-    monitor.availableConstruction.clear()
-    monitor.signs.clear()
-    monitor.stones.clear()
-    monitor.discoveredPoints.clear()
-    monitor.workers.clear()
-    monitor.wildAnimals.clear()
-    monitor.houses.clear()
-    monitor.flags.clear()
-    monitor.roads.clear()
-    monitor.trees.clear()
-    monitor.crops.clear()
-    monitor.deadTrees.clear()
-    monitor.decorations.clear()
-    monitor.housesAt.clear()
+    api.availableConstruction.clear()
+    api.signs.clear()
+    api.stones.clear()
+    api.discoveredPoints.clear()
+    api.workers.clear()
+    api.wildAnimals.clear()
+    api.houses.clear()
+    api.flags.clear()
+    api.roads.clear()
+    api.trees.clear()
+    api.crops.clear()
+    api.deadTrees.clear()
+    api.decorations.clear()
+    api.housesAt.clear()
 
     // Read the full state from the backend
     loadPlayerViewAndCallListeners(playerView)
@@ -1032,9 +1042,9 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     // Start by handling locally cached changes
 
     // Clear local additions
-    monitor.roads.delete('LOCAL')
-    monitor.flags.delete('LOCAL')
-    monitor.houses.delete('LOCAL')
+    api.roads.delete('LOCAL')
+    api.flags.delete('LOCAL')
+    api.houses.delete('LOCAL')
 
     // Update game tick
     if (playerViewChanges.tick !== undefined) {
@@ -1047,16 +1057,16 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     // Update game speed
     if (playerViewChanges.gameSpeed) {
-        monitor.gameSpeed = playerViewChanges.gameSpeed
+        api.gameSpeed = playerViewChanges.gameSpeed
 
-        gameListeners.forEach(listener => listener.onGameSpeedChanged && listener.onGameSpeedChanged(monitor.gameSpeed))
+        gameListeners.forEach(listener => listener.onGameSpeedChanged && listener.onGameSpeedChanged(api.gameSpeed))
     }
 
     // Confirm local removals if they are part of the message
-    playerViewChanges.removedFlags?.forEach(removedFlagId => monitor.localRemovedFlags.delete(removedFlagId))
+    playerViewChanges.removedFlags?.forEach(removedFlagId => api.localRemovedFlags.delete(removedFlagId))
 
     // Digest all changes from the message
-    playerViewChanges.newDiscoveredLand?.forEach(point => monitor.discoveredPoints.add(point))
+    playerViewChanges.newDiscoveredLand?.forEach(point => api.discoveredPoints.add(point))
 
     if (playerViewChanges.newDiscoveredLand) {
         console.log("Got new discovered points")
@@ -1066,7 +1076,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     if (playerViewChanges.workersWithNewTargets) {
         playerViewChanges.workersWithNewTargets.forEach(worker => {
-            const monitoredWorker = monitor.workers.get(worker.id)
+            const monitoredWorker = api.workers.get(worker.id)
 
             if (monitoredWorker && monitoredWorker.action) {
                 actionListeners.forEach(listener => {
@@ -1086,7 +1096,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
         }
 
         playerViewChanges.workersWithStartedActions.forEach(workerWithNewAction => {
-            const worker = monitor.workers.get(workerWithNewAction.id)
+            const worker = api.workers.get(workerWithNewAction.id)
 
             if (worker) {
                 actionListeners.forEach(listener => {
@@ -1114,7 +1124,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     }
 
     playerViewChanges.removedWorkers?.forEach(id => {
-        const worker = monitor.workers.get(id)
+        const worker = api.workers.get(id)
 
         if (worker?.action) {
             actionListeners.forEach(listener => {
@@ -1124,19 +1134,19 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             })
         }
 
-        monitor.workers.delete(id)
+        api.workers.delete(id)
     })
 
-    playerViewChanges.removedWildAnimals?.forEach(id => monitor.wildAnimals.delete(id))
+    playerViewChanges.removedWildAnimals?.forEach(id => api.wildAnimals.delete(id))
 
     playerViewChanges.newBuildings?.forEach(house => {
-        monitor.houses.set(house.id, house)
-        monitor.housesAt.set(house, house)
+        api.houses.set(house.id, house)
+        api.housesAt.set(house, house)
     })
 
     if (playerViewChanges.changedBuildings) {
         playerViewChanges.changedBuildings.forEach(house => {
-            const oldHouse = monitor.houses.get(house.id)
+            const oldHouse = api.houses.get(house.id)
 
             if (oldHouse && oldHouse.state !== 'BURNING' && house.state === 'BURNING') {
                 houseBurningListeners.forEach(listener => listener.houseStartedToBurn(house.id, house))
@@ -1144,47 +1154,47 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
                 houseBurningListeners.forEach(listener => listener.houseStoppedBurning(house.id, house))
             }
 
-            monitor.houses.set(house.id, house)
+            api.houses.set(house.id, house)
 
-            monitor.housesAt.set(house, house)
+            api.housesAt.set(house, house)
         })
     }
 
     playerViewChanges.removedBuildings?.forEach(id => {
-        const house = monitor.houses.get(id)
-        monitor.houses.delete(id)
+        const house = api.houses.get(id)
+        api.houses.delete(id)
 
         if (house) {
-            monitor.housesAt.delete(house)
+            api.housesAt.delete(house)
         }
     })
 
-    playerViewChanges.newDecorations?.forEach(pointAndDecoration => monitor.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
-    playerViewChanges.removedDecorations?.forEach(point => monitor.decorations.delete(point))
+    playerViewChanges.newDecorations?.forEach(pointAndDecoration => api.decorations.set({ x: pointAndDecoration.x, y: pointAndDecoration.y }, pointAndDecoration))
+    playerViewChanges.removedDecorations?.forEach(point => api.decorations.delete(point))
 
     playerViewChanges.newFlags?.forEach(flag => {
-        monitor.flags.set(flag.id, flag)
+        api.flags.set(flag.id, flag)
         flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
     })
     playerViewChanges.changedFlags?.forEach(flag => {
-        monitor.flags.set(flag.id, flag)
+        api.flags.set(flag.id, flag)
         flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
     })
     playerViewChanges.removedFlags?.forEach(id => {
-        monitor.flags.delete(id)
+        api.flags.delete(id)
         flagListeners.get(id)?.forEach(listener => listener.onRemove())
     })
 
-    playerViewChanges.newRoads?.forEach(road => monitor.roads.set(road.id, road))
-    playerViewChanges.changedRoads?.forEach(road => monitor.roads.set(road.id, road))
-    playerViewChanges.removedRoads?.forEach(id => monitor.roads.delete(id))
+    playerViewChanges.newRoads?.forEach(road => api.roads.set(road.id, road))
+    playerViewChanges.changedRoads?.forEach(road => api.roads.set(road.id, road))
+    playerViewChanges.removedRoads?.forEach(id => api.roads.delete(id))
 
-    playerViewChanges.newTrees?.forEach(tree => monitor.trees.set(tree.id, serverSentTreeToLocal(tree)))
+    playerViewChanges.newTrees?.forEach(tree => api.trees.set(tree.id, serverSentTreeToLocal(tree)))
     playerViewChanges.removedTrees?.forEach(treeId => {
-        const treeToRemove = monitor.trees.get(treeId)
+        const treeToRemove = api.trees.get(treeId)
 
         if (treeToRemove) {
-            monitor.fallingTrees.set(treeId,
+            api.fallingTrees.set(treeId,
                 {
                     x: treeToRemove.x,
                     y: treeToRemove.y,
@@ -1195,44 +1205,44 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
             actionListeners.forEach(actionListener => actionListener.actionStarted(treeId, treeToRemove, 'FALLING_TREE'))
 
-            monitor.trees.delete(treeId)
+            api.trees.delete(treeId)
         }
     })
 
-    playerViewChanges.discoveredDeadTrees?.forEach(discoveredDeadTree => monitor.deadTrees.add(discoveredDeadTree))
-    playerViewChanges.removedDeadTrees?.forEach(deadTree => monitor.deadTrees.delete(deadTree))
+    playerViewChanges.discoveredDeadTrees?.forEach(discoveredDeadTree => api.deadTrees.add(discoveredDeadTree))
+    playerViewChanges.removedDeadTrees?.forEach(deadTree => api.deadTrees.delete(deadTree))
 
-    playerViewChanges.newStones?.forEach(stone => monitor.stones.set(stone.id, stone))
-    playerViewChanges.changedStones?.forEach(stone => monitor.stones.set(stone.id, stone))
-    playerViewChanges.removedStones?.forEach(stoneId => monitor.stones.delete(stoneId))
+    playerViewChanges.newStones?.forEach(stone => api.stones.set(stone.id, stone))
+    playerViewChanges.changedStones?.forEach(stone => api.stones.set(stone.id, stone))
+    playerViewChanges.removedStones?.forEach(stoneId => api.stones.delete(stoneId))
 
     if (playerViewChanges.changedBorders) {
         syncChangedBorders(playerViewChanges.changedBorders)
     }
 
-    playerViewChanges.newCrops?.forEach(crop => monitor.crops.set(crop.id, serverSentCropToLocal(crop)))
+    playerViewChanges.newCrops?.forEach(crop => api.crops.set(crop.id, serverSentCropToLocal(crop)))
 
     playerViewChanges.harvestedCrops?.forEach(cropId => {
-        const crop = monitor.crops.get(cropId)
+        const crop = api.crops.get(cropId)
 
         if (crop !== undefined) {
             crop.state = 'HARVESTED'
         }
     })
 
-    playerViewChanges.removedCrops?.forEach(cropId => monitor.crops.delete(cropId))
+    playerViewChanges.removedCrops?.forEach(cropId => api.crops.delete(cropId))
 
-    playerViewChanges.newSigns?.forEach(sign => monitor.signs.set(sign.id, sign))
-    playerViewChanges.removedSigns?.forEach(id => monitor.signs.delete(id))
+    playerViewChanges.newSigns?.forEach(sign => api.signs.set(sign.id, sign))
+    playerViewChanges.removedSigns?.forEach(id => api.signs.delete(id))
 
     if (playerViewChanges.changedAvailableConstruction) {
         for (const change of playerViewChanges.changedAvailableConstruction) {
             const point = { x: change.x, y: change.y }
 
             if (change.available.length === 0) {
-                monitor.availableConstruction.delete(point)
+                api.availableConstruction.delete(point)
             } else {
-                monitor.availableConstruction.set(point, change.available)
+                api.availableConstruction.set(point, change.available)
             }
 
             availableConstructionListeners.get(point)?.forEach(listener => listener.onAvailableConstructionChanged(change.available))
@@ -1249,13 +1259,13 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     let removedMessages: GameMessageId[] = []
 
     if (playerViewChanges.newMessages) {
-        playerViewChanges.newMessages.forEach(message => monitor.messages.set(message.id, message))
+        playerViewChanges.newMessages.forEach(message => api.messages.set(message.id, message))
 
         receivedMessages = playerViewChanges.newMessages
     }
 
     if (playerViewChanges.removedMessages) {
-        playerViewChanges.removedMessages.forEach(messageId => monitor.messages.delete(messageId))
+        playerViewChanges.removedMessages.forEach(messageId => api.messages.delete(messageId))
 
         removedMessages = playerViewChanges.removedMessages
     }
@@ -1275,7 +1285,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
 function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): void {
     for (const point of newlyDiscoveredPoints) {
-        const terrainAtPoint = monitor.allTiles.get(point)
+        const terrainAtPoint = api.allTiles.get(point)
 
         if (terrainAtPoint === undefined) {
             continue
@@ -1288,24 +1298,24 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
         const pointRight = getPointRight(point)
         const pointUpLeft = getPointUpLeft(point)
 
-        const isLeftDiscovered = pointLeft.x > 0 && monitor.discoveredPoints.has(pointLeft)
-        const isDownLeftDiscovered = pointDownLeft.x > 0 && pointDownLeft.y > 0 && monitor.discoveredPoints.has(pointDownLeft)
-        const isDownRightDiscovered = monitor.discoveredPoints.has(pointDownRight)
-        const isRightDiscovered = monitor.discoveredPoints.has(pointRight)
-        const isUpRightDiscovered = monitor.discoveredPoints.has(pointUpRight)
-        const isUpLeftDiscovered = monitor.discoveredPoints.has(pointUpLeft)
+        const isLeftDiscovered = pointLeft.x > 0 && api.discoveredPoints.has(pointLeft)
+        const isDownLeftDiscovered = pointDownLeft.x > 0 && pointDownLeft.y > 0 && api.discoveredPoints.has(pointDownLeft)
+        const isDownRightDiscovered = api.discoveredPoints.has(pointDownRight)
+        const isRightDiscovered = api.discoveredPoints.has(pointRight)
+        const isUpRightDiscovered = api.discoveredPoints.has(pointUpRight)
+        const isUpLeftDiscovered = api.discoveredPoints.has(pointUpLeft)
 
-        const terrainAtPointLeft = pointLeft.x > 0 ? monitor.allTiles.get(pointLeft) : undefined
-        const terrainAtPointDownLeft = (pointDownLeft.x > 0 && pointDownLeft.y > 0) ? monitor.allTiles.get(pointDownLeft) : undefined
-        const terrainAtPointDownRight = monitor.allTiles.get(pointDownRight)
-        const terrainAtPointRight = monitor.allTiles.get(pointRight)
-        const terrainAtPointUpRight = monitor.allTiles.get(pointUpRight)
-        const terrainAtPointUpLeft = monitor.allTiles.get(pointUpLeft)
+        const terrainAtPointLeft = pointLeft.x > 0 ? api.allTiles.get(pointLeft) : undefined
+        const terrainAtPointDownLeft = (pointDownLeft.x > 0 && pointDownLeft.y > 0) ? api.allTiles.get(pointDownLeft) : undefined
+        const terrainAtPointDownRight = api.allTiles.get(pointDownRight)
+        const terrainAtPointRight = api.allTiles.get(pointRight)
+        const terrainAtPointUpRight = api.allTiles.get(pointUpRight)
+        const terrainAtPointUpLeft = api.allTiles.get(pointUpLeft)
 
         /* Tile down left */
         if (terrainAtPointLeft && terrainAtPointDownLeft && isLeftDiscovered && isDownLeftDiscovered &&
-            !monitor.pointsWithDownRightTileDiscovered.has(pointLeft)) {
-            monitor.discoveredDownRightTiles.add(
+            !api.pointsWithDownRightTileDiscovered.has(pointLeft)) {
+            api.discoveredDownRightTiles.add(
                 {
                     vegetation: terrainAtPointLeft.downRight,
                     pointLeft: pointLeft,
@@ -1315,13 +1325,13 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
                 }
             )
 
-            monitor.pointsWithDownRightTileDiscovered.add(pointLeft)
+            api.pointsWithDownRightTileDiscovered.add(pointLeft)
         }
 
         /* Tile up right */
         if (terrainAtPointUpRight && terrainAtPointRight && isUpRightDiscovered && isRightDiscovered &&
-            !monitor.pointsWithBelowTileDiscovered.has(pointUpRight)) {
-            monitor.discoveredBelowTiles.add(
+            !api.pointsWithBelowTileDiscovered.has(pointUpRight)) {
+            api.discoveredBelowTiles.add(
                 {
                     vegetation: terrainAtPointUpRight.below,
                     pointAbove: pointUpRight,
@@ -1331,13 +1341,13 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
                 }
             )
 
-            monitor.pointsWithBelowTileDiscovered.add(pointUpRight)
+            api.pointsWithBelowTileDiscovered.add(pointUpRight)
         }
 
         /* Tile below */
         if (terrainAtPointDownLeft && terrainAtPointDownRight && isDownLeftDiscovered && isDownRightDiscovered &&
-            !monitor.pointsWithBelowTileDiscovered.has(point)) {
-            monitor.discoveredBelowTiles.add(
+            !api.pointsWithBelowTileDiscovered.has(point)) {
+            api.discoveredBelowTiles.add(
                 {
                     vegetation: terrainAtPoint.below,
                     pointAbove: point,
@@ -1347,14 +1357,14 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
                 }
             )
 
-            monitor.pointsWithBelowTileDiscovered.add(point)
+            api.pointsWithBelowTileDiscovered.add(point)
         }
 
         /* Tile down right */
         if (terrainAtPointDownRight && terrainAtPointRight && isDownRightDiscovered && isRightDiscovered &&
-            !monitor.pointsWithDownRightTileDiscovered.has(point)) {
+            !api.pointsWithDownRightTileDiscovered.has(point)) {
 
-            monitor.discoveredDownRightTiles.add(
+            api.discoveredDownRightTiles.add(
                 {
                     vegetation: terrainAtPoint.downRight,
                     pointLeft: point,
@@ -1364,13 +1374,13 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
                 }
             )
 
-            monitor.pointsWithDownRightTileDiscovered.add(point)
+            api.pointsWithDownRightTileDiscovered.add(point)
         }
 
         /* Tile up left */
         if (isUpLeftDiscovered && isLeftDiscovered && terrainAtPointUpLeft && terrainAtPointLeft &&
-            !monitor.pointsWithBelowTileDiscovered.has(pointUpLeft)) {
-            monitor.discoveredBelowTiles.add(
+            !api.pointsWithBelowTileDiscovered.has(pointUpLeft)) {
+            api.discoveredBelowTiles.add(
                 {
                     vegetation: terrainAtPointUpLeft.below,
                     pointAbove: pointUpLeft,
@@ -1380,13 +1390,13 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
                 }
             )
 
-            monitor.pointsWithBelowTileDiscovered.add(pointUpLeft)
+            api.pointsWithBelowTileDiscovered.add(pointUpLeft)
         }
 
         /* Tile above */
         if (isUpLeftDiscovered && isUpRightDiscovered && terrainAtPointUpLeft && terrainAtPointUpRight &&
-            !monitor.pointsWithDownRightTileDiscovered.has(pointUpLeft)) {
-            monitor.discoveredDownRightTiles.add(
+            !api.pointsWithDownRightTileDiscovered.has(pointUpLeft)) {
+            api.discoveredDownRightTiles.add(
                 {
                     vegetation: terrainAtPointUpLeft.downRight,
                     pointLeft: pointUpLeft,
@@ -1396,20 +1406,20 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
                 }
             )
 
-            monitor.pointsWithDownRightTileDiscovered.add(pointUpLeft)
+            api.pointsWithDownRightTileDiscovered.add(pointUpLeft)
         }
     }
 }
 
 function syncChangedBorders(borderChanges: BorderChange[]): void {
     for (const borderChange of borderChanges) {
-        const currentBorderForPlayer = monitor.border.get(borderChange.playerId)
+        const currentBorderForPlayer = api.border.get(borderChange.playerId)
 
         if (currentBorderForPlayer) {
             borderChange.newBorder.forEach(point => currentBorderForPlayer.points.add(point))
             borderChange.removedBorder.forEach(point => currentBorderForPlayer.points.delete(point))
         } else {
-            const player = monitor.players.get(borderChange.playerId)
+            const player = api.players.get(borderChange.playerId)
 
             if (!player) {
                 console.error("UNKNOWN PLAYER: " + JSON.stringify(borderChange))
@@ -1417,10 +1427,10 @@ function syncChangedBorders(borderChanges: BorderChange[]): void {
                 continue
             }
 
-            monitor.border.set(borderChange.playerId,
+            api.border.set(borderChange.playerId,
                 {
                     color: player.color,
-                    nation: monitor.players.get(borderChange.playerId)?.nation ?? 'ROMANS',
+                    nation: api.players.get(borderChange.playerId)?.nation ?? 'ROMANS',
                     points: new PointSetFast(borderChange.newBorder)
                 }
             )
@@ -1430,7 +1440,7 @@ function syncChangedBorders(borderChanges: BorderChange[]): void {
 
 function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void {
     for (const wildAnimalInformation of wildAnimals) {
-        let wildAnimal = monitor.wildAnimals.get(wildAnimalInformation.id)
+        let wildAnimal = api.wildAnimals.get(wildAnimalInformation.id)
 
         if (wildAnimal === undefined) {
             wildAnimal = {
@@ -1443,7 +1453,7 @@ function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void
                 type: wildAnimalInformation.type
             }
 
-            monitor.wildAnimals.set(wildAnimal.id, wildAnimal)
+            api.wildAnimals.set(wildAnimal.id, wildAnimal)
         }
 
         if (!wildAnimalInformation.path || wildAnimalInformation.path.length === 0) {
@@ -1465,7 +1475,7 @@ function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void
 
 function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     for (const walkerTargetChange of targetChanges) {
-        let worker = monitor.workers.get(walkerTargetChange.id)
+        let worker = api.workers.get(walkerTargetChange.id)
         const direction = simpleDirectionToCompassDirection(walkerTargetChange.direction)
 
         if (worker === undefined) {
@@ -1483,7 +1493,7 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
                 nation: walkerTargetChange.nation
             }
 
-            monitor.workers.set(worker.id, worker)
+            api.workers.set(worker.id, worker)
         }
 
         if (!walkerTargetChange.path || walkerTargetChange.path.length === 0) {
@@ -1553,21 +1563,21 @@ function serverSentTreeToLocal(serverTree: TreeInformation): TreeInformationLoca
 }
 
 function placeLocalRoad(points: Point[]): void {
-    monitor.roads.set('LOCAL', { id: 'LOCAL', points, type: 'NORMAL' })
+    api.roads.set('LOCAL', { id: 'LOCAL', points, type: 'NORMAL' })
 }
 
 function removeLocalRoad(roadId: RoadId): void {
-    const road = monitor.roads.get(roadId)
+    const road = api.roads.get(roadId)
 
     if (road !== undefined) {
-        monitor.localRemovedRoads.set(roadId, road)
+        api.localRemovedRoads.set(roadId, road)
 
-        monitor.roads.delete(roadId)
+        api.roads.delete(roadId)
     }
 }
 
 function isGameDataAvailable(): boolean {
-    return monitor.discoveredBelowTiles.size > 0
+    return api.discoveredBelowTiles.size > 0
 }
 
 function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): WorkerInformation {
@@ -1578,13 +1588,13 @@ function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): Worke
 }
 
 function assignGameInformation(gameInformation: GameInformation): void {
-    monitor.gameId = gameInformation.id
-    monitor.gameName = gameInformation.name
-    monitor.gameState = gameInformation.status
-    monitor.map = gameInformation.map
-    monitor.othersCanJoin = gameInformation.othersCanJoin
+    api.gameId = gameInformation.id
+    api.gameName = gameInformation.name
+    api.gameState = gameInformation.status
+    api.map = gameInformation.map
+    api.othersCanJoin = gameInformation.othersCanJoin
 
-    gameInformation.players.forEach(player => monitor.players.set(player.id, player))
+    gameInformation.players.forEach(player => api.players.set(player.id, player))
 
 }
 
@@ -1600,8 +1610,8 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
         requestedFollowingState = 'FOLLOW'
         followingState = 'STARTING_TO_FOLLOW'
 
-        monitor.gameId = gameId
-        monitor.playerId = playerId
+        api.gameId = gameId
+        api.playerId = playerId
 
         // Register the gameId and playerId with the backend
         await setGame(gameId)
@@ -1639,9 +1649,9 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
 }
 
 function loadChatRoomHistoryAndCallListeners(chatRoomHistory: ChatMessage[]): void {
-    chatRoomHistory.forEach(chatMessage => monitor.chatRoomMessages.push(chatMessage))
+    chatRoomHistory.forEach(chatMessage => api.chatRoomMessages.push(chatMessage))
 
-    console.log(monitor.chatRoomMessages)
+    console.log(api.chatRoomMessages)
 
     chatListeners.forEach(listener => listener())
 }
@@ -1655,7 +1665,7 @@ async function waitForGameDataAvailable(): Promise<void> {
             throw new Error('Timed out')
         }
 
-        if (monitor.allTiles.size > 0) {
+        if (api.allTiles.size > 0) {
             console.log('Game data is available')
             return
         }
@@ -1666,5 +1676,5 @@ async function waitForGameDataAvailable(): Promise<void> {
 
 export {
     getHeadquarterForPlayer,
-    monitor
+    api
 }

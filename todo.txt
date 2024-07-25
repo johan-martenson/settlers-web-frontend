@@ -141,6 +141,8 @@ Todo 1.0
     utils.ts:766 
     (3) ['private', 'STAND_ASIDE', 'WEST']
 
+33. Large stone (`PILE_OF_STONES`) where it's possible to place a flag and thus remove the stone
+
 Todo 2.0
 ========
 

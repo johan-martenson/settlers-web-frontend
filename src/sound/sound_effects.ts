@@ -1,6 +1,6 @@
 import { DEFAULT_VOLUME, immediateUxState } from "../play"
 import { Action, GameMessage, GameMessageId, HouseId, Point } from "../api/types"
-import { monitor } from "../api/ws-api"
+import { api } from "../api/ws-api"
 import { Sound } from "./utils"
 import { screenPointToGamePointNoHeightAdjustment } from "../utils"
 
@@ -112,7 +112,7 @@ function startEffects() {
     })
 
     // Listen to events to start/stop sound effects
-    monitor.addActionsListener({
+    api.addActionsListener({
         actionStarted: (id: string, point: Point, action: Action) => {
             ongoingEffects.set(id, { id, point, action, index: 0 })
         },
@@ -134,7 +134,7 @@ function startEffects() {
         }
     })
 
-    monitor.addBurningHousesListener({
+    api.addBurningHousesListener({
         houseStartedToBurn: (id: HouseId, point: Point) => {
             ongoingEffects.set(id, { id, point, action: 'HOUSE_BURNING', index: 0 })
         },
@@ -148,7 +148,7 @@ function startEffects() {
     })
 
     // eslint-disable-next-line
-    monitor.addMessagesListener((newMessages: GameMessage[], removedMessages: GameMessageId[]) => {
+    api.addMessagesListener((newMessages: GameMessage[], removedMessages: GameMessageId[]) => {
         soundInstances.get('NEW-MESSAGE')?.play()
     })
 

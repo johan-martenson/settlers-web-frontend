@@ -1,5 +1,5 @@
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation } from './api/types'
-import { monitor } from './api/ws-api'
+import { api } from './api/ws-api'
 import { ScreenPoint } from './render/game_render'
 import { STANDARD_HEIGHT } from './render/constants'
 import { PointMapFast } from './util_types'
@@ -381,7 +381,7 @@ function pointStringToPoint(pointString: string): Point {
 }
 
 async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSize: number): Promise<HTMLImageElement | undefined> {
-    const terrainInformation = await monitor.getTerrainForMap(map.id)
+    const terrainInformation = await api.getTerrainForMap(map.id)
 
     const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
 
@@ -597,7 +597,7 @@ function screenPointToGamePointWithHeightAdjustment(screenPoint: Point, translat
         screenHeight
     )
 
-    const adjustedGamePoint = findClosestHeightAdjustedPoint(screenPoint, unadjustedGamePoint, translate, scale, screenHeight, heightAdjust, monitor.allTiles)
+    const adjustedGamePoint = findClosestHeightAdjustedPoint(screenPoint, unadjustedGamePoint, translate, scale, screenHeight, heightAdjust, api.allTiles)
 
     return adjustedGamePoint ?? unadjustedGamePoint
 }

@@ -1,6 +1,6 @@
 import { Button, Input, InputOnChangeData } from '@fluentui/react-components'
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react'
-import { monitor } from '../api/ws-api'
+import { api } from '../api/ws-api'
 import { ChatMessage, PlayerId, RoomId } from '../api/types'
 import './chat.css'
 import ExpandCollapseToggle from '../expand_collapse_toggle'
@@ -15,20 +15,20 @@ type ChatBoxProps = {
 function ChatBox({ playerId, roomId }: ChatBoxProps) {
     const inputRef = useRef<HTMLInputElement | null>(null)
 
-    const [chatLog, setChatLog] = useState<ChatMessage[]>(monitor.chatRoomMessages)
+    const [chatLog, setChatLog] = useState<ChatMessage[]>(api.chatRoomMessages)
     const [messageText, setMessageText] = useState<string>('')
 
     useEffect(
         () => {
             function changedChatLog() {
-                setChatLog([...monitor.chatRoomMessages])
+                setChatLog([...api.chatRoomMessages])
             }
 
-            setChatLog(monitor.chatRoomMessages)
+            setChatLog(api.chatRoomMessages)
 
-            monitor.addChatMessagesListener(changedChatLog, playerId, [roomId])
+            api.addChatMessagesListener(changedChatLog, playerId, [roomId])
 
-            return () => monitor.removeChatMessagesListener(changedChatLog)
+            return () => api.removeChatMessagesListener(changedChatLog)
         }, [roomId, playerId]
     )
 
@@ -61,7 +61,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                             console.log(message)
                             setMessageText('')
 
-                            monitor.sendChatMessageToRoom(message, roomId, playerId)
+                            api.sendChatMessageToRoom(message, roomId, playerId)
                         }
                     }} />
                 <Button
@@ -75,7 +75,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
                         if (message) {
                             console.log('sending')
-                            monitor.sendChatMessageToRoom(message, roomId, playerId)
+                            api.sendChatMessageToRoom(message, roomId, playerId)
                         }
                     }}
                 >

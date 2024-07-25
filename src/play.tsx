@@ -7,7 +7,7 @@ import GameMessagesViewer from './game_messages_viewer'
 import { CursorState, GameCanvas } from './render/game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
-import { GameListener, getHeadquarterForPlayer, monitor } from './api/ws-api'
+import { GameListener, getHeadquarterForPlayer, api } from './api/ws-api'
 import MusicPlayer from './sound/music_player'
 import Statistics from './statistics'
 import { printVariables } from './stats'
@@ -234,11 +234,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     useEffect(
         () => {
             async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId) {
-                await monitor.connectAndWaitForConnection()
+                await api.connectAndWaitForConnection()
 
-                monitor.addGameStateListener(gameMonitorCallbacks)
+                api.addGameStateListener(gameMonitorCallbacks)
 
-                await monitor.followGame(gameId, selfPlayerId)
+                await api.followGame(gameId, selfPlayerId)
             }
 
             console.log("Use effect: Start listening to game")
@@ -248,7 +248,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             return () => {
                 console.log('Use effect: Stop listening to game')
 
-                monitor.removeGameStateListener(gameMonitorCallbacks)
+                api.removeGameStateListener(gameMonitorCallbacks)
             }
         }, [gameId, selfPlayerId]
     )
@@ -294,7 +294,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     function goToHouse(houseId: HouseId): void {
         console.info("Go to house immediately: " + houseId)
 
-        const house = monitor.houses.get(houseId)
+        const house = api.houses.get(houseId)
 
         if (house) {
             goToPoint({ x: house.x, y: house.y })
@@ -474,30 +474,30 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     useEffect(
         () => {
             function setTypingCommands() {
-                const player = monitor.players.get(selfPlayerId)
+                const player = api.players.get(selfPlayerId)
                 const nation = player?.nation ?? 'VIKINGS'
                 const color = player?.color ?? 'GREEN'
 
                 const commands = new Map()
 
                 SMALL_HOUSES.forEach(building => commands.set(building, {
-                    action: (point: Point) => monitor.placeHouse(building, point),
+                    action: (point: Point) => api.placeHouse(building, point),
                     filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'small') !== undefined,
                     icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
                 }))
                 MEDIUM_HOUSES.forEach(building => commands.set(building, {
-                    action: (point: Point) => monitor.placeHouse(building, point),
+                    action: (point: Point) => api.placeHouse(building, point),
                     filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'medium') !== undefined,
                     icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
                 }))
                 LARGE_HOUSES.forEach(building => building !== 'Headquarter' && commands.set(building, {
-                    action: (point: Point) => monitor.placeHouse(building, point),
+                    action: (point: Point) => api.placeHouse(building, point),
                     filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'large') !== undefined,
                     icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
                 }))
 
                 commands.set("Kill websocket", {
-                    action: () => monitor.killWebsocket(),
+                    action: () => api.killWebsocket(),
                     icon: <Dismiss24Filled />
                 })
 
@@ -507,7 +507,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                         /* Get the possible connections from the server and draw them */
                         const pointDownRight = { x: point.x + 1, y: point.y - 1 }
-                        const pointInformations = await monitor.getInformationOnPoints([point, pointDownRight])
+                        const pointInformations = await api.getInformationOnPoints([point, pointDownRight])
 
                         const pointInformation = pointInformations.get(point)
                         const pointDownRightInformation = pointInformations.get(pointDownRight)
@@ -537,14 +537,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 })
 
                 commands.set("Flag", {
-                    action: (point: Point) => monitor.placeFlag(point),
+                    action: (point: Point) => api.placeFlag(point),
                     filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'flag') !== undefined,
                     icon: <FlagIcon nation={nation} type="NORMAL" animate scale={0.7} color={color} />
                 })
                 commands.set("Remove (house, flag, or road)", {
-                    action: (point: Point) => removeHouseOrFlagOrRoadAtPointWebsocket(point, monitor),
+                    action: (point: Point) => removeHouseOrFlagOrRoadAtPointWebsocket(point, api),
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'building' &&
-                        monitor.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
+                        api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
                 })
                 commands.set("Statistics", {
                     action: () => {
@@ -555,19 +555,19 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     action: () => setShowTitles(!showTitles)
                 })
                 commands.set("Geologist", {
-                    action: (point: Point) => monitor.callGeologist(point),
+                    action: (point: Point) => api.callGeologist(point),
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
                 })
                 commands.set("Scout", {
-                    action: (point: Point) => monitor.callScout(point),
+                    action: (point: Point) => api.callScout(point),
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
                 })
                 commands.set("Evacuate building", {
                     action: (point: Point) => {
-                        const house = monitor.houseAt(point)
+                        const house = api.houseAt(point)
 
                         if (house !== undefined) {
-                            monitor.evacuateHouse(house.id)
+                            api.evacuateHouse(house.id)
                         }
                     },
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
@@ -580,10 +580,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 })
                 commands.set("Upgrade", {
                     action: (point: Point) => {
-                        const houseInformation = monitor.getHouseAtPointLocal(point)
+                        const houseInformation = api.getHouseAtPointLocal(point)
 
                         if (houseInformation && canBeUpgraded(houseInformation)) {
-                            monitor.upgradeHouse(houseInformation.id)
+                            api.upgradeHouse(houseInformation.id)
                         }
                     },
                     filter: (pointInformation: PointInformation) => {
@@ -591,7 +591,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             return false
                         }
 
-                        const houseInformation = monitor.houses.get(pointInformation.buildingId)
+                        const houseInformation = api.houses.get(pointInformation.buildingId)
 
                         return (houseInformation?.state === 'OCCUPIED' || houseInformation?.state === 'UNOCCUPIED') &&
                             (houseInformation?.type == 'Barracks' || houseInformation?.type == 'GuardHouse' ||
@@ -613,10 +613,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     action: () => openSingletonWindow({ type: 'QUOTA' })
                 })
                 commands.set("Pause game", {
-                    action: () => monitor.pauseGame()
+                    action: () => api.pauseGame()
                 })
                 commands.set("Resume game", {
-                    action: () => monitor.resumeGame()
+                    action: () => api.resumeGame()
                 })
                 commands.set("Debug", {
                     action: () => openSingletonWindow({ type: 'DEBUG' })
@@ -630,12 +630,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             console.log('Use effect: set commands')
 
-            monitor.waitForGameDataAvailable().then(
+            api.waitForGameDataAvailable().then(
                 () => {
                     setTypingCommands()
 
                     // Store information about the player
-                    setPlayer(monitor.players.get(selfPlayerId))
+                    setPlayer(api.players.get(selfPlayerId))
 
                     if (selfNameRef.current) {
                         immediateUxState.width = selfNameRef.current.clientWidth
@@ -697,7 +697,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 /* Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road */
                 // TODO: move to ws API
-                const possibleNewRoadSegment = (await monitor.findPossibleNewRoad(recent, point, newRoad)).possibleRoad
+                const possibleNewRoadSegment = (await api.findPossibleNewRoad(recent, point, newRoad)).possibleRoad
 
                 if (possibleNewRoadSegment) {
                     possibleNewRoad.push(...possibleNewRoadSegment.slice(1))
@@ -713,7 +713,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             console.log("Ongoing road construction: " + JSON.stringify(possibleNewRoad))
 
             /* Handle the case when a flag is clicked and create a road to it. Also select the point of the flag */
-            const flag = monitor.getFlagAtPointLocal(point)
+            const flag = api.getFlagAtPointLocal(point)
 
             if (flag) {
                 console.info("Placing road directly to flag")
@@ -723,18 +723,18 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 setSelected(point)
 
                 // Create the road, including making an optimistic change first on the client side
-                monitor.placeRoad(possibleNewRoad)
+                api.placeRoad(possibleNewRoad)
 
                 /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
-            } else if (isRoadAtPoint(point, monitor.roads)) {
+            } else if (isRoadAtPoint(point, api.roads)) {
                 console.info('Placing flag for road')
 
-                if (monitor.isAvailable(point, 'FLAG')) {
+                if (api.isAvailable(point, 'FLAG')) {
 
                     // Start with changing the UI state to make the user experience feel quicker
                     setNewRoad(undefined)
 
-                    monitor.placeRoadWithFlag(point, possibleNewRoad)
+                    api.placeRoadWithFlag(point, possibleNewRoad)
                 }
 
                 /* Add the new possible road points to the ongoing road and don't create the road */
@@ -742,7 +742,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 console.info("Continuing road building with extended road segment")
 
                 /* Get the available connections from the added point */
-                const pointInformation = await monitor.getInformationOnPoint(point)
+                const pointInformation = await api.getInformationOnPoint(point)
 
                 console.log("Possible new road direct adjacent road connections: " + JSON.stringify(pointInformation.possibleRoadConnections))
 
@@ -765,7 +765,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         if (newRoad) {
             console.log("New road exists")
 
-            if (monitor.isAvailable(point, 'FLAG')) {
+            if (api.isAvailable(point, 'FLAG')) {
                 console.log("Can place flag")
 
                 // Keep a reference to the new road so it doesn't get lost when the state is changed
@@ -782,7 +782,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 setSelected(point)
 
                 // Call the backend to make the changes take effect
-                monitor.placeRoadWithFlag(point, newRoadPoints)
+                api.placeRoadWithFlag(point, newRoadPoints)
 
                 console.info("Created flag and road")
             } else {
@@ -793,14 +793,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         /* Show 'no action' window if the point is not discovered */
-        if (!monitor.discoveredPoints.has(point)) {
+        if (!api.discoveredPoints.has(point)) {
             openWindow({ type: 'NO_ACTION', point })
 
             return
         }
 
         /* Handle click on house */
-        const house = monitor.getHouseAtPointLocal(point)
+        const house = api.getHouseAtPointLocal(point)
 
         if (house) {
             console.info("Clicked house " + JSON.stringify(house))
@@ -816,7 +816,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         /* Handle the case where a flag was double clicked */
-        const flag = monitor.getFlagAtPointLocal(point)
+        const flag = api.getFlagAtPointLocal(point)
 
         if (flag) {
             console.info("Clicked flag")
@@ -832,11 +832,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         /* Ask the server for what can be done on the spot */
-        const pointInformation = await monitor.getInformationOnPoint(point)
+        const pointInformation = await api.getInformationOnPoint(point)
 
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
-            monitor.placeFlag(pointInformation)
+            api.placeFlag(pointInformation)
 
             setSelected(point)
         }
@@ -864,7 +864,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             } else if (newRoad) {
                 setNewRoad(undefined)
 
-                monitor.removeLocalRoad("LOCAL")
+                api.removeLocalRoad("LOCAL")
 
                 /* Otherwise, send the escape to the type controller */
             } else {
@@ -902,7 +902,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         console.info("Start new road construction at: " + JSON.stringify({ x: point.x, y: point.y }))
 
         /* Get the possible connections from the server and draw them */
-        const pointInformation = await monitor.getInformationOnPoint(point)
+        const pointInformation = await api.getInformationOnPoint(point)
 
         setNewRoad([{ x: point.x, y: point.y }])
         setPossibleRoadConnections(pointInformation.possibleRoadConnections)

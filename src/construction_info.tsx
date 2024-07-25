@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES } from './api/types'
 import './construction_info.css'
 import { ButtonRow, Window } from './components/dialog'
-import { monitor } from './api/ws-api'
+import { api } from './api/ws-api'
 import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from './utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon } from './icons/icon'
@@ -43,9 +43,9 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                 }
             }
 
-            monitor.addAvailableConstructionListener(point, listener)
+            api.addAvailableConstructionListener(point, listener)
 
-            return () => monitor.removeAvailableConstructionListener(point, listener)
+            return () => api.removeAvailableConstructionListener(point, listener)
         }, [point])
 
     if (canBuildHouse(point)) {
@@ -103,7 +103,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                                     onClick={
                                         () => {
                                             console.info("Raising flag")
-                                            monitor.placeFlag(point)
+                                            api.placeFlag(point)
 
                                             onClose()
                                         }
@@ -164,7 +164,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                                             onClick={
                                                 async () => {
                                                     console.info("Creating house")
-                                                    monitor.placeHouse(house, point)
+                                                    api.placeHouse(house, point)
 
                                                     onClose()
                                                 }
@@ -196,7 +196,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                                             onClick={
                                                 async () => {
                                                     console.info("Creating house")
-                                                    monitor.placeHouse(house, point)
+                                                    api.placeHouse(house, point)
 
                                                     onClose()
                                                 }
@@ -228,7 +228,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                                             onClick={
                                                 async () => {
                                                     console.info("Creating house")
-                                                    monitor.placeHouse(house, point)
+                                                    api.placeHouse(house, point)
 
                                                     onClose()
                                                 }

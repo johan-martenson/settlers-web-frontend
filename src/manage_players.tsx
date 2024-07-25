@@ -3,7 +3,7 @@ import { Button, Subtitle1 } from "@fluentui/react-components"
 import { Player } from './player'
 import './manage_players.css'
 import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId, GameInformation } from './api/types'
-import { GameListener, monitor } from './api/ws-api'
+import { GameListener, api } from './api/ws-api'
 
 // Types
 export type PlayerCandidateType = {
@@ -19,7 +19,7 @@ type ManagePlayersProps = {
 
 // React components
 const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
-    const [players, setPlayers] = useState<PlayerInformation[]>(Array.from(monitor.players.values()))
+    const [players, setPlayers] = useState<PlayerInformation[]>(Array.from(api.players.values()))
 
     useEffect(
         () => {
@@ -28,18 +28,18 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
             }
 
             async function startListening() {
-                const { players } = await monitor.getGameInformation()
+                const { players } = await api.getGameInformation()
 
                 console.log(players)
 
                 setPlayers(players)
 
-                monitor.addGameStateListener(listener)
+                api.addGameStateListener(listener)
             }
 
             startListening()
 
-            return () => monitor.removeGameStateListener(listener)
+            return () => api.removeGameStateListener(listener)
         }, []
     )
 
@@ -65,12 +65,12 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
         const nextColor = colorsRemaining.values().next()
 
         if (nextColor.value) {
-            const newPlayer = await monitor.createPlayer("Computer Player " + nextPlayer,
+            const newPlayer = await api.createPlayer("Computer Player " + nextPlayer,
                 nextColor.value,
                 'ROMANS',
                 'COMPUTER')
 
-            await monitor.addPlayerToGame(monitor.gameId ?? '', newPlayer.id)
+            await api.addPlayerToGame(api.gameId ?? '', newPlayer.id)
         } else {
             console.error("No color available for computer player")
         }
@@ -99,7 +99,7 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
                                     availableColors={availableColors}
                                     onPlayerUpdated={
                                         (name: string, nation: Nation, color: PlayerColor) => {
-                                            monitor.updatePlayer(player.id, name, color, nation)
+                                            api.updatePlayer(player.id, name, color, nation)
                                         }
                                     }
                                     player={player}
@@ -111,10 +111,10 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
                                     availableColors={availableColors}
                                     onPlayerUpdated={
                                         (name: string, nation: Nation, color: PlayerColor) => {
-                                            monitor.updatePlayer(player.id, name, color, nation)
+                                            api.updatePlayer(player.id, name, color, nation)
                                         }
                                     }
-                                    onPlayerRemoved={() => { monitor.removePlayer(player.id) }}
+                                    onPlayerRemoved={() => { api.removePlayer(player.id) }}
                                 />
                             }
                         </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import './game_messages_viewer.css'
-import { monitor } from './api/ws-api'
+import { api } from './api/ws-api'
 import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
 import { PlayerId, HouseId, Point, GameMessage, Nation, GameMessageId } from './api/types'
 import { HouseIcon, WorkerIcon } from './icons/icon'
@@ -20,23 +20,23 @@ type GameMessagesViewerProps = {
 // React components
 const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
-    const [messages, setMessages] = useState<GameMessage[]>(Array.from(monitor.messages.values()))
+    const [messages, setMessages] = useState<GameMessage[]>(Array.from(api.messages.values()))
 
     function removeMessage(message: GameMessage) {
-        monitor.removeMessage(message.id)
+        api.removeMessage(message.id)
     }
 
     useEffect(() => {
 
         // eslint-disable-next-line
         const messageReceiver = (_receivedMessages: GameMessage[], _removedMessages: GameMessageId[]) => {
-            setMessages(Array.from(monitor.messages.values()))
+            setMessages(Array.from(api.messages.values()))
         }
 
         // Subscribe to received messages
-        monitor.addMessagesListener(messageReceiver)
+        api.addMessagesListener(messageReceiver)
 
-        return () => monitor.removeMessagesListener(messageReceiver)
+        return () => api.removeMessagesListener(messageReceiver)
     }, [playerId])
 
     return (
@@ -211,7 +211,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
                         }
                     )
                     }
-                    <Button onClick={() => monitor.removeMessages(messages)} >Clear all</Button>
+                    <Button onClick={() => api.removeMessages(messages)} >Clear all</Button>
 
                 </div>
             }

@@ -4,7 +4,7 @@ import './quotas.css'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components"
 import { Nation } from "./api/types"
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
-import { monitor } from "./api/ws-api"
+import { api } from "./api/ws-api"
 import { AmountBar } from "./amount_bar"
 import { Window } from './components/dialog'
 
@@ -41,7 +41,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
 
     useEffect(() => {
         (async () => {
-            const coalQuotas = await monitor.getCoalQuotas()
+            const coalQuotas = await api.getCoalQuotas()
 
             setMintAmount(coalQuotas.mint)
             setArmoryCoalAmount(coalQuotas.armory)
@@ -53,7 +53,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
 
     useEffect(() => {
         (async () => {
-            const foodQuotas = await monitor.getFoodQuotas()
+            const foodQuotas = await api.getFoodQuotas()
 
             setIronMineAmount(foodQuotas.ironMine)
             setCoalMineAmount(foodQuotas.coalMine)
@@ -66,7 +66,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
 
     useEffect(() => {
         (async () => {
-            const wheatQuotas = await monitor.getWheatQuotas()
+            const wheatQuotas = await api.getWheatQuotas()
 
             setPigFarmWheatAmount(wheatQuotas.pigFarm)
             setDonkeyFarmWheatAmount(wheatQuotas.donkeyFarm)
@@ -79,7 +79,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
 
     useEffect(() => {
         (async () => {
-            const waterQuotas = await monitor.getWaterQuotas()
+            const waterQuotas = await api.getWaterQuotas()
 
             setBakeryAmount(waterQuotas.bakery)
             setDonkeyFarmWaterAmount(waterQuotas.donkeyFarm)
@@ -90,7 +90,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
 
     useEffect(() => {
         (async () => {
-            const ironBarQuotas = await monitor.getIronBarQuotas()
+            const ironBarQuotas = await api.getIronBarQuotas()
 
             setArmoryIronBarAmount(ironBarQuotas.armory)
             setMetalworksIronBarAmount(ironBarQuotas.metalworks)
@@ -98,31 +98,31 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
     }, [])
 
     useEffect(() => {
-        monitor.setWaterQuotas(bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount)
+        api.setWaterQuotas(bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount)
 
         return () => { }
     }, [bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount])
 
     useEffect(() => {
-        monitor.setCoalQuotas(mintAmount, armoryCoalAmount, ironSmelterAmount)
+        api.setCoalQuotas(mintAmount, armoryCoalAmount, ironSmelterAmount)
 
         return () => { }
     }, [mintAmount, armoryCoalAmount, ironSmelterAmount])
 
     useEffect(() => {
-        monitor.setFoodQuotas(ironMineAmount, coalMineAmount, goldMineAmount, graniteMineAmount)
+        api.setFoodQuotas(ironMineAmount, coalMineAmount, goldMineAmount, graniteMineAmount)
 
         return () => { }
     }, [ironMineAmount, coalMineAmount, goldMineAmount, graniteMineAmount])
 
     useEffect(() => {
-        monitor.setWheatQuotas(donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount)
+        api.setWheatQuotas(donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount)
 
         return () => { }
     }, [donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount])
 
     useEffect(() => {
-        monitor.setIronBarQuotas(armoryIronBarAmount, metalworksIronBarAmount)
+        api.setIronBarQuotas(armoryIronBarAmount, metalworksIronBarAmount)
 
         return () => { }
     }, [armoryIronBarAmount, metalworksIronBarAmount])

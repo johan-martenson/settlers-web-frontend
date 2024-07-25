@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components"
 import { UiIcon } from "./icons/icon"
 import { Point, RoadId } from "./api/types"
-import { monitor } from "./api/ws-api"
+import { api } from "./api/ws-api"
 import './road-info.css'
 import { ButtonRow, Window } from './components/dialog'
 
@@ -48,7 +48,7 @@ const RoadInfo = ({ roadId, onStartMonitor, onClose, onRaise }: RoadInfoProps) =
                 <ButtonRow>
                     <Button
                         onClick={() => {
-                            monitor.removeRoad(roadId)
+                            api.removeRoad(roadId)
 
                             onClose()
                         }}
@@ -64,7 +64,7 @@ const RoadInfo = ({ roadId, onStartMonitor, onClose, onRaise }: RoadInfoProps) =
                 <ButtonRow>
                     <Button
                         onClick={() => {
-                            const road = monitor.roads.get(roadId)
+                            const road = api.roads.get(roadId)
 
                             if (road !== undefined) {
                                 const mid = Math.round(road.points.length / 2)

@@ -341,7 +341,7 @@ async function setOthersCanJoin(othersCanJoin: boolean): Promise<GameInformation
  * Sets the initial resources for the game.
  * @param {ResourceLevel} resources - The levels of initial resources to set.
  */
-function setAvailableResources(resources: ResourceLevel): void {
+function setInitialResources(resources: ResourceLevel): void {
     sendWithOptions<{ resources: ResourceLevel }>(Command.SetInitialResources, { resources })
 }
 
@@ -669,7 +669,7 @@ export {
     startGame,
     setMap,
     setOthersCanJoin,
-    setAvailableResources,
+    setInitialResources,
     setTitle,
     setGameSpeed,
     setMilitaryPopulationFarFromBorder,

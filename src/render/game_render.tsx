@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, TerrainAtPoint, FlagInformation } from '../api/types'
 import { Duration } from '../duration'
 import './game_render.css'
-import { monitor, TileBelow, TileDownRight } from '../api/ws-api'
+import { api, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../stats'
 import { camelCaseToWords, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
@@ -342,7 +342,7 @@ function GameCanvas({
         () => {
             addVariableIfAbsent("fps")
 
-            monitor.allTiles.forEach(tile => visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
+            api.allTiles.forEach(tile => visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
         }, []
     )
 
@@ -365,7 +365,7 @@ function GameCanvas({
     function updateRoadDrawingBuffers(): void {
         console.log("Should update road drawing buffers")
         if (renderState.drawRoadsProgramInstance) {
-            const roadRenderInformation = prepareToRenderRoads(monitor.roads.values(), monitor.flags.values())
+            const roadRenderInformation = prepareToRenderRoads(api.roads.values(), api.flags.values())
 
             setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_coords', roadRenderInformation?.coordinates)
             setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_normal', roadRenderInformation.normals)
@@ -376,7 +376,7 @@ function GameCanvas({
     }
 
     function updateFogOfWarRendering(): FogOfWarRenderInformation {
-        const triangles = getTrianglesAffectedByFogOfWar(monitor.discoveredPoints, monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+        const triangles = getTrianglesAffectedByFogOfWar(api.discoveredPoints, api.discoveredBelowTiles, api.discoveredDownRightTiles)
 
         const fogOfWarCoordinates: number[] = []
         const fogOfWarIntensities: number[] = []
@@ -397,7 +397,7 @@ function GameCanvas({
         })
 
         // Add triangles to draw black
-        monitor.discoveredBelowTiles.forEach(discoveredBelow => {
+        api.discoveredBelowTiles.forEach(discoveredBelow => {
             const below = renderState.allPointsVisibilityTracking.get(discoveredBelow.pointAbove)
 
             if (below) {
@@ -405,7 +405,7 @@ function GameCanvas({
             }
         })
 
-        monitor.discoveredDownRightTiles.forEach(discoveredDownRight => {
+        api.discoveredDownRightTiles.forEach(discoveredDownRight => {
             const downRight = renderState.allPointsVisibilityTracking.get(discoveredDownRight.pointLeft)
 
             if (downRight) {
@@ -459,7 +459,7 @@ function GameCanvas({
             function monitoringStarted() {
                 console.log("Received monitoring started callback. Calculating normals")
 
-                calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles)
 
                 updateRoadDrawingBuffers()
             }
@@ -475,11 +475,11 @@ function GameCanvas({
             function discoveredPointsUpdated() {
 
                 // Update the calculated normals
-                calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles)
                 console.log("New discovered points - calculated normals")
 
                 // Update the map rendering buffers
-                renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
+                renderState.mapRenderInformation = prepareToRenderFromTiles(api.discoveredBelowTiles, api.discoveredDownRightTiles, api.allTiles)
 
                 if (renderState.drawGroundProgramInstance) {
                     setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
@@ -544,12 +544,12 @@ function GameCanvas({
                 }
 
                 // Wait for the game data to be read from the backend and the websocket to be established
-                await Promise.all([monitor.waitForConnection(), monitor.waitForGameDataAvailable()])
+                await Promise.all([api.waitForConnection(), api.waitForGameDataAvailable()])
 
                 /* Put together the render information from the discovered tiles */
-                calculateNormalsForEachPoint(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles)
+                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles)
 
-                renderState.mapRenderInformation = prepareToRenderFromTiles(monitor.discoveredBelowTiles, monitor.discoveredDownRightTiles, monitor.allTiles)
+                renderState.mapRenderInformation = prepareToRenderFromTiles(api.discoveredBelowTiles, api.discoveredDownRightTiles, api.allTiles)
 
                 /*  Initialize webgl2 */
                 if (normalCanvasRef?.current) {
@@ -592,7 +592,7 @@ function GameCanvas({
 
                 // Start tracking visible triangles
                 if (renderState.allPointsVisibilityTracking.size === 0) {
-                    monitor.allTiles.forEach(tile => renderState.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
+                    api.allTiles.forEach(tile => renderState.allPointsVisibilityTracking.set(tile.point, { belowVisible: false, downRightVisible: false }))
                 }
 
                 if (renderState.fogOfWarProgramInstance) {
@@ -603,9 +603,9 @@ function GameCanvas({
                 }
 
                 // Start listeners
-                monitor.addRoadsListener(roadsUpdated)
-                monitor.addGameStateListener(gameStateListener)
-                monitor.addDiscoveredPointsListener(discoveredPointsUpdated)
+                api.addRoadsListener(roadsUpdated)
+                api.addGameStateListener(gameStateListener)
+                api.addDiscoveredPointsListener(discoveredPointsUpdated)
 
                 console.log('Started listeners')
 
@@ -657,9 +657,9 @@ function GameCanvas({
             loadAssetsAndSetupGl().then(() => renderGame())
 
             return () => {
-                monitor.removeGameStateListener(gameStateListener)
-                monitor.removeRoadsListener(roadsUpdated)
-                monitor.removeDiscoveredPointsListener(discoveredPointsUpdated)
+                api.removeGameStateListener(gameStateListener)
+                api.removeRoadsListener(roadsUpdated)
+                api.removeDiscoveredPointsListener(discoveredPointsUpdated)
             }
         }, []
     )
@@ -668,7 +668,7 @@ function GameCanvas({
         const duration = new Duration("GameRender::renderGame")
 
         // Only draw if the game data is available
-        if (!monitor.isGameDataAvailable()) {
+        if (!api.isGameDataAvailable()) {
             return
         }
 
@@ -692,7 +692,7 @@ function GameCanvas({
             renderState.newRoadCurrentLength = newRoadsUpdatedLength
 
             if (renderState.newRoad !== undefined) {
-                monitor.placeLocalRoad(renderState.newRoad.newRoad)
+                api.placeLocalRoad(renderState.newRoad.newRoad)
             }
 
             updateRoadDrawingBuffers()
@@ -788,7 +788,7 @@ function GameCanvas({
         /* Draw decorations on the ground */
         const decorationsToDraw: ToDraw[] = []
 
-        monitor.decorations.forEach(decoration => {
+        api.decorations.forEach(decoration => {
             const image = decorationsImageAtlasHandler.getDrawingInformationFor(decoration.decoration)
 
             if (image) {
@@ -827,7 +827,7 @@ function GameCanvas({
                         u_source_dimensions: [toDraw.source.width, toDraw.source.height],
                         u_screen_dimensions: [width, height],
                         u_height_adjust: heightAdjust,
-                        u_height: monitor.getHeight(toDraw.gamePoint)
+                        u_height: api.getHeight(toDraw.gamePoint)
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -865,7 +865,7 @@ function GameCanvas({
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
         /* Collect borders to draw */
-        monitor.border.forEach((borderForPlayer) => {
+        api.border.forEach((borderForPlayer) => {
             borderForPlayer.points.forEach(borderPoint => {
                 if (borderPoint.x < minXInGame - 1 || borderPoint.x > maxXInGame || borderPoint.y < minYInGame - 1 || borderPoint.y > maxYInGame + 1) {
                     return
@@ -884,7 +884,7 @@ function GameCanvas({
 
 
         /* Collect the houses */
-        for (const house of monitor.houses.values()) {
+        for (const house of api.houses.values()) {
             if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                 continue
             }
@@ -980,7 +980,7 @@ function GameCanvas({
 
         /* Collect the trees */
         let treeIndex = 0
-        for (const tree of monitor.trees.values()) {
+        for (const tree of api.trees.values()) {
             if (tree.x + 2 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
                 continue
             }
@@ -1020,7 +1020,7 @@ function GameCanvas({
             treeIndex = treeIndex + 1
         }
 
-        monitor.fallingTrees.forEach(tree => {
+        api.fallingTrees.forEach(tree => {
             if (tree.x + 2 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
                 return
             }
@@ -1044,7 +1044,7 @@ function GameCanvas({
 
 
         /* Collect the crops */
-        for (const crop of monitor.crops.values()) {
+        for (const crop of api.crops.values()) {
             if (crop.x < minXInGame || crop.x > maxXInGame || crop.y < minYInGame || crop.y > maxYInGame) {
                 continue
             }
@@ -1069,7 +1069,7 @@ function GameCanvas({
 
 
         /* Collect the signs */
-        for (const sign of monitor.signs.values()) {
+        for (const sign of api.signs.values()) {
             if (sign.x < minXInGame || sign.x > maxXInGame || sign.y < minYInGame || sign.y > maxYInGame) {
                 continue
             }
@@ -1099,7 +1099,7 @@ function GameCanvas({
 
 
         /* Collect the stones */
-        for (const stone of monitor.stones.values()) {
+        for (const stone of api.stones.values()) {
             if (stone.x + 1 < minXInGame || stone.x - 1 > maxXInGame || stone.y + 1 < minYInGame || stone.y - 1 > maxYInGame) {
                 continue
             }
@@ -1123,7 +1123,7 @@ function GameCanvas({
 
 
         /* Collect wild animals */
-        for (const animal of monitor.wildAnimals.values()) {
+        for (const animal of api.wildAnimals.values()) {
 
             // Animal is walking between fixed points
             if (animal.previous && animal.next) {
@@ -1211,7 +1211,7 @@ function GameCanvas({
 
 
         /* Collect ships */
-        for (const ship of monitor.ships.values()) {
+        for (const ship of api.ships.values()) {
 
             // ship is moving and not at a fixed point
             if (ship.previous && ship.next) {
@@ -1290,7 +1290,7 @@ function GameCanvas({
 
 
         /* Collect workers */
-        for (const worker of monitor.workers.values()) {
+        for (const worker of api.workers.values()) {
 
             // Worker is moving and not at a fixed point
             if (worker.betweenPoints && worker.previous !== undefined && worker.next) {
@@ -1564,7 +1564,7 @@ function GameCanvas({
 
         /* Collect flags */
         let flagCount = 0
-        for (const flag of monitor.flags.values()) {
+        for (const flag of api.flags.values()) {
             if (flag.x < minXInGame || flag.x > maxXInGame || flag.y < minYInGame || flag.y > maxYInGame) {
                 continue
             }
@@ -1592,7 +1592,7 @@ function GameCanvas({
                     toDrawNormal.push({
                         source: cargoDrawInfo,
                         gamePoint: { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 },
-                        height: monitor.getHeight(flag)
+                        height: api.getHeight(flag)
                     })
                 }
 
@@ -1605,7 +1605,7 @@ function GameCanvas({
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             gamePoint: { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 },
-                            height: monitor.getHeight(flag)
+                            height: api.getHeight(flag)
                         })
                     }
                 }
@@ -1619,7 +1619,7 @@ function GameCanvas({
                         toDrawNormal.push({
                             source: cargoDrawInfo,
                             gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 },
-                            height: monitor.getHeight(flag)
+                            height: api.getHeight(flag)
                         })
                     }
                 }
@@ -1633,7 +1633,7 @@ function GameCanvas({
 
         /* Collect available construction */
         if (renderState.showAvailableConstruction) {
-            for (const [gamePoint, available] of monitor.availableConstruction.entries()) {
+            for (const [gamePoint, available] of api.availableConstruction.entries()) {
                 if (available.length === 0) {
                     continue
                 }
@@ -1711,7 +1711,7 @@ function GameCanvas({
                         u_source_dimensions: [shadow.source.width, shadow.source.height],
                         u_screen_dimensions: [width, height],
                         u_height_adjust: heightAdjust,
-                        u_height: shadow.height ?? monitor.getHeight(shadow.gamePoint)
+                        u_height: shadow.height ?? api.getHeight(shadow.gamePoint)
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -1751,7 +1751,7 @@ function GameCanvas({
                         u_source_dimensions: [toDraw.source.width, toDraw.source.height],
                         u_screen_dimensions: [width, height],
                         u_height_adjust: heightAdjust,
-                        u_height: toDraw.height ?? monitor.getHeight(toDraw.gamePoint)
+                        u_height: toDraw.height ?? api.getHeight(toDraw.gamePoint)
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -1774,7 +1774,7 @@ function GameCanvas({
                     gamePoint: center
                 })
 
-                const centerHeight = monitor.getHeight(center)
+                const centerHeight = api.getHeight(center)
 
                 const differenceToLevel = (a: number, b: number) => {
                     const diff = Math.abs(a - b)
@@ -1791,7 +1791,7 @@ function GameCanvas({
                 renderState.newRoad.possibleConnections.forEach(
                     (point) => {
                         if (renderState.newRoad?.newRoad.find(newRoadPoint => newRoadPoint.x === point.x && newRoadPoint.y === point.y) === undefined) {
-                            const height = monitor.getHeight(point)
+                            const height = api.getHeight(point)
                             let startPointInfo
 
                             if (height > centerHeight) {
@@ -1833,7 +1833,7 @@ function GameCanvas({
         /* Draw the hover point */
         if (!hideHoverPoint) {
             if (renderState.hoverPoint && renderState.hoverPoint.y > 0 && renderState.hoverPoint.x > 0) {
-                const availableConstructionAtHoverPoint = monitor.availableConstruction.get(renderState.hoverPoint)
+                const availableConstructionAtHoverPoint = api.availableConstruction.get(renderState.hoverPoint)
 
                 if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
                     if (availableConstructionAtHoverPoint.includes("large")) {
@@ -1911,7 +1911,7 @@ function GameCanvas({
                         u_source_dimensions: [toDraw.source.width, toDraw.source.height],
                         u_screen_dimensions: [width, height],
                         u_height_adjust: heightAdjust,
-                        u_height: toDraw.height ?? monitor.getHeight(toDraw.gamePoint)
+                        u_height: toDraw.height ?? api.getHeight(toDraw.gamePoint)
                     },
                     'NO_CLEAR_BEFORE_DRAW'
                 )
@@ -1927,7 +1927,7 @@ function GameCanvas({
             overlayCtx.strokeStyle = 'black'
             overlayCtx.fillStyle = 'yellow'
 
-            for (const house of monitor.houses.values()) {
+            for (const house of api.houses.values()) {
                 if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                     continue
                 }
@@ -2007,7 +2007,7 @@ function GameCanvas({
     }
 
     function gamePointToScreenPointWithHeightAdjustmentInternal(gamePoint: Point): ScreenPoint {
-        const height = monitor.getHeight(gamePoint)
+        const height = api.getHeight(gamePoint)
 
         return gamePointToScreenPointWithHeightAdjustment(
             gamePoint,
@@ -2341,7 +2341,7 @@ function GameCanvas({
         }
 
         // Calculate the normal for each point
-        for (const point of monitor.discoveredPoints) {
+        for (const point of api.discoveredPoints) {
             const normals = [
                 straightBelowNormals.get(getPointUpLeft(point)),
                 downRightNormals.get(getPointUpLeft(point)),
@@ -2425,8 +2425,8 @@ function GameCanvas({
 
                 // Handle horizontal roads
                 if (left.y === right.y) {
-                    const heightLeft = monitor.getHeight(left)
-                    const heightRight = monitor.getHeight(right)
+                    const heightLeft = api.getHeight(left)
+                    const heightRight = api.getHeight(right)
 
                     Array.prototype.push.apply(
                         coordinates,
@@ -2453,8 +2453,8 @@ function GameCanvas({
 
                     // Handle road up-right
                 } else if (left.y < right.y) {
-                    const heightLeft = monitor.getHeight(left)
-                    const heightRight = monitor.getHeight(right)
+                    const heightLeft = api.getHeight(left)
+                    const heightRight = api.getHeight(right)
 
                     Array.prototype.push.apply(
                         coordinates,
@@ -2481,8 +2481,8 @@ function GameCanvas({
 
                     // Handle road down-right
                 } else if (left.y > right.y) {
-                    const heightLeft = monitor.getHeight(left)
-                    const heightRight = monitor.getHeight(right)
+                    const heightLeft = api.getHeight(left)
+                    const heightRight = api.getHeight(right)
 
                     Array.prototype.push.apply(
                         coordinates,
@@ -2521,7 +2521,7 @@ function GameCanvas({
                 continue
             }
 
-            const height = monitor.allTiles.get(flag)?.height ?? 0
+            const height = api.allTiles.get(flag)?.height ?? 0
             const normal = renderState.normals.get(flag) ?? { x: 0, y: 0, z: 1 }
 
             // TODO: read out height and normals surrounding and then interpolate
@@ -2677,8 +2677,8 @@ function getTrianglesAffectedByFogOfWar(discovered: PointSetFast, tilesBelow: Se
 }
 
 function interpolateHeight(previous: Point, next: Point, progress: number): number {
-    const previousHeight = monitor.getHeight(previous)
-    const nextHeight = monitor.getHeight(next)
+    const previousHeight = api.getHeight(previous)
+    const nextHeight = api.getHeight(next)
 
     return previousHeight + (nextHeight - previousHeight) * progress
 }

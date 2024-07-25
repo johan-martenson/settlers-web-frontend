@@ -8,7 +8,7 @@ import { Button } from '@fluentui/react-components'
 import { animator } from './utils/animator'
 import { calcTranslation } from './render/utils'
 import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from './utils'
-import { MoveUpdate, monitor } from './api/ws-api'
+import { MoveUpdate, api } from './api/ws-api'
 
 // Types
 type FollowProps = {
@@ -63,9 +63,9 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
                     }
                 }
 
-                monitor.addMovementForWorkerListener(moveListener)
+                api.addMovementForWorkerListener(moveListener)
 
-                return () => monitor.removeMovementForWorkerListener(moveListener)
+                return () => api.removeMovementForWorkerListener(moveListener)
             }
         }, [idToFollow]
     )
@@ -105,8 +105,8 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
     )
 
     function goToBetweenPoints(from: Point, to: Point, progress: number) {
-        const heightAtFrom = monitor.allTiles.get(from)?.height ?? 0
-        const heightAtTo = monitor.allTiles.get(to)?.height ?? 0
+        const heightAtFrom = api.allTiles.get(from)?.height ?? 0
+        const heightAtTo = api.allTiles.get(to)?.height ?? 0
 
         const screenPointFrom = gamePointToScreenPointWithHeightAdjustment(
             from,
@@ -141,7 +141,7 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
 
     // eslint-disable-next-line
     function goToPoint(point: Point) {
-        const heightAtPoint = monitor.allTiles.get(point)?.height ?? 0
+        const heightAtPoint = api.allTiles.get(point)?.height ?? 0
 
         const screenPoint = gamePointToScreenPointWithHeightAdjustment(
             point,
@@ -168,7 +168,7 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
         let distance = 2000
         let newIdToFollow
 
-        for (const [id, worker] of monitor.workers) {
+        for (const [id, worker] of api.workers) {
             let position
 
             if (worker.betweenPoints && worker.previous && worker.next) {
@@ -197,7 +197,7 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
         }
 
         if (distance > 0) {
-            for (const [id, animal] of monitor.wildAnimals) {
+            for (const [id, animal] of api.wildAnimals) {
                 let position
 
                 if (animal.betweenPoints && animal.previous && animal.next) {
@@ -229,7 +229,7 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
         if (newIdToFollow) {
             setIdToFollow(newIdToFollow)
 
-            const worker = monitor.workers.get(newIdToFollow) ?? monitor.wildAnimals.get(newIdToFollow)
+            const worker = api.workers.get(newIdToFollow) ?? api.wildAnimals.get(newIdToFollow)
 
             if (worker) {
                 let position

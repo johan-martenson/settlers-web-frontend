@@ -6,7 +6,7 @@ import { HouseIcon, InventoryIcon, UiIcon } from '../icons/icon'
 import './house_info.css'
 import { HeadquarterInfo } from './headquarter'
 import { MilitaryBuilding } from './military_building'
-import { monitor } from '../api/ws-api'
+import { api } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
 import { houseIsReady, isMilitaryBuilding } from '../api/utils'
 
@@ -71,12 +71,12 @@ const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseIn
         // TODO: fix the listeners and ideally hide the 'detailed monitoring' triggering from the user
 
         // Start monitoring when the component is mounted
-        monitor.addHouseListener(house.id, (house: HouseInformation) => setHouse(house))
+        api.addHouseListener(house.id, (house: HouseInformation) => setHouse(house))
 
-        monitor.addDetailedMonitoring(house.id)
+        api.addDetailedMonitoring(house.id)
 
         // Stop monitoring when the component is unmounted
-        return () => monitor.removeDetailedMonitoring(house.id)
+        return () => api.removeDetailedMonitoring(house.id)
 
         // Only change detailed monitoring if the house id changes
     }, [house.id])
@@ -121,7 +121,7 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoP
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             <Button onClick={() => {
-                monitor.removeBuilding(house.id)
+                api.removeBuilding(house.id)
 
                 onClose()
             }}
@@ -170,7 +170,7 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                         </div>
                     </Field>
                     <Button onClick={() => {
-                        monitor.attackHouse(house.id, chosenAttackers, attackType)
+                        api.attackHouse(house.id, chosenAttackers, attackType)
 
                         onClose()
                     }
@@ -221,7 +221,7 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
             }
 
             <Button onClick={() => {
-                monitor.removeBuilding(house.id)
+                api.removeBuilding(house.id)
 
                 onClose()
             }}
@@ -304,7 +304,7 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                 {house.productionEnabled &&
                     <Tooltip content={'Pause production'} relationship='label' withArrow>
                         <Button
-                            onClick={() => monitor.pauseProductionForHouse(house.id)}
+                            onClick={() => api.pauseProductionForHouse(house.id)}
                             onMouseEnter={() => setHoverInfo('Pause production')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         ><PauseRegular />
@@ -315,7 +315,7 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                 {!house.productionEnabled &&
                     <Tooltip content={'Resume production'} relationship='label' withArrow>
                         <Button
-                            onClick={() => monitor.resumeProductionForHouse(house.id)}
+                            onClick={() => api.resumeProductionForHouse(house.id)}
                             onMouseEnter={() => setHoverInfo('Resume production')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
@@ -326,7 +326,7 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
 
                 <Tooltip content={'Remove'} relationship='label' withArrow>
                     <Button onClick={() => {
-                        monitor.removeBuilding(house.id)
+                        api.removeBuilding(house.id)
 
                         onClose()
                     }}

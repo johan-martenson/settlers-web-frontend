@@ -5,7 +5,7 @@ import { HouseInformation, MATERIALS, Nation, SOLDIER_TYPES, getSoldierDisplayNa
 import { HouseIcon, InventoryIcon } from "../icons/icon"
 import './house_info.css'
 import { useState } from "react"
-import { monitor } from "../api/ws-api"
+import { api } from "../api/ws-api"
 import { Window } from '../components/dialog'
 
 // Types
@@ -97,7 +97,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
     useEffect(
         () => {
-            monitor.getMilitarySettings().then(
+            api.getMilitarySettings().then(
                 (settings) => {
                     setStrengthWhenPopulatingBuildings(settings.soldierStrengthWhenPopulatingBuildings)
                     setDefenseFromSurroundingBuildings(settings.defenseFromSurroundingBuildings)
@@ -117,7 +117,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     useEffect(
         () => {
             if (loaded) {
-                monitor.setMilitaryPopulationFarFromBorder(populateFarFromBorder)
+                api.setMilitaryPopulationFarFromBorder(populateFarFromBorder)
             }
         },
         [populateFarFromBorder])
@@ -125,7 +125,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     useEffect(
         () => {
             if (loaded) {
-                monitor.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
+                api.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
             }
         },
         [soldiersAvailableForAttack])
@@ -133,7 +133,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     useEffect(
         () => {
             if (loaded) {
-                monitor.setMilitaryPopulationCloserToBorder(populateCloserToBorder)
+                api.setMilitaryPopulationCloserToBorder(populateCloserToBorder)
             }
         },
         [populateCloserToBorder])
@@ -141,7 +141,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     useEffect(
         () => {
             if (loaded) {
-                monitor.setMilitaryPopulationCloseToBorder(populateCloseToBorder)
+                api.setMilitaryPopulationCloseToBorder(populateCloseToBorder)
             }
         },
         [populateCloseToBorder])
@@ -149,7 +149,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     useEffect(
         () => {
             if (loaded) {
-                monitor.setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings)
+                api.setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings)
             }
         },
         [defenseFromSurroundingBuildings])
@@ -157,7 +157,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     useEffect(
         () => {
             if (loaded) {
-                monitor.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
+                api.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
             }
         },
         [soldiersAvailableForAttack])
@@ -165,7 +165,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     useEffect(
         () => {
             if (loaded) {
-                monitor.setStrengthWhenPopulatingMilitaryBuildings(strengthWhenPopulatingBuildings)
+                api.setStrengthWhenPopulatingMilitaryBuildings(strengthWhenPopulatingBuildings)
             }
         },
         [strengthWhenPopulatingBuildings])
@@ -173,7 +173,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     useEffect(
         () => {
             if (loaded) {
-                monitor.setDefenseStrength(defenseStrength)
+                api.setDefenseStrength(defenseStrength)
             }
         },
         [defenseStrength])
@@ -243,8 +243,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                             <InventoryIcon material={rankToMaterial(rank)} nation={nation} inline />
                                         </div>
                                     </Tooltip>
-                                    <Subtract16Filled onClick={() => house.reserved[rank] !== 0 && monitor.setReservedSoldiers(rank, house.reserved[rank] - 1)} />
-                                    <Add16Filled onClick={() => house.reserved[rank] !== 100 && monitor.setReservedSoldiers(rank, house.reserved[rank] + 1)} />
+                                    <Subtract16Filled onClick={() => house.reserved[rank] !== 0 && api.setReservedSoldiers(rank, house.reserved[rank] - 1)} />
+                                    <Add16Filled onClick={() => house.reserved[rank] !== 100 && api.setReservedSoldiers(rank, house.reserved[rank] + 1)} />
                                 </div>
                             )
                         }

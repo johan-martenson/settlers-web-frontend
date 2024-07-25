@@ -437,8 +437,6 @@ const api = {
     removeBuilding,
     getHouseAtPointLocal,
     upgrade,
-    addDetailedMonitoring,
-    removeDetailedMonitoring,
     houseAt,
     attackHouse,
     evacuateHouse,
@@ -449,6 +447,7 @@ const api = {
     enablePromotionsForHouse,
     cancelEvacuationForHouse,
     addHouseListener,
+    removeHouseListener,
 
     // Flag
     placeFlag,
@@ -499,7 +498,7 @@ const api = {
 
 // State - listeners
 const messageListeners: Set<MessagesListener> = new Set<MessagesListener>()
-const houseListeners: Map<HouseId, HouseListener[]> = new Map<HouseId, HouseListener[]>()
+const houseListeners: Map<HouseId, Set<HouseListener>> = new Map<HouseId, Set<HouseListener>>()
 const discoveredPointListeners: Set<DiscoveredPointListener> = new Set<DiscoveredPointListener>()
 const roadListeners: Set<RoadListener> = new Set<RoadListener>()
 const availableConstructionListeners = new PointMapFast<Set<AvailableConstructionListener>>()
@@ -510,6 +509,9 @@ const gamesListeners: Set<GameListListener> = new Set<GameListListener>()
 const workerMovedListeners: Set<WorkerMoveListener> = new Set<WorkerMoveListener>()
 const chatListeners: Set<ChatListener> = new Set<ChatListener>()
 const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagListener>>()
+
+// State - misc
+const objectsWithDetailedMonitoring = new Set<HouseId | FlagId>()
 
 // Initialization
 function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
@@ -605,15 +607,38 @@ function addMovementForWorkerListener(listener: WorkerMoveListener): void {
 }
 
 function addHouseListener(houseId: HouseId, houseListener: HouseListener): void {
+
+    // Add the listener
     let listenersForHouseId = houseListeners.get(houseId)
 
     if (!listenersForHouseId) {
-        listenersForHouseId = []
+        listenersForHouseId = new Set()
 
         houseListeners.set(houseId, listenersForHouseId)
     }
 
-    listenersForHouseId.push(houseListener)
+    listenersForHouseId.add(houseListener)
+
+    // Add detailed monitoring for the house
+    if (!objectsWithDetailedMonitoring.has(houseId)) {
+        addDetailedMonitoring(houseId)
+
+        objectsWithDetailedMonitoring.add(houseId)
+    }
+}
+
+function removeHouseListener(houseId: HouseId, houseListener: HouseListener): void {
+    const listenersForHouse = houseListeners.get(houseId)
+
+    if (listenersForHouse) {
+        houseListeners.get(houseId)?.delete(houseListener)
+
+        if (listenersForHouse.size === 0) {
+            removeDetailedMonitoring(houseId)
+
+            objectsWithDetailedMonitoring.delete(houseId)
+        }
+    }
 }
 
 function addDiscoveredPointsListener(listener: DiscoveredPointListener): void {
@@ -629,11 +654,20 @@ function addRoadsListener(listener: RoadListener): void {
 }
 
 function addFlagListener(flagId: FlagId, listener: FlagListener): void {
+
+    // Add the listener
     if (!flagListeners.has(flagId)) {
         flagListeners.set(flagId, new Set())
     }
 
     flagListeners.get(flagId)?.add(listener)
+
+    // Add detailed monitoring
+    if (!objectsWithDetailedMonitoring.has(flagId)) {
+        addDetailedMonitoring(flagId)
+
+        objectsWithDetailedMonitoring.add(flagId)
+    }
 }
 
 function removeGamesListener(listener: GameListListener): void {
@@ -641,7 +675,19 @@ function removeGamesListener(listener: GameListListener): void {
 }
 
 function removeFlagListener(flagId: FlagId, listener: FlagListener): void {
-    flagListeners.get(flagId)?.delete(listener)
+    const listeners = flagListeners.get(flagId)
+
+    if (listeners) {
+
+        // Remove the listener
+        flagListeners.get(flagId)?.delete(listener)
+
+        if (listeners.size === 0) {
+            removeDetailedMonitoring(flagId)
+
+            objectsWithDetailedMonitoring.delete(flagId)
+        }
+    }
 }
 
 function addAvailableConstructionListener(point: Point, listener: AvailableConstructionListener): void {

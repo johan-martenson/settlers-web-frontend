@@ -512,8 +512,8 @@ function addDetailedMonitoring(id: HouseId | FlagId): void {
     sendWithOptions<{ id: HouseId | FlagId }>(Command.StartDetailedMonitoring, { id })
 }
 
-function removeDetailedMonitoring(houseId: HouseId): void {
-    sendWithOptions<{ buildingId: HouseId }>(Command.StopDetailedMonitoring, { buildingId: houseId })
+function removeDetailedMonitoring(id: HouseId | FlagId): void {
+    sendWithOptions<{ id: HouseId | FlagId }>(Command.StopDetailedMonitoring, { id })
 }
 
 function removeMessage(messageId: GameMessageId): void {

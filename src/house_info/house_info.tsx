@@ -67,18 +67,11 @@ const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseIn
     const isOwnHouse = (house.playerId === selfPlayerId)
 
     useEffect(() => {
+        const houseListener = (house: HouseInformation) => setHouse(house)
+        
+        api.addHouseListener(house.id, houseListener)
 
-        // TODO: fix the listeners and ideally hide the 'detailed monitoring' triggering from the user
-
-        // Start monitoring when the component is mounted
-        api.addHouseListener(house.id, (house: HouseInformation) => setHouse(house))
-
-        api.addDetailedMonitoring(house.id)
-
-        // Stop monitoring when the component is unmounted
-        return () => api.removeDetailedMonitoring(house.id)
-
-        // Only change detailed monitoring if the house id changes
+        return () => api.removeHouseListener(house.id, houseListener)
     }, [house.id])
 
     return (

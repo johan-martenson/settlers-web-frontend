@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { setTransportPriorityForMaterial } from './api/rest-api'
 import { Window } from './components/dialog'
 import './transport_priority.css'
 import { GameId, PlayerId, Material, Nation, TransportCategories, TRANSPORT_CATEGORIES } from './api/types'
 import { Tooltip } from '@fluentui/react-components'
 import { InventoryIcon } from './icons/icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
+import { monitor } from './api/ws-api'
 
 // Types
 type SetTransportPriorityProps = {
@@ -53,7 +53,7 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose, onRaise }: Se
 
         const updatedPriority = Object.assign([], priority)
 
-        await setTransportPriorityForMaterial(gameId, playerId, category, currentPriority - 1)
+        await monitor.setTransportPriorityForMaterial(category, currentPriority - 1)
 
         delete updatedPriority[currentPriority]
 
@@ -73,7 +73,7 @@ const SetTransportPriority = ({ playerId, gameId, nation, onClose, onRaise }: Se
 
         const updatedPriority = Object.assign([], priority)
 
-        await setTransportPriorityForMaterial(gameId, playerId, category, currentPriority + 1)
+        await monitor.setTransportPriorityForMaterial(category, currentPriority + 1)
 
         delete updatedPriority[currentPriority]
 

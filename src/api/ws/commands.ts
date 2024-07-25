@@ -1,5 +1,5 @@
 import { PointMapFast } from "../../util_types"
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, Vegetation, WildAnimalInformation, AttackType } from "../types"
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, Vegetation, WildAnimalInformation, AttackType, TransportCategories, TerrainInformation, ProductionStatistics, LandStatistics } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
@@ -172,7 +172,11 @@ enum Command {
     ResumeProduction = 'RESUME_PRODUCTION',
     DisablePromotions = 'DISABLE_PROMOTIONS',
     EnablePromotions = 'ENABLE_PROMOTIONS',
-    CancelEvacuation = 'CANCEL_EVACUATION'
+    CancelEvacuation = 'CANCEL_EVACUATION',
+    SetTransportPriority = 'SET_TRANSPORT_PRIORITY',
+    GetTerrain = 'GET_TERRAIN',
+    GetGameStatistics = 'GET_PRODUCTION_STATISTICS',
+    GetLandStatistics = 'GET_LAND_STATISTICS'
 }
 
 // Type functions
@@ -215,6 +219,18 @@ function upgradeHouse(houseId: HouseId): void {
 
 function evacuateHouse(houseId: HouseId): void {
     sendWithOptions<{ houseId: HouseId }>(Command.EvacuateHouse, { houseId })
+}
+
+async function getLandStatistics(): Promise<LandStatistics> {
+    return (await sendRequestAndWaitForReply<{ landStatistics: LandStatistics }>(Command.GetLandStatistics)).landStatistics
+}
+
+async function getProductionStatistics(): Promise<ProductionStatistics> {
+    return (await sendRequestAndWaitForReply<{ productionStatistics: ProductionStatistics }>(Command.GetGameStatistics)).productionStatistics
+}
+
+function setTransportPriorityForMaterial(category: TransportCategories, priority: number): void {
+    sendWithOptions<{ category: TransportCategories, priority: number }>(Command.SetTransportPriority, { category, priority })
 }
 
 /**
@@ -401,6 +417,10 @@ async function getChatRoomHistory(roomId: RoomId): Promise<ChatMessage[]> {
  */
 async function getGames(): Promise<GameInformation[]> {
     return (await sendRequestAndWaitForReply<{ games: GameInformation[] }>(Command.GetGames)).games
+}
+
+async function getTerrainForMap(mapId: MapId): Promise<TerrainInformation> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ terrain: TerrainInformation }, { mapId: MapId }>(Command.GetTerrain, { mapId })).terrain
 }
 
 async function getMaps(): Promise<MapInformation[]> {
@@ -712,5 +732,9 @@ export {
     enablePromotionsForHouse,
     pauseProductionForHouse,
     resumeProductionForHouse,
-    cancelEvacuationForHouse
+    cancelEvacuationForHouse,
+    setTransportPriorityForMaterial,
+    getTerrainForMap,
+    getProductionStatistics,
+    getLandStatistics
 }

@@ -1,6 +1,5 @@
 import * as d3 from 'd3'
 import React, { useState, useEffect, useRef } from 'react'
-import { getGameStatistics, getLandStatistics } from './api/rest-api'
 import { Window } from './components/dialog'
 import "./statistics.css"
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
@@ -39,8 +38,9 @@ const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClos
 
     useEffect(() => {
         async function fetchData() {
-            const productionStats = await getGameStatistics(gameId)
-            const landStats = await getLandStatistics(gameId)
+            const productionStats = await monitor.getProductionStatistics()
+            const landStats = await monitor.getLandStatistics()
+
             setProductionStatistics(productionStats)
             setLandStatistics(landStats)
         }

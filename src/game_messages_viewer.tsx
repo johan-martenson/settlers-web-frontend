@@ -4,13 +4,12 @@ import ExpandCollapseToggle from './expand_collapse_toggle'
 import './game_messages_viewer.css'
 import { api } from './api/ws-api'
 import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
-import { PlayerId, HouseId, Point, GameMessage, Nation, GameMessageId } from './api/types'
+import { HouseId, Point, GameMessage, Nation, GameMessageId } from './api/types'
 import { HouseIcon, WorkerIcon } from './icons/icon'
 import { ShipIcon } from './icons/ship'
 
 // Types
 type GameMessagesViewerProps = {
-    playerId: PlayerId
     nation: Nation
 
     onGoToHouse: ((houseId: HouseId) => void)
@@ -18,7 +17,7 @@ type GameMessagesViewerProps = {
 }
 
 // React components
-const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
+const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [messages, setMessages] = useState<GameMessage[]>(Array.from(api.messages.values()))
 
@@ -37,7 +36,7 @@ const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: Game
         api.addMessagesListener(messageReceiver)
 
         return () => api.removeMessagesListener(messageReceiver)
-    }, [playerId])
+    }, [])
 
     return (
         <div className="game-messages" onWheel={(event) => event.stopPropagation()}>

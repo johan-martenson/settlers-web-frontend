@@ -16,14 +16,13 @@ type GraphHover = {
 }
 
 type StatisticsProps = {
-    gameId: GameId
     nation: Nation
     onRaise: () => void
     onClose: () => void
 }
 
 // React components
-const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClose }: StatisticsProps) => {
+const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: StatisticsProps) => {
     const landStatsContainerRef = useRef<SVGSVGElement>(null)
     const productionStatsContainerRef = useRef<SVGSVGElement>(null)
     const statsParentRef = useRef<HTMLDivElement>(null)
@@ -45,7 +44,7 @@ const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClos
             setLandStatistics(landStats)
         }
         fetchData()
-    }, [gameId])  // Run once on mount and when gameId changes
+    }, [])  // Run once on mount and when gameId changes
 
     useEffect(() => {
         if (productionStatsContainerRef.current && statsParentRef.current && productionStatistics) {

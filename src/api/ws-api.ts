@@ -399,8 +399,15 @@ const api = {
     updatePlayer,
     removePlayer,
     addActionsListener,
+    addDiscoveredPointsListener,
+    removeDiscoveredPointsListener,
+    addMessagesListener,
+    removeMessagesListener,
     removeMessage,
     removeMessages,
+    setTransportPriorityForMaterial,
+
+    // Player - military
     setReservedSoldiers,
     setStrengthWhenPopulatingMilitaryBuildings,
     setDefenseStrength,
@@ -409,6 +416,7 @@ const api = {
     setMilitaryPopulationCloserToBorder,
     setMilitaryPopulationCloseToBorder,
     setSoldiersAvailableForAttack,
+
     getStrengthWhenPopulatingMilitaryBuildings,
     getDefenseStrength,
     getDefenseFromSurroundingBuildings,
@@ -418,6 +426,7 @@ const api = {
     getSoldiersAvailableForAttack,
     getMilitarySettings,
 
+    // Player - quotas
     setCoalQuotas,
     setFoodQuotas,
     setWheatQuotas,
@@ -430,7 +439,8 @@ const api = {
     getIronBarQuotas,
     getCoalQuotas,
 
-    setTransportPriorityForMaterial,
+    // Houses
+    addBurningHousesListener,
 
     // House
     placeHouse,
@@ -483,17 +493,11 @@ const api = {
     findPossibleNewRoad,
     isAvailable,
     addAvailableConstructionListener,
-
-    // To-be-sorted
-    addBurningHousesListener,
-    addMessagesListener,
-    addDiscoveredPointsListener,
-    addMovementForWorkerListener,
-
     removeAvailableConstructionListener,
-    removeMessagesListener,
+
+    // Workers
+    addMovementForWorkerListener,
     removeMovementForWorkerListener,
-    removeDiscoveredPointsListener,
 }
 
 // State - listeners

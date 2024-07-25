@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Window } from './components/dialog'
 import './transport_priority.css'
-import { GameId, PlayerId, Material, Nation, TransportCategories, TRANSPORT_CATEGORIES } from './api/types'
+import { Material, Nation, TransportCategories, TRANSPORT_CATEGORIES } from './api/types'
 import { Tooltip } from '@fluentui/react-components'
 import { InventoryIcon } from './icons/icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
@@ -9,8 +9,6 @@ import { api } from './api/ws-api'
 
 // Types
 type SetTransportPriorityProps = {
-    gameId: GameId
-    playerId: PlayerId
     nation: Nation
 
     onRaise: (() => void)
@@ -38,9 +36,17 @@ CATEGORY_MATERIALS_MAP.set('FLOUR', ['FLOUR'])
 CATEGORY_MATERIALS_MAP.set('BOAT', ['BOAT'])
 
 // React components
-const SetTransportPriority = ({ playerId, gameId, nation, onClose, onRaise }: SetTransportPriorityProps) => {
+const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriorityProps) => {
     const [selected, setSelected] = useState<TransportCategories>('PLANK')
     const [priority, setPriority] = useState<TransportCategories[]>(Array.from(TRANSPORT_CATEGORIES))
+
+    useEffect(
+        () => {
+            // Read current transport priorities
+
+            // Listen for changes
+        }, []
+    )
 
     async function increasePriority(category: TransportCategories): Promise<void> {
         const currentPriority = priority.findIndex(e => e === category)

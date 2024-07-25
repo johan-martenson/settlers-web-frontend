@@ -1138,7 +1138,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             key={window.id}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
-                            gameId={gameId}
                             nation={player?.nation ?? 'ROMANS'}
                         />
                     case 'QUOTA':
@@ -1154,8 +1153,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
                             nation={player?.nation ?? 'ROMANS'}
-                            gameId={gameId}
-                            playerId={selfPlayerId}
                         />
                     case 'ROAD_INFO':
                         return <RoadInfo
@@ -1201,7 +1198,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             }
 
             <GameMessagesViewer
-                playerId={selfPlayerId}
                 nation={player?.nation ?? 'ROMANS'}
                 onGoToHouse={(houseId: HouseId) => goToHouse(houseId)}
                 onGoToPoint={(point: Point) => goToPoint(point)}

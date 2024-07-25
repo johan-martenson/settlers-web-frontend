@@ -6,11 +6,13 @@ import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, Input
 import MapInformationCard from './map_information_card'
 import { GameListener, monitor } from './api/ws-api'
 
-interface MapSelectionProps {
+// Types
+type MapSelectionProps = {
     minPlayers: number
     onMapSelected: ((map: MapInformation) => void)
 }
 
+// React components
 const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
     const [map, setMap] = useState<MapInformation | undefined>()
     const [filterTitle, setSearchTitle] = useState<string>("")

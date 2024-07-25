@@ -98,23 +98,32 @@ type Window = {
     id: number
 } & WindowType
 
-// Constants
-
-// State
-let trackNextWindowId = 0
-
-function nextWindowId(): number {
-    trackNextWindowId++
-
-    return trackNextWindowId - 1
+type StoredTouch = {
+    identifier: number
+    pageX: number
+    pageY: number
 }
+
+type PlayProps = {
+    selfPlayerId: PlayerId
+    gameId: GameId
+
+    onLeaveGame: (() => void)
+}
+
+export type NewRoad = {
+    newRoad: Point[]
+    possibleConnections: Point[]
+}
+
+// Constants
+export const DEFAULT_VOLUME = 0.5
 
 const MAX_SCALE = 150
 const MIN_SCALE = 10
 const ARROW_KEY_MOVE_DISTANCE = 20
 
-export const DEFAULT_VOLUME = 0.5
-
+// State
 export const immediateUxState = {
     mouseDown: false,
     mouseDownX: 0,
@@ -130,15 +139,18 @@ export const immediateUxState = {
     scale: DEFAULT_SCALE
 }
 
-/* Track ongoing touches to make touch control work */
+let trackNextWindowId = 0
+
 const ongoingTouches: Map<number, StoredTouch> = new Map()
 
-interface StoredTouch {
-    identifier: number
-    pageX: number
-    pageY: number
+// Functions
+function nextWindowId(): number {
+    trackNextWindowId++
+
+    return trackNextWindowId - 1
 }
 
+// React components
 const Expired = () => {
     return (
         <div className='expired'>
@@ -175,18 +187,6 @@ const PauseSign = () => {
             </div>
         </div>
     )
-}
-
-interface PlayProps {
-    selfPlayerId: PlayerId
-    gameId: GameId
-
-    onLeaveGame: (() => void)
-}
-
-export type NewRoad = {
-    newRoad: Point[]
-    possibleConnections: Point[]
 }
 
 const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {

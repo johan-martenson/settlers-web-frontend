@@ -8,7 +8,8 @@ import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
 import { DEFAULT_VOLUME } from './play'
 import { monitor } from './api/ws-api'
 
-interface GameMenuProps {
+// Types
+type GameMenuProps = {
     maxZoom: number
     minZoom: number
     areTitlesVisible: boolean
@@ -38,6 +39,7 @@ interface GameMenuProps {
     onQuota: (() => void)
 }
 
+// React components
 const GameMenu = (
     { minZoom,
         maxZoom,

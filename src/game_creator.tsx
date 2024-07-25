@@ -9,13 +9,15 @@ import { GameListener, monitor } from './api/ws-api'
 import { ChatBox } from './chat/chat'
 import { Center } from './components/center'
 
-interface GameCreatorProps {
+// Types
+type GameCreatorProps = {
     selfPlayerId: PlayerId
 
     onGameStarted: (gameId: GameId, selfPlayerId: PlayerId) => void
     onGameCreateCanceled: () => void
 }
 
+// React component
 const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: GameCreatorProps) => {
     const [state, setState] = useState<'GET_NAME_FOR_GAME' | 'CREATE_GAME'>('GET_NAME_FOR_GAME')
     const [candidateTitle, setCandidateTitle] = useState<string>()

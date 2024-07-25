@@ -4,18 +4,19 @@ import ExpandCollapseToggle from './expand_collapse_toggle'
 import { PointInformation, Point } from './api/types'
 import { monitor } from './api/ws-api'
 
-export interface Command {
+// Types
+export type Command = {
     action: ((point: Point) => void)
     filter?: ((selectedPointInformation: PointInformation) => boolean) | undefined
     icon?: React.ReactNode
 }
 
-interface TypeControlProps {
+type TypeControlProps = {
     commands: Map<string, Command>
     selectedPoint: Point
 }
 
-interface TypeControlKey {
+type TypeControlKey = {
     key: string
     altKey: boolean
     ctrlKey: boolean
@@ -23,6 +24,16 @@ interface TypeControlKey {
     shiftKey: boolean
 }
 
+type InputAction = {
+    type: 'set' | 'add' | 'run' | 'remove_last'
+    payload: string
+}
+
+type InputState = {
+    input: string
+}
+
+// Functions
 function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeControlKey> {
     return event !== null &&
         event !== undefined &&
@@ -33,14 +44,7 @@ function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeContr
         'key' in event.detail
 }
 
-interface InputAction {
-    type: 'set' | 'add' | 'run' | 'remove_last'
-    payload: string
-}
-
-interface InputState {
-    input: string
-}
+// React components
 
 /**
  * Note: the TypeControl component is written as a functional component and uses a complex way to

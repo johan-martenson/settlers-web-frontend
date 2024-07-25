@@ -3,12 +3,15 @@ import { Label, Input, Button, InputOnChangeData } from "@fluentui/react-compone
 import './fill_in_player_information.css'
 import { Center } from './components/center'
 
-interface FillInPlayerInformationProps {
+// Types
+type FillInPlayerInformationProps {
     onPlayerInformationDone: ((name: string) => void)
 }
 
+// Constants
 const defaultUserName = localStorage.getItem("mostRecentPlayer") ?? ""
 
+// React components
 const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInformationProps) => {
     const [userName, setUserName] = useState<string>(defaultUserName)
 

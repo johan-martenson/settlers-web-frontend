@@ -8,13 +8,15 @@ import { monitor } from "./api/ws-api"
 import { AmountBar } from "./amount_bar"
 import { Window } from './components/dialog'
 
-interface QuotasProps {
+// Types
+type QuotasProps = {
     nation: Nation
 
     onRaise: (() => void)
     onClose: (() => void)
 }
 
+// React components
 const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
     const [materialToManage, setMaterialToManage] = useState<'COAL' | 'WHEAT' | 'WATER' | 'PLANK' | 'FOOD' | 'IRON_BAR'>('COAL')
     const [mintAmount, setMintAmount] = useState<number>(5)

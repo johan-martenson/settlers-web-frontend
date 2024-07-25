@@ -7,7 +7,8 @@ import { camelCaseToWords, canBuildHouse, canBuildLargeHouse, canBuildMediumHous
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon } from './icons/icon'
 
-interface ConstructionInfoProps {
+// Types
+type ConstructionInfoProps = {
     point: PointInformation
     nation: Nation
 
@@ -19,6 +20,7 @@ interface ConstructionInfoProps {
 
 // TODO: add monitor tab
 
+// React components
 const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMonitor, ...props }: ConstructionInfoProps) => {
     const [point, setPoint] = useState<PointInformation>(props.point)
     const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads' | 'Monitor'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads')

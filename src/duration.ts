@@ -1,6 +1,7 @@
 import { addVariableIfAbsent, reportValueForVariable } from './stats'
 
-interface Timestamp {
+// Types
+type Timestamp = {
     time: number
     name: string
 }

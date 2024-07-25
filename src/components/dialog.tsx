@@ -4,7 +4,8 @@ import { Dismiss16Filled } from '@fluentui/react-icons'
 import './dialog.css'
 import { Point } from '../api/types'
 
-interface WindowProps {
+// Types
+type WindowProps = {
     hoverInfo?: string
     heading?: string
     className?: string
@@ -20,6 +21,11 @@ type Drag = {
     windowDragStart: Point
 }
 
+type ButtonRowProps = {
+    children?: React.ReactNode
+}
+
+// React components
 function Window({ onClose, onRaise, ...props }: WindowProps) {
     const className = props.className !== undefined ? `window ${props.className}` : 'window'
 
@@ -93,10 +99,6 @@ function Window({ onClose, onRaise, ...props }: WindowProps) {
             </Button>
         </div >
     )
-}
-
-type ButtonRowProps = {
-    children?: React.ReactNode
 }
 
 function ButtonRow({ children }: ButtonRowProps) {

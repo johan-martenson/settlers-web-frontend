@@ -5,7 +5,8 @@ import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation } from '
 import { MoreHorizontal20Regular } from "@fluentui/react-icons"
 import { WorkerIcon } from './icons/icon'
 
-interface PlayerProps {
+// Types
+type PlayerProps = {
     isSelf?: boolean
     player: PlayerInformation
     availableColors: Set<PlayerColor>
@@ -13,6 +14,7 @@ interface PlayerProps {
     onPlayerUpdated?: ((name: string, nation: Nation, color: PlayerColor) => void)
 }
 
+// React components
 const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpdated }: PlayerProps) => {
     const [editName, setEditName] = useState<string | undefined>()
     const [editNation, setEditNation] = useState<Nation>(player.nation)

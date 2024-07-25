@@ -1,10 +1,12 @@
 import React from 'react'
 import { CalendarAgenda28Filled } from "@fluentui/react-icons"
 
-interface MenuButtonProps {
+// Types
+type MenuButtonProps = {
     onMenuButtonClicked: (() => void)
 }
 
+// React components
 const MenuButton = ({ onMenuButtonClicked }: MenuButtonProps) => {
     return (
         <div className="MenuButton"

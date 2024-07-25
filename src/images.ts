@@ -1,7 +1,9 @@
 import { AnyBuilding } from './api/types'
 
+// Types
 export type Filename = string
 
+// Constants
 const prefix = "assets/roman-buildings/"
 
 const houseImageMap: Map<AnyBuilding, Filename> = new Map()

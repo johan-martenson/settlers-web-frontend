@@ -5,11 +5,13 @@ import { ChatMessage, PlayerId, RoomId } from '../api/types'
 import './chat.css'
 import ExpandCollapseToggle from '../expand_collapse_toggle'
 
+// Types
 type ChatBoxProps = {
     playerId: PlayerId
     roomId: RoomId
 }
 
+// React components
 function ChatBox({ playerId, roomId }: ChatBoxProps) {
     const inputRef = useRef<HTMLInputElement | null>(null)
 

@@ -10,9 +10,7 @@ import { calcTranslation } from './render/utils'
 import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from './utils'
 import { MoveUpdate, monitor } from './api/ws-api'
 
-const MIN_SCALE = 10
-const MAX_SCALE = 150
-
+// Types
 type FollowProps = {
     point: Point
     heightAdjust: number
@@ -30,6 +28,11 @@ type Moving = {
     translate: Point
 }
 
+// Constants
+const MIN_SCALE = 10
+const MAX_SCALE = 150
+
+// React components
 function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps) {
     const myRef = useRef<HTMLDivElement | null>(null)
 

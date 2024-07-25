@@ -8,17 +8,19 @@ import { Window } from '../components/dialog'
 import { glUtilsDebug } from "../render/utils"
 import { wsApiDebugSettings } from "../api/ws/core"
 
-function Value({ children }: { children?: React.ReactNode }) {
-    return (
-        <div className="value"><span>{children}</span></div>
-    )
-}
-
+// Types
 type DebugProps = {
     point: Point
 
     onRaise: (() => void)
     onClose: (() => void)
+}
+
+// React components
+function Value({ children }: { children?: React.ReactNode }) {
+    return (
+        <div className="value"><span>{children}</span></div>
+    )
 }
 
 function Debug({ point, onClose, onRaise }: DebugProps) {

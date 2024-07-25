@@ -4,16 +4,18 @@ import './map_list.css'
 import { MapInformation } from './api/types'
 import { monitor } from './api/ws-api'
 
-interface MapListProps {
-    onMapSelected: ((map: MapInformation) => void)
+// Types
+type MapListProps = {
     defaultSelect?: boolean
     minPlayers: number
     filterTitle?: string
     filterAuthor?: string
     filterMinPlayers?: number
     filterMaxPlayers?: number
+    onMapSelected: ((map: MapInformation) => void)
 }
 
+// React components
 const MapList = ({ minPlayers, defaultSelect, filterTitle, filterAuthor, filterMinPlayers, filterMaxPlayers, onMapSelected }: MapListProps) => {
     const [maps, setMaps] = useState<MapInformation[]>([])
 

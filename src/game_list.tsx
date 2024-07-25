@@ -12,6 +12,12 @@ import './game_list.css'
 import { GameId, GameInformation } from './api/types'
 import { monitor } from './api/ws-api'
 
+// Types
+type GameListProps = {
+    onJoinGame: ((gameId: GameId) => void)
+}
+
+// Constants
 const statusToText = {
     STARTED: 'Started',
     NOT_STARTED: 'Not started',
@@ -28,10 +34,7 @@ const columns = [
     { columnKey: 'actions', label: 'Actions' }
 ]
 
-interface GameListProps {
-    onJoinGame: ((gameId: GameId) => void)
-}
-
+// React components
 const GameList = ({ onJoinGame }: GameListProps) => {
     const [games, setGames] = useState<GameInformation[] | undefined>()
 
@@ -58,6 +61,7 @@ const GameList = ({ onJoinGame }: GameListProps) => {
             return () => monitor.removeGamesListener(gameListChanged)
         }, []
     )
+
     return (
         <>
             {<div className='games-list'>

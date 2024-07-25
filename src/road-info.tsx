@@ -6,6 +6,7 @@ import { monitor } from "./api/ws-api"
 import './road-info.css'
 import { ButtonRow, Window } from './components/dialog'
 
+// Types
 type RoadInfoProps = {
     roadId: RoadId
 
@@ -16,6 +17,7 @@ type RoadInfoProps = {
 
 // TODO: add monitor tab
 
+// React components
 const RoadInfo = ({ roadId, onStartMonitor, onClose, onRaise }: RoadInfoProps) => {
     const [selected, setSelected] = useState<'ROAD' | 'MONITOR'>('ROAD')
     const [hoverInfo, setHoverInfo] = useState<string>()

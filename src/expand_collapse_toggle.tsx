@@ -3,12 +3,14 @@ import './expand_collapse_toggle.css'
 import { Button } from '@fluentui/react-components'
 import { ChevronUp24Filled, ChevronDown24Filled } from '@fluentui/react-icons'
 
-interface ExpandCollapseToggleProps {
+// Types
+type ExpandCollapseToggleProps = {
     inverted?: boolean
     onExpand: (() => void)
     onCollapse: (() => void)
 }
 
+// React components
 const ExpandCollapseToggle = ({ inverted, onCollapse, onExpand }: ExpandCollapseToggleProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
 

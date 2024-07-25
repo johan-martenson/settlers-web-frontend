@@ -7,7 +7,8 @@ import { monitor } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
 import { canBeUpgraded, isEvacuated } from '../api/utils'
 
-interface MilitaryBuildingProps {
+// Types
+type MilitaryBuildingProps = {
     house: HouseInformation
     nation: Nation
 
@@ -15,6 +16,7 @@ interface MilitaryBuildingProps {
     onClose: (() => void)
 }
 
+// React components
 const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingProps) => {
     const soldiers: (SoldierType | null)[] = []
 

@@ -8,7 +8,8 @@ import { PlayerId, HouseId, Point, GameMessage, Nation, GameMessageId } from './
 import { HouseIcon, WorkerIcon } from './icons/icon'
 import { ShipIcon } from './icons/ship'
 
-interface GameMessagesViewerProps {
+// Types
+type GameMessagesViewerProps = {
     playerId: PlayerId
     nation: Nation
 
@@ -16,6 +17,7 @@ interface GameMessagesViewerProps {
     onGoToPoint: ((point: Point) => void)
 }
 
+// React components
 const GameMessagesViewer = ({ playerId, nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [messages, setMessages] = useState<GameMessage[]>(Array.from(monitor.messages.values()))

@@ -4,11 +4,18 @@ import './guide.css'
 import { Button } from '@fluentui/react-components'
 import { Window } from './components/dialog'
 
-interface GuideProps {
+// Types
+type GuideProps = {
     onRaise: (() => void)
     onClose: (() => void)
 }
 
+
+type PageProps {
+    page: PageType
+}
+
+// React components
 const Guide = ({ onClose, onRaise }: GuideProps) => {
     const [pageNumber, setPageNumber] = useState<number>(0)
 
@@ -30,10 +37,6 @@ const Guide = ({ onClose, onRaise }: GuideProps) => {
             </div>
         </Window>
     )
-}
-
-interface PageProps {
-    page: PageType
 }
 
 const Page = ({ page }: PageProps) => {

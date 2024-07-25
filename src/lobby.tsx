@@ -5,13 +5,15 @@ import './lobby.css'
 import { GameId, PlayerInformation } from './api/types'
 import { ChatBox } from './chat/chat'
 
-interface LobbyProps {
+// Types
+type LobbyProps = {
     player: PlayerInformation
 
     onJoinExistingGame: (gameId: GameId) => void
     onCreateNewGame: () => void
 }
 
+// React components
 const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
     return (
         <div id="center-on-screen">

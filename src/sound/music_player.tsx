@@ -4,22 +4,24 @@ import ExpandCollapseToggle from '../expand_collapse_toggle'
 import './music_player.css'
 import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons'
 
-interface AudioAtlasSongs {
+// Types
+type AudioAtlasSongs = {
     path: string
     title: string
 }
 
-interface SongAndTitle {
+type SongAndTitle = {
     title: string
     song: HTMLAudioElement
 }
 
-interface MusicPlayerProps {
+type MusicPlayerProps = {
     volume: number
 }
 
 type Mode = 'LOOP_SONG' | 'LOOP_LIST' | 'SHUFFLE_LIST'
 
+// React components
 const MusicPlayer = ({ volume }: MusicPlayerProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [playing, setPlaying] = useState<boolean>(false)

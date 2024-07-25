@@ -5,17 +5,19 @@ import './manage_players.css'
 import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId, GameInformation } from './api/types'
 import { GameListener, monitor } from './api/ws-api'
 
-export interface PlayerCandidateType {
+// Types
+export type PlayerCandidateType = {
     name: string
     color: PlayerColor
     type: PlayerType
 }
 
-interface ManagePlayersProps {
+type ManagePlayersProps = {
     selfPlayerId: PlayerId
     maxPlayers: number
 }
 
+// React components
 const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
     const [players, setPlayers] = useState<PlayerInformation[]>(Array.from(monitor.players.values()))
 

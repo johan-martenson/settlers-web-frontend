@@ -2,13 +2,15 @@ import React, { ReactNode } from 'react'
 import { isBuilding, isMaterial } from './api/types'
 import { HouseIcon, InventoryIcon } from './icons/icon'
 
-export interface PageType {
+// Types
+export type PageType = {
     page: string
     title: string
     pictures: ReactNode[]
     description: string[]
 }
 
+// Constants
 const HELP_PAGES: PageType[] = [
     {
         page: 'construction',

@@ -6,7 +6,8 @@ import { Button, Field, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, InventoryIcon, UiIcon } from './icons/icon'
 import { ButtonRow, Window } from './components/dialog'
 
-interface FriendlyFlagInfoProps {
+// Types
+type FriendlyFlagInfoProps = {
     flag: FlagInformation
     nation: Nation
 
@@ -17,6 +18,7 @@ interface FriendlyFlagInfoProps {
 
 // TODO: add monitor tab
 
+// React components
 const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }: FriendlyFlagInfoProps) => {
     const [flag, setFlag] = useState<FlagInformation>(props.flag)
     const [hoverInfo, setHoverInfo] = useState<string>()

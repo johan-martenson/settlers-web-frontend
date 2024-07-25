@@ -9,19 +9,21 @@ import { InventoryIcon } from './icons/icon'
 import { monitor } from './api/ws-api'
 import { ColorBox } from './components/utils'
 
+// Types
 type GraphHover = {
     x: number
     y: number
     value: number
 }
 
-interface StatisticsProps {
+type StatisticsProps = {
     gameId: GameId
     nation: Nation
     onRaise: () => void
     onClose: () => void
 }
 
+// React components
 const Statistics: React.FC<StatisticsProps> = ({ gameId, nation, onRaise, onClose }: StatisticsProps) => {
     const landStatsContainerRef = useRef<SVGSVGElement>(null)
     const productionStatsContainerRef = useRef<SVGSVGElement>(null)

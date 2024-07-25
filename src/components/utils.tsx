@@ -2,11 +2,13 @@ import { Tooltip } from '@fluentui/react-components'
 import React from 'react'
 import { PlayerColor } from '../api/types'
 
+// Types
 type ColorBoxProps = {
     color: PlayerColor
     inline?: boolean
 }
 
+// React components
 const ColorBox = ({ color, inline }: ColorBoxProps) => {
     return (<Tooltip content={color.toLocaleLowerCase()} relationship='label' withArrow key={color} >
         <div

@@ -1,3 +1,4 @@
+// Types
 type AnimationTarget = 'ZOOM' | 'TRANSLATE' | 'MUSIC_VOLUME' | 'EFFECTS_VOLUME'
 type AnimatorState = 'RUNNING' | 'STOPPED'
 type OneOrMany = 'ONE' | 'MANY'
@@ -11,10 +12,12 @@ type OngoingAnimation = {
     speed: number
 }
 
+// Constants
 const CLOSE_ENOUGH = 0.01
 const SPEED = 0.5
 const DT = 1
 
+// State
 // Can be canceled by id
 const ongoingAnimations = new Map<string, OngoingAnimation>()
 
@@ -24,6 +27,7 @@ const ongoingAnimationsWithoutIds = new Set<OngoingAnimation>()
 let timer: NodeJS.Timeout | undefined
 let state: AnimatorState = 'STOPPED'
 
+// Functions
 function step() {
     ongoingAnimations.forEach((animation, variable) => {
         let allReachedTarget = true

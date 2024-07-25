@@ -8,6 +8,16 @@ import { useState } from "react"
 import { monitor } from "../api/ws-api"
 import { Window } from '../components/dialog'
 
+// Types
+type HeadquarterInfoProps = {
+    house: HouseInformation
+    nation: Nation
+
+    onRaise: (() => void)
+    onClose: (() => void)
+}
+
+// Constants
 const MATERIAL_LABELS: Map<string, string> = new Map(Object.entries(
     {
         PLANK: 'Plank',
@@ -72,14 +82,7 @@ const MATERIAL_LABELS: Map<string, string> = new Map(Object.entries(
     }
 ))
 
-interface HeadquarterInfoProps {
-    house: HouseInformation
-    nation: Nation
-
-    onRaise: (() => void)
-    onClose: (() => void)
-}
-
+// React components
 const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoProps) => {
     const [panel, setPanel] = useState<'INVENTORY' | 'RESERVED' | 'MILITARY_SETTINGS'>('INVENTORY')
     const [strengthWhenPopulatingBuildings, setStrengthWhenPopulatingBuildings] = useState<number>(5)

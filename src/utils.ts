@@ -83,8 +83,6 @@ intToVegetationColor.set(22, [110, 57, 48])      // Lava 4
 intToVegetationColor.set(23, [140, 140, 140])  // Buildable mountain
 
 // Functions
-
-// FIXME: make a proper implementation
 function camelCaseToWords(camelCaseStr: string): string {
     return camelCaseStr.replace(/([A-Z])/g, ' $1').trim();
 }

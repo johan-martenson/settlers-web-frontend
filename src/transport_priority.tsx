@@ -7,7 +7,8 @@ import { Tooltip } from '@fluentui/react-components'
 import { InventoryIcon } from './icons/icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
 
-interface SetTransportPriorityProps {
+// Types
+type SetTransportPriorityProps = {
     gameId: GameId
     playerId: PlayerId
     nation: Nation
@@ -16,6 +17,7 @@ interface SetTransportPriorityProps {
     onClose: (() => void)
 }
 
+// Constants
 const CATEGORY_MATERIALS_MAP = new Map<TransportCategories, Material[]>()
 
 CATEGORY_MATERIALS_MAP.set('FOOD', ['BREAD', 'MEAT', 'FISH'])
@@ -35,6 +37,7 @@ CATEGORY_MATERIALS_MAP.set('PIG', ['PIG'])
 CATEGORY_MATERIALS_MAP.set('FLOUR', ['FLOUR'])
 CATEGORY_MATERIALS_MAP.set('BOAT', ['BOAT'])
 
+// React components
 const SetTransportPriority = ({ playerId, gameId, nation, onClose, onRaise }: SetTransportPriorityProps) => {
     const [selected, setSelected] = useState<TransportCategories>('PLANK')
     const [priority, setPriority] = useState<TransportCategories[]>(Array.from(TRANSPORT_CATEGORIES))

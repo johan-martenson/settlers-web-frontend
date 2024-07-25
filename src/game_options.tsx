@@ -3,7 +3,8 @@ import './game_options.css'
 import { Switch, Select, SelectOnChangeData, Subtitle1, Field, SwitchOnChangeData } from "@fluentui/react-components"
 import { ResourceLevel } from './api/types'
 
-interface GameOptionsProps {
+// Types
+type GameOptionsProps = {
     initialResources: ResourceLevel
     othersCanJoin: boolean
 
@@ -11,12 +12,14 @@ interface GameOptionsProps {
     setOthersCanJoin: ((otherCanJoin: boolean) => void)
 }
 
+// Constants
 const OPTIONS = new Map<ResourceLevel, string>()
 
 OPTIONS.set("LOW", "Sparse")
 OPTIONS.set("MEDIUM", "Medium")
 OPTIONS.set("HIGH", "Plenty")
 
+// React components
 const GameOptions = ({ othersCanJoin, setAvailableResources, setOthersCanJoin, ...props }: GameOptionsProps) => {
     let initialResources = 'High'
 

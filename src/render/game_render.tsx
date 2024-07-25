@@ -15,10 +15,7 @@ import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_R
 import { textures } from '../render/textures'
 import { ProgramDescriptor, ProgramInstance, draw, initProgram, setBuffer } from './utils'
 
-const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
-
-const OVERLAP_FACTOR = (16.0 / 47.0)
-
+// Types
 export type ScreenPoint = {
     x: number
     y: number
@@ -78,6 +75,50 @@ type RenderInformation = {
     textureMapping: number[]
 }
 
+type RenderState = {
+    previousTimestamp?: number
+    previous: number
+    overshoot: number
+
+    animationIndex: number
+    mapRenderInformation?: MapRenderInformation
+    gl?: WebGL2RenderingContext
+
+    newRoad?: NewRoad
+
+    // Draw directions
+    screenHeight: number
+    scale: number
+    translate: Point
+
+    selectedPoint?: Point
+    hoverPoint?: Point
+    newRoadCurrentLength: number
+
+    showHouseTitles: boolean
+    showAvailableConstruction: boolean
+
+    // Map of the normal for each point on the map
+    normals: PointMapFast<Vector>
+
+    // Drawing program instances
+    drawGroundProgramInstance?: ProgramInstance
+    drawRoadsProgramInstance?: ProgramInstance
+    drawImageProgramInstance?: ProgramInstance
+    drawShadowProgramInstance?: ProgramInstance
+    fogOfWarProgramInstance?: ProgramInstance
+
+    allPointsVisibilityTracking: PointMapFast<TrianglesAtPoint>
+    once: boolean
+}
+
+// Constants
+const MAX_NUMBER_TRIANGLES = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
+
+const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
+
+const OVERLAP_FACTOR = (16.0 / 47.0)
+
 const ANIMATION_PERIOD = 100
 
 const MOUSE_STYLES = new Map<CursorState, string>()
@@ -87,14 +128,9 @@ MOUSE_STYLES.set('DRAGGING', 'url(assets/cursors/cursor-move.png), auto')
 MOUSE_STYLES.set('BUILDING_ROAD', "url(assets/cursors/cursor-build-road.png), auto")
 MOUSE_STYLES.set('BUILDING_ROAD_PRESSED', "url(assets/cursors/cursor-build-road-pressed.png), auto")
 
-let timer: ReturnType<typeof setTimeout>
-
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
 
-let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
-
-const maxNumberTriangles = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
-
+// Web gl program definitions
 const drawGroundProgramDescriptor: ProgramDescriptor = {
     vertexShaderSource: textureAndLightingVertexShader,
     fragmentShaderSource: textureAndLightingFragmentShader,
@@ -109,15 +145,15 @@ const drawGroundProgramDescriptor: ProgramDescriptor = {
     },
     attributes: {
         'a_coords': {
-            maxElements: maxNumberTriangles * 3 * 3,
+            maxElements: MAX_NUMBER_TRIANGLES * 3 * 3,
             elementsPerVertex: 3
         },
         'a_normal': {
-            maxElements: maxNumberTriangles * 3 * 3,
+            maxElements: MAX_NUMBER_TRIANGLES * 3 * 3,
             elementsPerVertex: 3
         },
         'a_texture_mapping': {
-            maxElements: maxNumberTriangles * 3 * 2,
+            maxElements: MAX_NUMBER_TRIANGLES * 3 * 2,
             elementsPerVertex: 2
         }
     }
@@ -249,43 +285,13 @@ type FogOfWarUniforms = {
 
 type FogOfWarAttributes = 'a_coordinates' | 'a_intensity'
 
-type RenderState = {
-    previousTimestamp?: number
-    previous: number
-    overshoot: number
 
-    animationIndex: number
-    mapRenderInformation?: MapRenderInformation
-    gl?: WebGL2RenderingContext
+// State
+let timer: ReturnType<typeof setTimeout>
 
-    newRoad?: NewRoad
+let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
 
-    // Draw directions
-    screenHeight: number
-    scale: number
-    translate: Point
-
-    selectedPoint?: Point
-    hoverPoint?: Point
-    newRoadCurrentLength: number
-
-    showHouseTitles: boolean
-    showAvailableConstruction: boolean
-
-    // Map of the normal for each point on the map
-    normals: PointMapFast<Vector>
-
-    // Drawing program instances
-    drawGroundProgramInstance?: ProgramInstance
-    drawRoadsProgramInstance?: ProgramInstance
-    drawImageProgramInstance?: ProgramInstance
-    drawShadowProgramInstance?: ProgramInstance
-    fogOfWarProgramInstance?: ProgramInstance
-
-    allPointsVisibilityTracking: PointMapFast<TrianglesAtPoint>
-    once: boolean
-}
-
+// React components
 function GameCanvas({
     cursor,
     newRoad,

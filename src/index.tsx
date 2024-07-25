@@ -10,8 +10,21 @@ import { monitor } from './api/ws-api'
 import { GameCreator } from './game_creator'
 import { getFreeColor } from './utils'
 
+// Types
 type PlayState = 'ENTER_PLAYER_INFORMATION' | 'LOBBY' | 'PLAY_GAME' | 'CREATE_GAME'
 
+// Constants
+const useStyles = makeStyles({
+    wrapper: {
+        backgroundColor: tokens.colorNeutralBackground2,
+        width: '100%',
+        height: '100%'
+    }
+})
+
+const container = document.getElementById('root')
+
+// React components
 function GameInit() {
     const [state, setState] = useState<PlayState>('ENTER_PLAYER_INFORMATION')
     const [player, setPlayer] = useState<PlayerInformation>()
@@ -154,7 +167,6 @@ function GameInit() {
     )
 }
 
-const container = document.getElementById('root')
 
 if (container) {
     const root = createRoot(container)
@@ -166,14 +178,6 @@ if (container) {
             </AppWrapper>
         </FluentProvider>)
 }
-
-const useStyles = makeStyles({
-    wrapper: {
-        backgroundColor: tokens.colorNeutralBackground2,
-        width: '100%',
-        height: '100%'
-    }
-})
 
 function AppWrapper({ children }: PropsWithChildren) {
     const className = useStyles()

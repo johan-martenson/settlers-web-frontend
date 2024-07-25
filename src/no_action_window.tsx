@@ -5,6 +5,7 @@ import { Point } from "./api/types"
 import { useState } from "react"
 import './no_action_window.css'
 
+// Types
 type NoActionWindowProps = {
     point: Point
     areHouseTitlesVisible: boolean
@@ -19,6 +20,7 @@ type NoActionWindowProps = {
     onClose: () => void
 }
 
+// React components
 function NoActionWindow({
     point,
     areHouseTitlesVisible,

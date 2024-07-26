@@ -1,4 +1,5 @@
-import { Direction, HouseInformation, SimpleDirection } from "./types"
+import { Direction, HouseInformation, PlayerId, SimpleDirection } from "./types"
+import { api } from "./ws-api"
 
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
     let compassDirection: Direction = 'NORTH_WEST'
@@ -42,6 +43,11 @@ function isEvacuated(house: HouseInformation): boolean {
     return house.evacuated
 }
 
+function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefined {
+    return Array.from(api.houses.values())
+        .find(house => house.type === 'Headquarter' && house.playerId === playerId)
+}
+
 export {
     simpleDirectionToCompassDirection,
     houseIsOccupied,
@@ -49,5 +55,6 @@ export {
     canBeEvacuated,
     canBeUpgraded,
     isMilitaryBuilding,
-    isEvacuated
+    isEvacuated,
+    getHeadquarterForPlayer
 }

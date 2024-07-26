@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Window } from './components/dialog'
 import './transport_priority.css'
-import { Material, Nation, TransportCategories, TRANSPORT_CATEGORIES } from './api/types'
+import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from './api/types'
 import { Tooltip } from '@fluentui/react-components'
 import { InventoryIcon } from './icons/icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
@@ -16,7 +16,7 @@ type SetTransportPriorityProps = {
 }
 
 // Constants
-const CATEGORY_MATERIALS_MAP = new Map<TransportCategories, Material[]>()
+const CATEGORY_MATERIALS_MAP = new Map<TransportCategory, Material[]>()
 
 CATEGORY_MATERIALS_MAP.set('FOOD', ['BREAD', 'MEAT', 'FISH'])
 CATEGORY_MATERIALS_MAP.set('WEAPONS', ['SWORD', 'SHIELD'])
@@ -37,18 +37,28 @@ CATEGORY_MATERIALS_MAP.set('BOAT', ['BOAT'])
 
 // React components
 const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriorityProps) => {
-    const [selected, setSelected] = useState<TransportCategories>('PLANK')
-    const [priority, setPriority] = useState<TransportCategories[]>(Array.from(TRANSPORT_CATEGORIES))
+    const [selected, setSelected] = useState<TransportCategory>('PLANK')
+    const [priority, setPriority] = useState<TransportCategory[]>(api.transportPriority ?? Array.from(TRANSPORT_CATEGORIES))
+    const [hoverInfo, setHoverInfo] = useState<string>()
 
     useEffect(
         () => {
-            // Read current transport priorities
+            async function readCurrentPriorities() {
+                const listener = (priority: TransportCategory[]) => {
+                    console.log('Updating transport priority')
+                    setPriority(priority)
+                }
 
-            // Listen for changes
+                api.addTransportPriorityListener(listener)
+
+                return () => api.removeTransportPriorityListener(listener)
+            }
+
+            readCurrentPriorities()
         }, []
     )
 
-    async function increasePriority(category: TransportCategories): Promise<void> {
+    async function increasePriority(category: TransportCategory): Promise<void> {
         const currentPriority = priority.findIndex(e => e === category)
 
         console.log("Current priority for " + category + ": " + currentPriority)
@@ -57,50 +67,39 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
             return
         }
 
-        const updatedPriority = Object.assign([], priority)
-
-        await api.setTransportPriorityForMaterial(category, currentPriority - 1)
-
-        delete updatedPriority[currentPriority]
-
-        updatedPriority.splice(currentPriority - 1, 0, category)
-
-        setPriority(updatedPriority)
+        api.setTransportPriorityForMaterial(category, currentPriority - 1)
     }
 
-    async function decreasePriority(category: TransportCategories): Promise<void> {
+    async function decreasePriority(category: TransportCategory): Promise<void> {
         const currentPriority = priority.findIndex(e => e === category)
 
         console.log("Current priority for " + category + ": " + currentPriority)
 
-        if (currentPriority == TRANSPORT_CATEGORIES.size) {
+        if (currentPriority === TRANSPORT_CATEGORIES.size) {
             return
         }
 
-        const updatedPriority = Object.assign([], priority)
-
-        await api.setTransportPriorityForMaterial(category, currentPriority + 1)
-
-        delete updatedPriority[currentPriority]
-
-        updatedPriority.splice(currentPriority + 2, 0, category)
-
-        setPriority(updatedPriority)
+        api.setTransportPriorityForMaterial(category, currentPriority + 1)
     }
 
     return (
-        <Window heading="Transport priority" onClose={onClose} onRaise={onRaise}>
+        <Window heading="Transport priority" onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
             <div className='transport-priority-list'>
                 {priority.map(
                     category => {
                         const icon = <Tooltip content={category} relationship={'label'} withArrow>
-                            <div style={{ display: 'inline' }} onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
-                                if (event.code === 'ArrowUp') {
-                                    increasePriority(selected)
-                                } else if (event.code === 'ArrowDown') {
-                                    decreasePriority(selected)
-                                }
-                            }}
+                            <div
+                                style={{ display: 'inline' }}
+                                onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+                                    if (event.code === 'ArrowUp') {
+                                        increasePriority(selected)
+                                    } else if (event.code === 'ArrowDown') {
+                                        decreasePriority(selected)
+                                    }
+                                }}
+                                onMouseEnter={() => setHoverInfo(`Set priority for ${category.toLocaleLowerCase()}`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+
                                 tabIndex={-1}
                             >{CATEGORY_MATERIALS_MAP.get(category)?.map(material =>
                                 <InventoryIcon material={material} nation={nation} inline key={material} />
@@ -109,9 +108,21 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
                         </Tooltip>
 
                         if (selected === category) {
-                            return <div key={category}>{icon}<ArrowSortUp24Filled
-                                onClick={async () => increasePriority(selected)} />
-                                <ArrowSortDown24Filled onClick={async () => decreasePriority(selected)} /></div>
+                            return (
+                                <div key={category}>
+                                    {icon}
+                                    <ArrowSortUp24Filled
+                                        onClick={async () => increasePriority(selected)}
+                                        onMouseEnter={() => setHoverInfo(`Raise priority`)}
+                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                    />
+                                    <ArrowSortDown24Filled
+                                        onClick={async () => decreasePriority(selected)}
+                                        onMouseEnter={() => setHoverInfo(`Lower priority`)}
+                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                    />
+
+                                </div>)
                         }
 
                         return <div onClick={() => setSelected(category)} key={category}>{icon}</div>

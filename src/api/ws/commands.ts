@@ -1,5 +1,5 @@
 import { PointMapFast } from "../../util_types"
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, Vegetation, WildAnimalInformation, AttackType, TransportCategories, TerrainInformation, ProductionStatistics, LandStatistics } from "../types"
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, Vegetation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
@@ -88,6 +88,7 @@ export type PlayerViewInformation = {
     map: MapInformation
     othersCanJoin: boolean
     initialResources: ResourceLevel
+    transportPriority: TransportCategory[]
 }
 
 type PossibleNewRoad = {
@@ -176,7 +177,10 @@ enum Command {
     SetTransportPriority = 'SET_TRANSPORT_PRIORITY',
     GetTerrain = 'GET_TERRAIN',
     GetGameStatistics = 'GET_PRODUCTION_STATISTICS',
-    GetLandStatistics = 'GET_LAND_STATISTICS'
+    GetLandStatistics = 'GET_LAND_STATISTICS',
+    GetTransportPriority = 'GET_TRANSPORT_PRIORITY',
+    StartMonitoringTransportPriority = 'START_MONITORING_TRANSPORT_PRIORITY',
+    StopMonitoringTransportPriority = 'STOP_MONITORING_TRANSPORT_PRIORITY'
 }
 
 // Type functions
@@ -229,8 +233,12 @@ async function getProductionStatistics(): Promise<ProductionStatistics> {
     return (await sendRequestAndWaitForReply<{ productionStatistics: ProductionStatistics }>(Command.GetGameStatistics)).productionStatistics
 }
 
-function setTransportPriorityForMaterial(category: TransportCategories, priority: number): void {
-    sendWithOptions<{ category: TransportCategories, priority: number }>(Command.SetTransportPriority, { category, priority })
+async function getTransportPriority(): Promise<TransportCategory[]> {
+    return (await sendRequestAndWaitForReply<{ priority: TransportCategory[] }>(Command.GetTransportPriority)).priority
+}
+
+function setTransportPriorityForMaterial(category: TransportCategory, priority: number): void {
+    sendWithOptions<{ category: TransportCategory, priority: number }>(Command.SetTransportPriority, { category, priority })
 }
 
 /**
@@ -736,5 +744,6 @@ export {
     setTransportPriorityForMaterial,
     getTerrainForMap,
     getProductionStatistics,
-    getLandStatistics
+    getLandStatistics,
+    getTransportPriority,
 }

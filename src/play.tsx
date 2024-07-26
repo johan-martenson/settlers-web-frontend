@@ -7,7 +7,7 @@ import GameMessagesViewer from './game_messages_viewer'
 import { CursorState, GameCanvas } from './render/game_render'
 import Guide from './guide'
 import MenuButton from './menu_button'
-import { GameListener, getHeadquarterForPlayer, api } from './api/ws-api'
+import { GameListener, api } from './api/ws-api'
 import MusicPlayer from './sound/music_player'
 import Statistics from './statistics'
 import { printVariables } from './stats'
@@ -29,7 +29,7 @@ import { ButtonRow } from './components/dialog'
 import { Button } from '@fluentui/react-components'
 import { NoActionWindow } from './no_action_window'
 import { ExpandChatBox } from './chat/chat'
-import { canBeUpgraded } from './api/utils'
+import { canBeUpgraded, getHeadquarterForPlayer } from './api/utils'
 
 // Types
 type HouseWindow = {

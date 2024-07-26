@@ -1,7 +1,7 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources } from './ws/commands'
+import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory } from './types'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
@@ -28,11 +28,6 @@ function getHeight(point: Point): number {
 
 function houseAt(point: Point): HouseInformation | undefined {
     return api.housesAt.get(point)
-}
-
-function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefined {
-    return Array.from(api.houses.values())
-        .find(house => house.type === 'Headquarter' && house.playerId === playerId)
 }
 
 function getInformationOnPointLocal(point: Point): PointInformationLocal {
@@ -188,6 +183,7 @@ type PlayerViewChanges = {
     removedDecorations?: Point[]
     newDecorations?: PointAndDecoration[]
     removedMessages?: GameMessageId[]
+    transportPriority?: TransportCategory[]
 }
 
 type GameInformationChangedMessage = { gameInformation: GameInformation }
@@ -255,6 +251,8 @@ export type FlagListener = {
     onUpdate: (flag: FlagInformation) => void
     onRemove: () => void
 }
+
+export type TransportPriorityListener = (priority: TransportCategory[]) => void
 
 export type GameListener = {
     onMonitoringStarted?: () => void
@@ -351,6 +349,7 @@ const api = {
     gameSpeed: 'NORMAL' as GameSpeed,
     gameName: '',
     chatRoomMessages: [] as ChatMessage[],
+    transportPriority: undefined as TransportCategory[] | undefined,
 
     housesAt: new PointMapFast<HouseInformation>(),
 
@@ -405,7 +404,10 @@ const api = {
     removeMessagesListener,
     removeMessage,
     removeMessages,
+    getTransportPriority,
     setTransportPriorityForMaterial,
+    addTransportPriorityListener,
+    removeTransportPriorityListener,
 
     // Player - military
     setReservedSoldiers,
@@ -513,6 +515,7 @@ const gamesListeners: Set<GameListListener> = new Set<GameListListener>()
 const workerMovedListeners: Set<WorkerMoveListener> = new Set<WorkerMoveListener>()
 const chatListeners: Set<ChatListener> = new Set<ChatListener>()
 const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagListener>>()
+const transportPriorityListeners: Set<TransportPriorityListener> = new Set
 
 // State - misc
 const objectsWithDetailedMonitoring = new Set<HouseId | FlagId>()
@@ -608,6 +611,14 @@ function removeChatMessagesListener(listener: ChatListener): void {
 
 function addMovementForWorkerListener(listener: WorkerMoveListener): void {
     workerMovedListeners.add(listener)
+}
+
+function addTransportPriorityListener(listener: TransportPriorityListener): void {
+    transportPriorityListeners.add(listener)
+}
+
+function removeTransportPriorityListener(listener: TransportPriorityListener): void {
+    transportPriorityListeners.delete(listener)
 }
 
 function addHouseListener(houseId: HouseId, houseListener: HouseListener): void {
@@ -790,6 +801,12 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
 
     message.decorations.forEach(decoration => api.decorations.set({ x: decoration.x, y: decoration.y }, decoration))
 
+    const changedTransportPriority = ('transportPriority' in message)
+
+    if (message.transportPriority) {
+        api.transportPriority = message.transportPriority
+    }
+
     for (const borderInformation of message.borders) {
         const player = api.players.get(borderInformation.playerId)
 
@@ -827,6 +844,12 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
 
     if (previousGameState !== api.gameState) {
         gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(api.gameState))
+    }
+
+    if (changedTransportPriority && api.transportPriority) {
+        for (const listener of transportPriorityListeners) {
+            listener(api.transportPriority)
+        }
     }
 }
 
@@ -1299,6 +1322,11 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
         }
     }
 
+    const transportPriorityChanged = ('transportPriority' in playerViewChanges)
+    if (playerViewChanges.transportPriority) {
+        api.transportPriority = playerViewChanges.transportPriority
+    }
+
     /* Finally, notify listeners when all data is updated */
     if (playerViewChanges.newDiscoveredLand) {
         const newDiscoveredLand = new PointSetFast(playerViewChanges.newDiscoveredLand)
@@ -1330,6 +1358,12 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     if (playerViewChanges.changedBuildings) {
         notifyHouseListeners(playerViewChanges.changedBuildings)
+    }
+
+    if (transportPriorityChanged && api.transportPriority) {
+        for (const listener of transportPriorityListeners) {
+            listener(api.transportPriority)
+        }
     }
 }
 
@@ -1725,6 +1759,5 @@ async function waitForGameDataAvailable(): Promise<void> {
 }
 
 export {
-    getHeadquarterForPlayer,
     api
 }

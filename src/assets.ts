@@ -1015,8 +1015,7 @@ class WorkerImageAtlasHandler {
         } else {
             if (!reported.has(action)) {
 
-                console.error('FOUND NO ACTION: ')
-                console.error([this.name, action, direction])
+                console.error(`FOUND NO ACTION: name: ${this.name}, nation: ${nation}, direction: ${direction}, action: ${action}, color: ${color}`)
 
                 reported.add(action)
             }

@@ -6,7 +6,7 @@
 const textureAndLightingVertexShader = /* glsl */`#version 300 es
 precision highp float;
 
-in vec3 a_coords;   // game coordinate (x, y)
+in vec3 a_coords;   // game coordinate (x, y, z)
 in vec3 a_normal;
 in vec2 a_texture_mapping;
 

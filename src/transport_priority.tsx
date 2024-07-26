@@ -87,8 +87,11 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
             <div className='transport-priority-list'>
                 {priority.map(
                     category => {
+                        const className = selected === category ? 'chosen-material' : 'material'
+                    
                         const icon = <Tooltip content={category} relationship={'label'} withArrow>
                             <div
+                                className={className}
                                 style={{ display: 'inline' }}
                                 onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
                                     if (event.code === 'ArrowUp') {

@@ -112,6 +112,10 @@ type RenderState = {
     once: boolean
 }
 
+type DoubleClickDetection = {
+    timer?: ReturnType<typeof setTimeout> | undefined
+}
+
 // Constants
 const MAX_NUMBER_TRIANGLES = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 
@@ -287,8 +291,6 @@ type FogOfWarAttributes = 'a_coordinates' | 'a_intensity'
 
 
 // State
-let timer: ReturnType<typeof setTimeout>
-
 let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
 
 // React components
@@ -336,6 +338,7 @@ function GameCanvas({
 
     // eslint-disable-next-line
     const [renderState, setRenderState] = useState<RenderState>(initRenderState)
+    const [doubleClickDetection, setDoubleClickDetection] = useState<DoubleClickDetection>({})
 
     // Run once on mount
     useEffect(
@@ -2064,14 +2067,14 @@ function GameCanvas({
 
         // Distinguish between single and doubleclick
         if (event.detail === 1) {
-            timer = setTimeout(() => {
+            doubleClickDetection.timer = setTimeout(() => {
                 event.currentTarget = currentTarget
 
                 onClick(event)
             }, 200)
         } else {
-            if (timer) {
-                clearTimeout(timer)
+            if (doubleClickDetection.timer) {
+                clearTimeout(doubleClickDetection.timer)
             }
 
             event.currentTarget = currentTarget

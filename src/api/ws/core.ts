@@ -1,4 +1,10 @@
-// RPC Core
+/**
+ * RPC Core: contains handling of the websocket connection to the backend and
+ * messaging functions to send one-way and request-reply messages.
+ *
+ * Provides listener interfaces to follow the connection status and received messages.
+ */
+
 
 import { delay } from "../../utils"
 
@@ -29,7 +35,7 @@ function isReplyMessage(message: unknown): message is ReplyMessage {
 }
 
 // Configuration
-export const wsApiDebugSettings = {
+export const wsApiCoreDebugSettings = {
     receive: false,
     send: false
 }
@@ -150,7 +156,7 @@ async function connectAndWaitForConnection(): Promise<void> {
 // It should ensure the connection status is 'CONNECTED' before resolving
 
 /**
- * Closes the connection to the WS backend.
+ * Closes the connection to the WS backend. Used to test the error case when the connection is broken.
  */
 function killWebsocket(): void {
     websocket?.close()
@@ -181,7 +187,7 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
 
     websocket?.send(JSON.stringify(message))
 
-    wsApiDebugSettings.send && console.log(`Send request: ${command} with id: ${requestId}`)
+    wsApiCoreDebugSettings.send && console.log(`Send request: ${command} with id: ${requestId}`)
 
     const startTime = Date.now()
     let elapsed = 0
@@ -221,7 +227,7 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
 
     websocket?.send(JSON.stringify({ command, requestId }))
 
-    wsApiDebugSettings.send && console.log(`Send request: ${command} with id: ${requestId}`)
+    wsApiCoreDebugSettings.send && console.log(`Send request: ${command} with id: ${requestId}`)
 
     const startTime = Date.now()
     let elapsed = 0
@@ -255,7 +261,7 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
 function send(command: string): void {
     const message = JSON.stringify({ command })
 
-    if (wsApiDebugSettings) {
+    if (wsApiCoreDebugSettings) {
         console.log(`SEND: ${message}`)
     }
 
@@ -270,7 +276,7 @@ function send(command: string): void {
 function sendWithOptions<Options>(command: string, options: Options): void {
     const message = JSON.stringify({ command, ...options })
 
-    if (wsApiDebugSettings) {
+    if (wsApiCoreDebugSettings.send) {
         console.log(`SEND: ${message}`)
     }
 
@@ -282,20 +288,20 @@ function sendWithOptions<Options>(command: string, options: Options): void {
  * @param {MessageEvent<any>} messageFromServer The message event received from the server.
  */
 // eslint-disable-next-line
-function websocketMessageReceived(messageFromServer: MessageEvent<any>): void {
+function handleMessage(messageFromServer: MessageEvent<any>): void {
     try {
         const message = JSON.parse(messageFromServer.data)
 
-        if (wsApiDebugSettings.receive) {
+        if (wsApiCoreDebugSettings.receive) {
             console.log(`Received message: ${JSON.stringify(message)}`)
         }
 
         if (isReplyMessage(message)) {
-            wsApiDebugSettings.receive && console.log('Handling reply message')
+            wsApiCoreDebugSettings.receive && console.log('Handling reply message')
 
             pendingReplies.set(message.requestId, message)
         } else {
-            wsApiDebugSettings.receive && console.log('Notifying listeners')
+            wsApiCoreDebugSettings.receive && console.log('Notifying listeners')
 
             messageListeners.forEach(listener => listener(message))
         }
@@ -348,10 +354,13 @@ function handleClose(event: CloseEvent): void {
     (async () => attemptReconnect)().then()
 }
 
+/**
+ * Tries to reconnet to the backend when the connection has been lost.
+ */
 async function attemptReconnect(): Promise<void> {
     for (let i = 0; i < 100; i++) {
         try {
-            connectAndWaitForConnection()
+            await connectAndWaitForConnection()
 
             console.log('Succeeded to reconnect')
 
@@ -373,10 +382,6 @@ function handleError(event: Event): void {
     notifyConnectionListeners('NOT_CONNECTED');
 
     (async () => attemptReconnect)().then()
-}
-
-function handleMessage(message: MessageEvent): void {
-    websocketMessageReceived(message)
 }
 
 /**

@@ -307,6 +307,9 @@ function isGameChangesMessage(message: unknown): message is PlayerViewChangedMes
 }
 
 // Configuration
+export const wsApiDebugSettings = {
+    receive: false
+}
 
 // State
 let gameTickLength = 200;
@@ -544,27 +547,37 @@ function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
 
 // eslint-disable-next-line
 function onMessageReceived(message: any): void {
-    console.log(`WS API: Got message: ${JSON.stringify(message)}`)
+    if (wsApiDebugSettings.receive) {
+        console.log(`WS API: Got message: ${JSON.stringify(message)}`)
+    }
 
     try {
         if (isGameChangesMessage(message)) {
-            console.log('Handling player view changed message')
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling player view changed message')
+            }
 
             loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
         } else if (isGameInformationChangedMessage(message)) {
-            console.log('Handling game information changed message')
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling game information changed message')
+            }
 
             handleGameInformationChangedMessage(message.gameInformation)
         } else if (isGameListChangedMessage(message)) {
-            console.log('Handling game list changed messgae')
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling game list changed messgae')
+            }
 
             receivedGameListChangedMessage(message)
         } else if (isChatMessage(message)) {
-            console.log('Handling chat message')
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling chat message')
+            }
 
             loadChatMessage(message.chatMessage)
         } else {
-            console.error('Do not know how to handle this')
+            console.error(`Do not know how to handle this: ${JSON.stringify(message)}`)
         }
     } catch (e) {
         console.error(e)

@@ -138,7 +138,9 @@ Todo 1.0
 
 28. Large stone (`PILE_OF_STONES`) where it's possible to place a flag and thus remove the stone
 
-29. Set speed is broken
+29. Find_new_road - timed out
+
+30. Should woodcutter always pick the closest trees first?
 
 Todo 2.0
 ========

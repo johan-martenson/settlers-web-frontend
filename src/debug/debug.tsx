@@ -6,7 +6,7 @@ import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, Switc
 import { VEGETATION } from "./translate"
 import { Window } from '../components/dialog'
 import { glUtilsDebug } from "../render/utils"
-import { wsApiDebugSettings } from "../api/ws/core"
+import { wsApiCoreDebugSettings } from "../api/ws/core"
 
 // Types
 type DebugProps = {
@@ -27,16 +27,16 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
     const [flagInformation, setFlagInformation] = useState<FlagDebugInfo>()
     const [pointInformation, setPointInformation] = useState<PointInformation>()
     const [gameInformation, setGameInformation] = useState<GameInformation>()
-    const [wsApiReceiveDebug, setWsApiReceiveDebug] = useState<boolean>(wsApiDebugSettings.receive)
-    const [wsApiSendDebug, setWsApiSendDebug] = useState<boolean>(wsApiDebugSettings.send)
+    const [wsApiReceiveDebug, setWsApiReceiveDebug] = useState<boolean>(wsApiCoreDebugSettings.receive)
+    const [wsApiSendDebug, setWsApiSendDebug] = useState<boolean>(wsApiCoreDebugSettings.send)
     const [glUtilsDebugSetBuffer, setGlUtilsDebugSetBuffer] = useState<boolean>(glUtilsDebug.setBuffer)
     const [glUtilsDebugDraw, setGlUtilsDebugDraw] = useState<boolean>(glUtilsDebug.draw)
     const [glUtilsDebugInitProgram, setGlUtilsDebugInitProgram] = useState<boolean>(glUtilsDebug.initProgram)
 
     useEffect(
         () => {
-            wsApiDebugSettings.receive = wsApiReceiveDebug
-            wsApiDebugSettings.send = wsApiSendDebug
+            wsApiCoreDebugSettings.receive = wsApiReceiveDebug
+            wsApiCoreDebugSettings.send = wsApiSendDebug
         }, [wsApiReceiveDebug, wsApiSendDebug]
     )
 

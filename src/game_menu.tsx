@@ -76,7 +76,11 @@ const GameMenu = (
             setGameSpeed(api.gameSpeed)
 
             const callback = {
-                onGameSpeedChanged: (gameSpeed: GameSpeed) => setGameSpeed(gameSpeed)
+                onGameSpeedChanged: (gameSpeed: GameSpeed) => {
+                    console.log(`NEW GAME SPEED: ${gameSpeed}`)
+
+                    setGameSpeed(gameSpeed)
+                }
             }
 
             api.addGameStateListener(callback)

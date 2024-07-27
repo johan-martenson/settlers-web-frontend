@@ -1,11 +1,11 @@
 // RPC Core
 
-import { delay } from "../../utils";
+import { delay } from "../../utils"
 
 // Constants
-export const MAX_WAIT_FOR_CONNECTION = 10_000; // milliseconds
+export const MAX_WAIT_FOR_CONNECTION = 10_000 // milliseconds
 
-const MAX_WAIT_FOR_REPLY = 1000; // milliseconds
+const MAX_WAIT_FOR_REPLY = 1000 // milliseconds
 
 // Types
 export type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
@@ -30,8 +30,8 @@ function isReplyMessage(message: unknown): message is ReplyMessage {
 
 // Configuration
 export const wsApiDebugSettings = {
-    receive: true,
-    send: true
+    receive: false,
+    send: false
 }
 
 // State

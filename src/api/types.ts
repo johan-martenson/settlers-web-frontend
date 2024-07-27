@@ -324,6 +324,8 @@ export type GameInformation = {
     map: MapInformation
     othersCanJoin: boolean
     initialResources: ResourceLevel
+    gameSpeed?: GameSpeed
+    tick?: number // milliseconds
 }
 
 export type MapInformation = {

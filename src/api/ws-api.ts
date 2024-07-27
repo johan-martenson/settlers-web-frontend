@@ -854,6 +854,7 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
 }
 
 function startTimers() {
+    console.log(`Starting timers with tick length: ${gameTickLength}`)
 
     // Drive worker animations
     workerAnimationsTimer = setInterval(async () => {
@@ -1027,6 +1028,8 @@ function startTimers() {
             }
         })
     }, gameTickLength * 10)
+
+    walkingTimerState = 'RUNNING'
 }
 
 function loadChatMessage(chatMessage: ChatMessage): void {
@@ -1053,13 +1056,32 @@ function clearAndLoadGameInformationAndCallListeners(gameInformation: GameInform
 
 async function loadGameInformationAndCallListeners(gameInformation: GameInformation): Promise<void> {
     const prevState = api.gameState
+    const prevSpeed = api.gameSpeed
 
     // Store the updated values
     assignGameInformation(gameInformation)
 
+    // Did the tick length change? Then change the dead-reckoning timers
+    if (gameInformation?.tick) {
+        stopTimers()
+
+        console.log(`Setting game tick length to: ${gameInformation.tick}`)
+
+        gameTickLength = gameInformation.tick
+
+        startTimers()
+    }
+
     // Call game state change listener
     if (prevState !== gameInformation.status) {
         gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(gameInformation.status))
+    }
+
+    // Call game speed change listener
+    if (prevSpeed !== gameInformation.gameSpeed && gameInformation.gameSpeed) {
+        for (const listener of gameListeners) {
+            listener.onGameSpeedChanged && listener.onGameSpeedChanged(gameInformation.gameSpeed)
+        }
     }
 
     // Call other listeners
@@ -1067,6 +1089,8 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
 }
 
 function stopTimers() {
+    console.log('Stopping walking timers')
+
     const timers = [workerAnimationsTimer, workerWalkingTimer, cropGrowerTimer, treeGrowerTimer]
 
     timers.forEach(timer => {
@@ -1074,6 +1098,8 @@ function stopTimers() {
             clearInterval(timer)
         }
     })
+
+    walkingTimerState = 'RUNNING'
 }
 
 function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformation): void {
@@ -1100,14 +1126,12 @@ function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformatio
 }
 
 function gameStateMightHaveChanged(gameState: GameState): void {
+    console.log(`Game state might have changed. Game state: ${gameState}, walking timer state: ${walkingTimerState}`)
+
     if (gameState === 'STARTED' && walkingTimerState !== 'RUNNING') {
         startTimers()
-
-        walkingTimerState = 'RUNNING'
     } else if (gameState === 'PAUSED' && walkingTimerState === 'RUNNING') {
         stopTimers()
-
-        walkingTimerState = 'NOT_RUNNING'
     }
 }
 
@@ -1118,15 +1142,6 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     api.roads.delete('LOCAL')
     api.flags.delete('LOCAL')
     api.houses.delete('LOCAL')
-
-    // Update game tick
-    if (playerViewChanges.tick !== undefined) {
-        stopTimers()
-
-        gameTickLength = playerViewChanges.tick
-
-        startTimers()
-    }
 
     // Update game speed
     if (playerViewChanges.gameSpeed) {
@@ -1678,8 +1693,11 @@ function assignGameInformation(gameInformation: GameInformation): void {
     api.map = gameInformation.map
     api.othersCanJoin = gameInformation.othersCanJoin
 
-    gameInformation.players.forEach(player => api.players.set(player.id, player))
+    if (gameInformation?.gameSpeed) {
+        api.gameSpeed = gameInformation.gameSpeed
+    }
 
+    gameInformation.players.forEach(player => api.players.set(player.id, player))
 }
 
 /**
@@ -1734,8 +1752,6 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
 
 function loadChatRoomHistoryAndCallListeners(chatRoomHistory: ChatMessage[]): void {
     chatRoomHistory.forEach(chatMessage => api.chatRoomMessages.push(chatMessage))
-
-    console.log(api.chatRoomMessages)
 
     chatListeners.forEach(listener => listener())
 }

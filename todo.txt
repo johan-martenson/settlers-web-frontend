@@ -107,35 +107,6 @@ Todo 1.0
     null
     org.appland.settlers.model.GameMap@5b78798d
 
-27. Missing action animations. (AFRICAN, ROMANS)
-
-    utils.ts:765 FOUND NO ACTION: 
-    utils.ts:766 
-    (3) ['private', 'HIT', 'WEST']
-    utils.ts:765 FOUND NO ACTION: 
-    utils.ts:766 
-    (3) ['private', 'JUMP_BACK', 'EAST']
-    ws-api.ts:1149 
-    (2) [{…}, {…}]
-    ws-api.ts:1149 
-    (2) [{…}, {…}]
-    ws-api.ts:1149 
-    (2) [{…}, {…}]
-    ws-api.ts:1149 
-    (2) [{…}, {…}]
-    utils.ts:765 FOUND NO ACTION: 
-    utils.ts:766 
-    (3) ['private', 'GET_HIT', 'WEST']
-    ws-api.ts:1149 
-    (2) [{…}, {…}]
-    ws-api.ts:1149 
-    (2) [{…}, {…}]
-    ws-api.ts:1149 
-    (2) [{…}, {…}]
-    utils.ts:765 FOUND NO ACTION: 
-    utils.ts:766 
-    (3) ['private', 'STAND_ASIDE', 'WEST']
-
 28. Large stone (`PILE_OF_STONES`) where it's possible to place a flag and thus remove the stone
 
 29. Find_new_road - timed out

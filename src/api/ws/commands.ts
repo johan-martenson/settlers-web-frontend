@@ -654,10 +654,19 @@ async function listenToGameMetadata(): Promise<GameInformation> {
     return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>(Command.ListenToGameInfo)).gameInformation
 }
 
+/**
+ * Instructs the backend to send messages when there are changes to the games list. This includes both
+ * adding/removing games, and changes to the metadata of existing games.
+ */
 function listenToGamesList(): void {
     send(Command.ListenToGameList)
 }
 
+/**
+ * Instructs the backend to send chat messages sent to the player and/or rooms to the API.
+ * @param playerId (optional) The id of the player to listen for chat messages to
+ * @param roomIds (optional) The id(s) of the room(s) to listen for chat messages to
+ */
 function listenToChatMessages(playerId: PlayerId, roomIds: RoomId[]): void {
     sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>(Command.ListenToChatMessages, { playerId, roomIds })
 }

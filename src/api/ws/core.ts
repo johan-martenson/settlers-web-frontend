@@ -37,7 +37,8 @@ function isReplyMessage(message: unknown): message is ReplyMessage {
 // Configuration
 export const wsApiCoreDebugSettings = {
     receive: false,
-    send: false
+    send: false,
+    connectionHandling: true
 }
 
 // State
@@ -94,7 +95,9 @@ async function waitForConnection(): Promise<void> {
 
     while (elapsed < MAX_WAIT_FOR_CONNECTION) {
         if (connectionStatus === 'CONNECTED') {
-            console.log('Connection is established')
+            if (wsApiCoreDebugSettings.connectionHandling) {
+                console.log('Connection is established')
+            }
 
             return
         }
@@ -117,20 +120,25 @@ async function waitForConnection(): Promise<void> {
  * @returns {Promise<void>}
  */
 async function connectAndWaitForConnection(): Promise<void> {
-    console.log('Connect and wait until the connection is ready.')
-    console.log(connectionStatus)
-    console.log(websocket)
+    if (wsApiCoreDebugSettings.connectionHandling) {
+        console.log(`Connect and wait until the connection is ready. Connection status: ${connectionStatus}, websocket ready state: ${websocket?.readyState}`)
+    }
 
     // Re-use the existing connection if possible
     if (connectionStatus === 'CONNECTED') {
-        console.log('Already connected')
+        if (wsApiCoreDebugSettings.connectionHandling) {
+            console.log('Already connected')
+        }
+
         return
     }
 
     try {
         const websocketUrl = makeWsConnectUrl()
 
-        console.info(`Websocket url: ${websocketUrl}`)
+        if (wsApiCoreDebugSettings.connectionHandling) {
+            console.info(`Websocket url: ${websocketUrl}`)
+        }
 
         websocket = new WebSocket(websocketUrl)
 
@@ -145,9 +153,12 @@ async function connectAndWaitForConnection(): Promise<void> {
         // Wait for the connection to be established
         await waitForConnection()
 
-        console.log(`Connected. ${connectionStatus}`)
+        if (wsApiCoreDebugSettings.connectionHandling) {
+            console.log(`Connected. ${connectionStatus}`)
+        }
     } catch (error) {
         console.error('Failed to establish a connection:', error)
+
         connectionStatus = 'NOT_CONNECTED'
     }
 }
@@ -183,11 +194,15 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
         ...options
     }
 
-    console.log(message)
+    if (wsApiCoreDebugSettings.send) {
+        console.log(message)
+    }
 
     websocket?.send(JSON.stringify(message))
 
-    wsApiCoreDebugSettings.send && console.log(`Send request: ${command} with id: ${requestId}`)
+    if (wsApiCoreDebugSettings.send) {
+        console.log(`Send request: ${command} with id: ${requestId}`)
+    }
 
     const startTime = Date.now()
     let elapsed = 0
@@ -201,7 +216,9 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
         if (reply) {
             pendingReplies.delete(requestId)
 
-            console.log(`Got reply: ${JSON.stringify(reply)} in ${elapsed} ms`)
+            if (wsApiCoreDebugSettings.send) {
+                console.log(`Got reply: ${JSON.stringify(reply)} in ${elapsed} ms`)
+            }
 
             if (reply?.error) {
                 throw new Error(reply.error)
@@ -225,9 +242,11 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
 async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyType> {
     const requestId = makeRequestId()
 
-    websocket?.send(JSON.stringify({ command, requestId }))
+    if (wsApiCoreDebugSettings.send) {
+        console.log(`Send request: ${command} with id: ${requestId}`)
+    }
 
-    wsApiCoreDebugSettings.send && console.log(`Send request: ${command} with id: ${requestId}`)
+    websocket?.send(JSON.stringify({ command, requestId }))
 
     const startTime = Date.now()
     let elapsed = 0
@@ -241,7 +260,9 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
         if (reply) {
             pendingReplies.delete(requestId)
 
-            console.log(`Got reply: ${JSON.stringify(reply)} in ${elapsed} ms`)
+            if (wsApiCoreDebugSettings.send) {
+                console.log(`Got reply: ${JSON.stringify(reply)} in ${elapsed} ms`)
+            }
 
             if (reply?.error) {
                 throw new Error(reply.error)
@@ -261,7 +282,7 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
 function send(command: string): void {
     const message = JSON.stringify({ command })
 
-    if (wsApiCoreDebugSettings) {
+    if (wsApiCoreDebugSettings.send) {
         console.log(`SEND: ${message}`)
     }
 
@@ -297,11 +318,15 @@ function handleMessage(messageFromServer: MessageEvent<any>): void {
         }
 
         if (isReplyMessage(message)) {
-            wsApiCoreDebugSettings.receive && console.log('Handling reply message')
+            if (wsApiCoreDebugSettings.receive) {
+                console.log('Handling reply message')
+            }
 
             pendingReplies.set(message.requestId, message)
         } else {
-            wsApiCoreDebugSettings.receive && console.log('Notifying listeners')
+            if (wsApiCoreDebugSettings.receive) {
+                console.log('Notifying listeners')
+            }
 
             messageListeners.forEach(listener => listener(message))
         }
@@ -335,7 +360,9 @@ function makeRequestId(): number {
  * Handles the open event for the WebSocket connection, setting the connection status to 'CONNECTED'.
  */
 function handleOpen(): void {
-    console.info('Websocket for subscription is open')
+    if (wsApiCoreDebugSettings.connectionHandling) {
+        console.info('Websocket for subscription is open')
+    }
 
     connectionStatus = 'CONNECTED'
     notifyConnectionListeners('CONNECTED')
@@ -346,7 +373,9 @@ function handleOpen(): void {
  * @param {CloseEvent} event The close event object.
  */
 function handleClose(event: CloseEvent): void {
-    console.error('Websocket was closed')
+    if (wsApiCoreDebugSettings.connectionHandling) {
+        console.error('Websocket was closed')
+    }
 
     connectionStatus = 'NOT_CONNECTED'
     notifyConnectionListeners('NOT_CONNECTED');
@@ -360,9 +389,15 @@ function handleClose(event: CloseEvent): void {
 async function attemptReconnect(): Promise<void> {
     for (let i = 0; i < 100; i++) {
         try {
+            if (wsApiCoreDebugSettings.connectionHandling) {
+                console.log('Attempting to reconnect')
+            }
+
             await connectAndWaitForConnection()
 
-            console.log('Succeeded to reconnect')
+            if (wsApiCoreDebugSettings.connectionHandling) {
+                console.log('Succeeded to reconnect')
+            }
 
             break
         } catch (error) {
@@ -376,7 +411,9 @@ async function attemptReconnect(): Promise<void> {
  * @param {Event} event The error event object.
  */
 function handleError(event: Event): void {
-    console.error('Websocket encountered an error')
+    if (wsApiCoreDebugSettings.connectionHandling) {
+        console.error('Websocket encountered an error')
+    }
 
     connectionStatus = 'NOT_CONNECTED'
     notifyConnectionListeners('NOT_CONNECTED');

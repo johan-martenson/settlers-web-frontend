@@ -37,8 +37,6 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
         onPlayerUpdated(updatedName, updatedNation, updatedColor)
     }
 
-    console.log(player)
-
     return (
         <Card>
             <CardHeader

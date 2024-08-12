@@ -163,9 +163,6 @@ async function connectAndWaitForConnection(): Promise<void> {
     }
 }
 
-// Assuming the function `waitForConnection` is defined elsewhere
-// It should ensure the connection status is 'CONNECTED' before resolving
-
 /**
  * Closes the connection to the WS backend. Used to test the error case when the connection is broken.
  */

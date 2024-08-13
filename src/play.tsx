@@ -13,7 +13,7 @@ import Statistics from './statistics'
 import { printVariables } from './stats'
 import { SetTransportPriority } from './transport_priority'
 import { TypeControl, Command } from './type_control'
-import { isRoadAtPoint, removeHouseOrFlagOrRoadAtPointWebsocket } from './utils'
+import { isRoadAtPoint } from './utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState, RoadId } from './api/types'
 import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon } from './icons/icon'
@@ -29,7 +29,7 @@ import { ButtonRow } from './components/dialog'
 import { Button } from '@fluentui/react-components'
 import { NoActionWindow } from './no_action_window'
 import { ExpandChatBox } from './chat/chat'
-import { canBeUpgraded, getHeadquarterForPlayer } from './api/utils'
+import { canBeUpgraded, getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint } from './api/utils'
 
 // Types
 type HouseWindow = {
@@ -542,7 +542,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     icon: <FlagIcon nation={nation} type="NORMAL" animate scale={0.7} color={color} />
                 })
                 commands.set("Remove (house, flag, or road)", {
-                    action: (point: Point) => removeHouseOrFlagOrRoadAtPointWebsocket(point, api),
+                    action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'building' &&
                         api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
                 })

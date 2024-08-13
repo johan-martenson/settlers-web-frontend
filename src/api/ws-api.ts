@@ -1772,12 +1772,7 @@ function loadChatRoomHistoryAndCallListeners(chatRoomHistory: ChatMessage[]): vo
 async function waitForGameDataAvailable(): Promise<void> {
     const startTime = Date.now()
 
-    while (true) {
-        if (Date.now() - startTime > MAX_WAIT_FOR_CONNECTION) {
-            console.error('Timed out waiting for game data to be available.')
-            throw new Error('Timed out')
-        }
-
+    while (Date.now() - startTime < MAX_WAIT_FOR_CONNECTION) {
         if (api.allTiles.size > 0) {
             console.log('Game data is available')
             return
@@ -1785,6 +1780,9 @@ async function waitForGameDataAvailable(): Promise<void> {
 
         await delay(5)
     }
+
+    console.error('Timed out waiting for game data to be available.')
+    throw new Error('Timed out')
 }
 
 export {

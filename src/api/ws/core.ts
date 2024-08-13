@@ -371,7 +371,7 @@ function handleOpen(): void {
  */
 function handleClose(event: CloseEvent): void {
     if (wsApiCoreDebugSettings.connectionHandling) {
-        console.error('Websocket was closed')
+        console.error(`Websocket was closed: ${event}`)
     }
 
     connectionStatus = 'NOT_CONNECTED'
@@ -409,7 +409,7 @@ async function attemptReconnect(): Promise<void> {
  */
 function handleError(event: Event): void {
     if (wsApiCoreDebugSettings.connectionHandling) {
-        console.error('Websocket encountered an error')
+        console.error(`Websocket encountered an error: ${event}`)
     }
 
     connectionStatus = 'NOT_CONNECTED'

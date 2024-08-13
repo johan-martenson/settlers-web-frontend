@@ -244,24 +244,6 @@ function isRoadAtPoint(point: Point, roads: Map<RoadId, RoadInformation>): boole
     )
 }
 
-async function removeHouseOrFlagOrRoadAtPointWebsocket(point: Point, monitor: any): Promise<void> {
-    const pointInformation = monitor.getInformationOnPointLocal(point)
-
-    console.log({ title: "Remove house/flag/road via websocket", localPointInformation: pointInformation })
-
-    if (pointInformation.is === "building") {
-        monitor.removeBuilding(pointInformation.buildingId)
-    }
-
-    if (pointInformation.is === 'flag') {
-        monitor.removeFlag(pointInformation.flagId)
-    }
-
-    if (pointInformation.is === 'road') {
-        monitor.removeRoad(pointInformation.roadId)
-    }
-}
-
 function same(point1: Point, point2: Point): boolean {
     return point1.x === point2.x && point1.y === point2.y
 }
@@ -699,7 +681,6 @@ export {
     makeShader,
     makeTextureFromImage,
     resizeCanvasToDisplaySize,
-    removeHouseOrFlagOrRoadAtPointWebsocket,
     pointStringToPoint,
     makeImageFromMap,
     canRemoveRoad,

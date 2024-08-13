@@ -1,4 +1,4 @@
-import { Direction, HouseInformation, PlayerId, SimpleDirection } from "./types"
+import { Direction, HouseInformation, PlayerId, Point, SimpleDirection } from "./types"
 import { api } from "./ws-api"
 
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
@@ -48,6 +48,24 @@ function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefin
         .find(house => house.type === 'Headquarter' && house.playerId === playerId)
 }
 
+async function removeHouseOrFlagOrRoadAtPoint(point: Point): Promise<void> {
+    const pointInformation = api.getInformationOnPointLocal(point)
+
+    console.log({ title: "Remove house/flag/road via websocket", localPointInformation: pointInformation })
+
+    if (pointInformation.is === "building") {
+        api.removeBuilding(pointInformation.buildingId)
+    }
+
+    if (pointInformation.is === 'flag') {
+        api.removeFlag(pointInformation.flagId)
+    }
+
+    if (pointInformation.is === 'road') {
+        api.removeRoad(pointInformation.roadId)
+    }
+}
+
 export {
     simpleDirectionToCompassDirection,
     houseIsOccupied,
@@ -56,5 +74,6 @@ export {
     canBeUpgraded,
     isMilitaryBuilding,
     isEvacuated,
-    getHeadquarterForPlayer
+    getHeadquarterForPlayer,
+    removeHouseOrFlagOrRoadAtPoint
 }

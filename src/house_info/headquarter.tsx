@@ -216,7 +216,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                         onMouseEnter={() => setHover(label)}
                                         onMouseLeave={() => setHover(undefined)}
                                     >
-                                        <InventoryIcon nation={nation} material={material} scale={1} label={material.toLowerCase()} />
+                                        <InventoryIcon nation={nation} material={material} scale={1} />
                                     </div>
                                 </Tooltip>
                                 {amount}

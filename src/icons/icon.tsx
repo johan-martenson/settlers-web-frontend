@@ -20,7 +20,6 @@ type WorkerIconProps = {
 type InventoryIconProps = {
     nation: Nation
     material: Material
-    label?: string
     scale?: number
     inline?: boolean
     missing?: boolean
@@ -30,7 +29,6 @@ type HouseProps = {
     nation: Nation
     houseType: AnyBuilding
     scale?: number
-    inline?: boolean
     drawShadow?: boolean
 }
 
@@ -284,7 +282,7 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false }: HousePr
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }
 
-const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false }: InventoryIconProps) => {
+const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false}: InventoryIconProps) => {
     const url = materialImageAtlasHandler.getInventoryIconUrl(nation, material)
 
     const displayStyle = inline ? 'inline' : 'block'

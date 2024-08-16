@@ -10,7 +10,7 @@ import { animals, borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtl
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from '../shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from '../shaders/terrain-and-roads'
-import { NewRoad, immediateUxState } from '../play'
+import { NewRoad } from '../play'
 import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, UNIT_SQUARE, vegetationToTextureMapping } from './constants'
 import { textures } from '../render/textures'
 import { ProgramDescriptor, ProgramInstance, draw, initProgram, setBuffer } from './utils'
@@ -45,7 +45,8 @@ type TrianglesAtPoint = {
     downRightVisible: boolean
 }
 
-type View = {
+export type View = {
+    screenSize: { width: number, height: number }
     scale: number
     translate: Point
 }
@@ -64,7 +65,7 @@ type GameCanvasProps = {
     showAvailableConstruction: boolean
     showHouseTitles: boolean
     showFpsCounter?: boolean
-    view?: View
+    view: View
     hideHoverPoint?: boolean
     hideSelectedPoint?: boolean
     heightAdjust: number
@@ -688,10 +689,8 @@ function GameCanvas({
         renderState.overshoot = timeSinceLastDraw % ANIMATION_PERIOD
         renderState.previous = now
 
-        if (view === undefined) {
-            renderState.scale = immediateUxState.scale
-            renderState.translate = immediateUxState.translate
-        }
+        renderState.scale = view.scale
+        renderState.translate = view.translate
 
         // Check if there are changes to the newRoads props array. In that case the buffers for drawing roads need to be updated.
         const newRoadsUpdatedLength = renderState.newRoad?.newRoad.length ?? 0

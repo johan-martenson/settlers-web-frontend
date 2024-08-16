@@ -30,6 +30,7 @@ import { Button } from '@fluentui/react-components'
 import { NoActionWindow } from './no_action_window'
 import { ExpandChatBox } from './chat/chat'
 import { canBeUpgraded, getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint } from './api/utils'
+import { calcTranslation } from './render/utils'
 
 // Types
 type HouseWindow = {
@@ -130,23 +131,9 @@ export const immediateUxState = {
     touchMoveOngoing: false,
     touchIdentifier: 0,
     translateAtMouseDown: { x: 0, y: 0 },
-    width: 0,
-    height: 0,
+    screenSize: { width: 0, height: 0 },
     translate: { x: 0, y: 0 },
     scale: DEFAULT_SCALE
-}
-
-// Functions
-function calcZoom(width: number, height: number, translate: { x: number, y: number }, prevScale: number, newScale: number) {
-    const centerGamePoint = {
-        x: (width / 2 - translate.x) / prevScale,
-        y: (height / 2 + translate.y) / (prevScale)
-    }
-
-    return {
-        x: width / 2 - centerGamePoint.x * newScale,
-        y: height / 2 - height + centerGamePoint.y * newScale
-    }
 }
 
 // React components
@@ -261,8 +248,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             function windowResizeListener(): void {
                 if (selfContainerRef.current) {
-                    immediateUxState.width = selfContainerRef.current.clientWidth
-                    immediateUxState.height = selfContainerRef.current.clientHeight
+                    immediateUxState.screenSize = {
+                        width: selfContainerRef.current.clientWidth,
+                        height: selfContainerRef.current.clientHeight
+                    }
 
                     setWindowHeight(selfContainerRef.current.clientHeight)
                 }
@@ -437,8 +426,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 setPlayer(api.players.get(selfPlayerId))
 
                 if (selfContainerRef.current) {
-                    immediateUxState.width = selfContainerRef.current.clientWidth
-                    immediateUxState.height = selfContainerRef.current.clientHeight
+                    immediateUxState.screenSize = {
+                        width: selfContainerRef.current.clientWidth,
+                        height: selfContainerRef.current.clientHeight
+                    }
 
                     setWindowHeight(selfContainerRef.current.clientHeight)
 
@@ -461,7 +452,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         () => {
             console.log('Use effect: start sound effects')
 
-            sfx.startEffects()
+            sfx.startEffects(immediateUxState)
 
             return () => {
                 console.log('Use effect: stop sound effects')
@@ -538,8 +529,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         const scaleY = immediateUxState.scale
 
         immediateUxState.translate = {
-            x: (immediateUxState.width / 2) - point.x * immediateUxState.scale,
-            y: (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
+            x: (immediateUxState.screenSize.width / 2) - point.x * immediateUxState.scale,
+            y: (immediateUxState.screenSize.height / 2) + point.y * scaleY - immediateUxState.screenSize.height
 
         }
     }, [])
@@ -549,8 +540,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             const scaleY = immediateUxState.scale
 
             setNewTranslatedAnimated({
-                x: (immediateUxState.width / 2) - point.x * immediateUxState.scale,
-                y: (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
+                x: (immediateUxState.screenSize.width / 2) - point.x * immediateUxState.scale,
+                y: (immediateUxState.screenSize.height / 2) + point.y * scaleY - immediateUxState.screenSize.height
             })
         } else {
             goToPoint(point)
@@ -571,24 +562,22 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         if (animateZoom) {
             animator.animate('ZOOM', (newScale) => {
-                immediateUxState.translate = calcZoom(
-                    immediateUxState.width,
-                    immediateUxState.height,
-                    immediateUxState.translate,
+                immediateUxState.translate = calcTranslation(
                     immediateUxState.scale,
-                    newScale
+                    newScale,
+                    immediateUxState.translate,
+                    immediateUxState.screenSize,
                 )
                 immediateUxState.scale = newScale
             },
                 immediateUxState.scale,
                 newScale)
         } else {
-            immediateUxState.translate = calcZoom(
-                immediateUxState.width,
-                immediateUxState.height,
-                immediateUxState.translate,
+            immediateUxState.translate = calcTranslation(
                 immediateUxState.scale,
-                newScale
+                newScale,
+                immediateUxState.translate,
+                immediateUxState.screenSize
             )
             immediateUxState.scale = newScale
         }
@@ -1030,6 +1019,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 showAvailableConstruction={showAvailableConstruction}
                 cursor={cursor}
                 heightAdjust={heightAdjust}
+                view={immediateUxState}
             />
 
             <MenuButton onMenuButtonClicked={() => setShowMenu(true)} />

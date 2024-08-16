@@ -10,29 +10,29 @@ function stringToPoint(pointAsString: string): Point {
 }
 
 function pointToFastKey(point: Point): number {
-    if (point.y >= 1000) {
-        throw new Error(`Cannot handle y values larger or equals to 1000. Value is: ${point.y}`)
+    if (point.y >= 1000 || point.y <= -1000) {
+        throw new Error(`Cannot handle y values outside of the range -1000 <= n <= 1000. Value is: ${point.y}`)
     }
 
-    if (point.y < 0) {
-        throw new Error(`Cannot handle y values under 0. Value is ${point.y}`)
+    if (point.x >= 1000 || point.x <= -1000) {
+        throw new Error(`Cannot handle x values outside of the range -1000 <= n <= 1000. Value is: ${point.x}`)
     }
 
-    if (point.x < 0) {
-        throw new Error(`Cannot handle x values under 0. Value is ${point.x}`)
-    }
+    const shiftedX = point.x + 1000
+    const shiftedY = point.y + 1000
 
-    return 1000 * point.x + point.y
+    // Pack the two values into a single 32-bit integer
+    return (shiftedX << 11) | shiftedY
 }
 
 function keyToFastPoint(key: number): Point {
-    const y = key % 1000
+    const shiftedX = (key >> 11) & 0x7FF // Mask with 0x7FF to keep only 11 bits
+    const shiftedY = key & 0x7FF
 
-    if (y < 0) {
-        throw new Error(`Got a negative y when doing key % 1000. Value is ${y}`)
-    }
+    // Shift the range back to [-1000, 1000]
+    const x = shiftedX - 1000
+    const y = shiftedY - 1000
 
-    const x = (key - y) / 1000
     return { x, y }
 }
 
@@ -59,7 +59,7 @@ class PointFastIterator implements IterableIterator<Point> {
         } else {
             return {
                 done: true,
-                value: {x: 2, y: 3}
+                value: { x: 2, y: 3 }
             }
         }
     }
@@ -90,7 +90,7 @@ class PointSetFastIterator implements IterableIterator<Point> {
         } else {
             return {
                 done: true,
-                value: {x: 2, y: 3}
+                value: { x: 2, y: 3 }
             }
         }
     }
@@ -249,7 +249,7 @@ class PointMapFast<T> implements Map<Point, T> {
     get size(): number {
         return this.numberToPointMap.size
     }
-    
+
     [Symbol.iterator](): IterableIterator<[Point, T]> {
         return this.entries()
     }

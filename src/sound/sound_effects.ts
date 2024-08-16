@@ -3,18 +3,19 @@ import { Action, HouseId, Point } from "../api/types"
 import { api } from "../api/ws-api"
 import { Sound } from "./utils"
 import { screenPointToGamePointNoHeightAdjustment } from "../utils"
+import { View } from "../render/game_render"
 
 // Types
 export type SoundEffect =
-| 'NEW-MESSAGE'
-| 'WOODCUTTER_CUTTING'
-| 'HAMMERING'
-| 'FORESTER_PLANTING'
-| 'STONEMASON_HACKING'
-| 'FIRE'
-| 'GEOLOGIST_FINDING'
-| 'GEOLOGIST_DIGGING'
-| 'FALLING_TREE'
+    | 'NEW-MESSAGE'
+    | 'WOODCUTTER_CUTTING'
+    | 'HAMMERING'
+    | 'FORESTER_PLANTING'
+    | 'STONEMASON_HACKING'
+    | 'FIRE'
+    | 'GEOLOGIST_FINDING'
+    | 'GEOLOGIST_DIGGING'
+    | 'FALLING_TREE'
 
 type SoundEffectsState = 'NOT_SUBSCRIBED' | 'RUNNING' | 'STOPPED'
 
@@ -76,6 +77,7 @@ let soundEffectsState: SoundEffectsState = 'NOT_SUBSCRIBED'
 let visibility: Visibility = { left: 0, right: 0, top: 0, bottom: 0 }
 let volume = 0
 let soundEffectsTimer: NodeJS.Timeout | undefined
+let view: View | undefined
 
 const ongoingEffects = new Map<string, OngoingEffect>()
 
@@ -96,10 +98,12 @@ function stopEffects(): void {
     clearInterval(soundEffectsTimer)
 }
 
-function startEffects(): void {
+function startEffects(viewToSet: View): void {
     if (soundEffectsState === 'RUNNING') {
         return
     }
+
+    view = viewToSet
 
     volume = DEFAULT_VOLUME
 
@@ -149,54 +153,60 @@ function startEffects(): void {
     soundEffectsState = 'RUNNING'
 
     soundEffectsTimer = setInterval(() => {
+        if (view === undefined) {
+            console.error('View is undefined')
 
-            // Keep track of what's visible on the screen
-            const upperLeftGamePoint = screenPointToGamePointNoHeightAdjustment(
-                { x: 0, y: 0 },
-                immediateUxState.translate.x,
-                immediateUxState.translate.y,
-                immediateUxState.scale,
-                immediateUxState.height)
-            const lowerRightGamePoint = screenPointToGamePointNoHeightAdjustment(
-                { x: immediateUxState.width, y: immediateUxState.height },
-                immediateUxState.translate.x,
-                immediateUxState.translate.y,
-                immediateUxState.scale,
-                immediateUxState.height)
+            return
+        }
 
-            visibility = {
-                left: upperLeftGamePoint.x,
-                right: lowerRightGamePoint.x,
-                top: upperLeftGamePoint.y,
-                bottom: lowerRightGamePoint.y
+
+        // Keep track of what's visible on the screen
+        const upperLeftGamePoint = screenPointToGamePointNoHeightAdjustment(
+            { x: 0, y: 0 },
+            view.translate.x,
+            view.translate.y,
+            view.scale,
+            view.screenSize.height)
+        const lowerRightGamePoint = screenPointToGamePointNoHeightAdjustment(
+            { x: view.screenSize.width, y: view.screenSize.height },
+            view.translate.x,
+            view.translate.y,
+            view.scale,
+            view.screenSize.height)
+
+        visibility = {
+            left: upperLeftGamePoint.x,
+            right: lowerRightGamePoint.x,
+            top: upperLeftGamePoint.y,
+            bottom: lowerRightGamePoint.y
+        }
+
+        // 1) Go through each ongoing actions
+        ongoingEffects.forEach((ongoingEffect, id) => {
+            const soundEffect = SOUND_EFFECTS.get(ongoingEffect.action)
+
+            // 2) Determine based on the timing of the action if it's time to make the sound
+            if (soundEffect &&
+                ongoingEffect.index === soundEffect.start &&
+                ongoingEffect.point.x > visibility.left &&
+                ongoingEffect.point.x < visibility.right &&
+                ongoingEffect.point.y < visibility.top &&
+                ongoingEffect.point.y > visibility.bottom) {
+                ongoingEffect.playing = play(soundEffect.audio, soundEffect.type === 'LOOPING')
             }
 
-            // 1) Go through each ongoing actions
-            ongoingEffects.forEach((ongoingEffect, id) => {
-                const soundEffect = SOUND_EFFECTS.get(ongoingEffect.action)
+            // 3) Step index
+            ongoingEffect.index += 1
 
-                // 2) Determine based on the timing of the action if it's time to make the sound
-                if (soundEffect &&
-                    ongoingEffect.index === soundEffect.start &&
-                    ongoingEffect.point.x > visibility.left &&
-                    ongoingEffect.point.x < visibility.right &&
-                    ongoingEffect.point.y < visibility.top &&
-                    ongoingEffect.point.y > visibility.bottom) {
-                    ongoingEffect.playing = play(soundEffect.audio, soundEffect.type === 'LOOPING')
+            if (soundEffect && ongoingEffect.index === soundEffect.animationLength) {
+                if (soundEffect.type === 'ONCE') {
+                    ongoingEffects.delete(id)
+                } else {
+                    ongoingEffect.index = 0
                 }
-
-                // 3) Step index
-                ongoingEffect.index += 1
-
-                if (soundEffect && ongoingEffect.index === soundEffect.animationLength) {
-                    if (soundEffect.type === 'ONCE') {
-                        ongoingEffects.delete(id)
-                    } else {
-                        ongoingEffect.index = 0
-                    }
-                }
-            })
-        }, 300)
+            }
+        })
+    }, 300)
 }
 
 function setSoundEffectsVolume(newVolume: number): void {

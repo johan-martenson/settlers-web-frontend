@@ -27,7 +27,7 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
                 onGameInformationChanged: (gameInformation: GameInformation) => setPlayers(gameInformation.players)
             }
 
-            async function startListening() {
+            async function startListening(): Promise<void> {
                 const { players } = await api.getGameInformation()
 
                 console.log(players)

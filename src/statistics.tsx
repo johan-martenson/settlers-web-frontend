@@ -36,7 +36,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
     const [playersToShow, setPlayersToShow] = useState<PlayerInformation[]>(Array.from(api.players.values()))
 
     useEffect(() => {
-        async function fetchData() {
+        async function fetchData(): Promise<void> {
             const productionStats = await api.getProductionStatistics()
             const landStats = await api.getLandStatistics()
 

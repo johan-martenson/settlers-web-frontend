@@ -10,7 +10,6 @@ import { delay } from "../../utils"
 
 // Constants
 export const MAX_WAIT_FOR_CONNECTION = 10_000 // milliseconds
-
 const MAX_WAIT_FOR_REPLY = 1000 // milliseconds
 
 // Types
@@ -28,8 +27,7 @@ type MessageListener = (message: unknown) => void
  * @returns {boolean} True if the message is a reply message, false otherwise.
  */
 function isReplyMessage(message: unknown): message is ReplyMessage {
-    return message !== undefined &&
-        message !== null &&
+    return message !== null &&
         typeof message === 'object' &&
         'requestId' in message
 }
@@ -42,9 +40,9 @@ export const wsApiCoreDebugSettings = {
 }
 
 // State
-const pendingReplies: Map<RequestId, ReplyMessage> = new Map()
-const connectionListeners: Set<ConnectionListener> = new Set()
-const messageListeners: Set<MessageListener> = new Set()
+const pendingReplies = new Map<RequestId, ReplyMessage>()
+const connectionListeners = new Set<ConnectionListener>()
+const messageListeners = new Set<MessageListener>()
 
 let websocket: WebSocket | undefined
 let nextRequestId = 0
@@ -91,9 +89,8 @@ function removeMessageListener(listener: MessageListener): void {
  */
 async function waitForConnection(): Promise<void> {
     const startTime = Date.now()
-    let elapsed = 0
 
-    while (elapsed < MAX_WAIT_FOR_CONNECTION) {
+    while (Date.now() - startTime < MAX_WAIT_FOR_CONNECTION) {
         if (connectionStatus === 'CONNECTED') {
             if (wsApiCoreDebugSettings.connectionHandling) {
                 console.log('Connection is established')
@@ -104,8 +101,6 @@ async function waitForConnection(): Promise<void> {
 
         // Wait a bit before checking again to reduce CPU usage
         await delay(100) // Wait 100 milliseconds before the next check
-
-        elapsed = Date.now() - startTime
     }
 
     // If we exit the loop, it means we've timed out
@@ -157,7 +152,7 @@ async function connectAndWaitForConnection(): Promise<void> {
             console.log(`Connected. ${connectionStatus}`)
         }
     } catch (error) {
-        console.error('Failed to establish a connection:', error)
+        console.error('Failed to establish a connection: ', error)
 
         connectionStatus = 'NOT_CONNECTED'
     }
@@ -191,22 +186,16 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
         ...options
     }
 
-    if (wsApiCoreDebugSettings.send) {
-        console.log(message)
-    }
-
     websocket?.send(JSON.stringify(message))
 
     if (wsApiCoreDebugSettings.send) {
-        console.log(`Send request: ${command} with id: ${requestId}`)
+        console.log(`Send request: ${JSON.stringify(message)} with id: ${requestId}`)
     }
 
     const startTime = Date.now()
-    let elapsed = 0
 
-    while (elapsed < MAX_WAIT_FOR_REPLY) {
+    while (Date.now() - startTime < MAX_WAIT_FOR_REPLY) {
         await delay(5)
-        elapsed = Date.now() - startTime
 
         const reply = pendingReplies.get(requestId)
 
@@ -214,10 +203,10 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
             pendingReplies.delete(requestId)
 
             if (wsApiCoreDebugSettings.send) {
-                console.log(`Got reply: ${JSON.stringify(reply)} in ${elapsed} ms`)
+                console.log(`Got reply: ${JSON.stringify(reply)} in ${Date.now() - startTime} ms`)
             }
 
-            if (reply?.error) {
+            if (reply.error) {
                 throw new Error(reply.error)
             } else {
                 return reply as ReplyType
@@ -239,18 +228,21 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
 async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyType> {
     const requestId = makeRequestId()
 
-    if (wsApiCoreDebugSettings.send) {
-        console.log(`Send request: ${command} with id: ${requestId}`)
+    const message = {
+        command,
+        requestId
     }
 
     websocket?.send(JSON.stringify({ command, requestId }))
 
+    if (wsApiCoreDebugSettings.send) {
+        console.log(`Send request: ${JSON.stringify(message)} with id: ${requestId}`)
+    }
+    
     const startTime = Date.now()
-    let elapsed = 0
 
-    while (elapsed < MAX_WAIT_FOR_REPLY) {
+    while (Date.now() - startTime < MAX_WAIT_FOR_REPLY) {
         await delay(5)
-        elapsed = Date.now() - startTime
 
         const reply = pendingReplies.get(requestId)
 
@@ -258,10 +250,10 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
             pendingReplies.delete(requestId)
 
             if (wsApiCoreDebugSettings.send) {
-                console.log(`Got reply: ${JSON.stringify(reply)} in ${elapsed} ms`)
+                console.log(`Got reply: ${JSON.stringify(reply)} in ${Date.now() - startTime} ms`)
             }
 
-            if (reply?.error) {
+            if (reply.error) {
                 throw new Error(reply.error)
             } else {
                 return reply as ReplyType
@@ -340,7 +332,7 @@ function handleMessage(messageFromServer: MessageEvent<any>): void {
  * @returns {string} The WebSocket URL to connect to.
  */
 function makeWsConnectUrl(): string {
-    return `ws://${window.location.hostname}:8080/ws/monitor/games`
+    return `ws://${window.location.hostname}:8080/ws/api`
 }
 
 /**

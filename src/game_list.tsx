@@ -40,11 +40,11 @@ const GameList = ({ onJoinGame }: GameListProps) => {
 
     useEffect(
         () => {
-            function gameListChanged(gameInformations: GameInformation[]) {
+            function gameListChanged(gameInformations: GameInformation[]): void {
                 setGames(gameInformations)
             }
 
-            async function connectAndHandleList() {
+            async function connectAndHandleList(): Promise<void> {
                 await api.connectAndWaitForConnection()
 
                 api.addGamesListener(gameListChanged)

@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react'
+import React, { ChangeEvent, useCallback, useState } from 'react'
 import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Field, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem, Tooltip } from "@fluentui/react-components"
 import './player.css'
 import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation } from './api/types'
@@ -23,19 +23,17 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
 
     const nationPrettyString = player.nation.charAt(0).toUpperCase() + player.nation.slice(1).toLowerCase()
 
-    function updatePlayer(): void {
-        if (!onPlayerUpdated) {
+    const updatePlayer = useCallback(() => {
+        if (onPlayerUpdated) {
+            const updatedName = editName ?? player.name
+            const updatedNation = editNation ?? player.nation
+            const updatedColor = editColor ?? player.color
+
+            onPlayerUpdated(updatedName, updatedNation, updatedColor)
+        } else {
             console.log("No player updated callback provided")
-
-            return
         }
-
-        const updatedName = editName ?? player.name
-        const updatedNation = editNation ?? player.nation
-        const updatedColor = editColor ?? player.color
-
-        onPlayerUpdated(updatedName, updatedNation, updatedColor)
-    }
+    }, [editName, editNation, editColor])
 
     return (
         <Card>

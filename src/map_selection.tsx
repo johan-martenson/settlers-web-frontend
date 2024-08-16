@@ -22,7 +22,7 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
 
     useEffect(
         () => {
-            function gameInformationChanged(gameInformation: GameInformation) {
+            function gameInformationChanged(gameInformation: GameInformation): void {
                 setMap(gameInformation.map)
             }
 

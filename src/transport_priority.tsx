@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Window } from './components/dialog'
 import './transport_priority.css'
 import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from './api/types'
@@ -43,44 +43,44 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
 
     useEffect(
         () => {
-            async function readCurrentPriorities() {
-                const listener = (priority: TransportCategory[]) => {
-                    console.log('Updating transport priority')
-                    setPriority(priority)
-                }
+            const listener = (priority: TransportCategory[]) => {
+                console.log('Updating transport priority')
+                setPriority(priority)
+            }
 
+            async function readCurrentPriorities(): Promise<void> {
                 api.addTransportPriorityListener(listener)
-
-                return () => api.removeTransportPriorityListener(listener)
             }
 
             readCurrentPriorities()
+
+            return () => api.removeTransportPriorityListener(listener)
         }, []
     )
 
-    async function increasePriority(category: TransportCategory): Promise<void> {
+    const increasePriority = useCallback((category: TransportCategory) => {
         const currentPriority = priority.findIndex(e => e === category)
 
-        console.log("Current priority for " + category + ": " + currentPriority)
+        console.log(`Current priority for ${category}: ${currentPriority}`)
 
         if (currentPriority <= 0) {
             return
         }
 
         api.setTransportPriorityForMaterial(category, currentPriority - 1)
-    }
+    }, [priority])
 
-    async function decreasePriority(category: TransportCategory): Promise<void> {
+    const decreasePriority = useCallback((category: TransportCategory) => {
         const currentPriority = priority.findIndex(e => e === category)
 
-        console.log("Current priority for " + category + ": " + currentPriority)
+        console.log(`Current priority for ${category}: ${currentPriority}`)
 
         if (currentPriority === TRANSPORT_CATEGORIES.size) {
             return
         }
 
         api.setTransportPriorityForMaterial(category, currentPriority + 1)
-    }
+    }, [priority])
 
     return (
         <Window heading="Transport priority" onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>

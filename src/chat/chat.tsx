@@ -20,7 +20,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
     useEffect(
         () => {
-            function changedChatLog() {
+            function changedChatLog(): void {
                 setChatLog([...api.chatRoomMessages])
             }
 

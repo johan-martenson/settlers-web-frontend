@@ -16,14 +16,16 @@ type GameMessagesViewerProps = {
     onGoToPoint: ((point: Point) => void)
 }
 
+// Functions
+
+function removeMessage(message: GameMessage): void {
+    api.removeMessage(message.id)
+}
+
 // React components
 const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [messages, setMessages] = useState<GameMessage[]>(Array.from(api.messages.values()))
-
-    function removeMessage(message: GameMessage) {
-        api.removeMessage(message.id)
-    }
 
     useEffect(() => {
 

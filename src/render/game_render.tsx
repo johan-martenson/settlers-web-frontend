@@ -50,6 +50,11 @@ type View = {
     translate: Point
 }
 
+type ShadedPoint = {
+    point: Point
+    intensity: number
+}
+
 type GameCanvasProps = {
     cursor?: CursorState
     screenHeight: number
@@ -459,7 +464,7 @@ function GameCanvas({
         () => {
 
             // Callback when monitoring is started
-            function monitoringStarted() {
+            function monitoringStarted(): void {
                 console.log("Received monitoring started callback. Calculating normals")
 
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles)
@@ -468,14 +473,14 @@ function GameCanvas({
             }
 
             // Callback when roads are updated
-            function roadsUpdated() {
+            function roadsUpdated(): void {
                 console.log("Received updated road callback")
 
                 updateRoadDrawingBuffers()
             }
 
             // Callback when discovered points are updated
-            function discoveredPointsUpdated() {
+            function discoveredPointsUpdated(): void {
 
                 // Update the calculated normals
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles)
@@ -505,7 +510,7 @@ function GameCanvas({
                 onMonitoringStarted: monitoringStarted
             }
 
-            async function loadAssetsAndSetupGl() {
+            async function loadAssetsAndSetupGl(): Promise<void> {
                 const fileLoading = []
 
                 for (const worker of workers.values()) {
@@ -2632,12 +2637,7 @@ function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
     return foundInside && foundOutside
 }
 
-type ShadedPoint = {
-    point: Point
-    intensity: number
-}
-
-function getTrianglesAffectedByFogOfWar(discovered: PointSetFast, tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>) {
+function getTrianglesAffectedByFogOfWar(discovered: PointSetFast, tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>): ShadedPoint[][] {
     const triangles: ShadedPoint[][] = []
 
     tilesBelow.forEach(tileBelow => {

@@ -59,7 +59,7 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
         return () => { }
     }, [mode, currentSong, songs, volume])
 
-    function pause(songToPause: number, songs: SongAndTitle[]) {
+    function pause(songToPause: number, songs: SongAndTitle[]): void {
         if (songs) {
             songs[songToPause].song.pause()
 
@@ -67,7 +67,7 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
         }
     }
 
-    function resume(songToResume: number, mode: Mode, songs: SongAndTitle[], volume: number) {
+    function resume(songToResume: number, mode: Mode, songs: SongAndTitle[], volume: number): void {
         if (songs) {
             songs[songToResume].song.volume = volume
             songs[songToResume].song.onended = () => { next(songToResume, mode, songs, volume) }
@@ -77,7 +77,7 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
         }
     }
 
-    function next(previous: number, mode: Mode, songs: SongAndTitle[], volume: number) {
+    function next(previous: number, mode: Mode, songs: SongAndTitle[], volume: number): void {
         songs[previous].song.pause()
 
         let newSong = previous

@@ -91,7 +91,7 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
 
     useEffect(
         () => {
-            function resizeListener() {
+            function resizeListener(): void {
                 setHeight(myRef.current?.clientHeight ?? 0)
                 setWidth(myRef.current?.clientWidth ?? 0)
             }
@@ -104,7 +104,7 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
         }
     )
 
-    function goToBetweenPoints(from: Point, to: Point, progress: number) {
+    function goToBetweenPoints(from: Point, to: Point, progress: number): void {
         const heightAtFrom = api.allTiles.get(from)?.height ?? 0
         const heightAtTo = api.allTiles.get(to)?.height ?? 0
 
@@ -140,7 +140,7 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
     }
 
     // eslint-disable-next-line
-    function goToPoint(point: Point) {
+    function goToPoint(point: Point): void {
         const heightAtPoint = api.allTiles.get(point)?.height ?? 0
 
         const screenPoint = gamePointToScreenPointWithHeightAdjustment(
@@ -159,12 +159,12 @@ function Follow({ heightAdjust, point, onRaise, onClose, ...props }: FollowProps
         })
     }
 
-    function findHeightAdjustedCenterGamePoint(translate: Point, scale: number) {
+    function findHeightAdjustedCenterGamePoint(translate: Point, scale: number): Point {
         const screenPoint = { x: width / 2, y: height / 2 }
         return screenPointToGamePointWithHeightAdjustment(screenPoint, translate, scale, height, heightAdjust)
     }
 
-    function startMonitor(gamePoint: Point) {
+    function startMonitor(gamePoint: Point): void {
         let distance = 2000
         let newIdToFollow
 

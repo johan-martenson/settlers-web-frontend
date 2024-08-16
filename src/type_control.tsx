@@ -81,11 +81,11 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
             return () => { }
         }, [selectedPoint])
 
-    function setInput(input: string) {
+    function setInput(input: string): void {
         dispatchInput({ type: 'set', payload: input })
     }
 
-    function addToInput(toAdd: string) {
+    function addToInput(toAdd: string): void {
         dispatchInput({ type: 'add', payload: toAdd })
     }
 
@@ -130,7 +130,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
         }
     }
 
-    function listener(event: Event) {
+    function listener(event: Event): void {
         if (isTypingControlKeyEvent(event)) {
             if (event.detail.metaKey || event.detail.altKey || event.detail.ctrlKey) {
                 return

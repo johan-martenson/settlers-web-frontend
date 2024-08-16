@@ -18,18 +18,43 @@ import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION,
 // State
 
 // Functions exposed as part of WS API
+/**
+ * Checks if a specific construction is available at a given point.
+ * 
+ * @param {Point} point - The point to check for construction availability.
+ * @param {'FLAG'} whatToBuild - The type of construction to check availability for (e.g., 'FLAG').
+ * @returns {boolean} - Returns `true` if the construction is available at the point, otherwise `false`.
+ */
 function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
     return whatToBuild === 'FLAG' && api.availableConstruction.get(point)?.indexOf('flag') !== -1
 }
 
+/**
+ * Gets the height of the terrain at a specific point.
+ * 
+ * @param {Point} point - The point to retrieve the height from.
+ * @returns {number} - The height of the terrain at the given point. Returns `0` if the point is not found.
+ */
 function getHeight(point: Point): number {
     return api.allTiles.get(point)?.height ?? 0
 }
 
+/**
+ * Retrieves information about a house located at a specific point, if any.
+ * 
+ * @param {Point} point - The point to check for a house.
+ * @returns {HouseInformation | undefined} - The house information at the given point, or `undefined` if no house is present.
+ */
 function houseAt(point: Point): HouseInformation | undefined {
     return api.housesAt.get(point)
 }
 
+/**
+ * Retrieves local information on a specific point, including what can be built and what is present.
+ * 
+ * @param {Point} point - The point to retrieve information about.
+ * @returns {PointInformationLocal} - Returns an object containing details about what can be built and what is currently present at the point.
+ */
 function getInformationOnPointLocal(point: Point): PointInformationLocal {
     const canBuild = api.availableConstruction.get(point)
 
@@ -80,10 +105,22 @@ function getInformationOnPointLocal(point: Point): PointInformationLocal {
     }
 }
 
+/**
+ * Retrieves flag information located at a specific point, if any.
+ * 
+ * @param {Point} point - The point to check for a flag.
+ * @returns {FlagInformation | undefined} - The flag information at the given point, or `undefined` if no flag is present.
+ */
 function getFlagAtPointLocal(point: Point): FlagInformation | undefined {
     return Array.from(api.flags.values()).find(flag => flag.x === point.x && flag.y === point.y)
 }
 
+/**
+ * Retrieves house information located at a specific point, if any.
+ * 
+ * @param {Point} point - The point to check for a house.
+ * @returns {HouseInformation | undefined} - The house information at the given point, or `undefined` if no house is present.
+ */
 function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
     return Array.from(api.houses.values()).find(house => house.x === point.x && house.y === point.y)
 }
@@ -290,18 +327,42 @@ export type PointInformationLocal = {
 
 
 // Type functions
+/**
+ * Determines if a message is of type `GameInformationChangedMessage`.
+ *
+ * @param {unknown} message - The message to check.
+ * @returns {message is GameInformationChangedMessage} - Returns `true` if the message is of type `GameInformationChangedMessage`.
+ */
 function isGameInformationChangedMessage(message: unknown): message is GameInformationChangedMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'GAME_INFO_CHANGED'
 }
 
+/**
+ * Determines if a message is of type `GameListChangedMessage`.
+ *
+ * @param {unknown} message - The message to check.
+ * @returns {message is GameListChangedMessage} - Returns `true` if the message is of type `GameListChangedMessage`.
+ */
 function isGameListChangedMessage(message: unknown): message is GameListChangedMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'GAME_LIST_CHANGED'
 }
 
+/**
+ * Determines if a message is of type `NewChatMessage`.
+ *
+ * @param {unknown} message - The message to check.
+ * @returns {message is NewChatMessage} - Returns `true` if the message is of type `NewChatMessage`.
+ */
 function isChatMessage(message: unknown): message is NewChatMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'NEW_CHAT_MESSAGES'
 }
 
+/**
+ * Determines if a message is of type `PlayerViewChangedMessage`.
+ *
+ * @param {unknown} message - The message to check.
+ * @returns {message is PlayerViewChangedMessage} - Returns `true` if the message is of type `PlayerViewChangedMessage`.
+ */
 function isGameChangesMessage(message: unknown): message is PlayerViewChangedMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'PLAYER_VIEW_CHANGED'
 }
@@ -524,6 +585,13 @@ const transportPriorityListeners: Set<TransportPriorityListener> = new Set
 const objectsWithDetailedMonitoring = new Set<HouseId | FlagId>()
 
 // Initialization
+/**
+ * Handles changes in the connection status. If the connection is established and the game is being followed,
+ * it attempts to sync the local state with the game information and player view from the backend.
+ * 
+ * @param {ConnectionStatus} connectionStatus - The current status of the connection.
+ * @returns {void}
+ */
 function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
     if (connectionStatus === 'CONNECTED' && followingState === 'FOLLOWING') {
         (async () => {
@@ -545,10 +613,21 @@ function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
     }
 }
 
+/**
+ * Handles incoming messages from the WebSocket. Depending on the type of message, it processes game changes, 
+ * game information updates, game list updates, or chat messages.
+ * 
+ * @param {any} message - The received WebSocket message. The type is `any` because the exact structure is validated within the function.
+ * @returns {void}
+ */
 // eslint-disable-next-line
 function onMessageReceived(message: any): void {
     if (wsApiDebugSettings.receive) {
         console.log(`WS API: Got message: ${JSON.stringify(message)}`)
+    }
+
+    if (message === undefined) {
+        console.error(`Got an undefined message: ${message}`)
     }
 
     try {
@@ -592,48 +671,116 @@ addMessageListener(onMessageReceived)
 
 // Functions exposed as part of WS API
 // Functions to add/remove listeners
-function addMessagesListener(listener: MessagesListener): void {
+/**
+ * Adds a listener for messages.
+ * 
+ * @param {MessagesListener} listener - The listener to add.
+ * @returns {void}
+ */function addMessagesListener(listener: MessagesListener): void {
     messageListeners.add(listener)
 }
 
+/**
+ * Removes a listener for messages.
+ * 
+ * @param {MessagesListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeMessagesListener(listener: MessagesListener): void {
     messageListeners.delete(listener)
 }
 
+/**
+ * Removes a listener for roads.
+ * 
+ * @param {RoadListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeRoadsListener(listener: RoadListener): void {
     roadListeners.delete(listener)
 }
 
+/**
+ * Removes a listener for game state changes.
+ * 
+ * @param {GameListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeGameStateListener(listener: GameListener): void {
     gameListeners.delete(listener)
 }
 
+/**
+ * Removes a listener for worker movement.
+ * 
+ * @param {WorkerMoveListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeMovementForWorkerListener(listener: WorkerMoveListener): void {
     workerMovedListeners.delete(listener)
 }
 
+/**
+ * Adds a listener for chat messages in specific rooms for a player.
+ * 
+ * @param {ChatListener} listener - The listener to add.
+ * @param {PlayerId} playerId - The ID of the player.
+ * @param {RoomId[]} roomIds - The IDs of the rooms to listen to.
+ * @returns {void}
+ */
 function addChatMessagesListener(listener: ChatListener, playerId: PlayerId, roomIds: RoomId[]): void {
     listenToChatMessages(playerId, roomIds)
 
     chatListeners.add(listener)
 }
 
+/**
+ * Removes a listener for chat messages.
+ * 
+ * @param {ChatListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeChatMessagesListener(listener: ChatListener): void {
     chatListeners.delete(listener)
 }
 
+/**
+ * Adds a listener for worker movement.
+ * 
+ * @param {WorkerMoveListener} listener - The listener to add.
+ * @returns {void}
+ */
 function addMovementForWorkerListener(listener: WorkerMoveListener): void {
     workerMovedListeners.add(listener)
 }
 
+/**
+ * Adds a listener for transport priority changes.
+ * 
+ * @param {TransportPriorityListener} listener - The listener to add.
+ * @returns {void}
+ */
 function addTransportPriorityListener(listener: TransportPriorityListener): void {
     transportPriorityListeners.add(listener)
 }
 
+/**
+ * Removes a listener for transport priority changes.
+ * 
+ * @param {TransportPriorityListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeTransportPriorityListener(listener: TransportPriorityListener): void {
     transportPriorityListeners.delete(listener)
 }
 
+/**
+ * Adds a listener for a specific house's changes.
+ * 
+ * @param {HouseId} houseId - The ID of the house.
+ * @param {HouseListener} houseListener - The listener to add.
+ * @returns {void}
+ */
 function addHouseListener(houseId: HouseId, houseListener: HouseListener): void {
 
     // Add the listener
@@ -655,6 +802,13 @@ function addHouseListener(houseId: HouseId, houseListener: HouseListener): void 
     }
 }
 
+/**
+ * Removes a listener for a specific house's changes.
+ * 
+ * @param {HouseId} houseId - The ID of the house.
+ * @param {HouseListener} houseListener - The listener to remove.
+ * @returns {void}
+ */
 function removeHouseListener(houseId: HouseId, houseListener: HouseListener): void {
     const listenersForHouse = houseListeners.get(houseId)
 
@@ -669,18 +823,43 @@ function removeHouseListener(houseId: HouseId, houseListener: HouseListener): vo
     }
 }
 
+/**
+ * Adds a listener for discovered points.
+ * 
+ * @param {DiscoveredPointListener} listener - The listener to add.
+ * @returns {void}
+ */
 function addDiscoveredPointsListener(listener: DiscoveredPointListener): void {
     discoveredPointListeners.add(listener)
 }
 
+/**
+ * Removes a listener for discovered points.
+ * 
+ * @param {DiscoveredPointListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeDiscoveredPointsListener(listener: DiscoveredPointListener): void {
     discoveredPointListeners.delete(listener)
 }
 
+/**
+ * Adds a listener for road updates.
+ * 
+ * @param {RoadListener} listener - The listener to add.
+ * @returns {void}
+ */
 function addRoadsListener(listener: RoadListener): void {
     roadListeners.add(listener)
 }
 
+/**
+ * Adds a listener for a specific flag's changes.
+ * 
+ * @param {FlagId} flagId - The ID of the flag.
+ * @param {FlagListener} listener - The listener to add.
+ * @returns {void}
+ */
 function addFlagListener(flagId: FlagId, listener: FlagListener): void {
 
     // Add the listener
@@ -698,10 +877,23 @@ function addFlagListener(flagId: FlagId, listener: FlagListener): void {
     }
 }
 
+/**
+ * Removes a listener for game list updates.
+ * 
+ * @param {GameListListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeGamesListener(listener: GameListListener): void {
     gamesListeners.delete(listener)
 }
 
+/**
+ * Removes a listener for a specific flag's changes.
+ * 
+ * @param {FlagId} flagId - The ID of the flag.
+ * @param {FlagListener} listener - The listener to remove.
+ * @returns {void}
+ */
 function removeFlagListener(flagId: FlagId, listener: FlagListener): void {
     const listeners = flagListeners.get(flagId)
 
@@ -718,6 +910,13 @@ function removeFlagListener(flagId: FlagId, listener: FlagListener): void {
     }
 }
 
+/**
+ * Adds a listener for available construction changes at a specific point.
+ * 
+ * @param {Point} point - The point to monitor.
+ * @param {AvailableConstructionListener} listener - The listener to add.
+ * @returns {void}
+ */
 function addAvailableConstructionListener(point: Point, listener: AvailableConstructionListener): void {
     if (availableConstructionListeners.has(point)) {
         availableConstructionListeners.set(point, new Set())
@@ -726,14 +925,33 @@ function addAvailableConstructionListener(point: Point, listener: AvailableConst
     availableConstructionListeners.get(point)?.add(listener)
 }
 
-function removeAvailableConstructionListener(point: Point, listener: AvailableConstructionListener) {
+/**
+ * Removes a listener for available construction changes at a specific point.
+ * 
+ * @param {Point} point - The point to stop monitoring.
+ * @param {AvailableConstructionListener} listener - The listener to remove.
+ * @returns {void}
+ */
+function removeAvailableConstructionListener(point: Point, listener: AvailableConstructionListener): void {
     availableConstructionListeners.get(point)?.delete(listener)
 }
 
-function addActionsListener(listener: ActionListener) {
+/**
+ * Adds a listener for player actions.
+ * 
+ * @param {ActionListener} listener - The listener to add.
+ * @returns {void}
+ */
+function addActionsListener(listener: ActionListener): void {
     actionListeners.add(listener)
 }
 
+/**
+ * Adds a listener for game list updates. If not currently listening, it will start listening.
+ * 
+ * @param {GameListListener} listener - The listener to add.
+ * @returns {void}
+ */
 function addGamesListener(listener: GameListListener): void {
     if (gamesListeningStatus === 'NOT_LISTENING') {
         listenToGamesList()
@@ -744,17 +962,34 @@ function addGamesListener(listener: GameListListener): void {
     gamesListeners.add(listener)
 }
 
-function addGameStateListener(listener: GameListener) {
+/**
+ * Adds a listener for game state changes.
+ * 
+ * @param {GameListener} listener - The listener to add.
+ * @returns {void}
+ */
+function addGameStateListener(listener: GameListener): void {
     gameListeners.add(listener)
 }
 
-function addBurningHousesListener(listener: HouseBurningListener) {
+/**
+ * Adds a listener for houses that start or stop burning.
+ * 
+ * @param {HouseBurningListener} listener - The listener to add.
+ * @returns {void}
+ */
+function addBurningHousesListener(listener: HouseBurningListener): void {
     houseBurningListeners.add(listener)
 }
 
 // Functions used within WS API
 
 // Functions used within monitoring
+/**
+ * Handles the game information changed message.
+ * 
+ * @param {GameInformation} gameInformation - The updated game information.
+ */
 function handleGameInformationChangedMessage(gameInformation: GameInformation): void {
     if (api.gameState === 'NOT_STARTED' && gameInformation.status !== 'NOT_STARTED') {
         (async () => {
@@ -768,6 +1003,11 @@ function handleGameInformationChangedMessage(gameInformation: GameInformation): 
     loadGameInformationAndCallListeners(gameInformation)
 }
 
+/**
+ * Loads the player view information and notifies all relevant listeners.
+ * 
+ * @param {PlayerViewInformation} message - The player view information to load.
+ */
 function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     const previousGameState = api.gameState
 
@@ -866,7 +1106,11 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     }
 }
 
-function startTimers() {
+/**
+ * Starts timers for various animations and actors walking to their targets
+ * @return {void}
+ */
+function startTimers(): void {
     console.log(`Starting timers with tick length: ${gameTickLength}`)
 
     // Drive worker animations
@@ -1045,16 +1289,31 @@ function startTimers() {
     walkingTimerState = 'RUNNING'
 }
 
+/**
+ * Loads a chat message and notifies all chat listeners.
+ * 
+ * @param {ChatMessage} chatMessage - The chat message to load.
+ */
 function loadChatMessage(chatMessage: ChatMessage): void {
     api.chatRoomMessages.push(chatMessage)
 
     chatListeners.forEach(listener => listener())
 }
 
+/**
+ * Receives the game list changed message and notifies all relevant listeners.
+ * 
+ * @param {GameListChangedMessage} message - The message containing the updated game list.
+ */
 function receivedGameListChangedMessage(message: GameListChangedMessage): void {
     gamesListeners.forEach(listener => listener(message.games))
 }
 
+/**
+ * Clears the existing game information and loads the updated information, then calls the appropriate listeners.
+ * 
+ * @param {GameInformation} gameInformation - The updated game information.
+ */
 function clearAndLoadGameInformationAndCallListeners(gameInformation: GameInformation): void {
 
     // Clear
@@ -1067,6 +1326,12 @@ function clearAndLoadGameInformationAndCallListeners(gameInformation: GameInform
     loadGameInformationAndCallListeners(gameInformation)
 }
 
+/**
+ * Loads the game information and calls all relevant listeners.
+ * 
+ * @param {GameInformation} gameInformation - The game information to load.
+ * @returns {Promise<void>} - A promise that resolves when the game information is fully loaded.
+ */
 async function loadGameInformationAndCallListeners(gameInformation: GameInformation): Promise<void> {
     const prevState = api.gameState
     const prevSpeed = api.gameSpeed
@@ -1101,7 +1366,11 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
     gameListeners.forEach(listener => listener.onGameInformationChanged && listener.onGameInformationChanged(gameInformation))
 }
 
-function stopTimers() {
+/**
+ * Stops all timers for animation and actors walking to their targets
+ * @param {void}
+ */
+function stopTimers(): void {
     console.log('Stopping walking timers')
 
     const timers = [workerAnimationsTimer, workerWalkingTimer, cropGrowerTimer, treeGrowerTimer]
@@ -1115,6 +1384,11 @@ function stopTimers() {
     walkingTimerState = 'RUNNING'
 }
 
+/**
+ * Clears the player view and reloads it, then notifies all relevant listeners.
+ * 
+ * @param {PlayerViewInformation} playerView - The player view information to load.
+ */
 function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformation): void {
     console.log("Handling full sync message")
 
@@ -1138,6 +1412,11 @@ function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformatio
     loadPlayerViewAndCallListeners(playerView)
 }
 
+/**
+ * Handles potential game state changes and adjusts timers accordingly.
+ * 
+ * @param {GameState} gameState - The current game state.
+ */
 function gameStateMightHaveChanged(gameState: GameState): void {
     console.log(`Game state might have changed. Game state: ${gameState}, walking timer state: ${walkingTimerState}`)
 
@@ -1148,6 +1427,11 @@ function gameStateMightHaveChanged(gameState: GameState): void {
     }
 }
 
+/**
+ * Loads changes in the player's view and notifies all relevant listeners.
+ * 
+ * @param {PlayerViewChanges} playerViewChanges - The changes in the player's view.
+ */
 function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChanges): void {
     // Start by handling locally cached changes
 
@@ -1157,7 +1441,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     api.houses.delete('LOCAL')
 
     // Update game speed
-    if (playerViewChanges.gameSpeed) {
+    if (playerViewChanges?.gameSpeed) {
         api.gameSpeed = playerViewChanges.gameSpeed
 
         gameListeners.forEach(listener => listener.onGameSpeedChanged && listener.onGameSpeedChanged(api.gameSpeed))
@@ -1395,6 +1679,11 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     }
 }
 
+/**
+ * Stores the discovered tiles based on newly discovered points.
+ * 
+ * @param {PointSetFast | Point[]} newlyDiscoveredPoints - The newly discovered points.
+ */
 function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): void {
     for (const point of newlyDiscoveredPoints) {
         const terrainAtPoint = api.allTiles.get(point)
@@ -1523,6 +1812,11 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): vo
     }
 }
 
+/**
+ * Synchronizes changes to player borders.
+ * 
+ * @param {BorderChange[]} borderChanges - The list of border changes to synchronize.
+ */
 function syncChangedBorders(borderChanges: BorderChange[]): void {
     for (const borderChange of borderChanges) {
         const currentBorderForPlayer = api.border.get(borderChange.playerId)
@@ -1550,6 +1844,11 @@ function syncChangedBorders(borderChanges: BorderChange[]): void {
     }
 }
 
+/**
+ * Synchronizes new or updated wild animals with the local state.
+ * 
+ * @param {WildAnimalInformation[]} wildAnimals - The list of wild animals to synchronize.
+ */
 function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void {
     for (const wildAnimalInformation of wildAnimals) {
         let wildAnimal = api.wildAnimals.get(wildAnimalInformation.id)
@@ -1586,56 +1885,51 @@ function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void
 }
 
 function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
-    for (const walkerTargetChange of targetChanges) {
-        let worker = api.workers.get(walkerTargetChange.id)
+    targetChanges.forEach(walkerTargetChange => {
         const direction = simpleDirectionToCompassDirection(walkerTargetChange.direction)
 
-        if (worker === undefined) {
-            worker = {
-                id: walkerTargetChange.id,
-                x: walkerTargetChange.x,
-                y: walkerTargetChange.y,
-                plannedPath: walkerTargetChange.path,
-                betweenPoints: false,
-                direction,
-                percentageTraveled: 0,
-                type: walkerTargetChange.type,
-                bodyType: walkerTargetChange.bodyType,
-                color: walkerTargetChange.color,
-                nation: walkerTargetChange.nation
-            }
-
-            api.workers.set(worker.id, worker)
+        let worker = api.workers.get(walkerTargetChange.id) ?? {
+            id: walkerTargetChange.id,
+            type: walkerTargetChange.type,
+            color: walkerTargetChange.color,
+            nation: walkerTargetChange.nation,
         }
 
-        if (!walkerTargetChange.path || walkerTargetChange.path.length === 0) {
-            worker.plannedPath = undefined
-        } else {
-            worker.plannedPath = walkerTargetChange.path
-
-            worker.previous = { x: walkerTargetChange.x, y: walkerTargetChange.y }
-
-            worker.next = { x: walkerTargetChange.path[0].x, y: walkerTargetChange.path[0].y }
-            worker.percentageTraveled = 0
-            worker.betweenPoints = false
+        worker = {
+            ...worker,
+            x: walkerTargetChange.x,
+            y: walkerTargetChange.y,
+            direction,
+            plannedPath: walkerTargetChange.path?.length ? walkerTargetChange.path : undefined,
+            previous: { x: walkerTargetChange.x, y: walkerTargetChange.y },
+            next: walkerTargetChange.path?.[0],
+            betweenPoints: false,
+            percentageTraveled: 0,
+            action: undefined,
+            cargo: walkerTargetChange.cargo,
         }
 
-        worker.action = undefined
-
-        worker.cargo = walkerTargetChange.cargo
-
-        worker.x = walkerTargetChange.x
-        worker.y = walkerTargetChange.y
-        worker.direction = direction
-    }
+        api.workers.set(worker.id, worker);
+    })
 }
 
+/**
+ * Notifies listeners for house changes.
+ * 
+ * @param {HouseInformation[]} houses - The list of houses with updated information.
+ */
 function notifyHouseListeners(houses: HouseInformation[]): void {
     houses.forEach(house => {
         houseListeners.get(house.id)?.forEach(listener => listener(house))
     })
 }
 
+/**
+ * Converts server-sent crop information to a local format.
+ * 
+ * @param {CropInformation} serverCrop - The crop information from the server.
+ * @returns {CropInformationLocal} - The local crop information.
+ */
 function serverSentCropToLocal(serverCrop: CropInformation): CropInformationLocal {
     let growth = 0
 
@@ -1655,6 +1949,12 @@ function serverSentCropToLocal(serverCrop: CropInformation): CropInformationLoca
     }
 }
 
+/**
+ * Converts server-sent tree information to a local format.
+ * 
+ * @param {TreeInformation} serverTree - The tree information from the server.
+ * @returns {TreeInformationLocal} - The local tree information.
+ */
 function serverSentTreeToLocal(serverTree: TreeInformation): TreeInformationLocal {
     let growth = 0
 
@@ -1674,10 +1974,20 @@ function serverSentTreeToLocal(serverTree: TreeInformation): TreeInformationLoca
     }
 }
 
+/**
+ * Places a local road on the map.
+ * 
+ * @param {Point[]} points - The points that make up the road.
+ */
 function placeLocalRoad(points: Point[]): void {
     api.roads.set('LOCAL', { id: 'LOCAL', points, type: 'NORMAL' })
 }
 
+/**
+ * Removes a locally placed road from the map.
+ * 
+ * @param {RoadId} roadId - The ID of the road to remove.
+ */
 function removeLocalRoad(roadId: RoadId): void {
     const road = api.roads.get(roadId)
 
@@ -1688,10 +1998,21 @@ function removeLocalRoad(roadId: RoadId): void {
     }
 }
 
+/**
+ * Checks if game data is available in the local state.
+ * 
+ * @returns {boolean} - Returns `true` if game data is available, otherwise `false`.
+ */
 function isGameDataAvailable(): boolean {
     return api.discoveredBelowTiles.size > 0
 }
 
+/**
+ * Converts server-sent worker information to a local format.
+ * 
+ * @param {ServerWorkerInformation} serverWorker - The worker information from the server.
+ * @returns {WorkerInformation} - The local worker information.
+ */
 function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): WorkerInformation {
     return {
         ...serverWorker,
@@ -1699,6 +2020,11 @@ function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): Worke
     }
 }
 
+/**
+ * Assigns game information to the local state.
+ * 
+ * @param {GameInformation} gameInformation - The game information to assign.
+ */
 function assignGameInformation(gameInformation: GameInformation): void {
     api.gameId = gameInformation.id
     api.gameName = gameInformation.name
@@ -1718,7 +2044,7 @@ function assignGameInformation(gameInformation: GameInformation): void {
  *
  * @param {GameId} gameId - The id of the game to follow.
  * @param {PlayerId} playerId - The id of the player.
- * @returns {Promise<GameInformation>} Metadata about the game.
+ * @returns {Promise<GameInformation>} - Metadata about the game.
  */
 async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation | undefined> {
     if (followingState === 'NOT_FOLLOWING') {
@@ -1763,12 +2089,23 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
     }
 }
 
+/**
+ * Loads chat room history and notifies all relevant listeners.
+ * 
+ * @param {ChatMessage[]} chatRoomHistory - The chat room history messages to load.
+ */
 function loadChatRoomHistoryAndCallListeners(chatRoomHistory: ChatMessage[]): void {
     chatRoomHistory.forEach(chatMessage => api.chatRoomMessages.push(chatMessage))
 
     chatListeners.forEach(listener => listener())
 }
 
+/**
+ * Waits for game data to be available, up to a maximum wait time.
+ * 
+ * @returns {Promise<void>} - A promise that resolves when game data is available.
+ * @throws {Error} - Throws an error if the wait time exceeds the maximum allowed time.
+ */
 async function waitForGameDataAvailable(): Promise<void> {
     const startTime = Date.now()
 

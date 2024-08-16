@@ -215,7 +215,7 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
     return programInstance
 }
 
-function calcTranslation(prevScale: number, newScale: number, prevTranslate: Point, dimension: Dimension) {
+function calcTranslation(prevScale: number, newScale: number, prevTranslate: Point, dimension: Dimension): Point {
     const centerGamePoint = findCenterGamePoint(dimension, prevScale, prevTranslate)
 
     const newTranslate = {
@@ -226,7 +226,7 @@ function calcTranslation(prevScale: number, newScale: number, prevTranslate: Poi
     return newTranslate
 }
 
-function findCenterGamePoint(dimension: Dimension, scale: number, translate: Point) {
+function findCenterGamePoint(dimension: Dimension, scale: number, translate: Point): Point {
     return {
         x: (dimension.width / 2 - translate.x) / scale,
         y: (dimension.height / 2 + translate.y) / (scale)

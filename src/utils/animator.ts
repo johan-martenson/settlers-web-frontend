@@ -28,7 +28,7 @@ let timer: NodeJS.Timeout | undefined
 let state: AnimatorState = 'STOPPED'
 
 // Functions
-function step() {
+function step(): void {
     ongoingAnimations.forEach((animation, variable) => {
         let allReachedTarget = true
 
@@ -177,7 +177,7 @@ function animateSeveral(animationTarget: AnimationTarget, onUpdatedValues: ((val
     }
 }
 
-function stopAnimation(animationTarget: AnimationTarget) {
+function stopAnimation(animationTarget: AnimationTarget): void {
     ongoingAnimations.delete(animationTarget)
 
     if (ongoingAnimations.size === 0 && ongoingAnimationsWithoutIds.size === 0 && timer) {

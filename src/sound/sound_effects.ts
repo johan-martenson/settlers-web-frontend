@@ -1,70 +1,31 @@
 import { DEFAULT_VOLUME, immediateUxState } from "../play"
-import { Action, GameMessage, GameMessageId, HouseId, Point } from "../api/types"
+import { Action, HouseId, Point } from "../api/types"
 import { api } from "../api/ws-api"
 import { Sound } from "./utils"
 import { screenPointToGamePointNoHeightAdjustment } from "../utils"
 
-export type SoundEffect = 'NEW-MESSAGE' |
-    'WOODCUTTER_CUTTING' |
-    'HAMMERING' |
-    'FORESTER_PLANTING' |
-    'STONEMASON_HACKING' |
-    'FIRE' |
-    'GEOLOGIST_FINDING' |
-    'GEOLOGIST_DIGGING' |
-    'FALLING_TREE'
+// Types
+export type SoundEffect =
+| 'NEW-MESSAGE'
+| 'WOODCUTTER_CUTTING'
+| 'HAMMERING'
+| 'FORESTER_PLANTING'
+| 'STONEMASON_HACKING'
+| 'FIRE'
+| 'GEOLOGIST_FINDING'
+| 'GEOLOGIST_DIGGING'
+| 'FALLING_TREE'
 
-interface Sfx {
-    play: ((name: SoundEffect, loop: boolean) => Sound | undefined)
-    startEffects: (() => void)
-    stopEffects: (() => void)
-    setSoundEffectsVolume: ((volume: number) => void)
-}
+type SoundEffectsState = 'NOT_SUBSCRIBED' | 'RUNNING' | 'STOPPED'
 
-const sfx: Sfx = {
-    play: play,
-    startEffects,
-    stopEffects,
-    setSoundEffectsVolume
-}
-
-interface Visibility {
+type Visibility = {
     left: number
     right: number
     top: number
     bottom: number
 }
 
-let visibility: Visibility = { left: 0, right: 0, top: 0, bottom: 0 }
-
-const soundInstances = new Map<SoundEffect, Sound>()
-
-soundInstances.set("NEW-MESSAGE", new Sound("assets/audio/new-message.wave"))
-soundInstances.set("WOODCUTTER_CUTTING", new Sound("assets/audio/woodcutter-cutting.wave"))
-soundInstances.set("FORESTER_PLANTING", new Sound("assets/audio/forester-0.wave"))
-soundInstances.set('STONEMASON_HACKING', new Sound("assets/audio/stonemason-hacking.wave"))
-soundInstances.set('FIRE', new Sound("assets/audio/fire.wave"))
-soundInstances.set('GEOLOGIST_FINDING', new Sound("assets/audio/geologist-finding.wave"))
-soundInstances.set('GEOLOGIST_DIGGING', new Sound("assets/audio/geologist-digging-1.wave"))
-soundInstances.set('FALLING_TREE', new Sound('assets/audio/falling-tree.wave'))
-
-soundInstances.forEach(sound => sound.load())
-
-let soundEffectsState: 'NOT_SUBSCRIBED' | 'RUNNING' | 'STOPPED' = 'NOT_SUBSCRIBED'
-
-let volume = 0
-
-function play(soundName: SoundEffect, loop = false): Sound | undefined {
-    const sound = soundInstances.get(soundName)
-
-    if (sound) {
-        sound.play(volume, 0, loop)
-    }
-
-    return sound
-}
-
-interface OngoingEffect {
+type OngoingEffect = {
     id: string
     point: Point
     action: Action
@@ -72,14 +33,24 @@ interface OngoingEffect {
     playing?: Sound
 }
 
-const ongoingEffects: Map<string, OngoingEffect> = new Map()
-
-interface SoundEffectInformation {
+type SoundEffectInformation = {
     start: number
     animationLength: number
     audio: SoundEffect
     type: 'ONCE' | 'PERIODIC' | 'LOOPING'
 }
+
+// Constants
+const SOUND_INSTANCES = new Map<SoundEffect, Sound>()
+
+SOUND_INSTANCES.set("NEW-MESSAGE", new Sound("assets/audio/new-message.wave"))
+SOUND_INSTANCES.set("WOODCUTTER_CUTTING", new Sound("assets/audio/woodcutter-cutting.wave"))
+SOUND_INSTANCES.set("FORESTER_PLANTING", new Sound("assets/audio/forester-0.wave"))
+SOUND_INSTANCES.set('STONEMASON_HACKING', new Sound("assets/audio/stonemason-hacking.wave"))
+SOUND_INSTANCES.set('FIRE', new Sound("assets/audio/fire.wave"))
+SOUND_INSTANCES.set('GEOLOGIST_FINDING', new Sound("assets/audio/geologist-finding.wave"))
+SOUND_INSTANCES.set('GEOLOGIST_DIGGING', new Sound("assets/audio/geologist-digging-1.wave"))
+SOUND_INSTANCES.set('FALLING_TREE', new Sound('assets/audio/falling-tree.wave'))
 
 const SOUND_EFFECTS = new Map<Action, SoundEffectInformation>()
 
@@ -91,14 +62,41 @@ SOUND_EFFECTS.set('HOUSE_BURNING', { start: 0, animationLength: 2, audio: 'FIRE'
 SOUND_EFFECTS.set('INVESTIGATING', { start: 10, animationLength: 16, audio: 'GEOLOGIST_DIGGING', type: 'PERIODIC' })
 SOUND_EFFECTS.set('FALLING_TREE', { start: 0, animationLength: 4, audio: 'FALLING_TREE', type: 'ONCE' })
 
+const sfx = {
+    play,
+    startEffects,
+    stopEffects,
+    setSoundEffectsVolume
+}
+
+// Configuration
+
+// State
+let soundEffectsState: SoundEffectsState = 'NOT_SUBSCRIBED'
+let visibility: Visibility = { left: 0, right: 0, top: 0, bottom: 0 }
+let volume = 0
 let soundEffectsTimer: NodeJS.Timeout | undefined
 
-function stopEffects() {
+const ongoingEffects = new Map<string, OngoingEffect>()
+
+// Init
+SOUND_INSTANCES.forEach(sound => sound.load())
+
+// Functions
+function play(soundName: SoundEffect, loop = false): Sound | undefined {
+    const sound = SOUND_INSTANCES.get(soundName)
+
+    sound?.play(volume, 0, loop)
+
+    return sound
+}
+
+function stopEffects(): void {
     soundEffectsState = 'STOPPED'
     clearInterval(soundEffectsTimer)
 }
 
-function startEffects() {
+function startEffects(): void {
     if (soundEffectsState === 'RUNNING') {
         return
     }
@@ -107,9 +105,7 @@ function startEffects() {
 
     // Load each sound
     // eslint-disable-next-line
-    soundInstances.forEach((sound, title) => {
-        sound.load()
-    })
+    SOUND_INSTANCES.forEach(sound => sound.load())
 
     // Listen to events to start/stop sound effects
     api.addActionsListener({
@@ -118,8 +114,7 @@ function startEffects() {
         },
 
         // eslint-disable-next-line
-        actionEnded: (id: string, point: Point, action: string) => {
-
+        actionEnded: id => {
             const ongoingEffect = ongoingEffects.get(id)
 
             if (ongoingEffect) {
@@ -140,26 +135,34 @@ function startEffects() {
         },
 
         // eslint-disable-next-line
-        houseStoppedBurning: (id: HouseId, point: Point) => {
+        houseStoppedBurning: id => {
             ongoingEffects.get(id)?.playing?.stop()
-
             ongoingEffects.delete(id)
         },
     })
 
     // eslint-disable-next-line
-    api.addMessagesListener((newMessages: GameMessage[], removedMessages: GameMessageId[]) => {
-        soundInstances.get('NEW-MESSAGE')?.play()
+    api.addMessagesListener(() => {
+        SOUND_INSTANCES.get('NEW-MESSAGE')?.play()
     })
 
     soundEffectsState = 'RUNNING'
 
-    soundEffectsTimer = setInterval(
-        () => {
+    soundEffectsTimer = setInterval(() => {
 
             // Keep track of what's visible on the screen
-            const upperLeftGamePoint = screenPointToGamePointNoHeightAdjustment({ x: 0, y: 0 }, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, immediateUxState.height)
-            const lowerRightGamePoint = screenPointToGamePointNoHeightAdjustment({ x: immediateUxState.width, y: immediateUxState.height }, immediateUxState.translate.x, immediateUxState.translate.y, immediateUxState.scale, immediateUxState.height)
+            const upperLeftGamePoint = screenPointToGamePointNoHeightAdjustment(
+                { x: 0, y: 0 },
+                immediateUxState.translate.x,
+                immediateUxState.translate.y,
+                immediateUxState.scale,
+                immediateUxState.height)
+            const lowerRightGamePoint = screenPointToGamePointNoHeightAdjustment(
+                { x: immediateUxState.width, y: immediateUxState.height },
+                immediateUxState.translate.x,
+                immediateUxState.translate.y,
+                immediateUxState.scale,
+                immediateUxState.height)
 
             visibility = {
                 left: upperLeftGamePoint.x,
@@ -196,10 +199,10 @@ function startEffects() {
         }, 300)
 }
 
-function setSoundEffectsVolume(newVolume: number) {
+function setSoundEffectsVolume(newVolume: number): void {
     volume = newVolume
 
-    soundInstances.forEach(soundInstance => soundInstance.setVolume(newVolume))
+    SOUND_INSTANCES.forEach(soundInstance => soundInstance.setVolume(newVolume))
 }
 
 export { sfx }

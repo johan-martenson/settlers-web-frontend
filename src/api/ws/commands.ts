@@ -97,90 +97,124 @@ type PossibleNewRoad = {
 }
 
 enum Command {
-    SetStrength = 'SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
-    GetStrength = 'GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
-    SetDefenseStrength = 'SET_DEFENSE_STRENGTH',
-    GetDefenseStrength = 'GET_DEFENSE_STRENGTH',
-    SetDefenseFromSurrounding = 'SET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
-    GetDefenseFromSurrounding = 'GET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
+
+    // Connection
+
+    // Games
+    GetGames = 'GET_GAMES',
+    ListenToGameList = 'LISTEN_TO_GAME_LIST',
+
+    // Maps
+    GetMaps = 'GET_MAPS',
+
+    // Map
+    GetTerrain = 'GET_TERRAIN',
+
+    // Game
+    CreateGame = 'CREATE_GAME',
     StartGame = 'START_GAME',
+    PauseGame = 'PAUSE_GAME',
+    ResumeGame = 'RESUME_GAME',
+    DeleteGame = 'DELETE_GAME',
     SetMap = 'SET_MAP',
     SetOthersCanJoin = 'SET_OTHERS_CAN_JOIN',
     SetInitialResources = 'SET_INITIAL_RESOURCES',
     SetGameName = 'SET_GAME_NAME',
     SetGameSpeed = 'SET_GAME_SPEED',
-    CreatePlayer = 'CREATE_PLAYER',
     AddPlayerToGame = 'ADD_PLAYER_TO_GAME',
-    UpdatePlayer = 'UPDATE_PLAYER',
-    RemovePlayer = 'REMOVE_PLAYER',
-    GetChatHistory = 'GET_CHAT_HISTORY_FOR_ROOM',
-    GetGames = 'GET_GAMES',
-    GetMaps = 'GET_MAPS',
     GetGameInformation = 'GET_GAME_INFORMATION',
-    Upgrade = 'UPGRADE',
-    GetFlagDebugInformation = 'FLAG_DEBUG_INFORMATION',
-    SetSelfPlayer = 'SET_SELF_PLAYER',
-    SetGame = 'SET_GAME',
-    SendChatMessageToRoom = 'SEND_CHAT_MESSAGE_TO_ROOM',
     StartMonitoringGame = 'START_MONITORING_GAME',
-    SetReservedInHeadquarters = 'SET_RESERVED_IN_HEADQUARTERS',
+    ListenToGameInfo = 'LISTEN_TO_GAME_INFO',
     StartDetailedMonitoring = 'START_DETAILED_MONITORING',
     StopDetailedMonitoring = 'STOP_DETAILED_MONITORING',
-    RemoveMessage = 'REMOVE_MESSAGE',
-    RemoveMessages = 'REMOVE_MESSAGES',
-    SetCoalQuotas = 'SET_COAL_QUOTAS',
-    GetFoodQuotas = 'GET_FOOD_QUOTAS',
-    SetWheatQuotas = 'SET_WHEAT_QUOTAS',
-    GetWheatQuotas = 'GET_WHEAT_QUOTAS',
-    GetWaterQuotas = 'GET_WATER_QUOTAS',
-    GetCoalQuotas = 'GET_COAL_QUOTAS',
-    GetIronBarQuotas = 'GET_IRON_BAR_QUOTAS',
-    SetFoodQuotas = 'SET_FOOD_QUOTAS',
-    SetWaterQuotas = 'SET_WATER_QUOTAS',
-    SetIronBarQuotas = 'SET_IRON_BAR_QUOTAS',
-    CreateGame = 'CREATE_GAME',
-    PauseGame = 'PAUSE_GAME',
-    ResumeGame = 'RESUME_GAME',
-    DeleteGame = 'DELETE_GAME',
-    PlaceBuilding = 'PLACE_BUILDING',
-    PlaceRoad = 'PLACE_ROAD',
-    PlaceFlag = 'PLACE_FLAG',
-    PlaceFlagAndRoad = 'PLACE_FLAG_AND_ROAD',
-    RemoveFlag = 'REMOVE_FLAG',
-    RemoveRoad = 'REMOVE_ROAD',
-    RemoveBuilding = 'REMOVE_BUILDING',
-    CallScout = 'CALL_SCOUT',
-    CallGeologist = 'CALL_GEOLOGIST',
-    FullSync = 'FULL_SYNC',
-    ListenToGameInfo = 'LISTEN_TO_GAME_INFO',
-    ListenToGameList = 'LISTEN_TO_GAME_LIST',
-    ListenToChatMessages = 'LISTEN_TO_CHAT_MESSAGES',
+    GetGameStatistics = 'GET_PRODUCTION_STATISTICS',
+    GetLandStatistics = 'GET_LAND_STATISTICS',
+
+    // Player
+    CreatePlayer = 'CREATE_PLAYER',
+    UpdatePlayer = 'UPDATE_PLAYER',
+    RemovePlayer = 'REMOVE_PLAYER',
+    StartMonitoringTransportPriority = 'START_MONITORING_TRANSPORT_PRIORITY',
+    StopMonitoringTransportPriority = 'STOP_MONITORING_TRANSPORT_PRIORITY',
+    GetTransportPriority = 'GET_TRANSPORT_PRIORITY',
+    SetTransportPriority = 'SET_TRANSPORT_PRIORITY',
+
+    // Player - military
+    GetStrength = 'GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
+    GetDefenseStrength = 'GET_DEFENSE_STRENGTH',
+    GetDefenseFromSurrounding = 'GET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
     GetMilitaryCloseToBorder = 'GET_POPULATE_MILITARY_CLOSE_TO_BORDER',
     GetMilitaryAwayFromBorder = 'GET_POPULATE_MILITARY_CLOSER_TO_BORDER',
     GetMilitaryFarFromBorder = 'GET_POPULATE_MILITARY_FAR_FROM_BORDER',
     GetMilitarySettings = 'GET_MILITARY_SETTINGS',
     GetSoldiersAvailableForAttack = 'GET_SOLDIERS_AVAILABLE_FOR_ATTACK',
+    SetReservedInHeadquarters = 'SET_RESERVED_IN_HEADQUARTERS',
+    SetStrength = 'SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
+    SetDefenseStrength = 'SET_DEFENSE_STRENGTH',
+    SetDefenseFromSurrounding = 'SET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
     SetMilitaryFromFromBorder = 'SET_MILITARY_POPULATION_FAR_FROM_BORDER',
     SetMilitaryAwayFromBorder = 'SET_MILITARY_POPULATION_CLOSER_TO_BORDER',
     SetMilitaryCloseToBorder = 'SET_MILITARY_POPULATION_CLOSE_TO_BORDER',
     SetSoldiersAvailableForAttack = 'SET_SOLDIERS_AVAILABLE_FOR_ATTACK',
-    GetInformationOnPoint = 'INFORMATION_ON_POINTS',
+
+    // Player - quotas
+    GetFoodQuotas = 'GET_FOOD_QUOTAS',
+    GetWheatQuotas = 'GET_WHEAT_QUOTAS',
+    GetWaterQuotas = 'GET_WATER_QUOTAS',
+    GetCoalQuotas = 'GET_COAL_QUOTAS',
+    GetIronBarQuotas = 'GET_IRON_BAR_QUOTAS',
+    SetCoalQuotas = 'SET_COAL_QUOTAS',
+    SetWheatQuotas = 'SET_WHEAT_QUOTAS',
+    SetFoodQuotas = 'SET_FOOD_QUOTAS',
+    SetWaterQuotas = 'SET_WATER_QUOTAS',
+    SetIronBarQuotas = 'SET_IRON_BAR_QUOTAS',
+
+    // Houses
+
+    // House
+    PlaceBuilding = 'PLACE_BUILDING',
+    RemoveBuilding = 'REMOVE_BUILDING',
+    Upgrade = 'UPGRADE',
     Attack = 'ATTACK_HOUSE',
     EvacuateHouse = 'EVACUATE_HOUSE',
     UpgradeHouse = 'UPGRADE_HOUSE',
-    FindPossibleNewRoad = 'FIND_NEW_ROAD',
     PauseProduction = 'PAUSE_PRODUCTION',
     ResumeProduction = 'RESUME_PRODUCTION',
     DisablePromotions = 'DISABLE_PROMOTIONS',
     EnablePromotions = 'ENABLE_PROMOTIONS',
     CancelEvacuation = 'CANCEL_EVACUATION',
-    SetTransportPriority = 'SET_TRANSPORT_PRIORITY',
-    GetTerrain = 'GET_TERRAIN',
-    GetGameStatistics = 'GET_PRODUCTION_STATISTICS',
-    GetLandStatistics = 'GET_LAND_STATISTICS',
-    GetTransportPriority = 'GET_TRANSPORT_PRIORITY',
-    StartMonitoringTransportPriority = 'START_MONITORING_TRANSPORT_PRIORITY',
-    StopMonitoringTransportPriority = 'STOP_MONITORING_TRANSPORT_PRIORITY'
+
+    // Flag
+    PlaceFlag = 'PLACE_FLAG',
+    RemoveFlag = 'REMOVE_FLAG',
+    GetFlagDebugInformation = 'FLAG_DEBUG_INFORMATION',
+    CallScout = 'CALL_SCOUT',
+    CallGeologist = 'CALL_GEOLOGIST',
+
+    // Road
+    PlaceRoad = 'PLACE_ROAD',
+    RemoveRoad = 'REMOVE_ROAD',
+    PlaceFlagAndRoad = 'PLACE_FLAG_AND_ROAD',
+
+    // Point
+    GetInformationOnPoint = 'INFORMATION_ON_POINTS',
+
+    // Chat messages
+    GetChatHistory = 'GET_CHAT_HISTORY_FOR_ROOM',
+    SendChatMessageToRoom = 'SEND_CHAT_MESSAGE_TO_ROOM',
+    RemoveMessage = 'REMOVE_MESSAGE',
+    RemoveMessages = 'REMOVE_MESSAGES',
+    ListenToChatMessages = 'LISTEN_TO_CHAT_MESSAGES',
+
+    // Construction
+    FindPossibleNewRoad = 'FIND_NEW_ROAD',
+
+    // Workers
+
+    // Misc
+    SetSelfPlayer = 'SET_SELF_PLAYER',
+    SetGame = 'SET_GAME',
+    FullSync = 'FULL_SYNC',
 }
 
 // Type functions
@@ -698,6 +732,7 @@ function removeMessages(messages: GameMessage[]): void {
  * @param {number} mint - The quota for the mint.
  * @param {number} armory - The quota for the armory.
  * @param {number} ironSmelter - The quota for the iron smelter.
+ * @returns {void}
  */
 function setCoalQuotas(mint: number, armory: number, ironSmelter: number): void {
     sendWithOptions<{ mint: number, armory: number, ironSmelter: number }>(
@@ -720,9 +755,10 @@ function getFoodQuotas(): Promise<FoodQuotas> {
  * @param {number} pigFarm - The quota for the pig farm.
  * @param {number} mill - The quota for the mill.
  * @param {number} brewery - The quota for the brewery.
+ * @returns {void}
  */
 
-function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number) {
+function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number): void {
     sendWithOptions<{ donkeyFarm: number, pigFarm: number, mill: number, brewery: number }>(
         Command.SetWheatQuotas,
         { donkeyFarm, pigFarm, mill, brewery }
@@ -768,8 +804,9 @@ function getIronBarQuotas(): Promise<IronBarQuotas> {
  * @param {number} coalMine - The quota for the coal mine.
  * @param {number} goldMine - The quota for the gold mine.
  * @param {number} graniteMine - The quota for the granite mine.
+ * @returns {void}
  */
-function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, graniteMine: number) {
+function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, graniteMine: number): void {
     sendWithOptions<{ ironMine: number, coalMine: number, goldMine: number, graniteMine: number }>(
         Command.SetFoodQuotas,
         { ironMine, coalMine, goldMine, graniteMine }
@@ -782,8 +819,9 @@ function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, gra
  * @param {number} donkeyFarm - The quota for the donkey farm.
  * @param {number} pigFarm - The quota for the pig farm.
  * @param {number} brewery - The quota for the brewery.
+ * @returns {void}
  */
-function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) {
+function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, brewery: number): void {
     sendWithOptions<{ bakery: number, donkeyFarm: number, pigFarm: number, brewery: number }>(
         Command.SetWaterQuotas,
         { bakery, donkeyFarm, pigFarm, brewery })
@@ -793,8 +831,9 @@ function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, bre
  * Sets the iron bar quotas for different production facilities.
  * @param {number} armory - The quota for the armory.
  * @param {number} metalworks - The quota for the metalworks.
+ * @returns {void}
  */
-function setIronBarQuotas(armory: number, metalworks: number) {
+function setIronBarQuotas(armory: number, metalworks: number): void {
     sendWithOptions<{ armory: number, metalworks: number }>(Command.SetIronBarQuotas, { armory, metalworks })
 }
 
@@ -820,14 +859,16 @@ function deleteGame(): void {
 
 /**
  * Pauses the current game.
- */
-function pauseGame() {
+ * @returns {void}
+*/
+function pauseGame(): void {
     send(Command.PauseGame)
 }
 
 /**
  * Resumes the current game after a pause.
- */
+ * @returns {void}
+*/
 function resumeGame(): void {
     send(Command.ResumeGame)
 }
@@ -836,7 +877,8 @@ function resumeGame(): void {
  * Places a house at a specific point on the map.
  * @param {AnyBuilding} type - The type of house to place.
  * @param {Point} point - The location to place the house.
- */
+ * @returns {void}
+*/
 function placeHouse(type: AnyBuilding, point: Point): void {
     sendWithOptions<{ x: number, y: number, type: AnyBuilding }>(Command.PlaceBuilding, { ...point, type })
 }

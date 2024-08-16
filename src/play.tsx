@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import { ConstructionInfo } from './construction_info'
 import FriendlyFlagInfo from './friendly_flag_info'
@@ -150,6 +150,18 @@ function nextWindowId(): number {
     return trackNextWindowId - 1
 }
 
+function calcZoom(width: number, height: number, translate: { x: number, y: number }, prevScale: number, newScale: number) {
+    const centerGamePoint = {
+        x: (width / 2 - translate.x) / prevScale,
+        y: (height / 2 + translate.y) / (prevScale)
+    }
+
+    return {
+        x: width / 2 - centerGamePoint.x * newScale,
+        y: height / 2 - height + centerGamePoint.y * newScale
+    }
+}
+
 // React components
 const Expired = () => {
     return (
@@ -190,8 +202,11 @@ const PauseSign = () => {
 }
 
 const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
+
+    // References
     const selfNameRef = useRef<HTMLDivElement | null>(null)
 
+    // State
     const [commands, setCommands] = useState<Map<string, Command>>(new Map())
     const [monitoringReady, setMonitoringReady] = useState<boolean>(false)
     const [showAvailableConstruction, setShowAvailableConstruction] = useState<boolean>(false)
@@ -213,6 +228,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [player, setPlayer] = useState<PlayerInformation>()
     const [windowHeight, setWindowHeight] = useState<number>(0)
 
+    // Effects
     const gameMonitorCallbacks: GameListener = {
         onMonitoringStarted: () => {
             setMonitoringReady(true)
@@ -233,7 +249,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     useEffect(
         () => {
-            async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId) {
+            async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId): Promise<void> {
                 await api.connectAndWaitForConnection()
 
                 api.addGameStateListener(gameMonitorCallbacks)
@@ -253,201 +269,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }, [gameId, selfPlayerId]
     )
 
-    function openSingletonWindow(window: WindowType): void {
-        const updatedWindows = windows.filter(w => w.type !== window.type)
-
-        const windowWithId = {
-            ...window,
-            id: nextWindowId()
-        }
-
-        updatedWindows.push(windowWithId)
-
-        setWindows((prevWindows) => [...prevWindows.filter(w => w.type !== window.type), windowWithId])
-    }
-
-    function openWindow(window: WindowType): void {
-        const windowWithId = {
-            ...window,
-            id: nextWindowId()
-        }
-
-        setWindows((windows: Window[]) => [...windows, windowWithId])
-    }
-
-    function closeWindow(id: number): void {
-        setWindows(windows.filter(w => w.id !== id))
-    }
-
-    function raiseWindow(id: number): void {
-        const window = windows.find(w => w.id === id)
-
-        if (window !== undefined) {
-            const remaining = windows.filter(w => w.id !== id)
-
-            remaining.push(window)
-
-            setWindows(remaining)
-        }
-    }
-
-    function goToHouse(houseId: HouseId): void {
-        console.info("Go to house immediately: " + houseId)
-
-        const house = api.houses.get(houseId)
-
-        if (house) {
-            goToPoint({ x: house.x, y: house.y })
-
-            setSelected({ x: house.x, y: house.y })
-        }
-    }
-
-    function setNewTranslatedAnimated(newTranslateX: number, newTranslateY: number) {
-        animator.animateSeveral('TRANSLATE', (newTranslate) => {
-            immediateUxState.translate = {
-                x: newTranslate[0],
-                y: newTranslate[1]
-            }
-        },
-            [immediateUxState.translate.x, immediateUxState.translate.y],
-            [newTranslateX, newTranslateY])
-    }
-
-    function goToPoint(point: Point): void {
-        console.info("Go to point: " + JSON.stringify(point))
-
-        const scaleY = immediateUxState.scale
-
-        const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
-        const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
-
-        if (animateMapScrolling) {
-            setNewTranslatedAnimated(newTranslateX, newTranslateY)
-        } else {
-            immediateUxState.translate = {
-                x: newTranslateX,
-                y: newTranslateY
-            }
-        }
-    }
-
-    function moveGame(newTranslateX: number, newTranslateY: number): void {
-        if (animateMapScrolling) {
-            setNewTranslatedAnimated(newTranslateX, newTranslateY)
-        } else {
-            immediateUxState.translate = { x: newTranslateX, y: newTranslateY }
-        }
-    }
-
-    function zoom(newScale: number): void {
-
-        // Set boundaries on how much scaling is allowed
-        newScale = Math.min(newScale, MAX_SCALE)
-        newScale = Math.max(newScale, MIN_SCALE)
-
-        if (animateZoom) {
-            animator.animate('ZOOM', (newScale) => {
-                const centerGamePoint = {
-                    x: (immediateUxState.width / 2 - immediateUxState.translate.x) / immediateUxState.scale,
-                    y: (immediateUxState.height / 2 + immediateUxState.translate.y) / (immediateUxState.scale)
-                }
-
-                const newTranslate = {
-                    x: immediateUxState.width / 2 - centerGamePoint.x * newScale,
-                    y: immediateUxState.height / 2 - immediateUxState.height + centerGamePoint.y * newScale
-                }
-
-                immediateUxState.translate = newTranslate
-                immediateUxState.scale = newScale
-            },
-                immediateUxState.scale,
-                newScale)
-        } else {
-            const centerGamePoint = {
-                x: (immediateUxState.width / 2 - immediateUxState.translate.x) / immediateUxState.scale,
-                y: (immediateUxState.height / 2 + immediateUxState.translate.y) / (immediateUxState.scale)
-            }
-
-            const newTranslate = {
-                x: immediateUxState.width / 2 - centerGamePoint.x * newScale,
-                y: immediateUxState.height / 2 - immediateUxState.height + centerGamePoint.y * newScale
-            }
-
-            immediateUxState.translate = newTranslate
-            immediateUxState.scale = newScale
-        }
-    }
-
-    function onMouseDown(event: React.MouseEvent): void {
-        if (event.button === 2) {
-            immediateUxState.mouseDown = true
-            immediateUxState.mouseDownX = event.pageX
-            immediateUxState.mouseDownY = event.pageY
-            immediateUxState.mouseMoving = false
-
-            immediateUxState.translateXAtMouseDown = immediateUxState.translate.x
-            immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
-
-            setCursor('DRAGGING')
-        } else if (event.button === 0 && newRoad !== undefined) {
-            setCursor('BUILDING_ROAD_PRESSED')
-        }
-
-        event.stopPropagation()
-    }
-
-    function onMouseMove(event: React.MouseEvent): void {
-        if (immediateUxState.mouseDown) {
-            const deltaX = (event.pageX - immediateUxState.mouseDownX)
-            const deltaY = (event.pageY - immediateUxState.mouseDownY)
-
-            /* Detect move to separate move from click */
-            if (deltaX * deltaX + deltaY * deltaY > 25) {
-                immediateUxState.mouseMoving = true
-            }
-
-            immediateUxState.translate = {
-                x: immediateUxState.translateXAtMouseDown + deltaX,
-                y: immediateUxState.translateYAtMouseDown + deltaY
-            }
-        }
-
-        event.stopPropagation()
-    }
-
-    function onMouseUp(event: React.MouseEvent): void {
-        if (immediateUxState.mouseMoving) {
-            immediateUxState.mouseDown = false
-            immediateUxState.mouseMoving = false
-
-            setCursor('NOTHING')
-        }
-
-        if (newRoad !== undefined) {
-            setCursor('BUILDING_ROAD')
-        }
-
-        event.stopPropagation()
-    }
-
-    // eslint-disable-next-line
-    function onMouseLeave(_event: React.MouseEvent): void {
-        setCursor('NOTHING')
-
-        immediateUxState.mouseDown = false
-        immediateUxState.mouseMoving = false
-    }
-
     useEffect(
         () => {
             console.log("Use effect: start event and window resize listeners")
 
-            function nopEventListener(event: MouseEvent) {
+            function nopEventListener(event: MouseEvent): void {
                 event.preventDefault()
             }
 
-            function windowResizeListener() {
+            function windowResizeListener(): void {
                 if (selfNameRef.current) {
                     immediateUxState.width = selfNameRef.current.clientWidth
                     immediateUxState.height = selfNameRef.current.clientHeight
@@ -473,7 +303,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     useEffect(
         () => {
-            function setTypingCommands() {
+            function setTypingCommands(): void {
                 const player = api.players.get(selfPlayerId)
                 const nation = player?.nation ?? 'VIKINGS'
                 const color = player?.color ?? 'GREEN'
@@ -673,7 +503,197 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }, []
     )
 
-    async function onPointClicked(point: Point): Promise<void> {
+    // Functions
+    const openSingletonWindow = useCallback((window: WindowType) => {
+        setWindows(prevWindows => [
+            ...prevWindows.filter(w => w.type !== window.type),
+            {
+                ...window,
+                id: nextWindowId()
+            }])
+    }, [])
+
+    const openWindow = useCallback((window: WindowType) => {
+        setWindows(windows => [
+            ...windows,
+            {
+                ...window,
+                id: nextWindowId()
+            }])
+    }, [])
+
+    const closeWindow = useCallback((id: number) => {
+        setWindows(windows => windows.filter(w => w.id !== id))
+    }, [])
+
+    const closeActiveWindow = useCallback(() => setWindows(windows => windows.slice(0, -2)), [])
+
+    const raiseWindow = useCallback((id: number) => {
+        setWindows(prevWindows => {
+            const window = prevWindows.find(w => w.id === id)
+
+            const remaining = prevWindows.filter(w => w.id !== id)
+
+            return window !== undefined ? [...remaining, window] : remaining
+        })
+    }, [])
+
+    const goToHouse = useCallback((houseId: HouseId) => {
+        console.info("Go to house immediately: " + houseId)
+
+        const house = api.houses.get(houseId)
+
+        if (house) {
+            goToPoint({ x: house.x, y: house.y })
+
+            setSelected({ x: house.x, y: house.y })
+        }
+    }, [])
+
+    const scrollToHouse = useCallback((houseId: HouseId) => {
+        console.info("Go to house: " + houseId)
+
+        const house = api.houses.get(houseId)
+
+        if (house) {
+            scrollToPoint({ x: house.x, y: house.y })
+
+            setSelected({ x: house.x, y: house.y })
+        }
+    }, [])
+
+    const setNewTranslatedAnimated = useCallback((newTranslateX: number, newTranslateY: number) => {
+        animator.animateSeveral('TRANSLATE', (newTranslate) => {
+            immediateUxState.translate = {
+                x: newTranslate[0],
+                y: newTranslate[1]
+            }
+        },
+            [immediateUxState.translate.x, immediateUxState.translate.y],
+            [newTranslateX, newTranslateY])
+    }, [])
+
+    const goToPoint = useCallback((point: Point) => {
+        const scaleY = immediateUxState.scale
+
+        const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
+        const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
+
+        immediateUxState.translate = {
+            x: newTranslateX,
+            y: newTranslateY
+        }
+    }, [])
+
+    const scrollToPoint = useCallback((point: Point) => {
+        if (animateMapScrolling) {
+            const scaleY = immediateUxState.scale
+
+            const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
+            const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
+
+            setNewTranslatedAnimated(newTranslateX, newTranslateY)
+        } else {
+            goToPoint(point)
+        }
+    }, [animateMapScrolling])
+
+    const moveGame = useCallback((newTranslateX: number, newTranslateY: number) => {
+        if (animateMapScrolling) {
+            setNewTranslatedAnimated(newTranslateX, newTranslateY)
+        } else {
+            immediateUxState.translate = { x: newTranslateX, y: newTranslateY }
+        }
+    }, [animateMapScrolling])
+
+    const zoom = useCallback((newScale: number) => {
+        newScale = Math.min(newScale, MAX_SCALE)
+        newScale = Math.max(newScale, MIN_SCALE)
+
+        if (animateZoom) {
+            animator.animate('ZOOM', (newScale) => {
+                immediateUxState.translate = calcZoom(
+                    immediateUxState.width,
+                    immediateUxState.height,
+                    immediateUxState.translate,
+                    immediateUxState.scale,
+                    newScale)
+                immediateUxState.scale = newScale
+            },
+                immediateUxState.scale,
+                newScale)
+        } else {
+            immediateUxState.translate = calcZoom(
+                immediateUxState.width,
+                immediateUxState.height,
+                immediateUxState.translate,
+                immediateUxState.scale,
+                newScale)
+            immediateUxState.scale = newScale
+        }
+    }, [animateZoom])
+
+    const onMouseDown = useCallback((event: React.MouseEvent) => {
+        if (event.button === 2) {
+            immediateUxState.mouseDown = true
+            immediateUxState.mouseDownX = event.pageX
+            immediateUxState.mouseDownY = event.pageY
+            immediateUxState.mouseMoving = false
+
+            immediateUxState.translateXAtMouseDown = immediateUxState.translate.x
+            immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
+
+            setCursor('DRAGGING')
+        } else if (event.button === 0 && newRoad !== undefined) {
+            setCursor('BUILDING_ROAD_PRESSED')
+        }
+
+        event.stopPropagation()
+    }, [])
+
+    const onMouseMove = useCallback((event: React.MouseEvent) => {
+        if (immediateUxState.mouseDown) {
+            const deltaX = (event.pageX - immediateUxState.mouseDownX)
+            const deltaY = (event.pageY - immediateUxState.mouseDownY)
+
+            /* Detect move to separate move from click */
+            if (deltaX * deltaX + deltaY * deltaY > 25) {
+                immediateUxState.mouseMoving = true
+            }
+
+            immediateUxState.translate = {
+                x: immediateUxState.translateXAtMouseDown + deltaX,
+                y: immediateUxState.translateYAtMouseDown + deltaY
+            }
+        }
+
+        event.stopPropagation()
+    }, [])
+
+    const onMouseUp = useCallback((event: React.MouseEvent) => {
+        if (immediateUxState.mouseMoving) {
+            immediateUxState.mouseDown = false
+            immediateUxState.mouseMoving = false
+
+            setCursor('NOTHING')
+        }
+
+        if (newRoad !== undefined) {
+            setCursor('BUILDING_ROAD')
+        }
+
+        event.stopPropagation()
+    }, [])
+
+    // eslint-disable-next-line
+    const onMouseLeave = useCallback((_event: React.MouseEvent) => {
+        setCursor('NOTHING')
+
+        immediateUxState.mouseDown = false
+        immediateUxState.mouseMoving = false
+    }, [])
+
+    const onPointClicked = useCallback(async (point: Point) => {
         console.info("Clicked point: " + point.x + ", " + point.y)
 
         /* Filter clicks that are really the end of moving the mouse */
@@ -756,9 +776,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             setSelected(point)
         }
-    }
+    }, [newRoad, possibleRoadConnections])
 
-    async function onPointDoubleClicked(point: Point): Promise<void> {
+    const onPointDoubleClicked = useCallback(async (point: Point) => {
         console.info("Double click on " + point.x + ", " + point.y)
 
         /* First, handle double clicks differently if a new road is being created */
@@ -851,22 +871,23 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         } else {
             openWindow({ type: 'NO_ACTION', point })
         }
-    }
+    }, [newRoad])
 
-    function onKeyDown(event: React.KeyboardEvent): void {
+    const onKeyDown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === "Escape") {
 
-            /* Close the active menu (if there is an active menu) */
+            // Close the active menu (if there is an active menu)
             if (windows.length > 0) {
-                closeWindow(windows[windows.length - 1].id)
+                closeActiveWindow()
 
-                /* Stop building a new road */
-            } else if (newRoad) {
+            // Stop building a new road
+            } else if (newRoad || possibleRoadConnections) {
                 setNewRoad(undefined)
+                setPossibleRoadConnections(undefined)
 
                 api.removeLocalRoad("LOCAL")
 
-                /* Otherwise, send the escape to the type controller */
+            // Otherwise, send the escape to the type controller
             } else {
                 const keyEvent = new CustomEvent("key", { detail: { key: event.key, metaKey: event.metaKey, altKey: event.altKey, ctrlKey: event.ctrlKey } })
 
@@ -894,9 +915,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             document.dispatchEvent(keyEvent)
         }
-    }
+    }, [windows, newRoad])
 
-    async function startNewRoad(point: Point): Promise<void> {
+    const startNewRoad = useCallback(async (point: Point) => {
 
         /* Start the list of points in the new road with the clicked point */
         console.info("Start new road construction at: " + JSON.stringify({ x: point.x, y: point.y }))
@@ -906,13 +927,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         setNewRoad([{ x: point.x, y: point.y }])
         setPossibleRoadConnections(pointInformation.possibleRoadConnections)
-    }
+    }, [])
 
-    function copyTouch(touch: React.Touch): StoredTouch {
+    const copyTouch = useCallback((touch: React.Touch) => {
         return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY }
-    }
+    }, [])
 
-    function onTouchStart(event: React.TouchEvent): void {
+    const onTouchStart = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
         console.log("touchstart.")
@@ -941,9 +962,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             immediateUxState.translateXAtMouseDown = immediateUxState.translate.x
             immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
         }
-    }
+    }, [])
 
-    function onTouchMove(event: React.TouchEvent): void {
+    const onTouchMove = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
         const touches = event.changedTouches
@@ -984,13 +1005,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 console.log("can't figure out which touch to continue")
             }
         }
-    }
+    }, [])
 
-    function onWheel(event: React.WheelEvent): void {
+    const onWheel = useCallback((event: React.WheelEvent) => {
         zoom(immediateUxState.scale - event.deltaY / 20.0)
-    }
+    }, [])
 
-    function onTouchCancel(event: React.TouchEvent): void {
+    const onTouchCancel = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
         console.log("touchcancel.")
@@ -1003,9 +1024,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         for (let i = 0; i < touches.length; i++) {
             ongoingTouches.delete(touches[i].identifier)
         }
-    }
+    }, [])
 
-    function onTouchEnd(event: React.TouchEvent): void {
+    const onTouchEnd = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
         /* Stop moving */
@@ -1022,8 +1043,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 console.log("can't figure out which touch to end")
             }
         }
-    }
+    }, [])
 
+    // Render
     return (
         <div
             className="App"
@@ -1199,11 +1221,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             <GameMessagesViewer
                 nation={player?.nation ?? 'ROMANS'}
-                onGoToHouse={(houseId: HouseId) => goToHouse(houseId)}
-                onGoToPoint={(point: Point) => goToPoint(point)}
+                onGoToHouse={(houseId: HouseId) => scrollToHouse(houseId)}
+                onGoToPoint={(point: Point) => scrollToPoint(point)}
             />
 
-            <ExpandChatBox playerId={selfPlayerId} roomId={`game-${gameId}`}/>
+            <ExpandChatBox playerId={selfPlayerId} roomId={`game-${gameId}`} />
 
             {showMusicPlayer &&
                 <MusicPlayer volume={musicVolume} />

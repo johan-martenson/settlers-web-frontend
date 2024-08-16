@@ -631,7 +631,7 @@ function gamePointToScreenPointWithHeightAdjustment(gamePoint: Point, height: nu
     }
 }
 
-function surroundingPoints(point: Point) {
+function surroundingPoints(point: Point): Point[] {
     return [
         { x: point.x - 2, y: point.y },
         { x: point.x - 1, y: point.y + 1 },

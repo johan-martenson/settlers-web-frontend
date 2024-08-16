@@ -139,17 +139,7 @@ export const immediateUxState = {
     scale: DEFAULT_SCALE
 }
 
-let trackNextWindowId = 0
-
-const ongoingTouches: Map<number, StoredTouch> = new Map()
-
 // Functions
-function nextWindowId(): number {
-    trackNextWindowId++
-
-    return trackNextWindowId - 1
-}
-
 function calcZoom(width: number, height: number, translate: { x: number, y: number }, prevScale: number, newScale: number) {
     const centerGamePoint = {
         x: (width / 2 - translate.x) / prevScale,
@@ -227,6 +217,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [possibleRoadConnections, setPossibleRoadConnections] = useState<Point[]>()
     const [player, setPlayer] = useState<PlayerInformation>()
     const [windowHeight, setWindowHeight] = useState<number>(0)
+    const [ongoingTouches, neverSetOngoingTouched] = useState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
+    const [nextWindowIdContainer, neverSetNextWindowIdContainer] = useState<{ nextWindowId: number }>({ nextWindowId: 0 })
 
     // Effects
     const gameMonitorCallbacks: GameListener = {
@@ -504,6 +496,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     )
 
     // Functions
+    const nextWindowId = useCallback(() => {
+        nextWindowIdContainer.nextWindowId += 1
+
+        return nextWindowIdContainer.nextWindowId - 1
+    }, [nextWindowIdContainer])
+
     const openSingletonWindow = useCallback((window: WindowType) => {
         setWindows(prevWindows => [
             ...prevWindows.filter(w => w.type !== window.type),
@@ -880,14 +878,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             if (windows.length > 0) {
                 closeActiveWindow()
 
-            // Stop building a new road
+                // Stop building a new road
             } else if (newRoad || possibleRoadConnections) {
                 setNewRoad(undefined)
                 setPossibleRoadConnections(undefined)
 
                 api.removeLocalRoad("LOCAL")
 
-            // Otherwise, send the escape to the type controller
+                // Otherwise, send the escape to the type controller
             } else {
                 const keyEvent = new CustomEvent("key", { detail: { key: event.key, metaKey: event.metaKey, altKey: event.altKey, ctrlKey: event.ctrlKey } })
 
@@ -962,7 +960,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             immediateUxState.translateXAtMouseDown = immediateUxState.translate.x
             immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
         }
-    }, [])
+    }, [ongoingTouches])
 
     const onTouchMove = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
@@ -1005,7 +1003,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 console.log("can't figure out which touch to continue")
             }
         }
-    }, [])
+    }, [ongoingTouches])
 
     const onWheel = useCallback((event: React.WheelEvent) => {
         zoom(immediateUxState.scale - event.deltaY / 20.0)
@@ -1024,7 +1022,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         for (let i = 0; i < touches.length; i++) {
             ongoingTouches.delete(touches[i].identifier)
         }
-    }, [])
+    }, [ongoingTouches])
 
     const onTouchEnd = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
@@ -1043,7 +1041,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 console.log("can't figure out which touch to end")
             }
         }
-    }, [])
+    }, [ongoingTouches])
 
     // Render
     return (
@@ -1241,6 +1239,5 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         </div>
     )
 }
-
 
 export default Play

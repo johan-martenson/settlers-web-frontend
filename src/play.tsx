@@ -82,21 +82,20 @@ type NoActionWindow = {
     point: Point
 }
 
-type WindowType = HouseWindow |
-    FlagWindow |
-    ConstructionWindow |
-    StatisticsWindow |
-    GuideWindow |
-    DebugWindow |
-    QuotaWindow |
-    RoadWindow |
-    TransportPriorityWindow |
-    FollowWindow |
-    NoActionWindow
+type WindowType =
+    | HouseWindow
+    | FlagWindow
+    | ConstructionWindow
+    | StatisticsWindow
+    | GuideWindow
+    | DebugWindow
+    | QuotaWindow
+    | RoadWindow
+    | TransportPriorityWindow
+    | FollowWindow
+    | NoActionWindow
 
-type Window = {
-    id: number
-} & WindowType
+type Window = { id: number } & WindowType
 
 type StoredTouch = {
     identifier: number
@@ -126,13 +125,11 @@ const ARROW_KEY_MOVE_DISTANCE = 20
 // State
 export const immediateUxState = {
     mouseDown: false,
-    mouseDownX: 0,
-    mouseDownY: 0,
+    mouseDownAt: { x: 0, y: 0 },
     mouseMoving: false,
     touchMoveOngoing: false,
     touchIdentifier: 0,
-    translateXAtMouseDown: 0,
-    translateYAtMouseDown: 0,
+    translateAtMouseDown: { x: 0, y: 0 },
     width: 0,
     height: 0,
     translate: { x: 0, y: 0 },
@@ -170,20 +167,20 @@ const Expired = () => {
 const PauseSign = () => {
     return (
         <div style={{
-            position: "absolute",
-            left: "0",
-            right: "0",
-            top: "50%",
-            fontSize: "5rem",
-            color: "white",
-            height: "auto",
-            lineHeight: "8rem",
-            display: "flex",
-            justifyContent: "center",
+            position: 'absolute',
+            left: '0',
+            right: '0',
+            top: '50%',
+            fontSize: '5rem',
+            color: 'white',
+            height: 'auto',
+            lineHeight: '8rem',
+            display: 'flex',
+            justifyContent: 'center',
             zIndex: 2000
         }}>
             <div style={{
-                backgroundColor: "black", borderRadius: "5px"
+                backgroundColor: 'black', borderRadius: '5px'
             }}>
                 The game is paused
             </div>
@@ -194,7 +191,7 @@ const PauseSign = () => {
 const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     // References
-    const selfNameRef = useRef<HTMLDivElement | null>(null)
+    const selfContainerRef = useRef<HTMLDivElement | null>(null)
 
     // State
     const [commands, setCommands] = useState<Map<string, Command>>(new Map())
@@ -220,24 +217,19 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [ongoingTouches, neverSetOngoingTouched] = useState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
     const [nextWindowIdContainer, neverSetNextWindowIdContainer] = useState<{ nextWindowId: number }>({ nextWindowId: 0 })
 
-    // Effects
+    // Constants
     const gameMonitorCallbacks: GameListener = {
         onMonitoringStarted: () => {
             setMonitoringReady(true)
-            console.log("Monitoring started")
+            console.log('Monitoring started')
         },
         onGameStateChanged: (gameState: GameState) => setGameState(gameState)
     }
 
-    useEffect(
-        () => {
-            if (newRoad === undefined) {
-                setCursor('NOTHING')
-            } else {
-                setCursor('BUILDING_ROAD')
-            }
-        }, [newRoad]
-    )
+    // Effects
+    useEffect(() => {
+        setCursor(newRoad === undefined ? 'NOTHING' : 'BUILDING_ROAD')
+    }, [newRoad])
 
     useEffect(
         () => {
@@ -245,17 +237,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 await api.connectAndWaitForConnection()
 
                 api.addGameStateListener(gameMonitorCallbacks)
-
                 await api.followGame(gameId, selfPlayerId)
             }
 
-            console.log("Use effect: Start listening to game")
+            console.log('Use effect: Start listening to game')
 
             connectAndFollow(gameId, selfPlayerId)
 
             return () => {
                 console.log('Use effect: Stop listening to game')
-
                 api.removeGameStateListener(gameMonitorCallbacks)
             }
         }, [gameId, selfPlayerId]
@@ -263,26 +253,23 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     useEffect(
         () => {
-            console.log("Use effect: start event and window resize listeners")
+            console.log('Use effect: start event and window resize listeners')
 
             function nopEventListener(event: MouseEvent): void {
                 event.preventDefault()
             }
 
             function windowResizeListener(): void {
-                if (selfNameRef.current) {
-                    immediateUxState.width = selfNameRef.current.clientWidth
-                    immediateUxState.height = selfNameRef.current.clientHeight
+                if (selfContainerRef.current) {
+                    immediateUxState.width = selfContainerRef.current.clientWidth
+                    immediateUxState.height = selfContainerRef.current.clientHeight
 
-                    setWindowHeight(selfNameRef.current.clientHeight)
+                    setWindowHeight(selfContainerRef.current.clientHeight)
                 }
             }
 
-            if (document.addEventListener) {
-                document.addEventListener('contextmenu', nopEventListener, false)
-            }
-
-            window.addEventListener("resize", windowResizeListener)
+            document.addEventListener('contextmenu', nopEventListener, false)
+            window.addEventListener('resize', windowResizeListener)
 
             return () => {
                 console.log('Use effect: removing event and window resize listeners')
@@ -290,7 +277,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 document.removeEventListener('contextmenu', nopEventListener)
                 window.removeEventListener('resize', windowResizeListener)
             }
-        }, [selfNameRef]
+        }, [selfContainerRef]
     )
 
     useEffect(
@@ -304,30 +291,29 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 SMALL_HOUSES.forEach(building => commands.set(building, {
                     action: (point: Point) => api.placeHouse(building, point),
-                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'small') !== undefined,
+                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('small'),
                     icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
                 }))
                 MEDIUM_HOUSES.forEach(building => commands.set(building, {
                     action: (point: Point) => api.placeHouse(building, point),
-                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'medium') !== undefined,
+                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('medium'),
                     icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
                 }))
                 LARGE_HOUSES.forEach(building => building !== 'Headquarter' && commands.set(building, {
                     action: (point: Point) => api.placeHouse(building, point),
-                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'large') !== undefined,
+                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('large'),
                     icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
                 }))
 
-                commands.set("Kill websocket", {
+                commands.set('Kill websocket', {
                     action: () => api.killWebsocket(),
                     icon: <Dismiss24Filled />
                 })
 
-                commands.set("Road", {
+                commands.set('Road', {
                     action: async (point: Point) => {
-                        console.log("Building road")
+                        console.log('Building road')
 
-                        /* Get the possible connections from the server and draw them */
                         const pointDownRight = { x: point.x + 1, y: point.y - 1 }
                         const pointInformations = await api.getInformationOnPoints([point, pointDownRight])
 
@@ -340,17 +326,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             return
                         }
 
-                        /* If a house is selected, start the road from the flag */
-                        if (pointInformation.is && pointInformation.is === "building") {
-                            if (pointDownRightInformation === undefined) {
-                                console.error(`Failed to get point down right information: ${pointDownRight}!`)
-
-                                return
-                            }
-
+                        // If a house is selected, start the road from the flag
+                        if (pointInformation.is === 'building' && pointDownRightInformation !== undefined) {
                             setNewRoad([pointDownRight])
                             setPossibleRoadConnections(pointDownRightInformation.possibleRoadConnections)
-                        } else if (pointInformation.is && pointInformation.is === "flag") {
+                        } else if (pointInformation.is === 'flag') {
                             setNewRoad([point])
                             setPossibleRoadConnections(pointInformation.possibleRoadConnections)
                         }
@@ -358,33 +338,33 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'building' || pointInformation.is === 'flag'
                 })
 
-                commands.set("Flag", {
+                commands.set('Flag', {
                     action: (point: Point) => api.placeFlag(point),
-                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.find(a => a === 'flag') !== undefined,
-                    icon: <FlagIcon nation={nation} type="NORMAL" animate scale={0.7} color={color} />
+                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('flag'),
+                    icon: <FlagIcon nation={nation} type='NORMAL' animate scale={0.7} color={color} />
                 })
-                commands.set("Remove (house, flag, or road)", {
+                commands.set('Remove (house, flag, or road)', {
                     action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'building' &&
                         api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
                 })
-                commands.set("Statistics", {
+                commands.set('Statistics', {
                     action: () => {
                         openSingletonWindow({ type: 'STATISTICS' })
                     }
                 })
-                commands.set("Titles", {
+                commands.set('Titles', {
                     action: () => setShowTitles(!showTitles)
                 })
-                commands.set("Geologist", {
+                commands.set('Geologist', {
                     action: (point: Point) => api.callGeologist(point),
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
                 })
-                commands.set("Scout", {
+                commands.set('Scout', {
                     action: (point: Point) => api.callScout(point),
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
                 })
-                commands.set("Evacuate building", {
+                commands.set('Evacuate building', {
                     action: (point: Point) => {
                         const house = api.houseAt(point)
 
@@ -394,13 +374,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     },
                     filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
                 })
-                commands.set("Transport priority", {
+                commands.set('Transport priority', {
                     action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' })
                 })
-                commands.set("List statistics", {
+                commands.set('List statistics', {
                     action: () => printVariables()
                 })
-                commands.set("Upgrade", {
+                commands.set('Upgrade', {
                     action: (point: Point) => {
                         const houseInformation = api.getHouseAtPointLocal(point)
 
@@ -409,41 +389,41 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         }
                     },
                     filter: (pointInformation: PointInformation) => {
-                        if (pointInformation.is !== 'building' || pointInformation?.buildingId === undefined) {
+                        if (pointInformation.is !== 'building' || pointInformation.buildingId === undefined) {
                             return false
                         }
 
                         const houseInformation = api.houses.get(pointInformation.buildingId)
 
-                        return (houseInformation?.state === 'OCCUPIED' || houseInformation?.state === 'UNOCCUPIED') &&
-                            (houseInformation?.type == 'Barracks' || houseInformation?.type == 'GuardHouse' ||
-                                houseInformation?.type == 'WatchTower')
+                        return houseInformation
+                            && ['Barracks', 'GuardHouse', 'WatchTower'].includes(houseInformation.type)
+                            && ['OCCUPIED', 'UNOCCUPIED'].includes(houseInformation.state)
                     },
                     icon: <AddCircle24Regular />
                 })
-                commands.set("Fps", {
+                commands.set('Fps', {
                     action: () => { setShowFpsCounter(!showFpsCounter) },
                     icon: <TopSpeed24Filled />
                 })
-                commands.set("Menu", {
+                commands.set('Menu', {
                     action: () => {
                         setShowMenu(true)
                     },
                     icon: <CalendarAgenda24Regular />
                 })
-                commands.set("Quotas", {
+                commands.set('Quotas', {
                     action: () => openSingletonWindow({ type: 'QUOTA' })
                 })
-                commands.set("Pause game", {
+                commands.set('Pause game', {
                     action: () => api.pauseGame()
                 })
-                commands.set("Resume game", {
+                commands.set('Resume game', {
                     action: () => api.resumeGame()
                 })
-                commands.set("Debug", {
+                commands.set('Debug', {
                     action: () => openSingletonWindow({ type: 'DEBUG' })
                 })
-                commands.set("Follow", {
+                commands.set('Follow', {
                     action: (point: Point) => openWindow({ type: 'FOLLOW', point })
                 })
 
@@ -452,33 +432,29 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             console.log('Use effect: set commands')
 
-            api.waitForGameDataAvailable().then(
-                () => {
-                    setTypingCommands()
+            api.waitForGameDataAvailable().then(() => {
+                setTypingCommands()
+                setPlayer(api.players.get(selfPlayerId))
 
-                    // Store information about the player
-                    setPlayer(api.players.get(selfPlayerId))
+                if (selfContainerRef.current) {
+                    immediateUxState.width = selfContainerRef.current.clientWidth
+                    immediateUxState.height = selfContainerRef.current.clientHeight
 
-                    if (selfNameRef.current) {
-                        immediateUxState.width = selfNameRef.current.clientWidth
-                        immediateUxState.height = selfNameRef.current.clientHeight
+                    setWindowHeight(selfContainerRef.current.clientHeight)
 
-                        setWindowHeight(selfNameRef.current.clientHeight)
-
-                        /* Request focus if the game is not blocked */
-                        if (!showMenu) {
-                            selfNameRef.current.focus()
-                        }
+                    if (!showMenu) {
+                        selfContainerRef.current.focus()
                     }
+                }
 
-                    /* Center the view on the headquarter on the first update */
-                    const headquarter = getHeadquarterForPlayer(selfPlayerId)
+                /* Center the view on the headquarter on the first update */
+                const headquarter = getHeadquarterForPlayer(selfPlayerId)
 
-                    if (headquarter) {
-                        goToHouse(headquarter.id)
-                    }
-                })
-        }, [monitoringReady]
+                if (headquarter) {
+                    goToHouse(headquarter.id)
+                }
+            })
+        }, [monitoringReady, selfPlayerId, showMenu]
     )
 
     useEffect(
@@ -505,23 +481,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const openSingletonWindow = useCallback((window: WindowType) => {
         setWindows(prevWindows => [
             ...prevWindows.filter(w => w.type !== window.type),
-            {
-                ...window,
-                id: nextWindowId()
-            }])
-    }, [])
+            { ...window, id: nextWindowId() }])
+    }, [nextWindowId])
 
     const openWindow = useCallback((window: WindowType) => {
-        setWindows(windows => [
-            ...windows,
-            {
-                ...window,
-                id: nextWindowId()
-            }])
-    }, [])
+        setWindows(prevWindows => [
+            ...prevWindows,
+            { ...window, id: nextWindowId() }])
+    }, [nextWindowId])
 
     const closeWindow = useCallback((id: number) => {
-        setWindows(windows => windows.filter(w => w.id !== id))
+        setWindows(prevWindows => prevWindows.filter(w => w.id !== id))
     }, [])
 
     const closeActiveWindow = useCallback(() => setWindows(windows => windows.slice(0, -2)), [])
@@ -530,56 +500,47 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         setWindows(prevWindows => {
             const window = prevWindows.find(w => w.id === id)
 
-            const remaining = prevWindows.filter(w => w.id !== id)
-
-            return window !== undefined ? [...remaining, window] : remaining
+            return window !== undefined ? [...prevWindows.filter(w => w.id !== id), window] : prevWindows
         })
     }, [])
 
     const goToHouse = useCallback((houseId: HouseId) => {
-        console.info("Go to house immediately: " + houseId)
+        console.info('Go to house immediately: ' + houseId)
 
         const house = api.houses.get(houseId)
 
         if (house) {
             goToPoint({ x: house.x, y: house.y })
-
             setSelected({ x: house.x, y: house.y })
         }
     }, [])
 
     const scrollToHouse = useCallback((houseId: HouseId) => {
-        console.info("Go to house: " + houseId)
+        console.info('Go to house: ' + houseId)
 
         const house = api.houses.get(houseId)
 
         if (house) {
             scrollToPoint({ x: house.x, y: house.y })
-
             setSelected({ x: house.x, y: house.y })
         }
     }, [])
 
-    const setNewTranslatedAnimated = useCallback((newTranslateX: number, newTranslateY: number) => {
-        animator.animateSeveral('TRANSLATE', (newTranslate) => {
-            immediateUxState.translate = {
-                x: newTranslate[0],
-                y: newTranslate[1]
-            }
+    const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
+        animator.animateSeveral('TRANSLATE', newTranslate => {
+            immediateUxState.translate = { x: newTranslate[0], y: newTranslate[1] }
         },
             [immediateUxState.translate.x, immediateUxState.translate.y],
-            [newTranslateX, newTranslateY])
+            [newTranslate.x, newTranslate.y])
     }, [])
 
     const goToPoint = useCallback((point: Point) => {
         const scaleY = immediateUxState.scale
 
-        const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
-        const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
-
         immediateUxState.translate = {
-            x: newTranslateX,
-            y: newTranslateY
+            x: (immediateUxState.width / 2) - point.x * immediateUxState.scale,
+            y: (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
+
         }
     }, [])
 
@@ -587,22 +548,22 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         if (animateMapScrolling) {
             const scaleY = immediateUxState.scale
 
-            const newTranslateX = (immediateUxState.width / 2) - point.x * immediateUxState.scale
-            const newTranslateY = (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
-
-            setNewTranslatedAnimated(newTranslateX, newTranslateY)
+            setNewTranslatedAnimated({
+                x: (immediateUxState.width / 2) - point.x * immediateUxState.scale,
+                y: (immediateUxState.height / 2) + point.y * scaleY - immediateUxState.height
+            })
         } else {
             goToPoint(point)
         }
-    }, [animateMapScrolling])
+    }, [animateMapScrolling, setNewTranslatedAnimated, goToPoint])
 
-    const moveGame = useCallback((newTranslateX: number, newTranslateY: number) => {
+    const moveGame = useCallback((newTranslate: { x: number, y: number }) => {
         if (animateMapScrolling) {
-            setNewTranslatedAnimated(newTranslateX, newTranslateY)
+            setNewTranslatedAnimated(newTranslate)
         } else {
-            immediateUxState.translate = { x: newTranslateX, y: newTranslateY }
+            immediateUxState.translate = newTranslate
         }
-    }, [animateMapScrolling])
+    }, [animateMapScrolling, setNewTranslatedAnimated])
 
     const zoom = useCallback((newScale: number) => {
         newScale = Math.min(newScale, MAX_SCALE)
@@ -615,7 +576,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     immediateUxState.height,
                     immediateUxState.translate,
                     immediateUxState.scale,
-                    newScale)
+                    newScale
+                )
                 immediateUxState.scale = newScale
             },
                 immediateUxState.scale,
@@ -626,7 +588,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 immediateUxState.height,
                 immediateUxState.translate,
                 immediateUxState.scale,
-                newScale)
+                newScale
+            )
             immediateUxState.scale = newScale
         }
     }, [animateZoom])
@@ -634,12 +597,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onMouseDown = useCallback((event: React.MouseEvent) => {
         if (event.button === 2) {
             immediateUxState.mouseDown = true
-            immediateUxState.mouseDownX = event.pageX
-            immediateUxState.mouseDownY = event.pageY
+            immediateUxState.mouseDownAt = { x: event.pageX, y: event.pageY }
             immediateUxState.mouseMoving = false
 
-            immediateUxState.translateXAtMouseDown = immediateUxState.translate.x
-            immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
+            immediateUxState.translateAtMouseDown = { ...immediateUxState.translate }
 
             setCursor('DRAGGING')
         } else if (event.button === 0 && newRoad !== undefined) {
@@ -651,17 +612,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     const onMouseMove = useCallback((event: React.MouseEvent) => {
         if (immediateUxState.mouseDown) {
-            const deltaX = (event.pageX - immediateUxState.mouseDownX)
-            const deltaY = (event.pageY - immediateUxState.mouseDownY)
+            const deltaX = (event.pageX - immediateUxState.mouseDownAt.x)
+            const deltaY = (event.pageY - immediateUxState.mouseDownAt.y)
 
             /* Detect move to separate move from click */
-            if (deltaX * deltaX + deltaY * deltaY > 25) {
+            if (deltaX ** 2 + deltaY ** 2 > 25) {
                 immediateUxState.mouseMoving = true
             }
 
             immediateUxState.translate = {
-                x: immediateUxState.translateXAtMouseDown + deltaX,
-                y: immediateUxState.translateYAtMouseDown + deltaY
+                x: immediateUxState.translateAtMouseDown.x + deltaX,
+                y: immediateUxState.translateAtMouseDown.y + deltaY
             }
         }
 
@@ -681,7 +642,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         event.stopPropagation()
-    }, [])
+    }, [newRoad])
 
     // eslint-disable-next-line
     const onMouseLeave = useCallback((_event: React.MouseEvent) => {
@@ -692,7 +653,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [])
 
     const onPointClicked = useCallback(async (point: Point) => {
-        console.info("Clicked point: " + point.x + ", " + point.y)
+        console.info('Clicked point: ' + point.x + ', ' + point.y)
 
         /* Filter clicks that are really the end of moving the mouse */
         if (immediateUxState.mouseMoving) {
@@ -702,9 +663,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         /* A road is being built */
         if (newRoad && possibleRoadConnections) {
             const recent = newRoad[newRoad.length - 1]
-
-            /* Create the possible new road including the addition */
-            const possibleNewRoad = newRoad
+            const possibleNewRoad = [...newRoad]
 
             /* Handle the case where one of the directly adjacent possible new road connections is selected */
             if (possibleRoadConnections?.find(e => e.x === point.x && e.y === point.y)) {
@@ -714,27 +673,24 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             } else {
 
                 /* Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road */
-                // TODO: move to ws API
                 const possibleNewRoadSegment = (await api.findPossibleNewRoad(recent, point, newRoad)).possibleRoad
 
                 if (possibleNewRoadSegment) {
                     possibleNewRoad.push(...possibleNewRoadSegment.slice(1))
                 } else {
-
-                    /* Ignore the click if no possible road is available */
-                    console.log("Not possible to include in road. Ignoring.")
+                    console.log('Not possible to include in road. Ignoring.')
 
                     return
                 }
             }
 
-            console.log("Ongoing road construction: " + JSON.stringify(possibleNewRoad))
+            console.log(`Ongoing road construction: ${JSON.stringify(possibleNewRoad)}`)
 
             /* Handle the case when a flag is clicked and create a road to it. Also select the point of the flag */
             const flag = api.getFlagAtPointLocal(point)
 
             if (flag) {
-                console.info("Placing road directly to flag")
+                console.info('Placing road directly to flag')
 
                 // Do this first to make the UI feel quicker
                 setNewRoad(undefined)
@@ -757,12 +713,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 /* Add the new possible road points to the ongoing road and don't create the road */
             } else if (recent.x !== point.x || recent.y !== point.y) {
-                console.info("Continuing road building with extended road segment")
+                console.info('Continuing road building with extended road segment')
 
                 /* Get the available connections from the added point */
                 const pointInformation = await api.getInformationOnPoint(point)
 
-                console.log("Possible new road direct adjacent road connections: " + JSON.stringify(pointInformation.possibleRoadConnections))
+                console.log(`Possible new road direct adjacent road connections: ${JSON.stringify(pointInformation.possibleRoadConnections)}`)
 
                 setNewRoad(possibleNewRoad)
                 setPossibleRoadConnections(pointInformation.possibleRoadConnections)
@@ -770,24 +726,24 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             /* Select the point */
         } else {
-            console.info("Selecting point: " + point.x + ", " + point.y)
+            console.info('Selecting point: ' + point.x + ', ' + point.y)
 
             setSelected(point)
         }
     }, [newRoad, possibleRoadConnections])
 
     const onPointDoubleClicked = useCallback(async (point: Point) => {
-        console.info("Double click on " + point.x + ", " + point.y)
+        console.info(`Double click on ${point.x}, ${point.y}`)
 
         /* First, handle double clicks differently if a new road is being created */
         if (newRoad) {
-            console.log("New road exists")
+            console.log('New road exists')
 
             if (api.isAvailable(point, 'FLAG')) {
-                console.log("Can place flag")
+                console.log('Can place flag')
 
                 // Keep a reference to the new road so it doesn't get lost when the state is changed
-                const newRoadPoints = newRoad
+                const newRoadPoints = [...newRoad]
                 const lastPoint = newRoad[newRoad.length - 1]
 
                 // Only add this point to the road points if the distance is acceptable - otherwise let the backend fill in
@@ -802,9 +758,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 // Call the backend to make the changes take effect
                 api.placeRoadWithFlag(point, newRoadPoints)
 
-                console.info("Created flag and road")
+                console.info('Created flag and road')
             } else {
-                console.log("Could not place flag")
+                console.log('Could not place flag')
             }
 
             return
@@ -821,13 +777,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         const house = api.getHouseAtPointLocal(point)
 
         if (house) {
-            console.info("Clicked house " + JSON.stringify(house))
-
-            /* Show friendly house info for own house */
-            console.info("Friendly house")
+            console.info('Clicked house ' + JSON.stringify(house))
 
             openWindow({ type: 'HOUSE', house })
-
             setShowMenu(false)
 
             return
@@ -837,11 +789,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         const flag = api.getFlagAtPointLocal(point)
 
         if (flag) {
-            console.info("Clicked flag")
+            console.info('Clicked flag')
 
-            /* Show friendly flag dialog */
             if (flag.playerId === selfPlayerId) {
-                console.info("Friendly flag")
+                console.info('Friendly flag')
 
                 openWindow({ type: 'FLAG', flag })
             }
@@ -857,22 +808,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             api.placeFlag(pointInformation)
 
             setSelected(point)
-        }
-
-        else if (pointInformation.is === "road" && pointInformation.roadId) {
+        } else if (pointInformation.is === 'road') {
             openWindow({ type: 'ROAD_INFO', roadId: pointInformation.roadId })
-        }
-
-        /* Open the window to construct houses/flags/roads */
-        else if (pointInformation.canBuild && pointInformation.canBuild.length !== 0) {
+        } else if (pointInformation.canBuild.length !== 0) {
             openWindow({ type: 'CONSTRUCTION_WINDOW', pointInformation: pointInformation })
         } else {
             openWindow({ type: 'NO_ACTION', point })
         }
-    }, [newRoad])
+    }, [newRoad, selfPlayerId, setNewRoad, setSelected, setShowMenu, selfPlayerId, openWindow])
 
     const onKeyDown = useCallback((event: React.KeyboardEvent) => {
-        if (event.key === "Escape") {
+        if (event.key === 'Escape') {
 
             // Close the active menu (if there is an active menu)
             if (windows.length > 0) {
@@ -883,47 +829,61 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 setNewRoad(undefined)
                 setPossibleRoadConnections(undefined)
 
-                api.removeLocalRoad("LOCAL")
+                api.removeLocalRoad('LOCAL')
 
                 // Otherwise, send the escape to the type controller
             } else {
-                const keyEvent = new CustomEvent("key", { detail: { key: event.key, metaKey: event.metaKey, altKey: event.altKey, ctrlKey: event.ctrlKey } })
+                const keyEvent = new CustomEvent('key', {
+                    detail: {
+                        key: event.key,
+                        metaKey: event.metaKey,
+                        altKey: event.altKey,
+                        ctrlKey: event.ctrlKey
+                    }
+                })
 
                 document.dispatchEvent(keyEvent)
             }
-        } else if (event.key === " ") {
+        } else if (event.key === ' ') {
             setShowTitles(true)
             setShowAvailableConstruction(!showAvailableConstruction)
-        } else if (event.key === "ArrowUp") {
-            moveGame(immediateUxState.translate.x, immediateUxState.translate.y + ARROW_KEY_MOVE_DISTANCE)
-        } else if (event.key === "ArrowRight") {
-            moveGame(immediateUxState.translate.x - ARROW_KEY_MOVE_DISTANCE, immediateUxState.translate.y)
-        } else if (event.key === "ArrowDown") {
-            moveGame(immediateUxState.translate.x, immediateUxState.translate.y - ARROW_KEY_MOVE_DISTANCE)
-        } else if (event.key === "ArrowLeft") {
-            moveGame(immediateUxState.translate.x + ARROW_KEY_MOVE_DISTANCE, immediateUxState.translate.y)
-        } else if (event.key === "+") {
+        } else if (event.key === 'ArrowUp') {
+            moveGame({ ...immediateUxState.translate, y: immediateUxState.translate.y + ARROW_KEY_MOVE_DISTANCE })
+        } else if (event.key === 'ArrowRight') {
+            moveGame({ ...immediateUxState.translate, x: immediateUxState.translate.x - ARROW_KEY_MOVE_DISTANCE })
+        } else if (event.key === 'ArrowDown') {
+            moveGame({ ...immediateUxState.translate, y: immediateUxState.translate.y - ARROW_KEY_MOVE_DISTANCE })
+        } else if (event.key === 'ArrowLeft') {
+            moveGame({ ...immediateUxState.translate, x: immediateUxState.translate.x + ARROW_KEY_MOVE_DISTANCE })
+        } else if (event.key === '+') {
             zoom(immediateUxState.scale + 1)
-        } else if (event.key === "-") {
+        } else if (event.key === '-') {
             zoom(immediateUxState.scale - 1)
-        } else if (event.key === "M") {
+        } else if (event.key === 'M') {
             setShowMenu(true)
         } else {
-            const keyEvent = new CustomEvent("key", { detail: { key: event.key, metaKey: event.metaKey, altKey: event.altKey, ctrlKey: event.ctrlKey } })
+            const keyEvent = new CustomEvent('key', {
+                detail: {
+                    key: event.key,
+                    metaKey: event.metaKey,
+                    altKey: event.altKey,
+                    ctrlKey: event.ctrlKey
+                }
+            })
 
             document.dispatchEvent(keyEvent)
         }
-    }, [windows, newRoad])
+    }, [windows, newRoad, possibleRoadConnections, moveGame, zoom, setNewRoad, setPossibleRoadConnections, setShowMenu])
 
     const startNewRoad = useCallback(async (point: Point) => {
 
         /* Start the list of points in the new road with the clicked point */
-        console.info("Start new road construction at: " + JSON.stringify({ x: point.x, y: point.y }))
+        console.info(`Start new road construction at: ${JSON.stringify({ x: point.x, y: point.y })}`)
 
         /* Get the possible connections from the server and draw them */
         const pointInformation = await api.getInformationOnPoint(point)
 
-        setNewRoad([{ x: point.x, y: point.y }])
+        setNewRoad([point])
         setPossibleRoadConnections(pointInformation.possibleRoadConnections)
     }, [])
 
@@ -934,16 +894,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onTouchStart = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
-        console.log("touchstart.")
+        console.log('touchstart.')
 
         const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
-            console.log("touchstart:" + i + "...")
+            console.log('touchstart:' + i + '...')
 
             ongoingTouches.set(touches[i].identifier, copyTouch(touches[i]))
 
-            console.log("touchstart:" + i + ".")
+            console.log('touchstart:' + i + '.')
         }
 
         /* Only move map with one movement */
@@ -952,15 +912,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             immediateUxState.touchIdentifier = touch.identifier
 
-            immediateUxState.mouseDownX = touch.pageX
-            immediateUxState.mouseDownY = touch.pageY
+            immediateUxState.mouseDownAt = { x: touch.pageX, y: touch.pageY }
             immediateUxState.mouseMoving = false
             immediateUxState.touchMoveOngoing = true
 
-            immediateUxState.translateXAtMouseDown = immediateUxState.translate.x
-            immediateUxState.translateYAtMouseDown = immediateUxState.translate.y
+            immediateUxState.translateAtMouseDown = { ...immediateUxState.translate }
         }
-    }, [ongoingTouches])
+    }, [ongoingTouches, copyTouch])
 
     const onTouchMove = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
@@ -975,30 +933,30 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             }
 
             if (immediateUxState.touchMoveOngoing && touch.identifier === immediateUxState.touchIdentifier) {
-                const deltaX = (touch.pageX - immediateUxState.mouseDownX)
-                const deltaY = (touch.pageY - immediateUxState.mouseDownY)
+                const deltaX = (touch.pageX - immediateUxState.mouseDownAt.x)
+                const deltaY = (touch.pageY - immediateUxState.mouseDownAt.y)
 
                 /* Detect move to separate move from click */
-                if (deltaX * deltaX + deltaY * deltaY > 25) {
+                if (deltaX ** 2 + deltaY ** 2 > 25) {
                     immediateUxState.mouseMoving = true
                 }
 
                 immediateUxState.translate = {
-                    x: immediateUxState.translateXAtMouseDown + deltaX,
-                    y: immediateUxState.translateYAtMouseDown + deltaY
+                    x: immediateUxState.translateAtMouseDown.x + deltaX,
+                    y: immediateUxState.translateAtMouseDown.y + deltaY
                 }
             }
 
             /* Store ongoing touches just because ... */
             if (touch) {
-                console.log("continuing touch " + touch)
+                console.log('continuing touch ' + touch)
 
-                console.log("ctx.moveTo(" + touch.pageX + ", " + touch.pageY + ")")
+                console.log('ctx.moveTo(' + touch.pageX + ', ' + touch.pageY + ')')
 
-                console.log("ctx.lineTo(" + touches[i].pageX + ", " + touches[i].pageY + ")")
+                console.log('ctx.lineTo(' + touches[i].pageX + ', ' + touches[i].pageY + ')')
 
                 ongoingTouches.set(touch.identifier, touches[i])
-                console.log(".")
+                console.log('.')
             } else {
                 console.log("can't figure out which touch to continue")
             }
@@ -1007,12 +965,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     const onWheel = useCallback((event: React.WheelEvent) => {
         zoom(immediateUxState.scale - event.deltaY / 20.0)
-    }, [])
+    }, [zoom])
 
     const onTouchCancel = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
-        console.log("touchcancel.")
+        console.log('touchcancel.')
 
         /* Stop moving */
         immediateUxState.touchMoveOngoing = false
@@ -1046,8 +1004,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     // Render
     return (
         <div
-            className="App"
-            ref={selfNameRef}
+            className='App'
+            ref={selfContainerRef}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
@@ -1063,9 +1021,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             <GameCanvas
                 screenHeight={windowHeight}
                 onKeyDown={onKeyDown}
-                onPointClicked={(point: Point) => onPointClicked(point)}
+                onPointClicked={onPointClicked}
                 selectedPoint={selected}
-                onDoubleClick={(point: Point) => onPointDoubleClicked(point)}
+                onDoubleClick={onPointDoubleClicked}
                 showHouseTitles={showTitles}
                 newRoad={newRoad}
                 possibleRoadConnections={possibleRoadConnections}
@@ -1077,10 +1035,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             <MenuButton onMenuButtonClicked={() => setShowMenu(true)} />
 
             <GameMenu
-                onChangedZoom={newScale => zoom(newScale)}
+                onChangedZoom={zoom}
                 minZoom={MIN_SCALE}
                 maxZoom={MAX_SCALE}
-                onSetTitlesVisible={(showTitles: boolean) => setShowTitles(showTitles)}
+                onSetTitlesVisible={setShowTitles}
                 areTitlesVisible={showTitles}
                 onLeaveGame={onLeaveGame}
                 onStatistics={() => openSingletonWindow({ type: 'STATISTICS' })}
@@ -1094,9 +1052,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 isTypingControllerVisible={showTypingController}
                 defaultZoom={DEFAULT_SCALE}
                 onClose={() => setShowMenu(false)}
-                onSetMusicPlayerVisible={(visible: boolean) => setShowMusicPlayer(visible)}
-                onSetTypingControllerVisible={(visible: boolean) => setShowTypingController(visible)}
-                onSetAvailableConstructionVisible={(visible: boolean) => setShowAvailableConstruction(visible)}
+                onSetMusicPlayerVisible={setShowMusicPlayer}
+                onSetTypingControllerVisible={setShowTypingController}
+                onSetAvailableConstructionVisible={setShowAvailableConstruction}
                 onSetMusicVolume={(newVolume: number) => animator.animate(
                     'MUSIC_VOLUME',
                     volume => setMusicVolume(volume),
@@ -1111,9 +1069,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     newVolume,
                     0.05
                 )}
-                onSetHeightAdjust={(heightAdjust: number) => setHeightAdjust(heightAdjust)}
-                onSetAnimateMapScrolling={(animateMapScrolling) => setAnimateMapScrolling(animateMapScrolling)}
-                onSetAnimateZooming={(animateZoom) => setAnimateZoom(animateZoom)}
+                onSetHeightAdjust={setHeightAdjust}
+                onSetAnimateMapScrolling={setAnimateMapScrolling}
+                onSetAnimateZooming={setAnimateZoom}
                 onQuota={() => openSingletonWindow({ type: 'QUOTA' })}
             />
 
@@ -1126,8 +1084,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             onStartMonitor={(point: Point) => openWindow({ type: 'FOLLOW', point })}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
-                            onStartNewRoad={startNewRoad.bind(this)}
-                            nation={(player) ? player.nation : "ROMANS"}
+                            onStartNewRoad={startNewRoad}
+                            nation={(player) ? player.nation : 'ROMANS'}
                         />
                     case 'FLAG':
                         return <FriendlyFlagInfo
@@ -1135,7 +1093,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             flag={window.flag}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
-                            onStartNewRoad={startNewRoad.bind(this)}
+                            onStartNewRoad={startNewRoad}
                             nation={player?.nation ?? 'ROMANS'}
                         />
                     case 'HOUSE':
@@ -1149,9 +1107,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         />
                     case 'GUIDE':
                         return <Guide
+                            key={window.id}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
-                            key={window.id}
                         />
                     case 'STATISTICS':
                         return <Statistics
@@ -1184,25 +1142,25 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         />
                     case 'DEBUG':
                         return <Debug
+                            key={window.id}
                             point={selected}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
-                            key={window.id}
                         />
                     case 'FOLLOW':
                         return <Follow
+                            key={window.id}
                             point={window.point}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
-                            key={window.id}
                             heightAdjust={heightAdjust}
                         />
                     case 'NO_ACTION':
                         return <NoActionWindow
+                            key={window.id}
                             point={window.point}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
-                            key={window.id}
                             areHouseTitlesVisible={showTitles}
                             isAvailableConstructionVisible={showAvailableConstruction}
                             onShowTitles={() => setShowTitles(true)}
@@ -1219,8 +1177,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             <GameMessagesViewer
                 nation={player?.nation ?? 'ROMANS'}
-                onGoToHouse={(houseId: HouseId) => scrollToHouse(houseId)}
-                onGoToPoint={(point: Point) => scrollToPoint(point)}
+                onGoToHouse={scrollToHouse}
+                onGoToPoint={scrollToPoint}
             />
 
             <ExpandChatBox playerId={selfPlayerId} roomId={`game-${gameId}`} />

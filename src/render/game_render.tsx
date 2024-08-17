@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, TerrainAtPoint, FlagInformation } from '../api/types'
 import { Duration } from '../duration'
 import './game_render.css'
@@ -6,7 +6,7 @@ import { api, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../stats'
 import { camelCaseToWords, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils'
 import { PointMapFast, PointSetFast } from '../util_types'
-import { animals, borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, donkeyAnimation, DrawingInformation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, fireImageAtlas, flagAnimations, houses, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, treeImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets'
+import { animals, borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, Dimension, donkeyAnimation, DrawingInformation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, fireImageAtlas, flagAnimations, houses, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, treeImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from '../shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from '../shaders/terrain-and-roads'
@@ -46,7 +46,7 @@ type TrianglesAtPoint = {
 }
 
 export type View = {
-    screenSize: { width: number, height: number }
+    screenSize: Dimension
     scale: number
     translate: Point
 }
@@ -93,7 +93,7 @@ type RenderState = {
     newRoad?: NewRoad
 
     // Draw directions
-    screenHeight: number
+    screenSize: Dimension
     scale: number
     translate: Point
 
@@ -321,7 +321,7 @@ function GameCanvas({
     const initRenderState = {
         previous: performance.now(),
         overshoot: 0,
-        screenHeight: 0,
+        screenSize: { width: 0, height: 0 },
         showHouseTitles,
         showAvailableConstruction,
         scale: 0,
@@ -343,8 +343,10 @@ function GameCanvas({
     const lightVector = [1, 1, -1]
 
     // eslint-disable-next-line
-    const [renderState, setRenderState] = useState<RenderState>(initRenderState)
-    const [doubleClickDetection, setDoubleClickDetection] = useState<DoubleClickDetection>({})
+    const [renderState, neverSetRenderState] = useState<RenderState>(initRenderState)
+
+    // eslint-disable-next-line
+    const [doubleClickDetection, neverSetDoubleClickDetection] = useState<DoubleClickDetection>({})
 
     // Run once on mount
     useEffect(
@@ -371,7 +373,7 @@ function GameCanvas({
         [showAvailableConstruction, selectedPoint, newRoad, possibleRoadConnections, showHouseTitles]
     )
 
-    function updateRoadDrawingBuffers(): void {
+    const updateRoadDrawingBuffers = useCallback(() => {
         console.log("Should update road drawing buffers")
         if (renderState.drawRoadsProgramInstance) {
             const roadRenderInformation = prepareToRenderRoads(api.roads.values(), api.flags.values())
@@ -382,9 +384,9 @@ function GameCanvas({
         } else {
             console.error(`Failed to update road drawing buffers`)
         }
-    }
+    }, [renderState])
 
-    function updateFogOfWarRendering(): FogOfWarRenderInformation {
+    const updateFogOfWarRendering = useCallback(() => {
         const triangles = getTrianglesAffectedByFogOfWar(api.discoveredPoints, api.discoveredBelowTiles, api.discoveredDownRightTiles)
 
         const fogOfWarCoordinates: number[] = []
@@ -459,7 +461,7 @@ function GameCanvas({
         })
 
         return { coordinates: fogOfWarCoordinates, intensities: fogOfWarIntensities }
-    }
+    }, [renderState])
 
     useEffect(
         () => {
@@ -728,7 +730,7 @@ function GameCanvas({
 
         const { width, height } = normalCanvasRef.current ?? { width: 0, height: 0 }
 
-        renderState.screenHeight = height
+        renderState.screenSize = { width, height }
 
         // Make sure gl is available
         if (renderState.gl === undefined) {
@@ -2013,26 +2015,23 @@ function GameCanvas({
         requestAnimationFrame(renderGame)
     }
 
-    function gamePointToScreenPointWithHeightAdjustmentInternal(gamePoint: Point): ScreenPoint {
+    const gamePointToScreenPointWithHeightAdjustmentInternal = useCallback((gamePoint: Point) => {
         const height = api.getHeight(gamePoint)
 
         return gamePointToScreenPointWithHeightAdjustment(
             gamePoint,
             height,
-            renderState.translate.x,
-            renderState.translate.y,
-            renderState.scale,
-            renderState.screenHeight,
+            renderState,
             heightAdjust,
             STANDARD_HEIGHT
         )
-    }
+    }, [renderState, heightAdjust])
 
-    function screenPointToGamePointNoHeightAdjustmentInternal(screenPoint: ScreenPoint): Point {
-        return screenPointToGamePointNoHeightAdjustment(screenPoint, renderState.translate.x, renderState.translate.y, renderState.scale, renderState.screenHeight)
-    }
+    const screenPointToGamePointNoHeightAdjustmentInternal = useCallback((screenPoint: ScreenPoint) => {
+        return screenPointToGamePointNoHeightAdjustment(screenPoint, renderState)
+    }, [renderState])
 
-    async function onClick(event: React.MouseEvent): Promise<void> {
+    const onClick = useCallback(async (event: React.MouseEvent) => {
         if (overlayCanvasRef?.current) {
             const rect = event.currentTarget.getBoundingClientRect()
             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * overlayCanvasRef.current.width)
@@ -2044,7 +2043,7 @@ function GameCanvas({
                 onPointClicked(gamePoint)
             }
         }
-    }
+    }, [overlayCanvasRef, onPointClicked])
 
     function onDoubleClickInternal(event: React.MouseEvent): void {
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
@@ -2566,22 +2565,14 @@ function GameCanvas({
     }
 
     function screenPointToGamePointWithHeightAdjustmentInternal(point: Point): Point {
-        return screenPointToGamePointWithHeightAdjustment(
-            point,
-            renderState.translate,
-            renderState.scale,
-            renderState.screenHeight,
-            heightAdjust
-        )
+        return screenPointToGamePointWithHeightAdjustment(point, renderState, heightAdjust)
     }
 
     // When using regular "useState" the screenHeight variable gets remembered as 0 and never updated in the renderGame function
-    renderState.screenHeight = screenHeight
+    renderState.screenSize.height = screenHeight
 
-    if (view) {
-        renderState.scale = view.scale
-        renderState.translate = view.translate
-    }
+    renderState.scale = view.scale
+    renderState.translate = view.translate
 
     return (
         <>

@@ -1,4 +1,4 @@
-import { DEFAULT_VOLUME, immediateUxState } from "../play"
+import { DEFAULT_VOLUME, immediateState } from "../play"
 import { Action, HouseId, Point } from "../api/types"
 import { api } from "../api/ws-api"
 import { Sound } from "./utils"
@@ -161,18 +161,8 @@ function startEffects(viewToSet: View): void {
 
 
         // Keep track of what's visible on the screen
-        const upperLeftGamePoint = screenPointToGamePointNoHeightAdjustment(
-            { x: 0, y: 0 },
-            view.translate.x,
-            view.translate.y,
-            view.scale,
-            view.screenSize.height)
-        const lowerRightGamePoint = screenPointToGamePointNoHeightAdjustment(
-            { x: view.screenSize.width, y: view.screenSize.height },
-            view.translate.x,
-            view.translate.y,
-            view.scale,
-            view.screenSize.height)
+        const upperLeftGamePoint = screenPointToGamePointNoHeightAdjustment({ x: 0, y: 0 }, view)
+        const lowerRightGamePoint = screenPointToGamePointNoHeightAdjustment({ x: view.screenSize.width, y: view.screenSize.height }, view)
 
         visibility = {
             left: upperLeftGamePoint.x,

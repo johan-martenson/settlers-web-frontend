@@ -124,7 +124,7 @@ const MIN_SCALE = 10
 const ARROW_KEY_MOVE_DISTANCE = 20
 
 // State
-export const immediateUxState = {
+export const immediateState = {
     mouseDown: false,
     mouseDownAt: { x: 0, y: 0 },
     mouseMoving: false,
@@ -201,7 +201,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [possibleRoadConnections, setPossibleRoadConnections] = useState<Point[]>()
     const [player, setPlayer] = useState<PlayerInformation>()
     const [windowHeight, setWindowHeight] = useState<number>(0)
+
+    // eslint-disable-next-line
     const [ongoingTouches, neverSetOngoingTouched] = useState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
+
+    // eslint-disable-next-line
     const [nextWindowIdContainer, neverSetNextWindowIdContainer] = useState<{ nextWindowId: number }>({ nextWindowId: 0 })
 
     // Constants
@@ -248,7 +252,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             function windowResizeListener(): void {
                 if (selfContainerRef.current) {
-                    immediateUxState.screenSize = {
+                    immediateState.screenSize = {
                         width: selfContainerRef.current.clientWidth,
                         height: selfContainerRef.current.clientHeight
                     }
@@ -426,7 +430,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 setPlayer(api.players.get(selfPlayerId))
 
                 if (selfContainerRef.current) {
-                    immediateUxState.screenSize = {
+                    immediateState.screenSize = {
                         width: selfContainerRef.current.clientWidth,
                         height: selfContainerRef.current.clientHeight
                     }
@@ -452,7 +456,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         () => {
             console.log('Use effect: start sound effects')
 
-            sfx.startEffects(immediateUxState)
+            sfx.startEffects(immediateState)
 
             return () => {
                 console.log('Use effect: stop sound effects')
@@ -519,29 +523,29 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
         animator.animateSeveral('TRANSLATE', newTranslate => {
-            immediateUxState.translate = { x: newTranslate[0], y: newTranslate[1] }
+            immediateState.translate = { x: newTranslate[0], y: newTranslate[1] }
         },
-            [immediateUxState.translate.x, immediateUxState.translate.y],
+            [immediateState.translate.x, immediateState.translate.y],
             [newTranslate.x, newTranslate.y])
     }, [])
 
     const goToPoint = useCallback((point: Point) => {
-        const scaleY = immediateUxState.scale
+        const scaleY = immediateState.scale
 
-        immediateUxState.translate = {
-            x: (immediateUxState.screenSize.width / 2) - point.x * immediateUxState.scale,
-            y: (immediateUxState.screenSize.height / 2) + point.y * scaleY - immediateUxState.screenSize.height
+        immediateState.translate = {
+            x: (immediateState.screenSize.width / 2) - point.x * immediateState.scale,
+            y: (immediateState.screenSize.height / 2) + point.y * scaleY - immediateState.screenSize.height
 
         }
     }, [])
 
     const scrollToPoint = useCallback((point: Point) => {
         if (animateMapScrolling) {
-            const scaleY = immediateUxState.scale
+            const scaleY = immediateState.scale
 
             setNewTranslatedAnimated({
-                x: (immediateUxState.screenSize.width / 2) - point.x * immediateUxState.scale,
-                y: (immediateUxState.screenSize.height / 2) + point.y * scaleY - immediateUxState.screenSize.height
+                x: (immediateState.screenSize.width / 2) - point.x * immediateState.scale,
+                y: (immediateState.screenSize.height / 2) + point.y * scaleY - immediateState.screenSize.height
             })
         } else {
             goToPoint(point)
@@ -552,7 +556,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         if (animateMapScrolling) {
             setNewTranslatedAnimated(newTranslate)
         } else {
-            immediateUxState.translate = newTranslate
+            immediateState.translate = newTranslate
         }
     }, [animateMapScrolling, setNewTranslatedAnimated])
 
@@ -562,34 +566,34 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         if (animateZoom) {
             animator.animate('ZOOM', (newScale) => {
-                immediateUxState.translate = calcTranslation(
-                    immediateUxState.scale,
+                immediateState.translate = calcTranslation(
+                    immediateState.scale,
                     newScale,
-                    immediateUxState.translate,
-                    immediateUxState.screenSize,
+                    immediateState.translate,
+                    immediateState.screenSize,
                 )
-                immediateUxState.scale = newScale
+                immediateState.scale = newScale
             },
-                immediateUxState.scale,
+                immediateState.scale,
                 newScale)
         } else {
-            immediateUxState.translate = calcTranslation(
-                immediateUxState.scale,
+            immediateState.translate = calcTranslation(
+                immediateState.scale,
                 newScale,
-                immediateUxState.translate,
-                immediateUxState.screenSize
+                immediateState.translate,
+                immediateState.screenSize
             )
-            immediateUxState.scale = newScale
+            immediateState.scale = newScale
         }
     }, [animateZoom])
 
     const onMouseDown = useCallback((event: React.MouseEvent) => {
         if (event.button === 2) {
-            immediateUxState.mouseDown = true
-            immediateUxState.mouseDownAt = { x: event.pageX, y: event.pageY }
-            immediateUxState.mouseMoving = false
+            immediateState.mouseDown = true
+            immediateState.mouseDownAt = { x: event.pageX, y: event.pageY }
+            immediateState.mouseMoving = false
 
-            immediateUxState.translateAtMouseDown = { ...immediateUxState.translate }
+            immediateState.translateAtMouseDown = { ...immediateState.translate }
 
             setCursor('DRAGGING')
         } else if (event.button === 0 && newRoad !== undefined) {
@@ -600,18 +604,18 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [])
 
     const onMouseMove = useCallback((event: React.MouseEvent) => {
-        if (immediateUxState.mouseDown) {
-            const deltaX = (event.pageX - immediateUxState.mouseDownAt.x)
-            const deltaY = (event.pageY - immediateUxState.mouseDownAt.y)
+        if (immediateState.mouseDown) {
+            const deltaX = (event.pageX - immediateState.mouseDownAt.x)
+            const deltaY = (event.pageY - immediateState.mouseDownAt.y)
 
             /* Detect move to separate move from click */
             if (deltaX ** 2 + deltaY ** 2 > 25) {
-                immediateUxState.mouseMoving = true
+                immediateState.mouseMoving = true
             }
 
-            immediateUxState.translate = {
-                x: immediateUxState.translateAtMouseDown.x + deltaX,
-                y: immediateUxState.translateAtMouseDown.y + deltaY
+            immediateState.translate = {
+                x: immediateState.translateAtMouseDown.x + deltaX,
+                y: immediateState.translateAtMouseDown.y + deltaY
             }
         }
 
@@ -619,9 +623,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [])
 
     const onMouseUp = useCallback((event: React.MouseEvent) => {
-        if (immediateUxState.mouseMoving) {
-            immediateUxState.mouseDown = false
-            immediateUxState.mouseMoving = false
+        if (immediateState.mouseMoving) {
+            immediateState.mouseDown = false
+            immediateState.mouseMoving = false
 
             setCursor('NOTHING')
         }
@@ -637,15 +641,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onMouseLeave = useCallback((_event: React.MouseEvent) => {
         setCursor('NOTHING')
 
-        immediateUxState.mouseDown = false
-        immediateUxState.mouseMoving = false
+        immediateState.mouseDown = false
+        immediateState.mouseMoving = false
     }, [])
 
     const onPointClicked = useCallback(async (point: Point) => {
         console.info('Clicked point: ' + point.x + ', ' + point.y)
 
         /* Filter clicks that are really the end of moving the mouse */
-        if (immediateUxState.mouseMoving) {
+        if (immediateState.mouseMoving) {
             return
         }
 
@@ -837,17 +841,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             setShowTitles(true)
             setShowAvailableConstruction(!showAvailableConstruction)
         } else if (event.key === 'ArrowUp') {
-            moveGame({ ...immediateUxState.translate, y: immediateUxState.translate.y + ARROW_KEY_MOVE_DISTANCE })
+            moveGame({ ...immediateState.translate, y: immediateState.translate.y + ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === 'ArrowRight') {
-            moveGame({ ...immediateUxState.translate, x: immediateUxState.translate.x - ARROW_KEY_MOVE_DISTANCE })
+            moveGame({ ...immediateState.translate, x: immediateState.translate.x - ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === 'ArrowDown') {
-            moveGame({ ...immediateUxState.translate, y: immediateUxState.translate.y - ARROW_KEY_MOVE_DISTANCE })
+            moveGame({ ...immediateState.translate, y: immediateState.translate.y - ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === 'ArrowLeft') {
-            moveGame({ ...immediateUxState.translate, x: immediateUxState.translate.x + ARROW_KEY_MOVE_DISTANCE })
+            moveGame({ ...immediateState.translate, x: immediateState.translate.x + ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === '+') {
-            zoom(immediateUxState.scale + 1)
+            zoom(immediateState.scale + 1)
         } else if (event.key === '-') {
-            zoom(immediateUxState.scale - 1)
+            zoom(immediateState.scale - 1)
         } else if (event.key === 'M') {
             setShowMenu(true)
         } else {
@@ -896,16 +900,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         /* Only move map with one movement */
-        if (!immediateUxState.touchMoveOngoing) {
+        if (!immediateState.touchMoveOngoing) {
             const touch = touches[0]
 
-            immediateUxState.touchIdentifier = touch.identifier
+            immediateState.touchIdentifier = touch.identifier
 
-            immediateUxState.mouseDownAt = { x: touch.pageX, y: touch.pageY }
-            immediateUxState.mouseMoving = false
-            immediateUxState.touchMoveOngoing = true
+            immediateState.mouseDownAt = { x: touch.pageX, y: touch.pageY }
+            immediateState.mouseMoving = false
+            immediateState.touchMoveOngoing = true
 
-            immediateUxState.translateAtMouseDown = { ...immediateUxState.translate }
+            immediateState.translateAtMouseDown = { ...immediateState.translate }
         }
     }, [ongoingTouches, copyTouch])
 
@@ -921,18 +925,18 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 continue
             }
 
-            if (immediateUxState.touchMoveOngoing && touch.identifier === immediateUxState.touchIdentifier) {
-                const deltaX = (touch.pageX - immediateUxState.mouseDownAt.x)
-                const deltaY = (touch.pageY - immediateUxState.mouseDownAt.y)
+            if (immediateState.touchMoveOngoing && touch.identifier === immediateState.touchIdentifier) {
+                const deltaX = (touch.pageX - immediateState.mouseDownAt.x)
+                const deltaY = (touch.pageY - immediateState.mouseDownAt.y)
 
                 /* Detect move to separate move from click */
                 if (deltaX ** 2 + deltaY ** 2 > 25) {
-                    immediateUxState.mouseMoving = true
+                    immediateState.mouseMoving = true
                 }
 
-                immediateUxState.translate = {
-                    x: immediateUxState.translateAtMouseDown.x + deltaX,
-                    y: immediateUxState.translateAtMouseDown.y + deltaY
+                immediateState.translate = {
+                    x: immediateState.translateAtMouseDown.x + deltaX,
+                    y: immediateState.translateAtMouseDown.y + deltaY
                 }
             }
 
@@ -953,7 +957,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [ongoingTouches])
 
     const onWheel = useCallback((event: React.WheelEvent) => {
-        zoom(immediateUxState.scale - event.deltaY / 20.0)
+        zoom(immediateState.scale - event.deltaY / 20.0)
     }, [zoom])
 
     const onTouchCancel = useCallback((event: React.TouchEvent) => {
@@ -962,7 +966,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         console.log('touchcancel.')
 
         /* Stop moving */
-        immediateUxState.touchMoveOngoing = false
+        immediateState.touchMoveOngoing = false
 
         const touches = event.changedTouches
 
@@ -975,7 +979,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         event.preventDefault()
 
         /* Stop moving */
-        immediateUxState.touchMoveOngoing = false
+        immediateState.touchMoveOngoing = false
 
         const touches = event.changedTouches
 
@@ -1019,7 +1023,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 showAvailableConstruction={showAvailableConstruction}
                 cursor={cursor}
                 heightAdjust={heightAdjust}
-                view={immediateUxState}
+                view={immediateState}
             />
 
             <MenuButton onMenuButtonClicked={() => setShowMenu(true)} />

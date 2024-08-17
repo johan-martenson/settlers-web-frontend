@@ -1,8 +1,9 @@
 import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation } from './api/types'
 import { api } from './api/ws-api'
-import { ScreenPoint } from './render/game_render'
+import { ScreenPoint, View } from './render/game_render'
 import { STANDARD_HEIGHT } from './render/constants'
 import { PointMapFast } from './util_types'
+import { Dimension } from './assets'
 
 // Types
 export type Point3D = {
@@ -512,9 +513,7 @@ function calcDistance(point0: Point, point1: Point): number {
 function findClosestHeightAdjustedPoint(
     screenPoint: Point,
     unadjustedGamePoint: Point,
-    translate: Point,
-    scale: number,
-    screenHeight: number,
+    view: View,
     heightAdjust: number,
     allTiles: PointMapFast<TerrainAtPoint>
 ): Point | undefined {
@@ -551,10 +550,7 @@ function findClosestHeightAdjustedPoint(
         const screenPointCandidate = gamePointToScreenPointWithHeightAdjustment(
             gamePoint,
             allTiles.get(gamePoint)?.height ?? 0,
-            translate.x,
-            translate.y,
-            scale,
-            screenHeight,
+            view,
             heightAdjust,
             STANDARD_HEIGHT
         )
@@ -570,23 +566,17 @@ function findClosestHeightAdjustedPoint(
     return adjustedGamePoint
 }
 
-function screenPointToGamePointWithHeightAdjustment(screenPoint: Point, translate: Point, scale: number, screenHeight: number, heightAdjust: number): Point {
-    const unadjustedGamePoint = screenPointToGamePointNoHeightAdjustment(
-        screenPoint,
-        translate.x,
-        translate.y,
-        scale,
-        screenHeight
-    )
+function screenPointToGamePointWithHeightAdjustment(screenPoint: Point, view: View, heightAdjust: number): Point {
+    const unadjustedGamePoint = screenPointToGamePointNoHeightAdjustment(screenPoint, view)
 
-    const adjustedGamePoint = findClosestHeightAdjustedPoint(screenPoint, unadjustedGamePoint, translate, scale, screenHeight, heightAdjust, api.allTiles)
+    const adjustedGamePoint = findClosestHeightAdjustedPoint(screenPoint, unadjustedGamePoint, view, heightAdjust, api.allTiles)
 
     return adjustedGamePoint ?? unadjustedGamePoint
 }
 
-function screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint, translateX: number, translateY: number, scale: number, screenHeight: number): Point {
-    const gameX = (screenPoint.x - translateX) / scale
-    const gameY = (screenHeight - screenPoint.y + translateY) / (scale)
+function screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint, view: View): Point {
+    const gameX = (screenPoint.x - view.translate.x) / view.scale
+    const gameY = (view.screenSize.height - screenPoint.y + view.translate.y) / (view.scale)
 
     let roundedGameX = Math.round(gameX)
     let roundedGameY = Math.round(gameY)
@@ -619,15 +609,15 @@ function screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint, tran
     return { x: roundedGameX, y: roundedGameY }
 }
 
-function gamePointToScreenPointWithHeightAdjustment(gamePoint: Point, height: number, translateX: number, translateY: number, scale: number, screenHeight: number, heightAdjust: number, standardHeight: number): ScreenPoint {
+function gamePointToScreenPointWithHeightAdjustment(gamePoint: Point, height: number, view: View, heightAdjust: number, standardHeight: number): ScreenPoint {
     const adjustedPoint = {
         x: gamePoint.x,
         y: gamePoint.y + ((height - standardHeight) / heightAdjust)
     }
 
     return {
-        x: adjustedPoint.x * scale + translateX,
-        y: screenHeight - adjustedPoint.y * scale + translateY
+        x: adjustedPoint.x * view.scale + view.translate.x,
+        y: view.screenSize.height - adjustedPoint.y * view.scale + view.translate.y
     }
 }
 

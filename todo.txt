@@ -132,6 +132,9 @@ Todo 1.0
 
 33. Put focus back on game after clicking a button in a window. E.g. click build road, then escape.
 
+34. Bug
+    thin-carrier-no-cargo, nation: AFRICANS, direction: SOUTH_WEST, action: CHEW_GUM, color: BROWN
+
 Todo 2.0
 ========
 

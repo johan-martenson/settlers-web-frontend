@@ -116,20 +116,14 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
         const screenPointFrom = gamePointToScreenPointWithHeightAdjustment(
             from,
             heightAtFrom,
-            view.translate.x,
-            view.translate.y,
-            view.scale,
-            view.screenSize.height,
+            view,
             heightAdjust,
             STANDARD_HEIGHT)
 
         const screenPointTo = gamePointToScreenPointWithHeightAdjustment(
             to,
             heightAtTo,
-            view.translate.x,
-            view.translate.y,
-            view.scale,
-            view.screenSize.height,
+            view,
             heightAdjust,
             STANDARD_HEIGHT)
 
@@ -151,10 +145,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
         const screenPoint = gamePointToScreenPointWithHeightAdjustment(
             point,
             heightAtPoint,
-            view.translate.x,
-            view.translate.y,
-            view.scale,
-            view.screenSize.height,
+            view,
             heightAdjust,
             STANDARD_HEIGHT)
 
@@ -166,7 +157,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
 
     function findHeightAdjustedCenterGamePoint(translate: Point, scale: number): Point {
         const screenPoint = { x: view.screenSize.width / 2, y: view.screenSize.height / 2 }
-        return screenPointToGamePointWithHeightAdjustment(screenPoint, translate, scale, view.screenSize.height, heightAdjust)
+        return screenPointToGamePointWithHeightAdjustment(screenPoint, view, heightAdjust)
     }
 
     function startMonitor(gamePoint: Point): void {

@@ -861,7 +861,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             document.dispatchEvent(keyEvent)
         }
-    }, [windows, newRoad, possibleRoadConnections, moveGame, zoom, setNewRoad, setPossibleRoadConnections, setShowMenu])
+    }, [windows, newRoad, possibleRoadConnections, showAvailableConstruction, moveGame, zoom, setNewRoad, setPossibleRoadConnections, setShowMenu])
 
     const startNewRoad = useCallback(async (point: Point) => {
 

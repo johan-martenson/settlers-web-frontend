@@ -22,6 +22,8 @@ type Time = {
     seconds: number
 }
 
+export type VegetationAsInt = number
+
 export type ChatMessage = {
     id: ChatMessageId
     fromPlayerId: PlayerId
@@ -249,8 +251,6 @@ export type TreeInformation = Point & {
 
 export type FireSize = "LARGE" | "MEDIUM" | "SMALL" | "MINI"
 
-export type Vegetation = "SA" | "MO1" | "SN" | "SW" | "D1" | "W1" | "B" | "D2" | "ME1" | "ME2" | "ME3" | "MO2" | "MO3" | "MO4" | "ST" | "FM" | "L1" | "MA" | "MM" | "W2" | "L2" | "L3" | "L4" | "BM"
-
 export type HeightInformation = number
 
 export type VegetationIntegers = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23
@@ -293,8 +293,8 @@ export type TerrainAtPoint = {
 export type TerrainInformation = {
     width: number
     height: number
-    straightBelow: Vegetation[]
-    belowToTheRight: Vegetation[]
+    straightBelow: VegetationAsInt[]
+    belowToTheRight: VegetationAsInt[]
     heights: HeightInformation[]
 }
 

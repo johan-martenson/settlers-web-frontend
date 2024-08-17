@@ -1,4 +1,4 @@
-import { Vegetation, TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation } from './api/types'
+import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation, WATER_1, WATER_2, BUILDABLE_WATER } from './api/types'
 import { api } from './api/ws-api'
 import { ScreenPoint, View } from './render/game_render'
 import { STANDARD_HEIGHT } from './render/constants'
@@ -27,59 +27,32 @@ export type Line = {
 export type RgbColorArray = [number, number, number]
 
 // Constants
-const vegetationToInt = new Map<Vegetation, number>()
+const INT_TO_VEGETATION_COLOR = new Map<number, RgbColorArray>()
 
-vegetationToInt.set("SA", 0)    // Savannah
-vegetationToInt.set("MO1", 1)   // Mountain 1
-vegetationToInt.set("SN", 2)    // Snow
-vegetationToInt.set("SW", 3)    // Swamp
-vegetationToInt.set("D1", 4)    // Desert 1
-vegetationToInt.set("W1", 5)    // Water (ships can pass)
-vegetationToInt.set("B", 6)     // Buildable water
-vegetationToInt.set("D2", 7)    // Desert 2
-vegetationToInt.set("ME1", 8)   // Meadow 1
-vegetationToInt.set("ME2", 9)   // Meadow 2
-vegetationToInt.set("ME3", 10)  // Meadow 3
-vegetationToInt.set("MO2", 11)  // Mountain 2
-vegetationToInt.set("MO3", 12)  // Mountain 3
-vegetationToInt.set("MO4", 13)  // Mountain 4
-vegetationToInt.set("ST", 14)   // Steppe
-vegetationToInt.set("FM", 15)   // Flower meadow
-vegetationToInt.set("L1", 16)   // Lava 1
-vegetationToInt.set("MA", 17)   // Magenta
-vegetationToInt.set("MM", 18)   // Mountain meadow
-vegetationToInt.set("W2", 19)   // Water 2
-vegetationToInt.set("L2", 20)   // Lava 2
-vegetationToInt.set("L3", 21)   // Lava 3
-vegetationToInt.set("L4", 22)   // Lava 4
-vegetationToInt.set("BM", 23)   // Buildable mountain
-
-const intToVegetationColor = new Map<number, RgbColorArray>()
-
-intToVegetationColor.set(0, [50, 82, 56])       // Savannah
-intToVegetationColor.set(1, [140, 140, 140])   // Mountain 1
-intToVegetationColor.set(2, [220, 220, 220])   // Snow
-intToVegetationColor.set(3, [0, 110, 0])       // Swamp
-intToVegetationColor.set(4, [110, 0, 110])     // Desert 1
-intToVegetationColor.set(5, [56, 62, 140])       // Water
-intToVegetationColor.set(6, [56, 62, 140])       // Buildable water
-intToVegetationColor.set(7, [110, 0, 110])     // Desert 2
-intToVegetationColor.set(8, [50, 82, 56])       // Meadow 1
-intToVegetationColor.set(9, [50, 82, 56])       // Meadow 2
-intToVegetationColor.set(10, [50, 82, 56])      // Meadow 3
-intToVegetationColor.set(11, [140, 140, 140])  // Mountain 2
-intToVegetationColor.set(12, [140, 140, 140])  // Mountain 3
-intToVegetationColor.set(13, [140, 140, 140])  // Mountain 4
-intToVegetationColor.set(14, [110, 0, 110])    // Steppe
-intToVegetationColor.set(15, [50, 82, 56])      // Flower meadow
-intToVegetationColor.set(16, [110, 57, 48])      // Lava 1
-intToVegetationColor.set(17, [99, 61, 99])  // Magenta
-intToVegetationColor.set(18, [50, 82, 56])    // Mountain meadow
-intToVegetationColor.set(19, [56, 62, 140])      // Water 2
-intToVegetationColor.set(20, [110, 57, 48])      // Lava 2
-intToVegetationColor.set(21, [110, 57, 48])      // Lava 3
-intToVegetationColor.set(22, [110, 57, 48])      // Lava 4
-intToVegetationColor.set(23, [140, 140, 140])  // Buildable mountain
+INT_TO_VEGETATION_COLOR.set(0, [50, 82, 56])       // Savannah
+INT_TO_VEGETATION_COLOR.set(1, [140, 140, 140])   // Mountain 1
+INT_TO_VEGETATION_COLOR.set(2, [220, 220, 220])   // Snow
+INT_TO_VEGETATION_COLOR.set(3, [0, 110, 0])       // Swamp
+INT_TO_VEGETATION_COLOR.set(4, [110, 0, 110])     // Desert 1
+INT_TO_VEGETATION_COLOR.set(5, [56, 62, 140])       // Water
+INT_TO_VEGETATION_COLOR.set(6, [56, 62, 140])       // Buildable water
+INT_TO_VEGETATION_COLOR.set(7, [110, 0, 110])     // Desert 2
+INT_TO_VEGETATION_COLOR.set(8, [50, 82, 56])       // Meadow 1
+INT_TO_VEGETATION_COLOR.set(9, [50, 82, 56])       // Meadow 2
+INT_TO_VEGETATION_COLOR.set(10, [50, 82, 56])      // Meadow 3
+INT_TO_VEGETATION_COLOR.set(11, [140, 140, 140])  // Mountain 2
+INT_TO_VEGETATION_COLOR.set(12, [140, 140, 140])  // Mountain 3
+INT_TO_VEGETATION_COLOR.set(13, [140, 140, 140])  // Mountain 4
+INT_TO_VEGETATION_COLOR.set(14, [110, 0, 110])    // Steppe
+INT_TO_VEGETATION_COLOR.set(15, [50, 82, 56])      // Flower meadow
+INT_TO_VEGETATION_COLOR.set(16, [110, 57, 48])      // Lava 1
+INT_TO_VEGETATION_COLOR.set(17, [99, 61, 99])  // Magenta
+INT_TO_VEGETATION_COLOR.set(18, [50, 82, 56])    // Mountain meadow
+INT_TO_VEGETATION_COLOR.set(19, [56, 62, 140])      // Water 2
+INT_TO_VEGETATION_COLOR.set(20, [110, 57, 48])      // Lava 2
+INT_TO_VEGETATION_COLOR.set(21, [110, 57, 48])      // Lava 3
+INT_TO_VEGETATION_COLOR.set(22, [110, 57, 48])      // Lava 4
+INT_TO_VEGETATION_COLOR.set(23, [140, 140, 140])  // Buildable mountain
 
 // Functions
 function camelCaseToWords(camelCaseStr: string): string {
@@ -105,8 +78,8 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
 
             const tile = {
                 point: point,
-                below: vegetationToInt.get(terrainInformation.straightBelow[count]),
-                downRight: vegetationToInt.get(terrainInformation.belowToTheRight[count]),
+                below: terrainInformation.straightBelow[count],
+                downRight: terrainInformation.belowToTheRight[count],
                 height: terrainInformation.heights[count]
             }
 
@@ -377,18 +350,12 @@ async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSiz
         return undefined
     }
 
-    const waterIntValue0 = vegetationToInt.get("W1")
-    const waterIntValue1 = vegetationToInt.get("W2")
-    const waterIntValue2 = vegetationToInt.get("B")
+    const waterColor = INT_TO_VEGETATION_COLOR.get(WATER_1)
 
-    if (waterIntValue0 !== undefined && waterIntValue1 !== undefined && waterIntValue2 !== undefined) {
-        const waterColor = intToVegetationColor.get(waterIntValue0)
-
-        if (waterColor) {
-            ctx.fillStyle = arrayToRgbStyle(waterColor)
-        } else {
-            ctx.fillStyle = "gray"
-        }
+    if (waterColor) {
+        ctx.fillStyle = arrayToRgbStyle(waterColor)
+    } else {
+        ctx.fillStyle = "gray"
     }
 
     ctx.rect(0, 0, map.width * 2 * blockSize / scaleDown, map.height * blockSize / scaleDown)
@@ -399,15 +366,15 @@ async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSiz
         const point = pointTerrainInformation.point
 
         if (point.x % scaleDown === 0 && point.y % scaleDown === 0) {
-            const colorStraightBelow = intToVegetationColor.get(pointTerrainInformation.below)
-            const colorBelowToTheRight = intToVegetationColor.get(pointTerrainInformation.downRight)
+            const colorStraightBelow = INT_TO_VEGETATION_COLOR.get(pointTerrainInformation.below)
+            const colorBelowToTheRight = INT_TO_VEGETATION_COLOR.get(pointTerrainInformation.downRight)
 
             // Use height - y to translate between context 2d coordinate system where (0, 0) is upper left
             // and the settlers game point where (0, 0) is bottom left
             if (colorStraightBelow &&
-                pointTerrainInformation.below !== waterIntValue0 &&
-                pointTerrainInformation.below !== waterIntValue1 &&
-                pointTerrainInformation.below !== waterIntValue2) {
+                pointTerrainInformation.below !== WATER_1 &&
+                pointTerrainInformation.below !== BUILDABLE_WATER &&
+                pointTerrainInformation.below !== WATER_2) {
                 ctx.beginPath()
                 ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
                 ctx.rect(point.x * blockSize / scaleDown, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
@@ -415,9 +382,9 @@ async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSiz
             }
 
             if (colorBelowToTheRight &&
-                pointTerrainInformation.downRight !== waterIntValue0 &&
-                pointTerrainInformation.downRight !== waterIntValue1 &&
-                pointTerrainInformation.downRight !== waterIntValue2) {
+                pointTerrainInformation.downRight !== WATER_1 &&
+                pointTerrainInformation.downRight !== BUILDABLE_WATER &&
+                pointTerrainInformation.downRight !== WATER_2) {
                 ctx.beginPath()
                 ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
                 ctx.rect((point.x * blockSize / scaleDown) + blockSize, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
@@ -663,8 +630,7 @@ export {
     getDotProduct,
     getNormalForTriangle,
     camelCaseToWords,
-    vegetationToInt,
-    intToVegetationColor,
+    INT_TO_VEGETATION_COLOR,
     sumVectors,
     loadImageNg,
     makeShader,

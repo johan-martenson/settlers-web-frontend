@@ -200,7 +200,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [newRoad, setNewRoad] = useState<Point[]>()
     const [possibleRoadConnections, setPossibleRoadConnections] = useState<Point[]>()
     const [player, setPlayer] = useState<PlayerInformation>()
-    const [windowHeight, setWindowHeight] = useState<number>(0)
 
     // eslint-disable-next-line
     const [ongoingTouches, neverSetOngoingTouched] = useState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
@@ -256,8 +255,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         width: selfContainerRef.current.clientWidth,
                         height: selfContainerRef.current.clientHeight
                     }
-
-                    setWindowHeight(selfContainerRef.current.clientHeight)
                 }
             }
 
@@ -434,8 +431,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         width: selfContainerRef.current.clientWidth,
                         height: selfContainerRef.current.clientHeight
                     }
-
-                    setWindowHeight(selfContainerRef.current.clientHeight)
 
                     if (!showMenu) {
                         selfContainerRef.current.focus()
@@ -1012,7 +1007,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             tabIndex={1}>
 
             <GameCanvas
-                screenHeight={windowHeight}
                 onKeyDown={onKeyDown}
                 onPointClicked={onPointClicked}
                 selectedPoint={selected}

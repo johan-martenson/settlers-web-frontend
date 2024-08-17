@@ -155,7 +155,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
         }
     }
 
-    function findHeightAdjustedCenterGamePoint(translate: Point, scale: number): Point {
+    function findHeightAdjustedCenterGamePoint(view: View): Point {
         const screenPoint = { x: view.screenSize.width / 2, y: view.screenSize.height / 2 }
         return screenPointToGamePointWithHeightAdjustment(screenPoint, view, heightAdjust)
     }
@@ -306,7 +306,6 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                 <GameCanvas
                     cursor='NOTHING'
                     heightAdjust={DEFAULT_HEIGHT_ADJUSTMENT}
-                    screenHeight={view.screenSize.height}
                     showAvailableConstruction={false}
                     showHouseTitles={false}
                     view={view}
@@ -390,7 +389,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                 </Button>
 
                 {idToFollow === undefined &&
-                    <Button onClick={() => startMonitor(findHeightAdjustedCenterGamePoint(view.translate, scale))}
+                    <Button onClick={() => startMonitor(findHeightAdjustedCenterGamePoint(view))}
                         onMouseEnter={() => setHoverInfo('Start monitoring')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >

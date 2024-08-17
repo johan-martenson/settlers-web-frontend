@@ -3,7 +3,6 @@ import { api } from './api/ws-api'
 import { ScreenPoint, View } from './render/game_render'
 import { STANDARD_HEIGHT } from './render/constants'
 import { PointMapFast } from './util_types'
-import { Dimension } from './assets'
 
 // Types
 export type Point3D = {

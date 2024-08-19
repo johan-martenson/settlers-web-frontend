@@ -1,13 +1,7 @@
 import { Point } from "../api/types"
 import { Dimension } from "../assets"
-import { makeShader } from "../utils"
 
-export const glUtilsDebug = {
-    setBuffer: false,
-    draw: false,
-    initProgram: false
-}
-
+// Types
 type UniformName = string
 type AttributeName = string
 
@@ -45,12 +39,23 @@ export type ProgramDescriptor = {
 
 export type ProgramInstance = {
     program?: WebGLProgram
-
     uniforms: Map<UniformName, UniformInstance>
     attributes: Map<AttributeName, AttributeInstance>
     gl: WebGL2RenderingContext
 }
 
+// Constants
+
+// State
+
+// Configuration
+export const glUtilsDebug = {
+    setBuffer: false,
+    draw: false,
+    initProgram: false
+}
+
+// Functions
 function setBuffer<Attribute extends string>(program: ProgramInstance, attributeName: Attribute, content: number[]): void {
     const attributeInstance = program.attributes.get(attributeName)
 
@@ -61,12 +66,16 @@ function setBuffer<Attribute extends string>(program: ProgramInstance, attribute
     }
 
     if (attributeInstance.buffer) {
-        program.gl.bindBuffer(program.gl.ARRAY_BUFFER, attributeInstance.buffer)
-        program.gl.bufferData(program.gl.ARRAY_BUFFER, new Float32Array(content), program.gl.STATIC_DRAW)
+        const { gl } = program
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, attributeInstance.buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(content), gl.STATIC_DRAW)
 
         attributeInstance.numberElements = content.length
 
-        glUtilsDebug.setBuffer && console.log(`Set buffer ${attributeName} to size ${content.length}`)
+        if (glUtilsDebug.setBuffer) {
+            console.log(`Set buffer ${attributeName} to size ${content.length}`)
+        }
     } else {
         console.error(`Buffer is invalid for ${attributeName}`)
     }
@@ -77,16 +86,18 @@ function draw<Uniforms extends object>(
     uniforms: Uniforms,
     clearMode: 'NO_CLEAR_BEFORE_DRAW' | 'CLEAR_BEFORE_DRAW'
 ): void {
+    const { gl } = program
+
     if (program.program === undefined) {
         console.error(`Program is undefined`)
 
         return
     }
 
-    program.gl.useProgram(program.program)
+    gl.useProgram(program.program)
 
-    program.gl.enable(program.gl.BLEND)
-    program.gl.blendFunc(program.gl.SRC_ALPHA, program.gl.ONE_MINUS_SRC_ALPHA)
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
     // Set uniforms
     for (const [uniformName, value] of Object.entries(uniforms)) {
@@ -98,21 +109,23 @@ function draw<Uniforms extends object>(
             continue
         }
 
-        if (uniformInstance.type === 'FLOAT') {
+        const { location, type } = uniformInstance
+
+        if (type === 'FLOAT') {
             if (typeof value === 'number') {
-                program.gl.uniform1f(uniformInstance.location ?? null, value)
+                gl.uniform1f(location ?? null, value)
             } else if (value.length === 2) {
-                program.gl.uniform2fv(uniformInstance.location ?? null, value)
+                gl.uniform2fv(location ?? null, value)
             } else if (value.length === 3) {
-                program.gl.uniform3fv(uniformInstance.location ?? null, value)
+                gl.uniform3fv(location ?? null, value)
             }
         } else {
             if (typeof value === 'number') {
-                program.gl.uniform1i(uniformInstance.location ?? null, value)
+                gl.uniform1i(location ?? null, value)
             } else if (value.length === 2) {
-                program.gl.uniform2iv(uniformInstance.location ?? null, value)
+                gl.uniform2iv(location ?? null, value)
             } else if (value.length === 3) {
-                program.gl.uniform3iv(uniformInstance.location ?? null, value)
+                gl.uniform3iv(location ?? null, value)
             }
         }
     }
@@ -127,9 +140,9 @@ function draw<Uniforms extends object>(
             continue
         }
 
-        program.gl.bindBuffer(program.gl.ARRAY_BUFFER, attributeInstance.buffer ?? null)
-        program.gl.vertexAttribPointer(attributeInstance.location, attributeInstance.elementsPerVertex, program.gl.FLOAT, false, 0, 0)
-        program.gl.enableVertexAttribArray(attributeInstance.location)
+        gl.bindBuffer(gl.ARRAY_BUFFER, attributeInstance.buffer ?? null)
+        gl.vertexAttribPointer(attributeInstance.location, attributeInstance.elementsPerVertex, gl.FLOAT, false, 0, 0)
+        gl.enableVertexAttribArray(attributeInstance.location)
 
         const candidateLength = (attributeInstance?.numberElements ?? 0) / attributeInstance.elementsPerVertex
 
@@ -141,12 +154,12 @@ function draw<Uniforms extends object>(
     }
 
     if (clearMode === 'CLEAR_BEFORE_DRAW') {
-        program.gl.clearColor(0.0, 0.0, 0.0, 1.0)
-        program.gl.clear(program.gl.COLOR_BUFFER_BIT)
+        gl.clearColor(0.0, 0.0, 0.0, 1.0)
+        gl.clear(gl.COLOR_BUFFER_BIT)
     }
 
     // Draw the triangles: mode, offset (nr vertices), count (nr vertices)
-    program.gl.drawArrays(program.gl.TRIANGLES, 0, length)
+    gl.drawArrays(gl.TRIANGLES, 0, length)
 }
 
 function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingContext): ProgramInstance {
@@ -208,7 +221,9 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
                 buffer
             })
 
-            glUtilsDebug.initProgram && console.log(`Set attribute instance ${attributeName}`)
+            if (glUtilsDebug.initProgram) {
+                console.log(`Set attribute instance for ${attributeName}`)
+            }
         }
     }
 
@@ -233,10 +248,57 @@ function findCenterGamePoint(dimension: Dimension, scale: number, translate: Poi
     }
 }
 
+function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType: number): WebGLShader | null {
+    const compiledShader = gl.createShader(shaderType)
+
+    if (compiledShader) {
+        gl.shaderSource(compiledShader, shaderSource)
+        gl.compileShader(compiledShader)
+
+        const shaderCompileLog = gl.getShaderInfoLog(compiledShader)
+
+        if (shaderCompileLog === '') {
+            console.info('Shader compiled correctly')
+        } else {
+            console.error(shaderCompileLog)
+        }
+    } else {
+        console.error('Failed to get the shader')
+    }
+
+    return compiledShader
+}
+
+function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement, flipYAxis: 'FLIP_Y' | 'NO_FLIP_Y' = 'NO_FLIP_Y'): WebGLTexture | null {
+    const texture = gl.createTexture()
+    const level = 0
+    const internalFormat = gl.RGBA
+    const srcFormat = gl.RGBA
+    const srcType = gl.UNSIGNED_BYTE
+
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipYAxis === 'FLIP_Y')
+
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)
+
+    gl.generateMipmap(gl.TEXTURE_2D)
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+
+    return texture
+}
+
 export {
     calcTranslation,
     findCenterGamePoint,
     initProgram,
     setBuffer,
-    draw
+    draw,
+    makeTextureFromImage
 }

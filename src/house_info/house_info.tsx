@@ -228,8 +228,6 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
 }
 
 const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuildingProps) => {
-    const producedMaterials = house.produces
-
     const [hoverInfo, setHoverInfo] = useState<string>()
 
     return (
@@ -283,8 +281,8 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                     </Field>
                 }
 
-                {producedMaterials &&
-                    <div>Produces: {producedMaterials.map(producedMaterial => (
+                {house.produces &&
+                    <div>Produces: {house.produces.map(producedMaterial => (
                         <div
                             key={producedMaterial}
                             onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(producedMaterial))}

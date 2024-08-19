@@ -27,32 +27,43 @@ export type Line = {
 export type RgbColorArray = [number, number, number]
 
 // Constants
-const INT_TO_VEGETATION_COLOR = new Map<number, RgbColorArray>()
+const STARTING_POINT_COLOR = 'yellow'
 
-INT_TO_VEGETATION_COLOR.set(0, [50, 82, 56])       // Savannah
-INT_TO_VEGETATION_COLOR.set(1, [140, 140, 140])    // Mountain 1
-INT_TO_VEGETATION_COLOR.set(2, [220, 220, 220])    // Snow
-INT_TO_VEGETATION_COLOR.set(3, [0, 110, 0])        // Swamp
-INT_TO_VEGETATION_COLOR.set(4, [110, 0, 110])      // Desert 1
-INT_TO_VEGETATION_COLOR.set(5, [56, 62, 140])      // Water
-INT_TO_VEGETATION_COLOR.set(6, [56, 62, 140])      // Buildable water
-INT_TO_VEGETATION_COLOR.set(7, [110, 0, 110])      // Desert 2
-INT_TO_VEGETATION_COLOR.set(8, [50, 82, 56])       // Meadow 1
-INT_TO_VEGETATION_COLOR.set(9, [50, 82, 56])       // Meadow 2
-INT_TO_VEGETATION_COLOR.set(10, [50, 82, 56])      // Meadow 3
-INT_TO_VEGETATION_COLOR.set(11, [140, 140, 140])   // Mountain 2
-INT_TO_VEGETATION_COLOR.set(12, [140, 140, 140])   // Mountain 3
-INT_TO_VEGETATION_COLOR.set(13, [140, 140, 140])   // Mountain 4
-INT_TO_VEGETATION_COLOR.set(14, [110, 0, 110])     // Steppe
-INT_TO_VEGETATION_COLOR.set(15, [50, 82, 56])      // Flower meadow
-INT_TO_VEGETATION_COLOR.set(16, [110, 57, 48])     // Lava 1
-INT_TO_VEGETATION_COLOR.set(17, [99, 61, 99])      // Magenta
-INT_TO_VEGETATION_COLOR.set(18, [50, 82, 56])      // Mountain meadow
-INT_TO_VEGETATION_COLOR.set(19, [56, 62, 140])     // Water 2
-INT_TO_VEGETATION_COLOR.set(20, [110, 57, 48])     // Lava 2
-INT_TO_VEGETATION_COLOR.set(21, [110, 57, 48])     // Lava 3
-INT_TO_VEGETATION_COLOR.set(22, [110, 57, 48])     // Lava 4
-INT_TO_VEGETATION_COLOR.set(23, [140, 140, 140])   // Buildable mountain
+const RGB_SAVANNAH: RgbColorArray = [50, 82, 56]
+const RGB_MOUNTAIN: RgbColorArray = [140, 140, 140]
+const RGB_SNOW: RgbColorArray = [220, 220, 220]
+const RGB_SWAMP: RgbColorArray = [0, 110, 0]
+const RGB_DESERT: RgbColorArray = [110, 0, 110]
+const RGB_WATER: RgbColorArray = [56, 62, 140]
+const RGB_LAVA: RgbColorArray = [110, 57, 48]
+const RGB_MAGENTA: RgbColorArray = [99, 61, 99]
+
+const INT_TO_VEGETATION_COLOR = new Map<number, RgbColorArray>([
+    [0, RGB_SAVANNAH],
+    [1, RGB_MOUNTAIN],
+    [2, RGB_SNOW],
+    [3, RGB_SWAMP],
+    [4, RGB_DESERT],
+    [5, RGB_WATER],
+    [6, RGB_WATER],
+    [7, RGB_DESERT],
+    [8, RGB_SAVANNAH],
+    [9, RGB_SAVANNAH],
+    [10, RGB_SAVANNAH],
+    [11, RGB_MOUNTAIN],
+    [12, RGB_MOUNTAIN],
+    [13, RGB_MOUNTAIN],
+    [14, RGB_DESERT],
+    [15, RGB_SAVANNAH],
+    [16, RGB_LAVA],
+    [17, RGB_MAGENTA],
+    [18, RGB_SAVANNAH],
+    [19, RGB_WATER],
+    [20, RGB_LAVA],
+    [21, RGB_LAVA],
+    [22, RGB_LAVA],
+    [23, RGB_MOUNTAIN]
+])
 
 // Functions
 function camelCaseToWords(camelCaseStr: string): string {
@@ -76,14 +87,12 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
                 y: Number(y)
             }
 
-            const tile = {
+            terrain[count] = {
                 point: point,
                 below: terrainInformation.straightBelow[count],
                 downRight: terrainInformation.belowToTheRight[count],
                 height: terrainInformation.heights[count]
             }
-
-            terrain[count] = tile
             count++
         }
 
@@ -130,7 +139,6 @@ function normalize(vector: Vector): NormalizedVector {
 function getNormalForTriangle(p1: Point3D, p2: Point3D, p3: Point3D): NormalizedVector {
     const vector1 = vectorFromPoints(p1, p2)
     const vector2 = vectorFromPoints(p1, p3)
-
     const normal = crossProduct(vector1, vector2)
 
     return normalize(normal)
@@ -235,18 +243,18 @@ function loadImageNg(src: string): Promise<HTMLImageElement> {
 
 function getDirectionForWalkingWorker(from: Point, to: Point): Direction {
     if (to.x === from.x + 1 && to.y === from.y - 1) {
-        return "SOUTH_EAST"
+        return 'SOUTH_EAST'
     } else if (to.x === from.x - 1 && to.y === from.y - 1) {
-        return "SOUTH_WEST"
+        return 'SOUTH_WEST'
     } else if (to.x === from.x - 2) {
-        return "WEST"
+        return 'WEST'
     } else if (to.x === from.x - 1 && to.y === from.y + 1) {
-        return "NORTH_WEST"
+        return 'NORTH_WEST'
     } else if (to.x === from.x + 1 && to.y === from.y + 1) {
-        return "NORTH_EAST"
+        return 'NORTH_EAST'
     }
 
-    return "EAST"
+    return 'EAST'
 }
 
 function getHouseSize(house: HouseInformation): Size {
@@ -257,56 +265,6 @@ function getHouseSize(house: HouseInformation): Size {
     }
 
     return 'LARGE'
-}
-
-function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType: number): WebGLShader | null {
-    const compiledShader = gl.createShader(shaderType)
-
-    if (compiledShader) {
-        gl.shaderSource(compiledShader, shaderSource)
-        gl.compileShader(compiledShader)
-
-        const shaderCompileLog = gl.getShaderInfoLog(compiledShader)
-
-        if (shaderCompileLog === "") {
-            console.info("Shader compiled correctly")
-        } else {
-            console.error(shaderCompileLog)
-        }
-    } else {
-        console.error("Failed to get the shader")
-    }
-
-    return compiledShader
-}
-
-function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement, flipYAxis: "FLIP_Y" | "NO_FLIP_Y" = "NO_FLIP_Y"): WebGLTexture | null {
-    const texture = gl.createTexture()
-    const level = 0
-    const internalFormat = gl.RGBA
-    const srcFormat = gl.RGBA
-    const srcType = gl.UNSIGNED_BYTE
-
-    if (flipYAxis === "FLIP_Y") {
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
-    } else {
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
-    }
-
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true)
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image)
-
-    gl.generateMipmap(gl.TEXTURE_2D)
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-
-    return texture
 }
 
 function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement): boolean {
@@ -327,24 +285,19 @@ function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement): boolean {
 }
 
 function pointStringToPoint(pointString: string): Point {
-    const indexOfComma = pointString.indexOf(',')
-
-    const x = pointString.substring(0, indexOfComma)
-    const y = pointString.substring(indexOfComma + 1, pointString.length)
-
-    return { x: parseInt(x), y: parseInt(y) }
+    const [x, y] = pointString.split(',').map(Number)
+    return { x, y }
 }
 
 async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSize: number): Promise<HTMLImageElement | undefined> {
     const terrainInformation = await api.getTerrainForMap(map.id)
-
     const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
 
     const offscreenCanvas = document.createElement('canvas')
     offscreenCanvas.width = map.width * 2 * blockSize / scaleDown
     offscreenCanvas.height = map.height * blockSize / scaleDown
 
-    const ctx = offscreenCanvas.getContext("2d", { alpha: false })
+    const ctx = offscreenCanvas.getContext('2d', { alpha: false })
 
     if (!ctx) {
         return undefined
@@ -355,49 +308,35 @@ async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSiz
     if (waterColor) {
         ctx.fillStyle = arrayToRgbStyle(waterColor)
     } else {
-        ctx.fillStyle = "gray"
+        ctx.fillStyle = 'gray'
     }
 
-    ctx.rect(0, 0, map.width * 2 * blockSize / scaleDown, map.height * blockSize / scaleDown)
+    ctx.fillRect(0, 0, map.width * 2 * blockSize / scaleDown, map.height * blockSize / scaleDown)
 
-    ctx.fill()
-
-    terrain.forEach(pointTerrainInformation => {
-        const point = pointTerrainInformation.point
-
+    terrain.forEach(({point, below, downRight}) => {
         if (point.x % scaleDown === 0 && point.y % scaleDown === 0) {
-            const colorStraightBelow = INT_TO_VEGETATION_COLOR.get(pointTerrainInformation.below)
-            const colorBelowToTheRight = INT_TO_VEGETATION_COLOR.get(pointTerrainInformation.downRight)
+            const colorBelow = INT_TO_VEGETATION_COLOR.get(below)
+            const colorDownRight = INT_TO_VEGETATION_COLOR.get(downRight)
 
             // Use height - y to translate between context 2d coordinate system where (0, 0) is upper left
             // and the settlers game point where (0, 0) is bottom left
-            if (colorStraightBelow &&
-                pointTerrainInformation.below !== WATER_1 &&
-                pointTerrainInformation.below !== BUILDABLE_WATER &&
-                pointTerrainInformation.below !== WATER_2) {
-                ctx.beginPath()
-                ctx.fillStyle = arrayToRgbStyle(colorStraightBelow)
-                ctx.rect(point.x * blockSize / scaleDown, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
-                ctx.fill()
+            if (colorBelow && [WATER_1, BUILDABLE_WATER, WATER_2].includes(below)) {
+                ctx.fillStyle = arrayToRgbStyle(colorBelow)
+                ctx.fillRect(point.x * blockSize / scaleDown, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
             }
 
-            if (colorBelowToTheRight &&
-                pointTerrainInformation.downRight !== WATER_1 &&
-                pointTerrainInformation.downRight !== BUILDABLE_WATER &&
-                pointTerrainInformation.downRight !== WATER_2) {
-                ctx.beginPath()
-                ctx.fillStyle = arrayToRgbStyle(colorBelowToTheRight)
-                ctx.rect((point.x * blockSize / scaleDown) + blockSize, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
-                ctx.fill()
+            if (colorDownRight && ![WATER_1, BUILDABLE_WATER, WATER_2].includes(downRight)) {
+                ctx.fillStyle = arrayToRgbStyle(colorDownRight)
+                ctx.fillRect((point.x * blockSize / scaleDown) + blockSize, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
             }
         }
     })
 
-    /* Draw the starting points */
-    ctx.fillStyle = 'yellow'
-    map.startingPoints.forEach(point => {
+    // Draw starting points
+    ctx.fillStyle = STARTING_POINT_COLOR
+    map.startingPoints.forEach(({ x, y }) => {
         ctx.beginPath()
-        ctx.arc(point.x * blockSize / scaleDown, (map.height - point.y) * blockSize / scaleDown, 3, 0, 2 * Math.PI)
+        ctx.arc(x * blockSize / scaleDown, (map.height - y) * blockSize / scaleDown, 3, 0, 2 * Math.PI)
         ctx.fill()
     })
 
@@ -410,63 +349,35 @@ async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSiz
 
 
 function canRemoveRoad(point: PointInformation): boolean {
-    if (point.is === "road") {
-        return true
-    }
-
-    return false
+    return point.is === 'road'
 }
 
 function canRaiseFlag(point: PointInformation): boolean {
-    if (point.canBuild.find(x => x === "flag")) {
-        return true
-    }
-
-    return false
+    return point.canBuild.includes('flag')
 }
 
 function canBuildHouse(point: PointInformation): boolean {
-    if (canBuildSmallHouse(point) || canBuildMediumHouse(point) || canBuildLargeHouse(point)) {
-        return true
-    }
-
-    return false
+    return canBuildSmallHouse(point) || canBuildMediumHouse(point) || canBuildLargeHouse(point)
 }
 
 function canBuildLargeHouse(point: PointInformation): boolean {
-    if (point.canBuild.find(x => x === "large")) {
-        return true
-    }
-
-    return false
+    return point.canBuild.includes('large')
 }
 
 function canBuildMediumHouse(point: PointInformation): boolean {
-    if (point.canBuild.find(x => x === "medium")) {
-        return true
-    }
-
-    return false
+    return point.canBuild.includes('medium')
 }
 
 function canBuildSmallHouse(point: PointInformation): boolean {
-    if (point.canBuild.find(x => x === "small")) {
-        return true
-    }
-
-    return false
+    return point.canBuild.includes('small')
 }
 
 function canBuildMine(point: PointInformation): boolean {
-    if (point.canBuild.find(x => x === "mine")) {
-        return true
-    }
-
-    return false
+    return point.canBuild.includes('mine')
 }
 
 function canBuildRoad(point: PointInformation): boolean {
-    return point.is === "flag"
+    return point.is === 'flag'
 }
 
 function calcDistance(point0: Point, point1: Point): number {
@@ -550,25 +461,12 @@ function screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint, view
     const faultX = gameX - roundedGameX
     const faultY = gameY - roundedGameY
 
-    /* Call the handler directly if both points are odd or even */
+    // Adjust to nearest valid point
     if ((roundedGameX + roundedGameY) % 2 !== 0) {
-
-        /* Find the closest valid point (odd-odd, or even-even) */
         if (Math.abs(faultX) > Math.abs(faultY)) {
-
-            if (faultX > 0) {
-                roundedGameX++
-            } else {
-                roundedGameX--
-            }
-        } else if (Math.abs(faultX) < Math.abs(faultY)) {
-            if (faultY > 0) {
-                roundedGameY++
-            } else {
-                roundedGameY--
-            }
+            roundedGameX += faultX > 0 ? 1 : -1
         } else {
-            roundedGameX++
+            roundedGameY += faultY > 0 ? 1 : -1
         }
     }
 
@@ -633,8 +531,6 @@ export {
     INT_TO_VEGETATION_COLOR,
     sumVectors,
     loadImageNg,
-    makeShader,
-    makeTextureFromImage,
     resizeCanvasToDisplaySize,
     pointStringToPoint,
     makeImageFromMap,

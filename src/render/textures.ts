@@ -1,4 +1,4 @@
-import { makeTextureFromImage } from "../utils"
+import { makeTextureFromImage } from "./utils"
 
 type Texture = {
     texture: WebGLTexture

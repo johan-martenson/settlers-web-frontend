@@ -9,6 +9,7 @@ import { MilitaryBuilding } from './military_building'
 import { api } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
 import { houseIsReady, isMilitaryBuilding } from '../api/utils'
+import { MATERIAL_FIRST_UPPERCASE } from '../pretty_strings'
 
 // Types
 type HouseInfoProps = {
@@ -68,7 +69,7 @@ const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseIn
 
     useEffect(() => {
         const houseListener = (house: HouseInformation) => setHouse(house)
-        
+
         api.addHouseListener(house.id, houseListener)
 
         return () => api.removeHouseListener(house.id, houseListener)
@@ -196,12 +197,12 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
 
                                     return <div key={material}>
                                         {Array.from({ length: has }, () => 1).map(
-                                            (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                            (value, index) => <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
                                                 <span><InventoryIcon material={material} nation={nation} key={index} inline /></span>
                                             </Tooltip>
                                         )}
                                         {Array.from({ length: gap }, () => 1).map(
-                                            (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                            (value, index) => <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
                                                 <span><InventoryIcon material={material} nation={nation} key={index} inline missing /></span>
                                             </Tooltip>
                                         )}
@@ -227,7 +228,7 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
 }
 
 const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuildingProps) => {
-    const producedMaterial = house.produces
+    const producedMaterials = house.produces
 
     const [hoverInfo, setHoverInfo] = useState<string>()
 
@@ -255,9 +256,9 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
 
                                         return <div key={material}>
                                             {Array.from({ length: has }, () => 1).map(
-                                                (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                                (value, index) => <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
                                                     <span
-                                                        onMouseEnter={() => setHoverInfo(material.toLocaleLowerCase())}
+                                                        onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
                                                         onMouseLeave={() => setHoverInfo(undefined)}
                                                     >
                                                         <InventoryIcon material={material} nation={nation} key={index} inline />
@@ -265,9 +266,9 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                                                 </Tooltip>
                                             )}
                                             {Array.from({ length: gap }, () => 1).map(
-                                                (value, index) => <Tooltip content={material.toLocaleLowerCase()} relationship='label' withArrow key={index}>
+                                                (value, index) => <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
                                                     <span
-                                                        onMouseEnter={() => setHoverInfo(material.toLocaleLowerCase())}
+                                                        onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
                                                         onMouseLeave={() => setHoverInfo(undefined)}
                                                     >
                                                         <InventoryIcon material={material} nation={nation} key={index + 10} inline missing />
@@ -282,13 +283,19 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                     </Field>
                 }
 
-                {producedMaterial &&
-                    <div
-                        onMouseEnter={() => setHoverInfo(producedMaterial)}
-                        onMouseLeave={() => setHoverInfo(undefined)}
-                    >Produces: <Tooltip content={producedMaterial} relationship='label' withArrow >
-                            <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
-                        </Tooltip></div>
+                {producedMaterials &&
+                    <div>Produces: {producedMaterials.map(producedMaterial => (
+                        <div
+                            key={producedMaterial}
+                            onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(producedMaterial))}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        >
+                            <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(producedMaterial) ?? ''} relationship='label' withArrow >
+                                <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
+                            </Tooltip>
+                        </div>
+                    ))}
+                    </div>
                 }
 
             </div>

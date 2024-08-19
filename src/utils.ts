@@ -30,29 +30,29 @@ export type RgbColorArray = [number, number, number]
 const INT_TO_VEGETATION_COLOR = new Map<number, RgbColorArray>()
 
 INT_TO_VEGETATION_COLOR.set(0, [50, 82, 56])       // Savannah
-INT_TO_VEGETATION_COLOR.set(1, [140, 140, 140])   // Mountain 1
-INT_TO_VEGETATION_COLOR.set(2, [220, 220, 220])   // Snow
-INT_TO_VEGETATION_COLOR.set(3, [0, 110, 0])       // Swamp
-INT_TO_VEGETATION_COLOR.set(4, [110, 0, 110])     // Desert 1
-INT_TO_VEGETATION_COLOR.set(5, [56, 62, 140])       // Water
-INT_TO_VEGETATION_COLOR.set(6, [56, 62, 140])       // Buildable water
-INT_TO_VEGETATION_COLOR.set(7, [110, 0, 110])     // Desert 2
+INT_TO_VEGETATION_COLOR.set(1, [140, 140, 140])    // Mountain 1
+INT_TO_VEGETATION_COLOR.set(2, [220, 220, 220])    // Snow
+INT_TO_VEGETATION_COLOR.set(3, [0, 110, 0])        // Swamp
+INT_TO_VEGETATION_COLOR.set(4, [110, 0, 110])      // Desert 1
+INT_TO_VEGETATION_COLOR.set(5, [56, 62, 140])      // Water
+INT_TO_VEGETATION_COLOR.set(6, [56, 62, 140])      // Buildable water
+INT_TO_VEGETATION_COLOR.set(7, [110, 0, 110])      // Desert 2
 INT_TO_VEGETATION_COLOR.set(8, [50, 82, 56])       // Meadow 1
 INT_TO_VEGETATION_COLOR.set(9, [50, 82, 56])       // Meadow 2
 INT_TO_VEGETATION_COLOR.set(10, [50, 82, 56])      // Meadow 3
-INT_TO_VEGETATION_COLOR.set(11, [140, 140, 140])  // Mountain 2
-INT_TO_VEGETATION_COLOR.set(12, [140, 140, 140])  // Mountain 3
-INT_TO_VEGETATION_COLOR.set(13, [140, 140, 140])  // Mountain 4
-INT_TO_VEGETATION_COLOR.set(14, [110, 0, 110])    // Steppe
+INT_TO_VEGETATION_COLOR.set(11, [140, 140, 140])   // Mountain 2
+INT_TO_VEGETATION_COLOR.set(12, [140, 140, 140])   // Mountain 3
+INT_TO_VEGETATION_COLOR.set(13, [140, 140, 140])   // Mountain 4
+INT_TO_VEGETATION_COLOR.set(14, [110, 0, 110])     // Steppe
 INT_TO_VEGETATION_COLOR.set(15, [50, 82, 56])      // Flower meadow
-INT_TO_VEGETATION_COLOR.set(16, [110, 57, 48])      // Lava 1
-INT_TO_VEGETATION_COLOR.set(17, [99, 61, 99])  // Magenta
-INT_TO_VEGETATION_COLOR.set(18, [50, 82, 56])    // Mountain meadow
-INT_TO_VEGETATION_COLOR.set(19, [56, 62, 140])      // Water 2
-INT_TO_VEGETATION_COLOR.set(20, [110, 57, 48])      // Lava 2
-INT_TO_VEGETATION_COLOR.set(21, [110, 57, 48])      // Lava 3
-INT_TO_VEGETATION_COLOR.set(22, [110, 57, 48])      // Lava 4
-INT_TO_VEGETATION_COLOR.set(23, [140, 140, 140])  // Buildable mountain
+INT_TO_VEGETATION_COLOR.set(16, [110, 57, 48])     // Lava 1
+INT_TO_VEGETATION_COLOR.set(17, [99, 61, 99])      // Magenta
+INT_TO_VEGETATION_COLOR.set(18, [50, 82, 56])      // Mountain meadow
+INT_TO_VEGETATION_COLOR.set(19, [56, 62, 140])     // Water 2
+INT_TO_VEGETATION_COLOR.set(20, [110, 57, 48])     // Lava 2
+INT_TO_VEGETATION_COLOR.set(21, [110, 57, 48])     // Lava 3
+INT_TO_VEGETATION_COLOR.set(22, [110, 57, 48])     // Lava 4
+INT_TO_VEGETATION_COLOR.set(23, [140, 140, 140])   // Buildable mountain
 
 // Functions
 function camelCaseToWords(camelCaseStr: string): string {

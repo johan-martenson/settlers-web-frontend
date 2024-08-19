@@ -543,7 +543,7 @@ export type HouseInformation = Point & {
     maxSoldiers?: number
     constructionProgress?: number
     resources: { [key in Material]: HouseResourceItem }
-    produces?: Material
+    produces?: Material[]
     promotionsEnabled: boolean
     productionEnabled: boolean
     state: HouseState

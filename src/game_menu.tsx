@@ -21,111 +21,111 @@ type GameMenuProps = {
     isAnimateZoomingSet: boolean
     defaultZoom: number
 
-    onChangedZoom: ((scale: number) => void)
-    onSetTitlesVisible: ((showTitles: boolean) => void)
-    onLeaveGame: (() => void)
-    onStatistics: (() => void)
-    onHelp: (() => void)
-    onSetTransportPriority: (() => void)
-    onClose: (() => void)
-    onSetMusicPlayerVisible: ((visible: boolean) => void)
-    onSetTypingControllerVisible: ((visible: boolean) => void)
-    onSetAvailableConstructionVisible: ((visible: boolean) => void)
-    onSetMusicVolume: ((volume: number) => void)
+    onChangedZoom: (scale: number) => void
+    onSetTitlesVisible: (showTitles: boolean) => void
+    onLeaveGame: () => void
+    onStatistics: () => void
+    onHelp: () => void
+    onSetTransportPriority: () => void
+    onClose: () => void
+    onSetMusicPlayerVisible: (visible: boolean) => void
+    onSetTypingControllerVisible: (visible: boolean) => void
+    onSetAvailableConstructionVisible: (visible: boolean) => void
+    onSetMusicVolume: (volume: number) => void
     onSetSoundEffectsVolume: (volume: number) => void
-    onSetHeightAdjust: ((heightAdjust: number) => void)
-    onSetAnimateMapScrolling: ((shouldAnimate: boolean) => void)
-    onSetAnimateZooming: ((shouldAnimate: boolean) => void)
-    onQuota: (() => void)
+    onSetHeightAdjust: (heightAdjust: number) => void
+    onSetAnimateMapScrolling: (shouldAnimate: boolean) => void
+    onSetAnimateZooming: (shouldAnimate: boolean) => void
+    onQuota: () => void
 }
 
 // React components
-const GameMenu = (
-    { minZoom,
-        maxZoom,
-        isOpen,
-        defaultZoom,
-        areTitlesVisible,
-        isMusicPlayerVisible,
-        isTypingControllerVisible,
-        isAvailableConstructionVisible,
-        isAnimateMapScrollingSet,
-        isAnimateZoomingSet,
-        onClose,
-        onChangedZoom,
-        onSetTitlesVisible,
-        onSetMusicPlayerVisible,
-        onSetTypingControllerVisible,
-        onSetAvailableConstructionVisible,
-        onLeaveGame,
-        onStatistics,
-        onHelp,
-        onSetTransportPriority,
-        onSetMusicVolume,
-        onSetSoundEffectsVolume,
-        onSetHeightAdjust,
-        onSetAnimateMapScrolling,
-        onSetAnimateZooming,
-        onQuota }: GameMenuProps
+const GameMenu = ({
+    minZoom,
+    maxZoom,
+    isOpen,
+    defaultZoom,
+    areTitlesVisible,
+    isMusicPlayerVisible,
+    isTypingControllerVisible,
+    isAvailableConstructionVisible,
+    isAnimateMapScrollingSet,
+    isAnimateZoomingSet,
+    onClose,
+    onChangedZoom,
+    onSetTitlesVisible,
+    onSetMusicPlayerVisible,
+    onSetTypingControllerVisible,
+    onSetAvailableConstructionVisible,
+    onLeaveGame,
+    onStatistics,
+    onHelp,
+    onSetTransportPriority,
+    onSetMusicVolume,
+    onSetSoundEffectsVolume,
+    onSetHeightAdjust,
+    onSetAnimateMapScrolling,
+    onSetAnimateZooming,
+    onQuota }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
     const [gameSpeed, setGameSpeed] = useState<GameSpeed>('NORMAL')
 
-    useEffect(
-        () => {
-            setGameSpeed(api.gameSpeed)
+    useEffect(() => {
+        setGameSpeed(api.gameSpeed)
 
-            const callback = {
-                onGameSpeedChanged: (gameSpeed: GameSpeed) => {
-                    console.log(`NEW GAME SPEED: ${gameSpeed}`)
-
-                    setGameSpeed(gameSpeed)
-                }
+        const callback = {
+            onGameSpeedChanged: (gameSpeed: GameSpeed) => {
+                console.log(`NEW GAME SPEED: ${gameSpeed}`)
+                setGameSpeed(gameSpeed)
             }
+        }
 
-            api.addGameStateListener(callback)
+        api.addGameStateListener(callback)
 
-            return () => api.removeGameStateListener(callback)
-        },
-        []
-    )
+        return () => api.removeGameStateListener(callback)
+    }, [])
 
     return (
-        <Drawer type='overlay' separator open={isOpen} onOpenChange={() => onClose()} onWheel={(event) => event.stopPropagation()}>
+        <Drawer type='overlay' separator open={isOpen} onOpenChange={onClose} onWheel={(event) => event.stopPropagation()}>
             <DrawerHeader>
-                <DrawerHeaderTitle action={<Button appearance="subtle" aria-label="Close" icon={<Dismiss24Regular />} onClick={() => onClose()} />} >
+                <DrawerHeaderTitle
+                    action={
+                        <Button appearance='subtle' aria-label='Close' icon={<Dismiss24Regular />} onClick={onClose} />
+                    }
+                >
                     Menu
                 </DrawerHeaderTitle>
             </DrawerHeader>
             <DrawerBody>
                 <div className='menu'>
                     <Field label='Zoom'>
-                        <Slider max={maxZoom}
+                        <Slider
+                            max={maxZoom}
                             min={minZoom}
                             value={zoom}
                             step={1}
                             onChange={(_event: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
                                 onChangedZoom(data.value)
-
                                 setZoom(data.value)
                             }}
                         />
                         <Button onClick={() => {
                             onChangedZoom(defaultZoom)
-
                             setZoom(DEFAULT_SCALE)
-                        }} >Reset</Button>
+                        }}
+                        >
+                            Reset
+                        </Button>
                     </Field>
                     <Field label='Set game speed'>
                         <Dropdown value={gameSpeed.charAt(0).toUpperCase() + gameSpeed.substring(1).toLocaleLowerCase()} onOptionSelect={(_event: SelectionEvents, data: OptionOnSelectData) => {
-                            if (data.optionValue === 'Fast') {
-                                api.setGameSpeed('FAST')
-                            } else if (data.optionValue === 'Normal') {
-                                api.setGameSpeed('NORMAL')
-                            } else {
-                                api.setGameSpeed('SLOW')
+                            const speed = data.optionValue?.toUpperCase()
+                            if (speed === 'FAST' || speed === 'NORMAL' || speed === 'SLOW') {
+                                api.setGameSpeed(speed as GameSpeed)
                             }
-                        }}>
+                        }}
+                        >
                             <Option>Fast</Option>
                             <Option>Normal</Option>
                             <Option>Slow</Option>
@@ -150,20 +150,20 @@ const GameMenu = (
                             defaultChecked={isTypingControllerVisible}
                         />
                     </Field>
-                    <Field label="Show available construction">
+                    <Field label='Show available construction'>
                         <Switch
                             onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAvailableConstructionVisible(data.checked)}
                             defaultChecked={isAvailableConstructionVisible}
                         />
                     </Field>
 
-                    <Field label="Animate scrolling in map">
+                    <Field label='Animate scrolling in map'>
                         <Switch
                             onChange={(ev: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAnimateMapScrolling(data.checked)}
                             defaultChecked={isAnimateMapScrollingSet}
                         />
                     </Field>
-                    <Field label="Animate zooming">
+                    <Field label='Animate zooming'>
                         <Switch
                             onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => onSetAnimateZooming(data.checked)}
                             defaultChecked={isAnimateZoomingSet}
@@ -173,29 +173,31 @@ const GameMenu = (
 
                     <Button onClick={() => {
                         onStatistics()
-
                         onClose()
                     }}
-                    >Statistics</Button>
+                    >
+                        Statistics
+                    </Button>
                     <Button onClick={() => {
                         onSetTransportPriority()
-
                         onClose()
                     }}
-                    >Set transport priority</Button>
+                    >
+                        Set transport priority
+                    </Button>
                     <Button onClick={() => {
                         onQuota()
-
                         onClose()
                     }}>Set quota</Button>
                     <Button onClick={() => {
                         onHelp()
-
                         onClose()
                     }}
-                    >Help</Button>
+                    >
+                        Help
+                    </Button>
 
-                    <Field label="Sound effects volume">
+                    <Field label='Sound effects volume'>
                         <Slider
                             min={0.0}
                             max={1.0}
@@ -206,7 +208,7 @@ const GameMenu = (
                             }} />
                     </Field>
 
-                    <Field label="Music volume">
+                    <Field label='Music volume'>
                         <Slider
                             min={0.0}
                             max={1.0}
@@ -217,7 +219,7 @@ const GameMenu = (
                             }} />
                     </Field>
 
-                    <Field label="Depth">
+                    <Field label='Depth'>
                         <Slider
                             min={0.0}
                             max={30}
@@ -239,7 +241,7 @@ const GameMenu = (
 
                     <Divider />
 
-                    <Button onClick={() => onLeaveGame()} >Leave game</Button>
+                    <Button onClick={onLeaveGame} >Leave game</Button>
                 </div>
             </DrawerBody>
         </Drawer>

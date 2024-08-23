@@ -32,12 +32,8 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
                 let imageBitmap = imageCache.get(image)
 
                 if (!imageBitmap) {
-                    console.log('Not in cache')
-
                     imageBitmap = await createImageBitmap(image)
                     imageCache.set(image, imageBitmap)
-                } else {
-                    console.log('Already in cache')
                 }
 
                 setSourceImage(imageBitmap)
@@ -52,8 +48,8 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
             } else {
                 console.error('Failed to set dimension')
             }
-        })().then()
-    }, [])
+        })()
+    }, [direction])
 
     // Drawing
     useEffect(() => {
@@ -62,7 +58,6 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
 
             if (!canvas) {
                 console.error('No canvas ref set')
-
                 return
             }
 
@@ -70,7 +65,6 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
 
             if (!context) {
                 console.error('No context')
-
                 return
             }
 
@@ -79,7 +73,6 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
 
             if (!drawArray) {
                 console.error(`No drawing information. Direction is ${direction}`)
-
                 return
             }
 
@@ -89,10 +82,8 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
             const width = draw.width * scale
             const height = draw.height * scale
 
-            // Clear the background
             context.clearRect(0, 0, dimension.width * scale, dimension.height * scale)
 
-            // Write the image data
             if (sourceImage) {
                 if (drawShadow) {
                     context.drawImage(
@@ -104,16 +95,15 @@ const ShipIcon = ({ scale = 1, drawShadow = false, direction = 'EAST' }: ShipIco
                 }
 
                 context.globalCompositeOperation = 'source-in'
-
                 context.fillStyle = SHADOW_COLOR
                 context.fillRect((draw.offsetX - shadow.offsetX) * scale, (draw.offsetY - shadow.offsetY) * scale, shadow.width * scale, shadow.height * scale)
                 context.globalCompositeOperation = 'source-over'
 
                 context.drawImage(sourceImage, draw.sourceX, draw.sourceY, draw.width, draw.height, 0, 0, width, height)
             }
-        })().then()
+        })()
 
-    }, [scale, sourceImage, drawShadow])
+    }, [scale, sourceImage, drawShadow, dimension, direction])
 
     return <canvas
         ref={canvasRef}

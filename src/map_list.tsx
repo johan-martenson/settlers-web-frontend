@@ -12,44 +12,52 @@ type MapListProps = {
     filterAuthor?: string
     filterMinPlayers?: number
     filterMaxPlayers?: number
-    onMapSelected: ((map: MapInformation) => void)
+    onMapSelected: (map: MapInformation) => void
 }
 
+// Constants
+const DEFAULT_MAX_PLAYERS = 8
+
 // React components
-const MapList = ({ minPlayers, defaultSelect, filterTitle, filterAuthor, filterMinPlayers, filterMaxPlayers, onMapSelected }: MapListProps) => {
+const MapList = ({
+    minPlayers,
+    defaultSelect,
+    filterTitle = '',
+    filterAuthor = '',
+    filterMinPlayers = 0,
+    filterMaxPlayers = DEFAULT_MAX_PLAYERS,
+    onMapSelected
+}: MapListProps) => {
     const [maps, setMaps] = useState<MapInformation[]>([])
 
-    useEffect(
-        () => {
-            (async () => {
-                const maps = await api.getMaps()
+    useEffect(() => {
+        (async () => {
+            const maps = await api.getMaps()
 
-                defaultSelect && onMapSelected(maps[0])
+            defaultSelect && onMapSelected(maps[0])
 
-                setMaps(maps)
-            })().then()
-        }, [])
+            setMaps(maps)
+        })()
+    }, [defaultSelect, onMapSelected])
 
     const matches = maps
         .filter(map => map.maxPlayers >= minPlayers)
-        .filter(map => filterTitle === undefined || filterTitle === "" || map.name.toLowerCase().includes(filterTitle.toLowerCase()))
-        .filter(map => filterAuthor === undefined || filterAuthor === "" || map.author.toLowerCase().includes(filterAuthor.toLowerCase()))
-        .filter(map => (filterMinPlayers ?? 0) <= map.maxPlayers)
-        .filter(map => (filterMaxPlayers ?? 8) >= map.maxPlayers)
+        .filter(map => filterTitle === '' || map.name.toLowerCase().includes(filterTitle.toLowerCase()))
+        .filter(map => filterAuthor === '' || map.author.toLowerCase().includes(filterAuthor.toLowerCase()))
+        .filter(map => filterMinPlayers <= map.maxPlayers)
+        .filter(map => filterMaxPlayers >= map.maxPlayers)
 
     return (
         <div>
             <div>
                 {`${matches.length} of ${maps.length}`}
             </div>
-            <div className="map-list">
-                {matches.map((map, index) => {
-                    return (
-                        <div key={index} >
-                            <MapInformationCard map={map} onMapSelected={() => onMapSelected(map)} />
-                        </div>
-                    )
-                })}
+            <div className='map-list'>
+                {matches.map((map, index) => (
+                    <div key={index} >
+                        <MapInformationCard map={map} onMapSelected={() => onMapSelected(map)} />
+                    </div>
+                ))}
             </div>
         </div>
     )

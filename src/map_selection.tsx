@@ -9,50 +9,49 @@ import { GameListener, api } from './api/ws-api'
 // Types
 type MapSelectionProps = {
     minPlayers: number
-    onMapSelected: ((map: MapInformation) => void)
+    onMapSelected: (map: MapInformation) => void
 }
 
 // React components
 const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
     const [map, setMap] = useState<MapInformation | undefined>()
-    const [filterTitle, setSearchTitle] = useState<string>("")
-    const [filterAuthor, setSearchAuthor] = useState<string>("")
+    const [filterTitle, setSearchTitle] = useState<string>('')
+    const [filterAuthor, setSearchAuthor] = useState<string>('')
     const [filterMinPlayers, setFilterMinPlayers] = useState<number>(1)
     const [filterMaxPlayers, setFilterMaxPlayers] = useState<number>(8)
 
-    useEffect(
-        () => {
-            function gameInformationChanged(gameInformation: GameInformation): void {
-                setMap(gameInformation.map)
-            }
+    useEffect(() => {
+        function gameInformationChanged(gameInformation: GameInformation): void {
+            setMap(gameInformation.map)
+        }
 
-            const listener: GameListener = {
-                onGameInformationChanged: gameInformationChanged
-            }
+        const listener: GameListener = {
+            onGameInformationChanged: gameInformationChanged
+        }
 
-            api.addGameStateListener(listener)
+        api.addGameStateListener(listener)
 
-            return () => api.removeGameStateListener(listener)
-        }, [])
+        return () => api.removeGameStateListener(listener)
+    }, [])
 
     return (
-        <div className="select-map">
-            <Subtitle1 as="h4" block>Map</Subtitle1>
+        <div className='select-map'>
+            <Subtitle1 as='h4' block>Map</Subtitle1>
 
             {map && <MapInformationCard map={map} />}
 
             <Accordion collapsible>
-                <AccordionItem value="1">
+                <AccordionItem value='1'>
                     <AccordionHeader>Filter</AccordionHeader>
                     <AccordionPanel>
                         <div>
                             <SearchBox
-                                contentBefore={"title: "}
+                                contentBefore={'title: '}
                                 value={filterTitle}
                                 onChange={(event: SearchBoxChangeEvent, data: InputOnChangeData) => setSearchTitle(data.value)}
                             />
                             <SearchBox
-                                contentBefore={"author: "}
+                                contentBefore={'author: '}
                                 value={filterAuthor}
                                 onChange={(event: SearchBoxChangeEvent, data: InputOnChangeData) => setSearchAuthor(data.value)}
                             />
@@ -62,13 +61,11 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                                     min={1}
                                     max={8}
                                     value={filterMinPlayers}
-                                    onChange={
-                                        (event: React.ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
-                                            if (data.value <= filterMaxPlayers) {
-                                                setFilterMinPlayers(data.value)
-                                            }
+                                    onChange={(event: React.ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                                        if (data.value <= filterMaxPlayers) {
+                                            setFilterMinPlayers(data.value)
                                         }
-                                    }
+                                    }}
                                 />
                             </Field>
                             <Field label={`Max players (${filterMaxPlayers})`}>
@@ -77,13 +74,11 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                                     min={1}
                                     max={8}
                                     value={filterMaxPlayers}
-                                    onChange={
-                                        (event: React.ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
-                                            if (data.value >= filterMinPlayers) {
-                                                setFilterMaxPlayers(data.value)
-                                            }
+                                    onChange={(event: React.ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                                        if (data.value >= filterMinPlayers) {
+                                            setFilterMaxPlayers(data.value)
                                         }
-                                    }
+                                    }}
                                 />
                             </Field>
                         </div>
@@ -92,13 +87,10 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
             </Accordion>
 
             <MapList
-                onMapSelected={
-                    (selectedMap) => {
-                        setMap(selectedMap)
-                        onMapSelected(selectedMap)
-                    }
-                }
-
+                onMapSelected={selectedMap => {
+                    setMap(selectedMap)
+                    onMapSelected(selectedMap)
+                }}
                 minPlayers={minPlayers}
                 filterTitle={filterTitle}
                 filterAuthor={filterAuthor}

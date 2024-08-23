@@ -84,14 +84,13 @@ function Window({ onClose, onRaise, ...props }: WindowProps) {
         >
             <div className="window-content">
                 {props.heading && <h1>{props.heading}</h1>}
-
                 {props.children}
             </div>
             <div className='hover-info-label'>
                 {windowHoverInfo ?? props.hoverInfo}
             </div>
             <Button
-                onClick={() => onClose()}
+                onClick={onClose}
                 onMouseEnter={() => setWindowHoverInfo("Close window")}
                 onMouseLeave={() => setWindowHoverInfo(undefined)}
             >

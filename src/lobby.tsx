@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from "@fluentui/react-components"
+import { Button } from '@fluentui/react-components'
 import GameList from './game_list'
 import './lobby.css'
 import { GameId, PlayerInformation } from './api/types'
@@ -14,14 +14,21 @@ type LobbyProps = {
 }
 
 // React components
+/**
+ * Lobby component that displays the available games and a chat box for the lobby.
+ * 
+ * @param {LobbyProps} props - The props for the Lobby component.
+ */
 const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
     return (
-        <div id="center-on-screen">
+        <div id='center-on-screen'>
 
-            <div id="list-games-or-create-new">
+            <div id='list-games-or-create-new'>
                 <h1>Available games</h1>
-                <GameList onJoinGame={(gameId: GameId) => onJoinExistingGame(gameId)} />
-                <Button onClick={() => onCreateNewGame()} autoFocus appearance='primary'>Create new game</Button>
+                <GameList onJoinGame={onJoinExistingGame} />
+                <Button onClick={onCreateNewGame} autoFocus appearance='primary'>
+                    Create new game
+                </Button>
             </div>
             <div className='lobby-chat'>
                 <h1>Chat</h1>

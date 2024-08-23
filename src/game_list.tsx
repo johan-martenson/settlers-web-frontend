@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton, Skeleton, SkeletonItem } from "@fluentui/react-components"
+import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton, Skeleton, SkeletonItem } from '@fluentui/react-components'
 import {
     TableBody,
     TableCell,
@@ -7,25 +7,25 @@ import {
     Table,
     TableHeader,
     TableHeaderCell
-} from "@fluentui/react-components"
+} from '@fluentui/react-components'
 import './game_list.css'
 import { GameId, GameInformation } from './api/types'
 import { api } from './api/ws-api'
 
 // Types
 type GameListProps = {
-    onJoinGame: ((gameId: GameId) => void)
+    onJoinGame: (gameId: GameId) => void
 }
 
 // Constants
-const statusToText = {
+const STATUS_TO_TEXT: { [key in GameInformation['status']]: string } = {
     STARTED: 'Started',
     NOT_STARTED: 'Not started',
     PAUSED: 'Paused',
     EXPIRED: 'Expired'
 }
 
-const columns = [
+const COLUMNS = [
     { columnKey: 'name', label: 'Name' },
     { columnKey: 'map', label: 'Map' },
     { columnKey: 'numberPlayers', label: 'Players' },
@@ -38,37 +38,32 @@ const columns = [
 const GameList = ({ onJoinGame }: GameListProps) => {
     const [games, setGames] = useState<GameInformation[] | undefined>()
 
-    useEffect(
-        () => {
-            function gameListChanged(gameInformations: GameInformation[]): void {
-                setGames(gameInformations)
-            }
+    useEffect(() => {
+        function gameListChanged(gameInformations: GameInformation[]): void {
+            setGames(gameInformations)
+        }
 
-            async function connectAndHandleList(): Promise<void> {
-                await api.connectAndWaitForConnection()
+        async function connectAndHandleList(): Promise<void> {
+            await api.connectAndWaitForConnection()
+            api.addGamesListener(gameListChanged)
 
-                api.addGamesListener(gameListChanged)
+            const games = await api.getGames()
+            console.log(games)
+            setGames(games)
+        }
 
-                const games = await api.getGames()
+        connectAndHandleList()
 
-                console.log(games)
-
-                setGames(games)
-            }
-
-            connectAndHandleList()
-
-            return () => api.removeGamesListener(gameListChanged)
-        }, []
-    )
+        return () => api.removeGamesListener(gameListChanged)
+    }, [])
 
     return (
         <>
             {<div className='games-list'>
-                <Table size="small">
+                <Table size='small'>
                     <TableHeader>
                         <TableRow>
-                            {columns.map(column => (
+                            {COLUMNS.map(column => (
                                 <TableHeaderCell key={column.columnKey}>
                                     {column.label}
                                 </TableHeaderCell>
@@ -83,7 +78,7 @@ const GameList = ({ onJoinGame }: GameListProps) => {
                                 <TableCell>{(game?.map) ? game.map.name : '-'}</TableCell>
                                 <TableCell>{game.players.length}</TableCell>
                                 <TableCell>{(game?.map) ? game.map.maxPlayers : '-'}</TableCell>
-                                <TableCell>{statusToText[game.status]}</TableCell>
+                                <TableCell>{STATUS_TO_TEXT[game.status]}</TableCell>
                                 <TableCell>
                                     <Menu>
                                         <MenuTrigger disableButtonEnhancement>
@@ -91,15 +86,23 @@ const GameList = ({ onJoinGame }: GameListProps) => {
                                         </MenuTrigger>
                                         <MenuPopover>
                                             <MenuList>
-                                                <MenuItem onClick={() => console.log("Clicked view " + game.id)}>View</MenuItem>
+                                                <MenuItem onClick={() => console.log('Clicked view ' + game.id)}>
+                                                    View
+                                                </MenuItem>
                                                 {game.status === 'NOT_STARTED' && game.othersCanJoin &&
-                                                    <MenuItem onClick={() => onJoinGame(game.id)} >Join</MenuItem>
+                                                    <MenuItem onClick={() => onJoinGame(game.id)} >
+                                                        Join
+                                                    </MenuItem>
                                                 }
-                                                {game.players.filter(player => player.type === 'HUMAN')
-                                                    .map(player => <MenuItem
-                                                        key={player.id}
-                                                        onClick={() => window.location.href = "?gameId=" + game.id + "&playerId=" + player.id}
-                                                    >Play as {player.name}</MenuItem>)}
+                                                {game.players
+                                                    .filter(player => player.type === 'HUMAN')
+                                                    .map(player =>
+                                                        <MenuItem
+                                                            key={player.id}
+                                                            onClick={() => window.location.href = '?gameId=' + game.id + '&playerId=' + player.id}
+                                                        >
+                                                            Play as {player.name}
+                                                        </MenuItem>)}
                                             </MenuList>
                                         </MenuPopover>
                                     </Menu>
@@ -109,14 +112,15 @@ const GameList = ({ onJoinGame }: GameListProps) => {
 
                         {!games &&
                             <>
-                                {[0, 1, 2, 3, 4].map(i => <TableRow key={i}>
-                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                </TableRow>)}
+                                {[0, 1, 2, 3, 4].map(i =>
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    </TableRow>)}
                             </>
                         }
 

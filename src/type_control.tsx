@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState } from 'react'
+import React, { useCallback, useEffect, useReducer, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from './expand_collapse_toggle'
 import { PointInformation, Point } from './api/types'
@@ -6,8 +6,8 @@ import { api } from './api/ws-api'
 
 // Types
 export type Command = {
-    action: ((point: Point) => void)
-    filter?: ((selectedPointInformation: PointInformation) => boolean) | undefined
+    action: (point: Point) => void
+    filter?: (selectedPointInformation: PointInformation) => boolean | undefined
     icon?: React.ReactNode
 }
 
@@ -60,77 +60,73 @@ function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeContr
  *
  */
 const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
-    const [expanded, setExpanded] = useState<boolean>()
+    const [expanded, setExpanded] = useState<boolean>(false)
     const [selectedPointInformation, setSelectedPointInformation] = useState<PointInformation>()
-    const [inputState, dispatchInput] = useReducer(reducer, { input: "" })
+    const [inputState, dispatchInput] = useReducer(reducer, { input: '' })
 
-    useEffect(
-        () => {
-            (async () => {
+    useEffect(() => {
+        (async () => {
 
-                // Use try-catch because this can be called before the websocket is setup and will then fail
-                try {
-                    const updatedPointInformation = await api.getInformationOnPoint(selectedPoint)
+            // Use try-catch because this can be called before the websocket is setup and will then fail
+            try {
+                const updatedPointInformation = await api.getInformationOnPoint(selectedPoint)
 
-                    setSelectedPointInformation(updatedPointInformation)
-                } catch (error) {
-                    console.error(`Error while getting info on selectiong point: ${selectedPoint}, ${error}`)
-                }
-            })().then()
+                setSelectedPointInformation(updatedPointInformation)
+            } catch (error) {
+                console.error(`Error while getting info on selectiong point: ${selectedPoint}, ${error}`)
+            }
+        })()
+    }, [selectedPoint])
 
-            return () => { }
-        }, [selectedPoint])
-
-    function setInput(input: string): void {
+    const setInput = useCallback((input: string) => {
         dispatchInput({ type: 'set', payload: input })
-    }
+    }, [])
 
-    function addToInput(toAdd: string): void {
+    const addToInput = useCallback((toAdd: string) => {
         dispatchInput({ type: 'add', payload: toAdd })
-    }
+    }, [])
 
-    useEffect(
-        () => {
+    useEffect(() => {
 
-            // eslint-disable-next-line
-            document.addEventListener("key", listener)
+        // eslint-disable-next-line
+        document.addEventListener('key', listener)
 
-            return () => document.removeEventListener("key", listener)
-        }, [])
+        return () => document.removeEventListener('key', listener)
+    }, [])
 
 
-    function commandChosen(commandName: string): void {
+    const commandChosen = useCallback((commandName: string) => {
         console.log(`Command: ${commandName}`)
 
         commands.get(commandName)?.action(selectedPoint)
-    }
+    }, [commands, selectedPoint])
 
-    function reducer(state: InputState, action: InputAction): InputState {
+    const reducer = useCallback((state: InputState, action: InputAction) => {
         switch (action.type) {
-            case "set":
+            case 'set':
                 return { input: action.payload }
-            case "add":
+            case 'add':
                 return { input: state.input + action.payload }
-            case "run": {
+            case 'run': {
                 const commandHit = Array.from(commands.keys())
                     .find(command => command.toLowerCase().startsWith(state.input.toLowerCase()))
 
                 if (commandHit) {
                     commandChosen(commandHit)
                 } else {
-                    console.log("Can't find command matching: " + state.input)
+                    console.log(`Can't find command matching: ${state.input}`)
                 }
 
                 return { input: '' }
             }
-            case "remove_last":
+            case 'remove_last':
                 return { input: state.input.slice(0, -1) }
             default:
                 return state
         }
-    }
+    }, [commands])
 
-    function listener(event: Event): void {
+    const listener = useCallback((event: Event) => {
         if (isTypingControlKeyEvent(event)) {
             if (event.detail.metaKey || event.detail.altKey || event.detail.ctrlKey) {
                 return
@@ -138,100 +134,80 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
             const key = event.detail.key
 
-            if (key === "Escape") {
-                setInput("")
-            } else if (key === "Enter") {
-                dispatchInput({ type: 'run', payload: "none" })
-            } else if (key === "Backspace") {
-                console.log("Is backspace")
+            if (key === 'Escape') {
+                setInput('')
+            } else if (key === 'Enter') {
+                dispatchInput({ type: 'run', payload: 'none' })
+            } else if (key === 'Backspace') {
+                console.log('Is backspace')
 
                 dispatchInput({ type: 'remove_last', payload: 'none' })
-            } else if (key.length === 1) {
-                if (key !== " ") {
-                    addToInput(key)
-                }
+            } else if (key.length === 1 && key !== ' ') {
+                addToInput(key)
             }
         }
-    }
+    }, [])
 
     const input = inputState.input
-
-    let hasMatch = false
     const inputToMatch = input.toLowerCase()
+    const hasMatch = Array.from(commands.keys())
+        .some(command => command.toLowerCase().startsWith(inputToMatch))
 
+    let className = 'no-input'
     if (input.length > 0) {
-        commands.forEach((fn, command) => {
-            if (command.toLowerCase().startsWith(inputToMatch)) {
-                hasMatch = true
-            }
-        })
+        className = hasMatch ? 'input-with-matches' : 'input-with-no-matches'
     }
 
-    let className = "no-input"
-
-    if (input.length > 0) {
-        if (hasMatch) {
-            className = "input-with-matches"
-        } else {
-            className = "input-with-no-matches"
-        }
-    }
-
-    if (expanded) {
-        className += " expanded"
-    } else {
-        className += " closed"
-    }
+    className += expanded ? ' expanded' : ' closed'
 
     const invalidSelectedPointInformation = selectedPointInformation === undefined || !('canBuild' in selectedPointInformation)
 
     return (
-        <div className="type-control" onWheel={(event) => event.stopPropagation()}>
+        <div className='type-control' onWheel={(event) => event.stopPropagation()}>
 
             <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} />
             <div className={className}>{input}</div>
 
-            <div className="container-alternatives">
+            <div className='container-alternatives'>
 
-                {
-                    Array.from(commands.entries())
+                {Array.from(commands.entries())
 
-                        // eslint-disable-next-line
-                        .filter(([_commandName, command]) => !command.filter || invalidSelectedPointInformation || command.filter(selectedPointInformation))
+                    // eslint-disable-next-line
+                    .filter(
+                        ([, command]) =>
+                            !command.filter ||
+                            invalidSelectedPointInformation ||
+                            command.filter(selectedPointInformation)
+                    )
+                    .filter(
+                        ([commandName]) =>
+                            expanded ||
+                            (inputToMatch.length > 0 &&
+                                commandName.toLowerCase().startsWith(inputToMatch))
+                    )
+                    .map(([commandName, command], index) => (
+                        <div
+                            key={index}
+                            className='alternative'
+                            onClick={() => {
+                                commandChosen(commandName)
+                                setInput('')
+                            }}
+                        >
 
-                        // eslint-disable-next-line
-                        .filter(([commandName, _command]) => expanded || (inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)))
-                        .map(
-                            ([commandName, command], index) => {
-                                return (
-                                    <div
-                                        key={index}
-                                        className="alternative"
-                                        onClick={() => {
-                                            commandChosen(commandName)
-                                            setInput("")
-                                        }} >
-
-                                        {(
-                                            () => {
-                                                if (inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)) {
-                                                    return (
-                                                        <>
-                                                            <span>
-                                                                <span className="MatchingPart">{commandName.substring(0, input.length)}</span>
-                                                                <span className="RemainingPart">{commandName.substring(input.length, commandName.length)}</span>
-                                                            </span>
-                                                            {command.icon}
-                                                        </>
-                                                    )
-                                                } else {
-                                                    return (<>{commandName} {command.icon}</>)
-                                                }
-                                            })()}
-                                    </div>
-                                )
+                            {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch) ?
+                                <>
+                                    <span>
+                                        <span className='MatchingPart'>{commandName.substring(0, input.length)}</span>
+                                        <span className='RemainingPart'>{commandName.substring(input.length, commandName.length)}</span>
+                                    </span>
+                                    {command.icon}
+                                </>
+                                :
+                                <>{commandName} {command.icon}</>
                             }
-                        )
+                        </div>
+                    ))
                 }
             </div>
         </div>

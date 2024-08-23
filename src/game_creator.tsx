@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Input, Button, Field, InputOnChangeData } from "@fluentui/react-components"
+import { Input, Button, Field, InputOnChangeData } from '@fluentui/react-components'
 import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
@@ -27,76 +27,71 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
     //  - Creating the game
     //  - Creating the player and adding it to the game
     //  - Starting to follow the game
-    useEffect(
-        () => {
+    useEffect(() => {
 
-            // Listen to the game meta data
-            const listener: GameListener = {
-                onGameInformationChanged: (changedGameInformation: GameInformation) => {
-                    if (changedGameInformation.status === 'STARTED' && gameInformation?.status !== 'STARTED') {
-                        if (api.gameId === undefined) {
-                            console.error('Game id is undefined')
-
-                            return
-                        }
-
-                        if (api.playerId === undefined) {
-                            console.error("Player id is undefined")
-
-                            return
-                        }
-
-                        onGameStarted(api.gameId, api.playerId)
+        // Listen to the game meta data
+        const listener: GameListener = {
+            onGameInformationChanged: (changedGameInformation: GameInformation) => {
+                if (changedGameInformation.status === 'STARTED' && gameInformation?.status !== 'STARTED') {
+                    if (api.gameId === undefined) {
+                        console.error('Game id is undefined')
+                        return
                     }
 
-                    setGameInformation(changedGameInformation)
+                    if (api.playerId === undefined) {
+                        console.error('Player id is undefined')
+                        return
+                    }
+
+                    onGameStarted(api.gameId, api.playerId)
                 }
+
+                setGameInformation(changedGameInformation)
+            }
+        }
+
+        api.addGameStateListener(listener);
+
+        // Connect to an existing game or create a new one
+        (async () => {
+            const gameInformation = await api.getGameInformation()
+
+            setGameInformation(gameInformation)
+            setState('CREATE_GAME')
+
+            // Set the default map if there is no map set
+            if (gameInformation?.map === undefined) {
+                const maps = await api.getMaps()
+                const greenIslandsMap = maps.find(map => map.name === 'Green Islands')
+                api.setMap(greenIslandsMap?.id ?? maps[0].id)
             }
 
-            api.addGameStateListener(listener);
-
-            // Connect to an existing game or create a new one
-            (async () => {
-                const gameInformation = await api.getGameInformation()
-
-                setGameInformation(gameInformation)
+            // Get a name for the game if none is set, otherwise go directly to the create screen
+            if (!gameInformation?.name) {
+                setState('GET_NAME_FOR_GAME')
+            } else {
                 setState('CREATE_GAME')
+            }
+        })()
 
-                // Set the default map is there is no map set
-                if (gameInformation?.map === undefined) {
-                    const maps = await api.getMaps()
-
-                    const greenIslandsMap = maps.find(map => map.name === 'Green Islands')
-                    api.setMap(greenIslandsMap?.id ?? maps[0].id)
-                }
-
-                // Get a name for the game if none is set, otherwise go directly to the create screen
-                if (gameInformation?.name === undefined || gameInformation.name === '') {
-                    setState('GET_NAME_FOR_GAME')
-                } else {
-                    setState('CREATE_GAME')
-                }
-            })().then()
-
-            return () => api.removeGameStateListener(listener)
-        }, []
-    )
+        return () => api.removeGameStateListener(listener)
+    }, [])
 
     return (
         <>
-            {state === "GET_NAME_FOR_GAME" &&
+            {state === 'GET_NAME_FOR_GAME' &&
                 <Center>
 
-                    <div className="set-game-name-label">
+                    <div className='set-game-name-label'>
 
-                        <Field label={"Enter a name for the game"} style={{ flex: "1 0 100%" }}>
-                            <Input type="text" placeholder="Name..."
+                        <Field label={'Enter a name for the game'} style={{ flex: '1 0 100%' }}>
+                            <Input
+                                type='text'
+                                placeholder='Name...'
                                 autoFocus
-                                onChange={
-                                    (_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
-                                        setCandidateTitle(data.value)
-                                    }
-                                }
+                                onChange={(_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
+                                    setCandidateTitle(data.value)
+                                }}
                                 onKeyDown={(event) => {
                                     if (event.key === 'Enter' && candidateTitle !== undefined) {
                                         api.setTitle(candidateTitle)
@@ -104,7 +99,6 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                                         setState('CREATE_GAME')
                                     }
                                 }}
-
                                 tabIndex={-1}
                             />
                         </Field>
@@ -116,7 +110,10 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                             }
 
                             onGameCreateCanceled()
-                        }} >Cancel</Button>
+                        }}
+                        >
+                            Cancel
+                        </Button>
                         <Button
                             disabled={!candidateTitle}
                             appearance='primary'
@@ -127,24 +124,26 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                                     setState('CREATE_GAME')
                                 }
                             }}
-                        >Create game</Button>
+                        >
+                            Create game
+                        </Button>
                     </div>
                 </Center>
             }
 
-            {state === "CREATE_GAME" && gameInformation?.id && selfPlayerId &&
-                <div className="game-creation-screen">
+            {state === 'CREATE_GAME' && gameInformation?.id && selfPlayerId &&
+                <div className='game-creation-screen'>
 
                     <h1>{gameInformation?.name ?? ''}</h1>
 
-                    <div className="create-game-columns">
+                    <div className='create-game-columns'>
 
                         <div className='options-column'>
                             <GameOptions
                                 initialResources={gameInformation?.initialResources ?? 'MEDIUM'}
                                 othersCanJoin={gameInformation?.othersCanJoin ?? true}
-                                setAvailableResources={(resources) => api.setInitialResources(resources)}
-                                setOthersCanJoin={(othersCanJoin: boolean) => api.setOthersCanJoin(othersCanJoin)}
+                                setAvailableResources={resources => api.setInitialResources(resources)}
+                                setOthersCanJoin={othersCanJoin => api.setOthersCanJoin(othersCanJoin)}
                             />
                         </div>
 
@@ -156,7 +155,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         </div>
 
                         <div className='map-column'>
-                            <MapSelection onMapSelected={(map: MapInformation) => api.setMap(map.id)} minPlayers={gameInformation?.players.length ?? 0} />
+                            <MapSelection onMapSelected={map => api.setMap(map.id)} minPlayers={gameInformation?.players.length ?? 0} />
                         </div>
 
                         <div className='game-create-chat'>
@@ -174,7 +173,9 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
                             onGameCreateCanceled()
 
-                        }} >Discard game</Button>
+                        }} >
+                            Discard game
+                        </Button>
                         <Button onClick={async () => {
                             api.startGame()
 
@@ -182,7 +183,9 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         }}
                             disabled={!gameInformation?.map}
                             appearance='primary'
-                        >Launch game</Button>
+                        >
+                            Launch game
+                        </Button>
                     </div>
                 </div>
             }

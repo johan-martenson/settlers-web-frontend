@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ButtonRow, Window } from './components/dialog'
-import { Point, WorkerId } from './api/types'
+import { Point, Size, WorkerId } from './api/types'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, STANDARD_HEIGHT } from './render/constants'
 import { GameCanvas, View } from './render/game_render'
 import './follow.css'
@@ -20,8 +20,6 @@ type FollowProps = {
     onClose: () => void
 }
 
-type Size = 'SMALL' | 'MEDIUM' | 'LARGE'
-
 type Moving = {
     moving: boolean
     mouseAt: Point
@@ -36,7 +34,6 @@ const MAX_SCALE = 150
 function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }: FollowProps) {
     const myRef = useRef<HTMLDivElement | null>(null)
 
-    // eslint-disable-next-line
     const [size, setSize] = useState<Size>('MEDIUM')
 
     // eslint-disable-next-line
@@ -48,66 +45,59 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
     // eslint-disable-next-line
     const [view, neverSetView] = useState<View>({ scale, translate: { x: 0, y: 0 }, screenSize: { width: 100, height: 100 } })
 
-    useEffect(
-        () => {
-            if (idToFollow !== undefined) {
-                const moveListener = {
-                    id: idToFollow,
-                    onWorkerMoved: (move: MoveUpdate) => {
-                        if (move.state === 'ON_POINT') {
-                            //goToPoint(move.point)
-                        } else if (move.state === 'BETWEEN_POINTS') {
-                            goToBetweenPoints(move.previous, move.next, move.progress)
-                        }
-                    }
-                }
-
-                api.addMovementForWorkerListener(moveListener)
-
-                return () => api.removeMovementForWorkerListener(moveListener)
-            }
-        }, [idToFollow]
-    )
-
-    useEffect(
-        () => {
-            view.screenSize = {
-                width: myRef?.current?.clientWidth ?? 0,
-                height: myRef?.current?.clientHeight ?? 0
-
-            }
-        }, [myRef]
-    )
-
-    useEffect(
-        () => {
-            if (!isCentered && view.screenSize.width > 0 && view.screenSize.height > 0) {
-                const newTranslateX = view.screenSize.width / 2 - point.x * view.scale
-                const newTranslateY = view.screenSize.height / 2 + point.y * view.scale - view.screenSize.height
-
-                view.translate = ({ x: newTranslateX, y: newTranslateY })
-                setIsCentered(true)
-            }
-        }, [isCentered]
-    )
-
-    useEffect(
-        () => {
-            function resizeListener(): void {
-                if (myRef.current) {
-                    view.screenSize = {
-                        width: myRef.current.clientWidth,
-                        height: myRef.current.clientHeight
+    useEffect(() => {
+        if (idToFollow !== undefined) {
+            const moveListener = {
+                id: idToFollow,
+                onWorkerMoved: (move: MoveUpdate) => {
+                    if (move.state === 'ON_POINT') {
+                        //goToPoint(move.point)
+                    } else if (move.state === 'BETWEEN_POINTS') {
+                        goToBetweenPoints(move.previous, move.next, move.progress)
                     }
                 }
             }
 
-            if (myRef?.current) {
-                myRef.current.addEventListener('resize', resizeListener)
-            }
+            api.addMovementForWorkerListener(moveListener)
 
-            return () => myRef?.current?.removeEventListener('resize', resizeListener)
-        }, [myRef])
+            return () => api.removeMovementForWorkerListener(moveListener)
+        }
+    }, [idToFollow])
+
+    useEffect(() => {
+        view.screenSize = {
+            width: myRef?.current?.clientWidth ?? 0,
+            height: myRef?.current?.clientHeight ?? 0
+
+        }
+    }, [myRef])
+
+    useEffect(() => {
+        if (!isCentered && view.screenSize.width > 0 && view.screenSize.height > 0) {
+            const newTranslateX = view.screenSize.width / 2 - point.x * view.scale
+            const newTranslateY = view.screenSize.height / 2 + point.y * view.scale - view.screenSize.height
+
+            view.translate = ({ x: newTranslateX, y: newTranslateY })
+            setIsCentered(true)
+        }
+    }, [isCentered])
+
+    useEffect(() => {
+        function resizeListener(): void {
+            if (myRef.current) {
+                view.screenSize = {
+                    width: myRef.current.clientWidth,
+                    height: myRef.current.clientHeight
+                }
+            }
+        }
+
+        if (myRef?.current) {
+            myRef.current.addEventListener('resize', resizeListener)
+        }
+
+        return () => myRef?.current?.removeEventListener('resize', resizeListener)
+    }, [myRef])
 
     function goToBetweenPoints(from: Point, to: Point, progress: number): void {
         const heightAtFrom = api.allTiles.get(from)?.height ?? 0

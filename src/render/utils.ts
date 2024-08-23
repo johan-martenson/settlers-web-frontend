@@ -6,12 +6,12 @@ type UniformName = string
 type AttributeName = string
 
 type UniformDescriptor = {
-    type: 'FLOAT' | 'INT'
+    type: 'FLOAT' | 'INT' | 'MATRIX'
 }
 
 type UniformInstance = {
     location?: WebGLUniformLocation
-    type: 'FLOAT' | 'INT'
+    type: 'FLOAT' | 'INT' | 'MATRIX'
 }
 
 type AttributeDescriptor = {
@@ -45,6 +45,57 @@ export type ProgramInstance = {
 }
 
 // Constants
+
+// Sample code
+const SAMPLE_MAX_ELEMENTS = 20
+
+const sampleVertexShader = "..."
+const sampleFragmentShader = "..."
+
+// eslint-ignore-next-line
+const sampleProgramDescriptor: ProgramDescriptor = {
+    vertexShaderSource: sampleVertexShader,
+    fragmentShaderSource: sampleFragmentShader,
+    uniforms: {
+        'u_light_vector': { type: 'FLOAT' },
+        'u_scale': { type: 'FLOAT' },
+        'u_offset': { type: 'FLOAT' },
+        'u_screen_width': { type: 'FLOAT' },
+        'u_screen_height': { type: 'FLOAT' },
+        'u_height_adjust': { type: 'FLOAT' },
+        'u_sampler': { type: 'INT' },
+        'u_matrix': { type: 'MATRIX' }
+    },
+    attributes: {
+        'a_coords': {
+            maxElements: SAMPLE_MAX_ELEMENTS,
+            elementsPerVertex: 3
+        },
+        'a_normal': {
+            maxElements: SAMPLE_MAX_ELEMENTS,
+            elementsPerVertex: 3
+        },
+        'a_texture_mapping': {
+            maxElements: SAMPLE_MAX_ELEMENTS,
+            elementsPerVertex: 2
+        }
+    }
+}
+
+// eslint-ignore-next-line
+type SampleUniforms = {
+    u_light_vector: number[]
+    u_scale: number[]
+    u_offset: number[]
+    u_screen_width: number
+    u_screen_height: number
+    u_height_adjust: number
+    u_sampler: number
+    u_matrix: Float32Array
+}
+
+// eslint-ignore-next-line
+type SampleAttributes = 'a_coords' | 'a_normal' | 'a_texture_mapping'
 
 // State
 
@@ -119,13 +170,21 @@ function draw<Uniforms extends object>(
             } else if (value.length === 3) {
                 gl.uniform3fv(location ?? null, value)
             }
-        } else {
+        } else if (type === 'INT') {
             if (typeof value === 'number') {
                 gl.uniform1i(location ?? null, value)
             } else if (value.length === 2) {
                 gl.uniform2iv(location ?? null, value)
             } else if (value.length === 3) {
                 gl.uniform3iv(location ?? null, value)
+            }
+        } else if (type === 'MATRIX') {
+            if (value.length === 4) {
+                gl.uniformMatrix2fv(location ?? null, false, value)
+            } else if (value.length === 9) {
+                gl.uniformMatrix3fv(location ?? null, false, value)
+            } else if (value.length === 16) {
+                gl.uniformMatrix4fv(location ?? null, false, value)
             }
         }
     }
@@ -233,12 +292,10 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
 function calcTranslation(prevScale: number, newScale: number, prevTranslate: Point, dimension: Dimension): Point {
     const centerGamePoint = findCenterGamePoint(dimension, prevScale, prevTranslate)
 
-    const newTranslate = {
+    return {
         x: dimension.width / 2 - centerGamePoint.x * newScale,
         y: dimension.height / 2 - dimension.height + centerGamePoint.y * newScale
     }
-
-    return newTranslate
 }
 
 function findCenterGamePoint(dimension: Dimension, scale: number, translate: Point): Point {

@@ -10,11 +10,11 @@ function stringToPoint(pointAsString: string): Point {
 }
 
 function pointToFastKey(point: Point): number {
-    if (point.y >= 1000 || point.y <= -1000) {
+    if (point.y > 1000 || point.y < -1000) {
         throw new Error(`Cannot handle y values outside of the range -1000 <= n <= 1000. Value is: ${point.y}`)
     }
 
-    if (point.x >= 1000 || point.x <= -1000) {
+    if (point.x > 1000 || point.x < -1000) {
         throw new Error(`Cannot handle x values outside of the range -1000 <= n <= 1000. Value is: ${point.x}`)
     }
 
@@ -51,7 +51,6 @@ class PointFastIterator implements IterableIterator<Point> {
         const result = this.pointFastSetIterator.next()
 
         if (result.value) {
-
             return {
                 done: result.done,
                 value: keyToFastPoint(result.value)
@@ -67,7 +66,6 @@ class PointFastIterator implements IterableIterator<Point> {
 
 
 class PointSetFastIterator implements IterableIterator<Point> {
-
     private pointFastSetIterator: IterableIterator<[number, number]>
 
     constructor(pointFastSetIterator: IterableIterator<[number, number]>) {
@@ -82,7 +80,6 @@ class PointSetFastIterator implements IterableIterator<Point> {
         const result = this.pointFastSetIterator.next()
 
         if (result.value) {
-
             return {
                 done: result.done,
                 value: keyToFastPoint(result.value[0])
@@ -97,7 +94,6 @@ class PointSetFastIterator implements IterableIterator<Point> {
 }
 
 class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
-
     private pointEntryFastIterator: IterableIterator<[number, T]>
 
     constructor(pointEntryFastIterator: IterableIterator<[number, T]>) {
@@ -172,10 +168,10 @@ class PointSetFast implements IterableIterator<Point> {
         throw new Error("Method not implemented.")
     }
 
-    forEach(arg0: (v: Point, i: number) => void): void {
+    forEach(callback: (v: Point, i: number) => void): void {
         this.pointSet.forEach((value, index) => {
             const point = keyToFastPoint(value)
-            arg0(point, index)
+            callback(point, index)
         })
     }
 
@@ -191,15 +187,12 @@ class PointSetFast implements IterableIterator<Point> {
 
     map(transform: (point: Point) => Point): PointSetFast {
         const mapped = new PointSetFast()
-        this.forEach(point => {
-            mapped.add(transform(point))
-        })
+        this.forEach(point => mapped.add(transform(point)))
         return mapped
     }
 }
 
 class PointMapFast<T> implements Map<Point, T> {
-
     private numberToPointMap: Map<number, T>
 
     constructor(pointAsStringDict?: { [pointAsString: string]: T }) {
@@ -226,9 +219,7 @@ class PointMapFast<T> implements Map<Point, T> {
     // eslint-disable-next-line
     forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: unknown): void {
         this.numberToPointMap.forEach(
-            (value, key) => {
-                callbackfn(value, keyToFastPoint(key), this)
-            }
+            (value, key) => callbackfn(value, keyToFastPoint(key), this)
         )
     }
 
@@ -269,4 +260,9 @@ class PointMapFast<T> implements Map<Point, T> {
     [Symbol.toStringTag]: string
 }
 
-export { PointSetFast, PointMapFast } 
+export {
+    PointSetFast,
+    PointMapFast,
+    pointToFastKey,
+    keyToFastPoint
+} 

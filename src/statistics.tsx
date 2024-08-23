@@ -1,7 +1,7 @@
 import * as d3 from 'd3'
 import React, { useState, useEffect, useRef } from 'react'
 import { Window } from './components/dialog'
-import "./statistics.css"
+import './statistics.css'
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerInformation } from './api/types'
 import { InventoryIcon } from './icons/icon'
@@ -22,6 +22,13 @@ type StatisticsProps = {
 }
 
 // React components
+/**
+ * The Statistics component displays production and land statistics for players in the game.
+ *
+ * @param nation - The nation of the player
+ * @param onRaise - Function to raise the window to the top
+ * @param onClose - Function to close the window
+ */
 const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: StatisticsProps) => {
     const landStatsContainerRef = useRef<SVGSVGElement>(null)
     const productionStatsContainerRef = useRef<SVGSVGElement>(null)
@@ -29,8 +36,8 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
     const [productionStatistics, setProductionStatistics] = useState<ProductionStatistics>()
     const [landStatistics, setLandStatistics] = useState<LandStatistics>()
-    const [materialToShow, setMaterialToShow] = useState<Material>("PLANK")
-    const [state, setState] = useState<"PRODUCTION" | "LAND">("PRODUCTION")
+    const [materialToShow, setMaterialToShow] = useState<Material>('PLANK')
+    const [state, setState] = useState<'PRODUCTION' | 'LAND'>('PRODUCTION')
     const [hoverInfo, setHoverInfo] = useState<string>()
     const [graphHover, setGraphHover] = useState<GraphHover>()
     const [playersToShow, setPlayersToShow] = useState<PlayerInformation[]>(Array.from(api.players.values()))
@@ -78,34 +85,27 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
             // Add an extra measurement to make the graph jump straight up
             if (previousMeasurement) {
-                landStatistics.push(
-                    {
-                        time: measurement.time,
-                        values: previousMeasurement.values
-                    }
-                )
+                landStatistics.push({
+                    time: measurement.time,
+                    values: previousMeasurement.values
+                })
             }
 
-            maxValue = Math.max(maxValue, measurement.values.reduce((a, b) => Math.max(a, b)))
-
+            maxValue = Math.max(maxValue, ...measurement.values)
             landStatistics.push(measurement)
-
             previousMeasurement = measurement
         }
 
-        landStatistics.push(
-            {
-                time: landStatisticsWithGaps.currentTime,
-                values: landStatisticsWithGaps.landStatistics[landStatisticsWithGaps.landStatistics.length - 1].values
-            }
-        )
+        landStatistics.push({
+            time: landStatisticsWithGaps.currentTime,
+            values: landStatisticsWithGaps.landStatistics[landStatisticsWithGaps.landStatistics.length - 1].values
+        })
 
         // Define layout - full width x height, the margin, and the inner width x height
         const fullHeight = parent.clientHeight
         const fullWidth = parent.clientWidth
 
         const margin = { top: 30, right: 40, bottom: 30, left: 50 }
-
         const dataAreaWidth = fullWidth - margin.top - margin.bottom
         const dataAreaHeight = fullHeight - margin.right - margin.left
 
@@ -120,16 +120,16 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
         // Create the lines
         const lines: d3.Line<LandDataPoint>[] = []
-
-        landStatisticsWithGaps.players.forEach(
-            (player, index) => lines.push(
+        landStatisticsWithGaps.players.forEach((player, index) =>
+            lines.push(
                 d3.line<LandDataPoint>()
-                    .x((d) => xScale(d.time) ?? 0)
-                    .y((d) => yScale(d.values[index]) ?? 0)
-            ))
+                    .x(d => xScale(d.time) ?? 0)
+                    .y(d => yScale(d.values[index]) ?? 0)
+            )
+        )
 
         // Remove the previous rendering (if any)
-        d3.selectAll("#land-stats-svg > *").remove()
+        d3.selectAll('#land-stats-svg > *').remove()
 
         // Get the svg to draw on
         const statisticsSvg = d3.select(statisticsSvgElement)
@@ -144,50 +144,48 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
         // Make the svg fill its parent and adapt when the size changes
         statisticsSvg
-            .attr("preserveAspectRatio", "xMinYMin meet")
-            .attr("viewBox", `0 0 ${fullWidth} ${fullHeight}`)
-            .classed("svg-content", true)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .attr('preserveAspectRatio', 'xMinYMin meet')
+            .attr('viewBox', `0 0 ${fullWidth} ${fullHeight}`)
+            .classed('svg-content', true)
+            .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`)
 
         // Add the x axis and the y axis
-        statisticsSvg.append("g")
-            .attr("transform", `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
+        statisticsSvg.append('g')
+            .attr('transform', `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
             .call(d3.axisBottom(xScale).tickArguments([5]).tickSize(-dataAreaHeight))
 
-        statisticsSvg.append("g")
-            .attr("transform", `translate(${margin.left}, ${margin.top})`)
+        statisticsSvg.append('g')
+            .attr('transform', `translate(${margin.left}, ${margin.top})`)
             .call(d3.axisLeft(yScale).tickArguments([5]).tickSize(-dataAreaWidth))
 
         // Add the lines
-        landStatisticsWithGaps.players.forEach(
-            (player, index) => playersToShow.find(p => p.name === player.name) !== undefined &&
-                statisticsSvg.append("path")
+        landStatisticsWithGaps.players.forEach((player, index) => {
+            if (playersToShow.find(p => p.name === player.name)) {
+                statisticsSvg.append('path')
                     .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                    .attr("fill", "none")
-                    .attr("stroke", player.color)
-                    .attr("stroke-width", 2)
-                    .attr("stroke-linejoin", "round")
-                    .attr("stroke-linecap", "round")
-                    .datum(landStatistics) // Bind data to the line
-                    .attr("class", "line")
-                    .attr("d", lines[index]) // Call the line generator
-                    .on("mouseover", () => setHoverInfo(player.name))
-                    .on("mouseout", () => setHoverInfo(undefined))
-        )
+                    .attr('fill', 'none')
+                    .attr('stroke', player.color)
+                    .attr('stroke-width', 2)
+                    .attr('stroke-linejoin', 'round')
+                    .attr('stroke-linecap', 'round')
+                    .datum(landStatistics)
+                    .attr('class', 'line')
+                    .attr('d', lines[index])
+                    .on('mouseover', () => setHoverInfo(player.name))
+                    .on('mouseout', () => setHoverInfo(undefined))
+            }
+        })
     }
 
     function reduceDataArrayIfNeeded(dataArray: Measurement[], amount: number): Measurement[] {
         const resultArray: Measurement[] = []
-
         const ratio = Math.floor(dataArray.length / amount)
 
         for (let i = 0; i < dataArray.length; i++) {
-            if (i !== 0 && i !== dataArray.length && i % ratio !== 0) {
-                continue
+            if (i === 0 || i === dataArray.length - 1 || i % ratio === 0) {
+                resultArray.push(dataArray[i])
             }
-
-            resultArray.push(dataArray[i])
         }
 
         return resultArray
@@ -247,7 +245,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                     .y(d => yScale(d.values[i]) ?? 0)))
 
         // Remove the previous rendering (if any)
-        d3.selectAll("#production-stats-svg > *").remove()
+        d3.selectAll('#production-stats-svg > *').remove()
 
         // Get the svg to draw on
         const statisticsSvg = d3.select(statisticsSvgElement)
@@ -262,19 +260,19 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
         // Make the svg fill its parent and adapt when the size changes
         statisticsSvg
-            .attr("preserveAspectRatio", "xMinYMin meet")
-            .attr("viewBox", `0 0 ${fullWidth} ${fullHeight}`)
-            .classed("svg-content", true)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .attr('preserveAspectRatio', 'xMinYMin meet')
+            .attr('viewBox', `0 0 ${fullWidth} ${fullHeight}`)
+            .classed('svg-content', true)
+            .append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
         // Add the x axis and the y axis
-        statisticsSvg.append("g")
-            .attr("transform", `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
+        statisticsSvg.append('g')
+            .attr('transform', `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
             .call(d3.axisBottom(xScale).tickArguments([5]).tickSize(-dataAreaHeight))
 
-        statisticsSvg.append("g")
-            .attr("transform", `translate(${margin.left}, ${margin.top})`)
+        statisticsSvg.append('g')
+            .attr('transform', `translate(${margin.left}, ${margin.top})`)
             .call(d3.axisLeft(yScale).tickArguments([5]).tickSize(-dataAreaWidth))
 
         // Instantiate the lines
@@ -288,27 +286,27 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                 const color = player.color
                 const name = player.name
 
-                statisticsSvg.append("path")
+                statisticsSvg.append('path')
                     .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                    .attr("fill", "none")
-                    .attr("stroke", color)
-                    .attr("stroke-width", 4)
-                    .attr("stroke-linejoin", "round")
-                    .attr("stroke-linecap", "round")
+                    .attr('fill', 'none')
+                    .attr('stroke', color)
+                    .attr('stroke-width', 4)
+                    .attr('stroke-linejoin', 'round')
+                    .attr('stroke-linecap', 'round')
                     .datum(resourceStatistics) // Bind data to the line
-                    .attr("class", "line")
-                    .attr("d", lines[index]) // Call the line generator
-                    .on("mouseenter", () => setHoverInfo(name))
-                    .on("mouseleave", () => setHoverInfo(undefined))
+                    .attr('class', 'line')
+                    .attr('d', lines[index]) // Call the line generator
+                    .on('mouseenter', () => setHoverInfo(name))
+                    .on('mouseleave', () => setHoverInfo(undefined))
 
-                statisticsSvg.selectAll(".dot" + index)
+                statisticsSvg.selectAll('.dot' + index)
                     .data(resourceStatistics)
-                    .enter().append("circle")
+                    .enter().append('circle')
                     .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                    .attr("fill", "rgba(0, 0, 0, 0)")
-                    .attr("class", "dot")
+                    .attr('fill', 'rgba(0, 0, 0, 0)')
+                    .attr('class', 'dot')
 
-                    .attr("cx", function (data) {
+                    .attr('cx', function (data) {
                         const xScaled = xScale(data.time)
 
                         if (xScaled === undefined) {
@@ -317,7 +315,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
                         return xScaled
                     })
-                    .attr("cy", function (data) {
+                    .attr('cy', function (data) {
                         const yScaled = yScale(data.values[index])
 
                         if (yScaled === undefined) {
@@ -326,8 +324,8 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
                         return yScaled
                     })
-                    .attr("r", 5)
-                    .on("mouseenter",
+                    .attr('r', 5)
+                    .on('mouseenter',
                         (event, d) => {
                             setHoverInfo(name)
                             setGraphHover({
@@ -335,7 +333,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                             })
                         })
 
-                    .on("mouseleave", () => {
+                    .on('mouseleave', () => {
                         setHoverInfo(undefined)
                         setGraphHover(undefined)
                     })
@@ -343,25 +341,25 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
         )
     }
 
-    const titleLabel = "Statistics"
+    const titleLabel = 'Statistics'
 
     return (
         <>
             <Window heading={titleLabel} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
-                <div id="stats-page">
+                <div id='stats-page'>
                     <TabList
                         selectedValue={state}
-                        onTabSelect={(event: SelectTabEvent, data: SelectTabData) => setState((data.value === "LAND") ? "LAND" : "PRODUCTION")
+                        onTabSelect={(event: SelectTabEvent, data: SelectTabData) => setState((data.value === 'LAND') ? 'LAND' : 'PRODUCTION')
                         } >
                         <Tab
-                            value={"PRODUCTION"}
+                            value={'PRODUCTION'}
                             onMouseEnter={() => setHoverInfo('Production statistics')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
                             Production
                         </Tab>
                         <Tab
-                            value={"LAND"}
+                            value={'LAND'}
                             onMouseEnter={() => setHoverInfo('Land size statistics')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
@@ -369,12 +367,12 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                         </Tab>
                     </TabList>
 
-                    <div ref={statsParentRef} id="stats-parent">
-                        <svg id="land-stats-svg"
+                    <div ref={statsParentRef} id='stats-parent'>
+                        <svg id='land-stats-svg'
                             ref={landStatsContainerRef}
                             display={(state === 'LAND') ? 'inline-block' : 'none'} />
 
-                        <svg id="production-stats-svg"
+                        <svg id='production-stats-svg'
                             ref={productionStatsContainerRef}
                             display={(state === 'PRODUCTION') ? 'inline-block' : 'none'}
                         />
@@ -401,7 +399,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                             >
                                 <Tooltip content={player.name} relationship='label'>
                                     <div
-                                        style={{ gap: "15px" }}
+                                        style={{ gap: '15px' }}
                                         onClick={() => {
                                             if (playersToShow.find(p => p.id === player.id)) {
                                                 const remaining = playersToShow.filter(p => p.id !== player.id)
@@ -433,14 +431,14 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
             {graphHover &&
                 <div style={{
-                    left: "" + graphHover.x + "px",
-                    top: "" + graphHover.y + "px",
-                    zIndex: "5000",
-                    width: "5em",
-                    height: "2em",
-                    position: "fixed",
-                    backgroundColor: "white",
-                    color: "black"
+                    left: '' + graphHover.x + 'px',
+                    top: '' + graphHover.y + 'px',
+                    zIndex: '5000',
+                    width: '5em',
+                    height: '2em',
+                    position: 'fixed',
+                    backgroundColor: 'white',
+                    color: 'black'
                 }}>
                     {graphHover.value}
                 </div>

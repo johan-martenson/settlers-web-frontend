@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Button, Field, Tooltip } from "@fluentui/react-components"
-import { HouseInformation, Nation, SoldierType, getSoldierDisplayName, isMaterial, rankToMaterial } from "../api/types"
+import { Button, Field, Tooltip } from '@fluentui/react-components'
+import { HouseInformation, Nation, SoldierType, getSoldierDisplayName, isMaterial, rankToMaterial } from '../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../icons/icon'
 import './house_info.css'
 import { api } from '../api/ws-api'
@@ -18,9 +18,9 @@ type MilitaryBuildingProps = {
 
 // React components
 const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingProps) => {
-    const soldiers: (SoldierType | null)[] = []
-
     const [hoverInfo, setHoverInfo] = useState<string>()
+
+    const soldiers: (SoldierType | null)[] = []
 
     if (house.soldiers && house.maxSoldiers) {
         soldiers.push(...house.soldiers)
@@ -34,22 +34,23 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
     const canHoldCoins = house.resources?.COIN?.canHold ?? 0
     const gapCoins = canHoldCoins - hasCoins
 
-    // TODO: show resources when upgrading. Show text "is upgrading..."
+    // TODO: show resources when upgrading. Show text 'is upgrading...'
 
     return (
-        <Window className="house-info" heading={house.type} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
+        <Window className='house-info' heading={house.type} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             {house.upgrading && <div>Upgrading ...</div>}
 
             {house.upgrading &&
-                Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
-                <Field label="Resources">
+                Object.keys(house.resources)
+                    .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
+                <Field label='Resources'>
                     <div>
-                        {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
+                        {Object.keys(house.resources)
+                            .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
                             .map(material => {
-
                                 if (isMaterial(material)) {
                                     const has = house.resources[material].has ?? 0
                                     const canHold = house.resources[material].canHold ?? 0
@@ -57,8 +58,8 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                                     const materialLabel = material.charAt(0) + material.substring(1).toLocaleLowerCase()
 
                                     return <div key={material}>
-                                        {Array.from({ length: has }, () => 1).map(
-                                            (value, index) => <Tooltip content={materialLabel} relationship='label' withArrow key={index}>
+                                        {Array.from({ length: has }, () => 1).map((value, index) => (
+                                            <Tooltip content={materialLabel} relationship='label' withArrow key={index}>
                                                 <span
                                                     onMouseEnter={() => setHoverInfo(materialLabel)}
                                                     onMouseLeave={() => setHoverInfo(undefined)}
@@ -66,9 +67,9 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                                                     <InventoryIcon material={material} nation={nation} inline />
                                                 </span>
                                             </Tooltip>
-                                        )}
-                                        {Array.from({ length: gap }, () => 1).map(
-                                            (value, index) => <Tooltip content={materialLabel} relationship='label' withArrow key={index}>
+                                        ))}
+                                        {Array.from({ length: gap }, () => 1).map((value, index) => (
+                                            <Tooltip content={materialLabel} relationship='label' withArrow key={index}>
                                                 <span
                                                     onMouseEnter={() => setHoverInfo(materialLabel)}
                                                     onMouseLeave={() => setHoverInfo(undefined)}
@@ -76,81 +77,80 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                                                     <InventoryIcon material={material} nation={nation} inline missing />
                                                 </span>
                                             </Tooltip>
-                                        )}
+                                        ))}
                                     </div>
                                 }
-                            })
-                        }
+                            })}
                     </div>
                 </Field>
             }
 
-            <Field label="Soldiers" >
+            <Field label='Soldiers' >
                 <div>
-                    {soldiers.map(
-                        (rank, index) => {
-                            if (rank) {
-                                const soldierDisplayName = getSoldierDisplayName(rank)
-                                const soldierMaterial = rankToMaterial(rank)
+                    {soldiers.map((rank, index) => {
+                        if (rank) {
+                            const soldierDisplayName = getSoldierDisplayName(rank)
+                            const soldierMaterial = rankToMaterial(rank)
 
-                                console.log(soldierDisplayName)
+                            console.log(soldierDisplayName)
 
-                                return (
-                                    <Tooltip content={soldierDisplayName} relationship='label' withArrow key={index} >
-                                        <div
-                                            onMouseEnter={() => setHoverInfo(soldierDisplayName)}
-                                            onMouseLeave={() => setHoverInfo(undefined)}
-                                            style={{ display: 'inline' }}><InventoryIcon material={soldierMaterial} nation={nation} key={index} inline /></div>
-                                    </Tooltip>
-                                )
-                            } else {
-                                return (
-                                    <Tooltip content="Open space for additional soldier" relationship='label' withArrow key={index} >
-                                        <div style={{ display: 'inline' }}><InventoryIcon material={'PRIVATE'} nation={nation} key={index} inline missing /></div>
-                                    </Tooltip>
-                                )
-                            }
+                            return (
+                                <Tooltip content={soldierDisplayName} relationship='label' withArrow key={index} >
+                                    <div
+                                        onMouseEnter={() => setHoverInfo(soldierDisplayName)}
+                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                        style={{ display: 'inline' }}>
+                                        <InventoryIcon material={soldierMaterial} nation={nation} key={index} inline />
+                                    </div>
+                                </Tooltip>
+                            )
+                        } else {
+                            return (
+                                <Tooltip content='Open space for additional soldier' relationship='label' withArrow key={index} >
+                                    <div style={{ display: 'inline' }}>
+                                        <InventoryIcon material={'PRIVATE'} nation={nation} key={index} inline missing />
+                                    </div>
+                                </Tooltip>
+                            )
                         }
-                    )}
+                    })}
                 </div>
             </Field>
 
-            <Field label="Coins">
+            <Field label='Coins'>
                 <div>
-                    {Array.from({ length: hasCoins }, () => 1).map(
-                        (value, index) => <Tooltip content="Coin" relationship={'label'} withArrow key={index}>
+                    {Array.from({ length: hasCoins }, () => 1).map((_, index) => (
+                        <Tooltip content='Coin' relationship={'label'} withArrow key={index}>
                             <span
                                 onMouseEnter={() => setHoverInfo('Coin')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             ><InventoryIcon material={'COIN'} nation={nation} inline /></span>
                         </Tooltip>
-                    )}
-                    {Array.from({ length: gapCoins }, () => 1).map(
-                        (value, index) => <Tooltip content="Coin" relationship={'label'} withArrow key={index}>
+                    ))}
+                    {Array.from({ length: gapCoins }, () => 1).map((_, index) => (
+                        <Tooltip content='Coin' relationship={'label'} withArrow key={index}>
                             <span
                                 onMouseEnter={() => setHoverInfo(`Can hold ${gapCoins} coins more`)}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             ><InventoryIcon material={'COIN'} nation={nation} inline missing /></span>
                         </Tooltip>
-                    )}
+                    ))}
                 </div>
             </Field>
 
             <ButtonRow>
-                {house.promotionsEnabled &&
+                {house.promotionsEnabled ?
                     <Button
                         onClick={() => { api.disablePromotionsForHouse(house.id) }}
-                        onMouseEnter={() => setHoverInfo("Disable promotions")}
+                        onMouseEnter={() => setHoverInfo('Disable promotions')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         Disable<br />promotions
                     </Button>
-                }
-
-                {!house.promotionsEnabled &&
+                    :
                     <Button
                         onClick={() => { api.enablePromotionsForHouse(house.id) }}
-                        onMouseEnter={() => setHoverInfo("Enable promotions")}
+                        onMouseEnter={() => setHoverInfo('Enable promotions')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         Enable<br />promotions
@@ -160,7 +160,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                 {isEvacuated(house) &&
                     <Button
                         onClick={() => { api.cancelEvacuationForHouse(house.id) }}
-                        onMouseEnter={() => setHoverInfo("Cancel evacuation")}
+                        onMouseEnter={() => setHoverInfo('Cancel evacuation')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         Cancel<br />evacuation
@@ -170,7 +170,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                 {!isEvacuated(house) &&
                     <Button
                         onClick={() => { api.evacuateHouse(house.id) }}
-                        onMouseEnter={() => setHoverInfo("Evacuate")}
+                        onMouseEnter={() => setHoverInfo('Evacuate')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >Evacuate</Button>
                 }
@@ -178,7 +178,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                 {canBeUpgraded(house) && !house.upgrading &&
                     <Button
                         onClick={() => api.upgrade(house.id)}
-                        onMouseEnter={() => setHoverInfo("Upgrade")}
+                        onMouseEnter={() => setHoverInfo('Upgrade')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         {house.type === 'Barracks' && <HouseIcon houseType='GuardHouse' nation={nation} scale={0.5} />}
@@ -194,7 +194,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
 
                         onClose()
                     }}
-                        onMouseEnter={() => setHoverInfo("Tear down")}
+                        onMouseEnter={() => setHoverInfo('Tear down')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         <UiIcon type='DESTROY_BUILDING' />

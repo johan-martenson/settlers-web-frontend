@@ -11,7 +11,7 @@ import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from '../shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from '../shaders/terrain-and-roads'
 import { NewRoad } from '../play'
-import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, UNIT_SQUARE, vegetationToTextureMapping } from './constants'
+import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, UNIT_SQUARE, VEGETATION_TO_TEXTURE_MAPPING } from './constants'
 import { textures } from '../render/textures'
 import { ProgramDescriptor, ProgramInstance, draw, initProgram, setBuffer } from './utils'
 
@@ -2383,7 +2383,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
             .map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
             .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
 
-        Array.prototype.push.apply(textureMappings, vegetationToTextureMapping.get(terrainBelow)?.below ?? [0, 0, 0.5, 1, 1, 0])
+        Array.prototype.push.apply(textureMappings, VEGETATION_TO_TEXTURE_MAPPING.get(terrainBelow)?.below ?? [0, 0, 0.5, 1, 1, 0])
 
         // Add transition triangles
         const terrainAtDownLeft = allTiles.get(pointDownLeft)
@@ -2494,7 +2494,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
             .map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
             .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
 
-        Array.prototype.push.apply(textureMappings, vegetationToTextureMapping.get(terrainDownRight)?.downRight ?? [0, 1, 0.5, 0, 1, 1])
+        Array.prototype.push.apply(textureMappings, VEGETATION_TO_TEXTURE_MAPPING.get(terrainDownRight)?.downRight ?? [0, 1, 0.5, 0, 1, 1])
 
         const overlap = OVERLAPS.get(terrainDownRight)
         const transitionTextureMapping = TRANSITION_TEXTURE_MAPPINGS.get(terrainDownRight)

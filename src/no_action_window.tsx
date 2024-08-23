@@ -73,9 +73,7 @@ function NoActionWindow({
                     </Button>}
 
                 <Button
-                    onClick={() => {
-                        onStartMonitor(point)
-                    }}
+                    onClick={() => onStartMonitor(point)}
                     onMouseEnter={() => setHoverInfo('Open monitor')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >

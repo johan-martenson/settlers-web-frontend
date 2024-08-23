@@ -30,39 +30,36 @@ function GameInit() {
     const [player, setPlayer] = useState<PlayerInformation>()
     const [gameId, setGameId] = useState<GameId>()
 
-    useEffect(
-        () => {
-            (async () => {
-                const urlParams = new URLSearchParams(window.location.search)
+    useEffect(() => {
+        (async () => {
+            const urlParams = new URLSearchParams(window.location.search)
+            const gameId = urlParams.get('gameId')
+            const playerId = urlParams.get('playerId')
 
-                const gameId = urlParams.get('gameId')
-                const playerId = urlParams.get('playerId')
+            await api.connectAndWaitForConnection()
 
-                await api.connectAndWaitForConnection()
+            if (gameId !== null && playerId !== null) {
+                await api.followGame(gameId, playerId)
 
-                if (gameId !== null && playerId !== null) {
-                    await api.followGame(gameId, playerId)
+                setGameId(gameId)
+                setPlayer(api.players.get(playerId))
+                setState('PLAY_GAME')
+            } else {
+                const selfPlayer = await api.createPlayer('', 'BROWN', 'AFRICANS', 'HUMAN')
 
-                    setGameId(gameId)
-                    setPlayer(api.players.get(playerId))
-                    setState('PLAY_GAME')
-                } else {
-                    const selfPlayer = await api.createPlayer('', 'BROWN', 'AFRICANS', 'HUMAN')
+                console.log(selfPlayer)
 
-                    console.log(selfPlayer)
-
-                    setPlayer(selfPlayer)
-                    setState('ENTER_PLAYER_INFORMATION')
-                }
-            })().then()
-        }, [])
+                setPlayer(selfPlayer)
+                setState('ENTER_PLAYER_INFORMATION')
+            }
+        })()
+    }, [])
 
     async function onCreateNewGame(): Promise<void> {
         console.log('Creating empty game, then going to create game screen')
 
         if (player === undefined) {
             console.error('Player is undefined')
-
             return
         }
 
@@ -79,7 +76,6 @@ function GameInit() {
 
         if (player === undefined) {
             console.error('The player is not set')
-
             return
         }
 
@@ -89,7 +85,6 @@ function GameInit() {
         const updatedPlayer = await api.updatePlayer(player.id, player.name, nextColor, player.nation)
 
         api.addPlayerToGame(gameId, player.id)
-
         await api.followGame(gameId, player.id)
 
         console.log(gameId)
@@ -102,13 +97,12 @@ function GameInit() {
 
     function onGameStarted(gameId: GameId, selfPlayerId: PlayerId): void {
         history.pushState(null, 'Settlers 2', `/?gameId=${gameId}&playerId=${selfPlayerId}`)
-
         setState('PLAY_GAME')
     }
 
     return (
         <div style={{
-            backgroundImage: 'url("assets/backgrounds/ship.png")',
+            backgroundImage: "url('assets/backgrounds/ship.png')",
             height: '100vh',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -116,23 +110,20 @@ function GameInit() {
         }}>
             {state === 'ENTER_PLAYER_INFORMATION' &&
                 <FillInPlayerInformation
-                    onPlayerInformationDone={
-                        async (name) => {
-                            console.log(`Set player name: ${name}`)
+                    onPlayerInformationDone={async (name) => {
+                        console.log(`Set player name: ${name}`)
 
-                            if (player !== undefined) {
-                                const updatedPlayer = await api.updatePlayer(player.id, name, player.color, player.nation)
+                        if (player !== undefined) {
+                            const updatedPlayer = await api.updatePlayer(player.id, name, player.color, player.nation)
 
-                                console.log(updatedPlayer)
+                            console.log(updatedPlayer)
 
-                                setPlayer(updatedPlayer)
-
-                                setState('LOBBY')
-                            } else {
-                                console.error('Player is undefined')
-                            }
+                            setPlayer(updatedPlayer)
+                            setState('LOBBY')
+                        } else {
+                            console.error('Player is undefined')
                         }
-                    }
+                    }}
                 />
             }
 
@@ -155,12 +146,10 @@ function GameInit() {
                 <Play
                     gameId={gameId}
                     selfPlayerId={player.id}
-                    onLeaveGame={
-                        () => {
-                            setGameId(undefined)
-                            setState('LOBBY')
-                        }
-                    }
+                    onLeaveGame={() => {
+                        setGameId(undefined)
+                        setState('LOBBY')
+                    }}
                 />
             }
         </div>

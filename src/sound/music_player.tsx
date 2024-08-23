@@ -21,60 +21,57 @@ type MusicPlayerProps = {
 
 type Mode = 'LOOP_SONG' | 'LOOP_LIST' | 'SHUFFLE_LIST'
 
+// Constants
+const DEFAULT_MODE: Mode = 'LOOP_LIST'
+const VOLUME_STEP = 0.1
+
 // React components
 const MusicPlayer = ({ volume }: MusicPlayerProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [playing, setPlaying] = useState<boolean>(false)
     const [songs, setSongs] = useState<SongAndTitle[]>([])
     const [currentSong, setCurrentSong] = useState<number>(0)
-    const [mode, setMode] = useState<Mode>('LOOP_LIST')
+    const [mode, setMode] = useState<Mode>(DEFAULT_MODE)
 
     useEffect(() => {
         (async () => {
             const result = await fetch('assets/audio-atlas-music.json')
-
             const audioAtlasSongs: AudioAtlasSongs[] = await result.json()
-
-            const newSongs = audioAtlasSongs?.map(newSong => { return { title: newSong.title, song: new Audio(newSong.path) } })
+            const newSongs = audioAtlasSongs?.map(newSong => {
+                return {
+                    title: newSong.title,
+                    song: new Audio(newSong.path)
+                }
+            })
 
             setSongs(newSongs)
-        })().then()
-
-        return () => { }
+        })()
     }, [])
 
     useEffect(() => {
-        if (songs !== undefined && currentSong !== undefined && songs[currentSong] !== undefined) {
+        if (currentSong !== undefined && songs[currentSong] !== undefined) {
             songs[currentSong].song.volume = volume
         }
-
-        return () => { }
     }, [songs, currentSong, volume])
 
     useEffect(() => {
         if (songs && currentSong) {
             songs[currentSong].song.onended = () => next(currentSong, mode, songs, volume)
         }
-
-        return () => { }
     }, [mode, currentSong, songs, volume])
 
     function pause(songToPause: number, songs: SongAndTitle[]): void {
-        if (songs) {
-            songs[songToPause].song.pause()
+        songs[songToPause].song.pause()
 
-            setPlaying(false)
-        }
+        setPlaying(false)
     }
 
     function resume(songToResume: number, mode: Mode, songs: SongAndTitle[], volume: number): void {
-        if (songs) {
-            songs[songToResume].song.volume = volume
-            songs[songToResume].song.onended = () => { next(songToResume, mode, songs, volume) }
-            songs[songToResume].song.play()
+        songs[songToResume].song.volume = volume
+        songs[songToResume].song.onended = () => { next(songToResume, mode, songs, volume) }
+        songs[songToResume].song.play()
 
-            setPlaying(true)
-        }
+        setPlaying(true)
     }
 
     function next(previous: number, mode: Mode, songs: SongAndTitle[], volume: number): void {
@@ -115,7 +112,7 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
     }
 
     return (
-        <div className="music-player" onWheel={(event) => event.stopPropagation()}>
+        <div className='music-player' onWheel={(event) => event.stopPropagation()}>
             <div> <b>Music</b></div>
 
             {playing && songs && expanded &&
@@ -125,34 +122,25 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
             {expanded &&
                 <>
                     <div>
-                        {playing &&
+                        {playing ?
                             <span><Button onClick={() => pause(currentSong, songs)} icon={<Pause24Filled />} appearance='transparent' /></span>
-                        }
-
-                        {!playing &&
+                            :
                             <span><Button onClick={() => resume(currentSong, mode, songs, volume)} icon={<Play24Filled />} appearance='transparent' /></span>
                         }
-
                         <span><Button onClick={() => next(currentSong, mode, songs, volume)} icon={<FastForward24Filled />} appearance='transparent' /></span>
                     </div>
 
-                    <div id="SongList">
-
-                        {songs &&
-                            songs.map(
-                                (song, index) => {
-                                    return (
-                                        <div
-                                            className={(index === currentSong) ? "PlayingSongItem" : "SongItem"}
-                                            key={index}
-                                            onClick={() => { play(index, songs, volume) }}
-                                        >
-                                            <div>{song.title}</div><div>{secondsToString(song.song.duration)}</div>
-                                        </div>
-                                    )
-                                }
-                            )
-                        }
+                    <div id='SongList'>
+                        {songs.map((song, index) => (
+                            <div
+                                key={index}
+                                className={(index === currentSong) ? 'PlayingSongItem' : 'SongItem'}
+                                onClick={() => { play(index, songs, volume) }}
+                            >
+                                <div>{song.title}</div>
+                                <div>{secondsToString(song.song.duration)}</div>
+                            </div>
+                        ))}
                     </div>
                     <Button appearance={mode === 'LOOP_SONG' ? 'secondary' : 'transparent'} onClick={() => setMode('LOOP_SONG')}>Loop song</Button>
                     <Button appearance={mode === 'LOOP_LIST' ? 'secondary' : 'transparent'} onClick={() => setMode('LOOP_LIST')}>Loop list</Button>

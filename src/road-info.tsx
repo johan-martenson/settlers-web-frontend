@@ -18,6 +18,14 @@ type RoadInfoProps = {
 // TODO: add monitor tab
 
 // React components
+/**
+ * RoadInfo component provides options to manage a road or start monitoring it.
+ *
+ * @param roadId - The ID of the road being managed
+ * @param onStartMonitor - Function to start monitoring a point on the road
+ * @param onRaise - Function to raise the window to the top
+ * @param onClose - Function to close the window
+ */
 const RoadInfo = ({ roadId, onStartMonitor, onClose, onRaise }: RoadInfoProps) => {
     const [selected, setSelected] = useState<'ROAD' | 'MONITOR'>('ROAD')
     const [hoverInfo, setHoverInfo] = useState<string>()
@@ -28,8 +36,7 @@ const RoadInfo = ({ roadId, onStartMonitor, onClose, onRaise }: RoadInfoProps) =
                 defaultSelectedValue={selected}
                 onTabSelect={
                     (_event: SelectTabEvent, data: SelectTabData) => {
-                        const value = data.value
-
+                        const { value } = data
                         if (value === 'ROAD' || value === 'MONITOR') {
                             setSelected(value)
                         }

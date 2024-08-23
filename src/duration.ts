@@ -25,7 +25,6 @@ class Duration {
     }
 
     reportStats(): void {
-
         let previous = null
 
         for (const stamp of this.stamps) {
@@ -41,7 +40,6 @@ class Duration {
         }
 
         if (previous) {
-
             const totalName = this.name + ".total"
 
             addVariableIfAbsent(totalName)

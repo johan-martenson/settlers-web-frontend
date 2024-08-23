@@ -108,7 +108,7 @@ type PlayProps = {
     selfPlayerId: PlayerId
     gameId: GameId
 
-    onLeaveGame: (() => void)
+    onLeaveGame: () => void
 }
 
 export type NewRoad = {
@@ -221,250 +221,236 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         setCursor(newRoad === undefined ? 'NOTHING' : 'BUILDING_ROAD')
     }, [newRoad])
 
-    useEffect(
-        () => {
-            async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId): Promise<void> {
-                await api.connectAndWaitForConnection()
+    useEffect(() => {
+        async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId): Promise<void> {
+            await api.connectAndWaitForConnection()
 
-                api.addGameStateListener(gameMonitorCallbacks)
-                await api.followGame(gameId, selfPlayerId)
-            }
+            api.addGameStateListener(gameMonitorCallbacks)
+            await api.followGame(gameId, selfPlayerId)
+        }
 
-            console.log('Use effect: Start listening to game')
+        console.log('Use effect: Start listening to game')
 
-            connectAndFollow(gameId, selfPlayerId)
+        connectAndFollow(gameId, selfPlayerId)
 
-            return () => {
-                console.log('Use effect: Stop listening to game')
-                api.removeGameStateListener(gameMonitorCallbacks)
-            }
-        }, [gameId, selfPlayerId]
-    )
+        return () => {
+            console.log('Use effect: Stop listening to game')
+            api.removeGameStateListener(gameMonitorCallbacks)
+        }
+    }, [gameId, selfPlayerId])
 
-    useEffect(
-        () => {
-            console.log('Use effect: start event and window resize listeners')
+    useEffect(() => {
+        console.log('Use effect: start event and window resize listeners')
 
-            function nopEventListener(event: MouseEvent): void {
-                event.preventDefault()
-            }
+        function nopEventListener(event: MouseEvent): void {
+            event.preventDefault()
+        }
 
-            function windowResizeListener(): void {
-                if (selfContainerRef.current) {
-                    immediateState.screenSize = {
-                        width: selfContainerRef.current.clientWidth,
-                        height: selfContainerRef.current.clientHeight
-                    }
+        function windowResizeListener(): void {
+            if (selfContainerRef.current) {
+                immediateState.screenSize = {
+                    width: selfContainerRef.current.clientWidth,
+                    height: selfContainerRef.current.clientHeight
                 }
             }
+        }
 
-            document.addEventListener('contextmenu', nopEventListener, false)
-            window.addEventListener('resize', windowResizeListener)
+        document.addEventListener('contextmenu', nopEventListener, false)
+        window.addEventListener('resize', windowResizeListener)
 
-            return () => {
-                console.log('Use effect: removing event and window resize listeners')
+        return () => {
+            console.log('Use effect: removing event and window resize listeners')
 
-                document.removeEventListener('contextmenu', nopEventListener)
-                window.removeEventListener('resize', windowResizeListener)
-            }
-        }, [selfContainerRef]
-    )
+            document.removeEventListener('contextmenu', nopEventListener)
+            window.removeEventListener('resize', windowResizeListener)
+        }
+    }, [selfContainerRef])
 
-    useEffect(
-        () => {
-            function setTypingCommands(): void {
-                const player = api.players.get(selfPlayerId)
-                const nation = player?.nation ?? 'VIKINGS'
-                const color = player?.color ?? 'GREEN'
+    useEffect(() => {
+        function setTypingCommands(): void {
+            const player = api.players.get(selfPlayerId)
+            const nation = player?.nation ?? 'VIKINGS'
+            const color = player?.color ?? 'GREEN'
 
-                const commands = new Map()
+            const commands = new Map<string, Command>()
 
-                SMALL_HOUSES.forEach(building => commands.set(building, {
-                    action: (point: Point) => api.placeHouse(building, point),
-                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('small'),
-                    icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-                }))
-                MEDIUM_HOUSES.forEach(building => commands.set(building, {
-                    action: (point: Point) => api.placeHouse(building, point),
-                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('medium'),
-                    icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-                }))
-                LARGE_HOUSES.forEach(building => building !== 'Headquarter' && commands.set(building, {
-                    action: (point: Point) => api.placeHouse(building, point),
-                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('large'),
-                    icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-                }))
+            SMALL_HOUSES.forEach(building => commands.set(building, {
+                action: (point: Point) => api.placeHouse(building, point),
+                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('small'),
+                icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+            }))
+            MEDIUM_HOUSES.forEach(building => commands.set(building, {
+                action: (point: Point) => api.placeHouse(building, point),
+                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('medium'),
+                icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+            }))
+            LARGE_HOUSES.forEach(building => building !== 'Headquarter' && commands.set(building, {
+                action: (point: Point) => api.placeHouse(building, point),
+                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('large'),
+                icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+            }))
 
-                commands.set('Kill websocket', {
-                    action: () => api.killWebsocket(),
-                    icon: <Dismiss24Filled />
-                })
+            commands.set('Kill websocket', {
+                action: () => api.killWebsocket(),
+                icon: <Dismiss24Filled />
+            })
 
-                commands.set('Road', {
-                    action: async (point: Point) => {
-                        console.log('Building road')
+            commands.set('Road', {
+                action: async (point: Point) => {
+                    console.log('Building road')
 
-                        const pointDownRight = { x: point.x + 1, y: point.y - 1 }
-                        const pointInformations = await api.getInformationOnPoints([point, pointDownRight])
+                    const pointDownRight = { x: point.x + 1, y: point.y - 1 }
+                    const pointInformations = await api.getInformationOnPoints([point, pointDownRight])
 
-                        const pointInformation = pointInformations.get(point)
-                        const pointDownRightInformation = pointInformations.get(pointDownRight)
+                    const pointInformation = pointInformations.get(point)
+                    const pointDownRightInformation = pointInformations.get(pointDownRight)
 
-                        if (pointInformation === undefined) {
-                            console.error(`Failed to get point information: ${point}!`)
-
-                            return
-                        }
-
-                        // If a house is selected, start the road from the flag
-                        if (pointInformation.is === 'building' && pointDownRightInformation !== undefined) {
-                            setNewRoad([pointDownRight])
-                            setPossibleRoadConnections(pointDownRightInformation.possibleRoadConnections)
-                        } else if (pointInformation.is === 'flag') {
-                            setNewRoad([point])
-                            setPossibleRoadConnections(pointInformation.possibleRoadConnections)
-                        }
-                    },
-                    filter: (pointInformation: PointInformation) => pointInformation.is === 'building' || pointInformation.is === 'flag'
-                })
-
-                commands.set('Flag', {
-                    action: (point: Point) => api.placeFlag(point),
-                    filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('flag'),
-                    icon: <FlagIcon nation={nation} type='NORMAL' animate scale={0.7} color={color} />
-                })
-                commands.set('Remove (house, flag, or road)', {
-                    action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
-                    filter: (pointInformation: PointInformation) => pointInformation.is === 'building' &&
-                        api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
-                })
-                commands.set('Statistics', {
-                    action: () => {
-                        openSingletonWindow({ type: 'STATISTICS' })
-                    }
-                })
-                commands.set('Titles', {
-                    action: () => setShowTitles(!showTitles)
-                })
-                commands.set('Geologist', {
-                    action: (point: Point) => api.callGeologist(point),
-                    filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
-                })
-                commands.set('Scout', {
-                    action: (point: Point) => api.callScout(point),
-                    filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
-                })
-                commands.set('Evacuate building', {
-                    action: (point: Point) => {
-                        const house = api.houseAt(point)
-
-                        if (house !== undefined) {
-                            api.evacuateHouse(house.id)
-                        }
-                    },
-                    filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
-                })
-                commands.set('Transport priority', {
-                    action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' })
-                })
-                commands.set('List statistics', {
-                    action: () => printVariables()
-                })
-                commands.set('Upgrade', {
-                    action: (point: Point) => {
-                        const houseInformation = api.getHouseAtPointLocal(point)
-
-                        if (houseInformation && canBeUpgraded(houseInformation)) {
-                            api.upgradeHouse(houseInformation.id)
-                        }
-                    },
-                    filter: (pointInformation: PointInformation) => {
-                        if (pointInformation.is !== 'building' || pointInformation.buildingId === undefined) {
-                            return false
-                        }
-
-                        const houseInformation = api.houses.get(pointInformation.buildingId)
-
-                        return houseInformation
-                            && ['Barracks', 'GuardHouse', 'WatchTower'].includes(houseInformation.type)
-                            && ['OCCUPIED', 'UNOCCUPIED'].includes(houseInformation.state)
-                    },
-                    icon: <AddCircle24Regular />
-                })
-                commands.set('Fps', {
-                    action: () => { setShowFpsCounter(!showFpsCounter) },
-                    icon: <TopSpeed24Filled />
-                })
-                commands.set('Menu', {
-                    action: () => {
-                        setShowMenu(true)
-                    },
-                    icon: <CalendarAgenda24Regular />
-                })
-                commands.set('Quotas', {
-                    action: () => openSingletonWindow({ type: 'QUOTA' })
-                })
-                commands.set('Pause game', {
-                    action: () => api.pauseGame()
-                })
-                commands.set('Resume game', {
-                    action: () => api.resumeGame()
-                })
-                commands.set('Debug', {
-                    action: () => openSingletonWindow({ type: 'DEBUG' })
-                })
-                commands.set('Follow', {
-                    action: (point: Point) => openWindow({ type: 'FOLLOW', point })
-                })
-
-                setCommands(commands)
-            }
-
-            console.log('Use effect: set commands')
-
-            api.waitForGameDataAvailable().then(() => {
-                setTypingCommands()
-                setPlayer(api.players.get(selfPlayerId))
-
-                if (selfContainerRef.current) {
-                    immediateState.screenSize = {
-                        width: selfContainerRef.current.clientWidth,
-                        height: selfContainerRef.current.clientHeight
+                    if (pointInformation === undefined) {
+                        console.error(`Failed to get point information: ${point}!`)
+                        return
                     }
 
-                    if (!showMenu) {
-                        selfContainerRef.current.focus()
+                    // If a house is selected, start the road from the flag
+                    if (pointInformation.is === 'building' && pointDownRightInformation !== undefined) {
+                        setNewRoad([pointDownRight])
+                        setPossibleRoadConnections(pointDownRightInformation.possibleRoadConnections)
+                    } else if (pointInformation.is === 'flag') {
+                        setNewRoad([point])
+                        setPossibleRoadConnections(pointInformation.possibleRoadConnections)
                     }
-                }
+                },
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'building' || pointInformation.is === 'flag'
+            })
 
-                /* Center the view on the headquarter on the first update */
-                const headquarter = getHeadquarterForPlayer(selfPlayerId)
-
-                if (headquarter) {
-                    goToHouse(headquarter.id)
+            commands.set('Flag', {
+                action: (point: Point) => api.placeFlag(point),
+                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('flag'),
+                icon: <FlagIcon nation={nation} type='NORMAL' animate scale={0.7} color={color} />
+            })
+            commands.set('Remove (house, flag, or road)', {
+                action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'building' &&
+                    api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
+            })
+            commands.set('Statistics', {
+                action: () => {
+                    openSingletonWindow({ type: 'STATISTICS' })
                 }
             })
-        }, [monitoringReady, selfPlayerId, showMenu]
-    )
+            commands.set('Titles', {
+                action: () => setShowTitles(!showTitles)
+            })
+            commands.set('Geologist', {
+                action: (point: Point) => api.callGeologist(point),
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
+            })
+            commands.set('Scout', {
+                action: (point: Point) => api.callScout(point),
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
+            })
+            commands.set('Evacuate building', {
+                action: (point: Point) => {
+                    const house = api.houseAt(point)
 
-    useEffect(
-        () => {
-            console.log('Use effect: start sound effects')
+                    if (house !== undefined) {
+                        api.evacuateHouse(house.id)
+                    }
+                },
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
+            })
+            commands.set('Transport priority', {
+                action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' })
+            })
+            commands.set('List statistics', {
+                action: () => printVariables()
+            })
+            commands.set('Upgrade', {
+                action: (point: Point) => {
+                    const houseInformation = api.getHouseAtPointLocal(point)
 
-            sfx.startEffects(immediateState)
+                    if (houseInformation && canBeUpgraded(houseInformation)) {
+                        api.upgradeHouse(houseInformation.id)
+                    }
+                },
+                filter: (pointInformation: PointInformation) => {
+                    if (pointInformation.is !== 'building' || pointInformation.buildingId === undefined) {
+                        return false
+                    }
 
-            return () => {
-                console.log('Use effect: stop sound effects')
+                    const houseInformation = api.houses.get(pointInformation.buildingId)
+                    return houseInformation !== undefined
+                        && ['Barracks', 'GuardHouse', 'WatchTower'].includes(houseInformation.type)
+                        && ['OCCUPIED', 'UNOCCUPIED'].includes(houseInformation.state)
+                },
+                icon: <AddCircle24Regular />
+            })
+            commands.set('Fps', {
+                action: () => setShowFpsCounter(!showFpsCounter),
+                icon: <TopSpeed24Filled />
+            })
+            commands.set('Menu', {
+                action: () => setShowMenu(true),
+                icon: <CalendarAgenda24Regular />
+            })
+            commands.set('Quotas', {
+                action: () => openSingletonWindow({ type: 'QUOTA' })
+            })
+            commands.set('Pause game', {
+                action: () => api.pauseGame()
+            })
+            commands.set('Resume game', {
+                action: () => api.resumeGame()
+            })
+            commands.set('Debug', {
+                action: () => openSingletonWindow({ type: 'DEBUG' })
+            })
+            commands.set('Follow', {
+                action: (point: Point) => openWindow({ type: 'FOLLOW', point })
+            })
 
-                sfx.stopEffects()
+            setCommands(commands)
+        }
+
+        console.log('Use effect: set commands')
+
+        api.waitForGameDataAvailable().then(() => {
+            setTypingCommands()
+            setPlayer(api.players.get(selfPlayerId))
+
+            if (selfContainerRef.current) {
+                immediateState.screenSize = {
+                    width: selfContainerRef.current.clientWidth,
+                    height: selfContainerRef.current.clientHeight
+                }
+
+                if (!showMenu) {
+                    selfContainerRef.current.focus()
+                }
             }
-        }, []
-    )
+
+            /* Center the view on the headquarter on the first update */
+            const headquarter = getHeadquarterForPlayer(selfPlayerId)
+            if (headquarter) {
+                goToHouse(headquarter.id)
+            }
+        })
+    }, [monitoringReady, selfPlayerId, showMenu])
+
+    useEffect(() => {
+        console.log('Use effect: start sound effects')
+
+        sfx.startEffects(immediateState)
+
+        return () => {
+            console.log('Use effect: stop sound effects')
+
+            sfx.stopEffects()
+        }
+    }, [])
 
     // Functions
     const nextWindowId = useCallback(() => {
         nextWindowIdContainer.nextWindowId += 1
-
         return nextWindowIdContainer.nextWindowId - 1
     }, [nextWindowIdContainer])
 
@@ -489,7 +475,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const raiseWindow = useCallback((id: number) => {
         setWindows(prevWindows => {
             const window = prevWindows.find(w => w.id === id)
-
             return window !== undefined ? [...prevWindows.filter(w => w.id !== id), window] : prevWindows
         })
     }, [])
@@ -498,7 +483,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         console.info('Go to house immediately: ' + houseId)
 
         const house = api.houses.get(houseId)
-
         if (house) {
             goToPoint({ x: house.x, y: house.y })
             setSelected({ x: house.x, y: house.y })
@@ -509,7 +493,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         console.info('Go to house: ' + houseId)
 
         const house = api.houses.get(houseId)
-
         if (house) {
             scrollToPoint({ x: house.x, y: house.y })
             setSelected({ x: house.x, y: house.y })
@@ -641,7 +624,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [])
 
     const onPointClicked = useCallback(async (point: Point) => {
-        console.info('Clicked point: ' + point.x + ', ' + point.y)
+        console.info(`Clicked point: ${point.x}, ${point.y}`)
 
         /* Filter clicks that are really the end of moving the mouse */
         if (immediateState.mouseMoving) {
@@ -714,7 +697,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             /* Select the point */
         } else {
-            console.info('Selecting point: ' + point.x + ', ' + point.y)
+            console.info(`Selecting point: ${point.x}, ${point.y}`)
 
             setSelected(point)
         }
@@ -763,9 +746,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         /* Handle click on house */
         const house = api.getHouseAtPointLocal(point)
-
         if (house) {
-            console.info('Clicked house ' + JSON.stringify(house))
+            console.info(`Clicked house: ${JSON.stringify(house)}`)
 
             openWindow({ type: 'HOUSE', house })
             setShowMenu(false)
@@ -887,11 +869,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
-            console.log('touchstart:' + i + '...')
-
             ongoingTouches.set(touches[i].identifier, copyTouch(touches[i]))
-
-            console.log('touchstart:' + i + '.')
         }
 
         /* Only move map with one movement */
@@ -899,11 +877,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             const touch = touches[0]
 
             immediateState.touchIdentifier = touch.identifier
-
             immediateState.mouseDownAt = { x: touch.pageX, y: touch.pageY }
             immediateState.mouseMoving = false
             immediateState.touchMoveOngoing = true
-
             immediateState.translateAtMouseDown = { ...immediateState.translate }
         }
     }, [ongoingTouches, copyTouch])
@@ -962,7 +938,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         /* Stop moving */
         immediateState.touchMoveOngoing = false
-
         const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
@@ -975,7 +950,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         /* Stop moving */
         immediateState.touchMoveOngoing = false
-
         const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {

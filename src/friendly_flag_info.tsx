@@ -23,36 +23,31 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
     const [flag, setFlag] = useState<FlagInformation>(props.flag)
     const [hoverInfo, setHoverInfo] = useState<string>()
 
-    useEffect(
-        () => {
-            const listener = {
-                onUpdate: (updatedFlag: FlagInformation) => setFlag(updatedFlag),
-                onRemove: () => onClose()
-            }
+    useEffect(() => {
+        const listener = {
+            onUpdate: setFlag,
+            onRemove: onClose
+        }
 
-            api.addFlagListener(flag.id, listener)
+        api.addFlagListener(flag.id, listener)
 
-            return () => { api.removeFlagListener(flag.id, listener) }
-        }, [])
+        return () => api.removeFlagListener(flag.id, listener)
+    }, [flag.id, onClose])
 
     return (
         <Window className='friendly-flag-info' heading='Flag' onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
-            <div className="flag-information">
-
+            <div className='flag-information'>
                 <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate drawShadow />
 
                 <ButtonRow>
-
                     <Tooltip content={'Remove flag'} relationship='label' withArrow>
                         <Button
-                            onClick={
-                                async () => {
-                                    api.removeFlag(flag.id)
+                            onClick={async () => {
+                                api.removeFlag(flag.id)
 
-                                    onClose()
-                                }
-                            }
-                            onMouseEnter={() => setHoverInfo("Remove flag")}
+                                onClose()
+                            }}
+                            onMouseEnter={() => setHoverInfo('Remove flag')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
                             Remove
@@ -61,28 +56,24 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
 
                     <Tooltip content='Build road' relationship='label' withArrow>
                         <Button
-                            onClick={
-                                () => {
-                                    onStartNewRoad(flag)
+                            onClick={() => {
+                                onStartNewRoad(flag)
 
-                                    onClose()
-                                }
-                            }
-                            onMouseEnter={() => setHoverInfo("Build road")}
+                                onClose()
+                            }}
+                            onMouseEnter={() => setHoverInfo('Build road')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >Build road</Button>
                     </Tooltip>
 
-                    <Tooltip content={"Call geologist"} relationship='label' withArrow>
+                    <Tooltip content={'Call geologist'} relationship='label' withArrow>
                         <Button
-                            onClick={
-                                async () => {
-                                    api.callGeologist(flag)
+                            onClick={async () => {
+                                api.callGeologist(flag)
 
-                                    onClose()
-                                }
-                            }
-                            onMouseEnter={() => setHoverInfo("Call geologist")}
+                                onClose()
+                            }}
+                            onMouseEnter={() => setHoverInfo('Call geologist')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
                             <div className='friendly-flag-info-button-icon-and-label'>
@@ -91,16 +82,14 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         </Button>
                     </Tooltip>
 
-                    <Tooltip content={"Call scout"} relationship='label' withArrow>
+                    <Tooltip content={'Call scout'} relationship='label' withArrow>
                         <Button
-                            onClick={
-                                async () => {
-                                    api.callScout(flag)
+                            onClick={async () => {
+                                api.callScout(flag)
 
-                                    onClose()
-                                }
-                            }
-                            onMouseEnter={() => setHoverInfo("Call scout")}
+                                onClose()
+                            }}
+                            onMouseEnter={() => setHoverInfo('Call scout')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
                             <div className='friendly-flag-info-button-icon-and-label'>
@@ -114,13 +103,14 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                     <div className='friendly-flag-info-stacked-cargo'>
                         <Field label='Cargo waiting'>
                             <div className='friendly-flag-info-cargo-list'>
-                                {flag.stackedCargo.map((material, index) => <InventoryIcon material={material} key={index} nation={nation} inline />)}
+                                {flag.stackedCargo.map((material, index) => (
+                                    <InventoryIcon material={material} key={index} nation={nation} inline />
+                                ))}
                             </div>
                         </Field>
                     </div>
                 }
             </div>
-
         </Window>
     )
 }

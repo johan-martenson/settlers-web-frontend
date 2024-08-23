@@ -1,5 +1,37 @@
 import { Point } from "../api/types"
-import { PointMapFast, PointSetFast } from "../util_types"
+import { keyToFastPoint, PointMapFast, PointSetFast, pointToFastKey } from "../util_types"
+
+describe('Point encoding and decoding', () => {
+    it('should encode and decode points within the valid range', () => {
+        const points = [
+            { x: 0, y: 0 },
+            { x: -1000, y: -1000 },
+            { x: 1000, y: 1000 },
+            { x: -500, y: 500 },
+            { x: 123, y: -456 }
+        ]
+
+        points.forEach(point => {
+            const key = pointToFastKey(point)
+            const decodedPoint = keyToFastPoint(key)
+            expect(decodedPoint).toEqual(point)
+        })
+    })
+
+    it('should throw an error when encoding points outside the valid range', () => {
+        const invalidPoints = [
+            { x: -1001, y: 0 },
+            { x: 1001, y: 0 },
+            { x: 0, y: -1001 },
+            { x: 0, y: 1001 },
+            { x: -1001, y: 1001 }
+        ]
+
+        invalidPoints.forEach(point => {
+            expect(() => pointToFastKey(point)).toThrow()
+        })
+    })
+})
 
 describe('PointSetFast', () => {
     let set: PointSetFast

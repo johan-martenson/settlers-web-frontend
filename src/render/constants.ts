@@ -80,8 +80,8 @@ export const MAIN_ROAD_WITH_FLAG = [
 ]
 
 // Vegetation constants
-export const OVERLAPS: Map<VegetationIntegers, Set<VegetationIntegers>> = new Map()
-export const TRANSITION_TEXTURE_MAPPINGS: Map<VegetationIntegers, number[]> = new Map()
+export const OVERLAPS = new Map<VegetationIntegers, Set<VegetationIntegers>>()
+export const TRANSITION_TEXTURE_MAPPINGS = new Map<VegetationIntegers, number[]>()
 
 OVERLAPS.set(SNOW, new Set([SAVANNAH, MOUNTAIN_1, SWAMP, DESERT_1, WATER_1, BUILDABLE_WATER, DESERT_2, MEADOW_1, MEADOW_2, MEADOW_3,
     MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, STEPPE, FLOWER_MEADOW, LAVA_1, MAGENTA, MOUNTAIN_MEADOW, WATER_2, LAVA_2, LAVA_3, LAVA_4, BUILDABLE_MOUNTAIN]))
@@ -125,9 +125,9 @@ TRANSITION_TEXTURE_MAPPINGS.set(DESERT_1, DESERT_TRANSITION)
 TRANSITION_TEXTURE_MAPPINGS.set(DESERT_2, DESERT_TRANSITION)
 TRANSITION_TEXTURE_MAPPINGS.set(STEPPE, DESERT_TRANSITION)
 
-export const vegetationToTextureMapping: Map<VegetationIntegers, BelowAndDownRight> = new Map()
+export const VEGETATION_TO_TEXTURE_MAPPING = new Map<VegetationIntegers, BelowAndDownRight>()
 
-vegetationToTextureMapping.set(SAVANNAH, {
+VEGETATION_TO_TEXTURE_MAPPING.set(SAVANNAH, {
     below: [
         1, 143,
         24, 96,
@@ -138,10 +138,9 @@ vegetationToTextureMapping.set(SAVANNAH, {
         24, 143,
         47, 96
     ].map(v => v / 256.0)
-}
-)
+})
 
-vegetationToTextureMapping.set(MOUNTAIN_1, {
+VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_1, {
     below: [
         1, 95,
         24, 48,
@@ -152,7 +151,7 @@ vegetationToTextureMapping.set(MOUNTAIN_1, {
         47, 48].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(SNOW, {
+VEGETATION_TO_TEXTURE_MAPPING.set(SNOW, {
     below: [
         1, 47,
         24, 1,
@@ -165,7 +164,7 @@ vegetationToTextureMapping.set(SNOW, {
     ].map(v => v / 255.0)
 })
 
-vegetationToTextureMapping.set(SWAMP, {
+VEGETATION_TO_TEXTURE_MAPPING.set(SWAMP, {
     below: [
         96, 47,
         120, 1,
@@ -176,7 +175,7 @@ vegetationToTextureMapping.set(SWAMP, {
         143, 1].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(DESERT_1, {
+VEGETATION_TO_TEXTURE_MAPPING.set(DESERT_1, {
     below: [
         48, 47,
         72, 1,
@@ -189,7 +188,7 @@ vegetationToTextureMapping.set(DESERT_1, {
     ].map(v => v / 255.0)
 })
 
-vegetationToTextureMapping.set(WATER_1, {
+VEGETATION_TO_TEXTURE_MAPPING.set(WATER_1, {
     below: [
         194, 76,
         219, 50,
@@ -200,7 +199,7 @@ vegetationToTextureMapping.set(WATER_1, {
         245, 77].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(BUILDABLE_WATER, {
+VEGETATION_TO_TEXTURE_MAPPING.set(BUILDABLE_WATER, {
     below: [
         194, 76,
         219, 50,
@@ -211,7 +210,7 @@ vegetationToTextureMapping.set(BUILDABLE_WATER, {
         245, 77].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(DESERT_2, {
+VEGETATION_TO_TEXTURE_MAPPING.set(DESERT_2, {
     below: [
         48, 47,
         72, 1,
@@ -223,7 +222,7 @@ vegetationToTextureMapping.set(DESERT_2, {
         95, 1].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(MEADOW_1, {
+VEGETATION_TO_TEXTURE_MAPPING.set(MEADOW_1, {
     below: [
         48, 143,
         72, 96,
@@ -234,21 +233,20 @@ vegetationToTextureMapping.set(MEADOW_1, {
         95, 96].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(MEADOW_2,
-    {
-        below: [
-            96, 143,
-            129, 96,
-            143, 143
-        ].map(v => v / 256),
-        downRight: [
-            96, 96,
-            120, 143,
-            143, 96
-        ].map(v => v / 256)
-    })
+VEGETATION_TO_TEXTURE_MAPPING.set(MEADOW_2, {
+    below: [
+        96, 143,
+        129, 96,
+        143, 143
+    ].map(v => v / 256),
+    downRight: [
+        96, 96,
+        120, 143,
+        143, 96
+    ].map(v => v / 256)
+})
 
-vegetationToTextureMapping.set(MEADOW_3, {
+VEGETATION_TO_TEXTURE_MAPPING.set(MEADOW_3, {
     below: [
         144, 143,
         168, 96,
@@ -259,7 +257,7 @@ vegetationToTextureMapping.set(MEADOW_3, {
         191, 96].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(MOUNTAIN_2, {
+VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_2, {
     below: [
         48, 95,
         72, 48,
@@ -270,7 +268,7 @@ vegetationToTextureMapping.set(MOUNTAIN_2, {
         95, 48].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(MOUNTAIN_3, {
+VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_3, {
     below: [
         96, 95,
         120, 48,
@@ -281,7 +279,7 @@ vegetationToTextureMapping.set(MOUNTAIN_3, {
         143, 48].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(MOUNTAIN_4, {
+VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_4, {
     below: [
         144, 95,
         168, 48,
@@ -292,7 +290,7 @@ vegetationToTextureMapping.set(MOUNTAIN_4, {
         191, 48].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(STEPPE, {
+VEGETATION_TO_TEXTURE_MAPPING.set(STEPPE, {
     below: [
         1, 191,
         24, 144,
@@ -303,7 +301,7 @@ vegetationToTextureMapping.set(STEPPE, {
         47, 191].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(FLOWER_MEADOW, {
+VEGETATION_TO_TEXTURE_MAPPING.set(FLOWER_MEADOW, {
     below: [
         144, 47,
         168, 1,
@@ -314,7 +312,7 @@ vegetationToTextureMapping.set(FLOWER_MEADOW, {
         191, 1].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(LAVA_1, {
+VEGETATION_TO_TEXTURE_MAPPING.set(LAVA_1, {
     below: [
         192, 132,
         219, 104,
@@ -325,7 +323,7 @@ vegetationToTextureMapping.set(LAVA_1, {
         246, 132].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(MAGENTA, {
+VEGETATION_TO_TEXTURE_MAPPING.set(MAGENTA, {
     below: [
         96, 191,
         120, 144,
@@ -336,7 +334,7 @@ vegetationToTextureMapping.set(MAGENTA, {
         143, 144].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(MOUNTAIN_MEADOW, {
+VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_MEADOW, {
     below: [
         48, 191,
         72, 144,
@@ -347,7 +345,7 @@ vegetationToTextureMapping.set(MOUNTAIN_MEADOW, {
         95, 144].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(WATER_2, {
+VEGETATION_TO_TEXTURE_MAPPING.set(WATER_2, {
     below: [
         194, 76,
         219, 50,
@@ -358,7 +356,7 @@ vegetationToTextureMapping.set(WATER_2, {
         245, 77].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(LAVA_2, {
+VEGETATION_TO_TEXTURE_MAPPING.set(LAVA_2, {
     below: [
         192, 132,
         219, 104,
@@ -369,7 +367,7 @@ vegetationToTextureMapping.set(LAVA_2, {
         246, 132].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(LAVA_3, {
+VEGETATION_TO_TEXTURE_MAPPING.set(LAVA_3, {
     below: [
         192, 132,
         219, 104,
@@ -380,7 +378,7 @@ vegetationToTextureMapping.set(LAVA_3, {
         246, 132].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(LAVA_4, {
+VEGETATION_TO_TEXTURE_MAPPING.set(LAVA_4, {
     below: [
         192, 132,
         219, 104,
@@ -391,7 +389,7 @@ vegetationToTextureMapping.set(LAVA_4, {
         246, 132].map(v => v / 256)
 })
 
-vegetationToTextureMapping.set(BUILDABLE_MOUNTAIN, {
+VEGETATION_TO_TEXTURE_MAPPING.set(BUILDABLE_MOUNTAIN, {
     below: [
         48, 95,
         72, 48,

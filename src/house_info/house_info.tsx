@@ -16,7 +16,6 @@ type HouseInfoProps = {
     house: HouseInformation
     selfPlayerId: PlayerId
     nation: Nation
-
     onRaise: () => void
     onClose: () => void
 }
@@ -24,7 +23,6 @@ type HouseInfoProps = {
 type PlannedHouseInfoProps = {
     house: HouseInformation
     nation: Nation
-
     onRaise: () => void
     onClose: () => void
 }
@@ -32,7 +30,6 @@ type PlannedHouseInfoProps = {
 type EnemyHouseInfoProps = {
     house: HouseInformation
     nation: Nation
-
     onRaise: () => void
     onClose: () => void
 }
@@ -40,7 +37,6 @@ type EnemyHouseInfoProps = {
 type MilitaryEnemyHouseInfoProps = {
     house: HouseInformation
     nation: Nation
-
     onRaise: () => void
     onClose: () => void
 }
@@ -48,7 +44,6 @@ type MilitaryEnemyHouseInfoProps = {
 type UnfinishedHouseInfo = {
     house: HouseInformation
     nation: Nation
-
     onRaise: () => void
     onClose: () => void
 }
@@ -56,7 +51,6 @@ type UnfinishedHouseInfo = {
 type ProductionBuildingProps = {
     house: HouseInformation
     nation: Nation
-
     onRaise: () => void
     onClose: () => void
 }
@@ -69,7 +63,6 @@ const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseIn
 
     useEffect(() => {
         const houseListener = (house: HouseInformation) => setHouse(house)
-
         api.addHouseListener(house.id, houseListener)
 
         return () => api.removeHouseListener(house.id, houseListener)
@@ -111,9 +104,7 @@ const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseIn
 const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoProps) => {
     return (
         <Window className='house-info' heading={'Planned ' + house.type} onClose={onClose} onRaise={onRaise}>
-
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
-
             <Button onClick={() => {
                 api.removeBuilding(house.id)
 
@@ -167,8 +158,7 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                         api.attackHouse(house.id, chosenAttackers, attackType)
 
                         onClose()
-                    }
-                    }>Attack</Button>
+                    }}>Attack</Button>
                 </div>
             }
         </Window>
@@ -178,16 +168,16 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
 const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHouseInfo) => {
     return (
         <Window className='house-info' heading={house.type} onClose={onClose} onRaise={onRaise}>
-
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
-
             <div>Under construction ...</div>
             <meter max={100} value={house.constructionProgress} />
 
-            {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
+            {Object.keys(house.resources)
+                .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
                 <Field label='Resources'>
                     <div>
-                        {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
+                        {Object.keys(house.resources)
+                            .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
                             .map(material => {
 
                                 if (isMaterial(material)) {
@@ -196,16 +186,16 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
                                     const gap = Math.max(canHold - has, 0)
 
                                     return <div key={material}>
-                                        {Array.from({ length: has }, () => 1).map(
-                                            (value, index) => <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
+                                        {Array.from({ length: has }, () => 1).map((value, index) => (
+                                            <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
                                                 <span><InventoryIcon material={material} nation={nation} key={index} inline /></span>
                                             </Tooltip>
-                                        )}
-                                        {Array.from({ length: gap }, () => 1).map(
-                                            (value, index) => <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
+                                        ))}
+                                        {Array.from({ length: gap }, () => 1).map((value, index) => (
+                                            <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
                                                 <span><InventoryIcon material={material} nation={nation} key={index} inline missing /></span>
                                             </Tooltip>
-                                        )}
+                                        ))}
                                     </div>
                                 }
                             })

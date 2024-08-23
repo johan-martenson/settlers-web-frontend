@@ -6,8 +6,8 @@ import { Window } from './components/dialog'
 
 // Types
 type GuideProps = {
-    onRaise: (() => void)
-    onClose: (() => void)
+    onRaise: () => void
+    onClose: () => void
 }
 
 
@@ -22,17 +22,20 @@ const Guide = ({ onClose, onRaise }: GuideProps) => {
     const currentPage: PageType = HELP_PAGES[pageNumber]
 
     return (
-        <Window className="guide" heading={currentPage.title} onClose={onClose} onRaise={onRaise}>
-
+        <Window className='guide' heading={currentPage.title} onClose={onClose} onRaise={onRaise}>
             <Page page={currentPage} />
 
             <div>
                 {pageNumber > 0 &&
-                    <Button onClick={() => { setPageNumber(pageNumber - 1) }} >Previous</Button>
+                    <Button onClick={() => { setPageNumber(pageNumber - 1) }} >
+                        Previous
+                    </Button>
                 }
 
                 {pageNumber < HELP_PAGES.length - 1 &&
-                    <Button onClick={() => { setPageNumber(pageNumber + 1) }} >Next</Button>
+                    <Button onClick={() => { setPageNumber(pageNumber + 1) }} >
+                        Next
+                    </Button>
                 }
             </div>
         </Window>
@@ -41,26 +44,22 @@ const Guide = ({ onClose, onRaise }: GuideProps) => {
 
 const Page = ({ page }: PageProps) => {
     return (
-        <div className="page">
+        <div className='page'>
+            <div className='DialogSection PageIllustrations'>
 
-            <div className="DialogSection PageIllustrations">
-
-                {page.pictures.map(
-                    (image, index) => {
-                        return (
-                            <div key={index} className="ConstructionItem PageIllustration">
-
-                                {image}
-
-                            </div>
-                        )
-                    }
-                )}
-
+                {page.pictures.map((image, index) => (
+                    <div key={index} className='ConstructionItem PageIllustration'>
+                        {image}
+                    </div>
+                ))}
             </div>
 
-            <div className="PageDescription">
-                {page.description.map((text, index) => <p key={index} className="PageParagraph">{text}</p>)}
+            <div className='PageDescription'>
+                {page.description.map((text, index) => (
+                    <p key={index} className='PageParagraph'>
+                        {text}
+                    </p>
+                ))}
             </div>
         </div>
     )

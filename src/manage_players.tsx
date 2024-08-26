@@ -84,8 +84,6 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
     const availableColors = new Set<PlayerColor>(PLAYER_COLORS)
     players.forEach(player => availableColors.delete(player.color))
 
-    console.log(players)
-
     return (
         <div className='player-list'>
             <Subtitle1 as='h4' block>Players</Subtitle1>

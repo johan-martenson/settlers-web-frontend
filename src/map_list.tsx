@@ -29,16 +29,23 @@ const MapList = ({
     onMapSelected
 }: MapListProps) => {
     const [maps, setMaps] = useState<MapInformation[]>([])
+    const [defaultSelectDone, setDefaultSelectDone] = useState<boolean>(false)
 
     useEffect(() => {
         (async () => {
             const maps = await api.getMaps()
 
-            defaultSelect && onMapSelected(maps[0])
-
             setMaps(maps)
         })()
-    }, [defaultSelect, onMapSelected])
+    }, [])
+
+    useEffect(() => {
+        if (defaultSelect && !defaultSelectDone && maps && maps.length > 0) {
+            onMapSelected(maps[0])
+
+            setDefaultSelectDone(true)
+        }
+    }, [maps, defaultSelect, onMapSelected])
 
     const matches = maps
         .filter(map => map.maxPlayers >= minPlayers)

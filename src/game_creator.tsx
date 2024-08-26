@@ -155,7 +155,15 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         </div>
 
                         <div className='map-column'>
-                            <MapSelection onMapSelected={map => api.setMap(map.id)} minPlayers={gameInformation?.players.length ?? 0} />
+                            <MapSelection onMapSelected={map => {
+                                console.log(map)
+                                console.log(gameInformation)
+
+                            if (!gameInformation?.map || gameInformation.map.id !== map.id) {
+                                    api.setMap(map.id)
+                                }
+                            }}
+                                minPlayers={gameInformation?.players.length ?? 0} />
                         </div>
 
                         <div className='game-create-chat'>

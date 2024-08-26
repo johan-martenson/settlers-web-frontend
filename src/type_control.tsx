@@ -62,6 +62,32 @@ function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeContr
 const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [selectedPointInformation, setSelectedPointInformation] = useState<PointInformation>()
+
+    const reducer = useCallback((state: InputState, action: InputAction) => {
+        switch (action.type) {
+            case 'set':
+                return { input: action.payload }
+            case 'add':
+                return { input: state.input + action.payload }
+            case 'run': {
+                const commandHit = Array.from(commands.keys())
+                    .find(command => command.toLowerCase().startsWith(state.input.toLowerCase()))
+
+                if (commandHit) {
+                    commandChosen(commandHit)
+                } else {
+                    console.log(`Can't find command matching: ${state.input}`)
+                }
+
+                return { input: '' }
+            }
+            case 'remove_last':
+                return { input: state.input.slice(0, -1) }
+            default:
+                return state
+        }
+    }, [commands])
+
     const [inputState, dispatchInput] = useReducer(reducer, { input: '' })
 
     useEffect(() => {
@@ -100,31 +126,6 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
         commands.get(commandName)?.action(selectedPoint)
     }, [commands, selectedPoint])
-
-    const reducer = useCallback((state: InputState, action: InputAction) => {
-        switch (action.type) {
-            case 'set':
-                return { input: action.payload }
-            case 'add':
-                return { input: state.input + action.payload }
-            case 'run': {
-                const commandHit = Array.from(commands.keys())
-                    .find(command => command.toLowerCase().startsWith(state.input.toLowerCase()))
-
-                if (commandHit) {
-                    commandChosen(commandHit)
-                } else {
-                    console.log(`Can't find command matching: ${state.input}`)
-                }
-
-                return { input: '' }
-            }
-            case 'remove_last':
-                return { input: state.input.slice(0, -1) }
-            default:
-                return state
-        }
-    }, [commands])
 
     const listener = useCallback((event: Event) => {
         if (isTypingControlKeyEvent(event)) {

@@ -364,6 +364,7 @@ function handleOpen(): void {
 function handleClose(event: CloseEvent): void {
     if (wsApiCoreDebugSettings.connectionHandling) {
         console.error(`Websocket was closed: ${event}`)
+        console.log(`Code: ${event.code}, Reason: ${event.reason}, Clean: ${event.wasClean}`);
     }
 
     connectionStatus = 'NOT_CONNECTED'

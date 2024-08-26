@@ -23,7 +23,6 @@ type Mode = 'LOOP_SONG' | 'LOOP_LIST' | 'SHUFFLE_LIST'
 
 // Constants
 const DEFAULT_MODE: Mode = 'LOOP_LIST'
-const VOLUME_STEP = 0.1
 
 // React components
 const MusicPlayer = ({ volume }: MusicPlayerProps) => {

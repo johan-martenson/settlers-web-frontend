@@ -70,6 +70,7 @@ const WorkerIcon = ({
 }: WorkerIconProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
+    // eslint-disable-next-line
     const [animationIndexHolder, setAnimationIndexHolder] = useState<AnimationIndexHolder>({ animationIndex: 0 })
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
     const [sourceImage, setSourceImage] = useState<ImageBitmap>()

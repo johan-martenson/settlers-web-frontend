@@ -52,7 +52,7 @@ const SAMPLE_MAX_ELEMENTS = 20
 const sampleVertexShader = "..."
 const sampleFragmentShader = "..."
 
-// eslint-ignore-next-line
+// eslint-disable-next-line
 const sampleProgramDescriptor: ProgramDescriptor = {
     vertexShaderSource: sampleVertexShader,
     fragmentShaderSource: sampleFragmentShader,
@@ -82,7 +82,7 @@ const sampleProgramDescriptor: ProgramDescriptor = {
     }
 }
 
-// eslint-ignore-next-line
+// eslint-disable-next-line
 type SampleUniforms = {
     u_light_vector: number[]
     u_scale: number[]
@@ -94,7 +94,7 @@ type SampleUniforms = {
     u_matrix: Float32Array
 }
 
-// eslint-ignore-next-line
+// eslint-disable-next-line
 type SampleAttributes = 'a_coords' | 'a_normal' | 'a_texture_mapping'
 
 // State

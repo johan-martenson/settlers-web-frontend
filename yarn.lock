@@ -4951,12 +4951,12 @@ clean-css@^5.2.2:
   dependencies:
     source-map "~0.6.0"
 
-cli-cursor@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/cli-cursor/-/cli-cursor-4.0.0.tgz#3cecfe3734bf4fe02a8361cbdc0f6fe28c6a57ea"
-  integrity sha512-VGtlMu3x/4DOtIUwEkRezxUZ2lBacNJCHash0N0WeZDBS+7Ux1dm3XWAgWYxLJFMMdOeXMHXorshEFhbMSGelg==
+cli-cursor@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/cli-cursor/-/cli-cursor-5.0.0.tgz#24a4831ecf5a6b01ddeb32fb71a4b2088b0dce38"
+  integrity sha512-aCj4O5wKyszjMmDT4tZj93kxyydN/K5zPWSCe6/0AV/AA1pqe5ZBIw0a2ZfPQV7lL5/yb5HsUreJ6UFAF1tEQw==
   dependencies:
-    restore-cursor "^4.0.0"
+    restore-cursor "^5.0.0"
 
 cli-spinners@^2.9.2:
   version "2.9.2"
@@ -5842,10 +5842,10 @@ detect-port-alt@^1.1.6:
     address "^1.0.1"
     debug "^2.6.0"
 
-devtools-protocol@0.0.1312386:
-  version "0.0.1312386"
-  resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1312386.tgz#5ab824d6f1669ec6c6eb0fba047e73601d969052"
-  integrity sha512-DPnhUXvmvKT2dFA/j7B+riVLUt9Q6RKJlcppojL5CoRywJJKLDYnRlw0gTFKfgDPHP5E04UoB71SxoJlVZy8FA==
+devtools-protocol@0.0.1330662:
+  version "0.0.1330662"
+  resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1330662.tgz#400fe703c2820d6b2d9ebdd1785934310152373e"
+  integrity sha512-pzh6YQ8zZfz3iKlCvgzVCu22NdpZ8hNmwU6WnQjNVquh0A9iVosPtNLWDwaWVGyrntQlltPFztTMK5Cg6lfCuw==
 
 didyoumean@^1.2.2:
   version "1.2.2"
@@ -7009,20 +7009,20 @@ fsevents@^2.3.2, fsevents@~2.3.2:
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.3.tgz#cac6407785d03675a2a5e1a5305c697b347d90d6"
   integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
-fuite@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/fuite/-/fuite-5.0.0.tgz#7d367680903b0787e5a75c9cf1b7e609dd9e94a5"
-  integrity sha512-QWMWLw3p7wnzMpJNA0pQUslJLgdtY+vThfD1X1e8zXXsX/8biZwvZdNUDul/OTdzyjtFDjpLmxe9Fi/X6L6Xwg==
+fuite@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/fuite/-/fuite-5.0.1.tgz#cdfecbd6aa863c93517d401fb60faada6cba3479"
+  integrity sha512-EGjC0rh9jw6nzFfwFPjb3hNXKeGvMk/FOO2Uyew8+7jzazcnh8bXx9VAbQtVr4+bFk5KXVmI6EG/p2kQLV9puw==
   dependencies:
     as-table "^1.0.55"
     chalk "^5.3.0"
     commander "^12.1.0"
     exit-hook "4.0.0"
     ono "^7.1.3"
-    ora "^8.0.1"
+    ora "^8.1.0"
     please-upgrade-node "^3.2.0"
     pretty-bytes "^6.1.1"
-    puppeteer "^23.1.0"
+    puppeteer "^23.2.0"
     quick-lru "^7.0.0"
     source-map "^0.7.4"
     stacktrace-parser "^0.1.10"
@@ -9012,6 +9012,11 @@ mimic-fn@^2.1.0:
   resolved "https://registry.yarnpkg.com/mimic-fn/-/mimic-fn-2.1.0.tgz#7ed2c2ccccaf84d3ffcb7a69b57711fc2083401b"
   integrity sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==
 
+mimic-function@^5.0.0:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/mimic-function/-/mimic-function-5.0.1.tgz#acbe2b3349f99b9deaca7fb70e48b83e94e67076"
+  integrity sha512-VP79XUPxV2CigYP3jWwAUFSku2aKqBH7uTAapFWCBqutsbmDo96KY5o8uh6U+/YSIn5OxJnXp73beVkpqMIGhA==
+
 min-indent@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/min-indent/-/min-indent-1.0.1.tgz#a63f681673b30571fbe8bc25686ae746eefa9869"
@@ -9311,12 +9316,19 @@ once@^1.3.0, once@^1.3.1, once@^1.4.0:
   dependencies:
     wrappy "1"
 
-onetime@^5.1.0, onetime@^5.1.2:
+onetime@^5.1.2:
   version "5.1.2"
   resolved "https://registry.yarnpkg.com/onetime/-/onetime-5.1.2.tgz#d0e96ebb56b07476df1dd9c4806e5237985ca45e"
   integrity sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==
   dependencies:
     mimic-fn "^2.1.0"
+
+onetime@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/onetime/-/onetime-7.0.0.tgz#9f16c92d8c9ef5120e3acd9dd9957cceecc1ab60"
+  integrity sha512-VXJjc87FScF88uafS3JllDgvAm+c/Slfz06lorj2uAY34rlUu0Nt+v8wreiImcrgAjjIHp1rXpTDlLOGw29WwQ==
+  dependencies:
+    mimic-function "^5.0.0"
 
 ono@^7.1.3:
   version "7.1.3"
@@ -9358,19 +9370,19 @@ optionator@^0.9.3:
     prelude-ls "^1.2.1"
     type-check "^0.4.0"
 
-ora@^8.0.1:
-  version "8.0.1"
-  resolved "https://registry.yarnpkg.com/ora/-/ora-8.0.1.tgz#6dcb9250a629642cbe0d2df3a6331ad6f7a2af3e"
-  integrity sha512-ANIvzobt1rls2BDny5fWZ3ZVKyD6nscLvfFRpQgfWsythlcsVUC9kL0zq6j2Z5z9wwp1kd7wpsD/T9qNPVLCaQ==
+ora@^8.1.0:
+  version "8.1.0"
+  resolved "https://registry.yarnpkg.com/ora/-/ora-8.1.0.tgz#c3db2f9f83a2bec9e8ab71fe3b9ae234d65ca3a8"
+  integrity sha512-GQEkNkH/GHOhPFXcqZs3IDahXEQcQxsSjEkK4KvEEST4t7eNzoMjxTzef+EZ+JluDEV+Raoi3WQ2CflnRdSVnQ==
   dependencies:
     chalk "^5.3.0"
-    cli-cursor "^4.0.0"
+    cli-cursor "^5.0.0"
     cli-spinners "^2.9.2"
     is-interactive "^2.0.0"
     is-unicode-supported "^2.0.0"
     log-symbols "^6.0.0"
-    stdin-discarder "^0.2.1"
-    string-width "^7.0.0"
+    stdin-discarder "^0.2.2"
+    string-width "^7.2.0"
     strip-ansi "^7.1.0"
 
 p-limit@^2.0.0, p-limit@^2.2.0:
@@ -10275,28 +10287,28 @@ punycode@^2.1.0, punycode@^2.1.1:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.0.tgz#f67fa67c94da8f4d0cfff981aee4118064199b8f"
   integrity sha512-rRV+zQD8tVFys26lAGR9WUuS4iUAngJScM+ZRSKtvl5tKeZ2t5bvdNFdNHBW9FWR4guGHlgmsZ1G7BSm2wTbuA==
 
-puppeteer-core@23.1.0:
-  version "23.1.0"
-  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-23.1.0.tgz#50703d2e27c1d73d523c25b807f6e6d95a6b1c47"
-  integrity sha512-SvAsu+xnLN2FMXE/59bp3s3WXp8ewqUGzVV4AQtml/2xmsciZnU/bXcCW+eETHPWQ6Agg2vTI7QzWXPpEARK2g==
+puppeteer-core@23.2.0:
+  version "23.2.0"
+  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-23.2.0.tgz#8ae22e412285e99c1b33263b5f65d391db2906a8"
+  integrity sha512-OFyPp2oolGSesx6ZrpmorE5tCaCKY1Z5e/h8f6sB0NpiezenB72jdWBdOrvBO/bUXyq14XyGJsDRUsv0ZOPdZA==
   dependencies:
     "@puppeteer/browsers" "2.3.1"
     chromium-bidi "0.6.4"
     debug "^4.3.6"
-    devtools-protocol "0.0.1312386"
+    devtools-protocol "0.0.1330662"
     typed-query-selector "^2.12.0"
     ws "^8.18.0"
 
-puppeteer@^23.1.0:
-  version "23.1.0"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-23.1.0.tgz#3abe4980670f214c8edfe689012e83418f81f9aa"
-  integrity sha512-m+CyicDlGN1AVUeOsCa6/+KQydJzxfsPowL7fQy+VGNeaWafB0m8G5aGfXdfZztKMxzCsdz7KNNzbJPeG9wwFw==
+puppeteer@^23.2.0:
+  version "23.2.0"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-23.2.0.tgz#9c0fcfdbdfffd68d62148403feaeef76f7185f72"
+  integrity sha512-MP7kLOdCfx1BJaGN5sgRo5fTYwAyGrlwWtrNphjKcwv/HO91+m90gbbwpRHbGl0rCvrmylq6vljn+zrjukniVg==
   dependencies:
     "@puppeteer/browsers" "2.3.1"
     chromium-bidi "0.6.4"
     cosmiconfig "^9.0.0"
-    devtools-protocol "0.0.1312386"
-    puppeteer-core "23.1.0"
+    devtools-protocol "0.0.1330662"
+    puppeteer-core "23.2.0"
     typed-query-selector "^2.12.0"
 
 q@^1.1.2:
@@ -10724,13 +10736,13 @@ resolve@^2.0.0-next.5:
     path-parse "^1.0.7"
     supports-preserve-symlinks-flag "^1.0.0"
 
-restore-cursor@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/restore-cursor/-/restore-cursor-4.0.0.tgz#519560a4318975096def6e609d44100edaa4ccb9"
-  integrity sha512-I9fPXU9geO9bHOt9pHHOhOkYerIMsmVaWB0rA2AI9ERh/+x/i7MV5HKBNrg+ljO5eoPVgCcnFuRjJ9uH6I/3eg==
+restore-cursor@^5.0.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/restore-cursor/-/restore-cursor-5.1.0.tgz#0766d95699efacb14150993f55baf0953ea1ebe7"
+  integrity sha512-oMA2dcrw6u0YfxJQXm342bFKX/E4sG9rbTzO9ptUcR/e8A33cHuvStiYOwH7fszkZlZ1z/ta9AAoPk2F4qIOHA==
   dependencies:
-    onetime "^5.1.0"
-    signal-exit "^3.0.2"
+    onetime "^7.0.0"
+    signal-exit "^4.1.0"
 
 retry@^0.13.1:
   version "0.13.1"
@@ -11094,6 +11106,11 @@ signal-exit@^3.0.2, signal-exit@^3.0.3:
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-3.0.7.tgz#a9a1767f8af84155114eaabd73f99273c8f59ad9"
   integrity sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==
 
+signal-exit@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-4.1.0.tgz#952188c1cbd546070e2dd20d0f41c0ae0530cb04"
+  integrity sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==
+
 sisteransi@^1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/sisteransi/-/sisteransi-1.0.5.tgz#134d681297756437cc05ca01370d3a7a571075ed"
@@ -11267,7 +11284,7 @@ statuses@2.0.1:
   resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.5.0.tgz#161c7dac177659fd9811f43771fa99381478628c"
   integrity sha512-OpZ3zP+jT1PI7I8nemJX4AKmAX070ZkYPVWV/AaKTJl+tXCTGyVdC1a4SL8RUQYEwk/f34ZX8UTykN68FwrqAA==
 
-stdin-discarder@^0.2.1:
+stdin-discarder@^0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/stdin-discarder/-/stdin-discarder-0.2.2.tgz#390037f44c4ae1a1ae535c5fe38dc3aba8d997be"
   integrity sha512-UhDfHmA92YAlNnCfhmq0VeNL5bDbiZGg7sZ2IvPsXubGkiNa9EC+tUTsjBRsYUAz87btI6/1wf4XoVvQ3uRnmQ==
@@ -11320,10 +11337,10 @@ string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
     is-fullwidth-code-point "^3.0.0"
     strip-ansi "^6.0.1"
 
-string-width@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/string-width/-/string-width-7.0.0.tgz#14aa1b7aaa126d5b64fa79d3c894da8a9650ba06"
-  integrity sha512-GPQHj7row82Hjo9hKZieKcHIhaAIKOJvFSIZXuCU9OASVZrMNUaZuz++SPVrBjnLsnk4k+z9f2EIypgxf2vNFw==
+string-width@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/string-width/-/string-width-7.2.0.tgz#b5bb8e2165ce275d4d43476dd2700ad9091db6dc"
+  integrity sha512-tsaTIkKW9b4N+AEj+SVA+WhJzV7/zMhcSu78mLKWSk7cXMOSHsBKFWUs0fWwq8QyK3MgJBQRX6Gbi4kYbdvGkQ==
   dependencies:
     emoji-regex "^10.3.0"
     get-east-asian-width "^1.0.0"

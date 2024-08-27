@@ -1,3 +1,5 @@
+// Types
+
 // Identities
 export type GameId = string
 export type PlayerId = string
@@ -40,20 +42,20 @@ export type AttackType = 'WEAK' | 'STRONG'
 
 export type ShipConstructionProgress = 'JUST_STARTED' | 'HALF_WAY' | 'ALMOST_DONE' | 'READY'
 
-export type AvailableConstruction = "flag" | "small" | "medium" | "large" | "mine"
+export type AvailableConstruction = Size | 'FLAG' | 'MINE'
 
-export type ResourceLevel = "LOW" | "MEDIUM" | "HIGH"
+export type ResourceLevel = 'LOW' | 'MEDIUM' | 'HIGH'
 
 export type TransportCategory = 'FOOD' | 'WEAPONS' | 'TOOLS' | 'IRON' | 'IRON_BAR' | 'COAL' | 'GOLD' | 'PLANK' | 'WOOD' | 'STONE' | 'COIN' | 'WHEAT' | 'WATER' | 'PIG' | 'FLOUR' | 'BOAT'
 export const TRANSPORT_CATEGORIES = new Set<TransportCategory>(['FOOD', 'WEAPONS', 'TOOLS', 'IRON', 'IRON_BAR', 'COAL', 'GOLD', 'PLANK', 'WOOD', 'STONE', 'COIN', 'WHEAT', 'WATER', 'PIG', 'FLOUR'])
 
-export type Material = "FLOUR" | "PIG" | "GOLD" | "IRON" | "COAL" | "STONE" | "WATER" | "WOOD" | "PLANK" | "BREAD" | "FISH" | "MEAT" | "SHIELD" | "SWORD" | "BEER" | "COIN" | "METALWORKER" | "WHEAT" | "SHIPWRIGHT" | "IRON_BAR" | 'BOAT' | Tool | MaterialWorker
+export type Material = 'FLOUR' | 'PIG' | 'GOLD' | 'IRON' | 'COAL' | 'STONE' | 'WATER' | 'WOOD' | 'PLANK' | 'BREAD' | 'FISH' | 'MEAT' | 'SHIELD' | 'SWORD' | 'BEER' | 'COIN' | 'METALWORKER' | 'WHEAT' | 'SHIPWRIGHT' | 'IRON_BAR' | 'BOAT' | Tool | MaterialWorker
 export const WORKER_MATERIALS = new Set<MaterialWorker>(['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'SAWMILL_WORKER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL', 'BUILDER', 'PLANER', 'SHIPWRIGHT'])
 
-export const MATERIALS = new Set<Material>(["PIG", "FLOUR", "GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
+export const MATERIALS = new Set<Material>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
 WORKER_MATERIALS.forEach(workerMaterial => MATERIALS.add(workerMaterial))
 
-export const MATERIALS_AS_STRING = new Set<string>(["PIG", "FLOUR", "GOLD", "IRON", "COAL", "STONE", "WATER", "WOOD", "PLANK", "BREAD", "FISH", "MEAT", "SHIELD", "SWORD", "BEER", "COIN", "METALWORKER", "WHEAT", "SHIPWRIGHT", 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
+export const MATERIALS_AS_STRING = new Set<string>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
 WORKER_MATERIALS.forEach(workerMaterial => MATERIALS_AS_STRING.add(workerMaterial))
 
 export type Tool = 'AXE' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
@@ -67,7 +69,7 @@ export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
 
 export const NATIONS: Set<Nation> = new Set(['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS'])
 
-export type Direction = "EAST" | "SOUTH_EAST" | "SOUTH_WEST" | "WEST" | "NORTH_WEST" | "NORTH_EAST"
+export type Direction = 'EAST' | 'SOUTH_EAST' | 'SOUTH_WEST' | 'WEST' | 'NORTH_WEST' | 'NORTH_EAST'
 
 export type StoneType = 'STONE_1' | 'STONE_2'
 
@@ -81,117 +83,119 @@ export type HouseResources = { [key in Material]?: HouseResourceItem }
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
 
-export type SmallBuilding = "ForesterHut" |
-    "Woodcutter" |
-    "Well" |
-    "Quarry" |
-    "Barracks" |
-    "GuardHouse" |
-    "HunterHut" |
-    "Fishery" |
-    "GoldMine" |
-    "IronMine" |
-    "CoalMine" |
-    "GraniteMine" |
-    "LookoutTower"
+export type SmallBuilding =
+    | 'ForesterHut'
+    | 'Woodcutter'
+    | 'Well'
+    | 'Quarry'
+    | 'Barracks'
+    | 'GuardHouse'
+    | 'HunterHut'
+    | 'Fishery'
+    | 'GoldMine'
+    | 'IronMine'
+    | 'CoalMine'
+    | 'GraniteMine'
+    | 'LookoutTower'
 
 const SMALL_HOUSES: SmallBuilding[] = [
-    "ForesterHut",
-    "Woodcutter",
-    "Well",
-    "Quarry",
-    "Barracks",
-    "GuardHouse",
-    "HunterHut",
-    "Fishery",
-    "GoldMine",
-    "IronMine",
-    "CoalMine",
-    "GraniteMine",
-    "LookoutTower"
+    'ForesterHut',
+    'Woodcutter',
+    'Well',
+    'Quarry',
+    'Barracks',
+    'GuardHouse',
+    'HunterHut',
+    'Fishery',
+    'GoldMine',
+    'IronMine',
+    'CoalMine',
+    'GraniteMine',
+    'LookoutTower'
 ]
 
 const SMALL_HOUSES_AS_STRINGS: string[] = [
-    "ForesterHut",
-    "Woodcutter",
-    "Well",
-    "Quarry",
-    "Barracks",
-    "GuardHouse",
-    "HunterHut",
-    "Fishery",
-    "GoldMine",
-    "IronMine",
-    "CoalMine",
-    "GraniteMine",
-    "LookoutTower"
+    'ForesterHut',
+    'Woodcutter',
+    'Well',
+    'Quarry',
+    'Barracks',
+    'GuardHouse',
+    'HunterHut',
+    'Fishery',
+    'GoldMine',
+    'IronMine',
+    'CoalMine',
+    'GraniteMine',
+    'LookoutTower'
 ]
 
-export type MediumBuilding = "Sawmill" |
-    "Bakery" |
-    "WatchTower" |
-    "Mill" |
-    "SlaughterHouse" |
-    "Catapult" |
-    "Mint" |
-    "Brewery" |
-    "Armory" |
-    "IronSmelter" |
-    "Metalworks" |
-    "Shipyard" |
-    "Storehouse"
+export type MediumBuilding =
+    | 'Sawmill'
+    | 'Bakery'
+    | 'WatchTower'
+    | 'Mill'
+    | 'SlaughterHouse'
+    | 'Catapult'
+    | 'Mint'
+    | 'Brewery'
+    | 'Armory'
+    | 'IronSmelter'
+    | 'Metalworks'
+    | 'Shipyard'
+    | 'Storehouse'
 
 const MEDIUM_HOUSES: MediumBuilding[] = [
-    "Sawmill",
-    "Bakery",
-    "WatchTower",
-    "Mill",
-    "SlaughterHouse",
-    "Catapult",
-    "Mint",
-    "Brewery",
-    "Armory",
-    "IronSmelter",
-    "Metalworks",
-    "Shipyard",
-    "Storehouse"
+    'Sawmill',
+    'Bakery',
+    'WatchTower',
+    'Mill',
+    'SlaughterHouse',
+    'Catapult',
+    'Mint',
+    'Brewery',
+    'Armory',
+    'IronSmelter',
+    'Metalworks',
+    'Shipyard',
+    'Storehouse'
 ]
 
 const MEDIUM_HOUSES_AS_STRINGS: string[] = [
-    "Sawmill",
-    "Bakery",
-    "WatchTower",
-    "Mill",
-    "SlaughterHouse",
-    "Catapult",
-    "Mint",
-    "Brewery",
-    "Armory",
-    "IronSmelter",
-    "Metalworks",
-    "Shipyard",
-    "Storehouse"
+    'Sawmill',
+    'Bakery',
+    'WatchTower',
+    'Mill',
+    'SlaughterHouse',
+    'Catapult',
+    'Mint',
+    'Brewery',
+    'Armory',
+    'IronSmelter',
+    'Metalworks',
+    'Shipyard',
+    'Storehouse'
 ]
-export type LargeBuilding = "Headquarter" | "Farm" | "PigFarm" | "DonkeyFarm" | "Fortress" | "Harbor"
+export type LargeBuilding = 'Headquarter' | 'Farm' | 'PigFarm' | 'DonkeyFarm' | 'Fortress' | 'Harbor'
 
 const LARGE_HOUSES: LargeBuilding[] = [
-    "Headquarter",
-    "Farm",
-    "PigFarm",
-    "DonkeyFarm",
-    "Fortress"
+    'Headquarter',
+    'Farm',
+    'PigFarm',
+    'DonkeyFarm',
+    'Fortress'
 ]
 
 const LARGE_HOUSES_AS_STRINGS: string[] = [
-    "Headquarter",
-    "Farm",
-    "PigFarm",
-    "DonkeyFarm",
-    "Fortress"
+    'Headquarter',
+    'Farm',
+    'PigFarm',
+    'DonkeyFarm',
+    'Fortress'
 ]
 
-export type WildAnimalType = "RABBIT" | "FOX" | "STAG" | "DEER" | "DUCK" | "SHEEP" | "DEER_2" | "DUCK_2" | "PACK_DONKEY"
-const WILD_ANIMAL_TYPES = ["RABBIT", "FOX", "STAG", "DEER", "DUCK", "SHEEP", "DEER_2", "DUCK_2", "PACK_DONKEY"]
+export type WildAnimalType = 'RABBIT' | 'FOX' | 'STAG' | 'DEER' | 'DUCK' | 'SHEEP' | 'DEER_2' | 'DUCK_2' | 'PACK_DONKEY'
+const WILD_ANIMAL_TYPES = ['RABBIT', 'FOX', 'STAG', 'DEER', 'DUCK', 'SHEEP', 'DEER_2', 'DUCK_2', 'PACK_DONKEY']
 
 export type WildAnimalInformation = Point & {
     id: WildAnimalId
@@ -205,10 +209,6 @@ export type WildAnimalInformation = Point & {
 
 export type PlayerColor = 'BLUE' | 'YELLOW' | 'RED' | 'PURPLE' | 'GRAY' | 'GREEN' | 'BROWN' | 'WHITE'
 export const PLAYER_COLORS: PlayerColor[] = ['BLUE', 'YELLOW', 'RED', 'PURPLE', 'GRAY', 'GREEN', 'BROWN', 'WHITE']
-
-function isPlayerColor(playerColor: unknown): playerColor is PlayerColor {
-    return typeof (playerColor) === 'string' && PLAYER_COLORS.find(e => e === playerColor) !== undefined
-}
 
 export type Player = {
     name: string
@@ -229,17 +229,17 @@ export type PointInformation = {
 } & ({
     is?: undefined
 } | {
-    is: 'building'
+    is: 'BUILDING'
     buildingId: HouseId
 } | {
-    is: 'flag'
+    is: 'FLAG'
     flagId: FlagId
 } | {
-    is: 'road'
+    is: 'ROAD'
     roadId: RoadId
 })
 
-export type TreeType = "PINE" | "BIRCH" | "OAK" | "PALM_1" | "PALM_2" | "PINE_APPLE" | "CYPRESS" | "CHERRY" | "FIR"
+export type TreeType = 'PINE' | 'BIRCH' | 'OAK' | 'PALM_1' | 'PALM_2' | 'PINE_APPLE' | 'CYPRESS' | 'CHERRY' | 'FIR'
 
 export type TreeSize = 'NEWLY_PLANTED' | 'SMALL' | 'MEDIUM' | 'FULL_GROWN'
 
@@ -249,7 +249,7 @@ export type TreeInformation = Point & {
     size: TreeSize
 }
 
-export type FireSize = "LARGE" | "MEDIUM" | "SMALL" | "MINI"
+export type FireSize = 'LARGE' | 'MEDIUM' | 'SMALL' | 'MINI'
 
 export type HeightInformation = number
 
@@ -304,7 +304,7 @@ export type RoadInformation = {
     readonly type: 'NORMAL' | 'MAIN'
 }
 
-export type PlayerType = "HUMAN" | "COMPUTER"
+export type PlayerType = 'HUMAN' | 'COMPUTER'
 
 export type PlayerInformation = {
     readonly name: string
@@ -376,107 +376,111 @@ export type StoneInformation = Point & {
     amount: StoneAmount
 }
 
-export type WorkerType = "Armorer" |
-    "Baker" | "Brewer" |
-    "Butcher" |
-    "Courier" |
-    "DonkeyBreeder" |
-    "Donkey" |
-    "Farmer" |
-    "Fisherman" |
-    "Forester" |
-    "Geologist" |
-    "Hunter" |
-    "IronFounder" |
-    "IronSmelter" |
-    "Metalworker" |
-    "Miller" |
-    "Miner" |
-    "Minter" |
-    "PigBreeder" |
-    "SawmillWorker" |
-    "Scout" |
-    "Stonemason" |
-    "StorehouseWorker" |
-    "WellWorker" |
-    "WoodcutterWorker" |
-    "Private" |
-    'Private_first_class' |
-    'Sergeant' |
-    'Officer' |
-    'General' |
-    'Builder' |
-    'Planer' |
-    'ShipWright'
+export type WorkerType =
+    | 'Armorer'
+    | 'Baker'
+    | 'Brewer'
+    | 'Butcher'
+    | 'Courier'
+    | 'DonkeyBreeder'
+    | 'Donkey'
+    | 'Farmer'
+    | 'Fisherman'
+    | 'Forester'
+    | 'Geologist'
+    | 'Hunter'
+    | 'IronFounder'
+    | 'IronSmelter'
+    | 'Metalworker'
+    | 'Miller'
+    | 'Miner'
+    | 'Minter'
+    | 'PigBreeder'
+    | 'SawmillWorker'
+    | 'Scout'
+    | 'Stonemason'
+    | 'StorehouseWorker'
+    | 'WellWorker'
+    | 'WoodcutterWorker'
+    | 'Private'
+    | 'Private_first_class'
+    | 'Sergeant'
+    | 'Officer'
+    | 'General'
+    | 'Builder'
+    | 'Planer'
+    | 'ShipWright'
 
 export type BodyType = 'FAT' | 'THIN'
 
-export type WorkerAction = 'PLANTING_TREE' |
-    'CUTTING' |
-    'HACKING_STONE' |
-    'FISHING' |
-    'INVESTIGATING' |
-    'PLANTING_WHEAT' |
-    'HARVESTING' |
-    'LOWER_FISHING_ROD' |
-    'PULL_UP_FISHING_ROD' |
-    'CHEW_GUM' |
-    'READ_NEWSPAPER' |
-    'TOUCH_NOSE' |
-    'JUMP_SKIP_ROPE' |
-    'HAMMERING_HOUSE_HIGH_AND_LOW' |
-    'PLANTING_TREE' |
-    'BAKING' |
-    'DIGGING_AND_STOMPING' |
-    'DRINKING_BEER' |
-    'INSPECTING_HOUSE_CONSTRUCTION' |
-    'PICKING_UP_MEAT' |
-    'SAWING' |
-    'SHOOTING' |
-    'SIT_DOWN' |
-    'HIT' |
-    'JUMP_BACK' |
-    'STAND_ASIDE' |
-    'DIE' |
-    'GET_HIT'
+export type WorkerAction =
+    | 'PLANTING_TREE'
+    | 'CUTTING'
+    | 'HACKING_STONE'
+    | 'FISHING'
+    | 'INVESTIGATING'
+    | 'PLANTING_WHEAT'
+    | 'HARVESTING'
+    | 'LOWER_FISHING_ROD'
+    | 'PULL_UP_FISHING_ROD'
+    | 'CHEW_GUM'
+    | 'READ_NEWSPAPER'
+    | 'TOUCH_NOSE'
+    | 'JUMP_SKIP_ROPE'
+    | 'HAMMERING_HOUSE_HIGH_AND_LOW'
+    | 'PLANTING_TREE'
+    | 'BAKING'
+    | 'DIGGING_AND_STOMPING'
+    | 'DRINKING_BEER'
+    | 'INSPECTING_HOUSE_CONSTRUCTION'
+    | 'PICKING_UP_MEAT'
+    | 'SAWING'
+    | 'SHOOTING'
+    | 'SIT_DOWN'
+    | 'HIT'
+    | 'JUMP_BACK'
+    | 'STAND_ASIDE'
+    | 'DIE'
+    | 'GET_HIT'
 
 export type Action = 'FALLING_TREE' | 'HOUSE_BURNING' | WorkerAction
 
-export type DecorationType = 'BROWN_MUSHROOM' |
-    'MINI_BROWN_MUSHROOM' |
-    'TOADSTOOL' |
-    'MINI_STONE' |
-    'SMALL_STONE' |
-    'STONE' |
-    'DEAD_TREE_LYING_DOWN' |
-    'DEAD_TREE' |
-    'ANIMAL_SKELETON_1' |
-    'ANIMAL_SKELETON_2' |
-    'FLOWERS' |
-    'LARGE_BUSH' |
-    'PILE_OF_STONES' |
-    'CACTUS_1' |
-    'CACTUS_2' |
-    'CATTAIL' |
-    'GRASS_1' |
-    'BUSH' |
-    'SMALL_BUSH' |
-    'MINI_BUSH' |
-    'GRASS_2' |
-    'MINI_GRASS' |
-    'HUMAN_SKELETON_1' |
-    'HUMAN_SKELETON_2' |
-    'PORTAL' |
-    'SHINING_PORTAL' |
-    'MINI_STONE_WITH_GRASS' |
-    'SMALL_STONE_WITH_GRASS' |
-    'SOME_SMALL_STONES' |
-    'SOME_SMALLER_STONES' |
-    'FEW_SMALL_STONES' |
-    'SPARSE_BUSH' |
-    'SOME_WATER' |
-    'LITTLE_GRASS' |
-    'SNOWMAN'
+export type DecorationType =
+    | 'BROWN_MUSHROOM'
+    | 'MINI_BROWN_MUSHROOM'
+    | 'TOADSTOOL'
+    | 'MINI_STONE'
+    | 'SMALL_STONE'
+    | 'STONE'
+    | 'DEAD_TREE_LYING_DOWN'
+    | 'DEAD_TREE'
+    | 'ANIMAL_SKELETON_1'
+    | 'ANIMAL_SKELETON_2'
+    | 'FLOWERS'
+    | 'LARGE_BUSH'
+    | 'PILE_OF_STONES'
+    | 'CACTUS_1'
+    | 'CACTUS_2'
+    | 'CATTAIL'
+    | 'GRASS_1'
+    | 'BUSH'
+    | 'SMALL_BUSH'
+    | 'MINI_BUSH'
+    | 'GRASS_2'
+    | 'MINI_GRASS'
+    | 'HUMAN_SKELETON_1'
+    | 'HUMAN_SKELETON_2'
+    | 'PORTAL'
+    | 'SHINING_PORTAL'
+    | 'MINI_STONE_WITH_GRASS'
+    | 'SMALL_STONE_WITH_GRASS'
+    | 'SOME_SMALL_STONES'
+    | 'SOME_SMALLER_STONES'
+    | 'FEW_SMALL_STONES'
+    | 'SPARSE_BUSH'
+    | 'SOME_WATER'
+    | 'LITTLE_GRASS'
+    | 'SNOWMAN'
 
 export type SimpleDirection = 'UP_LEFT' | 'UP_RIGHT' | 'RIGHT' | 'DOWN_RIGHT' | 'DOWN_LEFT' | 'LEFT'
 
@@ -523,15 +527,15 @@ export type ShipInformation = Point & {
     constructionState: ShipConstructionProgress
 }
 
-export type SoldierType = "PRIVATE_RANK" | "PRIVATE_FIRST_CLASS_RANK" | "SERGEANT_RANK" | "OFFICER_RANK" | "GENERAL_RANK"
-const SOLDIER_TYPES: SoldierType[] = ["PRIVATE_RANK", "PRIVATE_FIRST_CLASS_RANK", "SERGEANT_RANK", "OFFICER_RANK", "GENERAL_RANK"]
+export type SoldierType = 'PRIVATE_RANK' | 'PRIVATE_FIRST_CLASS_RANK' | 'SERGEANT_RANK' | 'OFFICER_RANK' | 'GENERAL_RANK'
+const SOLDIER_TYPES: SoldierType[] = ['PRIVATE_RANK', 'PRIVATE_FIRST_CLASS_RANK', 'SERGEANT_RANK', 'OFFICER_RANK', 'GENERAL_RANK']
 
 type HouseResourceItem = {
     has: number
     canHold?: number
 }
 
-type HouseState = "UNFINISHED" | "UNOCCUPIED" | "OCCUPIED" | "BURNING" | "DESTROYED" | "PLANNED"
+type HouseState = 'UNFINISHED' | 'UNOCCUPIED' | 'OCCUPIED' | 'BURNING' | 'DESTROYED' | 'PLANNED'
 
 export type HouseInformation = Point & {
     id: HouseId
@@ -586,7 +590,7 @@ export type Decoration = Point & {
     decoration: DecorationType
 }
 
-export type GameState = 'NOT_STARTED' | "STARTED" | "PAUSED" | "EXPIRED"
+export type GameState = 'NOT_STARTED' | 'STARTED' | 'PAUSED' | 'EXPIRED'
 
 export type PossibleNewRoadInformation = {
     possibleNewRoad: Point[]
@@ -667,14 +671,14 @@ export type MilitaryBuildingCausedLostLandMessage = {
 }
 
 export type MilitaryBuildingReadyMessage = {
-    type: "MILITARY_BUILDING_READY"
+    type: 'MILITARY_BUILDING_READY'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
 }
 
 export type NoMoreResourcesMessage = {
-    type: "NO_MORE_RESOURCES"
+    type: 'NO_MORE_RESOURCES'
     houseId: HouseId
     houseType: AnyBuilding
     point: Point
@@ -710,7 +714,7 @@ export type BuildingCapturedMessage = {
 export type GeologistFindMessage = {
     type: 'GEOLOGIST_FIND'
     point: Point
-    material: "IRON" | "WATER" | "COAL" | "STONE" | "GOLD"
+    material: 'IRON' | 'WATER' | 'COAL' | 'STONE' | 'GOLD'
 }
 
 export type StoreHouseIsReadyMessage = {
@@ -723,31 +727,31 @@ export type StoreHouseIsReadyMessage = {
 export type GameMessage = {
     id: GameMessageId
 } & (
-        GameEndedMessage |
-        ShipHasReachedDestinationMessage |
-        ShipReadyForExpeditionMessage |
-        HarborIsFinishedMessage |
-        BombardedByCatapultMessage |
-        TreeConservationProgramActivatedMessage |
-        TreeConservationProgramDeactivatedMessage |
-        MilitaryBuildingCausedLostLandMessage |
-        MilitaryBuildingReadyMessage |
-        NoMoreResourcesMessage |
-        MilitaryBuildingOccupiedMessage |
-        UnderAttackMessage |
-        BuildingLostMessage |
-        BuildingCapturedMessage |
-        GeologistFindMessage |
-        StoreHouseIsReadyMessage
+        | GameEndedMessage
+        | ShipHasReachedDestinationMessage
+        | ShipReadyForExpeditionMessage
+        | HarborIsFinishedMessage
+        | BombardedByCatapultMessage
+        | TreeConservationProgramActivatedMessage
+        | TreeConservationProgramDeactivatedMessage
+        | MilitaryBuildingCausedLostLandMessage
+        | MilitaryBuildingReadyMessage
+        | NoMoreResourcesMessage
+        | MilitaryBuildingOccupiedMessage
+        | UnderAttackMessage
+        | BuildingLostMessage
+        | BuildingCapturedMessage
+        | GeologistFindMessage
+        | StoreHouseIsReadyMessage
     )
 
-
+// Functions
 function isHeadquarterInformation(houseInformation: HouseInformation): houseInformation is HeadquarterInformation {
     return 'reserved' in houseInformation
 }
 
 function isNation(maybeNation: unknown): maybeNation is Nation {
-    return maybeNation === 'ROMANS' || maybeNation === "VIKINGS" || maybeNation === 'JAPANESE' || maybeNation === 'AFRICANS'
+    return maybeNation === 'ROMANS' || maybeNation === 'VIKINGS' || maybeNation === 'JAPANESE' || maybeNation === 'AFRICANS'
 }
 
 function rankToMaterial(rank: SoldierType): Material {
@@ -786,22 +790,12 @@ function isMaterial(material: unknown): material is Material {
         MATERIALS_AS_STRING.has(material)
 }
 
-function getSoldierDisplayName(soldierType: SoldierType): string {
-    if (soldierType === "PRIVATE_RANK") {
-        return "Private"
-    } else if (soldierType === "PRIVATE_FIRST_CLASS_RANK") {
-        return "Private first class"
-    } else if (soldierType === "SERGEANT_RANK") {
-        return "Sergeant"
-    } else if (soldierType === "OFFICER_RANK") {
-        return "Officer"
-    } else {
-        return "General"
-    }
-}
-
 function isBuilding(aString: string): aString is AnyBuilding {
     return SMALL_HOUSES_AS_STRINGS.includes(aString) || MEDIUM_HOUSES_AS_STRINGS.includes(aString) || LARGE_HOUSES_AS_STRINGS.includes(aString)
+}
+
+function isPlayerColor(playerColor: unknown): playerColor is PlayerColor {
+    return typeof (playerColor) === 'string' && PLAYER_COLORS.find(e => e === playerColor) !== undefined
 }
 
 export {
@@ -810,7 +804,6 @@ export {
     isToolUpperCase,
     isWildAnimal,
     isMaterial,
-    getSoldierDisplayName,
     isBuilding,
     isNation,
     isPlayerColor,

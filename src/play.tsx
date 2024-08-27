@@ -276,17 +276,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             SMALL_HOUSES.forEach(building => commands.set(building, {
                 action: (point: Point) => api.placeHouse(building, point),
-                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('small'),
+                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('SMALL'),
                 icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
             }))
             MEDIUM_HOUSES.forEach(building => commands.set(building, {
                 action: (point: Point) => api.placeHouse(building, point),
-                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('medium'),
+                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('MEDIUM'),
                 icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
             }))
             LARGE_HOUSES.forEach(building => building !== 'Headquarter' && commands.set(building, {
                 action: (point: Point) => api.placeHouse(building, point),
-                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('large'),
+                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('LARGE'),
                 icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
             }))
 
@@ -311,25 +311,25 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     }
 
                     // If a house is selected, start the road from the flag
-                    if (pointInformation.is === 'building' && pointDownRightInformation !== undefined) {
+                    if (pointInformation.is === 'BUILDING' && pointDownRightInformation !== undefined) {
                         setNewRoad([pointDownRight])
                         setPossibleRoadConnections(pointDownRightInformation.possibleRoadConnections)
-                    } else if (pointInformation.is === 'flag') {
+                    } else if (pointInformation.is === 'FLAG') {
                         setNewRoad([point])
                         setPossibleRoadConnections(pointInformation.possibleRoadConnections)
                     }
                 },
-                filter: (pointInformation: PointInformation) => pointInformation.is === 'building' || pointInformation.is === 'flag'
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING' || pointInformation.is === 'FLAG'
             })
 
             commands.set('Flag', {
                 action: (point: Point) => api.placeFlag(point),
-                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('flag'),
+                filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('FLAG'),
                 icon: <FlagIcon nation={nation} type='NORMAL' animate scale={0.7} color={color} />
             })
             commands.set('Remove (house, flag, or road)', {
                 action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
-                filter: (pointInformation: PointInformation) => pointInformation.is === 'building' &&
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING' &&
                     api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
             })
             commands.set('Statistics', {
@@ -342,11 +342,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             })
             commands.set('Geologist', {
                 action: (point: Point) => api.callGeologist(point),
-                filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'FLAG'
             })
             commands.set('Scout', {
                 action: (point: Point) => api.callScout(point),
-                filter: (pointInformation: PointInformation) => pointInformation.is === 'flag'
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'FLAG'
             })
             commands.set('Evacuate building', {
                 action: (point: Point) => {
@@ -356,7 +356,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         api.evacuateHouse(house.id)
                     }
                 },
-                filter: (pointInformation: PointInformation) => pointInformation.is === 'building'
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING'
             })
             commands.set('Transport priority', {
                 action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' })
@@ -373,7 +373,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     }
                 },
                 filter: (pointInformation: PointInformation) => {
-                    if (pointInformation.is !== 'building' || pointInformation.buildingId === undefined) {
+                    if (pointInformation.is !== 'BUILDING' || pointInformation.buildingId === undefined) {
                         return false
                     }
 
@@ -774,11 +774,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         const pointInformation = await api.getInformationOnPoint(point)
 
         /* Create a flag if it is the only possible construction */
-        if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'flag') {
+        if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'FLAG') {
             api.placeFlag(pointInformation)
 
             setSelected(point)
-        } else if (pointInformation.is === 'road') {
+        } else if (pointInformation.is === 'ROAD') {
             openWindow({ type: 'ROAD_INFO', roadId: pointInformation.roadId })
         } else if (pointInformation.canBuild.length !== 0) {
             openWindow({ type: 'CONSTRUCTION_WINDOW', pointInformation: pointInformation })

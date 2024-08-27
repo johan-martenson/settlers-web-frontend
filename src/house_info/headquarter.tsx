@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
-import { HouseInformation, MATERIALS, Nation, SOLDIER_TYPES, getSoldierDisplayName, isHeadquarterInformation, rankToMaterial } from '../api/types'
+import { HouseInformation, MATERIALS, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../api/types'
 import { HouseIcon, InventoryIcon } from '../icons/icon'
 import './house_info.css'
 import { useState } from 'react'
 import { api } from '../api/ws-api'
 import { Window } from '../components/dialog'
-import { MATERIAL_LABELS } from '../pretty_strings'
+import { MATERIAL_LABELS, soldierPretty } from '../pretty_strings'
 
 // Types
 type HeadquarterInfoProps = {
@@ -145,7 +145,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                 <div className='headquarter-reserved-soldiers'>
                     {SOLDIER_TYPES.map(rank => {
                         if (isHeadquarterInformation(house)) {
-                            const soldierDisplayName = getSoldierDisplayName(rank)
+                            const soldierDisplayName = soldierPretty(rank)
 
                             return (
                                 <div className='headquarter-inventory-item' key={rank} style={{ display: 'block' }}>

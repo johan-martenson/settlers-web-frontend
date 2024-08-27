@@ -1,4 +1,4 @@
-import { Material, Nation, PlayerColor } from "./api/types"
+import { Material, Nation, PlayerColor, SoldierType } from "./api/types"
 
 const MATERIAL_FIRST_UPPERCASE = new Map<Material, string>()
 
@@ -154,9 +154,24 @@ function colorPretty(color: PlayerColor): string {
     return COLOR_PRETTY.get(color) ?? ''
 }
 
+function soldierPretty(soldierType: SoldierType): string {
+    if (soldierType === 'PRIVATE_RANK') {
+        return 'Private'
+    } else if (soldierType === 'PRIVATE_FIRST_CLASS_RANK') {
+        return 'Private first class'
+    } else if (soldierType === 'SERGEANT_RANK') {
+        return 'Sergeant'
+    } else if (soldierType === 'OFFICER_RANK') {
+        return 'Officer'
+    } else {
+        return 'General'
+    }
+}
+
 export {
     MATERIAL_FIRST_UPPERCASE,
     MATERIAL_LABELS,
     nationPretty,
-    colorPretty
+    colorPretty,
+    soldierPretty
 }

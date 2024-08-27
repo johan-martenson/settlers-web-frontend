@@ -26,7 +26,7 @@ import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION,
  * @returns {boolean} - Returns `true` if the construction is available at the point, otherwise `false`.
  */
 function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
-    return whatToBuild === 'FLAG' && api.availableConstruction.get(point)?.indexOf('flag') !== -1
+    return whatToBuild === 'FLAG' && (api.availableConstruction.get(point)?.includes('FLAG') ?? false)
 }
 
 /**

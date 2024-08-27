@@ -34,14 +34,13 @@ const RoadInfo = ({ roadId, onStartMonitor, onClose, onRaise }: RoadInfoProps) =
         <Window className="road-info" heading='Road' onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
             <TabList
                 defaultSelectedValue={selected}
-                onTabSelect={
-                    (_event: SelectTabEvent, data: SelectTabData) => {
-                        const { value } = data
-                        if (value === 'ROAD' || value === 'MONITOR') {
-                            setSelected(value)
-                        }
+                onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
+                    const { value } = data
+
+                    if (value === 'ROAD' || value === 'MONITOR') {
+                        setSelected(value)
                     }
-                }
+                }}
             >
                 <Tab value='ROAD'>
                     Road

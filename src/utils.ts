@@ -349,11 +349,11 @@ async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSiz
 
 
 function canRemoveRoad(point: PointInformation): boolean {
-    return point.is === 'road'
+    return point.is === 'ROAD'
 }
 
 function canRaiseFlag(point: PointInformation): boolean {
-    return point.canBuild.includes('flag')
+    return point.canBuild.includes('FLAG')
 }
 
 function canBuildHouse(point: PointInformation): boolean {
@@ -361,23 +361,23 @@ function canBuildHouse(point: PointInformation): boolean {
 }
 
 function canBuildLargeHouse(point: PointInformation): boolean {
-    return point.canBuild.includes('large')
+    return point.canBuild.includes('LARGE')
 }
 
 function canBuildMediumHouse(point: PointInformation): boolean {
-    return point.canBuild.includes('medium')
+    return point.canBuild.includes('MEDIUM')
 }
 
 function canBuildSmallHouse(point: PointInformation): boolean {
-    return point.canBuild.includes('small')
+    return point.canBuild.includes('SMALL')
 }
 
 function canBuildMine(point: PointInformation): boolean {
-    return point.canBuild.includes('mine')
+    return point.canBuild.includes('MINE')
 }
 
 function canBuildRoad(point: PointInformation): boolean {
-    return point.is === 'flag'
+    return point.is === 'FLAG'
 }
 
 function calcDistance(point0: Point, point1: Point): number {

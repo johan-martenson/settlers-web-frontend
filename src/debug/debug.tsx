@@ -59,7 +59,7 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
                 console.log(gameInformation)
                 setGameInformation(gameInformation)
 
-                if (pointInformation?.is === 'flag') {
+                if (pointInformation?.is === 'FLAG') {
                     const flagInformation = await api.getFlagDebugInfo(pointInformation.flagId)
                     console.log(flagInformation)
                     setFlagInformation(flagInformation)
@@ -155,7 +155,7 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
                             </>
                         }
 
-                        {pointInformation?.is === 'building' &&
+                        {pointInformation?.is === 'BUILDING' &&
                             <div>Building: <Value>{JSON.stringify(api.houses.get(pointInformation.buildingId), null, 2)}</Value></div>
                         }
 

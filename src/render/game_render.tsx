@@ -125,10 +125,10 @@ const MOUSE_STYLES = new Map<CursorState, string>()
 
 MOUSE_STYLES.set('NOTHING', 'default')
 MOUSE_STYLES.set('DRAGGING', 'url(assets/cursors/cursor-move.png), auto')
-MOUSE_STYLES.set('BUILDING_ROAD', "url(assets/cursors/cursor-build-road.png), auto")
-MOUSE_STYLES.set('BUILDING_ROAD_PRESSED', "url(assets/cursors/cursor-build-road-pressed.png), auto")
+MOUSE_STYLES.set('BUILDING_ROAD', 'url(assets/cursors/cursor-build-road.png), auto')
+MOUSE_STYLES.set('BUILDING_ROAD_PRESSED', 'url(assets/cursors/cursor-build-road-pressed.png), auto')
 
-const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = "assets/nature/terrain/greenland/greenland-texture.png"
+const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = 'assets/nature/terrain/greenland/greenland-texture.png'
 
 // Web gl program definitions
 const drawGroundProgramDescriptor: ProgramDescriptor = {
@@ -340,7 +340,7 @@ function GameCanvas({
     // Run once on mount
     useEffect(
         () => {
-            addVariableIfAbsent("fps")
+            addVariableIfAbsent('fps')
 
             api.allTiles.forEach(tile => visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
         }, []
@@ -361,7 +361,7 @@ function GameCanvas({
         }, [showAvailableConstruction, selectedPoint, newRoad, possibleRoadConnections, showHouseTitles])
 
     const updateRoadDrawingBuffers = useCallback(() => {
-        console.log("Should update road drawing buffers")
+        console.log('Should update road drawing buffers')
         if (renderState.drawRoadsProgramInstance) {
             const roadRenderInformation = prepareToRenderRoads(api.roads.values(), api.flags.values(), renderState.normals)
 
@@ -378,7 +378,7 @@ function GameCanvas({
 
             // Callback when monitoring is started
             function monitoringStarted(): void {
-                console.log("Received monitoring started callback. Calculating normals")
+                console.log('Received monitoring started callback. Calculating normals')
 
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
 
@@ -387,7 +387,7 @@ function GameCanvas({
 
             // Callback when roads are updated
             function roadsUpdated(): void {
-                console.log("Received updated road callback")
+                console.log('Received updated road callback')
 
                 updateRoadDrawingBuffers()
             }
@@ -397,7 +397,7 @@ function GameCanvas({
 
                 // Update the calculated normals
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
-                console.log("New discovered points - calculated normals")
+                console.log('New discovered points - calculated normals')
 
                 // Update the map rendering buffers
                 renderState.mapRenderInformation = prepareToRenderFromTiles(api.discoveredBelowTiles, api.discoveredDownRightTiles, api.allTiles, renderState.normals)
@@ -476,7 +476,7 @@ function GameCanvas({
                 if (normalCanvasRef?.current) {
                     const canvas = normalCanvasRef.current
 
-                    const gl = canvas.getContext("webgl2", { alpha: false })
+                    const gl = canvas.getContext('webgl2', { alpha: false })
 
                     if (gl) {
                         renderState.drawGroundProgramInstance = initProgram(drawGroundProgramDescriptor, gl)
@@ -505,10 +505,10 @@ function GameCanvas({
                         setBuffer<DrawShadowAttributes>(renderState.drawShadowProgramInstance, 'a_position', positions)
                         setBuffer<DrawShadowAttributes>(renderState.drawShadowProgramInstance, 'a_texcoord', texCoords)
                     } else {
-                        console.error("Failed to create shadow rendering gl program")
+                        console.error('Failed to create shadow rendering gl program')
                     }
                 } else {
-                    console.error("No canvasRef.current")
+                    console.error('No canvasRef.current')
                 }
 
                 // Start tracking visible triangles
@@ -534,7 +534,7 @@ function GameCanvas({
                 // Wait for asset loading to finish and for the websocket connection to be established
                 await Promise.all(allThingsToWaitFor)
 
-                console.log("Download image atlases done. Connection to websocket backend established")
+                console.log('Download image atlases done. Connection to websocket backend established')
 
 
                 // Make textures for the image atlases
@@ -586,7 +586,7 @@ function GameCanvas({
     )
 
     function renderGame(): void {
-        const duration = new Duration("GameRender::renderGame")
+        const duration = new Duration('GameRender::renderGame')
 
         // Only draw if the game data is available
         if (!api.isGameDataAvailable()) {
@@ -616,17 +616,17 @@ function GameCanvas({
 
         /* Ensure that the reference to the canvases are set */
         if (!overlayCanvasRef?.current || !normalCanvasRef?.current) {
-            console.error("The canvas references are not set properly")
+            console.error('The canvas references are not set properly')
 
             return
         }
 
         /* Get the rendering context for the overlay canvas */
-        const overlayCtx = overlayCanvasRef.current.getContext("2d")
+        const overlayCtx = overlayCanvasRef.current.getContext('2d')
 
         /* Ensure that the canvas rendering context is valid */
         if (!overlayCtx) {
-            console.error("No or invalid context")
+            console.error('No or invalid context')
 
             return
         }
@@ -639,7 +639,7 @@ function GameCanvas({
 
         // Make sure gl is available
         if (renderState.gl === undefined) {
-            console.error("Gl is not available")
+            console.error('Gl is not available')
 
             return
         }
@@ -662,7 +662,7 @@ function GameCanvas({
         const maxXInGame = downRight.x
         const minYInGame = downRight.y
 
-        duration.after("init")
+        duration.after('init')
 
         /**
          * Draw according to the following layers:
@@ -696,7 +696,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("draw terrain")
+        duration.after('draw terrain')
 
 
         /* Draw decorations on the ground */
@@ -750,7 +750,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("drawing decorations")
+        duration.after('drawing decorations')
 
 
         /* Draw the road layer */
@@ -773,7 +773,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("draw roads")
+        duration.after('draw roads')
 
 
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
@@ -794,7 +794,7 @@ function GameCanvas({
             })
         })
 
-        duration.after("collect borders")
+        duration.after('collect borders')
 
 
         /* Collect the houses */
@@ -835,7 +835,7 @@ function GameCanvas({
                     source: fireDrawInformation,
                     gamePoint: house,
                 })
-            } else if (house.state === "UNFINISHED" && house.constructionProgress !== undefined) {
+            } else if (house.state === 'UNFINISHED' && house.constructionProgress !== undefined) {
                 const houseUnderConstruction = houses.getDrawingInformationForHouseUnderConstruction(house.nation, house.type)
 
                 if (houseUnderConstruction) {
@@ -889,7 +889,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("collect houses")
+        duration.after('collect houses')
 
 
         /* Collect the trees */
@@ -954,7 +954,7 @@ function GameCanvas({
             }
         })
 
-        duration.after("collect trees")
+        duration.after('collect trees')
 
 
         /* Collect the crops */
@@ -979,7 +979,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("collect crops")
+        duration.after('collect crops')
 
 
         /* Collect the signs */
@@ -993,7 +993,7 @@ function GameCanvas({
             if (sign.type !== undefined && sign.amount !== undefined) {
                 signDrawInfo = signImageAtlasHandler.getDrawingInformation(sign.type, sign.amount)
             } else {
-                signDrawInfo = signImageAtlasHandler.getDrawingInformation("NOTHING", "LARGE")
+                signDrawInfo = signImageAtlasHandler.getDrawingInformation('NOTHING', 'LARGE')
             }
 
             if (signDrawInfo) {
@@ -1009,7 +1009,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("collect signs")
+        duration.after('collect signs')
 
 
         /* Collect the stones */
@@ -1033,7 +1033,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("collect stones")
+        duration.after('collect stones')
 
 
         /* Collect wild animals */
@@ -1121,7 +1121,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("collect wild animals")
+        duration.after('collect wild animals')
 
 
         /* Collect ships */
@@ -1174,7 +1174,7 @@ function GameCanvas({
                     continue
                 }
 
-                let direction: Direction = "WEST"
+                let direction: Direction = 'WEST'
 
                 if (ship.previous) {
                     direction = getDirectionForWalkingWorker(ship, ship.previous)
@@ -1223,7 +1223,7 @@ function GameCanvas({
 
                 const interpolatedHeight = interpolateHeight(worker.previous, worker.next, worker.percentageTraveled / 100)
 
-                if (worker.type === "Donkey") {
+                if (worker.type === 'Donkey') {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, renderState.animationIndex, worker.percentageTraveled)
 
                     if (donkeyImage) {
@@ -1251,7 +1251,7 @@ function GameCanvas({
                             height: interpolatedHeight
                         })
                     }
-                } else if (worker.type === "Courier" || worker.type === 'StorehouseWorker') {
+                } else if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
                     let image
 
                     if (worker.cargo) {
@@ -1332,7 +1332,7 @@ function GameCanvas({
                     continue
                 }
 
-                if (worker.type === "Donkey") {
+                if (worker.type === 'Donkey') {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, 0, worker.percentageTraveled)
 
                     if (donkeyImage) {
@@ -1356,7 +1356,7 @@ function GameCanvas({
                             gamePoint: worker
                         })
                     }
-                } else if (worker.type === "Courier" || worker.type === 'StorehouseWorker') {
+                } else if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
                     let didDrawAnimation = false
 
                     if (worker.action && worker.actionAnimationIndex !== undefined) {
@@ -1473,7 +1473,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("collect workers")
+        duration.after('collect workers')
 
 
         /* Collect flags */
@@ -1542,7 +1542,7 @@ function GameCanvas({
             flagCount = flagCount + 1
         }
 
-        duration.after("collect flags")
+        duration.after('collect flags')
 
 
         /* Collect available construction */
@@ -1556,35 +1556,35 @@ function GameCanvas({
                     continue
                 }
 
-                if (available.includes("large")) {
+                if (available.includes('LARGE')) {
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
 
                     toDrawNormal.push({
                         source: largeHouseAvailableInfo,
                         gamePoint
                     })
-                } else if (available.includes("medium")) {
+                } else if (available.includes('MEDIUM')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
 
                     toDrawNormal.push({
                         source: mediumHouseAvailableInfo,
                         gamePoint
                     })
-                } else if (available.includes("small")) {
+                } else if (available.includes('SMALL')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
 
                     toDrawNormal.push({
                         source: mediumHouseAvailableInfo,
                         gamePoint
                     })
-                } else if (available.includes("mine")) {
+                } else if (available.includes('MINE')) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
 
                     toDrawNormal.push({
                         source: mineAvailableInfo,
                         gamePoint
                     })
-                } else if (available.includes("flag")) {
+                } else if (available.includes('FLAG')) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
 
                     toDrawNormal.push({
@@ -1595,7 +1595,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("Collect available construction")
+        duration.after('Collect available construction')
 
 
         // Draw the Shadow layer and the Normal layer
@@ -1726,7 +1726,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("collect possible road connections")
+        duration.after('collect possible road connections')
 
 
         /* Draw the selected point */
@@ -1741,7 +1741,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("collect selected point")
+        duration.after('collect selected point')
 
 
         /* Draw the hover point */
@@ -1750,7 +1750,7 @@ function GameCanvas({
                 const availableConstructionAtHoverPoint = api.availableConstruction.get(renderState.hoverPoint)
 
                 if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
-                    if (availableConstructionAtHoverPoint.includes("large")) {
+                    if (availableConstructionAtHoverPoint.includes('LARGE')) {
 
                         const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
 
@@ -1758,28 +1758,28 @@ function GameCanvas({
                             source: largeHouseAvailableInfo,
                             gamePoint: renderState.hoverPoint
                         })
-                    } else if (availableConstructionAtHoverPoint.includes("medium")) {
+                    } else if (availableConstructionAtHoverPoint.includes('MEDIUM')) {
                         const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
 
                         toDrawHover.push({
                             source: mediumHouseAvailableInfo,
                             gamePoint: renderState.hoverPoint
                         })
-                    } else if (availableConstructionAtHoverPoint.includes("small")) {
+                    } else if (availableConstructionAtHoverPoint.includes('SMALL')) {
                         const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
 
                         toDrawHover.push({
                             source: smallHouseAvailableInfo,
                             gamePoint: renderState.hoverPoint
                         })
-                    } else if (availableConstructionAtHoverPoint.includes("mine")) {
+                    } else if (availableConstructionAtHoverPoint.includes('MINE')) {
                         const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
 
                         toDrawHover.push({
                             source: mineAvailableInfo,
                             gamePoint: renderState.hoverPoint
                         })
-                    } else if (availableConstructionAtHoverPoint.includes("flag")) {
+                    } else if (availableConstructionAtHoverPoint.includes('FLAG')) {
                         const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
 
                         toDrawHover.push({
@@ -1832,12 +1832,12 @@ function GameCanvas({
             }
         }
 
-        duration.after("draw normal layer")
+        duration.after('draw normal layer')
 
 
         /* Draw house titles */
         if (renderState.showHouseTitles) {
-            overlayCtx.font = "bold 12px sans-serif"
+            overlayCtx.font = 'bold 12px sans-serif'
             overlayCtx.strokeStyle = 'black'
             overlayCtx.fillStyle = 'yellow'
 
@@ -1858,10 +1858,10 @@ function GameCanvas({
 
                 let houseTitle = camelCaseToWords(house.type)
 
-                if (house.state === "UNFINISHED") {
-                    houseTitle = "(" + houseTitle + ")"
+                if (house.state === 'UNFINISHED') {
+                    houseTitle = '(' + houseTitle + ')'
                 } else if (house.productivity !== undefined) {
-                    houseTitle = houseTitle + " (" + house.productivity + "%)"
+                    houseTitle = houseTitle + ' (' + house.productivity + '%)'
                 }
 
                 const widthOffset = overlayCtx.measureText(houseTitle).width / 2
@@ -1874,7 +1874,7 @@ function GameCanvas({
             }
         }
 
-        duration.after("draw house titles")
+        duration.after('draw house titles')
 
 
         // Fill in the buffers to draw fog of war
@@ -1894,7 +1894,7 @@ function GameCanvas({
 
 
         /* List counters if the rendering time exceeded the previous maximum */
-        if (isLatestValueHighestForVariable("GameRender::renderGame.total")) {
+        if (isLatestValueHighestForVariable('GameRender::renderGame.total')) {
             printVariables()
         }
 
@@ -1902,7 +1902,7 @@ function GameCanvas({
         const timestamp = Date.now()
 
         if (showFpsCounter && renderState.previousTimestamp) {
-            const fps = getLatestValueForVariable("GameRender::renderGame.total")
+            const fps = getLatestValueForVariable('GameRender::renderGame.total')
 
             overlayCtx.fillStyle = 'white'
             overlayCtx.fillRect(width - 100, 5, 100, 60)
@@ -1910,9 +1910,9 @@ function GameCanvas({
             overlayCtx.closePath()
 
             overlayCtx.fillStyle = 'black'
-            overlayCtx.fillText("" + fps, width - 100, 20)
+            overlayCtx.fillText('' + fps, width - 100, 20)
 
-            overlayCtx.fillText("" + getAverageValueForVariable("GameRender::renderGame.total"), width - 100, 40)
+            overlayCtx.fillText('' + getAverageValueForVariable('GameRender::renderGame.total'), width - 100, 40)
         }
 
         renderState.previousTimestamp = timestamp
@@ -1956,7 +1956,7 @@ function GameCanvas({
 
     const onDoubleClickInternal = useCallback((event: React.MouseEvent) => {
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
-            console.error("Received invalid double click event")
+            console.error('Received invalid double click event')
 
             return
         }
@@ -2000,7 +2000,7 @@ function GameCanvas({
     return (
         <>
             <canvas
-                className="game-canvas"
+                className='game-canvas'
                 onKeyDown={onKeyDown}
                 onClick={onClickOrDoubleClick}
                 style={{ cursor: MOUSE_STYLES.get(cursor ?? 'NOTHING') }}
@@ -2035,7 +2035,7 @@ function GameCanvas({
                 }
             />
 
-            <canvas ref={normalCanvasRef} className="terrain-canvas" />
+            <canvas ref={normalCanvasRef} className='terrain-canvas' />
         </>
     )
 }
@@ -2100,7 +2100,7 @@ function interpolateHeight(previous: Point, next: Point, progress: number): numb
 }
 
 function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<FlagInformation>, allNormals: PointMapFast<Vector>): RenderInformation {
-    console.log("Prepare to render roads")
+    console.log('Prepare to render roads')
 
     const coordinates: number[] = []
     const normals: number[] = []
@@ -2143,7 +2143,7 @@ function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<
             const normalRight = allNormals?.get(right)
 
             if (normalLeft === undefined || normalRight === undefined) {
-                console.error("Missing normals")
+                console.error('Missing normals')
                 console.log(normalLeft)
                 console.log(normalRight)
 
@@ -2239,7 +2239,7 @@ function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<
         }
     }
 
-    // Add a circle of "road" for each flag
+    // Add a circle of 'road' for each flag
     for (const flag of flags) {
         const isNormal = normalRoadFlagPoints.has(flag)
         const isMain = mainRoadFlagPoints.has(flag)
@@ -2373,7 +2373,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         const terrainBelow = tileBelow.vegetation
 
         if (VEGETATION_INTEGERS.indexOf(terrainBelow) === -1) {
-            console.error("UNKNOWN TERRAIN: " + terrainBelow)
+            console.error('UNKNOWN TERRAIN: ' + terrainBelow)
         }
 
         // Add each terrain tile to the buffers (coordinates, normals, texture mapping)
@@ -2484,7 +2484,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         const terrainRight = allTiles.get(pointRight)
 
         if (VEGETATION_INTEGERS.indexOf(terrainDownRight) === -1) {
-            console.log("UNKNOWN TERRAIN: " + terrainDownRight)
+            console.log('UNKNOWN TERRAIN: ' + terrainDownRight)
         }
 
         // Add each terrain tile to the buffers (coordinates, normals, texture mapping)

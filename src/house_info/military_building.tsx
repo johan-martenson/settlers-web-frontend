@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { Button, Field, Tooltip } from '@fluentui/react-components'
-import { HouseInformation, Nation, SoldierType, getSoldierDisplayName, isMaterial, rankToMaterial } from '../api/types'
+import { HouseInformation, Nation, SoldierType, isMaterial, rankToMaterial } from '../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../icons/icon'
 import './house_info.css'
 import { api } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
 import { canBeUpgraded, isEvacuated } from '../api/utils'
+import { soldierPretty } from '../pretty_strings'
 
 // Types
 type MilitaryBuildingProps = {
@@ -89,7 +90,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                 <div>
                     {soldiers.map((rank, index) => {
                         if (rank) {
-                            const soldierDisplayName = getSoldierDisplayName(rank)
+                            const soldierDisplayName = soldierPretty(rank)
                             const soldierMaterial = rankToMaterial(rank)
 
                             console.log(soldierDisplayName)

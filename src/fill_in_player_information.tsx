@@ -23,6 +23,7 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
                     <div id='label-and-input'>
                         <Label>Name</Label>
                         <Input
+                            id='set-player-name'
                             type='text'
                             onChange={(_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
                                 setUserName(data.value)

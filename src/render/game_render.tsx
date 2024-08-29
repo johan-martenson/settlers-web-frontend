@@ -1371,7 +1371,7 @@ function GameCanvas({
                                     gamePoint: { x: worker.x, y: worker.y }
                                 })
                             }
-                        } else {
+                        } else if (worker.bodyType === 'THIN') {
                             const animationImage = thinCarrierNoCargo.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
 
                             if (animationImage) {
@@ -1382,6 +1382,9 @@ function GameCanvas({
                                     gamePoint: { x: worker.x, y: worker.y }
                                 })
                             }
+                        } else {
+                            console.error(`COURIER OR STOREHOUSE WORKER DOING ACTION AND IT'S NEITHER FAT NOR THIN`)
+                            console.log(worker)
                         }
                     }
 

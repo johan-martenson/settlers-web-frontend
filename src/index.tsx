@@ -4,7 +4,7 @@ import { FillInPlayerInformation } from './fill_in_player_information'
 import './index.css'
 import { Lobby } from './lobby'
 import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/react-components'
-import { GameId, PlayerId, PlayerInformation } from './api/types'
+import { GameId, Nation, PlayerColor, PlayerId, PlayerInformation } from './api/types'
 import Play from './play'
 import { api } from './api/ws-api'
 import { GameCreator } from './game_creator'
@@ -21,6 +21,9 @@ const useStyles = makeStyles({
         height: '100%'
     }
 })
+
+const DEFAULT_PLAYER_COLOR: PlayerColor = 'WHITE'
+const DEFAULT_PLAYER_NATION: Nation = 'JAPANESE'
 
 const container = document.getElementById('root')
 
@@ -45,7 +48,7 @@ function GameInit() {
                 setPlayer(api.players.get(playerId))
                 setState('PLAY_GAME')
             } else {
-                const selfPlayer = await api.createPlayer('', 'BROWN', 'AFRICANS', 'HUMAN')
+                const selfPlayer = await api.createPlayer('', DEFAULT_PLAYER_COLOR, DEFAULT_PLAYER_NATION, 'HUMAN')
 
                 console.log(selfPlayer)
 

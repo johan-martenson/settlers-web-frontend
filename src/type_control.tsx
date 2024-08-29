@@ -63,6 +63,12 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [selectedPointInformation, setSelectedPointInformation] = useState<PointInformation>()
 
+    const commandChosen = useCallback((commandName: string) => {
+        console.log(`Command: ${commandName} at point ${selectedPoint.x},${selectedPoint.y}`)
+
+        commands.get(commandName)?.action(selectedPoint)
+    }, [commands, selectedPoint])
+
     const reducer = useCallback((state: InputState, action: InputAction) => {
         switch (action.type) {
             case 'set':
@@ -86,7 +92,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
             default:
                 return state
         }
-    }, [commands])
+    }, [commands, commandChosen])
 
     const [inputState, dispatchInput] = useReducer(reducer, { input: '' })
 
@@ -119,13 +125,6 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
         return () => document.removeEventListener('key', listener)
     }, [])
-
-
-    const commandChosen = useCallback((commandName: string) => {
-        console.log(`Command: ${commandName}`)
-
-        commands.get(commandName)?.action(selectedPoint)
-    }, [commands, selectedPoint])
 
     const listener = useCallback((event: Event) => {
         if (isTypingControlKeyEvent(event)) {

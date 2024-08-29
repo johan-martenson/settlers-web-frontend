@@ -42,7 +42,7 @@ void main (void) {
 
 
     // Calculate the lighting
-    v_brightness = (dot(a_normal, u_light_vector) * -1.0 / 3.0) - 0.1;
+    v_brightness = (dot(a_normal, u_light_vector) * -0.8 / 3.0) - 0.2;
 
 
     // Texture and verticies have different coordinate spaces, we do this to invert Y axis

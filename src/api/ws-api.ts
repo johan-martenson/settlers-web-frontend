@@ -1907,6 +1907,7 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
             percentageTraveled: 0,
             action: undefined,
             cargo: walkerTargetChange.cargo,
+            bodyType: walkerTargetChange?.bodyType
         }
 
         api.workers.set(worker.id, worker);

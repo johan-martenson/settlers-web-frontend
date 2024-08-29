@@ -127,13 +127,13 @@ Todo 1.0
         at flushPassiveEffects (http://localhost:3000/static/js/bundle.js:116332:18)
         at performSyncWorkOnRoot (http://localhost:3000/static/js/bundle.js:115549:7)
 
-32. Bug
-    assets.ts:1018 FOUND NO ACTION: name: thin-carrier-no-cargo, nation: AFRICANS, direction: WEST, action: SIT_DOWN, color: BROWN
+32. Feels like animations run too fast - at least couriers reading the paper
 
 33. Put focus back on game after clicking a button in a window. E.g. click build road, then escape.
 
-34. Bug
-    thin-carrier-no-cargo, nation: AFRICANS, direction: SOUTH_WEST, action: CHEW_GUM, color: BROWN
+35. Bug - first map parsed wrong?
+    I - Off we go
+    7 players, 64x64, by Blue Byte
 
 Todo 2.0
 ========

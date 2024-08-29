@@ -86,6 +86,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
                         <Field label={'Enter a name for the game'} style={{ flex: '1 0 100%' }}>
                             <Input
+                                id='set-name-for-game'
                                 type='text'
                                 placeholder='Name...'
                                 autoFocus

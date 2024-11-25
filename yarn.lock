@@ -7057,10 +7057,10 @@ fsevents@^2.3.2, fsevents@~2.3.2:
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.3.tgz#cac6407785d03675a2a5e1a5305c697b347d90d6"
   integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
-fuite@^5.0.3:
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/fuite/-/fuite-5.0.3.tgz#b6974907b1295395dd5c9555802c82dd20ef9bcd"
-  integrity sha512-mUZO9YNk+SwldK+7KybxrdrvgdcMt+avmbYu0YrXEZORXRALYxZ6IKhY/5QvEDmCIFqKkj2onM7qkWuqt81FkA==
+fuite@^5.0.4:
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/fuite/-/fuite-5.0.4.tgz#5b06e77ffa289d6a6aa6c18b55884a263a639a77"
+  integrity sha512-eYcbPqqJVJdKGc0vF3zN71Qqxke0u7Euaz7rwOZsFYAWT7wtC8KRczU9Dw0x3E35lOfUuIgSSN+V7P5fenSGOA==
   dependencies:
     as-table "^1.0.55"
     chalk "^5.3.0"

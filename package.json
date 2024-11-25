@@ -14,7 +14,7 @@
     "@types/react-dom": "^18.3.1",
     "d3": "^7.9.0",
     "eslint-plugin-react-hooks": "^5.0.0",
-    "fuite": "^5.0.3",
+    "fuite": "^5.0.4",
     "gl-matrix": "^3.4.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

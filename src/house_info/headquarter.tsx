@@ -160,6 +160,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                         </div>
                                     </Tooltip>
                                     <Subtract16Filled
+                                    onMouseEnter={() => setHover(`Reduce reserved ${soldierDisplayName}s`)}
+                                    onMouseLeave={() => setHover(undefined)}
                                         onClick={() => {
                                             if (house.reserved[rank] !== 0) {
                                                 api.setReservedSoldiers(rank, house.reserved[rank] - 1)
@@ -167,6 +169,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                         }}
                                     />
                                     <Add16Filled
+                                    onMouseEnter={() => setHover(`Increase reserved ${soldierDisplayName}s`)}
+                                    onMouseLeave={() => setHover(undefined)}
                                         onClick={() => {
                                             if (house.reserved[rank] !== 100) {
                                                 api.setReservedSoldiers(rank, house.reserved[rank] + 1)

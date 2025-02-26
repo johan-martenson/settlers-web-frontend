@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { GameInformation, MapInformation } from './api/types'
 import { MapList } from './map_list'
 import './map_selection.css'
-import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, InputOnChangeData, SearchBox, SearchBoxChangeEvent, Slider, SliderOnChangeData, Subtitle1 } from '@fluentui/react-components'
+import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, InputOnChangeData, SearchBox, SearchBoxChangeEvent, Slider, SliderOnChangeData } from '@fluentui/react-components'
 import MapInformationCard from './map_information_card'
 import { GameListener, api } from './api/ws-api'
 

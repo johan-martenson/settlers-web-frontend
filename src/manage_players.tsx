@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button, Subtitle1 } from '@fluentui/react-components'
+import { Button } from '@fluentui/react-components'
 import { Player } from './player'
 import './manage_players.css'
 import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId, GameInformation } from './api/types'

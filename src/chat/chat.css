@@ -1,18 +1,30 @@
 .chat-box {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 5em;
+    gap: 10px 10px;
+    grid-template-areas:
+        "chat-log"
+        "send-area";
+    height: 100%;
 }
 
 .chat-log {
+    grid-area: chat-log;
+    overflow: auto;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     overflow-y: auto;
     flex-grow: 1;
+    border: 2px solid gray; /* White border */
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+    padding: 5px;
 }
 
 .chat-type-and-send {
-    flex-grow: 0;
+    grid-area: send-area;
 }
 
 .expand-chat-box {

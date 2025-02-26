@@ -785,7 +785,7 @@ function GameCanvas({
                     return
                 }
 
-                const borderPointInfo = borderImageAtlasHandler.getDrawingInformation(borderForPlayer.nation, borderForPlayer.color, 'LAND')
+                const borderPointInfo = borderImageAtlasHandler.getDrawingInformation(borderForPlayer.nation, borderForPlayer.color, 'SUMMER')
 
                 toDrawNormal.push({
                     source: borderPointInfo,

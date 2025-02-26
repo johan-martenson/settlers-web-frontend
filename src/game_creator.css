@@ -1,45 +1,107 @@
-.game-creation-screen {
-    width: 100vw;
-    height: 100vh;
+#game-creation-screen {
     position: absolute;
-    top: 0px;
-}
-
-.create-game-columns {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: flex-start;
-    gap: 20px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
     padding: 20px;
-
-    height: 90%;
-    width: 100%;
+    grid-template-columns: 20em 0.7fr 1.3fr 25em;
+    grid-template-rows: 1fr 1fr 1fr 1fr;
+    gap: 20px 50px;
+    grid-template-areas:
+        "title title title title"
+        "options-title players-title map-title chat-title"
+        "options players map chat"
+        ". start-or-cancel start-or-cancel .";
 }
 
-.players-column {
+#title {
+    grid-area: title;
+    font-size: 5em;
+    font-weight: bold;
+    line-height: 1.2;        /* Adjusts line height for readability */
+    color: white;
+    margin: 0.5em 0;
+}
+
+#options-title {
+    grid-area: options-title;
+}
+
+#options-title > h2 {
+    font-size: 2em;
+    font-weight: bold;
+    line-height: 1.2;        /* Adjusts line height for readability */
+    color: white;
+    margin: 0.5em 0;
+}
+
+#options {
+    grid-area: options;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#players-title {
+    grid-area: players-title;
+}
+
+#players-title > h2 {
+    font-size: 2em;
+    font-weight: bold;
+    line-height: 1.2;        /* Adjusts line height for readability */
+    color: white;
+    margin: 0.5em 0;
+}
+
+#players {
+    grid-area: players;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 10px;
-    width: 30%
 }
 
-.options-column {
+#map-title {
+    grid-area: map-title;
+}
+
+#map-title > h2 {
+    font-size: 2em;
+    font-weight: bold;
+    line-height: 1.2;        /* Adjusts line height for readability */
+    color: white;
+    margin: 0.5em 0;
+}
+
+#map {
+    grid-area: map;
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 10px;
-    width: 10%;
 }
 
-.map-column {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 30%;
+#chat-title {
+    grid-area: chat-title;
 }
 
-.start-or-cancel {
+#chat-title > h2 {
+    font-size: 2em;
+    font-weight: bold;
+    line-height: 1.2;        /* Adjusts line height for readability */
+    color: white;
+    margin: 0.5em 0;
+}
+
+#chat {
+    grid-area: chat;
+}
+
+#start-or-cancel {
+    grid-area: start-or-cancel;
     display: flex;
     flex-direction: row;
     justify-content: center;

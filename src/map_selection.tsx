@@ -36,8 +36,6 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
 
     return (
         <div className='select-map'>
-            <Subtitle1 as='h4' block>Map</Subtitle1>
-
             {map && <MapInformationCard map={map} />}
 
             <Accordion collapsible>

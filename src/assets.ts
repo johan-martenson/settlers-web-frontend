@@ -1201,8 +1201,16 @@ class HouseImageAtlasHandler {
             return undefined
         }
 
+        if (this.imageAtlasInfo?.buildings[nation][houseType] === undefined) {
+            console.log([nation, houseType, this.imageAtlasInfo?.buildings[nation]])
+        }
+
         const houseImage = this.imageAtlasInfo.buildings[nation][houseType].ready
         const houseShadowImage = this.imageAtlasInfo.buildings[nation][houseType].readyShadow
+
+        if (houseShadowImage === undefined) {
+            console.log([nation, houseType])
+        }
 
         return [
             {
@@ -1258,15 +1266,11 @@ class HouseImageAtlasHandler {
                 texture: this.texture
             }]
     }
-
-    getUrlForIndividualBuilding(nation: Nation, houseType: AnyBuilding): string {
-        return 'assets/' + nation + '/' + houseType + '.png'
-    }
 }
 
 class BorderImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<PlayerColor, Record<'landBorder' | 'coastBorder', OneImageInformation>>>
+    private imageAtlasInfo?: Record<Nation, Record<PlayerColor, Record<'summerBorder' | 'winterBorder', OneImageInformation>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1292,17 +1296,17 @@ class BorderImageAtlasHandler {
         return this.image
     }
 
-    getDrawingInformation(nation: Nation, color: PlayerColor, type: 'LAND' | 'COAST'): DrawingInformation | undefined {
+    getDrawingInformation(nation: Nation, color: PlayerColor, type: 'SUMMER' | 'WINTER'): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
         let imageInfo
 
-        if (type === 'COAST') {
-            imageInfo = this.imageAtlasInfo[nation][color]['coastBorder']
+        if (type === 'WINTER') {
+            imageInfo = this.imageAtlasInfo[nation][color]['winterBorder']
         } else {
-            imageInfo = this.imageAtlasInfo[nation][color]['landBorder']
+            imageInfo = this.imageAtlasInfo[nation][color]['summerBorder']
         }
 
         return {

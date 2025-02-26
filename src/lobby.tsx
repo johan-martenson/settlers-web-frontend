@@ -21,17 +21,19 @@ type LobbyProps = {
  */
 const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
     return (
-        <div id='center-on-screen'>
-
-            <div id='list-games-or-create-new'>
-                <h1>Available games</h1>
-                <GameList onJoinGame={onJoinExistingGame} />
+        <div id='lobby-screen'>
+            <div id='lobby-title'>Lobby</div>
+            <div id='game-list-title'><h1>Available games</h1></div>
+            <div id='game-list'>
+                <div id='game-list-content'>
+                    <GameList onJoinGame={onJoinExistingGame}/>
+                </div>
                 <Button onClick={onCreateNewGame} autoFocus appearance='primary'>
                     Create new game
                 </Button>
             </div>
-            <div className='lobby-chat'>
-                <h1>Chat</h1>
+            <div id='chat-title'><h1>Chat</h1></div>
+            <div id='chat'>
                 <ChatBox playerId={player.id} roomId='lobby' />
             </div>
 

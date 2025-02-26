@@ -461,6 +461,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [nextWindowId])
 
     const openWindow = useCallback((window: WindowType) => {
+        console.log(`Opening: ${JSON.stringify(window)}`)
+
         setWindows(prevWindows => [
             ...prevWindows,
             { ...window, id: nextWindowId() }])
@@ -746,6 +748,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         /* Handle click on house */
         const house = api.getHouseAtPointLocal(point)
+        console.log(`House on local: ${JSON.stringify(house)}`)
+
         if (house) {
             console.info(`Clicked house: ${JSON.stringify(house)}`)
 
@@ -757,6 +761,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         /* Handle the case where a flag was double clicked */
         const flag = api.getFlagAtPointLocal(point)
+        console.log(`Flag on local: ${JSON.stringify(flag)}`)
 
         if (flag) {
             console.info('Clicked flag')
@@ -772,6 +777,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         /* Ask the server for what can be done on the spot */
         const pointInformation = await api.getInformationOnPoint(point)
+        console.log(`Point information: ${JSON.stringify(pointInformation)}`)
 
         /* Create a flag if it is the only possible construction */
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'FLAG') {
@@ -781,6 +787,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         } else if (pointInformation.is === 'ROAD') {
             openWindow({ type: 'ROAD_INFO', roadId: pointInformation.roadId })
         } else if (pointInformation.canBuild.length !== 0) {
+            console.log(`Opening construction window`)
+
             openWindow({ type: 'CONSTRUCTION_WINDOW', pointInformation: pointInformation })
         } else {
             openWindow({ type: 'NO_ACTION', point })

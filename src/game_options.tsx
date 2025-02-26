@@ -31,8 +31,6 @@ const GameOptions = ({ othersCanJoin, setAvailableResources, setOthersCanJoin, .
     return (
         <div className='settings'>
 
-            <Subtitle1 as='h4' block>Settings</Subtitle1>
-
             <Field label='Allow others to join?'>
                 <Switch
                     checked={othersCanJoin}

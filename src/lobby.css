@@ -1,4 +1,4 @@
-#center-on-screen {
+/*#center-on-screen {
     position: absolute;
     display: flex;
     justify-content: center;
@@ -9,6 +9,63 @@
     min-height: 20em;
     max-height: 100vh;
     width: 100vw;
+}*/
+
+#lobby-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: 7em 1fr 7em 25em 1em;
+    grid-template-rows: 1fr 3em 40em 1fr;
+    gap: 10px 10px;
+    grid-template-areas:
+        "lobby-title . . . ."
+        ". game-list-title . chat-title ."
+        ". game-list . chat ."
+        ". . . . .";
+}
+
+#lobby-title {
+    grid-area: lobby-title;
+    font-size: 5em;
+    font-weight: bold;
+    line-height: 1.2;        /* Adjusts line height for readability */
+    color: white;
+    margin: 0.5em 0;
+}
+
+#chat-title {
+    grid-area: chat-title;
+}
+
+#chat-title > h1 {
+    text-align: left;
+}
+
+#chat {
+    grid-area: chat;
+}
+
+#game-list-title {
+    grid-area: game-list-title;
+}
+
+#game-list-title > h1 {
+    text-align: left;
+}
+
+#game-list {
+    grid-area: game-list;
+    display: flex;
+    flex-direction: column;
+}
+
+#game-list-content {
+    flex-grow: 1;
+    overflow-y: auto;
 }
 
 #list-games-or-create-new {

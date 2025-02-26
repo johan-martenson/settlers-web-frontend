@@ -70,6 +70,7 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
 
     const vegetationBelow = api.allTiles.get(point)?.below
     const vegetationDownRight = api.allTiles.get(point)?.downRight
+    const tree = Array.from(api.trees.values()).find(tree => tree.x === point.x && tree.y === point.y)
 
     return (<Window className='debug-window' heading='Debug' onClose={onClose} onRaise={onRaise}>
         <Accordion multiple>
@@ -163,6 +164,14 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
 
                         {api.decorations.has(point) &&
                             <div>Decoration: <Value>{api.decorations.get(point)?.decoration ?? ''}</Value></div>
+                        }
+
+                        {tree &&
+                            <div>Tree
+                                <div>Id: <Value>{tree.id}</Value></div>
+                                <div>Type: <Value>{tree.type}</Value></div>
+                                <div>Size: <Value>{tree.size}</Value></div>
+                            </div>
                         }
                     </div>
                 </AccordionPanel>

@@ -51,8 +51,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                 {chatLog
                     .filter(chatMessage =>
                         chatMessage?.toRoomId === roomId ||
-                        chatMessage?.toPlayers?.some(p => p === playerId)
-                    )
+                        chatMessage?.toPlayers?.some(p => p === playerId))
                     .map(chatMessage => (
                         <div key={chatMessage.id} className='chat-entry'>
                             [{chatMessage.time.hours.toString().padStart(2, '0')}:{chatMessage.time.minutes.toString().padStart(2, '0')}] {chatMessage.fromName}: {chatMessage.text}
@@ -65,7 +64,9 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                     onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setMessageText(data.value)}
                     onKeyDown={(event: React.KeyboardEvent) => {
                         if (!event.metaKey && !event.altKey && !event.ctrlKey && !event.shiftKey) {
-                            sendMessage()
+                            if (event.key === 'Enter') {
+                                sendMessage()
+                            }
                         }
                     }} />
                 <Button

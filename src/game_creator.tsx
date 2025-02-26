@@ -133,46 +133,46 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
             }
 
             {state === 'CREATE_GAME' && gameInformation?.id && selfPlayerId &&
-                <div className='game-creation-screen'>
+                <div id='game-creation-screen'>
 
-                    <h1>{gameInformation?.name ?? ''}</h1>
+                    <div id='title'>Create game: {gameInformation?.name ?? ''}</div>
 
-                    <div className='create-game-columns'>
+                    <div id='options-title'><h2>Options</h2></div>
+                    <div id='options'>
+                        <GameOptions
+                            initialResources={gameInformation?.initialResources ?? 'MEDIUM'}
+                            othersCanJoin={gameInformation?.othersCanJoin ?? true}
+                            setAvailableResources={resources => api.setInitialResources(resources)}
+                            setOthersCanJoin={othersCanJoin => api.setOthersCanJoin(othersCanJoin)}
+                        />
+                    </div>
 
-                        <div className='options-column'>
-                            <GameOptions
-                                initialResources={gameInformation?.initialResources ?? 'MEDIUM'}
-                                othersCanJoin={gameInformation?.othersCanJoin ?? true}
-                                setAvailableResources={resources => api.setInitialResources(resources)}
-                                setOthersCanJoin={othersCanJoin => api.setOthersCanJoin(othersCanJoin)}
-                            />
-                        </div>
+                    <div id='players-title'><h2>Players</h2></div>
+                    <div id='players'>
+                        <ManagePlayers
+                            selfPlayerId={selfPlayerId}
+                            maxPlayers={gameInformation?.map?.maxPlayers ?? 3}
+                        />
+                    </div>
 
-                        <div className='players-column'>
-                            <ManagePlayers
-                                selfPlayerId={selfPlayerId}
-                                maxPlayers={gameInformation?.map?.maxPlayers ?? 3}
-                            />
-                        </div>
-
-                        <div className='map-column'>
-                            <MapSelection onMapSelected={map => {
-                                console.log(map)
-                                console.log(gameInformation)
+                    <div id='map-title'><h2>Select map</h2></div>
+                    <div id='map'>
+                        <MapSelection onMapSelected={map => {
+                            console.log(map)
+                            console.log(gameInformation)
 
                             if (!gameInformation?.map || gameInformation.map.id !== map.id) {
-                                    api.setMap(map.id)
-                                }
-                            }}
-                                minPlayers={gameInformation?.players.length ?? 0} />
-                        </div>
-
-                        <div className='game-create-chat'>
-                            <h2>Chat</h2>
-                            <ChatBox playerId={selfPlayerId} roomId={`game-${gameInformation?.id}`} />
-                        </div>
+                                api.setMap(map.id)
+                            }
+                        }}
+                            minPlayers={gameInformation?.players.length ?? 0} />
                     </div>
-                    <div className='start-or-cancel'>
+
+                    <div id='chat-title'><h2>Chat</h2></div>
+                    <div id='chat'>
+                        <ChatBox playerId={selfPlayerId} roomId={`game-${gameInformation?.id}`} />
+                    </div>
+                    <div id='start-or-cancel'>
                         <Button onClick={() => {
                             if (api.gameId !== undefined) {
                                 api.deleteGame()

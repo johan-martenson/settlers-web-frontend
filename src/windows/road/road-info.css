@@ -1,6 +1,4 @@
 .road-info {
-    display: flex;
-    flex-direction: column;
     background-color: darkgray;
     color: white;
     position: absolute;
@@ -8,8 +6,6 @@
     top: 10vh;
     width: 20em;
     border-radius: 10px;
-    align-items: center;
-    justify-content: flex-start;
     background-color: darkslategray;
     padding-left: 2em;
     padding-right: 2em;

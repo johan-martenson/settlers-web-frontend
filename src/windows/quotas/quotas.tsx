@@ -112,7 +112,13 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
     }, [armoryIronBarAmount, metalworksIronBarAmount])
 
     return (
-        <Window className='quotas-window' heading='Quotas' onClose={onClose} onRaise={onRaise} hoverInfo={hover}>
+        <Window
+            className='quotas-window'
+            heading='Quotas'
+            onClose={onClose}
+            onRaise={onRaise}
+            hoverInfo={hover}
+        >
 
             <TabList
                 defaultSelectedValue={materialToManage}

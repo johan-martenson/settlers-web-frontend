@@ -8,10 +8,6 @@
     min-height: 10rem;
     height: auto;
     border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
     background-color: darkslategray;
     padding-left: 2em;
     padding-right: 2em;

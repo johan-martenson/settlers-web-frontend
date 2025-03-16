@@ -6,7 +6,7 @@
     "@fluentui/react-components": "^9.60.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
-    "@testing-library/user-event": "^14.6.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/d3": "^7.4.3",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.10",

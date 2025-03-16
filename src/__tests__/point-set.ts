@@ -1,5 +1,5 @@
 import { Point } from "../api/types"
-import { keyToFastPoint, PointMapFast, PointSetFast, pointToFastKey } from "../util_types"
+import { keyToPoint, PointMap, PointSet, pointToKey } from "../utils/util_types"
 
 describe('Point encoding and decoding', () => {
     it('should encode and decode points within the valid range', () => {
@@ -12,8 +12,8 @@ describe('Point encoding and decoding', () => {
         ]
 
         points.forEach(point => {
-            const key = pointToFastKey(point)
-            const decodedPoint = keyToFastPoint(key)
+            const key = pointToKey(point)
+            const decodedPoint = keyToPoint(key)
             expect(decodedPoint).toEqual(point)
         })
     })
@@ -28,16 +28,16 @@ describe('Point encoding and decoding', () => {
         ]
 
         invalidPoints.forEach(point => {
-            expect(() => pointToFastKey(point)).toThrow()
+            expect(() => pointToKey(point)).toThrow()
         })
     })
 })
 
 describe('PointSetFast', () => {
-    let set: PointSetFast
+    let set: PointSet
 
     beforeEach(() => {
-        set = new PointSetFast()
+        set = new PointSet()
     })
 
     test('should add points correctly', () => {
@@ -133,10 +133,10 @@ describe('PointSetFast', () => {
 })
 
 describe('PointMapFast', () => {
-    let pointMap: PointMapFast<string>
+    let pointMap: PointMap<string>
 
     beforeEach(() => {
-        pointMap = new PointMapFast()
+        pointMap = new PointMap()
     })
 
     test('should set and get values by point keys', () => {

@@ -1,9 +1,9 @@
 import { Button, Input, InputOnChangeData } from '@fluentui/react-components'
 import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
-import { api } from '../api/ws-api'
-import { ChatMessage, PlayerId, RoomId } from '../api/types'
+import { api } from '../../api/ws-api'
+import { ChatMessage, PlayerId, RoomId } from '../../api/types'
 import './chat.css'
-import ExpandCollapseToggle from '../components/expand_collapse_toggle/expand_collapse_toggle'
+import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 
 // Types
 type ChatBoxProps = {

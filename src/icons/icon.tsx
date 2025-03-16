@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../api/types'
 import { Dimension, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets'
-import { resizeCanvasToDisplaySize } from '../utils'
+import { resizeCanvasToDisplaySize } from '../utils/utils'
 import './icon.css'
 
 // Types

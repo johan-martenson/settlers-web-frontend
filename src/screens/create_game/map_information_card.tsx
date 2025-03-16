@@ -3,7 +3,7 @@ import { MapInformation, MapId } from '../../api/types'
 import { Button, Text, Caption1 } from '@fluentui/react-components'
 import { Card, CardHeader } from '@fluentui/react-components'
 import './map_information_card.css'
-import { makeImageFromMap } from '../../utils'
+import { makeImageFromMap } from '../../utils/utils'
 
 // Types
 type MapInformationCardProps = {

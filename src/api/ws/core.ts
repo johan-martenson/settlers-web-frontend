@@ -6,7 +6,7 @@
  */
 
 
-import { delay } from "../../utils"
+import { delay } from "../../utils/utils"
 
 // Constants
 export const MAX_WAIT_FOR_CONNECTION = 10_000 // milliseconds

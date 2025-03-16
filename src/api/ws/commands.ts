@@ -1,4 +1,4 @@
-import { PointMapFast } from "../../util_types"
+import { PointMap } from "../../utils/util_types"
 import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics, VegetationAsInt } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
@@ -674,12 +674,12 @@ async function getInformationOnPoint(point: Point): Promise<PointInformation> {
 /**
  * Retrieves information about multiple points in the game world.
  * @param {Point[]} points - The points to get information on.
- * @returns {Promise<PointMapFast<PointInformation>>} A map of point information.
+ * @returns {Promise<PointMap<PointInformation>>} A map of point information.
  */
-async function getInformationOnPoints(points: Point[]): Promise<PointMapFast<PointInformation>> {
+async function getInformationOnPoints(points: Point[]): Promise<PointMap<PointInformation>> {
     const reply = await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, { points: Point[] }>(Command.GetInformationOnPoint, { points })
 
-    const map = new PointMapFast<PointInformation>()
+    const map = new PointMap<PointInformation>()
 
     reply.pointsWithInformation.forEach(pointInformation => map.set({ x: pointInformation.x, y: pointInformation.y }, pointInformation))
 

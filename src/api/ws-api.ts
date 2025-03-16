@@ -1,5 +1,5 @@
-import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils'
-import { PointMapFast, PointSetFast } from '../util_types'
+import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils/utils'
+import { PointMap, PointSet } from '../utils/util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory } from './types'
 import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
@@ -142,7 +142,7 @@ type FollowingState = 'NOT_FOLLOWING' | 'STARTING_TO_FOLLOW' | 'FOLLOWING'
 type MonitoredBorderForPlayer = {
     color: PlayerColor
     nation: Nation
-    points: PointSetFast
+    points: PointSet
 }
 
 type WalkerTargetChange = {
@@ -270,7 +270,7 @@ let treeGrowerTimer: undefined | NodeJS.Timeout
 export type GameListListener = (gameInformations: GameInformation[]) => void
 export type MessagesListener = (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void
 export type HouseListener = ((house: HouseInformation) => void)
-export type DiscoveredPointListener = (discoveredPoints: PointSetFast) => void
+export type DiscoveredPointListener = (discoveredPoints: PointSet) => void
 export type RoadListener = () => void
 export type ChatListener = () => void
 
@@ -396,26 +396,26 @@ const api = {
     fallingTrees: new Map<TreeId, FallingTreeInformation>(),
     stones: new Map<StoneId, StoneInformation>(),
     crops: new Map<CropId, CropInformationLocal>(),
-    discoveredPoints: new PointSetFast(),
+    discoveredPoints: new PointSet(),
     signs: new Map<SignId, SignInformation>(),
     players: new Map<PlayerId, PlayerInformation>(),
-    availableConstruction: new PointMapFast<AvailableConstruction[]>(),
+    availableConstruction: new PointMap<AvailableConstruction[]>(),
     messages: new Map<GameMessageId, GameMessage>(),
-    allTiles: new PointMapFast<TerrainAtPoint>(),
+    allTiles: new PointMap<TerrainAtPoint>(),
     discoveredBelowTiles: new Set<TileBelow>(),
     discoveredDownRightTiles: new Set<TileDownRight>(),
-    pointsWithBelowTileDiscovered: new PointSetFast(),
-    pointsWithDownRightTileDiscovered: new PointSetFast(),
-    deadTrees: new PointSetFast(),
+    pointsWithBelowTileDiscovered: new PointSet(),
+    pointsWithDownRightTileDiscovered: new PointSet(),
+    deadTrees: new PointSet(),
     wildAnimals: new Map<WildAnimalId, WildAnimalInformation>(),
-    decorations: new PointMapFast<Decoration>(),
+    decorations: new PointMap<Decoration>(),
     gameState: 'NOT_STARTED' as GameState,
     gameSpeed: 'NORMAL' as GameSpeed,
     gameName: '',
     chatRoomMessages: [] as ChatMessage[],
     transportPriority: undefined as TransportCategory[] | undefined,
 
-    housesAt: new PointMapFast<HouseInformation>(),
+    housesAt: new PointMap<HouseInformation>(),
 
     localRemovedFlags: new Map<FlagId, FlagInformation>(),
     localRemovedRoads: new Map<RoadId, RoadInformation>(),
@@ -571,7 +571,7 @@ const messageListeners: Set<MessagesListener> = new Set<MessagesListener>()
 const houseListeners: Map<HouseId, Set<HouseListener>> = new Map<HouseId, Set<HouseListener>>()
 const discoveredPointListeners: Set<DiscoveredPointListener> = new Set<DiscoveredPointListener>()
 const roadListeners: Set<RoadListener> = new Set<RoadListener>()
-const availableConstructionListeners = new PointMapFast<Set<AvailableConstructionListener>>()
+const availableConstructionListeners = new PointMap<Set<AvailableConstructionListener>>()
 const actionListeners: Set<ActionListener> = new Set<ActionListener>()
 const houseBurningListeners: Set<HouseBurningListener> = new Set<HouseBurningListener>()
 const gameListeners: Set<GameListener> = new Set<GameListener>()
@@ -1073,7 +1073,7 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
             {
                 color: player.color,
                 nation: player.nation,
-                points: new PointSetFast(borderInformation.points)
+                points: new PointSet(borderInformation.points)
             }
         )
     }
@@ -1641,7 +1641,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     /* Finally, notify listeners when all data is updated */
     if (playerViewChanges.newDiscoveredLand) {
-        const newDiscoveredLand = new PointSetFast(playerViewChanges.newDiscoveredLand)
+        const newDiscoveredLand = new PointSet(playerViewChanges.newDiscoveredLand)
         discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
     }
 
@@ -1682,9 +1682,9 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 /**
  * Stores the discovered tiles based on newly discovered points.
  * 
- * @param {PointSetFast | Point[]} newlyDiscoveredPoints - The newly discovered points.
+ * @param {PointSet | Point[]} newlyDiscoveredPoints - The newly discovered points.
  */
-function storeDiscoveredTiles(newlyDiscoveredPoints: PointSetFast | Point[]): void {
+function storeDiscoveredTiles(newlyDiscoveredPoints: PointSet | Point[]): void {
     for (const point of newlyDiscoveredPoints) {
         const terrainAtPoint = api.allTiles.get(point)
 
@@ -1837,7 +1837,7 @@ function syncChangedBorders(borderChanges: BorderChange[]): void {
                 {
                     color: player.color,
                     nation: api.players.get(borderChange.playerId)?.nation ?? 'ROMANS',
-                    points: new PointSetFast(borderChange.newBorder)
+                    points: new PointSet(borderChange.newBorder)
                 }
             )
         }

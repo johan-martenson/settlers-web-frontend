@@ -1,4 +1,4 @@
-import { VegetationIntegers } from "../api/types";
+import { VegetationIntegers } from "../../api/types";
 
 export const VEGETATION: Map<VegetationIntegers, string> = new Map()
 

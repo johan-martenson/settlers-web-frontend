@@ -1,8 +1,8 @@
-import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation, WATER_1, WATER_2, BUILDABLE_WATER } from './api/types'
-import { api } from './api/ws-api'
-import { ScreenPoint, View } from './render/game_render'
-import { STANDARD_HEIGHT } from './render/constants'
-import { PointMapFast } from './util_types'
+import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation, WATER_1, WATER_2, BUILDABLE_WATER } from '../api/types'
+import { api } from '../api/ws-api'
+import { ScreenPoint, View } from '../render/game_render'
+import { STANDARD_HEIGHT } from '../render/constants'
+import { PointMap } from './util_types'
 
 // Types
 export type Point3D = {
@@ -66,10 +66,6 @@ const INT_TO_VEGETATION_COLOR = new Map<number, RgbColorArray>([
 ])
 
 // Functions
-function camelCaseToWords(camelCaseStr: string): string {
-    return camelCaseStr.replace(/([A-Z])/g, ' $1').trim();
-}
-
 function isContext2D(context: RenderingContext): context is CanvasRenderingContext2D {
     return true
 }
@@ -392,7 +388,7 @@ function findClosestHeightAdjustedPoint(
     unadjustedGamePoint: Point,
     view: View,
     heightAdjust: number,
-    allTiles: PointMapFast<TerrainAtPoint>
+    allTiles: PointMap<TerrainAtPoint>
 ): Point | undefined {
     let distance = 2000
     let adjustedGamePoint: Point | undefined
@@ -527,7 +523,6 @@ export {
     getPointUp,
     getDotProduct,
     getNormalForTriangle,
-    camelCaseToWords,
     INT_TO_VEGETATION_COLOR,
     sumVectors,
     loadImageNg,

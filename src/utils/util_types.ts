@@ -9,7 +9,7 @@ function stringToPoint(pointAsString: string): Point {
     return { x: parseInt(x), y: parseInt(y) }
 }
 
-function pointToFastKey(point: Point): number {
+function pointToKey(point: Point): number {
     if (point.y > 1000 || point.y < -1000) {
         throw new Error(`Cannot handle y values outside of the range -1000 <= n <= 1000. Value is: ${point.y}`)
     }
@@ -25,7 +25,7 @@ function pointToFastKey(point: Point): number {
     return (shiftedX << 11) | shiftedY
 }
 
-function keyToFastPoint(key: number): Point {
+function keyToPoint(key: number): Point {
     const shiftedX = (key >> 11) & 0x7FF // Mask with 0x7FF to keep only 11 bits
     const shiftedY = key & 0x7FF
 
@@ -36,36 +36,7 @@ function keyToFastPoint(key: number): Point {
     return { x, y }
 }
 
-/*class PointFastIterator implements IterableIterator<Point> {
-    private pointFastSetIterator: IterableIterator<number>
-
-    constructor(pointFastSetIterator: IterableIterator<number>) {
-        this.pointFastSetIterator = pointFastSetIterator
-    }
-
-    [Symbol.iterator](): IterableIterator<Point> {
-        return this
-    }
-
-    next(): IteratorResult<Point> {
-        const result = this.pointFastSetIterator.next()
-
-        if (result.value) {
-            return {
-                done: result.done,
-                value: keyToFastPoint(result.value)
-            }
-        } else {
-            return {
-                done: true,
-                value: { x: 2, y: 3 }
-            }
-        }
-    }
-}*/
-
-
-class PointSetFastIterator implements IterableIterator<Point> {
+class PointSetIterator implements IterableIterator<Point> {
     private pointFastSetIterator: IterableIterator<[number, number]>
 
     constructor(pointFastSetIterator: IterableIterator<[number, number]>) {
@@ -82,7 +53,7 @@ class PointSetFastIterator implements IterableIterator<Point> {
         if (result.value) {
             return {
                 done: result.done,
-                value: keyToFastPoint(result.value[0])
+                value: keyToPoint(result.value[0])
             }
         } else {
             return {
@@ -93,37 +64,7 @@ class PointSetFastIterator implements IterableIterator<Point> {
     }
 }
 
-/*class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
-    private pointEntryFastIterator: IterableIterator<[number, T]>
-
-    constructor(pointEntryFastIterator: IterableIterator<[number, T]>) {
-        this.pointEntryFastIterator = pointEntryFastIterator
-    }
-
-    [Symbol.iterator](): IterableIterator<[Point, T]> {
-        return this
-    }
-
-    next(): IteratorResult<[Point, T]> {
-        const result = this.pointEntryFastIterator.next()
-
-        if (result.done) {
-            return {
-                done: true,
-                value: undefined
-            }
-        }
-
-        const [pointNumber, value] = result.value
-
-        return {
-            done: result.done,
-            value: [keyToFastPoint(pointNumber), value]
-        }
-    }
-}*/
-
-class PointSetFast implements IterableIterator<Point> {
+class PointSet implements IterableIterator<Point> {
     private pointSet: Set<number>
 
     constructor(points?: Set<Point> | Point[]) {
@@ -131,7 +72,7 @@ class PointSetFast implements IterableIterator<Point> {
 
         if (points) {
             for (const point of points) {
-                this.pointSet.add(pointToFastKey(point))
+                this.pointSet.add(pointToKey(point))
             }
         }
     }
@@ -141,19 +82,19 @@ class PointSetFast implements IterableIterator<Point> {
     }
 
     add(point: Point): void {
-        this.pointSet.add(pointToFastKey(point))
+        this.pointSet.add(pointToKey(point))
     }
 
     delete(point: Point): void {
-        this.pointSet.delete(pointToFastKey(point))
+        this.pointSet.delete(pointToKey(point))
     }
 
     has(point: Point): boolean {
-        return this.pointSet.has(pointToFastKey(point))
+        return this.pointSet.has(pointToKey(point))
     }
 
     entries(): IterableIterator<Point> {
-        return new PointSetFastIterator(this.pointSet.entries())
+        return new PointSetIterator(this.pointSet.entries())
     }
 
     size(): number {
@@ -170,13 +111,13 @@ class PointSetFast implements IterableIterator<Point> {
 
     forEach(callback: (v: Point, i: number) => void): void {
         this.pointSet.forEach((value, index) => {
-            const point = keyToFastPoint(value)
+            const point = keyToPoint(value)
             callback(point, index)
         })
     }
 
-    filter(predicate: (point: Point) => boolean): PointSetFast {
-        const filtered = new PointSetFast()
+    filter(predicate: (point: Point) => boolean): PointSet {
+        const filtered = new PointSet()
         this.forEach(point => {
             if (predicate(point)) {
                 filtered.add(point)
@@ -185,14 +126,14 @@ class PointSetFast implements IterableIterator<Point> {
         return filtered
     }
 
-    map(transform: (point: Point) => Point): PointSetFast {
-        const mapped = new PointSetFast()
+    map(transform: (point: Point) => Point): PointSet {
+        const mapped = new PointSet()
         this.forEach(point => mapped.add(transform(point)))
         return mapped
     }
 }
 
-class PointMapFast<T> implements Map<Point, T> {
+class PointMap<T> implements Map<Point, T> {
     private numberToPointMap: Map<number, T>
 
     constructor(pointAsStringDict?: { [pointAsString: string]: T }) {
@@ -202,7 +143,7 @@ class PointMapFast<T> implements Map<Point, T> {
             for (const pointAsString in pointAsStringDict) {
                 const point = stringToPoint(pointAsString)
 
-                this.numberToPointMap.set(pointToFastKey(point), pointAsStringDict[pointAsString])
+                this.numberToPointMap.set(pointToKey(point), pointAsStringDict[pointAsString])
             }
 
         }
@@ -213,26 +154,26 @@ class PointMapFast<T> implements Map<Point, T> {
     }
 
     delete(point: Point): boolean {
-        return this.numberToPointMap.delete(pointToFastKey(point))
+        return this.numberToPointMap.delete(pointToKey(point))
     }
 
     // eslint-disable-next-line
     forEach(callbackfn: (value: T, key: Point, map: Map<Point, T>) => void, thisArg?: unknown): void {
         this.numberToPointMap.forEach(
-            (value, key) => callbackfn(value, keyToFastPoint(key), this)
+            (value, key) => callbackfn(value, keyToPoint(key), this)
         )
     }
 
     get(point: Point): T | undefined {
-        return this.numberToPointMap.get(pointToFastKey(point))
+        return this.numberToPointMap.get(pointToKey(point))
     }
 
     has(point: Point): boolean {
-        return this.numberToPointMap.has(pointToFastKey(point))
+        return this.numberToPointMap.has(pointToKey(point))
     }
 
     set(point: Point, value: T): this {
-        this.numberToPointMap.set(pointToFastKey(point), value)
+        this.numberToPointMap.set(pointToKey(point), value)
 
         return this
     }
@@ -262,13 +203,13 @@ class PointMapFast<T> implements Map<Point, T> {
     private *transformIterator<K>(
         iterator: IterableIterator<K>
 
-    // eslint-disable-next-line
+        // eslint-disable-next-line
     ): MapIterator<any> {
         for (const item of iterator) {
             if (typeof item === "number") {
-                yield keyToFastPoint(item)
+                yield keyToPoint(item)
             } else if (Array.isArray(item)) {
-                yield [keyToFastPoint(item[0]), item[1]]
+                yield [keyToPoint(item[0]), item[1]]
             } else {
                 yield item
             }
@@ -277,8 +218,8 @@ class PointMapFast<T> implements Map<Point, T> {
 }
 
 export {
-    PointSetFast,
-    PointMapFast,
-    pointToFastKey,
-    keyToFastPoint
+    PointSet,
+    PointMap,
+    pointToKey,
+    keyToPoint
 } 

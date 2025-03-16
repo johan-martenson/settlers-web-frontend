@@ -6,7 +6,7 @@ import MapSelection from './map_selection'
 import ManagePlayers from './manage_players'
 import { GameId, PlayerId, GameInformation } from '../../api/types'
 import { GameListener, api } from '../../api/ws-api'
-import { ChatBox } from '../../chat/chat'
+import { ChatBox } from '../../components/chat/chat'
 import { Center } from '../../components/center'
 
 // Types

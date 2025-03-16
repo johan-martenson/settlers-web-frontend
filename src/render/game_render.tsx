@@ -4,8 +4,8 @@ import { Duration } from '../duration'
 import './game_render.css'
 import { api, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../stats'
-import { camelCaseToWords, gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils'
-import { PointMapFast, PointSetFast } from '../util_types'
+import { gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils/utils'
+import { PointMap, PointSet } from '../utils/util_types'
 import { animals, borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, Dimension, donkeyAnimation, DrawingInformation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, fireImageAtlas, flagAnimations, houses, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, treeImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from '../shaders/image-and-shadow'
@@ -14,6 +14,7 @@ import { NewRoad } from '../screens/play/play'
 import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, UNIT_SQUARE, VEGETATION_TO_TEXTURE_MAPPING } from './constants'
 import { textures } from '../render/textures'
 import { ProgramDescriptor, ProgramInstance, draw, initProgram, setBuffer } from './utils'
+import { buildingPretty } from '../pretty_strings'
 
 // Types
 export type ScreenPoint = {
@@ -99,7 +100,7 @@ type RenderState = {
     showAvailableConstruction: boolean
 
     // Map of the normal for each point on the map
-    normals: PointMapFast<Vector>
+    normals: PointMap<Vector>
 
     // Drawing program instances
     drawGroundProgramInstance?: ProgramInstance
@@ -108,7 +109,7 @@ type RenderState = {
     drawShadowProgramInstance?: ProgramInstance
     fogOfWarProgramInstance?: ProgramInstance
 
-    allPointsVisibilityTracking: PointMapFast<TrianglesAtPoint>
+    allPointsVisibilityTracking: PointMap<TrianglesAtPoint>
     once: boolean
 }
 
@@ -305,7 +306,7 @@ function GameCanvas({
     onPointClicked,
     onKeyDown,
     onDoubleClick }: GameCanvasProps) {
-    const visiblePoints = new PointMapFast<TrianglesAtPoint>()
+    const visiblePoints = new PointMap<TrianglesAtPoint>()
 
     const initRenderState = {
         previous: performance.now(),
@@ -317,7 +318,7 @@ function GameCanvas({
         translate: { x: 0, y: 0 },
         newRoadCurrentLength: 0,
         animationIndex: 0,
-        normals: new PointMapFast<Vector>(),
+        normals: new PointMap<Vector>(),
         fogOfWarRenderProgram: null,
         fogOfWarCoordinates: [],
         fogOfWarIntensities: [],
@@ -1859,7 +1860,7 @@ function GameCanvas({
                     heightOffset = houseDrawInformation[0].offsetY * view.scale / DEFAULT_SCALE
                 }
 
-                let houseTitle = camelCaseToWords(house.type)
+                let houseTitle = buildingPretty(house.type)
 
                 if (house.state === 'UNFINISHED') {
                     houseTitle = '(' + houseTitle + ')'
@@ -2043,7 +2044,7 @@ function GameCanvas({
     )
 }
 
-function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
+function isOnEdgeOfDiscovery(point: Point, discovered: PointSet): boolean {
     const surrounding = surroundingPoints(point)
 
     // TODO: filter points outside of the map
@@ -2053,7 +2054,7 @@ function isOnEdgeOfDiscovery(point: Point, discovered: PointSetFast): boolean {
     return foundInside && foundOutside
 }
 
-function getTrianglesAffectedByFogOfWar(discovered: PointSetFast, tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>): ShadedPoint[][] {
+function getTrianglesAffectedByFogOfWar(discovered: PointSet, tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>): ShadedPoint[][] {
     const triangles: ShadedPoint[][] = []
 
     tilesBelow.forEach(tileBelow => {
@@ -2102,15 +2103,15 @@ function interpolateHeight(previous: Point, next: Point, progress: number): numb
     return previousHeight + (nextHeight - previousHeight) * progress
 }
 
-function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<FlagInformation>, allNormals: PointMapFast<Vector>): RenderInformation {
+function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<FlagInformation>, allNormals: PointMap<Vector>): RenderInformation {
     console.log('Prepare to render roads')
 
     const coordinates: number[] = []
     const normals: number[] = []
     const textureMapping: number[] = []
 
-    const mainRoadFlagPoints = new PointSetFast()
-    const normalRoadFlagPoints = new PointSetFast()
+    const mainRoadFlagPoints = new PointSet()
+    const normalRoadFlagPoints = new PointSet()
 
     // Iterate through each segment of the road
     for (const road of roads) {
@@ -2288,9 +2289,9 @@ function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<
     }
 }
 
-function calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDownRight: Iterable<TileDownRight>, allNormals: PointMapFast<Vector>): void {
-    const straightBelowNormals = new PointMapFast<Vector>()
-    const downRightNormals = new PointMapFast<Vector>()
+function calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDownRight: Iterable<TileDownRight>, allNormals: PointMap<Vector>): void {
+    const straightBelowNormals = new PointMap<Vector>()
+    const downRightNormals = new PointMap<Vector>()
 
     for (const terrainAtPoint of tilesBelow) {
         const point = terrainAtPoint.pointAbove
@@ -2354,7 +2355,7 @@ function calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDown
     }
 }
 
-function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>, allTiles: PointMapFast<TerrainAtPoint>, allNormals: PointMapFast<Vector>): MapRenderInformation {
+function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>, allTiles: PointMap<TerrainAtPoint>, allNormals: PointMap<Vector>): MapRenderInformation {
     const coordinates: number[] = []
     const normals: number[] = []
     const textureMappings: number[] = []
@@ -2578,7 +2579,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
     }
 }
 
-function updateFogOfWarRendering(allPointsVisibilityTracking: PointMapFast<TrianglesAtPoint>): FogOfWarRenderInformation {
+function updateFogOfWarRendering(allPointsVisibilityTracking: PointMap<TrianglesAtPoint>): FogOfWarRenderInformation {
     const triangles = getTrianglesAffectedByFogOfWar(api.discoveredPoints, api.discoveredBelowTiles, api.discoveredDownRightTiles)
 
     const fogOfWarCoordinates: number[] = []

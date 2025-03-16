@@ -2,7 +2,7 @@ import { DEFAULT_VOLUME } from "../screens/play/play"
 import { Action, HouseId, Point } from "../api/types"
 import { api } from "../api/ws-api"
 import { Sound } from "./utils"
-import { screenPointToGamePointNoHeightAdjustment } from "../utils"
+import { screenPointToGamePointNoHeightAdjustment } from "../utils/utils"
 import { View } from "../render/game_render"
 
 // Types

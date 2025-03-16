@@ -3,7 +3,7 @@ import { Button } from '@fluentui/react-components'
 import GameList from './game_list'
 import './lobby.css'
 import { GameId, PlayerInformation } from '../../api/types'
-import { ChatBox } from '../../chat/chat'
+import { ChatBox } from '../../components/chat/chat'
 
 // Types
 type LobbyProps = {

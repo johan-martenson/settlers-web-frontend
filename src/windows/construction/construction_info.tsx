@@ -3,7 +3,7 @@ import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, Poin
 import './construction_info.css'
 import { ButtonRow, Window } from '../../components/dialog'
 import { api } from '../../api/ws-api'
-import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils'
+import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils/utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon } from '../../icons/icon'
 import { buildingPretty } from '../../pretty_strings'

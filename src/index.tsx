@@ -8,7 +8,7 @@ import { GameId, Nation, PlayerColor, PlayerId, PlayerInformation } from './api/
 import Play from './screens/play/play'
 import { api } from './api/ws-api'
 import { GameCreator } from './screens/create_game/game_creator'
-import { getFreeColor } from './utils'
+import { getFreeColor } from './utils/utils'
 
 // Types
 type PlayState = 'ENTER_PLAYER_INFORMATION' | 'LOBBY' | 'PLAY_GAME' | 'CREATE_GAME'

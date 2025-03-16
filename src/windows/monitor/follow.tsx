@@ -7,7 +7,7 @@ import './follow.css'
 import { Button } from '@fluentui/react-components'
 import { animator } from '../../utils/animator'
 import { calcTranslation } from '../../render/utils'
-import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../../utils'
+import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../../utils/utils'
 import { MoveUpdate, api } from '../../api/ws-api'
 
 // Types

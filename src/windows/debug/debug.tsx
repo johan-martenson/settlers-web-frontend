@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { FlagDebugInfo, GameInformation, Point, PointInformation } from '../api/types'
-import { api } from '../api/ws-api'
+import { FlagDebugInfo, GameInformation, Point, PointInformation } from '../../api/types'
+import { api } from '../../api/ws-api'
 import './debug.css'
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, Switch } from '@fluentui/react-components'
 import { VEGETATION } from './translate'
-import { Window } from '../components/dialog'
-import { glUtilsDebug } from '../render/utils'
-import { wsApiCoreDebugSettings } from '../api/ws/core'
+import { Window } from '../../components/dialog'
+import { glUtilsDebug } from '../../render/utils'
+import { wsApiCoreDebugSettings } from '../../api/ws/core'
 
 // Types
 type DebugProps = {

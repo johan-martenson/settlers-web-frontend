@@ -1,12 +1,12 @@
 import * as d3 from 'd3'
 import React, { useState, useEffect, useRef } from 'react'
-import { Window } from './components/dialog'
+import { Window } from '../../components/dialog'
 import './statistics.css'
 import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
-import { ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerInformation } from './api/types'
-import { InventoryIcon } from './icons/icon'
-import { api } from './api/ws-api'
-import { ColorBox } from './components/utils'
+import { ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerInformation } from '../../api/types'
+import { InventoryIcon } from '../../icons/icon'
+import { api } from '../../api/ws-api'
+import { ColorBox } from '../../components/utils'
 
 // Types
 type GraphHover = {

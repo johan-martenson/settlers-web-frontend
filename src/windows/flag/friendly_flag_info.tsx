@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { FlagInformation, Nation } from './api/types'
+import { FlagInformation, Nation } from '../../api/types'
 import './friendly_flag_info.css'
-import { api } from './api/ws-api'
+import { api } from '../../api/ws-api'
 import { Button, Field, Tooltip } from '@fluentui/react-components'
-import { FlagIcon, InventoryIcon, UiIcon } from './icons/icon'
-import { ButtonRow, Window } from './components/dialog'
+import { FlagIcon, InventoryIcon, UiIcon } from '../../icons/icon'
+import { ButtonRow, Window } from '../../components/dialog'
 
 // Types
 type FriendlyFlagInfoProps = {

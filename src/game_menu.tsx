@@ -87,7 +87,7 @@ const GameMenu = ({
     }, [])
 
     return (
-        <Drawer type='overlay' separator open={isOpen} onOpenChange={onClose} onWheel={(event) => event.stopPropagation()}>
+        <Drawer type='overlay' separator open={isOpen} onOpenChange={onClose} onWheel={(event: React.WheelEvent) => event.stopPropagation()}>
             <DrawerHeader>
                 <DrawerHeaderTitle
                     action={

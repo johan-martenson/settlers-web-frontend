@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ButtonRow, Window } from './components/dialog'
-import { Point, Size, WorkerId } from './api/types'
-import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, STANDARD_HEIGHT } from './render/constants'
-import { GameCanvas, View } from './render/game_render'
+import { ButtonRow, Window } from '../../components/dialog'
+import { Point, Size, WorkerId } from '../../api/types'
+import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, STANDARD_HEIGHT } from '../../render/constants'
+import { GameCanvas, View } from '../../render/game_render'
 import './follow.css'
 import { Button } from '@fluentui/react-components'
-import { animator } from './utils/animator'
-import { calcTranslation } from './render/utils'
-import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from './utils'
-import { MoveUpdate, api } from './api/ws-api'
+import { animator } from '../../utils/animator'
+import { calcTranslation } from '../../render/utils'
+import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../../utils'
+import { MoveUpdate, api } from '../../api/ws-api'
 
 // Types
 type FollowProps = {

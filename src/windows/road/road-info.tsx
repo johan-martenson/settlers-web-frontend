@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from "@fluentui/react-components"
-import { UiIcon } from "./icons/icon"
-import { Point, RoadId } from "./api/types"
-import { api } from "./api/ws-api"
+import { UiIcon } from "../../icons/icon"
+import { Point, RoadId } from "../../api/types"
+import { api } from "../../api/ws-api"
 import './road-info.css'
-import { ButtonRow, Window } from './components/dialog'
+import { ButtonRow, Window } from '../../components/dialog'
 
 // Types
 type RoadInfoProps = {

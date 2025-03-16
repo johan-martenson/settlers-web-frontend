@@ -85,6 +85,13 @@ function GameInit() {
         await api.connectAndWaitForConnection()
 
         const nextColor = getFreeColor(Array.from(api.players.values()))
+
+        if (nextColor === undefined) {
+            console.error(`No free colors available for the player. Can't join game`)
+
+            return
+        }
+
         const updatedPlayer = await api.updatePlayer(player.id, player.name, nextColor, player.nation)
 
         api.addPlayerToGame(gameId, player.id)

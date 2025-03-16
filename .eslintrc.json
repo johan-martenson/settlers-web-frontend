@@ -21,6 +21,7 @@
     "rules": {
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-for-in-array": "error",
-        "react/no-unused-prop-types": [2]
+        "react/no-unused-prop-types": [2],
+        "@typescript-eslint/no-unused-expressions": ["error", { "allowShortCircuit": true }]
     }
 }

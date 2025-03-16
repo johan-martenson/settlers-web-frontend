@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { HELP_PAGES, PageType } from './help_pages'
 import './guide.css'
 import { Button } from '@fluentui/react-components'
-import { Window } from './components/dialog'
+import { Window } from '../../components/dialog'
 
 // Types
 type GuideProps = {

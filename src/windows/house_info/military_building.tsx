@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { Button, Field, Tooltip } from '@fluentui/react-components'
-import { HouseInformation, Nation, SoldierType, isMaterial, rankToMaterial } from '../api/types'
-import { HouseIcon, InventoryIcon, UiIcon } from '../icons/icon'
+import { HouseInformation, Nation, SoldierType, isMaterial, rankToMaterial } from '../../api/types'
+import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
-import { api } from '../api/ws-api'
-import { ButtonRow, Window } from '../components/dialog'
-import { canBeUpgraded, isEvacuated } from '../api/utils'
-import { buildingPretty, soldierPretty } from '../pretty_strings'
+import { api } from '../../api/ws-api'
+import { ButtonRow, Window } from '../../components/dialog'
+import { canBeUpgraded, isEvacuated } from '../../api/utils'
+import { buildingPretty, soldierPretty } from '../../pretty_strings'
 
 // Types
 type MilitaryBuildingProps = {

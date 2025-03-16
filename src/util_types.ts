@@ -36,7 +36,7 @@ function keyToFastPoint(key: number): Point {
     return { x, y }
 }
 
-class PointFastIterator implements IterableIterator<Point> {
+/*class PointFastIterator implements IterableIterator<Point> {
     private pointFastSetIterator: IterableIterator<number>
 
     constructor(pointFastSetIterator: IterableIterator<number>) {
@@ -62,7 +62,7 @@ class PointFastIterator implements IterableIterator<Point> {
             }
         }
     }
-}
+}*/
 
 
 class PointSetFastIterator implements IterableIterator<Point> {
@@ -93,7 +93,7 @@ class PointSetFastIterator implements IterableIterator<Point> {
     }
 }
 
-class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
+/*class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
     private pointEntryFastIterator: IterableIterator<[number, T]>
 
     constructor(pointEntryFastIterator: IterableIterator<[number, T]>) {
@@ -110,7 +110,7 @@ class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
         if (result.done) {
             return {
                 done: true,
-                value: 1
+                value: undefined
             }
         }
 
@@ -121,7 +121,7 @@ class PointEntryFastIterator<T> implements IterableIterator<[Point, T]> {
             value: [keyToFastPoint(pointNumber), value]
         }
     }
-}
+}*/
 
 class PointSetFast implements IterableIterator<Point> {
     private pointSet: Set<number>
@@ -241,23 +241,39 @@ class PointMapFast<T> implements Map<Point, T> {
         return this.numberToPointMap.size
     }
 
-    [Symbol.iterator](): IterableIterator<[Point, T]> {
+    [Symbol.iterator](): MapIterator<[Point, T]> {
         return this.entries()
     }
 
-    entries(): IterableIterator<[Point, T]> {
-        return new PointEntryFastIterator(this.numberToPointMap.entries())
+    entries(): MapIterator<[Point, T]> {
+        return this.transformIterator(this.numberToPointMap.entries())
     }
 
-    keys(): IterableIterator<Point> {
-        return new PointFastIterator(this.numberToPointMap.keys())
+    keys(): MapIterator<Point> {
+        return this.transformIterator(this.numberToPointMap.keys())
     }
 
-    values(): IterableIterator<T> {
+    values(): MapIterator<T> {
         return this.numberToPointMap.values()
     }
 
     [Symbol.toStringTag]: string
+
+    private *transformIterator<K>(
+        iterator: IterableIterator<K>
+
+    // eslint-disable-next-line
+    ): MapIterator<any> {
+        for (const item of iterator) {
+            if (typeof item === "number") {
+                yield keyToFastPoint(item)
+            } else if (Array.isArray(item)) {
+                yield [keyToFastPoint(item[0]), item[1]]
+            } else {
+                yield item
+            }
+        }
+    }
 }
 
 export {

@@ -496,7 +496,7 @@ function surroundingPoints(point: Point): Point[] {
     ]
 }
 
-function getFreeColor(players: PlayerInformation[]): PlayerColor {
+function getFreeColor(players: PlayerInformation[]): PlayerColor | undefined {
     const colorsRemaining = new Set<PlayerColor>(PLAYER_COLORS)
 
     players.forEach(player => colorsRemaining.delete(player.color))

@@ -93,7 +93,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                                 onChange={(_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
                                     setCandidateTitle(data.value)
                                 }}
-                                onKeyDown={(event) => {
+                                onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
                                     if (event.key === 'Enter' && candidateTitle !== undefined) {
                                         api.setTitle(candidateTitle)
 

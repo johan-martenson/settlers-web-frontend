@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES } from './api/types'
+import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES } from '../../api/types'
 import './construction_info.css'
-import { ButtonRow, Window } from './components/dialog'
-import { api } from './api/ws-api'
-import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from './utils'
+import { ButtonRow, Window } from '../../components/dialog'
+import { api } from '../../api/ws-api'
+import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
-import { FlagIcon, HouseIcon } from './icons/icon'
-import { buildingPretty } from './pretty_strings'
+import { FlagIcon, HouseIcon } from '../../icons/icon'
+import { buildingPretty } from '../../pretty_strings'
 
 // Types
 type ConstructionInfoProps = {

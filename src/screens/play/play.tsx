@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import './App.css'
+import './play.css'
 import { ConstructionInfo } from '../../windows/construction/construction_info'
 import FriendlyFlagInfo from '../../windows/flag/friendly_flag_info'
 import GameMenu from './game_menu'

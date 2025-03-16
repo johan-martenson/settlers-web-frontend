@@ -247,7 +247,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     <Field label='Defenders from surrounding buildings'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
                             <Subtract16Filled
-                                onMouseEnter={() => setHover(`Decrease amount of defenders from surrounding buildings`)}
+                                onMouseEnter={() => setHover(`Fewer defenders from surrounding buildings`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setDefenseFromSurroundingBuildings(prev => Math.max(0, prev - 1))} />
                             <meter
@@ -258,7 +258,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <Add16Filled
-                                onMouseEnter={() => setHover(`Increase amount of defenders from surrounding buildings`)}
+                                onMouseEnter={() => setHover(`More defenders from surrounding buildings`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setDefenseFromSurroundingBuildings(prev => Math.min(10, prev + 1))} />
                         </div>
@@ -267,7 +267,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     <Field label='Soldiers available for attack'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
                             <Subtract16Filled
-                                onMouseEnter={() => setHover(`Decrease the amount of soldiers available for attacks`)}
+                                onMouseEnter={() => setHover(`Fewer soldiers available for attacks`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setSoldiersAvailableForAttack(prev => Math.max(0, prev - 1))} />
                             <meter
@@ -278,7 +278,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <Add16Filled
-                                onMouseEnter={() => setHover(`Increase the amount of soliders available for attacks`)}
+                                onMouseEnter={() => setHover(`More soliders available for attacks`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setSoldiersAvailableForAttack(prev => Math.min(10, prev + 1))} />
                         </div>
@@ -287,7 +287,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     <Field label='Populate military buildings far from border'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
                             <Subtract16Filled
-                                onMouseEnter={() => setHover(`Decrease population of military buildings far from the border`)}
+                                onMouseEnter={() => setHover(`Fewer soldiers far from the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateFarFromBorder(prev => Math.max(0, prev - 1))} />
                             <meter
@@ -298,7 +298,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <Add16Filled
-                                onMouseEnter={() => setHover(`Increase population of military buildings far from the border`)}
+                                onMouseEnter={() => setHover(`More soldiers far from the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateFarFromBorder(prev => Math.min(10, prev + 1))} />
                         </div>
@@ -307,7 +307,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     <Field label='Populate military buildings closer to border'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
                             <Subtract16Filled
-                                onMouseEnter={() => setHover(`Decrease population of military buildings closer to the border`)}
+                                onMouseEnter={() => setHover(`Fewer soldiers closer to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateCloserToBorder(prev => Math.max(0, prev - 1))} />
                             <meter
@@ -318,7 +318,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <Add16Filled
-                                onMouseEnter={() => setHover(`Increase population of military buildings closer to the border`)}
+                                onMouseEnter={() => setHover(`More soldiers closer to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateCloserToBorder(prev => Math.min(10, prev + 1))} />
                         </div>
@@ -327,7 +327,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     <Field label='Populate military buildings close to border'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
                             <Subtract16Filled
-                                onMouseEnter={() => setHover(`Decrease population of military buildings close to the border`)}
+                                onMouseEnter={() => setHover(`Fewer soldiers close to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateCloseToBorder(prev => Math.max(0, prev - 1))} />
                             <meter
@@ -338,7 +338,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <Add16Filled
-                                onMouseEnter={() => setHover(`Increase population of military buildings close to the border`)}
+                                onMouseEnter={() => setHover(`More soldiers close to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateCloseToBorder(prev => Math.min(10, prev + 1))} />
                         </div>

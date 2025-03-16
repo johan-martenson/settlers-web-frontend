@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Window } from './components/dialog'
+import { Window } from '../../components/dialog'
 import './transport_priority.css'
-import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from './api/types'
+import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from '../../api/types'
 import { Tooltip } from '@fluentui/react-components'
-import { InventoryIcon } from './icons/icon'
+import { InventoryIcon } from '../../icons/icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
-import { api } from './api/ws-api'
+import { api } from '../../api/ws-api'
 
 // Types
 type SetTransportPriorityProps = {

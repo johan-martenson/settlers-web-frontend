@@ -1,12 +1,12 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
-import { GameSpeed } from './api/types'
+import { GameSpeed } from '../../api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
 import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option, SelectionEvents, OptionOnSelectData } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
 import './game_menu.css'
-import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from './render/constants'
+import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from '../../render/constants'
 import { DEFAULT_VOLUME } from './play'
-import { api } from './api/ws-api'
+import { api } from '../../api/ws-api'
 
 // Types
 type GameMenuProps = {

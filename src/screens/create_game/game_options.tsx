@@ -1,7 +1,7 @@
 import React, { ChangeEvent } from 'react'
 import './game_options.css'
 import { Switch, Select, SelectOnChangeData, Field, SwitchOnChangeData } from '@fluentui/react-components'
-import { ResourceLevel } from './api/types'
+import { ResourceLevel } from '../../api/types'
 
 // Types
 type GameOptionsProps = {

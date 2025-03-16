@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button } from "@fluentui/react-components"
-import { ButtonRow, Window } from "./components/dialog"
-import { Point } from "./api/types"
+import { ButtonRow, Window } from "../../components/dialog"
+import { Point } from "../../api/types"
 import { useState } from "react"
 import './no_action_window.css'
 

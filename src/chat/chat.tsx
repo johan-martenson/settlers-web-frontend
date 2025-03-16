@@ -3,7 +3,7 @@ import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from 're
 import { api } from '../api/ws-api'
 import { ChatMessage, PlayerId, RoomId } from '../api/types'
 import './chat.css'
-import ExpandCollapseToggle from '../expand_collapse_toggle'
+import ExpandCollapseToggle from '../components/expand_collapse_toggle/expand_collapse_toggle'
 
 // Types
 type ChatBoxProps = {

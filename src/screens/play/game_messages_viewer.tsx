@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
-import ExpandCollapseToggle from './expand_collapse_toggle'
+import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import './game_messages_viewer.css'
-import { api } from './api/ws-api'
+import { api } from '../../api/ws-api'
 import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
-import { HouseId, Point, GameMessage, Nation, GameMessageId } from './api/types'
-import { HouseIcon, WorkerIcon } from './icons/icon'
-import { ShipIcon } from './icons/ship'
+import { HouseId, Point, GameMessage, Nation, GameMessageId } from '../../api/types'
+import { HouseIcon, WorkerIcon } from '../../icons/icon'
+import { ShipIcon } from '../../icons/ship'
 
 // Types
 type GameMessagesViewerProps = {

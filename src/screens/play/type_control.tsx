@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useReducer, useState } from 'react'
 import './type_control.css'
-import ExpandCollapseToggle from './expand_collapse_toggle'
-import { PointInformation, Point } from './api/types'
-import { api } from './api/ws-api'
+import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
+import { PointInformation, Point } from '../../api/types'
+import { api } from '../../api/ws-api'
 
 // Types
 export type Command = {

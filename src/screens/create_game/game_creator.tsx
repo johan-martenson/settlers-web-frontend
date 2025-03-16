@@ -4,10 +4,10 @@ import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
 import ManagePlayers from './manage_players'
-import { GameId, PlayerId, GameInformation } from './api/types'
-import { GameListener, api } from './api/ws-api'
-import { ChatBox } from './chat/chat'
-import { Center } from './components/center'
+import { GameId, PlayerId, GameInformation } from '../../api/types'
+import { GameListener, api } from '../../api/ws-api'
+import { ChatBox } from '../../chat/chat'
+import { Center } from '../../components/center'
 
 // Types
 type GameCreatorProps = {

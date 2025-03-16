@@ -1,13 +1,13 @@
 import React, { PropsWithChildren, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { FillInPlayerInformation } from './fill_in_player_information'
+import { FillInPlayerInformation } from './screens/start/fill_in_player_information'
 import './index.css'
-import { Lobby } from './lobby'
+import { Lobby } from './screens/lobby/lobby'
 import { FluentProvider, makeStyles, teamsDarkTheme, tokens } from '@fluentui/react-components'
 import { GameId, Nation, PlayerColor, PlayerId, PlayerInformation } from './api/types'
-import Play from './play'
+import Play from './screens/play/play'
 import { api } from './api/ws-api'
-import { GameCreator } from './game_creator'
+import { GameCreator } from './screens/create_game/game_creator'
 import { getFreeColor } from './utils'
 
 // Types

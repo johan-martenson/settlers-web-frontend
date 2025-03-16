@@ -1,10 +1,10 @@
 import React, { ChangeEvent, useCallback, useState } from 'react'
 import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Field, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem, Tooltip } from '@fluentui/react-components'
 import './player.css'
-import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation } from './api/types'
+import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation } from '../../api/types'
 import { MoreHorizontal20Regular } from '@fluentui/react-icons'
-import { WorkerIcon } from './icons/icon'
-import { nationPretty, colorPretty } from './pretty_strings'
+import { WorkerIcon } from '../../icons/icon'
+import { nationPretty, colorPretty } from '../../pretty_strings'
 
 // Types
 type PlayerProps = {

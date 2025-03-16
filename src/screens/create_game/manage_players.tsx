@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import { Player } from './player'
 import './manage_players.css'
-import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId, GameInformation } from './api/types'
-import { GameListener, api } from './api/ws-api'
+import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId, GameInformation } from '../../api/types'
+import { GameListener, api } from '../../api/ws-api'
 
 // Types
 export type PlayerCandidateType = {

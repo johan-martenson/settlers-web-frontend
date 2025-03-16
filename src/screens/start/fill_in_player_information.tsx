@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Label, Input, Button, InputOnChangeData } from '@fluentui/react-components'
 import './fill_in_player_information.css'
-import { Center } from './components/center'
+import { Center } from '../../components/center'
 
 // Types
 type FillInPlayerInformationProps = {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
-import ExpandCollapseToggle from '../expand_collapse_toggle'
+import ExpandCollapseToggle from '../components/expand_collapse_toggle/expand_collapse_toggle'
 import './music_player.css'
 import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons'
 

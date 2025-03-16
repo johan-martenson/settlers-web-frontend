@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import MapInformationCard from './map_information_card'
 import './map_list.css'
-import { MapInformation } from './api/types'
-import { api } from './api/ws-api'
+import { MapInformation } from '../../api/types'
+import { api } from '../../api/ws-api'
 
 // Types
 type MapListProps = {

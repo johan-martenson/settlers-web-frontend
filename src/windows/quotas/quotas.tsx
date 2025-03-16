@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { HouseIcon } from './icons/icon'
+import { HouseIcon } from '../../icons/icon'
 import './quotas.css'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { Nation } from './api/types'
+import { Nation } from '../../api/types'
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
-import { api } from './api/ws-api'
-import { AmountBar } from './amount_bar'
-import { Window } from './components/dialog'
+import { api } from '../../api/ws-api'
+import { AmountBar } from '../../amount_bar'
+import { Window } from '../../components/dialog'
 
 // Types
 type QuotasProps = {

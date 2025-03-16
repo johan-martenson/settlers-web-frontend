@@ -9,8 +9,8 @@ import {
     TableHeaderCell
 } from '@fluentui/react-components'
 import './game_list.css'
-import { GameId, GameInformation } from './api/types'
-import { api } from './api/ws-api'
+import { GameId, GameInformation } from '../../api/types'
+import { api } from '../../api/ws-api'
 
 // Types
 type GameListProps = {

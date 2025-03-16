@@ -1,5 +1,5 @@
 import { Point } from "../api/types"
-import { Dimension } from "../assets"
+import { Dimension } from "../assets/assets"
 
 // Types
 type UniformName = string

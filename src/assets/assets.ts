@@ -1,6 +1,6 @@
-import { loadImageNg } from './utils/utils'
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, StoneAmount, StoneType, TreeSize, TreeType, WildAnimalType, WorkerAction, WorkerType } from './api/types'
-import { UiIconType } from './icons/icon'
+import { loadImageNg } from '../utils/utils'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, StoneAmount, StoneType, TreeSize, TreeType, WildAnimalType, WorkerAction, WorkerType } from '../api/types'
+import { UiIconType } from '../icons/icon'
 
 // Types
 export type Dimension = {

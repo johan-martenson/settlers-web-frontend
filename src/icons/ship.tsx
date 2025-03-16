@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { Direction } from '../api/types'
-import { Dimension, shipImageAtlas } from '../assets'
+import { Dimension, shipImageAtlas } from '../assets/assets'
 import { SHADOW_COLOR } from './icon'
 
 // Types

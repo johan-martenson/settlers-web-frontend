@@ -9,7 +9,7 @@ import { MilitaryBuilding } from './military_building'
 import { api } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
 import { houseIsReady, isMilitaryBuilding } from '../api/utils'
-import { MATERIAL_FIRST_UPPERCASE } from '../pretty_strings'
+import { buildingPretty, MATERIAL_FIRST_UPPERCASE } from '../pretty_strings'
 
 // Types
 type HouseInfoProps = {
@@ -105,7 +105,13 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoP
     const [hoverInfo, setHoverInfo] = useState<string>()
 
     return (
-        <Window className='house-info' heading={'Planned ' + house.type} onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
+        <Window
+            className='house-info'
+            heading={`Planned ${buildingPretty(house.type)}`}
+            onClose={onClose}
+            onRaise={onRaise}
+            hoverInfo={hoverInfo}
+        >
             <HouseIcon
                 houseType={house.type}
                 nation={nation}
@@ -131,7 +137,12 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoP
 
 const EnemyHouseInfo = ({ house, nation, onClose, onRaise }: EnemyHouseInfoProps) => {
     return (
-        <Window className='house-info' onClose={onClose} heading={`Enemy building: ${house.type}`} onRaise={onRaise}>
+        <Window
+            className='house-info'
+            onClose={onClose}
+            heading={`Enemy building: ${buildingPretty(house.type)}`}
+            onRaise={onRaise}
+        >
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
         </Window>
     )
@@ -144,7 +155,12 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
     const availableAttackers = house.availableAttackers ?? 0
 
     return (
-        <Window className='house-info' onClose={onClose} heading={`Military enemy building: ${house.type}`} onRaise={onRaise}>
+        <Window
+            className='house-info'
+            onClose={onClose}
+            heading={`Military enemy building: ${buildingPretty(house.type)}`}
+            onRaise={onRaise}
+        >
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
             {house.availableAttackers === 0 && <div>No attack possible</div>}
@@ -178,7 +194,12 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
 
 const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHouseInfo) => {
     return (
-        <Window className='house-info' heading={house.type} onClose={onClose} onRaise={onRaise}>
+        <Window
+            className='house-info'
+            heading={buildingPretty(house.type)}
+            onClose={onClose}
+            onRaise={onRaise}
+        >
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
             <div>Under construction ...</div>
             <meter max={100} value={house.constructionProgress} />
@@ -232,7 +253,13 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
     const [hoverInfo, setHoverInfo] = useState<string>()
 
     return (
-        <Window className='house-info production-building' onClose={onClose} heading={house.type} hoverInfo={hoverInfo} onRaise={onRaise}>
+        <Window
+            className='house-info production-building'
+            onClose={onClose}
+            heading={buildingPretty(house.type)}
+            hoverInfo={hoverInfo}
+            onRaise={onRaise}
+        >
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 

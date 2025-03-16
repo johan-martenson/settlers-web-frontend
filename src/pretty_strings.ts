@@ -1,4 +1,4 @@
-import { Material, Nation, PlayerColor, SoldierType } from "./api/types"
+import { AnyBuilding, Material, Nation, PlayerColor, SoldierType } from "./api/types"
 
 const MATERIAL_FIRST_UPPERCASE = new Map<Material, string>()
 
@@ -146,6 +146,42 @@ const COLOR_PRETTY = new Map<PlayerColor, string>([
     ['YELLOW', 'Yellow']
 ])
 
+const BUILDINGS_PRETTY = new Map<AnyBuilding, string>([
+    ['ForesterHut', 'Forester hut'],
+    ['Woodcutter', 'Woodcutter'],
+    ['Well', 'Well'],
+    ['Quarry', 'Quarry'],
+    ['Barracks', 'Barracks'],
+    ['GuardHouse', 'Guard house'],
+    ['HunterHut', 'Hunter hut'],
+    ['Fishery', 'Fishery'],
+    ['GoldMine', 'Gold mine'],
+    ['IronMine', 'Iron mine'],
+    ['CoalMine', 'Coal mine'],
+    ['GraniteMine', 'Granite mine'],
+    ['LookoutTower', 'Lookout tower'],
+
+    ['Sawmill', 'Sawmill'],
+    ['Bakery', 'Bakery'],
+    ['WatchTower', 'Watch tower'],
+    ['Armory', 'Armory'],
+    ['Mill', 'Mill'],
+    ['SlaughterHouse', 'Slaughter house'],
+    ['Catapult', 'Catapult'],
+    ['Mint', 'Mint'],
+    ['Brewery', 'Brewery'],
+    ['Armory', 'Armory'],
+    ['IronSmelter', 'Iron smelter'],
+    ['Metalworks', 'Metalworks'],
+    ['Shipyard', 'Shipyard'],
+    ['Storehouse', 'Storehouse'],
+
+    ['Farm', 'Farm'],
+    ['PigFarm', 'Pig farm'],
+    ['DonkeyFarm', 'Donkey farm'],
+    ['Fortress', 'Fortress'],
+])
+
 function nationPretty(nation: Nation): string {
     return NATION_PRETTY.get(nation) ?? ''
 }
@@ -168,10 +204,15 @@ function soldierPretty(soldierType: SoldierType): string {
     }
 }
 
+function buildingPretty(building: AnyBuilding): string {
+    return BUILDINGS_PRETTY.get(building) ?? building
+}
+
 export {
     MATERIAL_FIRST_UPPERCASE,
     MATERIAL_LABELS,
     nationPretty,
     colorPretty,
-    soldierPretty
+    soldierPretty,
+    buildingPretty
 }

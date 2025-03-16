@@ -6,7 +6,7 @@ import './house_info.css'
 import { api } from '../api/ws-api'
 import { ButtonRow, Window } from '../components/dialog'
 import { canBeUpgraded, isEvacuated } from '../api/utils'
-import { soldierPretty } from '../pretty_strings'
+import { buildingPretty, soldierPretty } from '../pretty_strings'
 
 // Types
 type MilitaryBuildingProps = {
@@ -38,7 +38,13 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
     // TODO: show resources when upgrading. Show text 'is upgrading...'
 
     return (
-        <Window className='house-info' heading={house.type} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
+        <Window
+            className='house-info'
+            heading={buildingPretty(house.type)}
+            onClose={onClose}
+            hoverInfo={hoverInfo}
+            onRaise={onRaise}
+        >
 
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 

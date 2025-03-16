@@ -1,6 +1,7 @@
 Todo 1.0
 ========
 
+0. Shouldn't be able to build mine on grass
 1. Animation of houses
 2. More sounds
 3. Planer

@@ -102,14 +102,25 @@ const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseIn
 }
 
 const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoProps) => {
-    return (
-        <Window className='house-info' heading={'Planned ' + house.type} onClose={onClose} onRaise={onRaise}>
-            <HouseIcon houseType={house.type} nation={nation} drawShadow />
-            <Button onClick={() => {
-                api.removeBuilding(house.id)
+    const [hoverInfo, setHoverInfo] = useState<string>()
 
-                onClose()
-            }}
+    return (
+        <Window className='house-info' heading={'Planned ' + house.type} onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
+            <HouseIcon
+                houseType={house.type}
+                nation={nation}
+                drawShadow
+                onMouseEnter={() => setHoverInfo(`Planned ${house.type}`)}
+                onMouseLeave={() => setHoverInfo(undefined)}
+            />
+            <Button
+                onClick={() => {
+                    api.removeBuilding(house.id)
+
+                    onClose()
+                }}
+                onMouseEnter={() => setHoverInfo('Tear down')}
+                onMouseLeave={() => setHoverInfo(undefined)}
             >
                 <UiIcon type='DESTROY_BUILDING' />
                 Destroy

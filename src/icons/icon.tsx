@@ -30,6 +30,8 @@ type HouseProps = {
     houseType: AnyBuilding
     scale?: number
     drawShadow?: boolean
+    onMouseEnter?: () => void
+    onMouseLeave?: () => void
 }
 
 type UiIconProps = {
@@ -185,7 +187,7 @@ const WorkerIcon = ({
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }
 
-const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false }: HouseProps) => {
+const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEnter = undefined, onMouseLeave = undefined }: HouseProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
     const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
@@ -288,7 +290,21 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false }: HousePr
         })()
     }, [nation, houseType, scale, drawShadow, sourceImage])
 
-    return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
+    return <canvas
+    ref={canvasRef}
+    width={dimension.width * scale}
+    height={dimension.height * scale}
+    onMouseEnter={() => {
+        if (onMouseEnter) {
+            onMouseEnter()
+        }
+    }}
+    onMouseLeave={() => {
+        if (onMouseLeave) {
+            onMouseLeave()
+        }
+    }}
+    />
 }
 
 const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false }: InventoryIconProps) => {
@@ -406,14 +422,12 @@ const FlagIcon = ({ type, nation, animate = false, scale = 1, color = 'BLUE', dr
 
     const draw = useCallback(() => {
         const canvas = canvasRef.current
-
         if (!canvas) {
             console.error('No canvas ref set')
             return
         }
 
         const context = canvas.getContext('2d')
-
         if (!context) {
             console.error('No context')
             return
@@ -427,14 +441,11 @@ const FlagIcon = ({ type, nation, animate = false, scale = 1, color = 'BLUE', dr
         )
 
         if (!drawArray) {
-            console.error('No drawing information')
-            console.error([nation, color, type])
+            console.error('No drawing information', [nation, color, type])
             return
         }
 
-        const draw = drawArray[0]
-        const shadow = drawArray[1]
-
+        const [draw, shadow] = drawArray
         const width = draw.width * scale
         const height = draw.height * scale
 
@@ -485,14 +496,16 @@ const FlagIcon = ({ type, nation, animate = false, scale = 1, color = 'BLUE', dr
                 }
 
                 setSourceImage(imageBitmap)
+            } else {
+                console.error('No image available')
             }
 
-            const dimension = drawShadow
+            const newDimension = drawShadow
                 ? flagAnimations.getSizeWithShadow(nation, type)
                 : flagAnimations.getSize(nation, type)
 
-            if (dimension) {
-                setDimension(dimension)
+            if (newDimension) {
+                setDimension(newDimension)
             } else {
                 console.error('Failed to set dimension')
             }
@@ -508,7 +521,13 @@ const FlagIcon = ({ type, nation, animate = false, scale = 1, color = 'BLUE', dr
             }, ANIMATION_INTERVAL)
             return () => clearInterval(intervalId)
         }
-    }, [animate])
+    }, [animate, draw, animationIndexHolder])
+
+    useEffect(() => {
+        if (!animate && sourceImage && dimension.width > 0 && dimension.height > 0) {
+            draw() // Ensure the flag is drawn when image and dimensions are ready
+        }
+    }, [sourceImage, dimension, draw])
 
     return <canvas
         ref={canvasRef}

@@ -95,9 +95,18 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                         }}
                 >
                     {Array.from(constructionOptions.entries(), ([key, value], index) => {
-                        return <Tab value={key} key={index}>{value}</Tab>
+                        return <Tab
+                            value={key}
+                            key={index}
+                            onMouseEnter={() => setHoverInfo(`Construct ${value}`)}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        >{value}</Tab>
                     })}
-                    <Tab value={'Monitor'}>
+                    <Tab
+                        value={'Monitor'}
+                        onMouseEnter={() => setHoverInfo('Create a monitor')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
                         Monitor
                     </Tab>
                 </TabList>
@@ -148,7 +157,12 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                             }}
                     >
                         {Array.from(houseOptions.entries(), ([key, value]) => {
-                            return <Tab value={key} key={value}>{value}</Tab>
+                            return <Tab
+                                value={key}
+                                key={value}
+                                onMouseEnter={() => setHoverInfo(`Place ${key} building`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >{value}</Tab>
                         })}
                     </TabList>
                 }
@@ -242,7 +256,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                     </ButtonRow>
                 }
             </div>
-        </Window>
+        </Window >
     )
 }
 

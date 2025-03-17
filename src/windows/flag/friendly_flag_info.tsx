@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { FlagInformation, Nation } from '../../api/types'
 import './friendly_flag_info.css'
 import { api } from '../../api/ws-api'
-import { Button, Field, Tooltip } from '@fluentui/react-components'
+import { Button, Field } from '@fluentui/react-components'
 import { FlagIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import { ButtonRow, Window } from '../../components/dialog'
 
@@ -37,66 +37,68 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
     return (
         <Window className='friendly-flag-info' heading='Flag' onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
             <div className='flag-information'>
-                <FlagIcon type={flag.type} nation={flag.nation} scale={2.0} color={flag.color} animate drawShadow />
+                <FlagIcon
+                    type={flag.type}
+                    nation={flag.nation}
+                    scale={2.0}
+                    color={flag.color}
+                    animate
+                    drawShadow
+                    onMouseEnter={() => setHoverInfo('Flag')}
+                    onMouseLeave={() => setHoverInfo(undefined)}
+                />
 
                 <ButtonRow>
-                    <Tooltip content={'Remove flag'} relationship='label' withArrow>
-                        <Button
-                            onClick={async () => {
-                                api.removeFlag(flag.id)
+                    <Button
+                        onClick={async () => {
+                            api.removeFlag(flag.id)
 
-                                onClose()
-                            }}
-                            onMouseEnter={() => setHoverInfo('Remove flag')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            Remove
-                        </Button>
-                    </Tooltip>
+                            onClose()
+                        }}
+                        onMouseEnter={() => setHoverInfo('Remove flag')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        Remove
+                    </Button>
 
-                    <Tooltip content='Build road' relationship='label' withArrow>
-                        <Button
-                            onClick={() => {
-                                onStartNewRoad(flag)
+                    <Button
+                        onClick={() => {
+                            onStartNewRoad(flag)
 
-                                onClose()
-                            }}
-                            onMouseEnter={() => setHoverInfo('Build road')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >Build road</Button>
-                    </Tooltip>
+                            onClose()
+                        }}
+                        onMouseEnter={() => setHoverInfo('Build road')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >Build road</Button>
 
-                    <Tooltip content={'Call geologist'} relationship='label' withArrow>
-                        <Button
-                            onClick={async () => {
-                                api.callGeologist(flag)
+                    <Button
+                        onClick={async () => {
+                            api.callGeologist(flag)
 
-                                onClose()
-                            }}
-                            onMouseEnter={() => setHoverInfo('Call geologist')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            <div className='friendly-flag-info-button-icon-and-label'>
-                                <UiIcon type='GEOLOGIST' />
-                            </div>
-                        </Button>
-                    </Tooltip>
+                            onClose()
+                        }}
+                        onMouseEnter={() => setHoverInfo('Call geologist')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <div className='friendly-flag-info-button-icon-and-label'>
+                            <UiIcon type='GEOLOGIST' />
+                        </div>
+                    </Button>
 
-                    <Tooltip content={'Call scout'} relationship='label' withArrow>
-                        <Button
-                            onClick={async () => {
-                                api.callScout(flag)
+                    <Button
+                        onClick={async () => {
+                            api.callScout(flag)
 
-                                onClose()
-                            }}
-                            onMouseEnter={() => setHoverInfo('Call scout')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            <div className='friendly-flag-info-button-icon-and-label'>
-                                <InventoryIcon material='SCOUT' nation={nation} />
-                            </div>
-                        </Button>
-                    </Tooltip>
+                            onClose()
+                        }}
+                        onMouseEnter={() => setHoverInfo('Call scout')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <div className='friendly-flag-info-button-icon-and-label'>
+                            <InventoryIcon material='SCOUT' nation={nation} />
+                        </div>
+                    </Button>
+
                 </ButtonRow>
 
                 {flag.stackedCargo &&

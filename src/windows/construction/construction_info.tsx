@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES } from '../../api/types'
+import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES, SmallBuilding } from '../../api/types'
 import './construction_info.css'
 import { ButtonRow, Window } from '../../components/dialog'
 import { api } from '../../api/ws-api'
-import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils/utils'
+import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildMine, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils/utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon } from '../../icons/icon'
 import { buildingPretty } from '../../pretty_strings'
@@ -20,6 +20,11 @@ type ConstructionInfoProps = {
 }
 
 type SizeLowerCase = 'small' | 'medium' | 'large'
+
+// Constancs
+const MINES: SmallBuilding[] = ['GoldMine', 'IronMine', 'CoalMine', 'GraniteMine']
+const MINES_SET = new Set<SmallBuilding>(MINES)
+const SMALL_BUILDINGS_EXCEPT_MINES: SmallBuilding[] = SMALL_HOUSES.filter(house => !MINES_SET.has(house))
 
 // TODO: add monitor tab
 
@@ -51,7 +56,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
             return () => api.removeAvailableConstructionListener(point, listener)
         }, [point])
 
-    if (canBuildHouse(point)) {
+    if (canBuildHouse(point) || canBuildMine(point)) {
         constructionOptions.set('Buildings', 'Buildings')
     }
 
@@ -61,7 +66,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
 
     const houseOptions = new Map<SizeLowerCase, string>()
 
-    if (canBuildSmallHouse(point)) {
+    if (canBuildSmallHouse(point) || canBuildMine(point)) {
         houseOptions.set('small', 'Small')
     }
 
@@ -171,26 +176,25 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                 {selected === 'Buildings' && buildingSizeSelected === 'small' &&
                     <div className='dialog-section'>
                         <div className='house-construction-buttons'>
-                            {SMALL_HOUSES.map((house) => {
+                            {(canBuildMine(point) ? MINES : SMALL_BUILDINGS_EXCEPT_MINES).map((house) => {
                                 const prettyHouse = buildingPretty(house)
 
-                                return (<Tooltip content={prettyHouse} relationship='label' withArrow key={house}>
-                                    <div
-                                        className='ConstructionItem'
-                                        onClick={async () => {
-                                            console.info('Creating house')
-                                            api.placeHouse(house, point)
+                                return (<div
+                                    key={house}
+                                    className='ConstructionItem'
+                                    onClick={async () => {
+                                        console.info('Creating house')
+                                        api.placeHouse(house, point)
 
-                                            onClose()
-                                        }}
-                                        onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
-                                        onMouseLeave={() => setHoverInfo(undefined)}
-                                    >
-                                        <div className='house-construction-button'>
-                                            <HouseIcon nation={nation} houseType={house} drawShadow />
-                                        </div>
+                                        onClose()
+                                    }}
+                                    onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    <div className='house-construction-button'>
+                                        <HouseIcon nation={nation} houseType={house} drawShadow />
                                     </div>
-                                </Tooltip>)
+                                </div>)
                             })}
                         </div>
                     </div>

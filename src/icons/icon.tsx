@@ -46,6 +46,8 @@ type FlagIconProps = {
     scale?: number
     color?: PlayerColor
     drawShadow?: boolean
+    onMouseEnter?: () => void
+    onMouseLeave?: () => void
 }
 
 type AnimationIndexHolder = {
@@ -291,19 +293,19 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
     }, [nation, houseType, scale, drawShadow, sourceImage])
 
     return <canvas
-    ref={canvasRef}
-    width={dimension.width * scale}
-    height={dimension.height * scale}
-    onMouseEnter={() => {
-        if (onMouseEnter) {
-            onMouseEnter()
-        }
-    }}
-    onMouseLeave={() => {
-        if (onMouseLeave) {
-            onMouseLeave()
-        }
-    }}
+        ref={canvasRef}
+        width={dimension.width * scale}
+        height={dimension.height * scale}
+        onMouseEnter={() => {
+            if (onMouseEnter) {
+                onMouseEnter()
+            }
+        }}
+        onMouseLeave={() => {
+            if (onMouseLeave) {
+                onMouseLeave()
+            }
+        }}
     />
 }
 
@@ -412,7 +414,7 @@ const UiIcon = ({ type, scale = 1 }: UiIconProps) => {
     />
 }
 
-const FlagIcon = ({ type, nation, animate = false, scale = 1, color = 'BLUE', drawShadow = false }: FlagIconProps) => {
+const FlagIcon = ({ type, nation, animate = false, scale = 1, color = 'BLUE', drawShadow = false, onMouseEnter = undefined, onMouseLeave = undefined }: FlagIconProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
     // eslint-disable-next-line
@@ -534,6 +536,8 @@ const FlagIcon = ({ type, nation, animate = false, scale = 1, color = 'BLUE', dr
         width={dimension.width * scale}
         height={dimension.height * scale}
         style={{ width: dimension.width * scale, height: dimension.height * scale }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
     />
 }
 

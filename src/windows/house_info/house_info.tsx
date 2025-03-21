@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button, Field, Tooltip } from '@fluentui/react-components'
+import { Button, Field } from '@fluentui/react-components'
 import { PauseRegular, PlayRegular } from '@fluentui/react-icons'
 import { AttackType, HouseInformation, Nation, PlayerId, isMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
@@ -9,7 +9,7 @@ import { MilitaryBuilding } from './military_building'
 import { api } from '../../api/ws-api'
 import { ButtonRow, Window } from '../../components/dialog'
 import { houseIsReady, isMilitaryBuilding } from '../../api/utils'
-import { buildingPretty, MATERIAL_FIRST_UPPERCASE } from '../../pretty_strings'
+import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../pretty_strings'
 
 // Types
 type HouseInfoProps = {
@@ -129,7 +129,6 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoP
                 onMouseLeave={() => setHoverInfo(undefined)}
             >
                 <UiIcon type='DESTROY_BUILDING' />
-                Destroy
             </Button>
         </Window>
     )
@@ -193,16 +192,28 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
 }
 
 const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHouseInfo) => {
+    const [hoverInfo, setHoverInfo] = useState<string>()
+
     return (
         <Window
             className='house-info'
-            heading={buildingPretty(house.type)}
+            heading={`${buildingPretty(house.type)}`}
             onClose={onClose}
             onRaise={onRaise}
+            hoverInfo={hoverInfo}
         >
-            <HouseIcon houseType={house.type} nation={nation} drawShadow />
+            <HouseIcon
+                houseType={house.type}
+                nation={nation}
+                drawShadow
+                onMouseEnter={() => setHoverInfo(buildingPretty(house.type))}
+                onMouseLeave={() => setHoverInfo(undefined)} />
             <div>Under construction ...</div>
-            <meter max={100} value={house.constructionProgress} />
+            <meter
+                max={100}
+                value={house.constructionProgress}
+                onMouseEnter={() => setHoverInfo(`${house.constructionProgress} / 100`)}
+                onMouseLeave={() => setHoverInfo(undefined)} />
 
             {Object.keys(house.resources)
                 .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
@@ -219,14 +230,25 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
 
                                     return <div key={material}>
                                         {Array.from({ length: has }, () => 1).map((value, index) => (
-                                            <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
-                                                <span><InventoryIcon material={material} nation={nation} key={index} inline /></span>
-                                            </Tooltip>
+                                            <span key={index}><InventoryIcon
+                                                material={material}
+                                                nation={nation}
+                                                key={index}
+                                                inline
+                                                onMouseEnter={() => setHoverInfo(materialPretty(material))}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            /></span>
                                         ))}
                                         {Array.from({ length: gap }, () => 1).map((value, index) => (
-                                            <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
-                                                <span><InventoryIcon material={material} nation={nation} key={index} inline missing /></span>
-                                            </Tooltip>
+                                            <span key={index + 10}><InventoryIcon
+                                                material={material}
+                                                nation={nation}
+                                                key={index}
+                                                inline
+                                                missing
+                                                onMouseEnter={() => setHoverInfo(materialPretty(material))}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            /></span>
                                         ))}
                                     </div>
                                 }
@@ -236,14 +258,16 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
                 </Field>
             }
 
-            <Button onClick={() => {
-                api.removeBuilding(house.id)
+            <Button
+                onClick={() => {
+                    api.removeBuilding(house.id)
 
-                onClose()
-            }}
+                    onClose()
+                }}
+                onMouseEnter={() => setHoverInfo('Tear down')}
+                onMouseLeave={() => setHoverInfo(undefined)}
             >
                 <UiIcon type='DESTROY_BUILDING' />
-                Destroy
             </Button>
         </Window>
     )
@@ -261,7 +285,13 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
             onRaise={onRaise}
         >
 
-            <HouseIcon houseType={house.type} nation={nation} drawShadow />
+            <HouseIcon
+                houseType={house.type}
+                nation={nation}
+                drawShadow
+                onMouseEnter={() => setHoverInfo(buildingPretty(house.type))}
+                onMouseLeave={() => setHoverInfo(undefined)}
+            />
 
             <div className='production-info'>
 
@@ -282,24 +312,22 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
 
                                         return <div key={material}>
                                             {Array.from({ length: has }, () => 1).map(
-                                                (value, index) => <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
-                                                    <span
-                                                        onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
-                                                        onMouseLeave={() => setHoverInfo(undefined)}
-                                                    >
-                                                        <InventoryIcon material={material} nation={nation} key={index} inline />
-                                                    </span>
-                                                </Tooltip>
+                                                (value, index) => <span
+                                                    key={index}
+                                                    onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
+                                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                                >
+                                                    <InventoryIcon material={material} nation={nation} key={index} inline />
+                                                </span>
                                             )}
                                             {Array.from({ length: gap }, () => 1).map(
-                                                (value, index) => <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(material) ?? ''} relationship='label' withArrow key={index}>
-                                                    <span
-                                                        onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
-                                                        onMouseLeave={() => setHoverInfo(undefined)}
-                                                    >
-                                                        <InventoryIcon material={material} nation={nation} key={index + 10} inline missing />
-                                                    </span>
-                                                </Tooltip>
+                                                (value, index) => <span
+                                                    key={index + 10}
+                                                    onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
+                                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                                >
+                                                    <InventoryIcon material={material} nation={nation} key={index + 10} inline missing />
+                                                </span>
                                             )}
                                         </div>
                                     }
@@ -316,9 +344,7 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                             onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(producedMaterial))}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            <Tooltip content={MATERIAL_FIRST_UPPERCASE.get(producedMaterial) ?? ''} relationship='label' withArrow >
-                                <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
-                            </Tooltip>
+                            <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
                         </div>
                     ))}
                     </div>
@@ -328,40 +354,34 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
 
             <ButtonRow>
                 {house.productionEnabled &&
-                    <Tooltip content={'Pause production'} relationship='label' withArrow>
-                        <Button
-                            onClick={() => api.pauseProductionForHouse(house.id)}
-                            onMouseEnter={() => setHoverInfo('Pause production')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        ><PauseRegular />
-                        </Button>
-                    </Tooltip>
+                    <Button
+                        onClick={() => api.pauseProductionForHouse(house.id)}
+                        onMouseEnter={() => setHoverInfo('Pause production')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    ><PauseRegular />
+                    </Button>
                 }
 
                 {!house.productionEnabled &&
-                    <Tooltip content={'Resume production'} relationship='label' withArrow>
-                        <Button
-                            onClick={() => api.resumeProductionForHouse(house.id)}
-                            onMouseEnter={() => setHoverInfo('Resume production')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            <PlayRegular />
-                        </Button>
-                    </Tooltip>
-                }
-
-                <Tooltip content={'Remove'} relationship='label' withArrow>
-                    <Button onClick={() => {
-                        api.removeBuilding(house.id)
-
-                        onClose()
-                    }}
-                        onMouseEnter={() => setHoverInfo('Tear down')}
+                    <Button
+                        onClick={() => api.resumeProductionForHouse(house.id)}
+                        onMouseEnter={() => setHoverInfo('Resume production')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='DESTROY_BUILDING' />
+                        <PlayRegular />
                     </Button>
-                </Tooltip>
+                }
+
+                <Button onClick={() => {
+                    api.removeBuilding(house.id)
+
+                    onClose()
+                }}
+                    onMouseEnter={() => setHoverInfo('Tear down')}
+                    onMouseLeave={() => setHoverInfo(undefined)}
+                >
+                    <UiIcon type='DESTROY_BUILDING' />
+                </Button>
             </ButtonRow>
         </Window >
     )

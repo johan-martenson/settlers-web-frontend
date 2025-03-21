@@ -42,10 +42,18 @@ const RoadInfo = ({ roadId, onStartMonitor, onClose, onRaise }: RoadInfoProps) =
                     }
                 }}
             >
-                <Tab value='ROAD'>
+                <Tab
+                    value='ROAD'
+                    onMouseEnter={() => setHoverInfo('Manage road')}
+                    onMouseLeave={() => setHoverInfo(undefined)}
+                >
                     Road
                 </Tab>
-                <Tab value='MONITOR'>
+                <Tab
+                    value='MONITOR'
+                    onMouseEnter={() => setHoverInfo('Start monitoring')}
+                    onMouseLeave={() => setHoverInfo(undefined)}
+                >
                     Monitor
                 </Tab>
             </TabList>
@@ -86,7 +94,7 @@ const RoadInfo = ({ roadId, onStartMonitor, onClose, onRaise }: RoadInfoProps) =
                 </ButtonRow>
             }
 
-        </Window>
+        </Window >
     )
 }
 

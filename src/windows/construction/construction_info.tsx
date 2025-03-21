@@ -4,7 +4,7 @@ import './construction_info.css'
 import { ButtonRow, Window } from '../../components/dialog'
 import { api } from '../../api/ws-api'
 import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildMine, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils/utils'
-import { Button, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
+import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon } from '../../icons/icon'
 import { buildingPretty } from '../../pretty_strings'
 
@@ -35,7 +35,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<SizeLowerCase>('small')
     const [hoverInfo, setHoverInfo] = useState<string | undefined>()
 
-    const constructionOptions = new Map()
+    const constructionOptions = new Map<'Buildings' | 'FlagsAndRoads', string>()
     const constructionInitialSelection = canBuildHouse(point) ? 'Buildings' : 'FlagsAndRoads'
 
     useEffect(
@@ -104,7 +104,7 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                         return <Tab
                             value={key}
                             key={index}
-                            onMouseEnter={() => setHoverInfo(`Construct ${value}`)}
+                            onMouseEnter={() => setHoverInfo(`Construct ${value.toLowerCase()}`)}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >{value}</Tab>
                     })}
@@ -121,20 +121,18 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                     <div className='dialog-section'>
 
                         <ButtonRow>
-                            <Tooltip content={'Raise flag'} relationship='label' withArrow>
-                                <Button
-                                    onClick={() => {
-                                        console.info('Raising flag')
-                                        api.placeFlag(point)
+                            <Button
+                                onClick={() => {
+                                    console.info('Raising flag')
+                                    api.placeFlag(point)
 
-                                        onClose()
-                                    }}
-                                    onMouseEnter={() => setHoverInfo('Raise flag')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    <FlagIcon type='NORMAL' nation={nation} />
-                                </Button>
-                            </Tooltip>
+                                    onClose()
+                                }}
+                                onMouseEnter={() => setHoverInfo('Raise flag')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <FlagIcon type='NORMAL' nation={nation} />
+                            </Button>
 
                             {canBuildRoad(point) &&
                                 <Button
@@ -203,25 +201,25 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                 {selected === 'Buildings' && canBuildMediumHouse(point) && buildingSizeSelected === 'medium' &&
                     <div className='dialog-section'>
                         <div className='house-construction-buttons'>
-                            {MEDIUM_HOUSES.map((house) => {
+                            {MEDIUM_HOUSES.map(house => {
                                 const prettyHouse = buildingPretty(house)
 
-                                return (<Tooltip content={prettyHouse} relationship='label' withArrow key={house}>
-                                    <div className='ConstructionItem'
-                                        onClick={async () => {
-                                            console.info('Creating house')
-                                            api.placeHouse(house, point)
+                                return (<div
+                                    key={house}
+                                    className='ConstructionItem'
+                                    onClick={async () => {
+                                        console.info('Creating house')
+                                        api.placeHouse(house, point)
 
-                                            onClose()
-                                        }}
-                                        onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
-                                        onMouseLeave={() => setHoverInfo(undefined)}
-                                    >
-                                        <div className='house-construction-button'>
-                                            <HouseIcon nation={nation} houseType={house} drawShadow />
-                                        </div>
+                                        onClose()
+                                    }}
+                                    onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    <div className='house-construction-button'>
+                                        <HouseIcon nation={nation} houseType={house} drawShadow />
                                     </div>
-                                </Tooltip>)
+                                </div>)
 
                             })}
                         </div>
@@ -231,26 +229,25 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                 {selected === 'Buildings' && canBuildLargeHouse(point) && buildingSizeSelected === 'large' &&
                     <div className='dialog-section'>
                         <div className='house-construction-buttons'>
-                            {LARGE_HOUSES.filter(house => house !== 'Headquarter').map((house) => {
+                            {LARGE_HOUSES.filter(house => house !== 'Headquarter').map(house => {
                                 const prettyHouse = buildingPretty(house)
 
-                                return (<Tooltip content={prettyHouse} relationship='label' withArrow key={house}>
-                                    <div
-                                        className='ConstructionItem'
-                                        onClick={async () => {
-                                            console.info('Creating house')
-                                            api.placeHouse(house, point)
+                                return (<div
+                                    key={house}
+                                    className='ConstructionItem'
+                                    onClick={async () => {
+                                        console.info('Creating house')
+                                        api.placeHouse(house, point)
 
-                                            onClose()
-                                        }}
-                                        onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
-                                        onMouseLeave={() => setHoverInfo(undefined)}
-                                    >
-                                        <div className='house-construction-button'>
-                                            <HouseIcon nation={nation} houseType={house} drawShadow />
-                                        </div>
+                                        onClose()
+                                    }}
+                                    onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    <div className='house-construction-button'>
+                                        <HouseIcon nation={nation} houseType={house} drawShadow />
                                     </div>
-                                </Tooltip>)
+                                </div>)
                             })}
                         </div>
                     </div>

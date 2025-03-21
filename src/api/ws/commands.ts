@@ -1,5 +1,5 @@
 import { PointMap } from "../../utils/util_types"
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics, VegetationAsInt } from "../types"
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics, VegetationAsInt, StatisticsPerPlayer } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
@@ -43,6 +43,12 @@ export type IronBarQuotas = {
     armory: number
     metalworks: number
 }
+
+export type StatisticsReply = {
+    currentTime: number
+    players: StatisticsPerPlayer[]
+}
+
 
 type CreateNewGameOptions = {
     name: string
@@ -129,6 +135,8 @@ enum Command {
     StopDetailedMonitoring = 'STOP_DETAILED_MONITORING',
     GetGameStatistics = 'GET_PRODUCTION_STATISTICS',
     GetLandStatistics = 'GET_LAND_STATISTICS',
+    GetStatistics = 'GET_STATISTICS',
+    ListenToStatistics = 'LISTEN_TO_STATISTICS',
 
     // Player
     CreatePlayer = 'CREATE_PLAYER',
@@ -292,6 +300,14 @@ function upgradeHouse(houseId: HouseId): void {
  */
 function evacuateHouse(houseId: HouseId): void {
     sendWithOptions<{ houseId: HouseId }>(Command.EvacuateHouse, { houseId })
+}
+
+/**
+ * Retrieves statistics about the ongoing game for each player. Includes production, land owned, and inventory (inventory TBD).
+ * @returns {Promise<StatisticsReply>} Statistics about production, inventory (TBD), and land owned for each player
+ */
+async function getStatistics(): Promise<StatisticsReply> {
+    return (await sendRequestAndWaitForReply<{statistics: StatisticsReply}>(Command.GetStatistics)).statistics
 }
 
 /**
@@ -983,6 +999,14 @@ function listenToChatMessages(playerId: PlayerId, roomIds: RoomId[]): void {
     sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>(Command.ListenToChatMessages, { playerId, roomIds })
 }
 
+/**
+ * Instructs the backend to send messages when statistics data has changed.
+ * @param {PlayerId} playerId - The id of the player
+ */
+function listenToStatistics(playerId: PlayerId): void {
+    sendWithOptions<{ playerId: PlayerId }>(Command.ListenToStatistics, { playerId })
+}
+
 export {
     setStrengthWhenPopulatingMilitaryBuildings,
     getStrengthWhenPopulatingMilitaryBuildings,
@@ -1066,5 +1090,7 @@ export {
     getTerrainForMap,
     getProductionStatistics,
     getLandStatistics,
+    getStatistics,
     getTransportPriority,
+    listenToStatistics
 }

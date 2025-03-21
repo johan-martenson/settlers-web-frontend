@@ -1,4 +1,4 @@
-import { AnyBuilding, Material, Nation, PlayerColor, SoldierType } from "./api/types"
+import { AnyBuilding, Material, Nation, PlayerColor, SoldierType, TransportCategory } from "./api/types"
 
 const MATERIAL_FIRST_UPPERCASE = new Map<Material, string>()
 
@@ -182,6 +182,26 @@ const BUILDINGS_PRETTY = new Map<AnyBuilding, string>([
     ['Fortress', 'Fortress'],
 ])
 
+const CATEGORY_PRETTY = new Map<TransportCategory, string>([
+    ['PLANK', 'Plank'],
+    ['WOOD', 'Wood'],
+    ['STONE', 'Stone'],
+    ['PIG', 'Pig'],
+    ['FLOUR', 'Flour'],
+    ['GOLD', 'Gold'],
+    ['IRON', 'Iron'],
+    ['COAL', 'Coal'],
+    ['WATER', 'Water'],
+    ['COIN', 'Coin'],
+    ['WHEAT', 'Wheat'],
+    ['IRON_BAR', 'Iron bar'],
+    ['FOOD', 'Food'],
+    ['WEAPONS', 'Weapons'],
+    ['TOOLS', 'Tools'],
+    ['BOAT', 'Boat'],
+])
+
+
 function nationPretty(nation: Nation): string {
     return NATION_PRETTY.get(nation) ?? ''
 }
@@ -208,11 +228,21 @@ function buildingPretty(building: AnyBuilding): string {
     return BUILDINGS_PRETTY.get(building) ?? building
 }
 
+function categoryPretty(category: TransportCategory): string {
+    return CATEGORY_PRETTY.get(category) ?? category
+}
+
+function materialPretty(material: Material): string {
+    return MATERIAL_FIRST_UPPERCASE.get(material) ?? material
+}
+
 export {
     MATERIAL_FIRST_UPPERCASE,
     MATERIAL_LABELS,
     nationPretty,
     colorPretty,
     soldierPretty,
-    buildingPretty
+    buildingPretty,
+    categoryPretty,
+    materialPretty
 }

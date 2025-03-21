@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Window } from '../../components/dialog'
 import './transport_priority.css'
 import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from '../../api/types'
-import { Tooltip } from '@fluentui/react-components'
 import { InventoryIcon } from '../../icons/icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
 import { api } from '../../api/ws-api'
+import { categoryPretty } from '../../pretty_strings'
 
 // Types
 type SetTransportPriorityProps = {
@@ -81,30 +81,29 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
             <div className='transport-priority-list'>
                 {priority.map(category => {
                     const className = selected === category ? 'chosen-material' : 'material'
+                    const categoryDisplayName = categoryPretty(category)
 
                     return (
                         <div key={category}>
-                            <Tooltip content={category} relationship={'label'} withArrow>
-                                <div
-                                    className={className}
-                                    style={{ display: 'inline' }}
-                                    onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
-                                        if (event.code === 'ArrowUp') {
-                                            increasePriority(selected)
-                                        } else if (event.code === 'ArrowDown') {
-                                            decreasePriority(selected)
-                                        }
-                                    }}
-                                    onMouseEnter={() => setHoverInfo(`Set priority for ${category.toLocaleLowerCase()}`)}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                    onClick={() => setSelected(category)}
+                            <div
+                                className={className}
+                                style={{ display: 'inline' }}
+                                onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+                                    if (event.code === 'ArrowUp') {
+                                        increasePriority(selected)
+                                    } else if (event.code === 'ArrowDown') {
+                                        decreasePriority(selected)
+                                    }
+                                }}
+                                onMouseEnter={() => setHoverInfo(`Set priority for ${categoryDisplayName.toLocaleLowerCase()}`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                                onClick={() => setSelected(category)}
 
-                                    tabIndex={-1}
-                                >{CATEGORY_MATERIALS_MAP.get(category)?.map(material =>
-                                    <InventoryIcon material={material} nation={nation} inline key={material} />
-                                )}
-                                </div>
-                            </Tooltip>
+                                tabIndex={-1}
+                            >{CATEGORY_MATERIALS_MAP.get(category)?.map(material =>
+                                <InventoryIcon material={material} nation={nation} inline key={material} scale={selected === category ? 2 : 1} />
+                            )}
+                            </div>
                             {selected === category && (
                                 <>
                                     <ArrowSortUp24Filled

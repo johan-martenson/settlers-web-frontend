@@ -1,7 +1,9 @@
 Todo 1.0
 ========
 
-0. Shouldn't be able to build mine on grass
+-2. Statistics crashes because format of land stats has changed.
+-1. Well worker is invisible???? Japanese, gray
+0. Productivity for the forester hut looks strange
 1. Animation of houses
 2. More sounds
 3. Planer

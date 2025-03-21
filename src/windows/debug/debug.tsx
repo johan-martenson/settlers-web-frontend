@@ -176,6 +176,19 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
                     </div>
                 </AccordionPanel>
             </AccordionItem>
+
+            <AccordionItem value='6'>
+                <AccordionHeader>Monitored world</AccordionHeader>
+                <AccordionPanel>
+                    <div className='monitored-world'>
+                        <div>Crops
+                            <ul>
+                                {Array.from(api.crops.entries()).map(crop => <li key={crop[0]}>{crop[0]}: {JSON.stringify(crop[1])}</li>)}
+                            </ul>
+                        </div>
+                    </div>
+                </AccordionPanel>
+            </AccordionItem>
         </Accordion>
     </Window>)
 }

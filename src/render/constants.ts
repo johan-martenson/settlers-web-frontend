@@ -229,7 +229,7 @@ VEGETATION_TO_TEXTURE_MAPPING.set(MEADOW_1, {
         95, 143].map(v => v / 256),
     downRight: [
         48, 96,
-        120, 143,
+        72, 143,
         95, 96].map(v => v / 256)
 })
 

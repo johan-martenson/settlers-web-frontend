@@ -23,6 +23,8 @@ type InventoryIconProps = {
     scale?: number
     inline?: boolean
     missing?: boolean
+    onMouseEnter?: () => void
+    onMouseLeave?: () => void
 }
 
 type HouseProps = {
@@ -309,22 +311,35 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
     />
 }
 
-const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false }: InventoryIconProps) => {
+const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false, onMouseEnter = undefined, onMouseLeave = undefined }: InventoryIconProps) => {
+    const [image, setImage] = useState<HTMLImageElement>()
+
+    useEffect(() => {
+        if (image) {
+            image.width = image.naturalWidth * scale
+            image.height = image.naturalHeight * scale
+        }
+    }, [scale, image])
+
     const url = materialImageAtlasHandler.getInventoryIconUrl(nation, material)
 
     const displayStyle = inline ? 'inline' : 'block'
     const transparency = missing ? '0.5' : '1.0'
 
     return (
-        <div className='inventory-icon' style={{ display: displayStyle, opacity: transparency }} >
+        <div
+            className='inventory-icon'
+            style={{ display: displayStyle, opacity: transparency, width: image?.naturalWidth ?? 1 * scale, height: image?.naturalHeight ?? 1 * scale }}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+        >
             <img
                 src={url}
                 draggable={false}
                 onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
                     const image = event.target as HTMLImageElement
 
-                    image.width = image.naturalWidth * scale
-                    image.height = image.naturalHeight * scale
+                    setImage(image)
                 }}
             />
         </div>

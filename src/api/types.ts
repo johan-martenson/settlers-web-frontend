@@ -597,30 +597,30 @@ export type PossibleNewRoadInformation = {
     closesRoad: boolean
 }
 
-export type Measurement = {
-    time: number
-    values: number[]
-}
-
-export type PlayerInformationLight = {
-    name: string
-    color: PlayerColor
-}
+type MeasurementTime = number
+type MeasurementValue = number
+export type Measurement = [MeasurementTime, MeasurementValue]
 
 export type ProductionStatistics = {
-    players: PlayerInformationLight[]
-    materialStatistics: { [key in Material]: Measurement[] }
+    [key in Material]?: Measurement[]
 }
 
-export type LandDataPoint = {
-    time: number
-    values: number[]
+export type LandStatistics = Measurement[]
+
+export type InventoryStatistics = {
+    [key in Material]?: Measurement[]
 }
 
-export type LandStatistics = {
-    players: PlayerInformationLight[]
-    currentTime: number
-    landStatistics: LandDataPoint[]
+export type BuildingStatistics = {
+    [key in AnyBuilding]?: Measurement[]
+}
+
+export type StatisticsPerPlayer = {
+    id: PlayerId
+    productionStatistics: ProductionStatistics
+    inventoryStatistics: InventoryStatistics
+    landStatistics: LandStatistics
+    buildingStatistics: BuildingStatistics
 }
 
 export type TransportPriorityInformation = Material[]

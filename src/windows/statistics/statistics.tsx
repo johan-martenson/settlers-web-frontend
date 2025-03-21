@@ -1,24 +1,71 @@
-import * as d3 from 'd3'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Window } from '../../components/dialog'
 import './statistics.css'
-import { SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
-import { ProductionStatistics, LandStatistics, Material, MATERIALS, LandDataPoint, Measurement, Nation, PlayerInformation } from '../../api/types'
-import { InventoryIcon } from '../../icons/icon'
+import { SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
+import { Material, MATERIALS, Nation, PlayerInformation, AnyBuilding, SMALL_HOUSES } from '../../api/types'
+import { HouseIcon, InventoryIcon } from '../../icons/icon'
 import { api } from '../../api/ws-api'
 import { ColorBox } from '../../components/utils'
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, TooltipProps } from "recharts"
+import styled from "styled-components";
+import { StatisticsReply } from '../../api/ws/commands'
+import { buildingPretty, materialPretty } from '../../pretty_strings'
 
 // Types
-type GraphHover = {
-    x: number
-    y: number
-    value: number
-}
-
 type StatisticsProps = {
     nation: Nation
     onRaise: () => void
     onClose: () => void
+}
+
+
+type ProductionAreaGraphProps = {
+    statistics: StatisticsReply
+    material: Material
+}
+
+type BuildingStatisticsGraphProps = {
+    statistics: StatisticsReply
+    buildingType: AnyBuilding
+}
+
+// Dummy data
+
+
+const dummyStatistics: StatisticsReply = {
+    "currentTime": 523,
+    "players": [
+        {
+            "id": "1",
+            "productionStatistics": {
+                "PLANK": [[0, 0], [23, 1], [24, 2], [62, 3], [73, 5]],
+                "STONE": [[0, 0], [45, 1], [72, 3]]
+            },
+            "inventoryStatistics": {
+                "PLANK": [[0, 10], [23, 11]]
+            },
+            "landStatistics": [[0, 20], [15, 23], [120, 70], [230, 82]],
+            "buildingStatistics": {
+                "ForesterHut": [[0, 0], [23, 1]],
+                "Woodcutter": [[0, 0], [10, 1], [50, 2]],
+                "Sawmill": [[0, 0], [15, 1]],
+                "Quarry": [[0, 0], [72, 1]]
+            }
+        },
+        {
+            "id": "2",
+            "productionStatistics": {
+                "PLANK": [[0, 0], [18, 1], [19, 2], [203, 3]],
+                "IRON_BAR": [[0, 0], [50, 1]]
+            },
+            "inventoryStatistics": {
+                "PLANK": [[0, 10], [18, 11]],
+                "COAL": [[0, 0], [73, 1]]
+            },
+            "landStatistics": [[0, 20], [23, 25]],
+            "buildingStatistics": {}
+        }
+    ]
 }
 
 // React components
@@ -30,316 +77,35 @@ type StatisticsProps = {
  * @param onClose - Function to close the window
  */
 const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: StatisticsProps) => {
-    const landStatsContainerRef = useRef<SVGSVGElement>(null)
-    const productionStatsContainerRef = useRef<SVGSVGElement>(null)
-    const statsParentRef = useRef<HTMLDivElement>(null)
-
-    const [productionStatistics, setProductionStatistics] = useState<ProductionStatistics>()
-    const [landStatistics, setLandStatistics] = useState<LandStatistics>()
+    const [statistics, setStatistics] = useState<StatisticsReply>({ "currentTime": 0, "players": [] })
     const [materialToShow, setMaterialToShow] = useState<Material>('PLANK')
-    const [state, setState] = useState<'PRODUCTION' | 'LAND'>('PRODUCTION')
+    const [state, setState] = useState<'PRODUCTION' | 'LAND' | 'BUILDINGS'>('PRODUCTION')
     const [hoverInfo, setHoverInfo] = useState<string>()
-    const [graphHover, setGraphHover] = useState<GraphHover>()
     const [playersToShow, setPlayersToShow] = useState<PlayerInformation[]>(Array.from(api.players.values()))
+    const [selectedBuilding, setSelectedBuilding] = useState<AnyBuilding>('ForesterHut')
 
     useEffect(() => {
-        async function fetchData(): Promise<void> {
-            const productionStats = await api.getProductionStatistics()
-            const landStats = await api.getLandStatistics()
+        function statisticsUpdated() {
+            console.log("Statistics updated")
+        }
 
-            setProductionStatistics(productionStats)
-            setLandStatistics(landStats)
+        async function fetchData(): Promise<void> {
+            // Fetch data
+            const statistics = await api.getStatistics()
+
+            setStatistics(statistics)
+
+            console.log(["Got statistics", statistics])
+
+            // Subscribe to changes
+            if (api.playerId) {
+                api.addStatisticsListener(statisticsUpdated, api.playerId)
+            } else {
+                console.error("No player ID found")
+            }
         }
         fetchData()
-    }, [])  // Run once on mount and when gameId changes
-
-    useEffect(() => {
-        if (productionStatsContainerRef.current && statsParentRef.current && productionStatistics) {
-            drawProductionStatistics(
-                productionStatsContainerRef.current,
-                statsParentRef.current,
-                productionStatistics!,
-                materialToShow
-            )
-        }
-        if (landStatsContainerRef.current && statsParentRef.current && landStatistics) {
-            drawLandStatistics(
-                landStatsContainerRef.current,
-                statsParentRef.current,
-                landStatistics!
-            )
-        }
-    }, [productionStatistics, landStatistics, materialToShow, state, playersToShow])
-
-    function drawLandStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, landStatisticsWithGaps: LandStatistics): void {
-
-        // Prepare the data - output is landStatistics, maxTime, and maxValue
-        const landStatistics: LandDataPoint[] = []
-
-        let maxValue = 0
-        const maxTime = landStatisticsWithGaps.currentTime
-
-        let previousMeasurement = undefined
-        for (let i = 0; i < landStatisticsWithGaps.landStatistics.length; i++) {
-            const measurement = landStatisticsWithGaps.landStatistics[i]
-
-            // Add an extra measurement to make the graph jump straight up
-            if (previousMeasurement) {
-                landStatistics.push({
-                    time: measurement.time,
-                    values: previousMeasurement.values
-                })
-            }
-
-            maxValue = Math.max(maxValue, ...measurement.values)
-            landStatistics.push(measurement)
-            previousMeasurement = measurement
-        }
-
-        landStatistics.push({
-            time: landStatisticsWithGaps.currentTime,
-            values: landStatisticsWithGaps.landStatistics[landStatisticsWithGaps.landStatistics.length - 1].values
-        })
-
-        // Define layout - full width x height, the margin, and the inner width x height
-        const fullHeight = parent.clientHeight
-        const fullWidth = parent.clientWidth
-
-        const margin = { top: 30, right: 40, bottom: 30, left: 50 }
-        const dataAreaWidth = fullWidth - margin.top - margin.bottom
-        const dataAreaHeight = fullHeight - margin.right - margin.left
-
-        // Define the view and value ranges - output is xScale and yScale
-        const xScale = d3.scaleLinear()
-            .domain([0, maxTime]).nice()
-            .range([0, dataAreaWidth])
-
-        const yScale = d3.scaleLinear()
-            .domain([0, maxValue]).nice()
-            .range([dataAreaHeight, 0])
-
-        // Create the lines
-        const lines: d3.Line<LandDataPoint>[] = []
-        landStatisticsWithGaps.players.forEach((player, index) =>
-            lines.push(
-                d3.line<LandDataPoint>()
-                    .x(d => xScale(d.time) ?? 0)
-                    .y(d => yScale(d.values[index]) ?? 0)
-            )
-        )
-
-        // Remove the previous rendering (if any)
-        d3.selectAll('#land-stats-svg > *').remove()
-
-        // Get the svg to draw on
-        const statisticsSvg = d3.select(statisticsSvgElement)
-
-        // Color the background
-        statisticsSvg.append('rect')
-            .attr('x', margin.left)
-            .attr('y', margin.top)
-            .attr('width', dataAreaWidth)
-            .attr('height', dataAreaHeight)
-            .style('fill', 'lightgray')
-
-        // Make the svg fill its parent and adapt when the size changes
-        statisticsSvg
-            .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', `0 0 ${fullWidth} ${fullHeight}`)
-            .classed('svg-content', true)
-            .append('g')
-            .attr('transform', `translate(${margin.left},${margin.top})`)
-
-        // Add the x axis and the y axis
-        statisticsSvg.append('g')
-            .attr('transform', `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
-            .call(d3.axisBottom(xScale).tickArguments([5]).tickSize(-dataAreaHeight))
-
-        statisticsSvg.append('g')
-            .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            .call(d3.axisLeft(yScale).tickArguments([5]).tickSize(-dataAreaWidth))
-
-        // Add the lines
-        landStatisticsWithGaps.players.forEach((player, index) => {
-            if (playersToShow.find(p => p.name === player.name)) {
-                statisticsSvg.append('path')
-                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                    .attr('fill', 'none')
-                    .attr('stroke', player.color)
-                    .attr('stroke-width', 2)
-                    .attr('stroke-linejoin', 'round')
-                    .attr('stroke-linecap', 'round')
-                    .datum(landStatistics)
-                    .attr('class', 'line')
-                    .attr('d', lines[index])
-                    .on('mouseover', () => setHoverInfo(player.name))
-                    .on('mouseout', () => setHoverInfo(undefined))
-            }
-        })
-    }
-
-    function reduceDataArrayIfNeeded(dataArray: Measurement[], amount: number): Measurement[] {
-        const resultArray: Measurement[] = []
-        const ratio = Math.floor(dataArray.length / amount)
-
-        for (let i = 0; i < dataArray.length; i++) {
-            if (i === 0 || i === dataArray.length - 1 || i % ratio === 0) {
-                resultArray.push(dataArray[i])
-            }
-        }
-
-        return resultArray
-    }
-
-    function drawProductionStatistics(statisticsSvgElement: SVGSVGElement, parent: HTMLDivElement, productionStats: ProductionStatistics, material: Material): void {
-
-        // Prepare the data - output is resourceStatistics, maxTime, and maxValue
-        const resourceStatisticsFull = productionStats.materialStatistics[material]
-
-        let resourceStatistics: Measurement[]
-
-        if (resourceStatisticsFull) {
-            resourceStatistics = (resourceStatisticsFull.length > 30) ? reduceDataArrayIfNeeded(resourceStatisticsFull, 30) : resourceStatisticsFull
-        } else {
-            resourceStatistics = [{
-                time: 0,
-                values: new Array<number>(productionStats.players.length).fill(0)
-            }]
-        }
-
-        let maxTime = 0
-        let maxValue = 0
-
-        resourceStatistics.forEach(measurement => {
-            maxTime = measurement.time
-            measurement.values.forEach(value => maxValue = Math.max(maxValue, value))
-        })
-
-        maxValue = Math.max(maxValue, 10)
-
-        // Define layout - full width x height, the margin, and the inner width x height
-        const fullHeight = parent.clientHeight
-        const fullWidth = parent.clientWidth
-
-        const margin = { top: 30, right: 40, bottom: 30, left: 40 }
-
-        const dataAreaWidth = fullWidth - margin.top - margin.bottom
-        const dataAreaHeight = fullHeight - margin.right - margin.left
-
-        // Define the view and value ranges - output is xScale and yScale
-        const xScale = d3.scaleLinear()
-            .domain([0, maxTime]).nice()
-            .range([0, dataAreaWidth])
-
-        const yScale = d3.scaleLinear()
-            .domain([0, maxValue]).nice()
-            .range([dataAreaHeight, 0])
-
-        // Create the lines
-        const lines: d3.Line<LandDataPoint>[] = []
-
-        productionStats.players.forEach(
-            (player, i) => lines.push(
-                d3.line<Measurement>()
-                    .x(d => xScale(d.time) ?? 0)
-                    .y(d => yScale(d.values[i]) ?? 0)))
-
-        // Remove the previous rendering (if any)
-        d3.selectAll('#production-stats-svg > *').remove()
-
-        // Get the svg to draw on
-        const statisticsSvg = d3.select(statisticsSvgElement)
-
-        // Color the background
-        statisticsSvg.append('rect')
-            .attr('x', margin.left)
-            .attr('y', margin.top)
-            .attr('width', dataAreaWidth)
-            .attr('height', dataAreaHeight)
-            .style('fill', 'lightgray')
-
-        // Make the svg fill its parent and adapt when the size changes
-        statisticsSvg
-            .attr('preserveAspectRatio', 'xMinYMin meet')
-            .attr('viewBox', `0 0 ${fullWidth} ${fullHeight}`)
-            .classed('svg-content', true)
-            .append('g')
-            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-
-        // Add the x axis and the y axis
-        statisticsSvg.append('g')
-            .attr('transform', `translate(${margin.left}, ${(margin.top + dataAreaHeight)})`)
-            .call(d3.axisBottom(xScale).tickArguments([5]).tickSize(-dataAreaHeight))
-
-        statisticsSvg.append('g')
-            .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            .call(d3.axisLeft(yScale).tickArguments([5]).tickSize(-dataAreaWidth))
-
-        // Instantiate the lines
-        productionStats.players.forEach(
-            (player, index) => lines[index](resourceStatistics)
-        )
-
-        /* Add the lines */
-        productionStats.players.forEach(
-            (player, index) => {
-                const color = player.color
-                const name = player.name
-
-                statisticsSvg.append('path')
-                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                    .attr('fill', 'none')
-                    .attr('stroke', color)
-                    .attr('stroke-width', 4)
-                    .attr('stroke-linejoin', 'round')
-                    .attr('stroke-linecap', 'round')
-                    .datum(resourceStatistics) // Bind data to the line
-                    .attr('class', 'line')
-                    .attr('d', lines[index]) // Call the line generator
-                    .on('mouseenter', () => setHoverInfo(name))
-                    .on('mouseleave', () => setHoverInfo(undefined))
-
-                statisticsSvg.selectAll('.dot' + index)
-                    .data(resourceStatistics)
-                    .enter().append('circle')
-                    .attr('transform', `translate(${margin.left}, ${margin.top})`)
-                    .attr('fill', 'rgba(0, 0, 0, 0)')
-                    .attr('class', 'dot')
-
-                    .attr('cx', function (data) {
-                        const xScaled = xScale(data.time)
-
-                        if (xScaled === undefined) {
-                            return 0
-                        }
-
-                        return xScaled
-                    })
-                    .attr('cy', function (data) {
-                        const yScaled = yScale(data.values[index])
-
-                        if (yScaled === undefined) {
-                            return 0
-                        }
-
-                        return yScaled
-                    })
-                    .attr('r', 5)
-                    .on('mouseenter',
-                        (event, d) => {
-                            setHoverInfo(name)
-                            setGraphHover({
-                                x: event.pageX + 20, y: event.pageY + 20, value: d.values[index]
-                            })
-                        })
-
-                    .on('mouseleave', () => {
-                        setHoverInfo(undefined)
-                        setGraphHover(undefined)
-                    })
-            }
-        )
-    }
+    }, [])
 
     const titleLabel = 'Statistics'
 
@@ -349,7 +115,15 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                 <div id='stats-page'>
                     <TabList
                         selectedValue={state}
-                        onTabSelect={(event: SelectTabEvent, data: SelectTabData) => setState((data.value === 'LAND') ? 'LAND' : 'PRODUCTION')
+                        onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
+                            if (data.value === 'LAND') {
+                                setState('LAND')
+                            } else if (data.value === 'PRODUCTION') {
+                                setState('PRODUCTION')
+                            } else {
+                                setState('BUILDINGS')
+                            }
+                        }
                         } >
                         <Tab
                             value={'PRODUCTION'}
@@ -365,39 +139,41 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                         >
                             Land
                         </Tab>
+                        <Tab
+                            value={'BUILDINGS'}
+                            onMouseEnter={() => setHoverInfo('Building statistics')}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        >
+                            Buildings
+                        </Tab>
                     </TabList>
 
-                    <div ref={statsParentRef} id='stats-parent'>
-                        <svg id='land-stats-svg'
-                            ref={landStatsContainerRef}
-                            display={(state === 'LAND') ? 'inline-block' : 'none'} />
-
-                        <svg id='production-stats-svg'
-                            ref={productionStatsContainerRef}
-                            display={(state === 'PRODUCTION') ? 'inline-block' : 'none'}
-                        />
-                    </div>
-
                     {state === 'PRODUCTION' &&
-                        <div className='select-materials'>
-                            {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
-                                .map(material => <div onClick={() => setMaterialToShow(material)} key={material}>
-                                    <Tooltip content={material.toLocaleLowerCase()} relationship='label'>
-                                        <div
-                                            onMouseEnter={() => setHoverInfo(material.toLocaleLowerCase())}
-                                            onMouseLeave={() => setHoverInfo(undefined)}
-                                        ><InventoryIcon nation={nation} material={material} missing={material !== materialToShow} /></div>
-                                    </Tooltip>
-                                </div>)}
-                        </div>
+                        <>
+                            <ProductionAreaGraph statistics={statistics ?? dummyStatistics} material={materialToShow} />
+                            <div className='select-materials'>
+                                {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
+                                    .map(material => {
+                                        const materialDisplay = materialPretty(material)
+
+                                        return <div onClick={() => setMaterialToShow(material)} key={material}>
+                                            <div
+                                                onMouseEnter={() => setHoverInfo(materialDisplay)}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            ><InventoryIcon nation={nation} material={material} missing={material !== materialToShow} /></div>
+                                        </div>
+                                    })}
+                            </div>
+                        </>
                     }
 
                     {state === 'LAND' &&
-                        <div className='select-players'>
-                            {Array.from(api.players.values()).map(player => <div
-                                key={player.id}
-                            >
-                                <Tooltip content={player.name} relationship='label'>
+                        <>
+                            <LandAreaGraph statistics={statistics ?? dummyStatistics} />
+                            <div className='select-players'>
+                                {Array.from(api.players.values()).map(player => <div
+                                    key={player.id}
+                                >
                                     <div
                                         style={{ gap: '15px' }}
                                         onClick={() => {
@@ -421,29 +197,298 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                                         {player.name}
                                         <ColorBox color={player.color} />
                                     </div>
-                                </Tooltip>
+                                </div>
+                                )}
                             </div>
-                            )}
-                        </div>
+                        </>
                     }
+
+                    {state === 'BUILDINGS' &&
+                        <>
+                            <BuildingStatisticsGraph statistics={statistics ?? dummyStatistics} buildingType={selectedBuilding} />
+                            <div className='select-building'>
+                                {SMALL_HOUSES.map(house => {
+                                    const prettyHouse = buildingPretty(house)
+
+                                    return (<div
+                                        key={house}
+                                        onClick={async () => {
+                                            setSelectedBuilding(house)
+                                        }}
+                                        onMouseEnter={() => setHoverInfo(`Show statistics for ${prettyHouse.toLowerCase()}`)}
+                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                    >
+                                        <HouseIcon nation={nation} houseType={house} drawShadow scale={0.5} />
+                                    </div>)
+                                })
+                                }
+                            </div>
+                        </>
+                    }
+
                 </div>
             </Window>
-
-            {graphHover &&
-                <div style={{
-                    left: '' + graphHover.x + 'px',
-                    top: '' + graphHover.y + 'px',
-                    zIndex: '5000',
-                    width: '5em',
-                    height: '2em',
-                    position: 'fixed',
-                    backgroundColor: 'white',
-                    color: 'black'
-                }}>
-                    {graphHover.value}
-                </div>
-            }
         </>
+    )
+}
+
+interface ChartData {
+    time: number
+    [key: string]: number | undefined
+}
+
+const CustomTooltipContainer = styled.div`
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+`
+
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+    if (!active || !payload || payload.length === 0) {
+        return null
+    }   
+
+    return (
+        <CustomTooltipContainer>
+            <p><strong>Time: {label}</strong></p>
+            {payload.map((entry, index: number) => (
+                <p key={index} style={{ color: entry.color }}>{entry.name}: {entry.value}</p>
+            ))}
+        </CustomTooltipContainer>
+    )
+}
+
+const ProductionAreaGraph = ({ statistics, material }: ProductionAreaGraphProps) => {
+    // Collect all unique timestamps
+    const allTimestamps = new Set<number>()
+    statistics.players.forEach(player => {
+        player.productionStatistics[material]?.forEach(([time]) => allTimestamps.add(time))
+    })
+
+    // Sort timestamps
+    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+
+    // Initialize chart data with all timestamps
+    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
+
+    // Fill in player data
+    statistics.players.forEach(player => {
+        let lastValue: number | undefined = undefined
+        sortedTimestamps.forEach((time, index) => {
+            const entry = chartData[index]
+            const found = player.productionStatistics[material]?.find(([t]) => t === time)
+            if (found) {
+                lastValue = found[1]
+            }
+            entry[`Player ${player.id}`] = lastValue // Carry forward last known value
+        })
+    })
+
+    // Sort data by time to ensure correct visualization
+    chartData.sort((a, b) => a.time - b.time)
+
+    if (chartData.length > 0 && chartData[chartData.length - 1].time != statistics.currentTime) {
+        chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
+    } else {
+        const zeroMeasurement: { [key: string]: number } = {}
+
+        statistics.players.forEach(player => {
+            zeroMeasurement[`Player ${player.id}`] = 0
+        })
+
+        chartData.push({ time: 0, ...zeroMeasurement })
+        chartData.push({ time: statistics.currentTime, ...zeroMeasurement })
+    }
+
+    return (
+        <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
+                <XAxis
+                    dataKey="time"
+                    label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
+                    stroke="#FFFFFF" // Change X-axis color
+                    type="number"
+                    domain={['dataMin', 'dataMax']} // Set the domain to dataMin and dataMax
+
+                />
+                <YAxis
+                    label={{ value: "Production", angle: -90, position: "insideLeft", fill: "white" }}
+                    stroke="#FFFFFF" // Change Y-axis color
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                {statistics.players.map((player) => (
+                    <Line
+                        key={player.id}
+                        type="stepAfter" // Use step-based line rendering
+                        dataKey={`Player ${player.id}`}
+                        name={`Player ${player.id}`}
+                        stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                        connectNulls // Ensures continuous lines even if some timestamps are missing
+                    />
+                ))}
+            </LineChart>
+        </ResponsiveContainer>
+    )
+}
+
+const BuildingStatisticsGraph = ({ statistics, buildingType }: BuildingStatisticsGraphProps) => {
+    // Collect all unique timestamps
+    const allTimestamps = new Set<number>()
+    statistics.players.forEach(player => {
+        player.buildingStatistics[buildingType]?.forEach(([time]) => allTimestamps.add(time))
+    })
+
+    // Sort timestamps
+    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+
+    // Initialize chart data with all timestamps
+    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
+
+    // Fill in player data
+    statistics.players.forEach(player => {
+        let lastValue: number | undefined = undefined
+        sortedTimestamps.forEach((time, index) => {
+            const entry = chartData[index]
+            const found = player.buildingStatistics[buildingType]?.find(([t]) => t === time)
+            if (found) {
+                lastValue = found[1]
+            }
+            entry[`Player ${player.id}`] = lastValue // Carry forward last known value
+        })
+    })
+
+    // Ensure the graph extends to the current time
+    if (chartData.length > 0 && chartData[chartData.length - 1].time != statistics.currentTime) {
+        chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
+    } else {
+        const zeroMeasurement: { [key: string]: number } = {}
+
+        statistics.players.forEach(player => {
+            zeroMeasurement[`Player ${player.id}`] = 0
+        })
+
+        chartData.push({ time: 0, ...zeroMeasurement })
+        chartData.push({ time: statistics.currentTime, ...zeroMeasurement })
+    }
+
+    return (
+        <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
+                <XAxis
+                    dataKey="time"
+                    label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
+                    stroke="#FFFFFF"
+                    type="number"
+                    domain={['dataMin', 'dataMax']}
+                />
+                <YAxis
+                    label={{ value: "Buildings", angle: -90, position: "insideLeft", fill: "white" }}
+                    stroke="#FFFFFF"
+                    domain={['dataMin', 'dataMax']} // Set the domain to dataMin and dataMax
+                />
+                <Tooltip />
+                <Legend />
+                {statistics.players.map(player => (
+                    <Line
+                        key={player.id}
+                        type="stepAfter"
+                        dataKey={`Player ${player.id}`}
+                        name={`Player ${player.id}`}
+                        stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                        connectNulls
+                    />
+                ))}
+            </LineChart>
+        </ResponsiveContainer>
+    )
+}
+
+const LandAreaGraph = ({ statistics }: { statistics: StatisticsReply }) => {
+    // Collect all unique timestamps
+    const allTimestamps = new Set<number>()
+    statistics.players.forEach(player => {
+        player.landStatistics.forEach(([time]) => allTimestamps.add(time))
+    })
+
+    // Sort timestamps
+    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+
+    // Initialize chart data with all timestamps
+    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
+
+    // Fill in player data
+    statistics.players.forEach(player => {
+        let lastValue: number | undefined = undefined
+        sortedTimestamps.forEach((time, index) => {
+            const entry = chartData[index]
+            const found = player.landStatistics.find(([t]) => t === time)
+            if (found) {
+                lastValue = found[1]
+            }
+            entry[`Player ${player.id}`] = lastValue // Carry forward last known value
+        })
+    })
+
+    // Sort data by time to ensure correct visualization
+    chartData.sort((a, b) => a.time - b.time)
+
+    if (chartData.length > 0 && chartData[chartData.length - 1].time != statistics.currentTime) {
+        chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
+    } else {
+        const zeroMeasurement: { [key: string]: number } = {}
+
+        statistics.players.forEach(player => {
+            zeroMeasurement[`Player ${player.id}`] = 0
+        })
+
+        chartData.push({ time: 0, ...zeroMeasurement })
+        chartData.push({ time: statistics.currentTime, ...zeroMeasurement })
+    }
+
+    return (
+        <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
+                <XAxis
+                    dataKey="time"
+                    label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
+                    stroke="#FFFFFF" // Change X-axis color
+                    type="number"
+                    domain={['dataMin', 'dataMax']} // Set the domain to dataMin and dataMax
+
+                />
+                <YAxis
+                    label={{ value: "Land Size", angle: -90, position: "insideLeft", fill: "white" }}
+                    stroke="#FFFFFF" // Change Y-axis color
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                {statistics.players.map((player) => (
+                    <Line
+                        key={player.id}
+                        type="stepAfter" // Use step-based line rendering
+                        dataKey={`Player ${player.id}`}
+                        name={`Player ${player.id}`}
+                        stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                        connectNulls // Ensures continuous lines even if some timestamps are missing
+                    />
+                ))}
+            </LineChart>
+        </ResponsiveContainer>
     )
 }
 

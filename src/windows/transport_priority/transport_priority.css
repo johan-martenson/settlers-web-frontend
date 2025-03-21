@@ -13,9 +13,6 @@
 }
 
 .chosen-material {
-    background-color: black;
-}
-
-.material {
-
+    filter: brightness(120%);
+    transform: scale(2);
 }

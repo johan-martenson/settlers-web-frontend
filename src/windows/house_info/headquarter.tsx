@@ -98,7 +98,13 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
     }, [defenseStrength, loaded])
 
     return (
-        <Window className='house-info' onClose={onClose} heading='Headquarters' hoverInfo={hover} onRaise={onRaise}>
+        <Window
+            className='house-info'
+            onClose={onClose}
+            heading='Headquarters'
+            hoverInfo={hover}
+            onRaise={onRaise}
+        >
             <HouseIcon
                 houseType='Headquarter'
                 nation={nation}

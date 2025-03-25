@@ -25,9 +25,7 @@ OPTIONS.set('HIGH', 'Plenty')
  * 
  * @param {GameOptionsProps} props - The properties for configuring game options.
  */
-const GameOptions = ({ othersCanJoin, setAvailableResources, setOthersCanJoin, ...props }: GameOptionsProps) => {
-    const initialResources = OPTIONS.get(props.initialResources) ?? 'High'
-
+const GameOptions = ({ othersCanJoin, initialResources = 'HIGH', setAvailableResources, setOthersCanJoin }: GameOptionsProps) => {
     return (
         <div className='settings'>
 
@@ -43,7 +41,7 @@ const GameOptions = ({ othersCanJoin, setAvailableResources, setOthersCanJoin, .
             <Field label='Initial resources'>
                 <Select
                     className='ResourceButtons'
-                    value={initialResources}
+                    value={OPTIONS.get(initialResources) ?? 'High'}
                     onChange={(_event: ChangeEvent<HTMLSelectElement>, data: SelectOnChangeData) => {
                         const value = data.value
                         console.log(data)

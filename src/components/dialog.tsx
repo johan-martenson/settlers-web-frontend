@@ -12,8 +12,8 @@ type WindowProps = {
     id?: string
     children?: React.ReactNode
 
-    onClose: (() => void)
-    onRaise: (() => void)
+    onClose: () => void
+    onRaise: () => void
 }
 
 type Drag = {
@@ -26,9 +26,14 @@ type ButtonRowProps = {
 }
 
 // React components
-function Window({ onClose, onRaise, ...props }: WindowProps) {
-    const className = props.className !== undefined ? `window ${props.className}` : 'window'
-
+function Window({
+    hoverInfo = undefined,
+    heading = undefined,
+    className = undefined,
+    id = undefined,
+    children = undefined,
+    onClose, onRaise,
+}: WindowProps) {
     const [windowHoverInfo, setWindowHoverInfo] = useState<string>()
     const [dragging, setDragging] = useState<Drag>()
     const [windowPosition, setWindowPosition] = useState<Point>()
@@ -41,8 +46,8 @@ function Window({ onClose, onRaise, ...props }: WindowProps) {
 
     return (
         <div
-            className={className}
-            id={props.id}
+            className={className !== undefined ? `window ${className}` : 'window'}
+            id={id}
             style={style}
             onWheel={(event) => event.stopPropagation()}
             onMouseDown={(event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -83,11 +88,11 @@ function Window({ onClose, onRaise, ...props }: WindowProps) {
             }}
         >
             <div className="window-content">
-                {props.heading && <h1>{props.heading}</h1>}
-                {props.children}
+                {heading && <h1>{heading}</h1>}
+                {children}
             </div>
             <div className='hover-info-label'>
-                {windowHoverInfo ?? props.hoverInfo}
+                {windowHoverInfo ?? hoverInfo}
             </div>
             <Button
                 onClick={onClose}

@@ -248,7 +248,7 @@ const CustomTooltipContainer = styled.div`
 const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (!active || !payload || payload.length === 0) {
         return null
-    }   
+    }
 
     return (
         <CustomTooltipContainer>
@@ -311,12 +311,14 @@ const ProductionAreaGraph = ({ statistics, material }: ProductionAreaGraphProps)
                     label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
                     stroke="#FFFFFF" // Change X-axis color
                     type="number"
-                    domain={['dataMin', 'dataMax']} // Set the domain to dataMin and dataMax
+                    domain={['0', 'dataMax']} // Set the domain to dataMin and dataMax
 
                 />
                 <YAxis
                     label={{ value: "Production", angle: -90, position: "insideLeft", fill: "white" }}
                     stroke="#FFFFFF" // Change Y-axis color
+                    allowDecimals={false}
+                    domain={[0, 'dataMax + 1']} // Set the domain to dataMin and dataMax
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
@@ -387,12 +389,13 @@ const BuildingStatisticsGraph = ({ statistics, buildingType }: BuildingStatistic
                     label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
                     stroke="#FFFFFF"
                     type="number"
-                    domain={['dataMin', 'dataMax']}
+                    domain={[0, 'dataMax']}
                 />
                 <YAxis
                     label={{ value: "Buildings", angle: -90, position: "insideLeft", fill: "white" }}
                     stroke="#FFFFFF"
-                    domain={['dataMin', 'dataMax']} // Set the domain to dataMin and dataMax
+                    domain={[0, 'dataMax + 1']} // Set the domain to dataMin and dataMax
+                    allowDecimals={false}
                 />
                 <Tooltip />
                 <Legend />
@@ -465,12 +468,13 @@ const LandAreaGraph = ({ statistics }: { statistics: StatisticsReply }) => {
                     label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
                     stroke="#FFFFFF" // Change X-axis color
                     type="number"
-                    domain={['dataMin', 'dataMax']} // Set the domain to dataMin and dataMax
-
+                    domain={[0, 'dataMax']} // Set the domain to dataMin and dataMax
                 />
                 <YAxis
                     label={{ value: "Land Size", angle: -90, position: "insideLeft", fill: "white" }}
                     stroke="#FFFFFF" // Change Y-axis color
+                    allowDecimals={false}
+                    domain={[0, 'dataMax + 1']} // Set the domain to dataMin and dataMax
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />

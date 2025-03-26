@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Window } from '../../components/dialog'
 import './statistics.css'
-import { SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { Material, MATERIALS, Nation, PlayerInformation, AnyBuilding, SMALL_HOUSES } from '../../api/types'
+import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
+import { Material, MATERIALS, Nation, PlayerInformation, AnyBuilding, SMALL_HOUSES, GeneralStatisticsType } from '../../api/types'
 import { HouseIcon, InventoryIcon } from '../../icons/icon'
 import { api } from '../../api/ws-api'
 import { ColorBox } from '../../components/utils'
@@ -18,21 +18,30 @@ type StatisticsProps = {
     onClose: () => void
 }
 
-
 type ProductionAreaGraphProps = {
     statistics: StatisticsReply
     material: Material
+
+    setHover: (info: string | undefined) => void
 }
 
 type BuildingStatisticsGraphProps = {
     statistics: StatisticsReply
     buildingType: AnyBuilding
+
+    setHover: (info: string | undefined) => void
 }
 
-// Dummy data
+type LandAreaGraphProps = {
+    statistics: StatisticsReply
 
+    setHover: (info: string | undefined) => void
+}
 
-const dummyStatistics: StatisticsReply = {
+type StatisticsView = 'GENERAL' | 'PRODUCTION' | 'LAND' | 'BUILDINGS'
+
+// Sample data
+const sampleStatisticsData: StatisticsReply = {
     "currentTime": 523,
     "players": [
         {
@@ -44,12 +53,23 @@ const dummyStatistics: StatisticsReply = {
             "inventoryStatistics": {
                 "PLANK": [[0, 10], [23, 11]]
             },
-            "landStatistics": [[0, 20], [15, 23], [120, 70], [230, 82]],
+            "landStatistics": [[1, 20], [15, 23], [120, 70], [230, 82]],
             "buildingStatistics": {
-                "ForesterHut": [[0, 0], [23, 1]],
-                "Woodcutter": [[0, 0], [10, 1], [50, 2]],
-                "Sawmill": [[0, 0], [15, 1]],
-                "Quarry": [[0, 0], [72, 1]]
+                "ForesterHut": [[1, 0], [23, 1]],
+                "Woodcutter": [[1, 0], [10, 1], [50, 2]],
+                "Sawmill": [[1, 0], [15, 1]],
+                "Quarry": [[1, 0], [72, 1]],
+                "Headquarter": [[1, 1]]
+            },
+            "general": {
+                "houses": [[1, 1], [23, 2]],
+                "workers": [],
+                "goods": [],
+                "military": [],
+                "coins": [],
+                "production": [],
+                "killedEnemies": [],
+                "land": []
             }
         },
         {
@@ -63,7 +83,17 @@ const dummyStatistics: StatisticsReply = {
                 "COAL": [[0, 0], [73, 1]]
             },
             "landStatistics": [[0, 20], [23, 25]],
-            "buildingStatistics": {}
+            "buildingStatistics": {},
+            "general": {
+                "houses": [],
+                "workers": [],
+                "goods": [],
+                "military": [],
+                "coins": [],
+                "production": [],
+                "killedEnemies": [],
+                "land": []
+            }
         }
     ]
 }
@@ -79,14 +109,19 @@ const dummyStatistics: StatisticsReply = {
 const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: StatisticsProps) => {
     const [statistics, setStatistics] = useState<StatisticsReply>({ "currentTime": 0, "players": [] })
     const [materialToShow, setMaterialToShow] = useState<Material>('PLANK')
-    const [state, setState] = useState<'PRODUCTION' | 'LAND' | 'BUILDINGS'>('PRODUCTION')
+    const [state, setState] = useState<StatisticsView>('GENERAL')
     const [hoverInfo, setHoverInfo] = useState<string>()
     const [playersToShow, setPlayersToShow] = useState<PlayerInformation[]>(Array.from(api.players.values()))
     const [selectedBuilding, setSelectedBuilding] = useState<AnyBuilding>('ForesterHut')
+    const [generalStatistics, setGeneralStatistics] = useState<GeneralStatisticsType>('land')
 
     useEffect(() => {
-        function statisticsUpdated() {
+        async function statisticsUpdated() {
             console.log("Statistics updated")
+
+            const statistics = await api.getStatistics()
+
+            setStatistics(statistics)
         }
 
         async function fetchData(): Promise<void> {
@@ -105,6 +140,12 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
             }
         }
         fetchData()
+
+        return () => {
+            if (api.playerId) {
+                api.removeStatisticsListener(statisticsUpdated)
+            }
+        }
     }, [])
 
     const titleLabel = 'Statistics'
@@ -120,11 +161,20 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                                 setState('LAND')
                             } else if (data.value === 'PRODUCTION') {
                                 setState('PRODUCTION')
-                            } else {
+                            } else if (data.value === 'BUILDINGS') {
                                 setState('BUILDINGS')
+                            } else {
+                                setState('GENERAL')
                             }
                         }
                         } >
+                        <Tab
+                            value={'GENERAL'}
+                            onMouseEnter={() => setHoverInfo('General statistics')}
+                            onMouseLeave={() => setHoverInfo(undefined)}
+                        >
+                            General
+                        </Tab>
                         <Tab
                             value={'PRODUCTION'}
                             onMouseEnter={() => setHoverInfo('Production statistics')}
@@ -148,9 +198,66 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                         </Tab>
                     </TabList>
 
+                    {state === 'GENERAL' &&
+                        <>
+                            <GeneralStatisticsGraph statistics={sampleStatisticsData} statType={generalStatistics} setHover={setHoverInfo} />
+                            <div>
+                                <Button
+                                    onClick={() => setGeneralStatistics('land')}
+                                    onMouseEnter={() => setHoverInfo('Land')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Land
+                                </Button>
+                                <Button
+                                    onClick={() => setGeneralStatistics('production')}
+                                    onMouseEnter={() => setHoverInfo('Production')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Production
+                                </Button>
+                                <Button
+                                    onClick={() => setGeneralStatistics('workers')}
+                                    onMouseEnter={() => setHoverInfo('Workers')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Workers
+                                </Button>
+                                <Button
+                                    onClick={() => setGeneralStatistics('houses')}
+                                    onMouseEnter={() => setHoverInfo('Buildings')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Houses
+                                </Button>
+                                <Button
+                                    onClick={() => setGeneralStatistics('goods')}
+                                    onMouseEnter={() => setHoverInfo('Goods')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Goods
+                                </Button>
+                                <Button
+                                    onClick={() => setGeneralStatistics('military')}
+                                    onMouseEnter={() => setHoverInfo('Military')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Military
+                                </Button>
+                                <Button
+                                    onClick={() => setGeneralStatistics('killedEnemies')}
+                                    onMouseEnter={() => setHoverInfo('Killed enemies')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Killed Enemies
+                                </Button>
+                            </div>
+                        </>
+                    }
+
                     {state === 'PRODUCTION' &&
                         <>
-                            <ProductionAreaGraph statistics={statistics ?? dummyStatistics} material={materialToShow} />
+                            <ProductionAreaGraph statistics={statistics ?? sampleStatisticsData} material={materialToShow} setHover={setHoverInfo} />
                             <div className='select-materials'>
                                 {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
                                     .map(material => {
@@ -169,7 +276,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
                     {state === 'LAND' &&
                         <>
-                            <LandAreaGraph statistics={statistics ?? dummyStatistics} />
+                            <LandAreaGraph statistics={statistics ?? sampleStatisticsData} setHover={info => setHoverInfo(info)} />
                             <div className='select-players'>
                                 {Array.from(api.players.values()).map(player => <div
                                     key={player.id}
@@ -205,7 +312,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
                     {state === 'BUILDINGS' &&
                         <>
-                            <BuildingStatisticsGraph statistics={statistics ?? dummyStatistics} buildingType={selectedBuilding} />
+                            <BuildingStatisticsGraph statistics={statistics ?? sampleStatisticsData} buildingType={selectedBuilding} setHover={setHoverInfo} />
                             <div className='select-building'>
                                 {SMALL_HOUSES.map(house => {
                                     const prettyHouse = buildingPretty(house)
@@ -260,7 +367,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
     )
 }
 
-const ProductionAreaGraph = ({ statistics, material }: ProductionAreaGraphProps) => {
+const ProductionAreaGraph = ({ statistics, material, setHover }: ProductionAreaGraphProps) => {
     // Collect all unique timestamps
     const allTimestamps = new Set<number>()
     statistics.players.forEach(player => {
@@ -304,7 +411,22 @@ const ProductionAreaGraph = ({ statistics, material }: ProductionAreaGraphProps)
 
     return (
         <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                onMouseLeave={() => setHover(undefined)}
+                onMouseMove={(event: { activePayload?: { value?: number }[] }) => {
+                    if (event?.activePayload) {
+                        const yValue = event.activePayload[0]?.value
+
+                        if (yValue !== undefined) {
+                            setHover(`${yValue}`)
+                        } else {
+                            setHover(undefined)
+                        }
+                    }
+                }}
+            >
                 <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
                 <XAxis
                     dataKey="time"
@@ -327,7 +449,7 @@ const ProductionAreaGraph = ({ statistics, material }: ProductionAreaGraphProps)
                         key={player.id}
                         type="stepAfter" // Use step-based line rendering
                         dataKey={`Player ${player.id}`}
-                        name={`Player ${player.id}`}
+                        name={api.players.get(player.id)?.name ?? `Player ${player.id}`}
                         stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
                         strokeWidth={2}
                         dot={false}
@@ -340,7 +462,7 @@ const ProductionAreaGraph = ({ statistics, material }: ProductionAreaGraphProps)
     )
 }
 
-const BuildingStatisticsGraph = ({ statistics, buildingType }: BuildingStatisticsGraphProps) => {
+const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: BuildingStatisticsGraphProps) => {
     // Collect all unique timestamps
     const allTimestamps = new Set<number>()
     statistics.players.forEach(player => {
@@ -382,7 +504,22 @@ const BuildingStatisticsGraph = ({ statistics, buildingType }: BuildingStatistic
 
     return (
         <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                onMouseLeave={() => setHover(undefined)}
+                onMouseMove={(event: { activePayload?: { value?: number }[] }) => {
+                    if (event?.activePayload) {
+                        const yValue = event.activePayload[0]?.value
+
+                        if (yValue !== undefined) {
+                            setHover(`${yValue}`)
+                        } else {
+                            setHover(undefined)
+                        }
+                    }
+                }}
+            >
                 <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
                 <XAxis
                     dataKey="time"
@@ -397,14 +534,14 @@ const BuildingStatisticsGraph = ({ statistics, buildingType }: BuildingStatistic
                     domain={[0, 'dataMax + 1']} // Set the domain to dataMin and dataMax
                     allowDecimals={false}
                 />
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend />
                 {statistics.players.map(player => (
                     <Line
                         key={player.id}
                         type="stepAfter"
                         dataKey={`Player ${player.id}`}
-                        name={`Player ${player.id}`}
+                        name={api.players.get(player.id)?.name ?? `Player ${player.id}`}
                         stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
                         strokeWidth={2}
                         dot={false}
@@ -417,7 +554,7 @@ const BuildingStatisticsGraph = ({ statistics, buildingType }: BuildingStatistic
     )
 }
 
-const LandAreaGraph = ({ statistics }: { statistics: StatisticsReply }) => {
+const LandAreaGraph = ({ statistics, setHover }: LandAreaGraphProps) => {
     // Collect all unique timestamps
     const allTimestamps = new Set<number>()
     statistics.players.forEach(player => {
@@ -461,7 +598,22 @@ const LandAreaGraph = ({ statistics }: { statistics: StatisticsReply }) => {
 
     return (
         <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                onMouseLeave={() => setHover(undefined)}
+                onMouseMove={(event: { activePayload?: { value?: number }[] }) => {
+                    if (event?.activePayload) {
+                        const yValue = event.activePayload[0]?.value
+
+                        if (yValue !== undefined) {
+                            setHover(`${yValue}`)
+                        } else {
+                            setHover(undefined)
+                        }
+                    }
+                }}
+            >
                 <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
                 <XAxis
                     dataKey="time"
@@ -478,18 +630,84 @@ const LandAreaGraph = ({ statistics }: { statistics: StatisticsReply }) => {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                {statistics.players.map((player) => (
+                {statistics.players.map(player => (
                     <Line
                         key={player.id}
                         type="stepAfter" // Use step-based line rendering
                         dataKey={`Player ${player.id}`}
-                        name={`Player ${player.id}`}
+                        name={api.players.get(player.id)?.name ?? `Player ${player.id}`}
                         stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
                         strokeWidth={2}
                         dot={false}
                         isAnimationActive={false}
                         connectNulls // Ensures continuous lines even if some timestamps are missing
                     />
+                ))}
+            </LineChart>
+        </ResponsiveContainer>
+    )
+}
+
+type GeneralStatisticsGraphProps = {
+    statistics: StatisticsReply
+    statType: GeneralStatisticsType
+    setHover: (info: string | undefined) => void
+}
+
+const GeneralStatisticsGraph = ({ statistics, statType, setHover }: GeneralStatisticsGraphProps) => {
+    const allTimestamps = new Set<number>()
+    statistics.players.forEach(player => {
+        player.general[statType]?.forEach(([time]) => allTimestamps.add(time))
+    })
+
+    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
+
+    statistics.players.forEach(player => {
+        let lastValue: number | undefined = undefined
+        sortedTimestamps.forEach((time, index) => {
+            const entry = chartData[index]
+            const found = player.general[statType]?.find(([t]) => t === time)
+            if (found) lastValue = found[1]
+            entry[`Player ${player.id}`] = lastValue
+        })
+    })
+
+    if (chartData.length > 0 && chartData[chartData.length - 1].time !== statistics.currentTime) {
+        chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
+    } else {
+        const zeroMeasurement: { [key: string]: number } = {}
+        statistics.players.forEach(player => {
+            zeroMeasurement[`Player ${player.id}`] = 0
+        })
+        chartData.push({ time: 0, ...zeroMeasurement })
+        chartData.push({ time: statistics.currentTime, ...zeroMeasurement })
+    }
+
+    return (
+        <ResponsiveContainer width="100%" height={400}>
+            <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                onMouseLeave={() => setHover(undefined)}
+                onMouseMove={(event: { activePayload?: { value?: number }[] }) => {
+                    if (event?.activePayload) {
+                        const yValue = event.activePayload[0]?.value
+
+                        if (yValue !== undefined) {
+                            setHover(`${yValue}`)
+                        } else {
+                            setHover(undefined)
+                        }
+                    }
+                }}
+            >
+                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
+                <XAxis dataKey="time" label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }} stroke="#FFFFFF" type="number" domain={[0, 'dataMax']} />
+                <YAxis label={{ value: statType, angle: -90, position: "insideLeft", fill: "white" }} stroke="#FFFFFF" domain={[0, 'dataMax + 1']} allowDecimals={false} />
+                <Legend />
+                {statistics.players.map(player => (
+                    <Line key={player.id} type="stepAfter" dataKey={`Player ${player.id}`} name={`Player ${player.id}`} stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`} strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
                 ))}
             </LineChart>
         </ResponsiveContainer>

@@ -1,7 +1,7 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics } from './ws/commands'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
@@ -229,6 +229,10 @@ type NewChatMessage = { chatMessage: ChatMessage }
 
 type GameListChangedMessage = { games: GameInformation[] }
 
+type StatisticsChangedMessage = {
+    change: ('BUILDINGS' | 'LAND' | 'PRODUCTION')[]
+}
+
 export type MoveUpdate = {
     id: WorkerId
 } & (
@@ -349,6 +353,15 @@ function isGameListChangedMessage(message: unknown): message is GameListChangedM
 }
 
 /**
+ * Determines if a message is of type `StatisticsChangedMessage`.
+ * @param {unknown} message - The message to check.
+ * @returns {message is StatisticsChangedMessage} - Returns `true` if the mesage is of type `StatisticsChangedMessage`
+ */
+function isStatisticsChangedMessage(message: unknown): message is StatisticsChangedMessage {
+    return message != null && typeof message === 'object' && 'type' in message && message.type === 'STATISTICS_CHANGED'
+}
+
+/**
  * Determines if a message is of type `NewChatMessage`.
  *
  * @param {unknown} message - The message to check.
@@ -458,6 +471,7 @@ const api = {
     getLandStatistics,
     getStatistics,
     addStatisticsListener,
+    removeStatisticsListener,
     followGame,
 
     // Player
@@ -581,7 +595,7 @@ const gameListeners: Set<GameListener> = new Set<GameListener>()
 const gamesListeners: Set<GameListListener> = new Set<GameListListener>()
 const workerMovedListeners: Set<WorkerMoveListener> = new Set<WorkerMoveListener>()
 const chatListeners: Set<ChatListener> = new Set<ChatListener>()
-const statisticsListeners: Set<StatisticsListener> = new Set<StatisticsListener>()
+const statisticsListeners: Map<StatisticsListener, PlayerId> = new Map()
 const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagListener>>()
 const transportPriorityListeners: Set<TransportPriorityListener> = new Set
 
@@ -659,6 +673,12 @@ function onMessageReceived(message: any): void {
             }
 
             loadChatMessage(message.chatMessage)
+        } else if (isStatisticsChangedMessage(message)) {
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling statistics changed message')
+            }
+
+            handleUpdatedStatistics(message)
         } else {
             console.error(`Do not know how to handle this: ${JSON.stringify(message)}`)
         }
@@ -745,9 +765,26 @@ function addChatMessagesListener(listener: ChatListener, playerId: PlayerId, roo
  * @param {PlayerId} playerId - The id of the player
  */
 function addStatisticsListener(listener: StatisticsListener, playerId: PlayerId): void {
-    listenToStatistics(playerId)
+    if (statisticsListeners.values().find(id => id === playerId) === undefined) {
+        listenToStatistics(playerId)
+    }
 
-    statisticsListeners.add(listener)
+    statisticsListeners.set(listener, playerId)
+}
+
+/**
+ * Removes a listener for changes in game stats.
+ *
+ * @param {StatisticsListener} listener - The listener to remove
+ */
+function removeStatisticsListener(listener: StatisticsListener): void {
+    const playerId = statisticsListeners.get(listener)
+
+    statisticsListeners.delete(listener)
+
+    if (playerId !== undefined && !statisticsListeners.values().find(id => id === playerId)) {
+        stopListeningToStatistics(playerId)
+    }
 }
 
 /**
@@ -1314,6 +1351,15 @@ function loadChatMessage(chatMessage: ChatMessage): void {
     api.chatRoomMessages.push(chatMessage)
 
     chatListeners.forEach(listener => listener())
+}
+
+/**
+ * Notifies listeners about the updated statistics.
+ *
+ * @param statisticsChangedMessage - An object describing the change
+ */
+function handleUpdatedStatistics(statisticsChangedMessage: StatisticsChangedMessage): void {
+    statisticsListeners.keys().forEach(listener => listener())
 }
 
 /**

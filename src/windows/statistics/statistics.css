@@ -5,41 +5,11 @@
     align-self: stretch;
 }
 
-#stats-parent {
-    flex: 1 0 40%;
-    display: inline-block;
-    position: relative;
-    width: 100%;
-    min-width: 10em;
-    max-width: 40em;
-    min-height: 20em;
-    max-height: 40em;
-    /*padding-bottom: 100%;*/
-    /*vertical-align: top;*/
-    overflow: hidden;
-    align-self: stretch;
-}
-
 .select-materials {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 10px;
-}
-
-#textlabel-statistics-tooltip {
-    background-color: white;
-    padding-left: 1em;
-    padding-right: 1em;
-    color: red;
-}
-
-.svg-content {
-    /*display: inline-block;*/
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
 }
 
 .select-building {
@@ -51,4 +21,8 @@
     gap: 10px;
     padding: 2em;
     align-items: center;
+}
+
+.select-building > div:hover {
+    filter: brightness(110%);
 }

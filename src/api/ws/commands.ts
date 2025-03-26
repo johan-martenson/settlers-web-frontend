@@ -137,6 +137,7 @@ enum Command {
     GetLandStatistics = 'GET_LAND_STATISTICS',
     GetStatistics = 'GET_STATISTICS',
     ListenToStatistics = 'LISTEN_TO_STATISTICS',
+    StopListeningToStatistics = 'STOP_LISTENING_TO_STATISTICS',
 
     // Player
     CreatePlayer = 'CREATE_PLAYER',
@@ -1007,6 +1008,10 @@ function listenToStatistics(playerId: PlayerId): void {
     sendWithOptions<{ playerId: PlayerId }>(Command.ListenToStatistics, { playerId })
 }
 
+function stopListeningToStatistics(playerId: PlayerId): void {
+    sendWithOptions<{ playerId: PlayerId }>(Command.StopListeningToStatistics, { playerId })
+}
+
 export {
     setStrengthWhenPopulatingMilitaryBuildings,
     getStrengthWhenPopulatingMilitaryBuildings,
@@ -1092,5 +1097,6 @@ export {
     getLandStatistics,
     getStatistics,
     getTransportPriority,
-    listenToStatistics
+    listenToStatistics,
+    stopListeningToStatistics
 }

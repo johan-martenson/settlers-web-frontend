@@ -1,6 +1,9 @@
 Todo 1.0
 ========
 
+-5. Land statistics should update when military building is occupied, when an enemy building steals land, and when a military building is conquered
+-4. Players should have their own color on lines in statistics window
+-3. Opening a window of a planned building that becomes under construction and then unoccupied creates a feeling of windows jumping around
 -2. Statistics crashes because format of land stats has changed.
 -1. Well worker is invisible???? Japanese, gray
 0. Productivity for the forester hut looks strange
@@ -9,6 +12,12 @@ Todo 1.0
 3. Planer
 4. Make materials visible when donkeys carry
 5. Fix statistics components. Should be general statistics to compare players, and Merchandise to see production and/or inventory
+  - General statistics:
+    - Land size
+    - Houses
+    - Workers
+    - Resources
+    - 
 6. Quota handling for planks
 7. Add the propeller to the mill
 8. Fix ugly scrollbar in type control
@@ -16,10 +25,9 @@ Todo 1.0
 10. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
 11. Add skeleton decoration on the ground when a worker dies
 12. Pinch-to-zoom should zoom in the game, not the full web page
-13. Border markers should look different for water/land
+13. Border markers should look different for summer/winter maps
 14. With guard house, new owned land is larger than discovered land. Reload fixes it
 15. Wild animals walk in place
-16. Houses should have their doors open and close
 17. Military buidings should have flags matching hosted soldiers and a cross if they are evacuated
 18. Bug:
   java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.Road.getCourier()" because "road" is null

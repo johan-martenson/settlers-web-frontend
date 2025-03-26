@@ -615,12 +615,19 @@ export type BuildingStatistics = {
     [key in AnyBuilding]?: Measurement[]
 }
 
+export type GeneralStatisticsType = 'land' | 'houses' | 'workers' | 'goods' | 'military' | 'coins' | 'production' | 'killedEnemies'
+
+export type GeneralStatistics = {
+    [key in GeneralStatisticsType]: Measurement[]
+}
+
 export type StatisticsPerPlayer = {
     id: PlayerId
     productionStatistics: ProductionStatistics
     inventoryStatistics: InventoryStatistics
     landStatistics: LandStatistics
     buildingStatistics: BuildingStatistics
+    general: GeneralStatistics
 }
 
 export type TransportPriorityInformation = Material[]

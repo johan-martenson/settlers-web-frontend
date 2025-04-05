@@ -5,7 +5,7 @@ import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from '../..
 import { InventoryIcon } from '../../icons/icon'
 import { ArrowSortUp24Filled, ArrowSortDown24Filled } from '@fluentui/react-icons'
 import { api } from '../../api/ws-api'
-import { categoryPretty } from '../../pretty_strings'
+import { transportCategoryPretty } from '../../pretty_strings'
 
 // Types
 type SetTransportPriorityProps = {
@@ -81,7 +81,7 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
             <div className='transport-priority-list'>
                 {priority.map(category => {
                     const className = selected === category ? 'chosen-material' : 'material'
-                    const categoryDisplayName = categoryPretty(category)
+                    const categoryDisplayName = transportCategoryPretty(category)
 
                     return (
                         <div key={category}>

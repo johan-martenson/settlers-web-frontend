@@ -1,5 +1,5 @@
 import { PointMap } from "../../utils/util_types"
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics, VegetationAsInt, StatisticsPerPlayer } from "../types"
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
@@ -47,8 +47,8 @@ export type IronBarQuotas = {
 export type StatisticsReply = {
     currentTime: number
     players: StatisticsPerPlayer[]
+    merchandise: MerchandiseStatistics
 }
-
 
 type CreateNewGameOptions = {
     name: string
@@ -177,6 +177,7 @@ enum Command {
     SetFoodQuotas = 'SET_FOOD_QUOTAS',
     SetWaterQuotas = 'SET_WATER_QUOTAS',
     SetIronBarQuotas = 'SET_IRON_BAR_QUOTAS',
+    MarkGameMessagesRead = 'MARK_GAME_MESSAGES_READ',
 
     // Houses
 
@@ -966,6 +967,14 @@ function callGeologist(point: Point): void {
 }
 
 /**
+ * Marks a set of messages as read.
+ * @param {GameMessageId[]} messageIds - A list of ids of the messages to mark as read
+ */
+function markGameMessagesRead(messageIds: GameMessageId[]): void {
+    sendWithOptions<{ messageIds: GameMessageId[] }>(Command.MarkGameMessagesRead, { messageIds })
+}
+
+/**
  * Retrieves the player's current view of the game. Internal function not exposed outside the module.
  * @returns {Promise<PlayerViewInformation>} The current view of the game.
  */
@@ -1098,5 +1107,6 @@ export {
     getStatistics,
     getTransportPriority,
     listenToStatistics,
-    stopListeningToStatistics
+    stopListeningToStatistics,
+    markGameMessagesRead
 }

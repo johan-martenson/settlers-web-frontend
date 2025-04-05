@@ -1,7 +1,7 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics } from './ws/commands'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
@@ -185,7 +185,7 @@ type PlayerViewChangedMessage = {
 }
 
 type PlayerViewChanges = {
-    tick: number
+    time: number
     gameSpeed?: GameSpeed
     workersWithNewTargets?: WalkerTargetChange[]
     workersWithStartedActions?: WorkerNewAction[]
@@ -214,6 +214,7 @@ type PlayerViewChanges = {
     removedSigns?: SignId[]
     changedAvailableConstruction?: ChangedAvailableConstruction[]
     newMessages?: GameMessage[]
+    readMessages?: GameMessage[]
     discoveredDeadTrees?: Point[]
     removedDeadTrees?: Point[]
     removedWildAnimals?: WildAnimalId[]
@@ -269,15 +270,17 @@ let workerWalkingTimer: undefined | NodeJS.Timeout
 let workerAnimationsTimer: undefined | NodeJS.Timeout
 let cropGrowerTimer: undefined | NodeJS.Timeout
 let treeGrowerTimer: undefined | NodeJS.Timeout
+let gameTimer: undefined | NodeJS.Timeout
 
 // Listener types
 export type GameListListener = (gameInformations: GameInformation[]) => void
-export type MessagesListener = (messagesReceived: GameMessage[], messagesRemoved: GameMessageId[]) => void
+export type MessagesListener = (messagesReceived: GameMessage[], messagesRead: GameMessage[], messagesRemoved: GameMessageId[]) => void
 export type HouseListener = ((house: HouseInformation) => void)
 export type DiscoveredPointListener = (discoveredPoints: PointSet) => void
 export type RoadListener = () => void
 export type ChatListener = () => void
 export type StatisticsListener = () => void
+export type TimeListener = (time: number) => void
 
 export type ActionListener = {
     actionStarted: (id: string, point: Point, action: Action) => void
@@ -295,6 +298,8 @@ export type FlagListener = {
 }
 
 export type TransportPriorityListener = (priority: TransportCategory[]) => void
+
+export type PlayerInformationListener = (playerInformation: PlayerInformation) => void
 
 export type GameListener = {
     onMonitoringStarted?: () => void
@@ -395,6 +400,7 @@ let requestedFollowingState: RequestedFollowingState = 'NO_FOLLLOW'
 let followingState: FollowingState = 'NOT_FOLLOWING'
 
 const api = {
+    time: 0,
     gameId: undefined as GameId | undefined,
     playerId: undefined as PlayerId | undefined,
     othersCanJoin: undefined as boolean | undefined,
@@ -472,6 +478,8 @@ const api = {
     getStatistics,
     addStatisticsListener,
     removeStatisticsListener,
+    addTimeListener,
+    removeTimeListener,
     followGame,
 
     // Player
@@ -485,10 +493,13 @@ const api = {
     removeMessagesListener,
     removeMessage,
     removeMessages,
+    markGameMessagesRead,
     getTransportPriority,
     setTransportPriorityForMaterial,
     addTransportPriorityListener,
     removeTransportPriorityListener,
+    addPlayerInformationListener,
+    removePlayerInformationListener,
 
     // Player - military
     setReservedSoldiers,
@@ -597,7 +608,10 @@ const workerMovedListeners: Set<WorkerMoveListener> = new Set<WorkerMoveListener
 const chatListeners: Set<ChatListener> = new Set<ChatListener>()
 const statisticsListeners: Map<StatisticsListener, PlayerId> = new Map()
 const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagListener>>()
-const transportPriorityListeners: Set<TransportPriorityListener> = new Set
+const transportPriorityListeners: Set<TransportPriorityListener> = new Set()
+const timeListeners: Set<TimeListener> = new Set()
+const playerInformationListeners: Map<PlayerId, Set<PlayerInformationListener>> = new Map()
+
 
 // State - misc
 const objectsWithDetailedMonitoring = new Set<HouseId | FlagId>()
@@ -773,6 +787,23 @@ function addStatisticsListener(listener: StatisticsListener, playerId: PlayerId)
 }
 
 /**
+ * Adds a listener for changes in game time.
+ *
+ * @param {TimeListener} listener - The listener to add
+ */
+function addTimeListener(listener: TimeListener): void {
+    timeListeners.add(listener)
+}
+
+/**
+ * Removes the given time listener.
+ * @param {TimeListener} listener - The listener to remove
+ */
+function removeTimeListener(listener: TimeListener): void {
+    timeListeners.delete(listener)
+}
+
+/**
  * Removes a listener for changes in game stats.
  *
  * @param {StatisticsListener} listener - The listener to remove
@@ -825,6 +856,30 @@ function addTransportPriorityListener(listener: TransportPriorityListener): void
  */
 function removeTransportPriorityListener(listener: TransportPriorityListener): void {
     transportPriorityListeners.delete(listener)
+}
+
+/**
+ * Adds a listener that receives updates when information about the given player is changed.
+ *
+ * @param {PlayerId} playerId - The id of the player to listen to
+ * @param {PlayerInformationListener} listener - The function that will be called
+ */
+function addPlayerInformationListener(playerId: PlayerId, listener: PlayerInformationListener): void {
+    if (!playerInformationListeners.has(playerId)) {
+        playerInformationListeners.set(playerId, new Set())
+    }
+
+    playerInformationListeners.get(playerId)?.add(listener)
+}
+
+/**
+ * Removes a listener for player information
+ *
+ * @param {PlayerId} playerId - Thd id of the player
+ * @param {PlayerInformationListener} listener - The function that is called when changes are done
+ */
+function removePlayerInformationListener(playerId: PlayerId, listener: PlayerInformationListener): void {
+    playerInformationListeners.get(playerId)?.delete(listener)
 }
 
 /**
@@ -1145,7 +1200,7 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     message?.messages.forEach(message => api.messages.set(message.id, message))
 
     if (message.messages) {
-        messageListeners.forEach(messageListener => messageListener(message.messages, []))
+        messageListeners.forEach(messageListener => messageListener(message.messages, [], []))
     }
 
     if (previousGameState !== api.gameState) {
@@ -1339,6 +1394,12 @@ function startTimers(): void {
         })
     }, gameTickLength * 10)
 
+    // Track game time
+    gameTimer = setInterval(() => {
+        api.time++
+        timeListeners.forEach(listener => listener(api.time))
+    }, gameTickLength)
+
     walkingTimerState = 'RUNNING'
 }
 
@@ -1426,6 +1487,9 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
 
     // Call other listeners
     gameListeners.forEach(listener => listener.onGameInformationChanged && listener.onGameInformationChanged(gameInformation))
+
+    // Call player information listeners
+    gameInformation.players.forEach(player => playerInformationListeners.get(player.id)?.forEach(listener => listener(player)))
 }
 
 /**
@@ -1435,7 +1499,7 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
 function stopTimers(): void {
     console.log('Stopping walking timers')
 
-    const timers = [workerAnimationsTimer, workerWalkingTimer, cropGrowerTimer, treeGrowerTimer]
+    const timers = [workerAnimationsTimer, workerWalkingTimer, cropGrowerTimer, treeGrowerTimer, gameTimer]
 
     timers.forEach(timer => {
         if (timer) {
@@ -1508,6 +1572,8 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
         gameListeners.forEach(listener => listener.onGameSpeedChanged && listener.onGameSpeedChanged(api.gameSpeed))
     }
+
+    api.time = playerViewChanges.time
 
     // Confirm local removals if they are part of the message
     playerViewChanges.removedFlags?.forEach(removedFlagId => api.localRemovedFlags.delete(removedFlagId))
@@ -1707,23 +1773,18 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
         discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
     }
 
-    let receivedMessages: GameMessage[] = []
-    let removedMessages: GameMessageId[] = []
+    playerViewChanges.newMessages?.forEach(message => api.messages.set(message.id, message))
 
-    if (playerViewChanges.newMessages) {
-        playerViewChanges.newMessages.forEach(message => api.messages.set(message.id, message))
+    playerViewChanges.readMessages?.forEach(message => api.messages.set(message.id, message))
 
-        receivedMessages = playerViewChanges.newMessages
-    }
+    playerViewChanges.removedMessages?.forEach(messageId => api.messages.delete(messageId))
 
-    if (playerViewChanges.removedMessages) {
-        playerViewChanges.removedMessages.forEach(messageId => api.messages.delete(messageId))
-
-        removedMessages = playerViewChanges.removedMessages
-    }
-
-    if (receivedMessages.length !== 0 || removedMessages.length !== 0) {
-        messageListeners.forEach(listener => listener(receivedMessages, removedMessages))
+    if (playerViewChanges.newMessages !== undefined || playerViewChanges.readMessages !== undefined || playerViewChanges.removedMessages !== undefined) {
+        messageListeners.forEach(listener => listener(
+            playerViewChanges.newMessages ?? [],
+            playerViewChanges.readMessages ?? [],
+            playerViewChanges.removedMessages ?? []
+        ))
     }
 
     if (playerViewChanges.newRoads !== undefined || playerViewChanges.removedRoads !== undefined) {
@@ -1739,6 +1800,8 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             listener(api.transportPriority)
         }
     }
+
+    timeListeners.forEach(listener => listener(api.time))
 }
 
 /**

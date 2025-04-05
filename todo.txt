@@ -1,10 +1,15 @@
 Todo 1.0
 ========
 
+-13. Planned building window should list needed material
+-12. Messages component should have indicator showing that there are unread messages (and how many)
+-11. Unoccupied mill doesn't get worker assigned
+-10. No sign on flag, or flag on sign
+-9. Should not open multiple windows for the same building
+-7. When the driveway to the headquarters becomes a main road a donkey should get assigned to it. Same for storehouses?
+-6. Playing on the border of the map doesn't look good. The edge zig-zags
 -5. Land statistics should update when military building is occupied, when an enemy building steals land, and when a military building is conquered
--4. Players should have their own color on lines in statistics window
 -3. Opening a window of a planned building that becomes under construction and then unoccupied creates a feeling of windows jumping around
--2. Statistics crashes because format of land stats has changed.
 -1. Well worker is invisible???? Japanese, gray
 0. Productivity for the forester hut looks strange
 1. Animation of houses
@@ -12,12 +17,6 @@ Todo 1.0
 3. Planer
 4. Make materials visible when donkeys carry
 5. Fix statistics components. Should be general statistics to compare players, and Merchandise to see production and/or inventory
-  - General statistics:
-    - Land size
-    - Houses
-    - Workers
-    - Resources
-    - 
 6. Quota handling for planks
 7. Add the propeller to the mill
 8. Fix ugly scrollbar in type control
@@ -53,7 +52,6 @@ Todo 1.0
 	at org.appland.settlers.model.GameMap.stepTime(GameMap.java:414)
 	at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:92)
 
-19. Starting inventory levels
 20. Re-route cargo at full flags when new roads are built to resolve the issue
   - Re-route both to the headquarters/storehouses, and to consumers directly
   - Overload happends when many things need to get to the headquarters and something is getting delivered in the opposite direction but can't because the flag is full
@@ -97,7 +95,6 @@ Todo 1.0
     null
     org.appland.settlers.model.GameMap@22109add
 
-26. Inventory in the headquarters should update when its window is open
 
 27. Bug
     ON MESSAGE: {"command":"FULL_SYNC","playerId":"52"}
@@ -146,9 +143,20 @@ Todo 1.0
     I - Off we go
     7 players, 64x64, by Blue Byte
 
+36. Bug
+    Warning: Cannot update a component (`Play`) while rendering a different component (`TypeControl`). To locate the bad setState() call inside `TypeControl`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render Error Component Stack
+    at TypeControl (type_control.tsx:62:1)
+    at div (<anonymous>)
+    at Play (play.tsx:178:1)
+    at div (<anonymous>)
+    at GameInit (index.tsx:32:1)
+    at div (<anonymous>)
+    at AppWrapper (index.tsx:181:1)
+    at div (<anonymous>)
+    at TextDirectionProvider (TextDirectionContext.tsx:21:1)
+
 Todo 2.0
 ========
 
-1. Divide src into sub-folders better. prepare-game, play-game?
 2. Workers should walk slower up-hill and faster down-hill
 3. Workers/soldiers should only leave buildings one-by-one, not all at once

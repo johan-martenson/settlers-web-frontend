@@ -24,3 +24,17 @@
     justify-content: space-between;
     gap: 10px;
 }
+
+.info-overlay {
+    background-color: crimson;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.game-messages-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}

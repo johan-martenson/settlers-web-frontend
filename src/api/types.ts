@@ -52,13 +52,13 @@ export const TRANSPORT_CATEGORIES = new Set<TransportCategory>(['FOOD', 'WEAPONS
 export type Material = 'FLOUR' | 'PIG' | 'GOLD' | 'IRON' | 'COAL' | 'STONE' | 'WATER' | 'WOOD' | 'PLANK' | 'BREAD' | 'FISH' | 'MEAT' | 'SHIELD' | 'SWORD' | 'BEER' | 'COIN' | 'METALWORKER' | 'WHEAT' | 'SHIPWRIGHT' | 'IRON_BAR' | 'BOAT' | Tool | MaterialWorker
 export const WORKER_MATERIALS = new Set<MaterialWorker>(['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'SAWMILL_WORKER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL', 'BUILDER', 'PLANER', 'SHIPWRIGHT'])
 
-export const MATERIALS = new Set<Material>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
+export const MATERIALS = new Set<Material>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'HAMMER', 'SCYTHE', 'IRON_BAR'])
 WORKER_MATERIALS.forEach(workerMaterial => MATERIALS.add(workerMaterial))
 
-export const MATERIALS_AS_STRING = new Set<string>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'IRON_BAR'])
+export const MATERIALS_AS_STRING = new Set<string>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'HAMMER', 'IRON_BAR'])
 WORKER_MATERIALS.forEach(workerMaterial => MATERIALS_AS_STRING.add(workerMaterial))
 
-export type Tool = 'AXE' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
+export type Tool = 'AXE' | 'HAMMER' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
 
 export const TOOLS: Set<Tool> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
 export const TOOLS_STRING: Set<string> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
@@ -621,11 +621,44 @@ export type GeneralStatistics = {
     [key in GeneralStatisticsType]: Measurement[]
 }
 
+export type Merchandise = 'WOOD'
+    | 'PLANK'
+    | 'STONE'
+    | 'FOOD'
+    | 'WATER'
+    | 'BEER'
+    | 'COAL'
+    | 'IRON'
+    | 'GOLD'
+    | 'IRON_BAR'
+    | 'COIN'
+    | 'TOOLS'
+    | 'WEAPONS'
+    | 'BOAT'
+
+const MERCHANDISE_VALUES: Merchandise[] = ['WOOD',
+    'PLANK',
+    'STONE',
+    'FOOD',
+    'WATER',
+    'BEER',
+    'COAL',
+    'IRON',
+    'GOLD',
+    'IRON_BAR',
+    'COIN',
+    'TOOLS',
+    'WEAPONS',
+    'BOAT']
+
+export type MerchandiseStatistics = {
+    [key in Merchandise]?: Measurement[]
+}
+
 export type StatisticsPerPlayer = {
     id: PlayerId
     productionStatistics: ProductionStatistics
     inventoryStatistics: InventoryStatistics
-    landStatistics: LandStatistics
     buildingStatistics: BuildingStatistics
     general: GeneralStatistics
 }
@@ -733,6 +766,7 @@ export type StoreHouseIsReadyMessage = {
 
 export type GameMessage = {
     id: GameMessageId
+    isRead: boolean
 } & (
         | GameEndedMessage
         | ShipHasReachedDestinationMessage
@@ -819,5 +853,6 @@ export {
     MEDIUM_HOUSES,
     LARGE_HOUSES,
     VEGETATION_INTEGERS,
-    SOLDIER_TYPES
+    SOLDIER_TYPES,
+    MERCHANDISE_VALUES
 }

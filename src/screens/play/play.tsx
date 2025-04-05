@@ -455,17 +455,18 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [nextWindowIdContainer])
 
     const openSingletonWindow = useCallback((window: WindowType) => {
-        setWindows(prevWindows => [
-            ...prevWindows.filter(w => w.type !== window.type),
-            { ...window, id: nextWindowId() }])
+        setWindows(prevWindows => prevWindows.find(w => w.type === window.type)
+            ? prevWindows
+            : [...prevWindows, { ...window, id: nextWindowId() }]
+        )
     }, [nextWindowId])
 
     const openWindow = useCallback((window: WindowType) => {
         console.log(`Opening: ${JSON.stringify(window)}`)
 
-        setWindows(prevWindows => [
-            ...prevWindows,
-            { ...window, id: nextWindowId() }])
+        setWindows(prevWindows => prevWindows.find(w => w.type === 'HOUSE' && window.type === 'HOUSE' && w.house.id === window.house.id)
+            ? prevWindows
+            : [...prevWindows, { ...window, id: nextWindowId() }])
     }, [nextWindowId])
 
     const closeWindow = useCallback((id: number) => {

@@ -34,7 +34,7 @@ function isReplyMessage(message: unknown): message is ReplyMessage {
 
 // Configuration
 export const wsApiCoreDebugSettings = {
-    receive: true,
+    receive: false,
     send: false,
     connectionHandling: true
 }

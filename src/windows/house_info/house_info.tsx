@@ -293,6 +293,8 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                 onMouseLeave={() => setHoverInfo(undefined)}
             />
 
+            {house.state === 'UNOCCUPIED' && <div>Unoccupied</div>}
+
             <div className='production-info'>
 
                 <div>Productivity: {house.productivity}</div>

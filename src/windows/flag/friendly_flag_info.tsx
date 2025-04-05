@@ -5,6 +5,7 @@ import { api } from '../../api/ws-api'
 import { Button, Field } from '@fluentui/react-components'
 import { FlagIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import { ButtonRow, Window } from '../../components/dialog'
+import { materialPretty } from '../../pretty_strings'
 
 // Types
 type FriendlyFlagInfoProps = {
@@ -106,7 +107,14 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         <Field label='Cargo waiting'>
                             <div className='friendly-flag-info-cargo-list'>
                                 {flag.stackedCargo.map((material, index) => (
-                                    <InventoryIcon material={material} key={index} nation={nation} inline />
+                                    <InventoryIcon
+                                        material={material}
+                                        key={index}
+                                        nation={nation}
+                                        inline
+                                        onMouseEnter={() => setHoverInfo(`${materialPretty(material)}`)}
+                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                    />
                                 ))}
                             </div>
                         </Field>

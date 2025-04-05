@@ -29,7 +29,15 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
     useEffect(() => {
 
         // eslint-disable-next-line
-        const messageReceiver = (_receivedMessages: GameMessage[], _removedMessages: GameMessageId[]) => {
+        const messageReceiver = (_receivedMessages: GameMessage[], _readMessages: GameMessage[], _removedMessages: GameMessageId[]) => {
+            if (expanded) {
+                const unreadMessages = Array.from(api.messages.values()).filter(message => !message.isRead)
+
+                if (unreadMessages.length > 0) {
+                    api.markGameMessagesRead(unreadMessages.map(message => message.id))
+                }    
+            }
+
             setMessages(Array.from(api.messages.values()))
         }
 
@@ -37,13 +45,29 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
         api.addMessagesListener(messageReceiver)
 
         return () => api.removeMessagesListener(messageReceiver)
-    }, [])
+    }, [expanded])
+
+    const unreadMessages = messages.filter(message => !message.isRead)
 
     return (
-        <div className='game-messages' onWheel={(event) => event.stopPropagation()}>
+        <div className='game-messages' onWheel={event => event.stopPropagation()}>
 
-            <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} />
-            <div> <b>Messages</b></div>
+            <ExpandCollapseToggle
+                onExpand={() => {
+                    console.log('xpanded')
+
+                    api.markGameMessagesRead(messages.map(message => message.id))
+
+                    setExpanded(true)
+                }
+                }
+                onCollapse={() => setExpanded(false)}
+            />
+
+            <div className='game-messages-header'>
+                <b>Messages</b>
+                {unreadMessages.length > 0 ? <div className='info-overlay'>{unreadMessages.length}</div> : <div></div>}
+            </div>
 
             {expanded &&
                 <div className='game-message-list'>

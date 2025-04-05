@@ -1,5 +1,8 @@
-import { AnyBuilding, Material, Nation, PlayerColor, SoldierType, TransportCategory } from "./api/types"
+import { AnyBuilding, Material, Merchandise, Nation, PlayerColor, SoldierType, TransportCategory } from "./api/types"
 
+// Types
+
+// Constants
 const MATERIAL_FIRST_UPPERCASE = new Map<Material, string>()
 
 MATERIAL_FIRST_UPPERCASE.set("FLOUR", 'Flour')
@@ -201,7 +204,35 @@ const CATEGORY_PRETTY = new Map<TransportCategory, string>([
     ['BOAT', 'Boat'],
 ])
 
+const MERCHANDISE_PRETTY = new Map<Merchandise, string>([
+    ['WOOD', 'Wood'],
+    ['PLANK', 'Plank'],
+    ['STONE', 'Stone'],
+    ['FOOD', 'Food'],
+    ['WATER', 'Water'],
+    ['BEER', 'Beer'],
+    ['COAL', 'Coal'],
+    ['IRON', 'Iron'],
+    ['GOLD', 'Gold'],
+    ['IRON_BAR', 'Iron bar'],
+    ['COIN', 'Coin'],
+    ['TOOLS', 'Tools'],
+    ['WEAPONS', 'Weapons'],
+    ['BOAT', 'Boats']
+])
 
+const PLAYER_COLORS: { [key in PlayerColor]: string } = {
+    BLUE: '#1E88E5',    // vibrant blue
+    RED: '#D32F2F',     // strong red
+    YELLOW: '#FBC02D',  // bright yellow
+    GREEN: '#43A047',   // clear green
+    PURPLE: '#8E24AA',  // typical purple
+    BROWN: '#795548',   // classic brown
+    GRAY: '#757575',    // neutral gray
+    WHITE: '#FFFFFF'    // true white
+}
+
+// Functions
 function nationPretty(nation: Nation): string {
     return NATION_PRETTY.get(nation) ?? ''
 }
@@ -228,7 +259,7 @@ function buildingPretty(building: AnyBuilding): string {
     return BUILDINGS_PRETTY.get(building) ?? building
 }
 
-function categoryPretty(category: TransportCategory): string {
+function transportCategoryPretty(category: TransportCategory): string {
     return CATEGORY_PRETTY.get(category) ?? category
 }
 
@@ -236,13 +267,24 @@ function materialPretty(material: Material): string {
     return MATERIAL_FIRST_UPPERCASE.get(material) ?? material
 }
 
+function merchandisePretty(category: Merchandise): string {
+    return MERCHANDISE_PRETTY.get(category) ?? category
+}
+
+function playerToColor(playerColor: PlayerColor): string {
+    return PLAYER_COLORS[playerColor]
+}
+
 export {
     MATERIAL_FIRST_UPPERCASE,
     MATERIAL_LABELS,
+    PLAYER_COLORS,
     nationPretty,
     colorPretty,
     soldierPretty,
     buildingPretty,
-    categoryPretty,
-    materialPretty
+    transportCategoryPretty,
+    materialPretty,
+    merchandisePretty,
+    playerToColor
 }

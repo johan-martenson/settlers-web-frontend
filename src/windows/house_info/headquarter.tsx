@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
-import { HouseInformation, MATERIALS, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
+import { HouseInformation, MATERIALS, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon } from '../../icons/icon'
 import './house_info.css'
 import { useState } from 'react'
@@ -19,6 +19,65 @@ type HeadquarterInfoProps = {
 }
 
 // Constants
+const INVENTORY_MATERIALS: Material[]  = [
+    'WOOD',
+    'PLANK',
+    'STONE',
+    'PIG',
+    'WHEAT',
+    'FISH',
+    'MEAT',
+    'BREAD',
+    'WATER',
+    'BEER',
+    'COAL',
+    'IRON',
+    'COIN',
+    'TONGS',
+    'AXE',
+    'SAW',
+    'PICK_AXE',
+    'HAMMER',
+    'SHOVEL',
+    'CRUCIBLE',
+    'FISHING_ROD',
+    'SCYTHE',
+    'CLEAVER',
+    'ROLLING_PIN',
+    'BOW',
+    'SWORD',
+    'SHIELD',
+    'BOAT',
+    'BUILDER',
+    'PLANER',
+    'WOODCUTTER_WORKER',
+    'FORESTER',
+    'STONEMASON',
+    'FISHERMAN',
+    'HUNTER',
+    'SAWMILL_WORKER',
+    'FARMER',
+    'PIG_BREEDER',
+    'DONKEY_BREEDER',
+    'MILLER',
+    'BAKER',
+    'BUTCHER',
+    'BREWER',
+    'MINER',
+    'IRON_FOUNDER',
+    'ARMORER',
+    'MINTER',
+    'METALWORKER',
+    'SHIPWRIGHT',
+    'GEOLOGIST',
+    'SCOUT',
+    'DONKEY',
+    'PRIVATE',
+    'PRIVATE_FIRST_CLASS',
+    'SERGEANT',
+    'OFFICER',
+    'GENERAL'
+]
 
 // React components
 const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoProps) => {
@@ -142,7 +201,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
             {panel === 'INVENTORY' &&
                 <div className='headquarter-inventory'>
-                    {Array.from(MATERIALS)
+                    {Array.from(INVENTORY_MATERIALS)
                         .filter(material => material !== 'STOREHOUSE_WORKER' && material !== 'WELL_WORKER')
                         .map(material => {
                             const amount = house.resources[material]?.has ?? 0

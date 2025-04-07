@@ -1419,7 +1419,8 @@ function loadChatMessage(chatMessage: ChatMessage): void {
  *
  * @param statisticsChangedMessage - An object describing the change
  */
-function handleUpdatedStatistics(statisticsChangedMessage: StatisticsChangedMessage): void {
+// eslint-disable-next-line
+function handleUpdatedStatistics(_statisticsChangedMessage: StatisticsChangedMessage): void {
     statisticsListeners.keys().forEach(listener => listener())
 }
 

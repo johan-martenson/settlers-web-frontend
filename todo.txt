@@ -1,8 +1,8 @@
 Todo 1.0
 ========
 
+-14. Hover info for construction progress is not updated
 -13. Planned building window should list needed material
--12. Messages component should have indicator showing that there are unread messages (and how many)
 -11. Unoccupied mill doesn't get worker assigned
 -10. No sign on flag, or flag on sign
 -9. Should not open multiple windows for the same building

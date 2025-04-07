@@ -271,6 +271,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
                                     return (
                                         <PlayerButton
+                                            key={player.id}
                                             playerId={player.id}
                                             selected={selectedPlayers.includes(player.id)}
                                             onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
@@ -344,7 +345,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
                     {state == 'MERCHANDISE' &&
                         <>
-                            <MerchandiseGraph statistics={statistics} selectedMerchandise={selectedMerchandise} setHover={setHoverInfo} time={time} />
+                            <MerchandiseGraph statistics={statistics} selectedMerchandise={selectedMerchandise} time={time} />
                             <div className='select-merchandise'>
                                 {MERCHANDISE_VALUES.map(merchandise => {
                                     const prettyMerchandise = merchandisePretty(merchandise).toLowerCase()
@@ -480,11 +481,9 @@ type MerchandiseGraphProps = {
     statistics: StatisticsReply
     selectedMerchandise: Merchandise[]
     time: number
-    setHover: (arg: string | undefined) => void
 }
 
-const MerchandiseGraph = ({ statistics, selectedMerchandise, time, setHover }: MerchandiseGraphProps) => {
-    const [value, setValue] = useState<{ label: Merchandise, value: number }>({ label: 'WOOD', value: 0 })
+const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: MerchandiseGraphProps) => {
 
     // Collect all unique timestamps
     const allTimestamps = new Set<number>()
@@ -562,7 +561,6 @@ const MerchandiseGraph = ({ statistics, selectedMerchandise, time, setHover }: M
                         dot={false}
                         isAnimationActive={false}
                         connectNulls
-                        onMouseMove={() => setHover(`${merchandisePretty(value.label)}: ${value.value}`)}
                     />
                 ))}
             </LineChart>

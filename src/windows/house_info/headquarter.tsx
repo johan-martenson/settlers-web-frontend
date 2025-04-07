@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
-import { HouseInformation, MATERIALS, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
+import { HouseInformation, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon } from '../../icons/icon'
 import './house_info.css'
 import { useState } from 'react'
@@ -55,7 +55,7 @@ const INVENTORY_MATERIALS: Material[]  = [
     'STONEMASON',
     'FISHERMAN',
     'HUNTER',
-    'SAWMILL_WORKER',
+    'CARPENTER',
     'FARMER',
     'PIG_BREEDER',
     'DONKEY_BREEDER',

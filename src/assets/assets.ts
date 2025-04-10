@@ -87,8 +87,18 @@ type WorkerImageAtlasFormat = {
     nationSpecific: WorkerNationSpecificFormat
 }
 
+type HouseImages = {
+    ready: OneImageInformation
+    underConstruction: OneImageInformation
+    underConstructionShadow: OneImageInformation
+    readyShadow: OneImageInformation
+    openDoor: OneImageInformation
+    workingAnimation?: ImageSeriesInformation
+    workingAnimationShadow?: ImageSeriesInformation
+}
+
 type HouseImageAtlasInformation = {
-    buildings: Record<Nation, Record<AnyBuilding, Record<'ready' | 'underConstruction' | 'underConstructionShadow' | 'readyShadow' | 'openDoor', OneImageInformation>>>
+    buildings: Record<Nation, Record<AnyBuilding, HouseImages>>
     constructionPlanned: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
     constructionJustStarted: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
 }
@@ -1191,6 +1201,58 @@ class HouseImageAtlasHandler {
         }
 
         return undefined
+    }
+
+    getDrawingInformationForWorkingHouse(nation: Nation, houseType: AnyBuilding, animationIndex: number): DrawingInformation[] | undefined {
+        if (this.image === undefined || this.imageAtlasInfo === undefined) {
+            console.error('Image or image atlas is undefined')
+            console.error([this.image, this.imageAtlasInfo])
+
+            return undefined
+        }
+
+        if (this.imageAtlasInfo?.buildings[nation][houseType] === undefined) {
+            console.log([nation, houseType, this.imageAtlasInfo?.buildings[nation]])
+        }
+
+        if (this.imageAtlasInfo?.buildings[nation][houseType].workingAnimation === undefined || this.imageAtlasInfo?.buildings[nation][houseType].readyShadow === undefined) {
+            console.error(['Missing animation for', nation, houseType])
+
+            return undefined
+        }
+
+
+        const houseAnimation = this.imageAtlasInfo.buildings[nation][houseType].workingAnimation
+        const houseAnimationShadow = this.imageAtlasInfo.buildings[nation][houseType].workingAnimationShadow
+
+        if (houseAnimationShadow === undefined) {
+            console.log([nation, houseType])
+
+            return undefined
+        }
+
+        return [
+            {
+                sourceX: houseAnimation.startX + (animationIndex % houseAnimation.nrImages) * houseAnimation.width,
+                sourceY: houseAnimation.startY,
+                width: houseAnimation.width,
+                height: houseAnimation.height,
+                offsetX: houseAnimation.offsetX,
+                offsetY: houseAnimation.offsetY,
+                image: this.image,
+                texture: this.texture
+            },
+            {
+                sourceX: houseAnimationShadow.startX + (animationIndex % houseAnimationShadow.nrImages) * houseAnimationShadow.width,
+                sourceY: houseAnimationShadow.startY,
+                width: houseAnimationShadow.width,
+                height: houseAnimationShadow.height,
+                offsetX: houseAnimationShadow.offsetX,
+                offsetY: houseAnimationShadow.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        ]
     }
 
     getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {

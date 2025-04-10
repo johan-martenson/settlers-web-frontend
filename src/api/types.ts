@@ -555,6 +555,7 @@ export type HouseInformation = Point & {
     productivity?: number
     upgrading?: boolean
     nation: Nation
+    isWorking?: boolean
 }
 
 export type HeadquarterInformation = HouseInformation & {

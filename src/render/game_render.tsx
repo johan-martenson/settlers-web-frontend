@@ -425,15 +425,10 @@ function GameCanvas({
             }
 
             async function loadAssetsAndSetupGl(): Promise<void> {
-                const fileLoading = []
+                const fileLoading: Promise<void | HTMLImageElement>[] = []
 
-                for (const worker of workers.values()) {
-                    fileLoading.push(worker.load())
-                }
-
-                for (const animal of animals.values()) {
-                    fileLoading.push(animal.load())
-                }
+                Array.from(workers.values()).forEach(worker => fileLoading.push(worker.load()))
+                Array.from(animals.values()).forEach(animal => fileLoading.push(animal.load()))
 
                 const allThingsToWaitFor: Promise<void | HTMLImageElement>[] = fileLoading.concat([
                     treeAnimations.load(),
@@ -468,15 +463,14 @@ function GameCanvas({
                 // Wait for the game data to be read from the backend and the websocket to be established
                 await Promise.all([api.waitForConnection(), api.waitForGameDataAvailable()])
 
-                /* Put together the render information from the discovered tiles */
+                // Put together the render information from the discovered tiles
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
 
                 renderState.mapRenderInformation = prepareToRenderFromTiles(api.discoveredBelowTiles, api.discoveredDownRightTiles, api.allTiles, renderState.normals)
 
-                /*  Initialize webgl2 */
+                //  Initialize webgl2
                 if (normalCanvasRef?.current) {
                     const canvas = normalCanvasRef.current
-
                     const gl = canvas.getContext('webgl2', { alpha: false })
 
                     if (gl) {
@@ -572,7 +566,7 @@ function GameCanvas({
                     // Bind the terrain and road image atlas texture
                 }
 
-                /* Prepare to draw roads */
+                // Prepare to draw roads
                 updateRoadDrawingBuffers()
             }
 
@@ -615,17 +609,17 @@ function GameCanvas({
             updateRoadDrawingBuffers()
         }
 
-        /* Ensure that the reference to the canvases are set */
+        // Ensure that the reference to the canvases are set
         if (!overlayCanvasRef?.current || !normalCanvasRef?.current) {
             console.error('The canvas references are not set properly')
 
             return
         }
 
-        /* Get the rendering context for the overlay canvas */
+        // Get the rendering context for the overlay canvas
         const overlayCtx = overlayCanvasRef.current.getContext('2d')
 
-        /* Ensure that the canvas rendering context is valid */
+        // Ensure that the canvas rendering context is valid
         if (!overlayCtx) {
             console.error('No or invalid context')
 
@@ -647,12 +641,12 @@ function GameCanvas({
 
         renderState.gl.viewport(0, 0, width, height)
 
-        /* Clear the drawing list */
+        // Clear the drawing list
         const toDrawNormal: ToDraw[] = []
         const shadowsToDraw: ToDraw[] = []
 
 
-        /* Clear the overlay - make it fully transparent */
+        // Clear the overlay - make it fully transparent
         overlayCtx.clearRect(0, 0, width, height)
 
         const upLeft = screenPointToGamePointNoHeightAdjustmentInternal({ x: 0, y: 0 })
@@ -677,7 +671,7 @@ function GameCanvas({
          */
 
 
-        /* Draw the terrain layer */
+        // Draw the terrain layer
         if (imageAtlasTerrainAndRoads) {
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
@@ -700,7 +694,7 @@ function GameCanvas({
         duration.after('draw terrain')
 
 
-        /* Draw decorations on the ground */
+        // Draw decorations on the ground
         const decorationsToDraw: ToDraw[] = []
 
         api.decorations.forEach(decoration => {
@@ -754,7 +748,7 @@ function GameCanvas({
         duration.after('drawing decorations')
 
 
-        /* Draw the road layer */
+        // Draw the road layer
         if (imageAtlasTerrainAndRoads) {
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
@@ -779,7 +773,7 @@ function GameCanvas({
 
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
-        /* Collect borders to draw */
+        // Collect borders to draw
         api.border.forEach((borderForPlayer) => {
             borderForPlayer.points.forEach(borderPoint => {
                 if (borderPoint.x < minXInGame - 1 || borderPoint.x > maxXInGame || borderPoint.y < minYInGame - 1 || borderPoint.y > maxYInGame + 1) {
@@ -798,7 +792,7 @@ function GameCanvas({
         duration.after('collect borders')
 
 
-        /* Collect the houses */
+        // Collect the houses
         for (const house of api.houses.values()) {
             if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                 continue
@@ -865,18 +859,35 @@ function GameCanvas({
                     })
                 }
             } else {
-                const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
+                if ((house.type === 'Mill' && house.isWorking) ||
+                    (house.type === 'Harbor' && (house.nation === 'ROMANS' || house.nation === 'JAPANESE') && house.isWorking)) {
+                    const houseDrawInformation = houses.getDrawingInformationForWorkingHouse(house.nation, house.type, renderState.animationIndex)
 
-                if (houseDrawInformation) {
-                    toDrawNormal.push({
-                        source: houseDrawInformation[0],
-                        gamePoint: house,
-                    })
+                    if (houseDrawInformation) {
+                        toDrawNormal.push({
+                            source: houseDrawInformation[0],
+                            gamePoint: house,
+                        })
 
-                    shadowsToDraw.push({
-                        source: houseDrawInformation[1],
-                        gamePoint: house,
-                    })
+                        shadowsToDraw.push({
+                            source: houseDrawInformation[1],
+                            gamePoint: house,
+                        })
+                    }
+                } else {
+                    const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
+
+                    if (houseDrawInformation) {
+                        toDrawNormal.push({
+                            source: houseDrawInformation[0],
+                            gamePoint: house,
+                        })
+
+                        shadowsToDraw.push({
+                            source: houseDrawInformation[1],
+                            gamePoint: house,
+                        })
+                    }
                 }
 
                 if (house.door === 'OPEN') {
@@ -893,7 +904,7 @@ function GameCanvas({
         duration.after('collect houses')
 
 
-        /* Collect the trees */
+        // Collect the trees
         let treeIndex = 0
         for (const tree of api.trees.values()) {
             if (tree.x + 2 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
@@ -958,7 +969,7 @@ function GameCanvas({
         duration.after('collect trees')
 
 
-        /* Collect the crops */
+        // Collect the crops
         for (const crop of api.crops.values()) {
             if (crop.x < minXInGame || crop.x > maxXInGame || crop.y < minYInGame || crop.y > maxYInGame) {
                 continue
@@ -983,7 +994,7 @@ function GameCanvas({
         duration.after('collect crops')
 
 
-        /* Collect the signs */
+        // Collect the signs
         for (const sign of api.signs.values()) {
             if (sign.x < minXInGame || sign.x > maxXInGame || sign.y < minYInGame || sign.y > maxYInGame) {
                 continue
@@ -1013,7 +1024,7 @@ function GameCanvas({
         duration.after('collect signs')
 
 
-        /* Collect the stones */
+        // Collect the stones
         for (const stone of api.stones.values()) {
             if (stone.x + 1 < minXInGame || stone.x - 1 > maxXInGame || stone.y + 1 < minYInGame || stone.y - 1 > maxYInGame) {
                 continue
@@ -1037,7 +1048,7 @@ function GameCanvas({
         duration.after('collect stones')
 
 
-        /* Collect wild animals */
+        // Collect wild animals
         for (const animal of api.wildAnimals.values()) {
 
             // Animal is walking between fixed points
@@ -1125,7 +1136,7 @@ function GameCanvas({
         duration.after('collect wild animals')
 
 
-        /* Collect ships */
+        // Collect ships
         for (const ship of api.ships.values()) {
 
             // ship is moving and not at a fixed point
@@ -1204,7 +1215,7 @@ function GameCanvas({
         }
 
 
-        /* Collect workers */
+        // Collect workers
         for (const worker of api.workers.values()) {
 
             // Worker is moving and not at a fixed point
@@ -1480,7 +1491,7 @@ function GameCanvas({
         duration.after('collect workers')
 
 
-        /* Collect flags */
+        // Collect flags
         let flagCount = 0
         for (const flag of api.flags.values()) {
             if (flag.x < minXInGame || flag.x > maxXInGame || flag.y < minYInGame || flag.y > maxYInGame) {
@@ -1549,7 +1560,7 @@ function GameCanvas({
         duration.after('collect flags')
 
 
-        /* Collect available construction */
+        // Collect available construction
         if (renderState.showAvailableConstruction) {
             for (const [gamePoint, available] of api.availableConstruction.entries()) {
                 if (available.length === 0) {
@@ -1679,7 +1690,7 @@ function GameCanvas({
         // Handle the hover layer
         const toDrawHover: ToDraw[] = []
 
-        /* Draw possible road connections */
+        // Draw possible road connections
         if (renderState.newRoad?.possibleConnections) {
             if (renderState?.newRoad !== undefined) {
                 const center = renderState.newRoad.newRoad[renderState.newRoad.newRoad.length - 1]
@@ -1733,7 +1744,7 @@ function GameCanvas({
         duration.after('collect possible road connections')
 
 
-        /* Draw the selected point */
+        // Draw the selected point
         if (!hideSelectedPoint) {
             if (renderState.selectedPoint) {
                 const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
@@ -1748,7 +1759,7 @@ function GameCanvas({
         duration.after('collect selected point')
 
 
-        /* Draw the hover point */
+        // Draw the hover point
         if (!hideHoverPoint) {
             if (renderState.hoverPoint && renderState.hoverPoint.y > 0 && renderState.hoverPoint.x > 0) {
                 const availableConstructionAtHoverPoint = api.availableConstruction.get(renderState.hoverPoint)
@@ -1839,7 +1850,7 @@ function GameCanvas({
         duration.after('draw normal layer')
 
 
-        /* Draw house titles */
+        // Draw house titles
         if (renderState.showHouseTitles) {
             overlayCtx.font = 'bold 12px sans-serif'
             overlayCtx.strokeStyle = 'black'
@@ -1899,12 +1910,12 @@ function GameCanvas({
         duration.reportStats()
 
 
-        /* List counters if the rendering time exceeded the previous maximum */
+        // List counters if the rendering time exceeded the previous maximum
         if (isLatestValueHighestForVariable('GameRender::renderGame.total')) {
             printVariables()
         }
 
-        /* Draw the FPS counter */
+        // Draw the FPS counter
         const timestamp = Date.now()
 
         if (showFpsCounter && renderState.previousTimestamp) {
@@ -2015,7 +2026,7 @@ function GameCanvas({
                 onMouseMove={
                     (event: React.MouseEvent) => {
 
-                        /* Convert to game coordinates */
+                        // Convert to game coordinates
                         if (overlayCanvasRef?.current) {
                             const rect = event.currentTarget.getBoundingClientRect()
                             const x = ((event.clientX - rect.left) / (rect.right - rect.left) * overlayCanvasRef.current.width)
@@ -2036,7 +2047,7 @@ function GameCanvas({
                             }
                         }
 
-                        /* Allow the event to propagate to make scrolling work */
+                        // Allow the event to propagate to make scrolling work
                     }
                 }
             />

@@ -1,6 +1,7 @@
 Todo 1.0
 ========
 
+-15. Flour is missing in headquarters inventory
 -14. Hover info for construction progress is not updated
 -13. Planned building window should list needed material
 -11. Unoccupied mill doesn't get worker assigned

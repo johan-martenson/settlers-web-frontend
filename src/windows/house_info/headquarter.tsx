@@ -14,8 +14,8 @@ type HeadquarterInfoProps = {
     house: HouseInformation
     nation: Nation
 
-    onRaise: (() => void)
-    onClose: (() => void)
+    onRaise: () => void
+    onClose: () => void
 }
 
 // Constants

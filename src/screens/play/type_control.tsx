@@ -3,6 +3,7 @@ import './type_control.css'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import { PointInformation, Point } from '../../api/types'
 import { api } from '../../api/ws-api'
+import { ItemContainer } from '../../components/item_container'
 
 // Types
 export type Command = {
@@ -162,54 +163,57 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
     const invalidSelectedPointInformation = selectedPointInformation === undefined || !('canBuild' in selectedPointInformation)
 
+    const matches = Array.from(commands.entries())
+
+        // eslint-disable-next-line
+        .filter(
+            ([, command]) =>
+                !command.filter ||
+                invalidSelectedPointInformation ||
+                command.filter(selectedPointInformation)
+        )
+        .filter(
+            ([commandName]) =>
+                expanded ||
+                (inputToMatch.length > 0 &&
+                    commandName.toLowerCase().startsWith(inputToMatch))
+        )
+
     return (
         <div className='type-control' onWheel={(event) => event.stopPropagation()}>
 
             <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} />
             <div className={className}>{input}</div>
 
-            <div className='container-alternatives'>
+            {(expanded || matches.length > 0) &&
+                <div className='container-alternatives'>
+                    <ItemContainer>
+                        {matches.map(([commandName, command], index) => (
+                            <div
+                                key={index}
+                                className='alternative'
+                                onClick={() => {
+                                    commandChosen(commandName)
+                                    setInput('')
+                                }}
+                            >
 
-                {Array.from(commands.entries())
+                                {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch) ?
+                                    <>
+                                        <span>
+                                            <span className='MatchingPart'>{commandName.substring(0, input.length)}</span>
+                                            <span className='RemainingPart'>{commandName.substring(input.length, commandName.length)}</span>
+                                        </span>
+                                        {command.icon}
+                                    </>
+                                    :
+                                    <>{commandName} {command.icon}</>
+                                }
+                            </div>
+                        ))}
+                    </ItemContainer>
+                </div>}
 
-                    // eslint-disable-next-line
-                    .filter(
-                        ([, command]) =>
-                            !command.filter ||
-                            invalidSelectedPointInformation ||
-                            command.filter(selectedPointInformation)
-                    )
-                    .filter(
-                        ([commandName]) =>
-                            expanded ||
-                            (inputToMatch.length > 0 &&
-                                commandName.toLowerCase().startsWith(inputToMatch))
-                    )
-                    .map(([commandName, command], index) => (
-                        <div
-                            key={index}
-                            className='alternative'
-                            onClick={() => {
-                                commandChosen(commandName)
-                                setInput('')
-                            }}
-                        >
-
-                            {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch) ?
-                                <>
-                                    <span>
-                                        <span className='MatchingPart'>{commandName.substring(0, input.length)}</span>
-                                        <span className='RemainingPart'>{commandName.substring(input.length, commandName.length)}</span>
-                                    </span>
-                                    {command.icon}
-                                </>
-                                :
-                                <>{commandName} {command.icon}</>
-                            }
-                        </div>
-                    ))
-                }
-            </div>
         </div>
     )
 }

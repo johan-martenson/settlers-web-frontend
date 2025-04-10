@@ -3,6 +3,7 @@ import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from '../components/expand_collapse_toggle/expand_collapse_toggle'
 import './music_player.css'
 import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons'
+import { ItemContainer } from '../components/item_container'
 
 // Types
 type AudioAtlasSongs = {
@@ -129,18 +130,20 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
                         <span><Button onClick={() => next(currentSong, mode, songs, volume)} icon={<FastForward24Filled />} appearance='transparent' /></span>
                     </div>
 
-                    <div id='SongList'>
-                        {songs.map((song, index) => (
-                            <div
-                                key={index}
-                                className={(index === currentSong) ? 'PlayingSongItem' : 'SongItem'}
-                                onClick={() => { play(index, songs, volume) }}
-                            >
-                                <div>{song.title}</div>
-                                <div>{secondsToString(song.song.duration)}</div>
-                            </div>
-                        ))}
-                    </div>
+                    <ItemContainer>
+                        <div id='SongList'>
+                            {songs.map((song, index) => (
+                                <div
+                                    key={index}
+                                    className={(index === currentSong) ? 'PlayingSongItem' : 'SongItem'}
+                                    onClick={() => { play(index, songs, volume) }}
+                                >
+                                    <div>{song.title}</div>
+                                    <div>{secondsToString(song.song.duration)}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </ItemContainer>
                     <Button appearance={mode === 'LOOP_SONG' ? 'secondary' : 'transparent'} onClick={() => setMode('LOOP_SONG')}>Loop song</Button>
                     <Button appearance={mode === 'LOOP_LIST' ? 'secondary' : 'transparent'} onClick={() => setMode('LOOP_LIST')}>Loop list</Button>
                     <Button appearance={mode === 'SHUFFLE_LIST' ? 'secondary' : 'transparent'} onClick={() => setMode('SHUFFLE_LIST')}>Shuffle</Button>

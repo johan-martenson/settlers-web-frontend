@@ -26,7 +26,8 @@ const PlayerButton = ({ playerId, selected = false, onClick }: PlayerButtonProps
                 key={player.id}
                 style={{
                     borderBottomColor: selected ? playerToColor(player.color) : undefined,
-                    borderBottomWidth: selected ? '3px' : undefined
+                    borderBottomWidth: selected ? '3px' : undefined,
+                    columnGap: '1em'
                 }}
                 onClick={onClick}
             >

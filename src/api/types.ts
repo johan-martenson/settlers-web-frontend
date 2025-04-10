@@ -49,21 +49,27 @@ export type ResourceLevel = 'LOW' | 'MEDIUM' | 'HIGH'
 export type TransportCategory = 'FOOD' | 'WEAPONS' | 'TOOLS' | 'IRON' | 'IRON_BAR' | 'COAL' | 'GOLD' | 'PLANK' | 'WOOD' | 'STONE' | 'COIN' | 'WHEAT' | 'WATER' | 'PIG' | 'FLOUR' | 'BOAT'
 export const TRANSPORT_CATEGORIES = new Set<TransportCategory>(['FOOD', 'WEAPONS', 'TOOLS', 'IRON', 'IRON_BAR', 'COAL', 'GOLD', 'PLANK', 'WOOD', 'STONE', 'COIN', 'WHEAT', 'WATER', 'PIG', 'FLOUR'])
 
-export type Material = 'FLOUR' | 'PIG' | 'GOLD' | 'IRON' | 'COAL' | 'STONE' | 'WATER' | 'WOOD' | 'PLANK' | 'BREAD' | 'FISH' | 'MEAT' | 'SHIELD' | 'SWORD' | 'BEER' | 'COIN' | 'METALWORKER' | 'WHEAT' | 'SHIPWRIGHT' | 'IRON_BAR' | 'BOAT' | Tool | MaterialWorker
-export const WORKER_MATERIALS = new Set<MaterialWorker>(['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'CARPENTER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL', 'BUILDER', 'PLANER', 'SHIPWRIGHT'])
-
-export const MATERIALS = new Set<Material>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'HAMMER', 'SCYTHE', 'IRON_BAR'])
-WORKER_MATERIALS.forEach(workerMaterial => MATERIALS.add(workerMaterial))
-
-export const MATERIALS_AS_STRING = new Set<string>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE', 'HAMMER', 'IRON_BAR'])
-WORKER_MATERIALS.forEach(workerMaterial => MATERIALS_AS_STRING.add(workerMaterial))
-
+export type Soldier = 'PRIVATE' | 'PRIVATE_FIRST_CLASS' | 'SERGEANT' | 'OFFICER' | 'GENERAL'
+export type Worker = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER' | 'COURIER' | 'DONKEY_BREEDER' | 'DONKEY' | 'FARMER' | 'FISHERMAN' | 'FORESTER' | 'GEOLOGIST' | 'HUNTER' | 'IRON_FOUNDER' | 'METALWORKER' | 'MILLER' | 'MINER' | 'MINTER' | 'PIG_BREEDER' | 'CARPENTER' | 'SCOUT' | 'STONEMASON' | 'STOREHOUSE_WORKER' | 'WELL_WORKER' | 'WOODCUTTER_WORKER' | 'BUILDER' | 'PLANER' | 'SHIPWRIGHT' | Soldier
 export type Tool = 'AXE' | 'HAMMER' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
+export type Goods = 'FLOUR' | 'PIG' | 'GOLD' | 'IRON' | 'COAL' | 'STONE' | 'WATER' | 'WOOD' | 'PLANK' | 'BREAD' | 'FISH' | 'MEAT' | 'SHIELD' | 'SWORD' | 'BEER' | 'COIN' | 'WHEAT' | 'IRON_BAR' | 'BOAT' | Tool | Worker
+export type Material = Soldier | Tool | Goods | Worker
 
+export const SOLDIERS: Soldier[] = ['PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL']
 export const TOOLS: Set<Tool> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
-export const TOOLS_STRING: Set<string> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
+export const GOODS = new Set<Goods>(['FLOUR', 'PIG', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'WHEAT', 'IRON_BAR', 'BOAT'])
+export const WORKERS = new Set<Worker>(['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'CARPENTER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL', 'BUILDER', 'PLANER', 'SHIPWRIGHT'])
+export const MATERIALS = new Set<Material>()
+WORKERS.forEach(workerMaterial => MATERIALS.add(workerMaterial))
+TOOLS.forEach(tool => MATERIALS.add(tool))
+GOODS.forEach(good => MATERIALS.add(good))
 
-export type MaterialWorker = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER' | 'COURIER' | 'DONKEY_BREEDER' | 'DONKEY' | 'FARMER' | 'FISHERMAN' | 'FORESTER' | 'GEOLOGIST' | 'HUNTER' | 'IRON_FOUNDER' | 'METALWORKER' | 'MILLER' | 'MINER' | 'MINTER' | 'PIG_BREEDER' | 'CARPENTER' | 'SCOUT' | 'STONEMASON' | 'STOREHOUSE_WORKER' | 'WELL_WORKER' | 'WOODCUTTER_WORKER' | 'PRIVATE' | 'PRIVATE_FIRST_CLASS' | 'SERGEANT' | 'OFFICER' | 'GENERAL' | 'BUILDER' | 'PLANER' | 'SHIPWRIGHT'
+//export type Material = 'FLOUR' | 'PIG' | 'GOLD' | 'IRON' | 'COAL' | 'STONE' | 'WATER' | 'WOOD' | 'PLANK' | 'BREAD' | 'FISH' | 'MEAT' | 'SHIELD' | 'SWORD' | 'BEER' | 'COIN' | 'METALWORKER' | 'WHEAT' | 'SHIPWRIGHT' | 'IRON_BAR' | 'BOAT' | Tool | MaterialWorker
+
+//export const MATERIALS = new Set<Material>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'HAMMER', 'SCYTHE', 'IRON_BAR'])
+
+export const MATERIALS_AS_STRING = new Set<string>(MATERIALS.values())
+export const TOOLS_STRING: Set<string> = new Set(TOOLS.values())
 
 export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
 

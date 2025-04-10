@@ -26,3 +26,33 @@
 .select-building > div:hover {
     filter: brightness(110%);
 }
+
+.inventory-item-list {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    column-gap: 2em;
+    height: 7em;
+    background-color: rgba(0, 0, 0, 0.50);
+    border-radius: 10px;
+    padding: 0.5em;
+}
+
+.inventory-item-list > div:hover {
+    filter: brightness(110%);
+}
+
+.buildings-list {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    column-gap: 2em;
+    height: 7em;
+    background-color: rgba(0, 0, 0, 0.50);
+    border-radius: 10px;
+    padding: 0.5em;
+}
+
+.buildings-list > div:hover {
+    filter: brightness(110%);
+}

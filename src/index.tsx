@@ -11,7 +11,7 @@ import { GameCreator } from './screens/create_game/game_creator'
 import { getFreeColor } from './utils/utils'
 
 // Types
-type PlayState = 'ENTER_PLAYER_INFORMATION' | 'LOBBY' | 'PLAY_GAME' | 'CREATE_GAME'
+type PlayState = 'CONNECTING' | 'ENTER_PLAYER_INFORMATION' | 'LOBBY' | 'PLAY_GAME' | 'CREATE_GAME'
 
 // Constants
 const useStyles = makeStyles({
@@ -29,7 +29,7 @@ const container = document.getElementById('root')
 
 // React components
 function GameInit() {
-    const [state, setState] = useState<PlayState>('ENTER_PLAYER_INFORMATION')
+    const [state, setState] = useState<PlayState>('CONNECTING')
     const [player, setPlayer] = useState<PlayerInformation>()
     const [gameId, setGameId] = useState<GameId>()
 
@@ -40,6 +40,8 @@ function GameInit() {
             const playerId = urlParams.get('playerId')
 
             await api.connectAndWaitForConnection()
+
+            setState('ENTER_PLAYER_INFORMATION')
 
             if (gameId !== null && playerId !== null) {
                 await api.followGame(gameId, playerId)
@@ -118,6 +120,10 @@ function GameInit() {
             backgroundRepeat: 'no-repeat',
             backgroundSize: 'cover'
         }}>
+            {state === 'CONNECTING' &&
+                <div>Connecting...</div>
+            }
+
             {state === 'ENTER_PLAYER_INFORMATION' &&
                 <FillInPlayerInformation
                     onPlayerInformationDone={async (name) => {

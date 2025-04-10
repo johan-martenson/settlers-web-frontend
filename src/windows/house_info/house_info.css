@@ -19,14 +19,6 @@
     width: 25em;
 }
 
-.headquarter-inventory {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 15px;
-    overflow-y: auto;
-}
-
 .headquarter-reserved-soldiers {
     display: flex;
     flex-direction: column;

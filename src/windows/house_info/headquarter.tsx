@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { api } from '../../api/ws-api'
 import { Window } from '../../components/dialog'
 import { MATERIAL_LABELS, soldierPretty } from '../../pretty_strings'
+import { ItemContainer } from '../../components/item_container'
 
 // Types
 type HeadquarterInfoProps = {
@@ -200,7 +201,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
             </TabList>
 
             {panel === 'INVENTORY' &&
-                <div className='headquarter-inventory'>
+                <ItemContainer rows >
                     {Array.from(INVENTORY_MATERIALS)
                         .filter(material => material !== 'STOREHOUSE_WORKER' && material !== 'WELL_WORKER')
                         .map(material => {
@@ -221,7 +222,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 </div>
                             )
                         })}
-                </div>
+                </ItemContainer>
             }
 
             {panel === 'RESERVED' &&

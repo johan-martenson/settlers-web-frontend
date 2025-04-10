@@ -2,27 +2,20 @@ import React, { useState, useEffect } from 'react'
 import { Window } from '../../components/dialog'
 import './statistics.css'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { Material, MATERIALS, Nation, PlayerInformation, AnyBuilding, SMALL_HOUSES, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId } from '../../api/types'
+import { Nation, AnyBuilding, SMALL_HOUSES, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, MEDIUM_HOUSES, LARGE_HOUSES } from '../../api/types'
 import { HouseIcon, InventoryIcon } from '../../icons/icon'
 import { api } from '../../api/ws-api'
-import { ColorBox } from '../../components/utils'
 import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, CartesianGrid } from "recharts"
 import { StatisticsReply } from '../../api/ws/commands'
 import { buildingPretty, materialPretty, merchandisePretty, playerToColor } from '../../pretty_strings'
 import PlayerButton from '../../components/player_button'
+import { ItemContainer } from '../../components/item_container'
 
 // Types
 type StatisticsProps = {
     nation: Nation
     onRaise: () => void
     onClose: () => void
-}
-
-type ProductionAreaGraphProps = {
-    statistics: StatisticsReply
-    material: Material
-
-    setHover: (info: string | undefined) => void
 }
 
 type BuildingStatisticsGraphProps = {
@@ -32,15 +25,22 @@ type BuildingStatisticsGraphProps = {
     setHover: (info: string | undefined) => void
 }
 
-type LandAreaGraphProps = {
-    statistics: StatisticsReply
-
-    setHover: (info: string | undefined) => void
-}
-
-type StatisticsView = 'GENERAL' | 'MERCHANDISE' | 'PRODUCTION' | 'LAND' | 'BUILDINGS'
+type StatisticsView = 'GENERAL' | 'MERCHANDISE' | 'INVENTORY' | 'BUILDINGS'
 
 // Constants
+const GENERAL_STATISTICS_LABELS: GeneralStatisticsType[] = ['land', 'production', 'workers', 'houses', 'goods', 'coins', 'military', 'killedEnemies']
+
+const GENERAL_STATISTICS: { [key in GeneralStatisticsType]?: { label: string, color: string } } = {
+    'land': { label: 'Land', color: '#1E88E5' },
+    'production': { label: 'Production', color: '#D32F2F' },
+    'workers': { label: 'Workers', color: '#FFB300' },
+    'houses': { label: 'Houses', color: '#00897B' },
+    'goods': { label: 'Goods', color: '#673AB7' },
+    'coins': { label: 'Coins', color: '#F57C00' },
+    'military': { label: 'Military', color: '#7CB342' },
+    'killedEnemies': { label: 'Killed Enemies', color: '#757575' }
+}
+
 const MERCHANDISE_STATS_COLORS: { [key in Merchandise]?: string } = {
     'WOOD': '#1E88E5',
     'PLANK': '#D32F2F',
@@ -148,10 +148,9 @@ const sampleStatisticsData: StatisticsReply = {
  */
 const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: StatisticsProps) => {
     const [statistics, setStatistics] = useState<StatisticsReply>(EMPTY_STATISTICS)
-    const [materialToShow, setMaterialToShow] = useState<Material>('PLANK')
     const [state, setState] = useState<StatisticsView>('GENERAL')
     const [hoverInfo, setHoverInfo] = useState<string>()
-    const [playersToShow, setPlayersToShow] = useState<PlayerInformation[]>(Array.from(api.players.values()))
+    const [buildingsView, setBuildingsView] = useState<'CURRENT' | 'HISTORICAL'>('CURRENT')
     const [selectedBuilding, setSelectedBuilding] = useState<AnyBuilding>('ForesterHut')
     const [generalStatistics, setGeneralStatistics] = useState<GeneralStatisticsType>('land')
     const [selectedMerchandise, setSelectedMerchandise] = useState<Merchandise[]>([])
@@ -211,10 +210,8 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                     <TabList
                         selectedValue={state}
                         onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
-                            if (data.value === 'LAND') {
-                                setState('LAND')
-                            } else if (data.value === 'PRODUCTION') {
-                                setState('PRODUCTION')
+                            if (data.value === 'INVENTORY') {
+                                setState('INVENTORY')
                             } else if (data.value === 'BUILDINGS') {
                                 setState('BUILDINGS')
                             } else if (data.value === 'MERCHANDISE') {
@@ -236,18 +233,11 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                             Merchandise
                         </Tab>
                         <Tab
-                            value={'PRODUCTION'}
-                            onMouseEnter={() => setHoverInfo('Production statistics')}
+                            value={'INVENTORY'}
+                            onMouseEnter={() => setHoverInfo('Inventory')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            Production
-                        </Tab>
-                        <Tab
-                            value={'LAND'}
-                            onMouseEnter={() => setHoverInfo('Land size statistics')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            Land
+                            Inventory
                         </Tab>
                         <Tab
                             value={'BUILDINGS'}
@@ -259,88 +249,50 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                     </TabList>
 
                     {state === 'GENERAL' &&
-                        <>
+                        <div style={{ rowGap: '1em', display: 'flex', flexDirection: 'column' }}>
                             <GeneralStatisticsGraph
                                 statistics={statistics}
                                 statType={generalStatistics}
                                 setHover={setHoverInfo}
                                 selectedPlayers={selectedPlayers}
+                                time={time}
                             />
                             <div>
-                                {Array.from(api.players.values()).map(player => {
+                                Players:
+                                <div>
+                                    {Array.from(api.players.values()).map(player => {
 
-                                    return (
-                                        <PlayerButton
-                                            key={player.id}
-                                            playerId={player.id}
-                                            selected={selectedPlayers.includes(player.id)}
-                                            onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
-                                                ? prev.filter(p => p !== player.id)
-                                                : [...prev, player.id]
-                                            )}
-                                        />
-                                    )
-                                })}
+                                        return (
+                                            <PlayerButton
+                                                key={player.id}
+                                                playerId={player.id}
+                                                selected={selectedPlayers.includes(player.id)}
+                                                onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
+                                                    ? prev.filter(p => p !== player.id)
+                                                    : [...prev, player.id]
+                                                )}
+                                            />
+                                        )
+                                    })}
+                                </div>
                             </div>
                             <div>
-                                <Button
-                                    onClick={() => setGeneralStatistics('land')}
-                                    onMouseEnter={() => setHoverInfo('Land')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Land
-                                </Button>
-                                <Button
-                                    onClick={() => setGeneralStatistics('production')}
-                                    onMouseEnter={() => setHoverInfo('Production')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Production
-                                </Button>
-                                <Button
-                                    onClick={() => setGeneralStatistics('workers')}
-                                    onMouseEnter={() => setHoverInfo('Workers')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Workers
-                                </Button>
-                                <Button
-                                    onClick={() => setGeneralStatistics('houses')}
-                                    onMouseEnter={() => setHoverInfo('Buildings')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Houses
-                                </Button>
-                                <Button
-                                    onClick={() => setGeneralStatistics('goods')}
-                                    onMouseEnter={() => setHoverInfo('Goods')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Goods
-                                </Button>
-                                <Button
-                                    onClick={() => setGeneralStatistics('coins')}
-                                    onMouseEnter={() => setHoverInfo('Coins')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Coins
-                                </Button>
-                                <Button
-                                    onClick={() => setGeneralStatistics('military')}
-                                    onMouseEnter={() => setHoverInfo('Military')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Military
-                                </Button>
-                                <Button
-                                    onClick={() => setGeneralStatistics('killedEnemies')}
-                                    onMouseEnter={() => setHoverInfo('Killed enemies')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Killed Enemies
-                                </Button>
+                                Available statistics:
+                                <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '0.5em' }}>
+                                    {GENERAL_STATISTICS_LABELS.map(stat =>
+                                        <Button
+                                            key={stat}
+                                            style={{ backgroundColor: generalStatistics === stat ? 'lightblue' : undefined }}
+                                            onClick={() => setGeneralStatistics(stat)}
+                                            onMouseEnter={() => setHoverInfo(GENERAL_STATISTICS[stat]?.label)}
+                                            onMouseLeave={() => setHoverInfo(undefined)}
+                                        >
+                                            {GENERAL_STATISTICS[stat]?.label}
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
-                        </>
+                        </div>
                     }
 
                     {state == 'MERCHANDISE' &&
@@ -360,27 +312,27 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                                             onMouseEnter={() => setHoverInfo(`Show statistics for ${prettyMerchandise}`)}
                                             onMouseLeave={() => setHoverInfo(undefined)}
                                         >
-                                            {merchandise === 'WOOD' && <InventoryIcon material='WOOD' nation={'ROMANS'} />}
-                                            {merchandise === 'PLANK' && <InventoryIcon material='PLANK' nation={'ROMANS'} />}
-                                            {merchandise === 'STONE' && <InventoryIcon material='STONE' nation={'ROMANS'} />}
+                                            {merchandise === 'WOOD' && <InventoryIcon material='WOOD' nation={nation} />}
+                                            {merchandise === 'PLANK' && <InventoryIcon material='PLANK' nation={nation} />}
+                                            {merchandise === 'STONE' && <InventoryIcon material='STONE' nation={nation} />}
                                             {merchandise === 'FOOD' && <>
-                                                <InventoryIcon material='FISH' nation={'ROMANS'} />
-                                                <InventoryIcon material='MEAT' nation={'ROMANS'} />
-                                                <InventoryIcon material='BREAD' nation={'ROMANS'} />
+                                                <InventoryIcon material='FISH' nation={nation} />
+                                                <InventoryIcon material='MEAT' nation={nation} />
+                                                <InventoryIcon material='BREAD' nation={nation} />
                                             </>}
-                                            {merchandise === 'WATER' && <InventoryIcon material='WATER' nation={'ROMANS'} />}
-                                            {merchandise === 'BEER' && <InventoryIcon material='BEER' nation={'ROMANS'} />}
-                                            {merchandise === 'COAL' && <InventoryIcon material='COAL' nation={'ROMANS'} />}
-                                            {merchandise === 'IRON' && <InventoryIcon material='IRON' nation={'ROMANS'} />}
-                                            {merchandise === 'GOLD' && <InventoryIcon material='GOLD' nation={'ROMANS'} />}
-                                            {merchandise === 'IRON_BAR' && <InventoryIcon material='IRON_BAR' nation={'ROMANS'} />}
-                                            {merchandise === 'COIN' && <InventoryIcon material='COIN' nation={'ROMANS'} />}
-                                            {merchandise === 'TOOLS' && <InventoryIcon material='TONGS' nation={'ROMANS'} />}
+                                            {merchandise === 'WATER' && <InventoryIcon material='WATER' nation={nation} />}
+                                            {merchandise === 'BEER' && <InventoryIcon material='BEER' nation={nation} />}
+                                            {merchandise === 'COAL' && <InventoryIcon material='COAL' nation={nation} />}
+                                            {merchandise === 'IRON' && <InventoryIcon material='IRON' nation={nation} />}
+                                            {merchandise === 'GOLD' && <InventoryIcon material='GOLD' nation={nation} />}
+                                            {merchandise === 'IRON_BAR' && <InventoryIcon material='IRON_BAR' nation={nation} />}
+                                            {merchandise === 'COIN' && <InventoryIcon material='COIN' nation={nation} />}
+                                            {merchandise === 'TOOLS' && <InventoryIcon material='TONGS' nation={nation} />}
                                             {merchandise === 'WEAPONS' && <>
-                                                <InventoryIcon material='SWORD' nation={'ROMANS'} />
-                                                <InventoryIcon material='SHIELD' nation={'ROMANS'} />
+                                                <InventoryIcon material='SWORD' nation={nation} />
+                                                <InventoryIcon material='SHIELD' nation={nation} />
                                             </>}
-                                            {merchandise === 'BOAT' && <InventoryIcon material='BOAT' nation={'ROMANS'} />}
+                                            {merchandise === 'BOAT' && <InventoryIcon material='BOAT' nation={nation} />}
                                         </Button>
                                     )
                                 })}
@@ -388,81 +340,165 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                         </>
                     }
 
-                    {state === 'PRODUCTION' &&
-                        <>
-                            <ProductionAreaGraph statistics={statistics ?? sampleStatisticsData} material={materialToShow} setHover={setHoverInfo} />
-                            <div className='select-materials'>
-                                {[...MATERIALS].filter(material => material !== 'WELL_WORKER' && material !== 'STOREHOUSE_WORKER')
-                                    .map(material => {
-                                        const materialDisplay = materialPretty(material)
+                    {state === 'INVENTORY' && <div>
+                        <div>
+                            Goods
 
-                                        return <div onClick={() => setMaterialToShow(material)} key={material}>
-                                            <div
-                                                onMouseEnter={() => setHoverInfo(materialDisplay)}
-                                                onMouseLeave={() => setHoverInfo(undefined)}
-                                            ><InventoryIcon nation={nation} material={material} missing={material !== materialToShow} /></div>
-                                        </div>
-                                    })}
+                            <div className='inventory-item-list' style={{ height: '10em' }}>
+                                {Array.from(GOODS).map(material =>
+                                (<div
+                                    key={material}
+                                    onMouseEnter={() => setHoverInfo(`${materialPretty(material)}: 0`)}
+                                    onMouseLeave={() => setHoverInfo(undefined)}>
+                                    <InventoryIcon material={material} nation={nation} scale={1} inline /> 0
+                                </div>))}
                             </div>
-                        </>
-                    }
+                        </div>
+                        <div>
+                            Tools
 
-                    {state === 'LAND' &&
-                        <>
-                            <LandAreaGraph statistics={statistics ?? sampleStatisticsData} setHover={info => setHoverInfo(info)} />
-                            <div className='select-players'>
-                                {Array.from(api.players.values()).map(player => <div
-                                    key={player.id}
+                            <div className='inventory-item-list'>
+                                {Array.from(TOOLS).map(tool =>
+                                (<div
+                                    key={tool}
+                                    onMouseEnter={() => setHoverInfo(`${materialPretty(tool)}: 0`)}
+                                    onMouseLeave={() => setHoverInfo(undefined)}>
+                                    <InventoryIcon material={tool} nation={nation} scale={1} inline /> 0
+                                </div>))}
+                            </div>
+                        </div>
+                        <div>
+                            Workers
+
+                            <div className='inventory-item-list' style={{ height: '15em' }}>
+                                {Array.from(WORKERS).map(worker =>
+                                (<div
+                                    key={worker}
+                                    onMouseEnter={() => setHoverInfo(`${materialPretty(worker)}: 0`)}
+                                    onMouseLeave={() => setHoverInfo(undefined)}>
+                                    <InventoryIcon material={worker} nation={nation} scale={1} inline /> 0
+                                </div>))}
+                            </div>
+                        </div>
+                        <div>
+                            Soldiers
+
+                            <div className='inventory-item-list' style={{ height: '6em' }}>
+                                {(SOLDIERS).map(soldier =>
+                                (<div
+                                    key={soldier}
+                                    onMouseEnter={() => setHoverInfo(`${materialPretty(soldier)}: 0`)}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
                                 >
-                                    <div
-                                        style={{ gap: '15px' }}
-                                        onClick={() => {
-                                            if (playersToShow.find(p => p.id === player.id)) {
-                                                const remaining = playersToShow.filter(p => p.id !== player.id)
-
-                                                setPlayersToShow(remaining)
-                                            } else {
-                                                setPlayersToShow([...playersToShow, player])
-                                            }
-                                        }}
-                                        onMouseEnter={() => {
-                                            if (playersToShow.find(p => p.id === player.id) !== undefined) {
-                                                setHoverInfo(`Hide ${player.name}`)
-                                            } else {
-                                                setHoverInfo(`Show ${player.name}`)
-                                            }
-                                        }}
-                                        onMouseLeave={() => setHoverInfo(undefined)}
-                                    >
-                                        {player.name}
-                                        <ColorBox color={player.color} />
-                                    </div>
-                                </div>
-                                )}
+                                    <InventoryIcon material={soldier} nation={nation} scale={1} inline />: 0
+                                </div>))}
                             </div>
-                        </>
-                    }
+                        </div>
+
+                    </div>}
 
                     {state === 'BUILDINGS' &&
                         <>
-                            <BuildingStatisticsGraph statistics={statistics ?? sampleStatisticsData} buildingType={selectedBuilding} setHover={setHoverInfo} />
-                            <div className='select-building'>
-                                {SMALL_HOUSES.map(house => {
-                                    const prettyHouse = buildingPretty(house)
+                            <TabList
+                                selectedValue={buildingsView}
+                                onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
+                                    if (data.value === 'CURRENT') {
+                                        setBuildingsView('CURRENT')
+                                    } else if (data.value === 'HISTORICAL') {
+                                        setBuildingsView('HISTORICAL')
+                                    }
+                                }}>
+                                <Tab
+                                    value={'CURRENT'}
+                                    onMouseEnter={() => setHoverInfo('Current buildings')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Current
+                                </Tab>
+                                <Tab
+                                    value={'HISTORICAL'}
+                                    onMouseEnter={() => setHoverInfo('Historical buildings')}
+                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                >
+                                    Historical
+                                </Tab>
+                            </TabList>
 
-                                    return (<div
-                                        key={house}
-                                        onClick={async () => {
-                                            setSelectedBuilding(house)
-                                        }}
-                                        onMouseEnter={() => setHoverInfo(`Show statistics for ${prettyHouse.toLowerCase()}`)}
-                                        onMouseLeave={() => setHoverInfo(undefined)}
-                                    >
-                                        <HouseIcon nation={nation} houseType={house} drawShadow scale={0.5} />
-                                    </div>)
-                                })
-                                }
-                            </div>
+                            {buildingsView === 'CURRENT' && <>
+                                <div>
+                                    Small buildings
+
+                                    <ItemContainer height='15em'>
+                                        {SMALL_HOUSES.map(house => {
+                                            return (
+                                                <div
+                                                    key={house}
+                                                    onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
+                                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                                >
+                                                    <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
+                                                </div>)
+                                        })}
+                                    </ItemContainer>
+                                </div>
+
+                                <div>
+                                    Medium buildings
+
+                                    <ItemContainer height='15em'>
+                                        {MEDIUM_HOUSES.map(house => {
+                                            return (
+                                                <div
+                                                    key={house}
+                                                    onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
+                                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                                >
+                                                    <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
+                                                </div>)
+                                        })}
+                                    </ItemContainer>
+                                </div>
+
+
+                                <div>
+                                    Large buildings
+
+                                    <ItemContainer height='10em'>
+                                        {LARGE_HOUSES.map(house => {
+                                            return (
+                                                <div
+                                                    key={house}
+                                                    onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
+                                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                                >
+                                                    <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
+                                                </div>)
+                                        })}
+                                    </ItemContainer>
+                                </div>
+                            </>}
+
+                            {buildingsView === 'HISTORICAL' &&
+                                <>
+                                    <BuildingStatisticsGraph statistics={statistics ?? sampleStatisticsData} buildingType={selectedBuilding} setHover={setHoverInfo} />
+                                    <div className='select-building'>
+                                        {SMALL_HOUSES.map(house => {
+                                            const prettyHouse = buildingPretty(house)
+
+                                            return (<div
+                                                key={house}
+                                                onClick={async () => {
+                                                    setSelectedBuilding(house)
+                                                }}
+                                                onMouseEnter={() => setHoverInfo(`Show statistics for ${prettyHouse.toLowerCase()}`)}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            >
+                                                <HouseIcon nation={nation} houseType={house} drawShadow scale={0.5} />
+                                            </div>)
+                                        })
+                                        }
+                                    </div>
+                                </>}
                         </>
                     }
 
@@ -568,100 +604,6 @@ const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: Merchandise
     )
 }
 
-const ProductionAreaGraph = ({ statistics, material, setHover }: ProductionAreaGraphProps) => {
-    // Collect all unique timestamps
-    const allTimestamps = new Set<number>()
-    statistics.players.forEach(player => {
-        player.productionStatistics[material]?.forEach(([time]) => allTimestamps.add(time))
-    })
-
-    // Sort timestamps
-    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
-
-    // Initialize chart data with all timestamps
-    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
-
-    // Fill in player data
-    statistics.players.forEach(player => {
-        let lastValue: number | undefined = undefined
-        sortedTimestamps.forEach((time, index) => {
-            const entry = chartData[index]
-            const found = player.productionStatistics[material]?.find(([t]) => t === time)
-            if (found) {
-                lastValue = found[1]
-            }
-            entry[`Player ${player.id}`] = lastValue // Carry forward last known value
-        })
-    })
-
-    // Sort data by time to ensure correct visualization
-    chartData.sort((a, b) => a.time - b.time)
-
-    if (chartData.length > 0 && chartData[chartData.length - 1].time != statistics.currentTime) {
-        chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
-    } else {
-        const zeroMeasurement: { [key: string]: number } = {}
-
-        statistics.players.forEach(player => {
-            zeroMeasurement[`Player ${player.id}`] = 0
-        })
-
-        chartData.push({ time: 0, ...zeroMeasurement })
-        chartData.push({ time: statistics.currentTime, ...zeroMeasurement })
-    }
-
-    return (
-        <ResponsiveContainer width="100%" height={400}>
-            <LineChart
-                data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                onMouseLeave={() => setHover(undefined)}
-                onMouseMove={(event: { activePayload?: { value?: number }[] }) => {
-                    if (event?.activePayload) {
-                        const yValue = event.activePayload[0]?.value
-
-                        if (yValue !== undefined) {
-                            setHover(`${yValue}`)
-                        } else {
-                            setHover(undefined)
-                        }
-                    }
-                }}
-            >
-                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
-                <XAxis
-                    dataKey="time"
-                    label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
-                    stroke="#FFFFFF" // Change X-axis color
-                    type="number"
-                    domain={[0, 'dataMax']} // Set the domain to dataMin and dataMax
-
-                />
-                <YAxis
-                    label={{ value: "Production", angle: -90, position: "insideLeft", fill: "white" }}
-                    stroke="#FFFFFF" // Change Y-axis color
-                    allowDecimals={false}
-                    domain={[0, 'dataMax + 1']} // Set the domain to dataMin and dataMax
-                />
-                <Legend />
-                {statistics.players.map((player) => (
-                    <Line
-                        key={player.id}
-                        type="stepAfter" // Use step-based line rendering
-                        dataKey={`Player ${player.id}`}
-                        name={api.players.get(player.id)?.name ?? `Player ${player.id}`}
-                        stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
-                        strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
-                        connectNulls // Ensures continuous lines even if some timestamps are missing
-                    />
-                ))}
-            </LineChart>
-        </ResponsiveContainer>
-    )
-}
-
 const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: BuildingStatisticsGraphProps) => {
     // Collect all unique timestamps
     const allTimestamps = new Set<number>()
@@ -753,108 +695,17 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: Buildin
     )
 }
 
-const LandAreaGraph = ({ statistics, setHover }: LandAreaGraphProps) => {
-    // Collect all unique timestamps
-    const allTimestamps = new Set<number>()
-    statistics.players.forEach(player => {
-        player.general.land.forEach(([time]) => allTimestamps.add(time))
-    })
-
-    // Sort timestamps
-    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
-
-    // Initialize chart data with all timestamps
-    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
-
-    // Fill in player data
-    statistics.players.forEach(player => {
-        let lastValue: number | undefined = undefined
-        sortedTimestamps.forEach((time, index) => {
-            const entry = chartData[index]
-            const found = player.general.land.find(([t]) => t === time)
-            if (found) {
-                lastValue = found[1]
-            }
-            entry[`Player ${player.id}`] = lastValue // Carry forward last known value
-        })
-    })
-
-    // Sort data by time to ensure correct visualization
-    chartData.sort((a, b) => a.time - b.time)
-
-    if (chartData.length > 0 && chartData[chartData.length - 1].time != statistics.currentTime) {
-        chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
-    } else {
-        const zeroMeasurement: { [key: string]: number } = {}
-
-        statistics.players.forEach(player => {
-            zeroMeasurement[`Player ${player.id}`] = 0
-        })
-
-        chartData.push({ time: 0, ...zeroMeasurement })
-        chartData.push({ time: statistics.currentTime, ...zeroMeasurement })
-    }
-
-    return (
-        <ResponsiveContainer width="100%" height={400}>
-            <LineChart
-                data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                onMouseLeave={() => setHover(undefined)}
-                onMouseMove={(event: { activePayload?: { value?: number }[] }) => {
-                    if (event?.activePayload) {
-                        const yValue = event.activePayload[0]?.value
-
-                        if (yValue !== undefined) {
-                            setHover(`${yValue}`)
-                        } else {
-                            setHover(undefined)
-                        }
-                    }
-                }}
-            >
-                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
-                <XAxis
-                    dataKey="time"
-                    label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
-                    stroke="#FFFFFF" // Change X-axis color
-                    type="number"
-                    domain={[0, 'dataMax']} // Set the domain to dataMin and dataMax
-                />
-                <YAxis
-                    label={{ value: "Land Size", angle: -90, position: "insideLeft", fill: "white" }}
-                    stroke="#FFFFFF" // Change Y-axis color
-                    allowDecimals={false}
-                    domain={[0, 'dataMax + 1']} // Set the domain to dataMin and dataMax
-                />
-                <Legend />
-                {statistics.players.map(player => (
-                    <Line
-                        key={player.id}
-                        type="stepAfter" // Use step-based line rendering
-                        dataKey={`Player ${player.id}`}
-                        name={api.players.get(player.id)?.name ?? `Player ${player.id}`}
-                        stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
-                        strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
-                        connectNulls // Ensures continuous lines even if some timestamps are missing
-                    />
-                ))}
-            </LineChart>
-        </ResponsiveContainer>
-    )
-}
-
 type GeneralStatisticsGraphProps = {
     statistics: StatisticsReply
     statType: GeneralStatisticsType
     selectedPlayers: PlayerId[]
+    time: number
     setHover: (info: string | undefined) => void
 }
 
-const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, setHover }: GeneralStatisticsGraphProps) => {
+const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, setHover }: GeneralStatisticsGraphProps) => {
     const allTimestamps = new Set<number>()
+
     statistics.players.filter(p => selectedPlayers.includes(p.id)).forEach(player => {
         player.general[statType]?.forEach(([time]) => allTimestamps.add(time))
     })
@@ -880,7 +731,7 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, setHove
             zeroMeasurement[`Player ${player.id}`] = 0
         })
         chartData.push({ time: 0, ...zeroMeasurement })
-        chartData.push({ time: statistics.currentTime, ...zeroMeasurement })
+        chartData.push({ time: Math.max(time, statistics.currentTime), ...zeroMeasurement })
     }
 
     return (
@@ -904,7 +755,7 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, setHove
                 <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
                 <XAxis dataKey="time" label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }} stroke="#FFFFFF" type="number" domain={[0, 'dataMax']} />
                 <YAxis label={{ value: statType, angle: -90, position: "insideLeft", fill: "white" }} stroke="#FFFFFF" domain={[0, 'dataMax + 1']} allowDecimals={false} />
-                <Legend />
+
                 {statistics.players.map(player => {
                     const playerColor: PlayerColor = api.players.get(player.id)?.color ?? 'BLUE'
                     const color = playerToColor(playerColor)

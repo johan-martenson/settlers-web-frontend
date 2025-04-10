@@ -10,6 +10,7 @@ import { api } from '../../api/ws-api'
 import { ButtonRow, Window } from '../../components/dialog'
 import { houseIsReady, isMilitaryBuilding } from '../../api/utils'
 import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../pretty_strings'
+import { ItemContainer } from '../../components/item_container'
 
 // Types
 type HouseInfoProps = {
@@ -302,8 +303,10 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                 {!house.productionEnabled && <div>Production disabled</div>}
 
                 {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
-                    <Field label='Resources'>
-                        <div>
+                    <div>
+                        Resources:
+                        <ItemContainer padding='0.5em' inline>
+
                             {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
                                 .map(material => {
 
@@ -335,20 +338,23 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                                     }
                                 })
                             }
-                        </div>
-                    </Field>
+                        </ItemContainer>
+                    </div>
                 }
 
                 {house.produces &&
-                    <div>Produces: {house.produces.map(producedMaterial => (
-                        <div
-                            key={producedMaterial}
-                            onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(producedMaterial))}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
-                        </div>
-                    ))}
+                    <div>Produces:
+
+                        {house.produces.map(producedMaterial => (
+                            <div
+                                key={producedMaterial}
+                                style={{ display: 'inline-block' }}
+                                onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(producedMaterial))}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <span><InventoryIcon material={producedMaterial} nation={nation} inline /></span>
+                            </div>
+                        ))}
                     </div>
                 }
 

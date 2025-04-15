@@ -7,6 +7,7 @@ import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildMine, c
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon } from '../../icons/icon'
 import { buildingPretty } from '../../pretty_strings'
+import { ItemContainer } from '../../components/item_container'
 
 // Types
 type ConstructionInfoProps = {
@@ -172,85 +173,79 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                 }
 
                 {selected === 'Buildings' && buildingSizeSelected === 'small' &&
-                    <div className='dialog-section'>
-                        <div className='house-construction-buttons'>
-                            {(canBuildMine(point) ? MINES : SMALL_BUILDINGS_EXCEPT_MINES).map((house) => {
-                                const prettyHouse = buildingPretty(house)
+                    <ItemContainer rows>
+                        {(canBuildMine(point) ? MINES : SMALL_BUILDINGS_EXCEPT_MINES).map((house) => {
+                            const prettyHouse = buildingPretty(house)
 
-                                return (<div
-                                    key={house}
-                                    className='ConstructionItem'
-                                    onClick={async () => {
-                                        console.info('Creating house')
-                                        api.placeHouse(house, point)
+                            return (<div
+                                key={house}
+                                className='ConstructionItem'
+                                onClick={async () => {
+                                    console.info('Creating house')
+                                    api.placeHouse(house, point)
 
-                                        onClose()
-                                    }}
-                                    onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    <div className='house-construction-button'>
-                                        <HouseIcon nation={nation} houseType={house} drawShadow />
-                                    </div>
-                                </div>)
-                            })}
-                        </div>
-                    </div>
+                                    onClose()
+                                }}
+                                onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <div className='house-construction-button'>
+                                    <HouseIcon nation={nation} houseType={house} drawShadow />
+                                </div>
+                            </div>)
+                        })}
+                    </ItemContainer>
                 }
 
                 {selected === 'Buildings' && canBuildMediumHouse(point) && buildingSizeSelected === 'medium' &&
-                    <div className='dialog-section'>
-                        <div className='house-construction-buttons'>
-                            {MEDIUM_HOUSES.map(house => {
-                                const prettyHouse = buildingPretty(house)
+                    <ItemContainer rows>
+                        {MEDIUM_HOUSES.map(house => {
+                            const prettyHouse = buildingPretty(house)
 
-                                return (<div
-                                    key={house}
-                                    className='ConstructionItem'
-                                    onClick={async () => {
-                                        console.info('Creating house')
-                                        api.placeHouse(house, point)
+                            return (<div
+                                key={house}
+                                className='ConstructionItem'
+                                onClick={async () => {
+                                    console.info('Creating house')
+                                    api.placeHouse(house, point)
 
-                                        onClose()
-                                    }}
-                                    onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    <div className='house-construction-button'>
-                                        <HouseIcon nation={nation} houseType={house} drawShadow />
-                                    </div>
-                                </div>)
+                                    onClose()
+                                }}
+                                onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <div className='house-construction-button'>
+                                    <HouseIcon nation={nation} houseType={house} drawShadow />
+                                </div>
+                            </div>)
 
-                            })}
-                        </div>
-                    </div>
+                        })}
+                    </ItemContainer>
                 }
 
                 {selected === 'Buildings' && canBuildLargeHouse(point) && buildingSizeSelected === 'large' &&
-                    <div className='dialog-section'>
-                        <div className='house-construction-buttons'>
-                            {LARGE_HOUSES.filter(house => house !== 'Headquarter').map(house => {
-                                const prettyHouse = buildingPretty(house)
+                    <ItemContainer rows>
+                        {LARGE_HOUSES.filter(house => house !== 'Headquarter').map(house => {
+                            const prettyHouse = buildingPretty(house)
 
-                                return (<div
-                                    key={house}
-                                    className='ConstructionItem'
-                                    onClick={async () => {
-                                        console.info('Creating house')
-                                        api.placeHouse(house, point)
+                            return (<div
+                                key={house}
+                                className='ConstructionItem'
+                                onClick={async () => {
+                                    console.info('Creating house')
+                                    api.placeHouse(house, point)
 
-                                        onClose()
-                                    }}
-                                    onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    <div className='house-construction-button'>
-                                        <HouseIcon nation={nation} houseType={house} drawShadow />
-                                    </div>
-                                </div>)
-                            })}
-                        </div>
-                    </div>
+                                    onClose()
+                                }}
+                                onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <div className='house-construction-button'>
+                                    <HouseIcon nation={nation} houseType={house} drawShadow />
+                                </div>
+                            </div>)
+                        })}
+                    </ItemContainer>
                 }
 
                 {selected === 'Monitor' &&

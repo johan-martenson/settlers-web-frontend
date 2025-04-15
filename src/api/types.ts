@@ -664,8 +664,6 @@ export type MerchandiseStatistics = {
 
 export type StatisticsPerPlayer = {
     id: PlayerId
-    productionStatistics: ProductionStatistics
-    inventoryStatistics: InventoryStatistics
     buildingStatistics: BuildingStatistics
     general: GeneralStatistics
 }

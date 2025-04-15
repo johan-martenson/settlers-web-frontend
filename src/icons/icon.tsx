@@ -188,6 +188,12 @@ const WorkerIcon = ({
         }
     }, [animate])
 
+    useEffect(() => {
+        if (!animate && sourceImage && dimension.width > 0 && dimension.height > 0) {
+            draw() // Ensure the flag is drawn when image and dimensions are ready
+        }
+    }, [sourceImage, dimension, draw])
+
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }
 

@@ -67,6 +67,8 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                             if (event.key === 'Enter') {
                                 sendMessage()
                             }
+
+                            event.stopPropagation()
                         }
                     }} />
                 <Button

@@ -24,6 +24,7 @@ type Mode = 'LOOP_SONG' | 'LOOP_LIST' | 'SHUFFLE_LIST'
 
 // Constants
 const DEFAULT_MODE: Mode = 'LOOP_LIST'
+const SELECTED_COLOR = 'lightblue'
 
 // React components
 const MusicPlayer = ({ volume }: MusicPlayerProps) => {
@@ -113,43 +114,44 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
 
     return (
         <div className='music-player' onWheel={(event) => event.stopPropagation()}>
-            <div> <b>Music</b></div>
+            <div className='music-player-content'>
+                <div><b>Music</b></div>
 
-            {playing && songs && expanded &&
-                <div> Playing: {songs[currentSong].title} </div>
-            }
+                {playing && songs && expanded &&
+                    <div> Playing: {songs[currentSong].title} </div>
+                }
 
-            {expanded &&
-                <>
-                    <div>
-                        {playing ?
-                            <span><Button onClick={() => pause(currentSong, songs)} icon={<Pause24Filled />} appearance='transparent' /></span>
-                            :
-                            <span><Button onClick={() => resume(currentSong, mode, songs, volume)} icon={<Play24Filled />} appearance='transparent' /></span>
-                        }
-                        <span><Button onClick={() => next(currentSong, mode, songs, volume)} icon={<FastForward24Filled />} appearance='transparent' /></span>
-                    </div>
+                {expanded &&
+                    <>
+                        <div>
+                            {playing ?
+                                <span><Button onClick={() => pause(currentSong, songs)} icon={<Pause24Filled />} appearance='transparent' /></span>
+                                :
+                                <span><Button onClick={() => resume(currentSong, mode, songs, volume)} icon={<Play24Filled />} appearance='transparent' /></span>
+                            }
+                            <span><Button onClick={() => next(currentSong, mode, songs, volume)} icon={<FastForward24Filled />} appearance='transparent' /></span>
+                        </div>
 
-                    <ItemContainer>
-                        <div id='SongList'>
+                        <ItemContainer>
                             {songs.map((song, index) => (
                                 <div
                                     key={index}
-                                    className={(index === currentSong) ? 'PlayingSongItem' : 'SongItem'}
+                                    className={(index === currentSong) ? 'playing-song-item' : 'song-item'}
                                     onClick={() => { play(index, songs, volume) }}
                                 >
                                     <div>{song.title}</div>
                                     <div>{secondsToString(song.song.duration)}</div>
                                 </div>
                             ))}
+                        </ItemContainer>
+                        <div>
+                            <Button style={{ backgroundColor: mode === 'LOOP_SONG' ? SELECTED_COLOR : undefined }} onClick={() => setMode('LOOP_SONG')}>Loop song</Button>
+                            <Button style={{ backgroundColor: mode === 'LOOP_LIST' ? SELECTED_COLOR : undefined }} onClick={() => setMode('LOOP_LIST')}>Loop list</Button>
+                            <Button style={{ backgroundColor: mode === 'SHUFFLE_LIST' ? SELECTED_COLOR : undefined }} onClick={() => setMode('SHUFFLE_LIST')}>Shuffle</Button>
                         </div>
-                    </ItemContainer>
-                    <Button appearance={mode === 'LOOP_SONG' ? 'secondary' : 'transparent'} onClick={() => setMode('LOOP_SONG')}>Loop song</Button>
-                    <Button appearance={mode === 'LOOP_LIST' ? 'secondary' : 'transparent'} onClick={() => setMode('LOOP_LIST')}>Loop list</Button>
-                    <Button appearance={mode === 'SHUFFLE_LIST' ? 'secondary' : 'transparent'} onClick={() => setMode('SHUFFLE_LIST')}>Shuffle</Button>
-                </>
-            }
-
+                    </>
+                }
+            </div>
             <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} inverted />
         </div>
     )

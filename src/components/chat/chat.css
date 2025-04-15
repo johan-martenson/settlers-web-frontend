@@ -29,7 +29,7 @@
 
 .expand-chat-box {
     position: absolute;
-    left: 20em;
+    left: 30em;
     bottom: 0px;
     z-index: 99;
     background-color: darkslategray;

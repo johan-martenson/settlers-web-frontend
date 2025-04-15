@@ -1263,7 +1263,7 @@ class HouseImageAtlasHandler {
             return undefined
         }
 
-        if (this.imageAtlasInfo?.buildings[nation][houseType] === undefined) {
+        if (this.imageAtlasInfo.buildings[nation][houseType] === undefined) {
             console.log([nation, houseType, this.imageAtlasInfo?.buildings[nation]])
         }
 

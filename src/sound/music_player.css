@@ -6,8 +6,15 @@
     background-color: darkslategray;
     border-radius: 0.5rem;
     padding: 0.7rem;
+    width: 25em;
+}
+
+.music-player-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-content: center;
     gap: 10px;
-    width: 10em;
 }
 
 .SongList {
@@ -17,25 +24,27 @@
     max-height: 80vh;
 }
 
-.SongItem {
+.song-item {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    width: 100%;
 }
 
-.SongItem:hover {
+.song-item:hover {
     background-color: lightblue;
     cursor: pointer;
 }
 
-.PlayingSongItem {
+.playing-song-item {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     font-weight: bold;
+    width: 100%;
 }
 
-.PlayingSongItem:hover {
+.playing-song-item:hover {
     background-color: lightblue;
     cursor: pointer;
 }

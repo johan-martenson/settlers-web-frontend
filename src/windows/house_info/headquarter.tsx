@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Field, SelectTabData, SelectTabEvent, Tab, TabList, Tooltip } from '@fluentui/react-components'
+import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
 import { HouseInformation, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon } from '../../icons/icon'
@@ -20,7 +20,7 @@ type HeadquarterInfoProps = {
 }
 
 // Constants
-const INVENTORY_MATERIALS: Material[]  = [
+const INVENTORY_MATERIALS: Material[] = [
     'WOOD',
     'PLANK',
     'STONE',
@@ -210,14 +210,12 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
                             return (
                                 <div className='headquarter-inventory-item' key={material} >
-                                    <Tooltip content={label} relationship='label' withArrow >
-                                        <div
-                                            onMouseEnter={() => setHover(label)}
-                                            onMouseLeave={() => setHover(undefined)}
-                                        >
-                                            <InventoryIcon nation={nation} material={material} scale={1} />
-                                        </div>
-                                    </Tooltip>
+                                    <div
+                                        onMouseEnter={() => setHover(label)}
+                                        onMouseLeave={() => setHover(undefined)}
+                                    >
+                                        <InventoryIcon nation={nation} material={material} scale={1} />
+                                    </div>
                                     {amount}
                                 </div>
                             )
@@ -226,7 +224,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
             }
 
             {panel === 'RESERVED' &&
-                <div className='headquarter-reserved-soldiers'>
+                <ItemContainer>
                     {SOLDIER_TYPES.map(rank => {
                         if (isHeadquarterInformation(house)) {
                             const soldierDisplayName = soldierPretty(rank)
@@ -234,15 +232,13 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                             return (
                                 <div className='headquarter-inventory-item' key={rank} style={{ display: 'block' }}>
                                     ({house.inReserve[rank]} / {house.reserved[rank]})
-                                    <Tooltip content={soldierDisplayName} relationship='label' withArrow key={rank}>
-                                        <div
-                                            style={{ display: 'inline' }}
-                                            onMouseEnter={() => setHover(soldierDisplayName)}
-                                            onMouseLeave={() => setHover(undefined)}
-                                        >
-                                            <InventoryIcon material={rankToMaterial(rank)} nation={nation} inline />
-                                        </div>
-                                    </Tooltip>
+                                    <div
+                                        style={{ display: 'inline' }}
+                                        onMouseEnter={() => setHover(soldierDisplayName)}
+                                        onMouseLeave={() => setHover(undefined)}
+                                    >
+                                        <InventoryIcon material={rankToMaterial(rank)} nation={nation} inline />
+                                    </div>
                                     <Subtract16Filled
                                         onMouseEnter={() => setHover(`Reduce reserved ${soldierDisplayName}s`)}
                                         onMouseLeave={() => setHover(undefined)}
@@ -265,11 +261,11 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                             )
                         }
                     })}
-                </div>
+                </ItemContainer>
             }
 
             {panel === 'MILITARY_SETTINGS' &&
-                <div className='headquarters-military-settings'>
+                <ItemContainer>
                     <Field label='Populate buildings with weak or strong soldiers'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
                             <Subtract16Filled
@@ -409,7 +405,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onClick={() => setPopulateCloseToBorder(prev => Math.min(10, prev + 1))} />
                         </div>
                     </Field>
-                </div>
+                </ItemContainer>
             }
 
         </Window>

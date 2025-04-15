@@ -151,6 +151,7 @@ const EnemyHouseInfo = ({ house, nation, onClose, onRaise }: EnemyHouseInfoProps
 const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEnemyHouseInfoProps) => {
     const [chosenAttackers, setChosenAttackers] = useState<number>(0)
     const [attackType, setAttackType] = useState<AttackType>('STRONG')
+    const [hoverInfo, setHoverInfo] = useState<string>()
 
     const availableAttackers = house.availableAttackers ?? 0
 
@@ -160,6 +161,7 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
             onClose={onClose}
             heading={`Military enemy building: ${buildingPretty(house.type)}`}
             onRaise={onRaise}
+            hoverInfo={hoverInfo}
         >
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -171,21 +173,45 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                     <Field label='Number of attackers'>
                         <div>
                             <div>Attackers: ({chosenAttackers}/{house.availableAttackers})</div>
-                            <Button onClick={() => setChosenAttackers(Math.max(chosenAttackers - 1, 0))}>Fewer</Button>
-                            <Button onClick={() => setChosenAttackers(Math.min(chosenAttackers + 1, availableAttackers))}>More</Button>
+                            <Button
+                                onClick={() => setChosenAttackers(Math.max(chosenAttackers - 1, 1))}
+                                onMouseEnter={() => setHoverInfo('Fewer attackers')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >Fewer</Button>
+                            <Button
+                                onClick={() => setChosenAttackers(Math.min(chosenAttackers + 1, availableAttackers))}
+                                onMouseEnter={() => setHoverInfo('More attackers')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >More</Button>
                         </div>
                     </Field>
                     <Field label='Weak or strong attackers'>
                         <div>
-                            <Button onClick={() => setAttackType('WEAK')}>Weaker</Button>
-                            <Button onClick={() => setAttackType('STRONG')}>Stronger</Button>
+                            <Button
+                                style={{ backgroundColor: attackType === 'WEAK' ? 'lightblue' : undefined }}
+                                onClick={() => setAttackType('WEAK')}
+                                onMouseEnter={() => setHoverInfo('Weaker attackers')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >Weaker</Button>
+                            <Button
+                                style={{ backgroundColor: attackType === 'STRONG' ? 'lightblue' : undefined }}
+                                onClick={() => setAttackType('STRONG')}
+                                onMouseEnter={() => setHoverInfo('Stronger attackers')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >Stronger</Button>
                         </div>
                     </Field>
-                    <Button onClick={() => {
-                        api.attackHouse(house.id, chosenAttackers, attackType)
+                    <Button
+                        onClick={() => {
+                            api.attackHouse(house.id, chosenAttackers, attackType)
 
-                        onClose()
-                    }}>Attack</Button>
+                            onClose()
+                        }}
+                        onMouseEnter={() => setHoverInfo('Launch attack')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        Attack
+                    </Button>
                 </div>
             }
         </Window>
@@ -219,7 +245,7 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
             {Object.keys(house.resources)
                 .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
                 <Field label='Resources'>
-                    <div>
+                    <ItemContainer>
                         {Object.keys(house.resources)
                             .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
                             .map(material => {
@@ -255,7 +281,7 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
                                 }
                             })
                         }
-                    </div>
+                    </ItemContainer>
                 </Field>
             }
 

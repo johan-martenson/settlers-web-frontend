@@ -88,13 +88,6 @@ const sampleStatisticsData: StatisticsReply = {
     "players": [
         {
             "id": "1",
-            "productionStatistics": {
-                "PLANK": [[0, 0], [23, 1], [24, 2], [62, 3], [73, 5]],
-                "STONE": [[0, 0], [45, 1], [72, 3]]
-            },
-            "inventoryStatistics": {
-                "PLANK": [[0, 10], [23, 11]]
-            },
             "buildingStatistics": {
                 "ForesterHut": [[1, 0], [23, 1]],
                 "Woodcutter": [[1, 0], [10, 1], [50, 2]],
@@ -115,14 +108,6 @@ const sampleStatisticsData: StatisticsReply = {
         },
         {
             "id": "2",
-            "productionStatistics": {
-                "PLANK": [[0, 0], [18, 1], [19, 2], [203, 3]],
-                "IRON_BAR": [[0, 0], [50, 1]]
-            },
-            "inventoryStatistics": {
-                "PLANK": [[0, 10], [18, 11]],
-                "COAL": [[0, 0], [73, 1]]
-            },
             "buildingStatistics": {},
             "general": {
                 "houses": [[1, 1]],

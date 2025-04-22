@@ -37,6 +37,7 @@ type GameMenuProps = {
     onSetAnimateMapScrolling: (shouldAnimate: boolean) => void
     onSetAnimateZooming: (shouldAnimate: boolean) => void
     onQuota: () => void
+    onManageToolPriorities: () => void
 }
 
 // React components
@@ -66,6 +67,7 @@ const GameMenu = ({
     onSetHeightAdjust,
     onSetAnimateMapScrolling,
     onSetAnimateZooming,
+    onManageToolPriorities,
     onQuota }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
@@ -188,7 +190,16 @@ const GameMenu = ({
                     <Button onClick={() => {
                         onQuota()
                         onClose()
-                    }}>Set quota</Button>
+                    }}>
+                        Set quota
+                    </Button>
+                    <Button onClick={() => {
+                        onManageToolPriorities()
+                        onClose()
+                    }}>
+                        Manage tool priorities
+                    </Button>
+
                     <Button onClick={() => {
                         onHelp()
                         onClose()

@@ -167,7 +167,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
 
                                     {message.type === 'TREE_CONSERVATION_PROGRAM_ACTIVATED' &&
                                         <>
-                                            The tree conservation program has been activated. Only Woodcutters, Sawmills, and Forester huts will get planks.
+                                            The tree conservation program has been activated.<br/>Only Woodcutters, Sawmills, and Forester huts will get planks.
                                         </>
                                     }
 

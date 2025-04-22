@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Field } from '@fluentui/react-components'
-import { PauseRegular, PlayRegular } from '@fluentui/react-icons'
-import { AttackType, HouseInformation, Nation, PlayerId, isMaterial } from '../../api/types'
+import { AttackType, HouseInformation, Nation, PlayerId, Point, isMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
 import { HeadquarterInfo } from './headquarter'
@@ -19,6 +18,7 @@ type HouseInfoProps = {
     nation: Nation
     onRaise: () => void
     onClose: () => void
+    goToPoint: (point: Point) => void
 }
 
 type PlannedHouseInfoProps = {
@@ -54,10 +54,11 @@ type ProductionBuildingProps = {
     nation: Nation
     onRaise: () => void
     onClose: () => void
+    goToPoint: (point: Point) => void
 }
 
 // React components
-const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseInfoProps) => {
+const HouseInfo = ({ selfPlayerId, nation, goToPoint, onClose, onRaise, ...props }: HouseInfoProps) => {
     const [house, setHouse] = useState<HouseInformation>(props.house)
 
     const isOwnHouse = (house.playerId === selfPlayerId)
@@ -84,11 +85,11 @@ const HouseInfo = ({ selfPlayerId, nation, onClose, onRaise, ...props }: HouseIn
             }
 
             {isOwnHouse && house.type !== 'Headquarter' && houseIsReady(house) && isMilitaryBuilding(house) &&
-                <MilitaryBuilding house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <MilitaryBuilding house={house} nation={nation} onClose={onClose} onRaise={onRaise} goToPoint={goToPoint} />
             }
 
             {isOwnHouse && (house.state === 'OCCUPIED' || house.state === 'UNOCCUPIED') && !isMilitaryBuilding(house) &&
-                <ProductionBuilding house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <ProductionBuilding house={house} nation={nation} onClose={onClose} onRaise={onRaise} goToPoint={goToPoint} />
             }
 
             {!isOwnHouse && !isMilitaryBuilding(house) &&
@@ -177,12 +178,16 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                                 onClick={() => setChosenAttackers(Math.max(chosenAttackers - 1, 1))}
                                 onMouseEnter={() => setHoverInfo('Fewer attackers')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
-                            >Fewer</Button>
+                            >
+                                <UiIcon type='ONE_YELLOW_SHIELD' />
+                            </Button>
                             <Button
                                 onClick={() => setChosenAttackers(Math.min(chosenAttackers + 1, availableAttackers))}
                                 onMouseEnter={() => setHoverInfo('More attackers')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
-                            >More</Button>
+                            >
+                                <UiIcon type='FIVE_YELLOW_SHIELDS' />
+                            </Button>
                         </div>
                     </Field>
                     <Field label='Weak or strong attackers'>
@@ -192,13 +197,17 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                                 onClick={() => setAttackType('WEAK')}
                                 onMouseEnter={() => setHoverInfo('Weaker attackers')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
-                            >Weaker</Button>
+                            >
+                                <UiIcon type='ROMAN_PRIVATE' />
+                            </Button>
                             <Button
                                 style={{ backgroundColor: attackType === 'STRONG' ? 'lightblue' : undefined }}
                                 onClick={() => setAttackType('STRONG')}
                                 onMouseEnter={() => setHoverInfo('Stronger attackers')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
-                            >Stronger</Button>
+                            >
+                                <UiIcon type='ROMAN_GENERAL' />
+                            </Button>
                         </div>
                     </Field>
                     <Button
@@ -300,7 +309,7 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
     )
 }
 
-const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuildingProps) => {
+const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: ProductionBuildingProps) => {
     const [hoverInfo, setHoverInfo] = useState<string>()
 
     return (
@@ -324,48 +333,52 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
 
             <div className='production-info'>
 
-                <div>Productivity: {house.productivity}</div>
+                {house.productionEnabled &&
+                    <div
+                        onMouseEnter={() => setHoverInfo(`Productivity: ${house.productivity}%`)}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        {house.productivity}%
+                    </div>
+                }
 
                 {!house.productionEnabled && <div>Production disabled</div>}
 
                 {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
-                    <div>
-                        Resources:
-                        <ItemContainer padding='0.5em' inline>
+                    <ItemContainer padding='0.5em' inline>
 
-                            {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
-                                .map(material => {
+                        {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
+                            .map(material => {
 
-                                    if (isMaterial(material)) {
-                                        const has = house.resources[material].has ?? 0
-                                        const canHold = house.resources[material].canHold ?? 0
-                                        const gap = Math.max(canHold - has, 0)
+                                if (isMaterial(material)) {
+                                    const has = house.resources[material].has ?? 0
+                                    const canHold = house.resources[material].canHold ?? 0
+                                    const gap = Math.max(canHold - has, 0)
 
-                                        return <div key={material}>
-                                            {Array.from({ length: has }, () => 1).map(
-                                                (value, index) => <span
-                                                    key={index}
-                                                    onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
-                                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                                >
-                                                    <InventoryIcon material={material} nation={nation} key={index} inline />
-                                                </span>
-                                            )}
-                                            {Array.from({ length: gap }, () => 1).map(
-                                                (value, index) => <span
-                                                    key={index + 10}
-                                                    onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
-                                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                                >
-                                                    <InventoryIcon material={material} nation={nation} key={index + 10} inline missing />
-                                                </span>
-                                            )}
-                                        </div>
-                                    }
-                                })
-                            }
-                        </ItemContainer>
-                    </div>
+                                    return <div key={material}>
+                                        {Array.from({ length: has }, () => 1).map(
+                                            (value, index) => <span
+                                                key={index}
+                                                onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            >
+                                                <InventoryIcon material={material} nation={nation} key={index} inline />
+                                            </span>
+                                        )}
+                                        {Array.from({ length: gap }, () => 1).map(
+                                            (value, index) => <span
+                                                key={index + 10}
+                                                onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            >
+                                                <InventoryIcon material={material} nation={nation} key={index + 10} inline missing />
+                                            </span>
+                                        )}
+                                    </div>
+                                }
+                            })
+                        }
+                    </ItemContainer>
                 }
 
                 {house.produces &&
@@ -392,7 +405,8 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                         onClick={() => api.pauseProductionForHouse(house.id)}
                         onMouseEnter={() => setHoverInfo('Pause production')}
                         onMouseLeave={() => setHoverInfo(undefined)}
-                    ><PauseRegular />
+                    >
+                        <UiIcon type='GEARS' />
                     </Button>
                 }
 
@@ -402,7 +416,7 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                         onMouseEnter={() => setHoverInfo('Resume production')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <PlayRegular />
+                        <UiIcon type='GEARS_CROSSED_OVER' />
                     </Button>
                 }
 
@@ -415,6 +429,15 @@ const ProductionBuilding = ({ house, nation, onClose, onRaise }: ProductionBuild
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
                     <UiIcon type='DESTROY_BUILDING' />
+                </Button>
+                <Button
+                    onClick={() => {
+                        goToPoint(house)
+                    }}
+                    onMouseEnter={() => setHoverInfo(`Go to the ${buildingPretty(house.type).toLowerCase()}`)}
+                    onMouseLeave={() => setHoverInfo(undefined)}
+                >
+                    <UiIcon type='GO_TO_POINT' />
                 </Button>
             </ButtonRow>
         </Window >

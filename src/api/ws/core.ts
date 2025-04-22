@@ -414,11 +414,15 @@ async function attemptReconnect(): Promise<void> {
 
             await connectAndWaitForConnection()
 
-            if (wsApiCoreDebugSettings.connectionHandling) {
-                console.log('Succeeded to reconnect')
-            }
+            if (connectionStatus === 'CONNECTED') {
+                if (wsApiCoreDebugSettings.connectionHandling) {
+                    console.log('Succeeded to reconnect')
+                }
 
-            break
+                break    
+            } else {
+                console.error(`Failed to reconnect`)
+            }
         } catch (error) {
             console.error(`Failed to reconnect: ${error}`)
         }

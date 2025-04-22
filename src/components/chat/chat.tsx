@@ -4,6 +4,7 @@ import { api } from '../../api/ws-api'
 import { ChatMessage, PlayerId, RoomId } from '../../api/types'
 import './chat.css'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
+import { ItemContainer } from '../item_container'
 
 // Types
 type ChatBoxProps = {
@@ -47,7 +48,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
     return (
         <div className='chat-box'>
-            <div className='chat-log'>
+            <ItemContainer>
                 {chatLog
                     .filter(chatMessage =>
                         chatMessage?.toRoomId === roomId ||
@@ -56,7 +57,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                         <div key={chatMessage.id} className='chat-entry'>
                             [{chatMessage.time.hours.toString().padStart(2, '0')}:{chatMessage.time.minutes.toString().padStart(2, '0')}] {chatMessage.fromName}: {chatMessage.text}
                         </div>))}
-            </div>
+            </ItemContainer>
             <div className='chat-type-and-send'>
                 <Input
                     value={messageText}

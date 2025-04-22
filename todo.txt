@@ -1,12 +1,11 @@
 Todo 1.0
 ========
 
+-18. Command should show available mine
 -17. Roads did not show as promoted. Reload fixed it
 -16. Initial land measurement is wrong for other players
--15. Flour is missing in headquarters inventory
 -14. Hover info for construction progress is not updated
 -13. Planned building window should list needed material
--11. Unoccupied mill doesn't get worker assigned
 -10. No sign on flag, or flag on sign
 -9. Should not open multiple windows for the same building
 -7. When the driveway to the headquarters becomes a main road a donkey should get assigned to it. Same for storehouses?
@@ -19,10 +18,7 @@ Todo 1.0
 2. More sounds
 3. Planer
 4. Make materials visible when donkeys carry
-5. Fix statistics components. Should be general statistics to compare players, and Merchandise to see production and/or inventory
 6. Quota handling for planks
-7. Add the propeller to the mill
-8. Fix ugly scrollbar in type control
 9. Soldiers waiting to fight should be facing the attacked building's flag
 10. Border update when (enemy) barracks is upgraded to guard house. Also somehow enemy border disappears
 11. Add skeleton decoration on the ground when a worker dies

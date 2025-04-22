@@ -8,13 +8,17 @@ type ItemContainerProps = {
     height?: string
     padding?: string
     width?: string
+    style?: React.CSSProperties
+    center?: boolean
 }
 
-const ItemContainer = ({ children, height, padding, inline, width, rows = false }: ItemContainerProps) => {
+const ItemContainer = ({ children, height, padding, inline, width, rows = false, center, style }: ItemContainerProps) => {
     return (<div
         className='item-container'
         style={{
+            ...style,
             flexDirection: rows ? 'row' : 'column',
+            alignContent: center ? 'center' : undefined,
             height,
             padding,
             width,

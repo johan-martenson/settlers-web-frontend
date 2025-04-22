@@ -15,9 +15,9 @@ import { SetTransportPriority } from '../../windows/transport_priority/transport
 import { TypeControl, Command } from './type_control'
 import { isRoadAtPoint } from '../../utils/utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState, RoadId } from '../../api/types'
-import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular } from '@fluentui/react-icons'
-import { FlagIcon, HouseIcon } from '../../icons/icon'
-import { HouseInfo } from '../../windows/house_info/house_info'
+import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled, PlayFilled, BugFilled } from '@fluentui/react-icons'
+import { FlagIcon, HouseIcon, UiIcon } from '../../icons/icon'
+import { HouseInfo } from '../../windows/house/house_info'
 import { sfx } from '../../sound/sound_effects'
 import { Quotas } from '../../windows/quotas/quotas'
 import { animator } from '../../utils/animator'
@@ -31,11 +31,16 @@ import { NoActionWindow } from '../../windows/no_action/no_action_window'
 import { ExpandChatBox } from '../../components/chat/chat'
 import { canBeUpgraded, getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint } from '../../api/utils'
 import { calcTranslation } from '../../render/utils'
+import Tools from '../../windows/tools/tools'
 
 // Types
 type HouseWindow = {
     type: 'HOUSE'
     house: HouseInformation
+}
+
+type ToolsWindow = {
+    type: 'TOOLS'
 }
 
 type FlagWindow = {
@@ -94,6 +99,7 @@ type WindowType =
     | RoadWindow
     | TransportPriorityWindow
     | FollowWindow
+    | ToolsWindow
     | NoActionWindow
 
 type Window = { id: number } & WindowType
@@ -319,7 +325,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         setPossibleRoadConnections(pointInformation.possibleRoadConnections)
                     }
                 },
-                filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING' || pointInformation.is === 'FLAG'
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING' || pointInformation.is === 'FLAG',
+                icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
             })
 
             commands.set('Flag', {
@@ -338,7 +345,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 }
             })
             commands.set('Titles', {
-                action: () => setShowTitles(!showTitles)
+                action: () => setShowTitles(!showTitles),
+                icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
             })
             commands.set('Geologist', {
                 action: (point: Point) => api.callGeologist(point),
@@ -359,7 +367,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING'
             })
             commands.set('Transport priority', {
-                action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' })
+                action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' }),
+                icon: <UiIcon type='TRANSPORT_PRIORITY' scale={0.5} />
             })
             commands.set('List statistics', {
                 action: () => printVariables()
@@ -396,16 +405,23 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 action: () => openSingletonWindow({ type: 'QUOTA' })
             })
             commands.set('Pause game', {
-                action: () => api.pauseGame()
+                action: () => api.pauseGame(),
+                icon: <PauseFilled />
             })
             commands.set('Resume game', {
-                action: () => api.resumeGame()
+                action: () => api.resumeGame(),
+                icon: <PlayFilled />
             })
             commands.set('Debug', {
-                action: () => openSingletonWindow({ type: 'DEBUG' })
+                action: () => openSingletonWindow({ type: 'DEBUG' }),
+                icon: <BugFilled />
             })
             commands.set('Follow', {
-                action: (point: Point) => openWindow({ type: 'FOLLOW', point })
+                action: (point: Point) => openWindow({ type: 'FOLLOW', point }),
+                icon: <UiIcon type='FILM_CAMERA' scale={0.5} />
+            })
+            commands.set('Tools', {
+                action: () => openSingletonWindow({ type: 'TOOLS' })
             })
 
             setCommands(commands)
@@ -1044,6 +1060,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 onSetAnimateMapScrolling={setAnimateMapScrolling}
                 onSetAnimateZooming={setAnimateZoom}
                 onQuota={() => openSingletonWindow({ type: 'QUOTA' })}
+                onManageToolPriorities={() => openSingletonWindow({ type: 'TOOLS' })}
             />
 
             {windows.map(window => {
@@ -1057,6 +1074,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             onRaise={() => raiseWindow(window.id)}
                             onStartNewRoad={startNewRoad}
                             nation={(player) ? player.nation : 'ROMANS'}
+                            houseTitlesVisible={showTitles}
+                            availableConstructionVisible={showAvailableConstruction}
+                            onShowHouseTitles={() => setShowTitles(true)}
+                            onHideHouseTitles={() => setShowTitles(false)}
+                            onShowAvailableConstruction={() => setShowAvailableConstruction(true)}
+                            onHideAvailableConstruction={() => setShowAvailableConstruction(false)}
                         />
                     case 'FLAG':
                         return <FriendlyFlagInfo
@@ -1075,6 +1098,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             nation={player?.nation ?? 'ROMANS'}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
+                            goToPoint={scrollToPoint}
                         />
                     case 'GUIDE':
                         return <Guide
@@ -1107,9 +1131,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         return <RoadInfo
                             key={window.id}
                             roadId={window.roadId}
-                            onStartMonitor={(point: Point) => openWindow({ type: 'FOLLOW', point })}
+                            houseTitlesVisible={showTitles}
+                            availableConstructionVisible={showAvailableConstruction}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
+                            onShowHouseTitles={() => setShowTitles(true)}
+                            onHideHouseTitles={() => setShowTitles(false)}
+                            onShowAvailableConstruction={() => setShowAvailableConstruction(true)}
+                            onHideAvailableConstruction={() => setShowAvailableConstruction(false)}
+                            onStartMonitor={() => openWindow({ type: 'FOLLOW', point: selected })}
                         />
                     case 'DEBUG':
                         return <Debug
@@ -1125,6 +1155,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
                             heightAdjust={heightAdjust}
+                        />
+                    case 'TOOLS':
+                        return <Tools
+                            key={window.id}
+                            onClose={() => closeWindow(window.id)}
+                            onRaise={() => raiseWindow(window.id)}
                         />
                     case 'NO_ACTION':
                         return <NoActionWindow

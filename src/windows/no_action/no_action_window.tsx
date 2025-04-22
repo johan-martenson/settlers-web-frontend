@@ -4,6 +4,7 @@ import { ButtonRow, Window } from "../../components/dialog"
 import { Point } from "../../api/types"
 import { useState } from "react"
 import './no_action_window.css'
+import { UiIcon } from '../../icons/icon'
 
 // Types
 type NoActionWindowProps = {
@@ -44,7 +45,7 @@ function NoActionWindow({
                         onMouseEnter={() => setHoverInfo('Show house names')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Show house titles
+                        <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' />
                     </Button>}
                 {areHouseTitlesVisible &&
                     <Button
@@ -52,7 +53,7 @@ function NoActionWindow({
                         onMouseEnter={() => setHoverInfo('Hide house names')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Hide house titles
+                        <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' />
                     </Button>}
                 {!isAvailableConstructionVisible &&
                     <Button
@@ -60,7 +61,7 @@ function NoActionWindow({
                         onMouseEnter={() => setHoverInfo('Show available construction')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Show available construction
+                        <UiIcon type='PLUS_AVAILABLE_BUILDINGS' />
                     </Button>}
 
                 {isAvailableConstructionVisible &&
@@ -69,15 +70,19 @@ function NoActionWindow({
                         onMouseEnter={() => setHoverInfo('Hide available construction')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Hide available construction
+                        <UiIcon type='PLUS_AVAILABLE_BUILDINGS' />
                     </Button>}
 
                 <Button
-                    onClick={() => onStartMonitor(point)}
+                    onClick={() => {
+                        onStartMonitor(point)
+
+                        onClose()
+                    }}
                     onMouseEnter={() => setHoverInfo('Open monitor')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    Monitor
+                    <UiIcon type='MAGNIFYING_GLASS' />
                 </Button>
             </ButtonRow>
         </Window>

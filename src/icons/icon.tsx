@@ -1,11 +1,98 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../api/types'
-import { Dimension, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets/assets'
+import { Dimension, DrawingInformation, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets/assets'
 import { resizeCanvasToDisplaySize } from '../utils/utils'
 import './icon.css'
 
 // Types
-export type UiIconType = 'DESTROY_BUILDING' | 'SCISSORS' | 'INFORMATION' | 'GEOLOGIST' | 'ATTACK'
+export type UiIconType = 'DESTROY_BUILDING'
+    | 'SCISSORS'
+    | 'INFORMATION'
+    | 'GEOLOGIST'
+    | 'ATTACK'
+    | 'BROKEN_FLAG'
+    | 'FILM_CAMERA'
+    | 'COIN_CROSSED_OUT'
+    | 'ANGEL_WITH_QUESTION_MARK'
+    | 'MAGNIFYING_GLASS'
+    | 'PULL_DOWN_FLAG'
+    | 'COIN'
+    | 'SHRINK_SCREEN_AND_MAGNIFYING_GLASS'
+    | 'ENLARGE_SCREEN_AND_MAGNIFYING_GLASS'
+    | 'ONE_YELLOW_SHIELD'
+    | 'FIVE_YELLOW_SHIELDS'
+    | 'LIGHT_ROAD_IN_NATURE'
+    | 'BROKEN_FLAG'
+    | 'ROMAN_GENERAL'
+    | 'ROMAN_PRIVATE'
+    | 'GO_TO_POINT'
+    | 'SEND_OUT_ARROWS'
+    | 'ROAD_AND_FLAGS'
+    | 'PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES'
+    | 'PLUS_AVAILABLE_BUILDINGS'
+    | 'RED_SMALL_AVAILABLE_BUILDING'
+    | 'RED_MEDIUM_AVAILABLE_BUILDING'
+    | 'RED_LARGE_AVAILABLE_BUILDING'
+    | 'SHOVEL'
+    | 'PULL_DOWN_FLAG'
+    | 'GEARS'
+    | 'GEARS_CROSSED_OVER'
+    | 'FORTRESS_WITH_PLUS'
+    | 'FORTRESS_WITH_MINUS'
+    | 'SMALLER_FORTRESS_WITH_PLUS'
+    | 'SMALLER_FORTRESS_WITH_MINUS'
+    | 'SMALLEST_FORTRESS_WITH_PLUS'
+    | 'SMALLEST_FORTRESS_WITH_MINUS'
+    | 'WEAK_SOLDIER_WITH_MINUS'
+    | 'STRONG_SOLDIER_WITH_PLUS'
+    | 'ONE_SHIELD_WITH_MINUS'
+    | 'TWO_SHIELDS_WITH_PLUS'
+    | 'MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_MINUS'
+    | 'MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_PLUS'
+    | 'MILITARY_BUILDING_WITH_SWORDS_AND_MINUS'
+    | 'MILITARY_BUILDING_WITH_SWORDS_AND_PLUS'
+    | 'MAP_WITH_QUESTION_MARK'
+    | 'BUILDINGS_WITH_QUESTION_MARK'
+    | 'WORKERS_WITH_QUESTION_MARK'
+    | 'GOODS_WITH_QUESTION_MARK'
+    | 'GENERAL_WITH_QUESTION_MARK'
+    | 'COINS_WITH_QUESTION_MARK'
+    | 'GEARS_WITH_QUESTION_MARK'
+    | 'ANGEL_WITH_QUESTION_MARK'
+    | 'WREATH_ON_MAP'
+    | 'GOODS_ON_MAP'
+    | 'OWNED_BUILDINGS_ON_MAP'
+    | 'WORKERS_GOODS_AND_QUESTION_MARK'
+    | 'TRANSPORT_PRIORITY'
+    | 'TOOLS_WITH_QUESTION_MARK'
+    | 'HOUSE_WITH_GEARS_AND_PROGRESS_BAR'
+    | 'WEAPONS_AND_SOLDIER'
+    | 'SHIP_AND_ANCHOR'
+    | 'HOUSE_ON_MAP'
+    | 'WEAPONS_MOVING'
+    | 'FOOD'
+    | 'SAW_AND_PLUS'
+    | 'SAW_AND_MINUS'
+    | 'AXE_AND_MINUS'
+    | 'AXE_AND_PLUS'
+    | 'SHOVEL_AND_MINUS'
+    | 'SHOVEL_AND_PLUS'
+    | 'LINE_AND_HOOK_AND_MINUS'
+    | 'LINE_AND_HOOK_AND_PLUS'
+    | 'BOW_AND_MINUS'
+    | 'BOW_AND_PLUS'
+    | 'CLEAVER_AND_MINUS'
+    | 'CLEAVER_AND_PLUS'
+    | 'ROLLING_PIN_AND_MINUS'
+    | 'ROLLING_PIN_AND_PLUS'
+    | 'CRUCIBLE_AND_MINUS'
+    | 'CRUCIBLE_AND_PLUS'
+    | 'TONGS_AND_MINUS'
+    | 'TONGS_AND_PLUS'
+    | 'SCYTHE_AND_MINUS'
+    | 'SCYTHE_AND_PLUS'
+    | 'PICK_AXE_AND_MINUS'
+    | 'PICK_AXE_AND_PLUS'
 
 type WorkerIconProps = {
     worker: WorkerType
@@ -39,6 +126,10 @@ type HouseProps = {
 type UiIconProps = {
     type: UiIconType
     scale?: number
+
+    onMouseEnter?: () => void
+    onMouseLeave?: () => void
+    onClick?: () => void
 }
 
 type FlagIconProps = {
@@ -351,11 +442,9 @@ const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = 
         </div>
     )
 }
-
-const UiIcon = ({ type, scale = 1 }: UiIconProps) => {
+const UiIcon = ({ type, scale = 1, onMouseEnter, onMouseLeave, onClick }: UiIconProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
-
-    const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
+    const [drawInfo, setDrawInfo] = useState<DrawingInformation>()
     const [sourceImage, setSourceImage] = useState<ImageBitmap>()
 
     useEffect(() => {
@@ -363,22 +452,28 @@ const UiIcon = ({ type, scale = 1 }: UiIconProps) => {
             await uiElementsImageAtlasHandler.load()
             const image = uiElementsImageAtlasHandler.getImage()
 
-            if (image) {
-                let imageBitmap = imageCache.get(image)
-
-                if (!imageBitmap) {
-                    imageBitmap = await createImageBitmap(image)
-                    imageCache.set(image, imageBitmap)
-                }
-
-                setSourceImage(imageBitmap)
+            if (!image) {
+                console.error('UiIcon: Failed to get image')
+                return
             }
 
-            const drawInfo = uiElementsImageAtlasHandler.getUiElement(type)
+            let imageBitmap = imageCache.get(image)
 
-            if (drawInfo) {
-                setDimension({ width: drawInfo.width, height: drawInfo.height })
+            if (!imageBitmap) {
+                imageBitmap = await createImageBitmap(image)
+                imageCache.set(image, imageBitmap)
+            } else {
+                console.log('UiIcon: Image bitmap was not in the cache')
             }
+
+            const info = uiElementsImageAtlasHandler.getUiElement(type)
+            if (!info) {
+                console.error('UiIcon: Failed to get draw info')
+                return
+            }
+
+            setSourceImage(imageBitmap)
+            setDrawInfo(info)
         })()
     }, [type])
 
@@ -399,10 +494,13 @@ const UiIcon = ({ type, scale = 1 }: UiIconProps) => {
                 return
             }
 
-            const drawInfo = uiElementsImageAtlasHandler.getUiElement(type)
+            if (!sourceImage) {
+                console.error(`No source image for ${type}`)
+                return
+            }
 
             if (!drawInfo) {
-                console.error('No drawing information')
+                console.error('No draw info')
                 return
             }
 
@@ -414,24 +512,28 @@ const UiIcon = ({ type, scale = 1 }: UiIconProps) => {
 
             context.clearRect(0, 0, width, height)
 
-            if (sourceImage) {
-                context.drawImage(
-                    sourceImage,
-                    drawInfo.sourceX, drawInfo.sourceY,
-                    drawInfo.width, drawInfo.height,
-                    0, 0,
-                    width, height
-                )
-            }
+            context.drawImage(
+                sourceImage,
+                drawInfo.sourceX, drawInfo.sourceY,
+                drawInfo.width, drawInfo.height,
+                0, 0,
+                width, height
+            )
         })()
 
-    }, [type, scale, sourceImage])
+    }, [scale, sourceImage, canvasRef, drawInfo])
+
+    const scaledWidth = (drawInfo?.width ?? 1) * scale
+    const scaledHeight = (drawInfo?.height ?? 1) * scale
 
     return <canvas
         ref={canvasRef}
-        width={dimension.width * scale}
-        height={dimension.height * scale}
-        style={{ width: dimension.width * scale, height: dimension.height * scale }}
+        width={scaledWidth}
+        height={scaledHeight}
+        style={{ width: scaledWidth, height: scaledHeight }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
     />
 }
 

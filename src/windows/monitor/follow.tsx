@@ -9,6 +9,7 @@ import { animator } from '../../utils/animator'
 import { calcTranslation } from '../../render/utils'
 import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../../utils/utils'
 import { MoveUpdate, api } from '../../api/ws-api'
+import { UiIcon } from '../../icons/icon'
 
 // Types
 type FollowProps = {
@@ -326,7 +327,6 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                             )
                         }}
                     >
-                        +
                     </Button>
                     <Button
                         appearance='subtle'
@@ -356,34 +356,43 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                 </div>
             </div>
             <ButtonRow>
-                <Button
-                    onClick={() => setSize('SMALL')}
-                    onMouseEnter={() => setHoverInfo('Small window')}
-                    onMouseLeave={() => setHoverInfo(undefined)}
-                >
-                    <div className='small-symbol' />
-                </Button>
-                <Button
-                    onClick={() => setSize('MEDIUM')}
-                    onMouseEnter={() => setHoverInfo('Medium window')}
-                    onMouseLeave={() => setHoverInfo(undefined)}
-                >
-                    <div className='medium-symbol' />
-                </Button>
-                <Button
-                    onClick={() => setSize('LARGE')}
-                    onMouseEnter={() => setHoverInfo('Large window')}
-                    onMouseLeave={() => setHoverInfo(undefined)}
-                >
-                    <div className='large-symbol' />
-                </Button>
+                {size !== 'SMALL' &&
+                    <Button
+                        onClick={() => setSize(prev => {
+                            if (prev === 'MEDIUM') {
+                                return 'SMALL'
+                            }
+
+                            return 'MEDIUM'
+                        })}
+                        onMouseEnter={() => setHoverInfo('Smaller window')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <UiIcon type='SHRINK_SCREEN_AND_MAGNIFYING_GLASS' />
+                    </Button>
+                }
+                {size !== 'LARGE' &&
+                    <Button
+                        onClick={() => setSize(prev => {
+                            if (prev === 'MEDIUM') {
+                                return 'LARGE'
+                            }
+
+                            return 'MEDIUM'
+                        })}
+                        onMouseEnter={() => setHoverInfo('Larger window')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <UiIcon type='ENLARGE_SCREEN_AND_MAGNIFYING_GLASS' />
+                    </Button>
+                }
 
                 {idToFollow === undefined &&
                     <Button onClick={() => startMonitor(findHeightAdjustedCenterGamePoint(view))}
                         onMouseEnter={() => setHoverInfo('Start monitoring')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Monitor
+                        <UiIcon type='FILM_CAMERA' />
                     </Button>
                 }
 

@@ -1,7 +1,7 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead } from './ws/commands'
+import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory, Tool } from './types'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
@@ -222,6 +222,7 @@ type PlayerViewChanges = {
     newDecorations?: PointAndDecoration[]
     removedMessages?: GameMessageId[]
     transportPriority?: TransportCategory[]
+    changedToolQuotas?: {[key in Tool]: number}
 }
 
 type GameInformationChangedMessage = { gameInformation: GameInformation }
@@ -300,6 +301,8 @@ export type FlagListener = {
 export type TransportPriorityListener = (priority: TransportCategory[]) => void
 
 export type PlayerInformationListener = (playerInformation: PlayerInformation) => void
+
+export type ToolPrioListener = (quotas: {[key in Tool]: number}) => void
 
 export type GameListener = {
     onMonitoringStarted?: () => void
@@ -500,6 +503,10 @@ const api = {
     removeTransportPriorityListener,
     addPlayerInformationListener,
     removePlayerInformationListener,
+    addToolPrioListener,
+    removeToolPrioListener,
+    getToolPriorities,
+    setToolPriority,
 
     // Player - military
     setReservedSoldiers,
@@ -611,7 +618,7 @@ const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagLi
 const transportPriorityListeners: Set<TransportPriorityListener> = new Set()
 const timeListeners: Set<TimeListener> = new Set()
 const playerInformationListeners: Map<PlayerId, Set<PlayerInformationListener>> = new Map()
-
+const toolPrioListeners: Set<ToolPrioListener> = new Set()
 
 // State - misc
 const objectsWithDetailedMonitoring = new Set<HouseId | FlagId>()
@@ -880,6 +887,14 @@ function addPlayerInformationListener(playerId: PlayerId, listener: PlayerInform
  */
 function removePlayerInformationListener(playerId: PlayerId, listener: PlayerInformationListener): void {
     playerInformationListeners.get(playerId)?.delete(listener)
+}
+
+function addToolPrioListener(listener: ToolPrioListener): void {
+    toolPrioListeners.add(listener)
+}
+
+function removeToolPrioListener(listener: ToolPrioListener): void {
+    toolPrioListeners.delete(listener)
 }
 
 /**
@@ -1786,6 +1801,12 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             playerViewChanges.readMessages ?? [],
             playerViewChanges.removedMessages ?? []
         ))
+    }
+
+    if (playerViewChanges.changedToolQuotas !== undefined) {
+        for (const listener of toolPrioListeners) {
+            listener(playerViewChanges.changedToolQuotas)
+        }
     }
 
     if (playerViewChanges.newRoads !== undefined || playerViewChanges.removedRoads !== undefined) {

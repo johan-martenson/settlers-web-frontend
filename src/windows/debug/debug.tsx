@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { FlagDebugInfo, GameInformation, Point, PointInformation } from '../../api/types'
-import { api } from '../../api/ws-api'
+import { api, wsApiDebugSettings } from '../../api/ws-api'
 import './debug.css'
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Field, Switch } from '@fluentui/react-components'
 import { VEGETATION } from './translate'
@@ -37,6 +37,7 @@ function Debug({ point, onClose, onRaise }: DebugProps) {
         () => {
             wsApiCoreDebugSettings.receive = wsApiReceiveDebug
             wsApiCoreDebugSettings.send = wsApiSendDebug
+            wsApiDebugSettings.receive = wsApiReceiveDebug
         }, [wsApiReceiveDebug, wsApiSendDebug]
     )
 

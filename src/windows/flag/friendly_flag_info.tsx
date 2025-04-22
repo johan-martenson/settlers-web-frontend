@@ -59,7 +59,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         onMouseEnter={() => setHoverInfo('Remove flag')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Remove
+                        <UiIcon type='BROKEN_FLAG' />
                     </Button>
 
                     <Button
@@ -70,7 +70,9 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         }}
                         onMouseEnter={() => setHoverInfo('Build road')}
                         onMouseLeave={() => setHoverInfo(undefined)}
-                    >Build road</Button>
+                    >
+                        <UiIcon type='LIGHT_ROAD_IN_NATURE' />
+                    </Button>
 
                     <Button
                         onClick={async () => {

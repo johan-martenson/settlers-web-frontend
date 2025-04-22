@@ -3,7 +3,7 @@ import { Window } from '../../components/dialog'
 import './statistics.css'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { Nation, AnyBuilding, SMALL_HOUSES, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, MEDIUM_HOUSES, LARGE_HOUSES } from '../../api/types'
-import { HouseIcon, InventoryIcon } from '../../icons/icon'
+import { HouseIcon, InventoryIcon, UiIcon, UiIconType } from '../../icons/icon'
 import { api } from '../../api/ws-api'
 import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, CartesianGrid } from "recharts"
 import { StatisticsReply } from '../../api/ws/commands'
@@ -29,6 +29,17 @@ type StatisticsView = 'GENERAL' | 'MERCHANDISE' | 'INVENTORY' | 'BUILDINGS'
 
 // Constants
 const GENERAL_STATISTICS_LABELS: GeneralStatisticsType[] = ['land', 'production', 'workers', 'houses', 'goods', 'coins', 'military', 'killedEnemies']
+
+const GENERAL_STATISTICS_UI_ICONS: Map<GeneralStatisticsType, UiIconType> = new Map([
+    ['land', 'MAP_WITH_QUESTION_MARK'],
+    ['production', 'GEARS_WITH_QUESTION_MARK'],
+    ['workers', 'WORKERS_WITH_QUESTION_MARK'],
+    ['houses', 'BUILDINGS_WITH_QUESTION_MARK'],
+    ['goods', 'GOODS_WITH_QUESTION_MARK'],
+    ['coins', 'COINS_WITH_QUESTION_MARK'],
+    ['military', 'GENERAL_WITH_QUESTION_MARK'],
+    ['killedEnemies', 'ANGEL_WITH_QUESTION_MARK']
+])
 
 const GENERAL_STATISTICS: { [key in GeneralStatisticsType]?: { label: string, color: string } } = {
     'land': { label: 'Land', color: '#1E88E5' },
@@ -210,26 +221,28 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                             onMouseEnter={() => setHoverInfo('General statistics')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            General
+                            <UiIcon type='WREATH_ON_MAP' />
                         </Tab>
                         <Tab
                             value={'MERCHANDISE'}
+                            onMouseEnter={() => setHoverInfo('Merchandise statistics')}
+                            onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            Merchandise
+                            <UiIcon type='GOODS_ON_MAP' />
                         </Tab>
                         <Tab
                             value={'INVENTORY'}
                             onMouseEnter={() => setHoverInfo('Inventory')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            Inventory
+                            <UiIcon type='WORKERS_GOODS_AND_QUESTION_MARK' />
                         </Tab>
                         <Tab
                             value={'BUILDINGS'}
                             onMouseEnter={() => setHoverInfo('Building statistics')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            Buildings
+                            <UiIcon type='HOUSE_ON_MAP' />
                         </Tab>
                     </TabList>
 
@@ -264,16 +277,20 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                             <div>
                                 Available statistics:
                                 <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '0.5em' }}>
-                                    {GENERAL_STATISTICS_LABELS.map(stat =>
-                                        <Button
-                                            key={stat}
-                                            style={{ backgroundColor: generalStatistics === stat ? 'lightblue' : undefined }}
-                                            onClick={() => setGeneralStatistics(stat)}
-                                            onMouseEnter={() => setHoverInfo(GENERAL_STATISTICS[stat]?.label)}
-                                            onMouseLeave={() => setHoverInfo(undefined)}
-                                        >
-                                            {GENERAL_STATISTICS[stat]?.label}
-                                        </Button>
+                                    {GENERAL_STATISTICS_LABELS.map(stat => {
+                                        const uiIcon = GENERAL_STATISTICS_UI_ICONS.get(stat)
+
+                                        return (
+                                            <Button
+                                                key={stat}
+                                                style={{ backgroundColor: generalStatistics === stat ? 'lightblue' : undefined }}
+                                                onClick={() => setGeneralStatistics(stat)}
+                                                onMouseEnter={() => setHoverInfo(GENERAL_STATISTICS[stat]?.label)}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            >
+                                                {uiIcon !== undefined && <UiIcon type={uiIcon} />}
+                                            </Button>)
+                                    }
                                     )}
                                 </div>
                             </div>
@@ -300,11 +317,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                                             {merchandise === 'WOOD' && <InventoryIcon material='WOOD' nation={nation} />}
                                             {merchandise === 'PLANK' && <InventoryIcon material='PLANK' nation={nation} />}
                                             {merchandise === 'STONE' && <InventoryIcon material='STONE' nation={nation} />}
-                                            {merchandise === 'FOOD' && <>
-                                                <InventoryIcon material='FISH' nation={nation} />
-                                                <InventoryIcon material='MEAT' nation={nation} />
-                                                <InventoryIcon material='BREAD' nation={nation} />
-                                            </>}
+                                            {merchandise === 'FOOD' && <UiIcon type='FOOD' scale={0.4} />}
                                             {merchandise === 'WATER' && <InventoryIcon material='WATER' nation={nation} />}
                                             {merchandise === 'BEER' && <InventoryIcon material='BEER' nation={nation} />}
                                             {merchandise === 'COAL' && <InventoryIcon material='COAL' nation={nation} />}
@@ -313,10 +326,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                                             {merchandise === 'IRON_BAR' && <InventoryIcon material='IRON_BAR' nation={nation} />}
                                             {merchandise === 'COIN' && <InventoryIcon material='COIN' nation={nation} />}
                                             {merchandise === 'TOOLS' && <InventoryIcon material='TONGS' nation={nation} />}
-                                            {merchandise === 'WEAPONS' && <>
-                                                <InventoryIcon material='SWORD' nation={nation} />
-                                                <InventoryIcon material='SHIELD' nation={nation} />
-                                            </>}
+                                            {merchandise === 'WEAPONS' && <UiIcon type='WEAPONS_MOVING' scale={0.4} />}
                                             {merchandise === 'BOAT' && <InventoryIcon material='BOAT' nation={nation} />}
                                         </Button>
                                     )
@@ -413,7 +423,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                                 <div>
                                     Small buildings
 
-                                    <ItemContainer height='15em'>
+                                    <ItemContainer height='15em' rows>
                                         {SMALL_HOUSES.map(house => {
                                             return (
                                                 <div

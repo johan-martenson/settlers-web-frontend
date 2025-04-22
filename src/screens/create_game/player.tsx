@@ -67,11 +67,9 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                                             }}
                                             onClick={() => setEditNation(nation)} key={nation}
                                         >
-                                            <Tooltip content={nationPretty(nation)} relationship='label' withArrow key={'BLUE'} >
-                                                <div>
-                                                    <WorkerIcon worker='General' color='BLUE' nation={nation} scale={2} />
-                                                </div>
-                                            </Tooltip>
+                                            <div>
+                                                <WorkerIcon worker='General' color='BLUE' nation={nation} scale={2} />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

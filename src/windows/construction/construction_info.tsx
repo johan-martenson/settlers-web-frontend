@@ -5,7 +5,7 @@ import { ButtonRow, Window } from '../../components/dialog'
 import { api } from '../../api/ws-api'
 import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildMine, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils/utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { FlagIcon, HouseIcon } from '../../icons/icon'
+import { FlagIcon, HouseIcon, UiIcon } from '../../icons/icon'
 import { buildingPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 
@@ -13,11 +13,17 @@ import { ItemContainer } from '../../components/item_container'
 type ConstructionInfoProps = {
     point: PointInformation
     nation: Nation
+    houseTitlesVisible: boolean
+    availableConstructionVisible: boolean
 
     onStartMonitor: (point: Point) => void
     onRaise: () => void
     onClose: () => void
     onStartNewRoad: (point: Point) => void
+    onShowHouseTitles: () => void
+    onHideHouseTitles: () => void
+    onShowAvailableConstruction: () => void
+    onHideAvailableConstruction: () => void
 }
 
 type SizeLowerCase = 'small' | 'medium' | 'large'
@@ -30,7 +36,19 @@ const SMALL_BUILDINGS_EXCEPT_MINES: SmallBuilding[] = SMALL_HOUSES.filter(house 
 // TODO: add monitor tab
 
 // React components
-const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMonitor, ...props }: ConstructionInfoProps) => {
+const ConstructionInfo = ({
+    nation,
+    houseTitlesVisible,
+    availableConstructionVisible,
+    onStartNewRoad,
+    onClose,
+    onRaise,
+    onStartMonitor,
+    onShowHouseTitles,
+    onHideHouseTitles,
+    onShowAvailableConstruction,
+    onHideAvailableConstruction,
+    ...props }: ConstructionInfoProps) => {
     const [point, setPoint] = useState<PointInformation>(props.point)
     const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads' | 'Monitor'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads')
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<SizeLowerCase>('small')
@@ -102,19 +120,23 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                         }}
                 >
                     {Array.from(constructionOptions.entries(), ([key, value], index) => {
+
                         return <Tab
                             value={key}
                             key={index}
                             onMouseEnter={() => setHoverInfo(`Construct ${value.toLowerCase()}`)}
                             onMouseLeave={() => setHoverInfo(undefined)}
-                        >{value}</Tab>
+                        >
+                            {key === 'Buildings' && <UiIcon type='SHOVEL' />}
+                            {key === 'FlagsAndRoads' && <UiIcon type='PULL_DOWN_FLAG' />}
+                        </Tab>
                     })}
                     <Tab
                         value={'Monitor'}
                         onMouseEnter={() => setHoverInfo('Create a monitor')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Monitor
+                        <UiIcon type='MAGNIFYING_GLASS' />
                     </Tab>
                 </TabList>
 
@@ -167,7 +189,11 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
                                 key={value}
                                 onMouseEnter={() => setHoverInfo(`Place ${key} building`)}
                                 onMouseLeave={() => setHoverInfo(undefined)}
-                            >{value}</Tab>
+                            >
+                                {value === 'Small' && <UiIcon type='RED_SMALL_AVAILABLE_BUILDING' />}
+                                {value === 'Medium' && <UiIcon type='RED_MEDIUM_AVAILABLE_BUILDING' />}
+                                {value === 'Large' && <UiIcon type='RED_LARGE_AVAILABLE_BUILDING' />}
+                            </Tab>
                         })}
                     </TabList>
                 }
@@ -250,12 +276,49 @@ const ConstructionInfo = ({ nation, onStartNewRoad, onClose, onRaise, onStartMon
 
                 {selected === 'Monitor' &&
                     <ButtonRow>
+                        {!houseTitlesVisible &&
+                            <Button
+                                onClick={onShowHouseTitles}
+                                onMouseEnter={() => setHoverInfo('Show house names')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' />
+                            </Button>}
+                        {houseTitlesVisible &&
+                            <Button
+                                onClick={onHideHouseTitles}
+                                onMouseEnter={() => setHoverInfo('Hide house names')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' />
+                            </Button>}
+                        {!availableConstructionVisible &&
+                            <Button
+                                onClick={onShowAvailableConstruction}
+                                onMouseEnter={() => setHoverInfo('Show available construction')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <UiIcon type='PLUS_AVAILABLE_BUILDINGS' />
+                            </Button>}
+
+                        {availableConstructionVisible &&
+                            <Button
+                                onClick={onHideAvailableConstruction}
+                                onMouseEnter={() => setHoverInfo('Hide available construction')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <UiIcon type='PLUS_AVAILABLE_BUILDINGS' />
+                            </Button>}
                         <Button
-                            onClick={() => onStartMonitor(point)}
+                            onClick={() => {
+                                onStartMonitor(point)
+
+                                onClose()
+                            }}
                             onMouseEnter={() => setHoverInfo('Open monitor')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            Monitor
+                            <UiIcon type='MAGNIFYING_GLASS' />
                         </Button>
                     </ButtonRow>
                 }

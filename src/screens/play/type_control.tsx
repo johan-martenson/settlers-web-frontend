@@ -187,7 +187,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
             {(expanded || matches.length > 0) &&
                 <div className='container-alternatives'>
-                    <ItemContainer>
+                    <ItemContainer style={{ alignItems: 'stretch' }}>
                         {matches.map(([commandName, command], index) => (
                             <div
                                 key={index}

@@ -1,5 +1,5 @@
 import { PointMap } from "../../utils/util_types"
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics } from "../types"
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics, Tool } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
@@ -147,6 +147,8 @@ enum Command {
     StopMonitoringTransportPriority = 'STOP_MONITORING_TRANSPORT_PRIORITY',
     GetTransportPriority = 'GET_TRANSPORT_PRIORITY',
     SetTransportPriority = 'SET_TRANSPORT_PRIORITY',
+    GetToolPriorities = 'GET_TOOL_PRODUCTION_PRIORITIES',
+    SetToolPriority = 'SET_TOOL_PRODUCTION_PRIORITY',
 
     // Player - military
     GetStrength = 'GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
@@ -334,6 +336,14 @@ async function getProductionStatistics(): Promise<ProductionStatistics> {
  */
 async function getTransportPriority(): Promise<TransportCategory[]> {
     return (await sendRequestAndWaitForReply<{ priority: TransportCategory[] }>(Command.GetTransportPriority)).priority
+}
+
+async function getToolPriorities(): Promise<{[key in Tool]: number}> {
+    return (await sendRequestAndWaitForReply<{ toolPriorities: {[key in Tool]: number} }>(Command.GetToolPriorities)).toolPriorities
+}
+
+function setToolPriority(tool: Tool, priority: number): void {
+    sendWithOptions<{ tool: Tool, priority: number }>(Command.SetToolPriority, { tool, priority })
 }
 
 /**
@@ -1108,5 +1118,7 @@ export {
     getTransportPriority,
     listenToStatistics,
     stopListeningToStatistics,
-    markGameMessagesRead
+    markGameMessagesRead,
+    getToolPriorities,
+    setToolPriority
 }

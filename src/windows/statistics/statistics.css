@@ -44,8 +44,11 @@
 
 .buildings-list {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     flex-wrap: wrap;
+    align-content: space-around;
+    justify-content: space-between;
+    align-items: baseline;
     column-gap: 2em;
     height: 7em;
     background-color: rgba(0, 0, 0, 0.50);
@@ -54,5 +57,16 @@
 }
 
 .buildings-list > div:hover {
+    filter: brightness(110%);
+}
+
+.select-merchandise {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5em;
+}
+
+.select-merchandise > div:hover {
     filter: brightness(110%);
 }

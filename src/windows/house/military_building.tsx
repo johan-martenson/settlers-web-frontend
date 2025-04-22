@@ -1,24 +1,26 @@
 import React, { useState } from 'react'
 import { Button, Field } from '@fluentui/react-components'
-import { HouseInformation, Nation, SoldierType, isMaterial, rankToMaterial } from '../../api/types'
+import { HouseInformation, Nation, Point, SoldierType, isMaterial, rankToMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
 import { api } from '../../api/ws-api'
 import { ButtonRow, Window } from '../../components/dialog'
 import { canBeUpgraded, isEvacuated } from '../../api/utils'
 import { buildingPretty, soldierPretty } from '../../pretty_strings'
+import { ItemContainer } from '../../components/item_container'
 
 // Types
 type MilitaryBuildingProps = {
     house: HouseInformation
     nation: Nation
 
-    onRaise: (() => void)
-    onClose: (() => void)
+    onRaise: () => void
+    onClose: () => void
+    goToPoint: (point: Point) => void
 }
 
 // React components
-const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingProps) => {
+const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: MilitaryBuildingProps) => {
     const [hoverInfo, setHoverInfo] = useState<string>()
 
     const soldiers: (SoldierType | null)[] = []
@@ -97,13 +99,11 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
             }
 
             <Field label='Soldiers' >
-                <div>
+                <ItemContainer rows>
                     {soldiers.map((rank, index) => {
                         if (rank) {
                             const soldierDisplayName = soldierPretty(rank)
                             const soldierMaterial = rankToMaterial(rank)
-
-                            console.log(soldierDisplayName)
 
                             return (
                                 <div
@@ -125,11 +125,11 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                             )
                         }
                     })}
-                </div>
+                </ItemContainer>
             </Field>
 
             <Field label='Coins'>
-                <div>
+                <ItemContainer rows>
                     {Array.from({ length: hasCoins }, () => 1).map((_value, index) => (
                         <span
                             key={index}
@@ -144,7 +144,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                             onMouseLeave={() => setHoverInfo(undefined)}
                         ><InventoryIcon material={'COIN'} nation={nation} inline missing /></span>
                     ))}
-                </div>
+                </ItemContainer>
             </Field>
 
             <ButtonRow>
@@ -154,7 +154,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                         onMouseEnter={() => setHoverInfo('Disable promotions')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Disable<br />promotions
+                        <UiIcon type='COIN' />
                     </Button>
                     :
                     <Button
@@ -162,7 +162,7 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                         onMouseEnter={() => setHoverInfo('Enable promotions')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Enable<br />promotions
+                        <UiIcon type='COIN_CROSSED_OUT' />
                     </Button>
                 }
 
@@ -181,7 +181,9 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                         onClick={() => { api.evacuateHouse(house.id) }}
                         onMouseEnter={() => setHoverInfo('Evacuate')}
                         onMouseLeave={() => setHoverInfo(undefined)}
-                    >Evacuate</Button>
+                    >
+                        <UiIcon type='SEND_OUT_ARROWS' />
+                    </Button>
                 }
 
                 {canBeUpgraded(house) && !house.upgrading &&
@@ -206,6 +208,15 @@ const MilitaryBuilding = ({ house, nation, onClose, onRaise }: MilitaryBuildingP
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
                     <UiIcon type='DESTROY_BUILDING' />
+                </Button>
+                <Button
+                    onClick={() => {
+                        goToPoint(house)
+                    }}
+                    onMouseEnter={() => setHoverInfo(`Go to the ${buildingPretty(house.type).toLowerCase()}`)}
+                    onMouseLeave={() => setHoverInfo(undefined)}
+                >
+                    <UiIcon type='GO_TO_POINT' />
                 </Button>
 
             </ButtonRow>

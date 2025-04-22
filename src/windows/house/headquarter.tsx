@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
 import { HouseInformation, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
-import { HouseIcon, InventoryIcon } from '../../icons/icon'
+import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
 import { useState } from 'react'
 import { api } from '../../api/ws-api'
@@ -26,6 +26,7 @@ const INVENTORY_MATERIALS: Material[] = [
     'STONE',
     'PIG',
     'WHEAT',
+    'FLOUR',
     'FISH',
     'MEAT',
     'BREAD',
@@ -265,10 +266,11 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
             }
 
             {panel === 'MILITARY_SETTINGS' &&
-                <ItemContainer>
+                <ItemContainer style={{alignItems: 'flex-start'}}>
                     <Field label='Populate buildings with weak or strong soldiers'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
-                            <Subtract16Filled
+                            <UiIcon
+                                type='WEAK_SOLDIER_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Populate new military buildings with weaker soldiers`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setStrengthWhenPopulatingBuildings(prev => Math.max(0, prev - 1))} />
@@ -279,7 +281,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseEnter={() => setHover(`${strengthWhenPopulatingBuildings}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
-                            <Add16Filled
+                            <UiIcon
+                                type='STRONG_SOLDIER_WITH_PLUS'
                                 onMouseEnter={() => setHover(`Populate new military buildings with stronger soldiers`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setStrengthWhenPopulatingBuildings(prev => Math.min(10, prev + 1))} />
@@ -288,7 +291,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
                     <Field label='Weak or strong defenders'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
-                            <Subtract16Filled
+                            <UiIcon
+                                type='ONE_SHIELD_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Weaken defense`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setDefenseStrength(prev => Math.max(0, prev - 1))} />
@@ -299,7 +303,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseEnter={() => setHover(`${defenseStrength}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
-                            <Add16Filled
+                            <UiIcon
+                                type='TWO_SHIELDS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`Strengthen defense`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setDefenseStrength(prev => Math.min(10, prev + 1))} />
@@ -308,7 +313,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
                     <Field label='Defenders from surrounding buildings'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
-                            <Subtract16Filled
+                            <UiIcon
+                                type='MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_MINUS'
                                 onMouseEnter={() => setHover(`Fewer defenders from surrounding buildings`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setDefenseFromSurroundingBuildings(prev => Math.max(0, prev - 1))} />
@@ -319,7 +325,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseEnter={() => setHover(`${defenseFromSurroundingBuildings}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
-                            <Add16Filled
+                            <UiIcon
+                                type='MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_PLUS'
                                 onMouseEnter={() => setHover(`More defenders from surrounding buildings`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setDefenseFromSurroundingBuildings(prev => Math.min(10, prev + 1))} />
@@ -328,7 +335,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
                     <Field label='Soldiers available for attack'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
-                            <Subtract16Filled
+                            <UiIcon
+                                type='MILITARY_BUILDING_WITH_SWORDS_AND_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers available for attacks`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setSoldiersAvailableForAttack(prev => Math.max(0, prev - 1))} />
@@ -339,7 +347,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseEnter={() => setHover(`${soldiersAvailableForAttack}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
-                            <Add16Filled
+                            <UiIcon
+                                type='MILITARY_BUILDING_WITH_SWORDS_AND_PLUS'
                                 onMouseEnter={() => setHover(`More soliders available for attacks`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setSoldiersAvailableForAttack(prev => Math.min(10, prev + 1))} />
@@ -348,7 +357,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
                     <Field label='Populate military buildings far from border'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
-                            <Subtract16Filled
+                            <UiIcon
+                                type='SMALLEST_FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers far from the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateFarFromBorder(prev => Math.max(0, prev - 1))} />
@@ -359,7 +369,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseEnter={() => setHover(`${populateFarFromBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
-                            <Add16Filled
+                            <UiIcon
+                                type='SMALLEST_FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers far from the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateFarFromBorder(prev => Math.min(10, prev + 1))} />
@@ -368,7 +379,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
                     <Field label='Populate military buildings closer to border'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
-                            <Subtract16Filled
+                            <UiIcon
+                                type='SMALLER_FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers closer to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateCloserToBorder(prev => Math.max(0, prev - 1))} />
@@ -379,7 +391,8 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseEnter={() => setHover(`${populateCloserToBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
-                            <Add16Filled
+                            <UiIcon
+                                type='SMALLER_FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers closer to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
                                 onClick={() => setPopulateCloserToBorder(prev => Math.min(10, prev + 1))} />
@@ -388,10 +401,12 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
                     <Field label='Populate military buildings close to border'>
                         <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
-                            <Subtract16Filled
+                            <UiIcon
+                                type='FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers close to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setPopulateCloseToBorder(prev => Math.max(0, prev - 1))} />
+                                onClick={() => setPopulateCloseToBorder(prev => Math.max(0, prev - 1))}
+                            />
                             <meter
                                 min={0}
                                 max={10}
@@ -399,10 +414,12 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 onMouseEnter={() => setHover(`${populateCloseToBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
-                            <Add16Filled
+                            <UiIcon
+                                type='FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers close to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setPopulateCloseToBorder(prev => Math.min(10, prev + 1))} />
+                                onClick={() => setPopulateCloseToBorder(prev => Math.min(10, prev + 1))}
+                            />
                         </div>
                     </Field>
                 </ItemContainer>

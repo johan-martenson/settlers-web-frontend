@@ -2470,7 +2470,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
                 [
                     point.x, point.y, tileBelow.heightAbove,
                     pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
-                    base.x + (pointLeft.x - base.x) * 0.7, base.y + (pointLeft.y - base.y) * 0.7, baseHeight + (heightLeft - baseHeight) * 0.7
+                    base.x + (pointLeft.x - base.x) * OVERLAP_FACTOR, base.y + (pointLeft.y - base.y) * OVERLAP_FACTOR, baseHeight + (heightLeft - baseHeight) * OVERLAP_FACTOR
                 ])
 
             Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
@@ -2548,7 +2548,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
                 [
                     point.x, point.y, tile.heightLeft,
                     pointRight.x, pointRight.y, tile.heightRight,
-                    point.x + 1, point.y + 0.6, baseHeight + (heightUp - baseHeight) * 0.7
+                    point.x + 1, point.y + OVERLAP_FACTOR, baseHeight + (heightUp - baseHeight) * OVERLAP_FACTOR
                 ]
             )
 

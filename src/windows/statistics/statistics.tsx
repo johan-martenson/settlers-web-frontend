@@ -548,8 +548,10 @@ const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: Merchandise
     // Sort data by time to ensure correct visualization
     chartData.sort((a, b) => a.time - b.time)
 
-    if (chartData.length > 0 && chartData[chartData.length - 1].time != statistics.currentTime) {
-        chartData.push({ ...chartData[chartData.length - 1], time: latest })
+    if (chartData.length > 0) {
+        if (chartData[chartData.length - 1].time != statistics.currentTime) {
+            chartData.push({ ...chartData[chartData.length - 1], time: latest })
+        }
     } else {
         const zeroMeasurement: { [key: string]: number } = {}
 
@@ -626,8 +628,10 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: Buildin
     })
 
     // Ensure the graph extends to the current time
-    if (chartData.length > 0 && chartData[chartData.length - 1].time != statistics.currentTime) {
-        chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
+    if (chartData.length > 0) {
+        if (chartData[chartData.length - 1].time != statistics.currentTime) {
+            chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
+        }
     } else {
         const zeroMeasurement: { [key: string]: number } = {}
 
@@ -699,15 +703,19 @@ type GeneralStatisticsGraphProps = {
 }
 
 const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, setHover }: GeneralStatisticsGraphProps) => {
+
+    // Collect all unique timestamps where selected players have data for the current stat type
     const allTimestamps = new Set<number>()
 
     statistics.players.filter(p => selectedPlayers.includes(p.id)).forEach(player => {
         player.general[statType]?.forEach(([time]) => allTimestamps.add(time))
     })
 
+    // Sort timestamps chronologically and initialize chart data with time-only entries
     const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
     const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
 
+    // For each selected player, fill the chartData with the most recent known value at each timestamp
     statistics.players.filter(p => selectedPlayers.includes(p.id)).forEach(player => {
         let lastValue: number | undefined = undefined
         sortedTimestamps.forEach((time, index) => {
@@ -718,9 +726,14 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
         })
     })
 
-    if (chartData.length > 0 && chartData[chartData.length - 1].time !== statistics.currentTime) {
-        chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
+    // Extend chart data to current time if it’s not already included
+    if (chartData.length > 0) {
+        if (chartData[chartData.length - 1].time !== statistics.currentTime) {
+            chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
+        }
     } else {
+
+        // Handle case where there’s no data: add zero-filled placeholders from time 0 to max time
         const zeroMeasurement: { [key: string]: number } = {}
         statistics.players.filter(p => selectedPlayers.includes(p.id)).forEach(player => {
             zeroMeasurement[`Player ${player.id}`] = 0

@@ -154,7 +154,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                         onMouseEnter={() => setHoverInfo('Disable promotions')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='COIN' />
+                        <UiIcon type='COIN' scale={0.5} />
                     </Button>
                     :
                     <Button
@@ -162,7 +162,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                         onMouseEnter={() => setHoverInfo('Enable promotions')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='COIN_CROSSED_OUT' />
+                        <UiIcon type='COIN_CROSSED_OUT' scale={0.5} />
                     </Button>
                 }
 
@@ -182,7 +182,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                         onMouseEnter={() => setHoverInfo('Evacuate')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='SEND_OUT_ARROWS' />
+                        <UiIcon type='SEND_OUT_ARROWS' scale={0.5} />
                     </Button>
                 }
 
@@ -207,7 +207,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                     onMouseEnter={() => setHoverInfo('Tear down')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    <UiIcon type='DESTROY_BUILDING' />
+                    <UiIcon type='DESTROY_BUILDING' scale={0.5} />
                 </Button>
                 <Button
                     onClick={() => {
@@ -216,7 +216,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                     onMouseEnter={() => setHoverInfo(`Go to the ${buildingPretty(house.type).toLowerCase()}`)}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    <UiIcon type='GO_TO_POINT' />
+                    <UiIcon type='GO_TO_POINT' scale={0.5} />
                 </Button>
 
             </ButtonRow>

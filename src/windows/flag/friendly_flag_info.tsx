@@ -51,18 +51,6 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
 
                 <ButtonRow>
                     <Button
-                        onClick={async () => {
-                            api.removeFlag(flag.id)
-
-                            onClose()
-                        }}
-                        onMouseEnter={() => setHoverInfo('Remove flag')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
-                    >
-                        <UiIcon type='BROKEN_FLAG' />
-                    </Button>
-
-                    <Button
                         onClick={() => {
                             onStartNewRoad(flag)
 
@@ -71,7 +59,18 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         onMouseEnter={() => setHoverInfo('Build road')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='LIGHT_ROAD_IN_NATURE' />
+                        <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
+                    </Button>
+                    <Button
+                        onClick={async () => {
+                            api.removeFlag(flag.id)
+
+                            onClose()
+                        }}
+                        onMouseEnter={() => setHoverInfo('Remove flag')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <UiIcon type='BROKEN_FLAG' scale={0.5} />
                     </Button>
 
                     <Button
@@ -84,7 +83,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         <div className='friendly-flag-info-button-icon-and-label'>
-                            <UiIcon type='GEOLOGIST' />
+                            <UiIcon type='GEOLOGIST' scale={0.5} />
                         </div>
                     </Button>
 

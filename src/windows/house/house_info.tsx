@@ -219,7 +219,7 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                         onMouseEnter={() => setHoverInfo('Launch attack')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        Attack
+                        <UiIcon type='TWO_SWORDS' />
                     </Button>
                 </div>
             }
@@ -406,7 +406,7 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
                         onMouseEnter={() => setHoverInfo('Pause production')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='GEARS' />
+                        <UiIcon type='GEARS' scale={0.5} />
                     </Button>
                 }
 
@@ -416,7 +416,7 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
                         onMouseEnter={() => setHoverInfo('Resume production')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='GEARS_CROSSED_OVER' />
+                        <UiIcon type='GEARS_CROSSED_OVER' scale={0.5} />
                     </Button>
                 }
 
@@ -428,7 +428,7 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
                     onMouseEnter={() => setHoverInfo('Tear down')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    <UiIcon type='DESTROY_BUILDING' />
+                    <UiIcon type='DESTROY_BUILDING' scale={0.5} />
                 </Button>
                 <Button
                     onClick={() => {
@@ -437,7 +437,7 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
                     onMouseEnter={() => setHoverInfo(`Go to the ${buildingPretty(house.type).toLowerCase()}`)}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    <UiIcon type='GO_TO_POINT' />
+                    <UiIcon type='GO_TO_POINT' scale={0.5} />
                 </Button>
             </ButtonRow>
         </Window >

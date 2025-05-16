@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { HouseIcon } from '../../icons/icon'
+import { HouseIcon, UiIcon } from '../../icons/icon'
 import './quotas.css'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { Nation } from '../../api/types'
-import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
 import { api } from '../../api/ws-api'
 import { Window } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
@@ -163,7 +162,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
             {materialToManage === 'COAL' &&
                 <>
                     <ItemContainer width='20em'>
-                        <Field label='Mint'>
+                        <Field label='Mint' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='Mint'
@@ -174,7 +173,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 />
 
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setMintAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease mint quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -186,7 +185,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${mintAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setMintAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase mint quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -195,7 +194,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                             </div>
                         </Field>
 
-                        <Field label='Armory'>
+                        <Field label='Armory' style={{width: '100%'}}>
                             <div className='quota-for-house'>
                                 <HouseIcon
                                     houseType='Armory'
@@ -206,7 +205,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 />
 
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setArmoryCoalAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease armory quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -218,7 +217,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${armoryCoalAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setArmoryCoalAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase armory quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -227,7 +226,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                             </div>
                         </Field>
 
-                        <Field label='Iron smelter'>
+                        <Field label='Iron smelter' style={{width: '100%'}}>
                             <div className='quota-for-house'>
                                 <HouseIcon
                                     houseType='IronSmelter'
@@ -238,7 +237,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 />
 
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setIronSmelterAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease iron smelter quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -250,7 +249,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${ironSmelterAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setIronSmelterAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase iron smelter quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -266,7 +265,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                 <>
                     <ItemContainer width='20em'>
 
-                        <Field label='Iron mine'>
+                        <Field label='Iron mine' style={{width: '100%'}}>
                             <div className='quota-for-house'>
                                 <HouseIcon
                                     houseType='IronMine'
@@ -277,7 +276,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 />
 
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setIronMineAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease iron mine quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -289,7 +288,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${ironMineAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setIronMineAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase iron mine quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -298,7 +297,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                             </div>
                         </Field>
 
-                        <Field label='Coal mine'>
+                        <Field label='Coal mine' style={{width: '100%'}}>
                             <div className='quota-for-house'>
                                 <HouseIcon
                                     houseType='CoalMine'
@@ -309,7 +308,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 />
 
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setCoalMineAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease coal mine quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -321,7 +320,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${coalMineAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setCoalMineAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase coal mine quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -330,7 +329,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                             </div>
                         </Field>
 
-                        <Field label='Gold mine'>
+                        <Field label='Gold mine' style={{width: '100%'}}>
                             <div className='quota-for-house'>
                                 <HouseIcon
                                     houseType='GoldMine'
@@ -341,7 +340,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 />
 
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setGoldMineAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease gold mine quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -353,7 +352,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${goldMineAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setGoldMineAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase gold mine quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -362,7 +361,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                             </div>
                         </Field>
 
-                        <Field label='Granite mine'>
+                        <Field label='Granite mine' style={{width: '100%'}}>
                             <div className='quota-for-house'>
                                 <HouseIcon
                                     houseType='GraniteMine'
@@ -373,7 +372,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 />
 
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setGraniteMineAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease granite mine quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -385,7 +384,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${graniteMineAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setGraniteMineAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase granite mine quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -400,7 +399,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
             {materialToManage === 'WATER' &&
                 <>
                     <ItemContainer width='20em'>
-                        <Field label='Bakery'>
+                        <Field label='Bakery' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='Bakery'
@@ -410,7 +409,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setBakeryAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease bakery quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -422,7 +421,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${bakeryAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setBakeryAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase bakery quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -430,7 +429,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 </div>
                             </div>
                         </Field>
-                        <Field label='Donkey farm'>
+                        <Field label='Donkey farm' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='DonkeyFarm'
@@ -440,7 +439,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setDonkeyFarmWaterAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease donkey farm water quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -452,7 +451,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${donkeyFarmWaterAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setDonkeyFarmWaterAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase donkey farm water quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -460,7 +459,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 </div>
                             </div>
                         </Field>
-                        <Field label='Pig farm'>
+                        <Field label='Pig farm' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='PigFarm'
@@ -470,7 +469,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setPigFarmWaterAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease pig farm water quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -482,7 +481,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${pigFarmWaterAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setPigFarmWaterAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase pig farm water quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -490,7 +489,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 </div>
                             </div>
                         </Field>
-                        <Field label='Brewery'>
+                        <Field label='Brewery' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='Brewery'
@@ -500,7 +499,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setBreweryWaterAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease brewery water quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -512,7 +511,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${breweryWaterAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setBreweryWaterAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase brewery water quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -528,11 +527,11 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                 <>
                     <div>(not implemented yet)</div>
                     <ItemContainer width='20em'>
-                        <Field label='Construction'>
+                        <Field label='Construction' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <div>Construction</div>
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setConstructionAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease construction quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -544,7 +543,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${constructionAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setConstructionAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase construction quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -552,11 +551,11 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 </div>
                             </div>
                         </Field>
-                        <Field label='Boats and ships'>
+                        <Field label='Boats and ships' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <div>Boats and ships</div>
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setBoatsAndShipsAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease boat and ship building quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -568,7 +567,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${boatsAndShipsAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setBoatsAndShipsAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase boat and ship building quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -583,7 +582,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
             {materialToManage === 'WHEAT' &&
                 <>
                     <ItemContainer width='20em'>
-                        <Field label='Mill'>
+                        <Field label='Mill' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='Mill'
@@ -593,7 +592,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setMillAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease mill quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -605,7 +604,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${millAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setMillAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase mill quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -613,7 +612,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 </div>
                             </div>
                         </Field>
-                        <Field label='Donkey farm'>
+                        <Field label='Donkey farm' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='DonkeyFarm'
@@ -623,7 +622,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setDonkeyFarmWheatAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease donkey farm wheat quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -635,7 +634,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${donkeyFarmWheatAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setDonkeyFarmWheatAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase donkey farm wheat quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -643,7 +642,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 </div>
                             </div>
                         </Field>
-                        <Field label='Pig farm'>
+                        <Field label='Pig farm' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='PigFarm'
@@ -653,7 +652,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setPigFarmWheatAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease pig farm wheat quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -665,7 +664,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${pigFarmWheatAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setPigFarmWheatAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase pig farm wheat quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -673,7 +672,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 </div>
                             </div>
                         </Field>
-                        <Field label='Brewery'>
+                        <Field label='Brewery' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='Brewery'
@@ -683,7 +682,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setBreweryWheatAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease brewery wheat quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -695,7 +694,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${breweryWheatAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setBreweryWheatAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase brewery wheat quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -710,7 +709,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
             {materialToManage === 'IRON_BAR' &&
                 <>
                     <ItemContainer width='20em'>
-                        <Field label='Armory'>
+                        <Field label='Armory' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='Armory'
@@ -720,7 +719,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setArmoryIronBarAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease armory iron bar quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -732,7 +731,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${armoryIronBarAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setArmoryIronBarAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase armory iron bar quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -740,7 +739,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                 </div>
                             </div>
                         </Field>
-                        <Field label='Metalworks'>
+                        <Field label='Metalworks' style={{width: '100%'}}>
                             <div className='quota-for-house' >
                                 <HouseIcon
                                     houseType='Metalworks'
@@ -750,7 +749,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                     onMouseLeave={() => setHover(undefined)}
                                 />
                                 <div className='quota'>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onClick={() => setMetalworksIronBarAmount((previous) => Math.max(0, previous - 1))}
                                         onMouseEnter={() => setHover('Decrease metalworks iron bar quota')}
                                         onMouseLeave={() => setHover(undefined)}
@@ -762,7 +761,7 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
                                         onMouseEnter={() => setHover(`${metalworksIronBarAmount} / 10`)}
                                         onMouseLeave={() => setHover(undefined)}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onClick={() => setMetalworksIronBarAmount((previous) => Math.min(10, previous + 1))}
                                         onMouseEnter={() => setHover('Increase metalworks iron bar quota')}
                                         onMouseLeave={() => setHover(undefined)}

@@ -71,7 +71,7 @@
 .button-row {
     display: flex;
     flex-direction: row;
-    gap: 1em;
+    column-gap: 0.5em;
     flex-wrap: wrap;
     justify-content: center;
 }

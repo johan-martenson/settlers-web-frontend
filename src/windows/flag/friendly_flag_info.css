@@ -1,7 +1,3 @@
-.flag-information {
-    gap: 10px;
-}
-
 .friendly-flag-info-button-icon-and-label {
     display: flex;
     flex-direction: column;
@@ -36,5 +32,13 @@
     padding-left: 2em;
     padding-right: 2em;
     padding-bottom: 2em;
-    gap: 10px;
+    column-gap: 0.5em;
+}
+
+.flag-information {
+    display: flex;
+    flex-direction: column;
+    row-gap: 1em;
+    align-items: center;
+    
 }

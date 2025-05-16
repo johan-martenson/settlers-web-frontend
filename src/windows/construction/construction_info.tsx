@@ -127,8 +127,8 @@ const ConstructionInfo = ({
                             onMouseEnter={() => setHoverInfo(`Construct ${value.toLowerCase()}`)}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            {key === 'Buildings' && <UiIcon type='SHOVEL' />}
-                            {key === 'FlagsAndRoads' && <UiIcon type='PULL_DOWN_FLAG' />}
+                            {key === 'Buildings' && <UiIcon type='SHOVEL' scale={0.5} />}
+                            {key === 'FlagsAndRoads' && <UiIcon type='PULL_DOWN_FLAG' scale={0.5} />}
                         </Tab>
                     })}
                     <Tab
@@ -136,7 +136,7 @@ const ConstructionInfo = ({
                         onMouseEnter={() => setHoverInfo('Create a monitor')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='MAGNIFYING_GLASS' />
+                        <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
                     </Tab>
                 </TabList>
 
@@ -190,9 +190,9 @@ const ConstructionInfo = ({
                                 onMouseEnter={() => setHoverInfo(`Place ${key} building`)}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                {value === 'Small' && <UiIcon type='RED_SMALL_AVAILABLE_BUILDING' />}
-                                {value === 'Medium' && <UiIcon type='RED_MEDIUM_AVAILABLE_BUILDING' />}
-                                {value === 'Large' && <UiIcon type='RED_LARGE_AVAILABLE_BUILDING' />}
+                                {value === 'Small' && <UiIcon type='RED_SMALL_AVAILABLE_BUILDING' scale={0.5} />}
+                                {value === 'Medium' && <UiIcon type='RED_MEDIUM_AVAILABLE_BUILDING' scale={0.5} />}
+                                {value === 'Large' && <UiIcon type='RED_LARGE_AVAILABLE_BUILDING' scale={0.5} />}
                             </Tab>
                         })}
                     </TabList>
@@ -282,7 +282,7 @@ const ConstructionInfo = ({
                                 onMouseEnter={() => setHoverInfo('Show house names')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' />
+                                <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
                             </Button>}
                         {houseTitlesVisible &&
                             <Button
@@ -290,7 +290,7 @@ const ConstructionInfo = ({
                                 onMouseEnter={() => setHoverInfo('Hide house names')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' />
+                                <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
                             </Button>}
                         {!availableConstructionVisible &&
                             <Button
@@ -298,7 +298,7 @@ const ConstructionInfo = ({
                                 onMouseEnter={() => setHoverInfo('Show available construction')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                <UiIcon type='PLUS_AVAILABLE_BUILDINGS' />
+                                <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
                             </Button>}
 
                         {availableConstructionVisible &&
@@ -307,7 +307,7 @@ const ConstructionInfo = ({
                                 onMouseEnter={() => setHoverInfo('Hide available construction')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                <UiIcon type='PLUS_AVAILABLE_BUILDINGS' />
+                                <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
                             </Button>}
                         <Button
                             onClick={() => {
@@ -318,7 +318,7 @@ const ConstructionInfo = ({
                             onMouseEnter={() => setHoverInfo('Open monitor')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
-                            <UiIcon type='MAGNIFYING_GLASS' />
+                            <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
                         </Button>
                     </ButtonRow>
                 }

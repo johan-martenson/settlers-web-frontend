@@ -93,6 +93,13 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'SCYTHE_AND_PLUS'
     | 'PICK_AXE_AND_MINUS'
     | 'PICK_AXE_AND_PLUS'
+    | 'PLUS'
+    | 'MINUS'
+    | 'TWO_SWORDS'
+    | 'UP_ARROW'
+    | 'DOWN_ARROW'
+    | 'ARROW_TO_TOP'
+    | 'ARROW_TO_BOTTOM'
 
 type WorkerIconProps = {
     worker: WorkerType

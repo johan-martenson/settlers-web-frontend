@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { Subtract16Filled, Add16Filled } from '@fluentui/react-icons'
 import { HouseInformation, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
@@ -240,7 +239,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                     >
                                         <InventoryIcon material={rankToMaterial(rank)} nation={nation} inline />
                                     </div>
-                                    <Subtract16Filled
+                                    <UiIcon type='MINUS' scale={0.5}
                                         onMouseEnter={() => setHover(`Reduce reserved ${soldierDisplayName}s`)}
                                         onMouseLeave={() => setHover(undefined)}
                                         onClick={() => {
@@ -249,7 +248,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                             }
                                         }}
                                     />
-                                    <Add16Filled
+                                    <UiIcon type='PLUS' scale={0.5}
                                         onMouseEnter={() => setHover(`Increase reserved ${soldierDisplayName}s`)}
                                         onMouseLeave={() => setHover(undefined)}
                                         onClick={() => {
@@ -266,9 +265,9 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
             }
 
             {panel === 'MILITARY_SETTINGS' &&
-                <ItemContainer style={{alignItems: 'flex-start'}}>
+                <ItemContainer style={{ alignItems: 'flex-start' }}>
                     <Field label='Populate buildings with weak or strong soldiers'>
-                        <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
+                        <div className='military-setting'>
                             <UiIcon
                                 type='WEAK_SOLDIER_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Populate new military buildings with weaker soldiers`)}
@@ -290,7 +289,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     </Field>
 
                     <Field label='Weak or strong defenders'>
-                        <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
+                        <div className='military-setting'>
                             <UiIcon
                                 type='ONE_SHIELD_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Weaken defense`)}
@@ -312,7 +311,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     </Field>
 
                     <Field label='Defenders from surrounding buildings'>
-                        <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
+                        <div className='military-setting'>
                             <UiIcon
                                 type='MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_MINUS'
                                 onMouseEnter={() => setHover(`Fewer defenders from surrounding buildings`)}
@@ -334,7 +333,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     </Field>
 
                     <Field label='Soldiers available for attack'>
-                        <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
+                        <div className='military-setting'>
                             <UiIcon
                                 type='MILITARY_BUILDING_WITH_SWORDS_AND_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers available for attacks`)}
@@ -356,7 +355,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     </Field>
 
                     <Field label='Populate military buildings far from border'>
-                        <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
+                        <div className='military-setting'>
                             <UiIcon
                                 type='SMALLEST_FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers far from the border`)}
@@ -378,7 +377,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     </Field>
 
                     <Field label='Populate military buildings closer to border'>
-                        <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
+                        <div className='military-setting'>
                             <UiIcon
                                 type='SMALLER_FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers closer to the border`)}
@@ -400,7 +399,7 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                     </Field>
 
                     <Field label='Populate military buildings close to border'>
-                        <div style={{ gap: '7px', display: 'flex', flexDirection: 'row' }}>
+                        <div className='military-setting'>
                             <UiIcon
                                 type='FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers close to the border`)}

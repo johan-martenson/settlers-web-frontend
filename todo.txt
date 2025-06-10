@@ -1,6 +1,11 @@
 Todo 1.0
 ========
 
+-23. Types have both e.g. WELL_WORKER and WellWorker. Unify into one.
+-22. Soldiers fighting and walking apart - right/left is not in sync.
+-21. After reload enemy border is not visible
+-20. Construction window should not be possible to open several times for same point
+-19. Construction window for available mine should show building construction by default
 -18. Command should show available mine
 -17. Roads did not show as promoted. Reload fixed it
 -16. Initial land measurement is wrong for other players
@@ -169,6 +174,51 @@ java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.buildi
         at java.base/java.lang.Thread.run(Thread.java:1575)
 null
 org.appland.settlers.model.GameMap@4dfc5da5
+
+38. Bug when soldier walks to take over enemy headquarters
+    Exception during game loop: java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.buildings.Building.isBurningDown()" because "building" is null
+java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.buildings.Building.isBurningDown()" because "building" is null
+        at org.appland.settlers.model.GameMap.lambda$updateBorder$43(GameMap.java:956)
+        at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:196)
+        at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1709)
+        at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:570)
+        at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:560)
+        at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+        at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+        at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:265)
+        at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:636)
+        at org.appland.settlers.model.GameMap.updateBorder(GameMap.java:962)
+        at org.appland.settlers.model.buildings.Building.tearDown(Building.java:552)
+        at org.appland.settlers.model.buildings.Headquarter.capture(Headquarter.java:396)
+        at org.appland.settlers.model.actors.Soldier.onArrival(Soldier.java:434)
+        at org.appland.settlers.model.actors.Worker.handleArrival(Worker.java:275)
+        at org.appland.settlers.model.actors.Worker.stepTime(Worker.java:174)
+        at org.appland.settlers.model.actors.Soldier.stepTime(Soldier.java:166)
+        at org.appland.settlers.model.GameMap.stepTime(GameMap.java:320)
+        at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:93)
+        at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+        at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358)
+        at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+        at java.base/java.lang.Thread.run(Thread.java:1575)
+
+39. Bug in WoodcutterWorker
+    Exception during game loop: org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (50, 66) to (51, 65)
+org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (50, 66) to (51, 65)
+        at org.appland.settlers.model.actors.Worker.setTarget(Worker.java:524)
+        at org.appland.settlers.model.actors.Worker.setTarget(Worker.java:484)
+        at org.appland.settlers.model.actors.WoodcutterWorker.onIdle(WoodcutterWorker.java:136)
+        at org.appland.settlers.model.actors.Worker.stepTime(Worker.java:201)
+        at org.appland.settlers.model.GameMap.stepTime(GameMap.java:321)
+        at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:93)
+        at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+        at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358)
+        at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+        at java.base/java.lang.Thread.run(Thread.java:1575)
+null
 
 Todo 2.0
 ========

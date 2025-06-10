@@ -15,7 +15,7 @@ import { SetTransportPriority } from '../../windows/transport_priority/transport
 import { TypeControl, Command } from './type_control'
 import { isRoadAtPoint } from '../../utils/utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState, RoadId } from '../../api/types'
-import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled, PlayFilled, BugFilled } from '@fluentui/react-icons'
+import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon, UiIcon } from '../../icons/icon'
 import { HouseInfo } from '../../windows/house/house_info'
 import { sfx } from '../../sound/sound_effects'
@@ -364,7 +364,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         api.evacuateHouse(house.id)
                     }
                 },
-                filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING'
+                filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING',
+                icon: <UiIcon type='SEND_OUT_ARROWS' scale={0.5} />
             })
             commands.set('Transport priority', {
                 action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' }),
@@ -410,18 +411,19 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             })
             commands.set('Resume game', {
                 action: () => api.resumeGame(),
-                icon: <PlayFilled />
+                icon: <UiIcon type='RIGHT_ARROW' scale={0.5} />
             })
             commands.set('Debug', {
                 action: () => openSingletonWindow({ type: 'DEBUG' }),
-                icon: <BugFilled />
+                icon: <UiIcon type='SPRAY_CAN' scale={0.5}/>
             })
             commands.set('Follow', {
                 action: (point: Point) => openWindow({ type: 'FOLLOW', point }),
                 icon: <UiIcon type='FILM_CAMERA' scale={0.5} />
             })
             commands.set('Tools', {
-                action: () => openSingletonWindow({ type: 'TOOLS' })
+                action: () => openSingletonWindow({ type: 'TOOLS' }),
+                icon: <UiIcon type='TOOLS_WITH_QUESTION_MARK' scale={0.5} />
             })
 
             setCommands(commands)
@@ -444,7 +446,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 }
             }
 
-            /* Center the view on the headquarter on the first update */
+            // Center the view on the headquarter on the first update
             const headquarter = getHeadquarterForPlayer(selfPlayerId)
             if (headquarter) {
                 goToHouse(headquarter.id)
@@ -480,7 +482,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const openWindow = useCallback((window: WindowType) => {
         console.log(`Opening: ${JSON.stringify(window)}`)
 
-        setWindows(prevWindows => prevWindows.find(w => w.type === 'HOUSE' && window.type === 'HOUSE' && w.house.id === window.house.id)
+        setWindows(prevWindows => (
+            prevWindows.find(w => w.type === 'HOUSE' && window.type === 'HOUSE' && w.house.id === window.house.id) ||
+            prevWindows.find(w => w.type === 'FLAG' && window.type === 'FLAG' && w.flag.id === window.flag.id) ||
+            prevWindows.find(w => w.type === 'ROAD_INFO' && window.type === 'ROAD_INFO' && w.roadId === window.roadId) ||
+            prevWindows.find(w => w.type === 'CONSTRUCTION_WINDOW' && window.type === 'CONSTRUCTION_WINDOW' &&
+                (w.pointInformation.x === window.pointInformation.x && w.pointInformation.y === window.pointInformation.y))
+        )
             ? prevWindows
             : [...prevWindows, { ...window, id: nextWindowId() }])
     }, [nextWindowId])
@@ -605,7 +613,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             const deltaX = (event.pageX - immediateState.mouseDownAt.x)
             const deltaY = (event.pageY - immediateState.mouseDownAt.y)
 
-            /* Detect move to separate move from click */
+            // Detect move to separate move from click
             if (deltaX ** 2 + deltaY ** 2 > 25) {
                 immediateState.mouseMoving = true
             }
@@ -645,24 +653,24 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onPointClicked = useCallback(async (point: Point) => {
         console.info(`Clicked point: ${point.x}, ${point.y}`)
 
-        /* Filter clicks that are really the end of moving the mouse */
+        // Filter clicks that are really the end of moving the mouse
         if (immediateState.mouseMoving) {
             return
         }
 
-        /* A road is being built */
+        // A road is being built
         if (newRoad && possibleRoadConnections) {
             const recent = newRoad[newRoad.length - 1]
             const possibleNewRoad = [...newRoad]
 
-            /* Handle the case where one of the directly adjacent possible new road connections is selected */
+            // Handle the case where one of the directly adjacent possible new road connections is selected
             if (possibleRoadConnections?.find(e => e.x === point.x && e.y === point.y)) {
                 possibleNewRoad.push(point)
 
-                /* Handle the case where a point further away was clicked */
+                // Handle the case where a point further away was clicked
             } else {
 
-                /* Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road */
+                // Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road
                 const possibleNewRoadSegment = (await api.findPossibleNewRoad(recent, point, newRoad)).possibleRoad
 
                 if (possibleNewRoadSegment) {
@@ -676,7 +684,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             console.log(`Ongoing road construction: ${JSON.stringify(possibleNewRoad)}`)
 
-            /* Handle the case when a flag is clicked and create a road to it. Also select the point of the flag */
+            // Handle the case when a flag is clicked and create a road to it. Also select the point of the flag
             const flag = api.getFlagAtPointLocal(point)
 
             if (flag) {
@@ -689,7 +697,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 // Create the road, including making an optimistic change first on the client side
                 api.placeRoad(possibleNewRoad)
 
-                /* Handle the case when a piece of road is clicked but there is no flag on it. Create the road */
+                // Handle the case when a piece of road is clicked but there is no flag on it. Create the road
             } else if (isRoadAtPoint(point, api.roads)) {
                 console.info('Placing flag for road')
 
@@ -701,11 +709,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     api.placeRoadWithFlag(point, possibleNewRoad)
                 }
 
-                /* Add the new possible road points to the ongoing road and don't create the road */
+                // Add the new possible road points to the ongoing road and don't create the road
             } else if (recent.x !== point.x || recent.y !== point.y) {
                 console.info('Continuing road building with extended road segment')
 
-                /* Get the available connections from the added point */
+                // Get the available connections from the added point
                 const pointInformation = await api.getInformationOnPoint(point)
 
                 console.log(`Possible new road direct adjacent road connections: ${JSON.stringify(pointInformation.possibleRoadConnections)}`)
@@ -714,7 +722,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 setPossibleRoadConnections(pointInformation.possibleRoadConnections)
             }
 
-            /* Select the point */
+            // Select the point
         } else {
             console.info(`Selecting point: ${point.x}, ${point.y}`)
 
@@ -725,7 +733,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onPointDoubleClicked = useCallback(async (point: Point) => {
         console.info(`Double click on ${point.x}, ${point.y}`)
 
-        /* First, handle double clicks differently if a new road is being created */
+        // First, handle double clicks differently if a new road is being created
         if (newRoad) {
             console.log('New road exists')
 
@@ -756,14 +764,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             return
         }
 
-        /* Show 'no action' window if the point is not discovered */
+        // Show 'no action' window if the point is not discovered
         if (!api.discoveredPoints.has(point)) {
             openWindow({ type: 'NO_ACTION', point })
 
             return
         }
 
-        /* Handle click on house */
+        // Handle click on house
         const house = api.getHouseAtPointLocal(point)
         console.log(`House on local: ${JSON.stringify(house)}`)
 
@@ -776,7 +784,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             return
         }
 
-        /* Handle the case where a flag was double clicked */
+        // Handle the case where a flag was double clicked
         const flag = api.getFlagAtPointLocal(point)
         console.log(`Flag on local: ${JSON.stringify(flag)}`)
 
@@ -792,11 +800,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             return
         }
 
-        /* Ask the server for what can be done on the spot */
+        // Ask the server for what can be done on the spot
         const pointInformation = await api.getInformationOnPoint(point)
         console.log(`Point information: ${JSON.stringify(pointInformation)}`)
 
-        /* Create a flag if it is the only possible construction */
+        // Create a flag if it is the only possible construction
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'FLAG') {
             api.placeFlag(pointInformation)
 
@@ -872,10 +880,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     const startNewRoad = useCallback(async (point: Point) => {
 
-        /* Start the list of points in the new road with the clicked point */
+        // Start the list of points in the new road with the clicked point
         console.info(`Start new road construction at: ${JSON.stringify({ x: point.x, y: point.y })}`)
 
-        /* Get the possible connections from the server and draw them */
+        // Get the possible connections from the server and draw them
         const pointInformation = await api.getInformationOnPoint(point)
 
         setNewRoad([point])
@@ -897,7 +905,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             ongoingTouches.set(touches[i].identifier, copyTouch(touches[i]))
         }
 
-        /* Only move map with one movement */
+        // Only move map with one movement
         if (!immediateState.touchMoveOngoing) {
             const touch = touches[0]
 
@@ -925,7 +933,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 const deltaX = (touch.pageX - immediateState.mouseDownAt.x)
                 const deltaY = (touch.pageY - immediateState.mouseDownAt.y)
 
-                /* Detect move to separate move from click */
+                // Detect move to separate move from click
                 if (deltaX ** 2 + deltaY ** 2 > 25) {
                     immediateState.mouseMoving = true
                 }
@@ -936,7 +944,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 }
             }
 
-            /* Store ongoing touches just because ... */
+            // Store ongoing touches just because ...
             if (touch) {
                 console.log('continuing touch ' + touch)
 
@@ -961,7 +969,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         console.log('touchcancel.')
 
-        /* Stop moving */
+        // Stop moving
         immediateState.touchMoveOngoing = false
         const touches = event.changedTouches
 
@@ -973,7 +981,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onTouchEnd = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
-        /* Stop moving */
+        // Stop moving
         immediateState.touchMoveOngoing = false
         const touches = event.changedTouches
 
@@ -1145,6 +1153,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         return <Debug
                             key={window.id}
                             point={selected}
+                            onGoToPoint={point => goToPoint(point)}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
                         />

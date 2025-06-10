@@ -11,6 +11,7 @@ type WindowProps = {
     className?: string
     id?: string
     children?: React.ReactNode
+    width?: string
 
     onClose: () => void
     onRaise: () => void
@@ -32,23 +33,18 @@ function Window({
     className = undefined,
     id = undefined,
     children = undefined,
+    width = undefined,
     onClose, onRaise,
 }: WindowProps) {
     const [windowHoverInfo, setWindowHoverInfo] = useState<string>()
     const [dragging, setDragging] = useState<Drag>()
     const [windowPosition, setWindowPosition] = useState<Point>()
 
-    let style = {}
-
-    if (windowPosition) {
-        style = { left: windowPosition.x, top: windowPosition.y }
-    }
-
     return (
         <div
             className={className !== undefined ? `window ${className}` : 'window'}
             id={id}
-            style={style}
+            style={{ width: width, left: windowPosition?.x ?? undefined, top: windowPosition?.y ?? undefined }}
             onWheel={(event) => event.stopPropagation()}
             onMouseDown={(event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
                 if (event.button === 2) {

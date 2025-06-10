@@ -150,7 +150,7 @@ const EnemyHouseInfo = ({ house, nation, onClose, onRaise }: EnemyHouseInfoProps
 }
 
 const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEnemyHouseInfoProps) => {
-    const [chosenAttackers, setChosenAttackers] = useState<number>(0)
+    const [chosenAttackers, setChosenAttackers] = useState<number>(1)
     const [attackType, setAttackType] = useState<AttackType>('STRONG')
     const [hoverInfo, setHoverInfo] = useState<string>()
 
@@ -171,34 +171,30 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
             {house.availableAttackers !== 0 &&
                 <div>
                     Attack
-                    <Field label='Number of attackers'>
-                        <div>
-                            <div>Attackers: ({chosenAttackers}/{house.availableAttackers})</div>
+                    <div>
+                        <div>Attackers: ({chosenAttackers}/{house.availableAttackers})</div>
+                        <ButtonRow>
                             <Button
                                 onClick={() => setChosenAttackers(Math.max(chosenAttackers - 1, 1))}
                                 onMouseEnter={() => setHoverInfo('Fewer attackers')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                <UiIcon type='ONE_YELLOW_SHIELD' />
+                                <UiIcon type='ONE_YELLOW_SHIELD' scale={0.5} />
                             </Button>
                             <Button
                                 onClick={() => setChosenAttackers(Math.min(chosenAttackers + 1, availableAttackers))}
                                 onMouseEnter={() => setHoverInfo('More attackers')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                <UiIcon type='FIVE_YELLOW_SHIELDS' />
+                                <UiIcon type='FIVE_YELLOW_SHIELDS' scale={0.5} />
                             </Button>
-                        </div>
-                    </Field>
-                    <Field label='Weak or strong attackers'>
-                        <div>
                             <Button
                                 style={{ backgroundColor: attackType === 'WEAK' ? 'lightblue' : undefined }}
                                 onClick={() => setAttackType('WEAK')}
                                 onMouseEnter={() => setHoverInfo('Weaker attackers')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                <UiIcon type='ROMAN_PRIVATE' />
+                                <UiIcon type='ROMAN_PRIVATE' scale={0.5} />
                             </Button>
                             <Button
                                 style={{ backgroundColor: attackType === 'STRONG' ? 'lightblue' : undefined }}
@@ -206,10 +202,10 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                                 onMouseEnter={() => setHoverInfo('Stronger attackers')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
-                                <UiIcon type='ROMAN_GENERAL' />
+                                <UiIcon type='ROMAN_GENERAL' scale={0.5} />
                             </Button>
-                        </div>
-                    </Field>
+                        </ButtonRow>
+                    </div>
                     <Button
                         onClick={() => {
                             api.attackHouse(house.id, chosenAttackers, attackType)
@@ -219,7 +215,7 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                         onMouseEnter={() => setHoverInfo('Launch attack')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='TWO_SWORDS' />
+                        <UiIcon type='TWO_SWORDS' scale={0.5} />
                     </Button>
                 </div>
             }

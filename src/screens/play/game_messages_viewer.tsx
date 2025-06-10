@@ -3,9 +3,8 @@ import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import './game_messages_viewer.css'
 import { api } from '../../api/ws-api'
-import { ArrowStepInRight24Regular, Delete24Filled } from '@fluentui/react-icons'
 import { HouseId, Point, GameMessage, Nation, GameMessageId } from '../../api/types'
-import { HouseIcon, WorkerIcon } from '../../icons/icon'
+import { HouseIcon, UiIcon, WorkerIcon } from '../../icons/icon'
 import { ShipIcon } from '../../icons/ship'
 import { ItemContainer } from '../../components/item_container'
 
@@ -23,6 +22,7 @@ function removeMessage(message: GameMessage): void {
 }
 
 // React components
+// eslint-disable-next-line
 const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
     const [expanded, setExpanded] = useState<boolean>(false)
     const [messages, setMessages] = useState<GameMessage[]>(Array.from(api.messages.values()))
@@ -79,10 +79,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Military building occupied
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                icon={<ArrowStepInRight24Regular />}
-                                                appearance='transparent'
-                                            />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -90,9 +87,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             No more resources
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -100,9 +95,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Military building is ready
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -110,18 +103,14 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             We&apos;re under attack!
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
                                     {message.type === 'GEOLOGIST_FIND' &&
                                         <>
                                             <WorkerIcon worker='Geologist' nation={nation} scale={0.5} />
                                             Geologist has found {message.material.toLowerCase()}!
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -129,9 +118,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Building lost to enemy
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -139,9 +126,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             Building captured
-                                            <Button onClick={() => { onGoToPoint(message.point) }}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -149,9 +134,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             A store house is ready
-                                            <Button onClick={() => onGoToHouse(message.houseId)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -159,15 +142,13 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
                                             This building has caused you to lose land
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
                                     {message.type === 'TREE_CONSERVATION_PROGRAM_ACTIVATED' &&
                                         <>
-                                            The tree conservation program has been activated.<br/>Only Woodcutters, Sawmills, and Forester huts will get planks.
+                                            The tree conservation program has been activated.<br />Only Woodcutters, Sawmills, and Forester huts will get planks.
                                         </>
                                     }
 
@@ -181,9 +162,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={'Catapult'} nation={nation} scale={0.5} />
                                             {"We're being bombarded by a catapult"}
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -191,9 +170,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <HouseIcon houseType={'Harbor'} nation={nation} scale={0.5} />
                                             A harbor is finished
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -201,9 +178,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <ShipIcon scale={0.5} />
                                             A ship is ready to start an expedition
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -211,9 +186,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         <>
                                             <ShipIcon scale={0.5} />
                                             A ship has reached its destination
-                                            <Button onClick={() => onGoToPoint(message.point)}
-                                                appearance='transparent'
-                                                icon={<ArrowStepInRight24Regular />} />
+                                            <UiIcon type='GO_TO_POINT' scale={0.5} onClick={() => onGoToPoint(message.point)} />
                                         </>
                                     }
 
@@ -223,9 +196,7 @@ const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesVi
                                         </>
                                     }
 
-                                    <Button icon={<Delete24Filled />}
-                                        onClick={() => removeMessage(message)}
-                                        appearance='transparent' />
+                                    <UiIcon type='TRASHCAN' scale={0.5} onClick={() => removeMessage(message)} />
                                 </div>
                             )}
                         </ItemContainer>

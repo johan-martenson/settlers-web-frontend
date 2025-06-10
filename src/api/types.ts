@@ -46,34 +46,40 @@ export type AvailableConstruction = Size | 'FLAG' | 'MINE'
 
 export type ResourceLevel = 'LOW' | 'MEDIUM' | 'HIGH'
 
-export type TransportCategory = 'FOOD' | 'WEAPONS' | 'TOOLS' | 'IRON' | 'IRON_BAR' | 'COAL' | 'GOLD' | 'PLANK' | 'WOOD' | 'STONE' | 'COIN' | 'WHEAT' | 'WATER' | 'PIG' | 'FLOUR' | 'BOAT'
-export const TRANSPORT_CATEGORIES = new Set<TransportCategory>(['FOOD', 'WEAPONS', 'TOOLS', 'IRON', 'IRON_BAR', 'COAL', 'GOLD', 'PLANK', 'WOOD', 'STONE', 'COIN', 'WHEAT', 'WATER', 'PIG', 'FLOUR'])
+const TRANSPORT_CATEGORY_VALUES = ['FOOD', 'WEAPONS', 'TOOLS', 'IRON', 'IRON_BAR', 'COAL', 'GOLD', 'PLANK', 'WOOD', 'STONE', 'COIN', 'WHEAT', 'WATER', 'PIG', 'FLOUR', 'BOAT']
 
-export type Soldier = 'PRIVATE' | 'PRIVATE_FIRST_CLASS' | 'SERGEANT' | 'OFFICER' | 'GENERAL'
-export type Worker = 'ARMORER' | 'BAKER' | 'BREWER' | 'BUTCHER' | 'COURIER' | 'DONKEY_BREEDER' | 'DONKEY' | 'FARMER' | 'FISHERMAN' | 'FORESTER' | 'GEOLOGIST' | 'HUNTER' | 'IRON_FOUNDER' | 'METALWORKER' | 'MILLER' | 'MINER' | 'MINTER' | 'PIG_BREEDER' | 'CARPENTER' | 'SCOUT' | 'STONEMASON' | 'STOREHOUSE_WORKER' | 'WELL_WORKER' | 'WOODCUTTER_WORKER' | 'BUILDER' | 'PLANER' | 'SHIPWRIGHT' | Soldier
-export type Tool = 'AXE' | 'HAMMER' | 'SHOVEL' | 'PICK_AXE' | 'FISHING_ROD' | 'BOW' | 'SAW' | 'CLEAVER' | 'ROLLING_PIN' | 'CRUCIBLE' | 'TONGS' | 'SCYTHE'
-export type Goods = 'FLOUR' | 'PIG' | 'GOLD' | 'IRON' | 'COAL' | 'STONE' | 'WATER' | 'WOOD' | 'PLANK' | 'BREAD' | 'FISH' | 'MEAT' | 'SHIELD' | 'SWORD' | 'BEER' | 'COIN' | 'WHEAT' | 'IRON_BAR' | 'BOAT' | Tool | Worker
-export type Material = Soldier | Tool | Goods | Worker
+export type TransportCategory = typeof TRANSPORT_CATEGORY_VALUES[number]
+export const TRANSPORT_CATEGORIES = new Set<TransportCategory>(TRANSPORT_CATEGORY_VALUES)
 
-export const SOLDIERS: Soldier[] = ['PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL']
-export const TOOLS: Set<Tool> = new Set(['AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'])
-export const GOODS = new Set<Goods>(['FLOUR', 'PIG', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'WHEAT', 'IRON_BAR', 'BOAT'])
-export const WORKERS = new Set<Worker>(['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'CARPENTER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL', 'BUILDER', 'PLANER', 'SHIPWRIGHT'])
-export const MATERIALS = new Set<Material>()
-WORKERS.forEach(workerMaterial => MATERIALS.add(workerMaterial))
-TOOLS.forEach(tool => MATERIALS.add(tool))
-GOODS.forEach(good => MATERIALS.add(good))
+const SOLDIER_VALUES = ['PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL']
 
-//export type Material = 'FLOUR' | 'PIG' | 'GOLD' | 'IRON' | 'COAL' | 'STONE' | 'WATER' | 'WOOD' | 'PLANK' | 'BREAD' | 'FISH' | 'MEAT' | 'SHIELD' | 'SWORD' | 'BEER' | 'COIN' | 'METALWORKER' | 'WHEAT' | 'SHIPWRIGHT' | 'IRON_BAR' | 'BOAT' | Tool | MaterialWorker
+export type Soldier = typeof SOLDIER_VALUES[number]
+export const SOLDIERS: Soldier[] = [...SOLDIER_VALUES]
 
-//export const MATERIALS = new Set<Material>(['PIG', 'FLOUR', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'METALWORKER', 'WHEAT', 'SHIPWRIGHT', 'AXE', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'HAMMER', 'SCYTHE', 'IRON_BAR'])
+const TOOLS_VALUES = ['AXE', 'HAMMER', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE']
 
-export const MATERIALS_AS_STRING = new Set<string>(MATERIALS.values())
-export const TOOLS_STRING: Set<string> = new Set(TOOLS.values())
+export type Tool = typeof TOOLS_VALUES[number]
+export const TOOLS: Set<Tool> = new Set(TOOLS_VALUES as Tool[])
 
-export type Nation = 'ROMANS' | 'AFRICANS' | 'JAPANESE' | 'VIKINGS'
+const GOODS_VALUES = ['FLOUR', 'PIG', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'WHEAT', 'IRON_BAR', 'BOAT']
 
-export const NATIONS: Set<Nation> = new Set(['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS'])
+export type Goods = typeof GOODS_VALUES[number]
+export const GOODS = new Set<Goods>(GOODS_VALUES as Goods[])
+
+const WORKER_VALUES = ['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'CARPENTER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'BUILDER', 'PLANER', 'SHIPWRIGHT', ...SOLDIER_VALUES]
+
+export type Worker = typeof WORKER_VALUES[number]
+export const WORKERS = new Set<Worker>(WORKER_VALUES)
+
+const MATERIAL_VALUES = [...SOLDIERS, ...TOOLS, ...GOODS, ...WORKERS]
+
+export type Material = typeof MATERIAL_VALUES[number]
+export const MATERIALS = new Set<Material>(MATERIAL_VALUES)
+
+const NATION_VALUES = ['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS']
+
+export type Nation = typeof NATION_VALUES[number]
+export const NATIONS = new Set<Nation>(NATION_VALUES)
 
 export type Direction = 'EAST' | 'SOUTH_EAST' | 'SOUTH_WEST' | 'WEST' | 'NORTH_WEST' | 'NORTH_EAST'
 
@@ -89,22 +95,7 @@ export type HouseResources = { [key in Material]?: HouseResourceItem }
 
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
 
-export type SmallBuilding =
-    | 'ForesterHut'
-    | 'Woodcutter'
-    | 'Well'
-    | 'Quarry'
-    | 'Barracks'
-    | 'GuardHouse'
-    | 'HunterHut'
-    | 'Fishery'
-    | 'GoldMine'
-    | 'IronMine'
-    | 'CoalMine'
-    | 'GraniteMine'
-    | 'LookoutTower'
-
-const SMALL_HOUSES: SmallBuilding[] = [
+const SMALL_HOUSE_VALUES = [
     'ForesterHut',
     'Woodcutter',
     'Well',
@@ -120,38 +111,11 @@ const SMALL_HOUSES: SmallBuilding[] = [
     'LookoutTower'
 ]
 
-const SMALL_HOUSES_AS_STRINGS: string[] = [
-    'ForesterHut',
-    'Woodcutter',
-    'Well',
-    'Quarry',
-    'Barracks',
-    'GuardHouse',
-    'HunterHut',
-    'Fishery',
-    'GoldMine',
-    'IronMine',
-    'CoalMine',
-    'GraniteMine',
-    'LookoutTower'
-]
+export type SmallBuilding = typeof SMALL_HOUSE_VALUES[number]
+const SMALL_HOUSES: SmallBuilding[] = [...SMALL_HOUSE_VALUES]
+const SMALL_HOUSES_SET = new Set<SmallBuilding>(SMALL_HOUSES)
 
-export type MediumBuilding =
-    | 'Sawmill'
-    | 'Bakery'
-    | 'WatchTower'
-    | 'Mill'
-    | 'SlaughterHouse'
-    | 'Catapult'
-    | 'Mint'
-    | 'Brewery'
-    | 'Armory'
-    | 'IronSmelter'
-    | 'Metalworks'
-    | 'Shipyard'
-    | 'Storehouse'
-
-const MEDIUM_HOUSES: MediumBuilding[] = [
+const MEDIUM_HOUSE_VALUES = [
     'Sawmill',
     'Bakery',
     'WatchTower',
@@ -167,24 +131,11 @@ const MEDIUM_HOUSES: MediumBuilding[] = [
     'Storehouse'
 ]
 
-const MEDIUM_HOUSES_AS_STRINGS: string[] = [
-    'Sawmill',
-    'Bakery',
-    'WatchTower',
-    'Mill',
-    'SlaughterHouse',
-    'Catapult',
-    'Mint',
-    'Brewery',
-    'Armory',
-    'IronSmelter',
-    'Metalworks',
-    'Shipyard',
-    'Storehouse'
-]
-export type LargeBuilding = 'Headquarter' | 'Farm' | 'PigFarm' | 'DonkeyFarm' | 'Fortress' | 'Harbor'
+export type MediumBuilding = typeof MEDIUM_HOUSE_VALUES[number]
+const MEDIUM_HOUSES: MediumBuilding[] = [...MEDIUM_HOUSE_VALUES]
+const MEDIUM_HOUSES_SET = new Set<MediumBuilding>(MEDIUM_HOUSES)
 
-const LARGE_HOUSES: LargeBuilding[] = [
+const LARGE_HOUSE_VALUES = [
     'Headquarter',
     'Farm',
     'PigFarm',
@@ -192,16 +143,17 @@ const LARGE_HOUSES: LargeBuilding[] = [
     'Fortress'
 ]
 
-const LARGE_HOUSES_AS_STRINGS: string[] = [
-    'Headquarter',
-    'Farm',
-    'PigFarm',
-    'DonkeyFarm',
-    'Fortress'
-]
+export type LargeBuilding = typeof LARGE_HOUSE_VALUES[number]
+const LARGE_HOUSES: LargeBuilding[] = [...LARGE_HOUSE_VALUES]
+const LARGE_HOUSES_SET = new Set<LargeBuilding>(LARGE_HOUSES)
 
-export type WildAnimalType = 'RABBIT' | 'FOX' | 'STAG' | 'DEER' | 'DUCK' | 'SHEEP' | 'DEER_2' | 'DUCK_2' | 'PACK_DONKEY'
-const WILD_ANIMAL_TYPES = ['RABBIT', 'FOX', 'STAG', 'DEER', 'DUCK', 'SHEEP', 'DEER_2', 'DUCK_2', 'PACK_DONKEY']
+export const HOUSES: Set<AnyBuilding> = new Set(SMALL_HOUSES.concat(MEDIUM_HOUSES).concat(LARGE_HOUSES))
+
+const WILD_ANIMAL_TYPE_VALUES = ['RABBIT', 'FOX', 'STAG', 'DEER', 'DUCK', 'SHEEP', 'DEER_2', 'DUCK_2', 'PACK_DONKEY']
+
+export type WildAnimalType = typeof WILD_ANIMAL_TYPE_VALUES[number]
+const WILD_ANIMAL_TYPES = [...WILD_ANIMAL_TYPE_VALUES]
+const WILD_ANIMAL_TYPES_SET = new Set<WildAnimalType>(WILD_ANIMAL_TYPES)
 
 export type WildAnimalInformation = Point & {
     id: WildAnimalId
@@ -213,8 +165,11 @@ export type WildAnimalInformation = Point & {
     path?: Point[]
 }
 
-export type PlayerColor = 'BLUE' | 'YELLOW' | 'RED' | 'PURPLE' | 'GRAY' | 'GREEN' | 'BROWN' | 'WHITE'
-export const PLAYER_COLORS: PlayerColor[] = ['BLUE', 'YELLOW', 'RED', 'PURPLE', 'GRAY', 'GREEN', 'BROWN', 'WHITE']
+const PLAYER_COLOR_VALUES = ['BLUE', 'YELLOW', 'RED', 'PURPLE', 'GRAY', 'GREEN', 'BROWN', 'WHITE']
+
+export type PlayerColor = typeof PLAYER_COLOR_VALUES[number]
+export const PLAYER_COLORS: PlayerColor[] = [...PLAYER_COLOR_VALUES]
+const PLAYER_COLORS_SET = new Set<PlayerColor>(PLAYER_COLORS)
 
 export type Player = {
     name: string
@@ -245,7 +200,10 @@ export type PointInformation = {
     roadId: RoadId
 })
 
-export type TreeType = 'PINE' | 'BIRCH' | 'OAK' | 'PALM_1' | 'PALM_2' | 'PINE_APPLE' | 'CYPRESS' | 'CHERRY' | 'FIR'
+const TREE_TYPE_VALUES = ['PINE', 'BIRCH', 'OAK', 'PALM_1', 'PALM_2', 'PINE_APPLE', 'CYPRESS', 'CHERRY', 'FIR']
+
+export type TreeType = typeof TREE_TYPE_VALUES[number]
+const TREE_TYPES: TreeType[] = [...TREE_TYPE_VALUES]
 
 export type TreeSize = 'NEWLY_PLANTED' | 'SMALL' | 'MEDIUM' | 'FULL_GROWN'
 
@@ -259,9 +217,10 @@ export type FireSize = 'LARGE' | 'MEDIUM' | 'SMALL' | 'MINI'
 
 export type HeightInformation = number
 
-export type VegetationIntegers = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23
+const VEGETATION_INTEGERS_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
 
-const VEGETATION_INTEGERS: VegetationIntegers[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+export type VegetationIntegers = typeof VEGETATION_INTEGERS_VALUES[number]
+const VEGETATION_INTEGERS: VegetationIntegers[] = [...VEGETATION_INTEGERS_VALUES]
 
 export const SAVANNAH = 0
 export const MOUNTAIN_1 = 1
@@ -287,7 +246,6 @@ export const LAVA_2 = 20
 export const LAVA_3 = 21
 export const LAVA_4 = 22
 export const BUILDABLE_MOUNTAIN = 23
-
 
 export type TerrainAtPoint = {
     point: Point
@@ -382,40 +340,41 @@ export type StoneInformation = Point & {
     amount: StoneAmount
 }
 
-export type WorkerType =
-    | 'Armorer'
-    | 'Baker'
-    | 'Brewer'
-    | 'Butcher'
-    | 'Courier'
-    | 'DonkeyBreeder'
-    | 'Donkey'
-    | 'Farmer'
-    | 'Fisherman'
-    | 'Forester'
-    | 'Geologist'
-    | 'Hunter'
-    | 'IronFounder'
-    | 'IronSmelter'
-    | 'Metalworker'
-    | 'Miller'
-    | 'Miner'
-    | 'Minter'
-    | 'PigBreeder'
-    | 'Carpenter'
-    | 'Scout'
-    | 'Stonemason'
-    | 'StorehouseWorker'
-    | 'WellWorker'
-    | 'WoodcutterWorker'
-    | 'Private'
-    | 'Private_first_class'
-    | 'Sergeant'
-    | 'Officer'
-    | 'General'
-    | 'Builder'
-    | 'Planer'
-    | 'ShipWright'
+const WORKER_TYPE_VALUES = ['Armorer'
+    , 'Baker'
+    , 'Brewer'
+    , 'Butcher'
+    , 'Courier'
+    , 'DonkeyBreeder'
+    , 'Donkey'
+    , 'Farmer'
+    , 'Fisherman'
+    , 'Forester'
+    , 'Geologist'
+    , 'Hunter'
+    , 'IronFounder'
+    , 'IronSmelter'
+    , 'Metalworker'
+    , 'Miller'
+    , 'Miner'
+    , 'Minter'
+    , 'PigBreeder'
+    , 'Carpenter'
+    , 'Scout'
+    , 'Stonemason'
+    , 'StorehouseWorker'
+    , 'WellWorker'
+    , 'WoodcutterWorker'
+    , 'Private'
+    , 'Private_first_class'
+    , 'Sergeant'
+    , 'Officer'
+    , 'General'
+    , 'Builder'
+    , 'Planer'
+    , 'ShipWright']
+export type WorkerType = typeof WORKER_TYPE_VALUES[number]
+const WORKER_TYPES: WorkerType[] = [...WORKER_TYPE_VALUES]
 
 export type BodyType = 'FAT' | 'THIN'
 
@@ -533,8 +492,9 @@ export type ShipInformation = Point & {
     constructionState: ShipConstructionProgress
 }
 
-export type SoldierType = 'PRIVATE_RANK' | 'PRIVATE_FIRST_CLASS_RANK' | 'SERGEANT_RANK' | 'OFFICER_RANK' | 'GENERAL_RANK'
-const SOLDIER_TYPES: SoldierType[] = ['PRIVATE_RANK', 'PRIVATE_FIRST_CLASS_RANK', 'SERGEANT_RANK', 'OFFICER_RANK', 'GENERAL_RANK']
+const SOLDIER_TYPE_VALUES = ['PRIVATE_RANK', 'PRIVATE_FIRST_CLASS_RANK', 'SERGEANT_RANK', 'OFFICER_RANK', 'GENERAL_RANK']
+export type SoldierType = typeof SOLDIER_TYPE_VALUES[number]
+const SOLDIER_TYPES: SoldierType[] = [...SOLDIER_TYPE_VALUES]
 
 type HouseResourceItem = {
     has: number
@@ -628,22 +588,7 @@ export type GeneralStatistics = {
     [key in GeneralStatisticsType]: Measurement[]
 }
 
-export type Merchandise = 'WOOD'
-    | 'PLANK'
-    | 'STONE'
-    | 'FOOD'
-    | 'WATER'
-    | 'BEER'
-    | 'COAL'
-    | 'IRON'
-    | 'GOLD'
-    | 'IRON_BAR'
-    | 'COIN'
-    | 'TOOLS'
-    | 'WEAPONS'
-    | 'BOAT'
-
-const MERCHANDISE_VALUES: Merchandise[] = ['WOOD',
+const MERCHANDISE_VALUES = ['WOOD',
     'PLANK',
     'STONE',
     'FOOD',
@@ -657,6 +602,8 @@ const MERCHANDISE_VALUES: Merchandise[] = ['WOOD',
     'TOOLS',
     'WEAPONS',
     'BOAT']
+
+export type Merchandise = typeof MERCHANDISE_VALUES[number]
 
 export type MerchandiseStatistics = {
     [key in Merchandise]?: Measurement[]
@@ -797,7 +744,7 @@ function isHeadquarterInformation(houseInformation: HouseInformation): houseInfo
 }
 
 function isNation(maybeNation: unknown): maybeNation is Nation {
-    return maybeNation === 'ROMANS' || maybeNation === 'VIKINGS' || maybeNation === 'JAPANESE' || maybeNation === 'AFRICANS'
+    return NATIONS.has(maybeNation as Nation)
 }
 
 function rankToMaterial(rank: SoldierType): Material {
@@ -818,36 +765,33 @@ function rankToMaterial(rank: SoldierType): Material {
     throw new Error(`Can't translate rank to material! Rank was: ${rank}`)
 }
 
-function isToolUpperCase(material: Material): material is Tool {
-    return TOOLS_STRING.has(material)
+function isTool(material: Material): material is Tool {
+    return TOOLS.has(material as Tool)
 }
 
 function isWildAnimal(animal: unknown): animal is WildAnimalInformation {
     return animal !== null &&
         typeof animal === 'object' &&
         'type' in animal &&
-        WILD_ANIMAL_TYPES.findIndex(type => type === animal.type) !== -1
+        WILD_ANIMAL_TYPES_SET.has(animal.type as WildAnimalType)
 }
 
 function isMaterial(material: unknown): material is Material {
-    return material !== null &&
-        material !== undefined &&
-        typeof material === 'string' &&
-        MATERIALS_AS_STRING.has(material)
+    return MATERIALS.has(material as Material)
 }
 
 function isBuilding(aString: string): aString is AnyBuilding {
-    return SMALL_HOUSES_AS_STRINGS.includes(aString) || MEDIUM_HOUSES_AS_STRINGS.includes(aString) || LARGE_HOUSES_AS_STRINGS.includes(aString)
+    return SMALL_HOUSES_SET.has(aString as SmallBuilding) || MEDIUM_HOUSES_SET.has(aString as MediumBuilding) || LARGE_HOUSES_SET.has(aString as LargeBuilding)
 }
 
 function isPlayerColor(playerColor: unknown): playerColor is PlayerColor {
-    return typeof (playerColor) === 'string' && PLAYER_COLORS.find(e => e === playerColor) !== undefined
+    return PLAYER_COLORS_SET.has(playerColor as PlayerColor)
 }
 
 export {
     isHeadquarterInformation,
     rankToMaterial,
-    isToolUpperCase,
+    isTool,
     isWildAnimal,
     isMaterial,
     isBuilding,
@@ -859,5 +803,7 @@ export {
     LARGE_HOUSES,
     VEGETATION_INTEGERS,
     SOLDIER_TYPES,
-    MERCHANDISE_VALUES
+    MERCHANDISE_VALUES,
+    TREE_TYPES,
+    WORKER_TYPES
 }

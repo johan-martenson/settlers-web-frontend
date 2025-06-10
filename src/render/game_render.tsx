@@ -1877,7 +1877,7 @@ function GameCanvas({
                     houseTitle = '(' + houseTitle + ')'
                 } else if (house.state === 'UNOCCUPIED') {
                     houseTitle = houseTitle + ' (unoccupied)'
-                } else if (house.productivity !== undefined) {
+                } else if (house.productivity !== undefined && house.state === 'OCCUPIED') {
                     houseTitle = houseTitle + ' (' + house.productivity + '%)'
                 }
 

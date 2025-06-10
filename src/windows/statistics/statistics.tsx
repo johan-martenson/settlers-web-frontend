@@ -5,7 +5,7 @@ import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/r
 import { Nation, AnyBuilding, SMALL_HOUSES, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, MEDIUM_HOUSES, LARGE_HOUSES } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon, UiIconType } from '../../icons/icon'
 import { api } from '../../api/ws-api'
-import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, CartesianGrid } from "recharts"
+import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, CartesianGrid, Label } from "recharts"
 import { StatisticsReply } from '../../api/ws/commands'
 import { buildingPretty, materialPretty, merchandisePretty, playerToColor } from '../../pretty_strings'
 import PlayerButton from '../../components/player_button'
@@ -761,8 +761,12 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
                 }}
             >
                 <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
-                <XAxis dataKey="time" label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }} stroke="#FFFFFF" type="number" domain={[0, 'dataMax']} />
-                <YAxis label={{ value: statType, angle: -90, position: "insideLeft", fill: "white" }} stroke="#FFFFFF" domain={[0, 'dataMax + 1']} allowDecimals={false} />
+                <XAxis dataKey="time" stroke="#FFFFFF" type="number" domain={[0, 'dataMax']}>
+                    <Label value="Time" position="bottom" offset={-5} fill="white" style={{textTransform: 'capitalize'}} />
+                </XAxis>
+                <YAxis stroke="#FFFFFF" domain={[0, 'dataMax + 1']} allowDecimals={false}>
+                    <Label angle={-90} value={statType} position="left" offset={-5} fill="white" style={{textTransform: 'capitalize'}} />
+                </YAxis>
 
                 {statistics.players.map(player => {
                     const playerColor: PlayerColor = api.players.get(player.id)?.color ?? 'BLUE'
@@ -771,13 +775,15 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
                     return (
                         <Line
                             key={player.id}
-                            type="stepAfter"
+                            type='linear'
                             dataKey={`Player ${player.id}`}
                             name={`Player ${player.id}`}
                             stroke={color}
                             strokeWidth={2}
                             dot={false}
                             isAnimationActive={false}
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
                             connectNulls
                         />
                     )

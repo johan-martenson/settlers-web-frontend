@@ -100,6 +100,9 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'DOWN_ARROW'
     | 'ARROW_TO_TOP'
     | 'ARROW_TO_BOTTOM'
+    | 'TRASHCAN'
+    | 'SPRAY_CAN'
+    | 'RIGHT_ARROW'
 
 type WorkerIconProps = {
     worker: WorkerType
@@ -537,7 +540,7 @@ const UiIcon = ({ type, scale = 1, onMouseEnter, onMouseLeave, onClick }: UiIcon
         ref={canvasRef}
         width={scaledWidth}
         height={scaledHeight}
-        style={{ width: scaledWidth, height: scaledHeight }}
+        style={{ width: scaledWidth, height: scaledHeight, imageRendering: 'pixelated' }}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onClick={onClick}

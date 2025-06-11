@@ -24,7 +24,16 @@ function MapInformationCard({ map, onMapSelected }: MapInformationCardProps) {
         if (cachedImage) {
             setMapImage(cachedImage)
         } else {
-            makeImageFromMap(map, 4, 2).then(image => {
+            makeImageFromMap(map,
+                { scaleDown: 4,
+                    blockSize: 2,
+                    drawStartingPoints: true
+                },
+                undefined,
+                undefined,
+                undefined,
+                undefined
+            ).then(image => {
                 if (image) {
                     setMapImage(image)
 

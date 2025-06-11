@@ -278,6 +278,7 @@ export type PlayerInformation = {
     readonly centerPoint: Point
     readonly discoveredPoints: Set<Point>
     readonly nation: Nation
+    readonly ownedLand: Point[]
 }
 
 export type GameInformation = {

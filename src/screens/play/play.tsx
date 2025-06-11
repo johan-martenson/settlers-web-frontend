@@ -32,6 +32,7 @@ import { ExpandChatBox } from '../../components/chat/chat'
 import { canBeUpgraded, getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint } from '../../api/utils'
 import { calcTranslation } from '../../render/utils'
 import Tools from '../../windows/tools/tools'
+import { MapView } from '../../windows/map/map'
 
 // Types
 type HouseWindow = {
@@ -88,6 +89,10 @@ type NoActionWindow = {
     point: Point
 }
 
+type MapWindow = {
+    type: 'MAP'
+}
+
 type WindowType =
     | HouseWindow
     | FlagWindow
@@ -101,6 +106,7 @@ type WindowType =
     | FollowWindow
     | ToolsWindow
     | NoActionWindow
+    | MapWindow
 
 type Window = { id: number } & WindowType
 
@@ -415,7 +421,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             })
             commands.set('Debug', {
                 action: () => openSingletonWindow({ type: 'DEBUG' }),
-                icon: <UiIcon type='SPRAY_CAN' scale={0.5}/>
+                icon: <UiIcon type='SPRAY_CAN' scale={0.5} />
             })
             commands.set('Follow', {
                 action: (point: Point) => openWindow({ type: 'FOLLOW', point }),
@@ -424,6 +430,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             commands.set('Tools', {
                 action: () => openSingletonWindow({ type: 'TOOLS' }),
                 icon: <UiIcon type='TOOLS_WITH_QUESTION_MARK' scale={0.5} />
+            })
+            commands.set('Map', {
+                action: () => openWindow({ type: 'MAP' }),
+                icon: <UiIcon type='GLOBE_WITH_MAGNIFYING_GLASS' scale={0.5} />
             })
 
             setCommands(commands)
@@ -1069,6 +1079,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 onSetAnimateZooming={setAnimateZoom}
                 onQuota={() => openSingletonWindow({ type: 'QUOTA' })}
                 onManageToolPriorities={() => openSingletonWindow({ type: 'TOOLS' })}
+                onViewMap={() => openSingletonWindow({ type: 'MAP' })}
             />
 
             {windows.map(window => {
@@ -1184,6 +1195,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             onShowAvailableConstruction={() => setShowAvailableConstruction(true)}
                             onHideAvailableConstruction={() => setShowAvailableConstruction(false)}
                             onStartMonitor={(point: Point) => openWindow({ type: 'FOLLOW', point })} />
+                    case 'MAP':
+                        return <MapView
+                            key={window.id}
+                            onClose={() => closeWindow(window.id)}
+                            onRaise={() => raiseWindow(window.id)}
+                        />
                 }
             })}
 

@@ -103,6 +103,11 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'TRASHCAN'
     | 'SPRAY_CAN'
     | 'RIGHT_ARROW'
+    | 'GLOBE_WITH_MAGNIFYING_GLASS'
+    | 'OWNED_AREA_ON_MAP'
+    | 'OWNED_BUILDINGS_ON_MAP'
+    | 'OWNED_ROADS_ON_MAP'
+    | 'GRAPH_OF_OWNED_AREA_ON_MAP'
 
 type WorkerIconProps = {
     worker: WorkerType

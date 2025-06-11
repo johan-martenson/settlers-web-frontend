@@ -38,6 +38,7 @@ type GameMenuProps = {
     onSetAnimateZooming: (shouldAnimate: boolean) => void
     onQuota: () => void
     onManageToolPriorities: () => void
+    onViewMap: () => void
 }
 
 // React components
@@ -68,7 +69,9 @@ const GameMenu = ({
     onSetAnimateMapScrolling,
     onSetAnimateZooming,
     onManageToolPriorities,
-    onQuota }: GameMenuProps
+    onQuota,
+    onViewMap
+}: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
     const [gameSpeed, setGameSpeed] = useState<GameSpeed>('NORMAL')
@@ -198,6 +201,15 @@ const GameMenu = ({
                         onClose()
                     }}>
                         Manage tool priorities
+                    </Button>
+
+                    <Button
+                        onClick={() => {
+                            onViewMap()
+                            onClose()
+                        }}
+                    >
+                        View map
                     </Button>
 
                     <Button onClick={() => {

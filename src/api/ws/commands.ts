@@ -111,6 +111,7 @@ enum Command {
     ListenToGameList = 'LISTEN_TO_GAME_LIST',
 
     // Maps
+    GetMap = 'GET_MAP',
     GetMaps = 'GET_MAPS',
 
     // Map
@@ -622,6 +623,14 @@ async function getMaps(): Promise<MapInformation[]> {
 }
 
 /**
+ * Retrieves a map
+ * @returns {Promise<MapInformation>} The requested map.
+ */
+async function getMap(mapId: MapId): Promise<MapInformation> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ map: MapInformation }, { mapId: MapId }>(Command.GetMap, { mapId })).map
+}
+
+/**
  * Retrieves game information by querying the game state.
  * @returns {Promise<GameInformation>} Current game information.
  */
@@ -1120,5 +1129,6 @@ export {
     stopListeningToStatistics,
     markGameMessagesRead,
     getToolPriorities,
-    setToolPriority
+    setToolPriority,
+    getMap
 }

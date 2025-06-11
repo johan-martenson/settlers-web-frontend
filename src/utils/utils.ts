@@ -2,7 +2,8 @@ import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Dir
 import { api } from '../api/ws-api'
 import { ScreenPoint, View } from '../render/game_render'
 import { STANDARD_HEIGHT } from '../render/constants'
-import { PointMap } from './util_types'
+import { PointMap, PointSet } from './util_types'
+import { playerToColor } from '../pretty_strings'
 
 // Types
 export type Point3D = {
@@ -25,6 +26,13 @@ export type Line = {
 }
 
 export type RgbColorArray = [number, number, number]
+
+type MapRenderOptions = {
+    scaleDown: number
+    blockSize: number
+    drawStartingPoints?: boolean
+    drawFogOfWar?: boolean
+}
 
 // Constants
 const STARTING_POINT_COLOR = 'yellow'
@@ -285,13 +293,41 @@ function pointStringToPoint(pointString: string): Point {
     return { x, y }
 }
 
-async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSize: number): Promise<HTMLImageElement | undefined> {
+async function makeImageFromMap(
+    map: MapInformation,
+    renderOptions: MapRenderOptions,
+    discovered: PointSet | undefined,
+    houses: Iterable<HouseInformation> | undefined,
+    roads: Iterable<RoadInformation> | undefined,
+    players: Iterable<PlayerInformation> | undefined
+): Promise<HTMLImageElement | undefined> {
+
+    // Utility functions
+    const pixelWidth = renderOptions.blockSize
+    const pixelHeight = renderOptions.blockSize
+    function drawPixel(ctx: CanvasRenderingContext2D, point: Point, color: RgbColorArray | string, transparency = 1) {
+        if (typeof color === 'string') {
+            ctx.fillStyle = color
+        } else {
+            ctx.fillStyle = arrayToRgbStyle(color)
+        }
+
+        ctx.globalAlpha = transparency
+
+        ctx.fillRect(
+            (point.x * pixelWidth / renderOptions.scaleDown) * 2 + pixelWidth, // x
+            (map.height - point.y) * pixelHeight / renderOptions.scaleDown, // y
+            pixelWidth, // width
+            pixelHeight) // height
+    }
+
+    // Load data
     const terrainInformation = await api.getTerrainForMap(map.id)
     const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
 
     const offscreenCanvas = document.createElement('canvas')
-    offscreenCanvas.width = map.width * 2 * blockSize / scaleDown
-    offscreenCanvas.height = map.height * blockSize / scaleDown
+    offscreenCanvas.width = map.width * 2 * renderOptions.blockSize / renderOptions.scaleDown
+    offscreenCanvas.height = map.height * renderOptions.blockSize / renderOptions.scaleDown
 
     const ctx = offscreenCanvas.getContext('2d', { alpha: false })
 
@@ -307,34 +343,84 @@ async function makeImageFromMap(map: MapInformation, scaleDown: number, blockSiz
         ctx.fillStyle = 'gray'
     }
 
-    ctx.fillRect(0, 0, map.width * 2 * blockSize / scaleDown, map.height * blockSize / scaleDown)
+    //ctx.fillRect(0, 0, map.width * 2 * renderOptions.blockSize / renderOptions.scaleDown, map.height * renderOptions.blockSize / renderOptions.scaleDown)
 
-    terrain.forEach(({point, below, downRight}) => {
-        if (point.x % scaleDown === 0 && point.y % scaleDown === 0) {
+    terrain.forEach(({ point, below, downRight }) => {
+        if (point.x % renderOptions.scaleDown === 0 && point.y % renderOptions.scaleDown === 0) {
             const colorBelow = INT_TO_VEGETATION_COLOR.get(below)
             const colorDownRight = INT_TO_VEGETATION_COLOR.get(downRight)
 
             // Use height - y to translate between context 2d coordinate system where (0, 0) is upper left
             // and the settlers game point where (0, 0) is bottom left
             if (colorBelow && [WATER_1, BUILDABLE_WATER, WATER_2].includes(below)) {
-                ctx.fillStyle = arrayToRgbStyle(colorBelow)
-                ctx.fillRect(point.x * blockSize / scaleDown, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
+                drawPixel(ctx, { x: point.x / 2, y: point.y }, colorBelow)
+
+                //ctx.fillStyle = arrayToRgbStyle(colorBelow)
+                //ctx.fillRect(point.x * renderOptions.blockSize / renderOptions.scaleDown, (map.height - point.y) * renderOptions.blockSize / renderOptions.scaleDown, renderOptions.blockSize, renderOptions.blockSize)
             }
 
             if (colorDownRight && ![WATER_1, BUILDABLE_WATER, WATER_2].includes(downRight)) {
-                ctx.fillStyle = arrayToRgbStyle(colorDownRight)
-                ctx.fillRect((point.x * blockSize / scaleDown) + blockSize, (map.height - point.y) * blockSize / scaleDown, blockSize, blockSize)
+                drawPixel(ctx, { x: (point.x / 2) + 1, y: point.y }, colorDownRight)
+
+                //ctx.fillStyle = arrayToRgbStyle(colorDownRight)
+                //ctx.fillStyle = arrayToRgbStyle(colorDownRight)
+                //ctx.fillRect((point.x * renderOptions.blockSize / renderOptions.scaleDown) + renderOptions.blockSize, (map.height - point.y) * renderOptions.blockSize / renderOptions.scaleDown, renderOptions.blockSize, renderOptions.blockSize)
             }
         }
     })
 
     // Draw starting points
-    ctx.fillStyle = STARTING_POINT_COLOR
-    map.startingPoints.forEach(({ x, y }) => {
-        ctx.beginPath()
-        ctx.arc(x * blockSize / scaleDown, (map.height - y) * blockSize / scaleDown, 3, 0, 2 * Math.PI)
-        ctx.fill()
-    })
+    if (renderOptions.drawStartingPoints) {
+        ctx.fillStyle = STARTING_POINT_COLOR
+        map.startingPoints.forEach(({ x, y }) => {
+            ctx.beginPath()
+            ctx.arc(x * renderOptions.blockSize / renderOptions.scaleDown, (map.height - y) * renderOptions.blockSize / renderOptions.scaleDown, 3, 0, 2 * Math.PI)
+            ctx.fill()
+        })
+    }
+
+    // Draw player land
+    if (players) {
+        for (const player of players) {
+            const color = playerToColor(player.color)
+
+            player.ownedLand.forEach(point => {
+                drawPixel(ctx, { x: point.x / 2, y: point.y }, color, 0.3)
+            })
+        }
+    }
+
+    ctx.globalAlpha = 1
+
+    // Draw roads
+    if (roads) {
+        for (const road of roads) {
+            road.points.forEach(point => {
+                drawPixel(ctx, { x: point.x / 2, y: point.y }, 'burlywood')
+            })
+        }
+    }
+
+    // Draw houses
+    if (houses) {
+        for (const house of houses) {
+            drawPixel(ctx, { x: house.x / 2, y: house.y }, 'white')
+        }
+    }
+
+    // Draw fog of war
+    if (renderOptions.drawFogOfWar && discovered) {
+        ctx.fillStyle = 'black'
+
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width * 2; x++) {
+                if (!discovered?.has({ x: x * 2 + ((y % 2 == 0) ? 0 : 1), y })) {
+                    drawPixel(ctx, { x, y }, [0, 0, 0])
+                }
+            }
+        }
+    }
+
 
     const image = new Image()
 

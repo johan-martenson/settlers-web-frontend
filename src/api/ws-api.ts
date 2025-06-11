@@ -1,7 +1,7 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory, Tool } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority } from './ws/commands'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, getProductionStatistics, getLandStatistics, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority, getMap } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
@@ -222,7 +222,7 @@ type PlayerViewChanges = {
     newDecorations?: PointAndDecoration[]
     removedMessages?: GameMessageId[]
     transportPriority?: TransportCategory[]
-    changedToolQuotas?: {[key in Tool]: number}
+    changedToolQuotas?: { [key in Tool]: number }
 }
 
 type GameInformationChangedMessage = { gameInformation: GameInformation }
@@ -282,6 +282,7 @@ export type RoadListener = () => void
 export type ChatListener = () => void
 export type StatisticsListener = () => void
 export type TimeListener = (time: number) => void
+export type HousesAddedOrRemovedListener = () => void
 
 export type ActionListener = {
     actionStarted: (id: string, point: Point, action: Action) => void
@@ -302,7 +303,7 @@ export type TransportPriorityListener = (priority: TransportCategory[]) => void
 
 export type PlayerInformationListener = (playerInformation: PlayerInformation) => void
 
-export type ToolPrioListener = (quotas: {[key in Tool]: number}) => void
+export type ToolPrioListener = (quotas: { [key in Tool]: number }) => void
 
 export type GameListener = {
     onMonitoringStarted?: () => void
@@ -455,6 +456,7 @@ const api = {
     removeGameStateListener,
 
     // Maps
+    getMap,
     getMaps,
 
     // Map
@@ -559,6 +561,10 @@ const api = {
     cancelEvacuationForHouse,
     addHouseListener,
     removeHouseListener,
+    addHousesAddedOrRemovedListener,
+    removeHousesAddedOrRemovedListener,
+
+    // Flags
 
     // Flag
     placeFlag,
@@ -619,6 +625,8 @@ const transportPriorityListeners: Set<TransportPriorityListener> = new Set()
 const timeListeners: Set<TimeListener> = new Set()
 const playerInformationListeners: Map<PlayerId, Set<PlayerInformationListener>> = new Map()
 const toolPrioListeners: Set<ToolPrioListener> = new Set()
+const housesAddedOrRemovedListeners: Set<HousesAddedOrRemovedListener> = new Set()
+
 
 // State - misc
 const objectsWithDetailedMonitoring = new Set<HouseId | FlagId>()
@@ -648,7 +656,7 @@ function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
 
                 gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged('EXPIRED'))
             }
-        })().then()
+        })()
     }
 }
 
@@ -721,7 +729,8 @@ addMessageListener(onMessageReceived)
  * 
  * @param {MessagesListener} listener - The listener to add.
  * @returns {void}
- */function addMessagesListener(listener: MessagesListener): void {
+ */
+function addMessagesListener(listener: MessagesListener): void {
     messageListeners.add(listener)
 }
 
@@ -975,6 +984,26 @@ function removeDiscoveredPointsListener(listener: DiscoveredPointListener): void
 function addRoadsListener(listener: RoadListener): void {
     roadListeners.add(listener)
 }
+
+/**
+ * Adds a listener for adding or removing houses
+ * @param {HousesAddedOrRemovedListener} listener - The listener to add.
+ * @returns {void}
+ */
+function addHousesAddedOrRemovedListener(listener: HousesAddedOrRemovedListener): void {
+    housesAddedOrRemovedListeners.add(listener)
+}
+
+/**
+ * Removes a listener for adding or removing houses
+ * 
+ * @param {HousesAddedOrRemovedListener} - The listener to remove.
+ * @returns {void}
+ */
+function removeHousesAddedOrRemovedListener(listener: HousesAddedOrRemovedListener): void {
+    housesAddedOrRemovedListeners.delete(listener)
+}
+
 
 /**
  * Adds a listener for a specific flag's changes.
@@ -1263,15 +1292,15 @@ function startTimers(): void {
     workerWalkingTimer = setInterval(async () => {
         for (const worker of api.workers.values()) {
 
-            /* Filter workers without any planned path */
+            // Filter workers without any planned path
             if (!worker.plannedPath || worker.plannedPath.length === 0) {
                 continue
             }
 
-            /* Take a step forward */
+            // Take a step forward
             worker.percentageTraveled = worker.percentageTraveled + 5
 
-            /* Worker is at an exact point */
+            // Worker is at an exact point
             if (worker.percentageTraveled === 100) {
 
                 // The point that the worker was going towards is now the current position
@@ -1303,7 +1332,7 @@ function startTimers(): void {
 
                 worker.betweenPoints = false
 
-                /* Show that the worker is walking between two points */
+                // Show that the worker is walking between two points
             } else {
                 worker.betweenPoints = true
             }
@@ -1335,17 +1364,17 @@ function startTimers(): void {
 
         for (const wildAnimal of api.wildAnimals.values()) {
 
-            /* Filter workers without any planned path */
+            // Filter workers without any planned path
             if (!wildAnimal.path || wildAnimal.path.length === 0) {
                 continue
             }
 
             wildAnimal.percentageTraveled = wildAnimal.percentageTraveled + 5
 
-            /* Get the next point */
+            // Get the next point
             const next = wildAnimal.path[0]
 
-            /* Clear the planned path for workers that have reached the target */
+            // Clear the planned path for workers that have reached the target
             if (wildAnimal.percentageTraveled === 100) {
 
                 if (wildAnimal.next) {
@@ -1367,7 +1396,7 @@ function startTimers(): void {
 
                 wildAnimal.betweenPoints = false
 
-                /* Show that the worker is walking between two points */
+                // Show that the worker is walking between two points
             } else {
                 wildAnimal.betweenPoints = true
             }
@@ -1783,7 +1812,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
         api.transportPriority = playerViewChanges.transportPriority
     }
 
-    /* Finally, notify listeners when all data is updated */
+    // Finally, notify listeners when all data is updated
     if (playerViewChanges.newDiscoveredLand) {
         const newDiscoveredLand = new PointSet(playerViewChanges.newDiscoveredLand)
         discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
@@ -1811,6 +1840,10 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     if (playerViewChanges.newRoads !== undefined || playerViewChanges.removedRoads !== undefined) {
         roadListeners.forEach(roadListener => roadListener())
+    }
+
+    if (playerViewChanges.newBuildings !== undefined || playerViewChanges.removedBuildings !== undefined) {
+        housesAddedOrRemovedListeners.forEach(listener => listener())
     }
 
     if (playerViewChanges.changedBuildings) {
@@ -1860,7 +1893,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSet | Point[]): void {
         const terrainAtPointUpRight = api.allTiles.get(pointUpRight)
         const terrainAtPointUpLeft = api.allTiles.get(pointUpLeft)
 
-        /* Tile down left */
+        // Tile down left
         if (terrainAtPointLeft && terrainAtPointDownLeft && isLeftDiscovered && isDownLeftDiscovered &&
             !api.pointsWithDownRightTileDiscovered.has(pointLeft)) {
             api.discoveredDownRightTiles.add(
@@ -1876,7 +1909,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSet | Point[]): void {
             api.pointsWithDownRightTileDiscovered.add(pointLeft)
         }
 
-        /* Tile up right */
+        // Tile up right
         if (terrainAtPointUpRight && terrainAtPointRight && isUpRightDiscovered && isRightDiscovered &&
             !api.pointsWithBelowTileDiscovered.has(pointUpRight)) {
             api.discoveredBelowTiles.add(
@@ -1892,7 +1925,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSet | Point[]): void {
             api.pointsWithBelowTileDiscovered.add(pointUpRight)
         }
 
-        /* Tile below */
+        // Tile below
         if (terrainAtPointDownLeft && terrainAtPointDownRight && isDownLeftDiscovered && isDownRightDiscovered &&
             !api.pointsWithBelowTileDiscovered.has(point)) {
             api.discoveredBelowTiles.add(
@@ -1908,7 +1941,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSet | Point[]): void {
             api.pointsWithBelowTileDiscovered.add(point)
         }
 
-        /* Tile down right */
+        // Tile down right
         if (terrainAtPointDownRight && terrainAtPointRight && isDownRightDiscovered && isRightDiscovered &&
             !api.pointsWithDownRightTileDiscovered.has(point)) {
 
@@ -1925,7 +1958,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSet | Point[]): void {
             api.pointsWithDownRightTileDiscovered.add(point)
         }
 
-        /* Tile up left */
+        // Tile up left
         if (isUpLeftDiscovered && isLeftDiscovered && terrainAtPointUpLeft && terrainAtPointLeft &&
             !api.pointsWithBelowTileDiscovered.has(pointUpLeft)) {
             api.discoveredBelowTiles.add(
@@ -1941,7 +1974,7 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSet | Point[]): void {
             api.pointsWithBelowTileDiscovered.add(pointUpLeft)
         }
 
-        /* Tile above */
+        // Tile above
         if (isUpLeftDiscovered && isUpRightDiscovered && terrainAtPointUpLeft && terrainAtPointUpRight &&
             !api.pointsWithDownRightTileDiscovered.has(pointUpLeft)) {
             api.discoveredDownRightTiles.add(

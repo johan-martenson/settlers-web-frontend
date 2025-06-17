@@ -108,6 +108,9 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'OWNED_BUILDINGS_ON_MAP'
     | 'OWNED_ROADS_ON_MAP'
     | 'GRAPH_OF_OWNED_AREA_ON_MAP'
+    | 'PLAY'
+    | 'PAUSE'
+    | 'FORWARD'
 
 type WorkerIconProps = {
     worker: WorkerType

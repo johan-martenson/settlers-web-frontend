@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from '../components/expand_collapse_toggle/expand_collapse_toggle'
 import './music_player.css'
-import { FastForward24Filled, Pause24Filled, Play24Filled } from '@fluentui/react-icons'
 import { ItemContainer } from '../components/item_container'
+import { UiIcon } from '../icons/icon'
 
 // Types
 type AudioAtlasSongs = {
@@ -125,11 +125,11 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
                     <>
                         <div>
                             {playing ?
-                                <span><Button onClick={() => pause(currentSong, songs)} icon={<Pause24Filled />} appearance='transparent' /></span>
+                                <span><Button onClick={() => pause(currentSong, songs)} appearance='transparent' ><UiIcon type='PAUSE' scale={0.6} /></Button></span>
                                 :
-                                <span><Button onClick={() => resume(currentSong, mode, songs, volume)} icon={<Play24Filled />} appearance='transparent' /></span>
+                                <span><Button onClick={() => resume(currentSong, mode, songs, volume)} appearance='transparent' ><UiIcon type='PLAY' scale={0.6} /></Button></span>
                             }
-                            <span><Button onClick={() => next(currentSong, mode, songs, volume)} icon={<FastForward24Filled />} appearance='transparent' /></span>
+                            <span><Button onClick={() => next(currentSong, mode, songs, volume)} appearance='transparent' ><UiIcon type='FORWARD' scale={0.6} /></Button></span>
                         </div>
 
                         <ItemContainer>

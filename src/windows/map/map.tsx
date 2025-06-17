@@ -3,7 +3,6 @@ import { ButtonRow, Window } from "../../components/dialog"
 import { makeImageFromMap } from "../../utils/utils"
 import { api } from "../../api/ws-api"
 import { Button } from "@fluentui/react-components"
-import { HouseInformation, RoadInformation } from "../../api/types"
 import { UiIcon } from "../../icons/icon"
 
 type MapViewProps = {
@@ -18,34 +17,33 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
     const [drawHouses, setDrawHouses] = useState<boolean>(true)
     const [baseMap, setBaseMap] = useState<HTMLImageElement>()
     const [drawRoads, setDrawRoads] = useState<boolean>(true)
-    const [houses, setHouses] = useState<HouseInformation[]>(Array.from(api.houses.values()))
-    const [roads, setRoads] = useState<RoadInformation[]>(Array.from(api.roads.values()))
+    const [drawCount, setDrawCount] = useState<number>(0)
     const [hover, setHover] = useState<string>()
 
     useEffect(
         () => {
-            function roadsChanged() {
-                setRoads(Array.from(api.roads.values()))
-            }
-
-            function housesChanged() {
-                setHouses(Array.from(api.houses.values()))
+            function redraw() {
+                setDrawCount(prev => prev + 1)
             }
 
             function subscribeToChanges() {
-                api.addHousesAddedOrRemovedListener(housesChanged)
-                api.addRoadsListener(roadsChanged)
+                api.addHousesAddedOrRemovedListener(redraw)
+                api.addRoadsListener(redraw)
+                api.addOwnedLandListener(redraw)
+                api.addDiscoveredPointsListener(redraw)
             }
 
             function unsubscribeFromChanges() {
-                api.removeHousesAddedOrRemovedListener(housesChanged)
-                api.removeRoadsListener(roadsChanged)
+                api.removeHousesAddedOrRemovedListener(redraw)
+                api.removeRoadsListener(redraw)
+                api.removeOwnedLandListener(redraw)
+                api.removeDiscoveredPointsListener(redraw)
             }
 
             subscribeToChanges()
 
             return () => unsubscribeFromChanges()
-        }, [api.roads])
+        }, [])
 
     useEffect(
         () => {
@@ -78,7 +76,7 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
             }
 
             getAndRenderMap()
-        }, [api.map, api.discoveredPoints, drawFogOfWar, drawHouses, drawPlayerLand, drawRoads, roads, houses])
+        }, [api.map, api.discoveredPoints, drawFogOfWar, drawHouses, drawPlayerLand, drawRoads, drawCount])
 
     return (
         <Window onClose={onClose} onRaise={onRaise} heading='Map' hoverInfo={hover}>

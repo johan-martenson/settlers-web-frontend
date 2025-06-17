@@ -220,6 +220,22 @@ org.appland.settlers.model.InvalidGameLogicException: No way on existing roads f
         at java.base/java.lang.Thread.run(Thread.java:1575)
 null
 
+40. Bug in WoodcutterWorker 
+    Exception during game loop: org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (133, 69) to (134, 68)
+org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (133, 69) to (134, 68)
+        at org.appland.settlers.model.actors.Worker.setTarget(Worker.java:524)
+        at org.appland.settlers.model.actors.Worker.setTarget(Worker.java:484)
+        at org.appland.settlers.model.actors.WoodcutterWorker.onIdle(WoodcutterWorker.java:136)
+        at org.appland.settlers.model.actors.Worker.stepTime(Worker.java:201)
+        at org.appland.settlers.model.GameMap.stepTime(GameMap.java:321)
+        at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:93)
+        at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+        at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:369)
+        at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:310)
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1095)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:619)
+        at java.base/java.lang.Thread.run(Thread.java:1447)
+
 Todo 2.0
 ========
 

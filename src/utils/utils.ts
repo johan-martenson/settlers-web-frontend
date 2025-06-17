@@ -79,13 +79,13 @@ function isContext2D(context: RenderingContext): context is CanvasRenderingConte
 }
 
 function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInformation): Array<TerrainAtPoint> {
-    let start = 1
+    let start = 0
     let count = 0
 
     const terrain = new Array(((terrainInformation.width * terrainInformation.height) / 2) + 1)
 
-    for (let y = 1; y < terrainInformation.height; y++) {
-        for (let x = start; x + 1 < terrainInformation.width; x += 2) {
+    for (let y = 0; y < terrainInformation.height; y++) {
+        for (let x = start; x + 2 < terrainInformation.width; x += 2) {
             const point: Point = {
                 x: Number(x),
                 y: Number(y)
@@ -101,7 +101,7 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
         }
 
         if (start === 1) {
-            start = 2
+            start = 0
         } else {
             start = 1
         }
@@ -305,36 +305,39 @@ async function makeImageFromMap(
     // Utility functions
     const pixelWidth = renderOptions.blockSize
     const pixelHeight = renderOptions.blockSize
+    const scaleDown = renderOptions.scaleDown
+
     function drawPixel(ctx: CanvasRenderingContext2D, point: Point, color: RgbColorArray | string, transparency = 1) {
-        if (typeof color === 'string') {
-            ctx.fillStyle = color
-        } else {
-            ctx.fillStyle = arrayToRgbStyle(color)
-        }
+        ctx.fillStyle = typeof color === 'string'
+                        ? color
+                        : arrayToRgbStyle(color)
 
         ctx.globalAlpha = transparency
 
         ctx.fillRect(
-            (point.x * pixelWidth / renderOptions.scaleDown) * 2 + pixelWidth, // x
-            (map.height - point.y) * pixelHeight / renderOptions.scaleDown, // y
+            (point.x * pixelWidth / scaleDown) * 2, // x
+            (map.height - point.y) * pixelHeight / scaleDown, // y
             pixelWidth, // width
             pixelHeight) // height
     }
 
-    // Load data
+    // Load data - tbd: move this to the caller
     const terrainInformation = await api.getTerrainForMap(map.id)
     const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
 
     const offscreenCanvas = document.createElement('canvas')
-    offscreenCanvas.width = map.width * 2 * renderOptions.blockSize / renderOptions.scaleDown
-    offscreenCanvas.height = map.height * renderOptions.blockSize / renderOptions.scaleDown
+    offscreenCanvas.width = map.width * 2 * pixelWidth / scaleDown
+    offscreenCanvas.height = map.height * pixelHeight / scaleDown
 
     const ctx = offscreenCanvas.getContext('2d', { alpha: false })
 
     if (!ctx) {
+        console.error('Failed to create context')
+
         return undefined
     }
 
+    // Optimize by drawing a blue rectangle for water
     const waterColor = INT_TO_VEGETATION_COLOR.get(WATER_1)
 
     if (waterColor) {
@@ -343,28 +346,20 @@ async function makeImageFromMap(
         ctx.fillStyle = 'gray'
     }
 
-    //ctx.fillRect(0, 0, map.width * 2 * renderOptions.blockSize / renderOptions.scaleDown, map.height * renderOptions.blockSize / renderOptions.scaleDown)
+    ctx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height)
 
+    // Draw the non-water terrain on top
     terrain.forEach(({ point, below, downRight }) => {
         if (point.x % renderOptions.scaleDown === 0 && point.y % renderOptions.scaleDown === 0) {
             const colorBelow = INT_TO_VEGETATION_COLOR.get(below)
             const colorDownRight = INT_TO_VEGETATION_COLOR.get(downRight)
 
-            // Use height - y to translate between context 2d coordinate system where (0, 0) is upper left
-            // and the settlers game point where (0, 0) is bottom left
-            if (colorBelow && [WATER_1, BUILDABLE_WATER, WATER_2].includes(below)) {
+            if (colorBelow && ![WATER_1, BUILDABLE_WATER, WATER_2].includes(below)) {
                 drawPixel(ctx, { x: point.x / 2, y: point.y }, colorBelow)
-
-                //ctx.fillStyle = arrayToRgbStyle(colorBelow)
-                //ctx.fillRect(point.x * renderOptions.blockSize / renderOptions.scaleDown, (map.height - point.y) * renderOptions.blockSize / renderOptions.scaleDown, renderOptions.blockSize, renderOptions.blockSize)
             }
 
             if (colorDownRight && ![WATER_1, BUILDABLE_WATER, WATER_2].includes(downRight)) {
                 drawPixel(ctx, { x: (point.x / 2) + 1, y: point.y }, colorDownRight)
-
-                //ctx.fillStyle = arrayToRgbStyle(colorDownRight)
-                //ctx.fillStyle = arrayToRgbStyle(colorDownRight)
-                //ctx.fillRect((point.x * renderOptions.blockSize / renderOptions.scaleDown) + renderOptions.blockSize, (map.height - point.y) * renderOptions.blockSize / renderOptions.scaleDown, renderOptions.blockSize, renderOptions.blockSize)
             }
         }
     })
@@ -390,8 +385,6 @@ async function makeImageFromMap(
         }
     }
 
-    ctx.globalAlpha = 1
-
     // Draw roads
     if (roads) {
         for (const road of roads) {
@@ -410,12 +403,10 @@ async function makeImageFromMap(
 
     // Draw fog of war
     if (renderOptions.drawFogOfWar && discovered) {
-        ctx.fillStyle = 'black'
-
         for (let y = 0; y < map.height; y++) {
-            for (let x = 0; x < map.width * 2; x++) {
-                if (!discovered?.has({ x: x * 2 + ((y % 2 == 0) ? 0 : 1), y })) {
-                    drawPixel(ctx, { x, y }, [0, 0, 0])
+            for (let x = 0; x < map.width; x++) {
+                if (!discovered?.has({ x: x * 2 + ((y % 2 === 0) ? 0 : 1), y })) {
+                    drawPixel(ctx, { x, y }, 'black')
                 }
             }
         }

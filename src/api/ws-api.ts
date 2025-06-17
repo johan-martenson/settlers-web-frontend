@@ -162,6 +162,8 @@ type BorderChange = {
     playerId: PlayerId
     newBorder: Point[]
     removedBorder: Point[]
+    newOwnedLand: Point[]
+    removedOwnedLand: Point[]
 }
 
 type ChangedAvailableConstruction = Point & { available: AvailableConstruction[] }
@@ -283,6 +285,7 @@ export type ChatListener = () => void
 export type StatisticsListener = () => void
 export type TimeListener = (time: number) => void
 export type HousesAddedOrRemovedListener = () => void
+export type OwnedLandListener = () => void
 
 export type ActionListener = {
     actionStarted: (id: string, point: Point, action: Action) => void
@@ -494,6 +497,8 @@ const api = {
     addActionsListener,
     addDiscoveredPointsListener,
     removeDiscoveredPointsListener,
+    addOwnedLandListener,
+    removeOwnedLandListener,
     addMessagesListener,
     removeMessagesListener,
     removeMessage,
@@ -626,6 +631,7 @@ const timeListeners: Set<TimeListener> = new Set()
 const playerInformationListeners: Map<PlayerId, Set<PlayerInformationListener>> = new Map()
 const toolPrioListeners: Set<ToolPrioListener> = new Set()
 const housesAddedOrRemovedListeners: Set<HousesAddedOrRemovedListener> = new Set()
+const ownedLandListeners: Set<OwnedLandListener> = new Set()
 
 
 // State - misc
@@ -973,6 +979,26 @@ function addDiscoveredPointsListener(listener: DiscoveredPointListener): void {
  */
 function removeDiscoveredPointsListener(listener: DiscoveredPointListener): void {
     discoveredPointListeners.delete(listener)
+}
+
+/**
+ * Add a listener for owned land.
+ * 
+ * @param {OwnedLandListener} listener - The listener to add.
+ * @returns {void}
+ */
+function addOwnedLandListener(listener: OwnedLandListener): void {
+    ownedLandListeners.add(listener)
+}
+
+/**
+ * Removes a listener for onwed land.
+ * 
+ * @param {OwnedLandListener} listener - The listener to remove.
+ * @returns {void}
+ */
+function removeOwnedLandListener(listener: OwnedLandListener): void {
+    ownedLandListeners.delete(listener)
 }
 
 /**
@@ -1776,6 +1802,14 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     if (playerViewChanges.changedBorders) {
         syncChangedBorders(playerViewChanges.changedBorders)
+
+        playerViewChanges.changedBorders.forEach(changedBorder => {
+            const player = api.players.get(changedBorder.playerId)
+
+            if (player) {
+                player.ownedLand = ([...player.ownedLand, ...changedBorder.newOwnedLand]).filter(point => !changedBorder.removedOwnedLand.includes(point))
+            }
+        })
     }
 
     playerViewChanges.newCrops?.forEach(crop => api.crops.set(crop.id, serverSentCropToLocal(crop)))
@@ -1807,22 +1841,19 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
         }
     }
 
-    const transportPriorityChanged = ('transportPriority' in playerViewChanges)
     if (playerViewChanges.transportPriority) {
         api.transportPriority = playerViewChanges.transportPriority
     }
 
-    // Finally, notify listeners when all data is updated
+    playerViewChanges.newMessages?.forEach(message => api.messages.set(message.id, message))
+    playerViewChanges.readMessages?.forEach(message => api.messages.set(message.id, message))
+    playerViewChanges.removedMessages?.forEach(messageId => api.messages.delete(messageId))
+
+    // Notify listeners when all data is updated
     if (playerViewChanges.newDiscoveredLand) {
         const newDiscoveredLand = new PointSet(playerViewChanges.newDiscoveredLand)
         discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
     }
-
-    playerViewChanges.newMessages?.forEach(message => api.messages.set(message.id, message))
-
-    playerViewChanges.readMessages?.forEach(message => api.messages.set(message.id, message))
-
-    playerViewChanges.removedMessages?.forEach(messageId => api.messages.delete(messageId))
 
     if (playerViewChanges.newMessages !== undefined || playerViewChanges.readMessages !== undefined || playerViewChanges.removedMessages !== undefined) {
         messageListeners.forEach(listener => listener(
@@ -1850,10 +1881,14 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
         notifyHouseListeners(playerViewChanges.changedBuildings)
     }
 
-    if (transportPriorityChanged && api.transportPriority) {
+    if (playerViewChanges.transportPriority !== undefined && api.transportPriority) {
         for (const listener of transportPriorityListeners) {
             listener(api.transportPriority)
         }
+    }
+
+    if (playerViewChanges?.changedBorders !== undefined) {
+        ownedLandListeners.forEach(listener => listener())
     }
 
     timeListeners.forEach(listener => listener(api.time))

@@ -15,7 +15,7 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
     const [drawFogOfWar, setDrawFogOfWar] = useState<boolean>(true)
     const [drawPlayerLand, setDrawPlayerLand] = useState<boolean>(true)
     const [drawHouses, setDrawHouses] = useState<boolean>(true)
-    const [baseMap, setBaseMap] = useState<HTMLImageElement>()
+    const [mapImage, setMapImage] = useState<HTMLImageElement>()
     const [drawRoads, setDrawRoads] = useState<boolean>(true)
     const [drawCount, setDrawCount] = useState<number>(0)
     const [hover, setHover] = useState<string>()
@@ -65,9 +65,9 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
                         drawPlayerLand ? api.players.values() : undefined
                     )
 
-                    if (mapImage) {
-                        setBaseMap(mapImage)
-                    } else {
+                    setMapImage(mapImage)
+
+                    if (!mapImage) {
                         console.error('Failed to create map image')
                     }
                 } else {
@@ -80,7 +80,7 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
 
     return (
         <Window onClose={onClose} onRaise={onRaise} heading='Map' hoverInfo={hover}>
-            <img src={baseMap?.src ?? ''} />
+            <img src={mapImage?.src ?? ''} />
             <ButtonRow>
                 <Button
                     onClick={() => setDrawPlayerLand(prev => !prev)}

@@ -1857,6 +1857,10 @@ function GameCanvas({
             overlayCtx.fillStyle = 'yellow'
 
             for (const house of api.houses.values()) {
+                if (api.playerId === undefined || house.playerId !== api.playerId) {
+                    continue
+                }
+
                 if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                     continue
                 }

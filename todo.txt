@@ -1,11 +1,13 @@
 Todo 1.0
 ========
 
--23. Types have both e.g. WELL_WORKER and WellWorker. Unify into one.
+-28. Soldiers should flash white when they get hit
+-27. Soldiers should not stop for a short time between each move in a fight
+-26. Workers should stop instead of passing by a flag where a fight is happening
+-24. Other player's border is not visible when page is reloaded
+-23. Update military building window when a soldier is promoted
 -22. Soldiers fighting and walking apart - right/left is not in sync.
 -21. After reload enemy border is not visible
--20. Construction window should not be possible to open several times for same point
--19. Construction window for available mine should show building construction by default
 -18. Command should show available mine
 -17. Roads did not show as promoted. Reload fixed it
 -16. Initial land measurement is wrong for other players
@@ -204,8 +206,13 @@ java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.buildi
         at java.base/java.lang.Thread.run(Thread.java:1575)
 
 39. Bug in WoodcutterWorker
+    - Seems like the woodcutter worker tries to go from the house to the flag and there is no way
+    - How can this happen?
+       - Is the house torn down or the flag removed so the road doesn't exist anymore?
+       - Or, is there a fault in the path finding algorithm?
+
     Exception during game loop: org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (50, 66) to (51, 65)
-org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (50, 66) to (51, 65)
+      org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (50, 66) to (51, 65)
         at org.appland.settlers.model.actors.Worker.setTarget(Worker.java:524)
         at org.appland.settlers.model.actors.Worker.setTarget(Worker.java:484)
         at org.appland.settlers.model.actors.WoodcutterWorker.onIdle(WoodcutterWorker.java:136)
@@ -220,15 +227,96 @@ org.appland.settlers.model.InvalidGameLogicException: No way on existing roads f
         at java.base/java.lang.Thread.run(Thread.java:1575)
 null
 
-40. Bug in WoodcutterWorker 
-    Exception during game loop: org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (133, 69) to (134, 68)
-org.appland.settlers.model.InvalidGameLogicException: No way on existing roads from (133, 69) to (134, 68)
-        at org.appland.settlers.model.actors.Worker.setTarget(Worker.java:524)
-        at org.appland.settlers.model.actors.Worker.setTarget(Worker.java:484)
-        at org.appland.settlers.model.actors.WoodcutterWorker.onIdle(WoodcutterWorker.java:136)
-        at org.appland.settlers.model.actors.Worker.stepTime(Worker.java:201)
+40.
+    Update border
+Buildings: [Headquarter with inventory {IRON=16, COAL=16, WOOD=24, PLANK=44, STONE=68, BREAD=8, FISH=4, MEAT=6, DONKEY=8, PRIVATE=51, FORESTER=4, WOODCUTTER_WORKER=8, STONEMASON=4, CARPENTER=4, MINER=10, ARMORER=4, GEOLOGIST=6, SCOUT=16, HUNTER=2, AXE=6, SHOVEL=4, PICK_AXE=2, FISHING_ROD=6, BOW=2, SAW=2, CLEAVER=2, ROLLING_PIN=2, CRUCIBLE=4, SCYTHE=8, METALWORKER=2, BUILDER=10, HAMMER=16, BOAT=12, PLANER=6, Headquarter with inventory {IRON=16, COAL=31, PLANK=227, STONE=205, WATER=142, BREAD=107, MEAT=1, PRIVATE=49, FORESTER=3, WOODCUTTER_WORKER=6, STONEMASON=3, CARPENTER=3, MINER=9, ARMORER=4, GEOLOGIST=7, SCOUT=16, HUNTER=1, AXE=6, SHOVEL=4, PICK_AXE=1, FISHING_ROD=6, BOW=2, SAW=2, CLEAVER=2, ROLLING_PIN=1, CRUCIBLE=4, SCYTHE=7, METALWORKER=2, BUILDER=13, HAMMER=16, BOAT=12, PLANER=6, HELPER=-1, Headquarter with inventory {IRON=16, COAL=16, PLANK=257, STONE=156, BREAD=8, FISH=4, MEAT=6, DONKEY=2, PRIVATE=45, FORESTER=3, WOODCUTTER_WORKER=6, STONEMASON=4, CARPENTER=3, MINER=10, ARMORER=4, GEOLOGIST=6, SCOUT=16, HUNTER=2, AXE=6, SHOVEL=4, PICK_AXE=2, FISHING_ROD=6, BOW=2, SAW=2, CLEAVER=2, ROLLING_PIN=2, CRUCIBLE=4, SCYTHE=8, METALWORKER=2, BUILDER=11, HAMMER=16, BOAT=12, PLANER=6, Headquarter with inventory {IRON=16, COAL=16, PLANK=250, STONE=66, BREAD=8, FISH=4, MEAT=6, DONKEY=5, PRIVATE=51, FORESTER=3, WOODCUTTER_WORKER=7, STONEMASON=4, CARPENTER=3, MINER=10, ARMORER=4, GEOLOGIST=6, SCOUT=16, HUNTER=2, AXE=6, SHOVEL=4, PICK_AXE=2, FISHING_ROD=6, BOW=2, SAW=2, CLEAVER=2, ROLLING_PIN=2, CRUCIBLE=4, SCYTHE=8, METALWORKER=2, BUILDER=10, HAMMER=16, BOAT=12, PLANER=6, ForesterHut at Flag (146, 26) with nothing in queue and state: OCCUPIED, ForesterHut at Flag (40, 20) with nothing in queue and state: OCCUPIED, ForesterHut at Flag (139, 73) (stacked cargo: WOOD) with nothing in queue and state: OCCUPIED, Woodcutter at Flag (148, 24) with nothing in queue and state: OCCUPIED, Woodcutter at Flag (144, 24) (stacked cargo: WHEAT) with nothing in queue and state: OCCUPIED, Woodcutter at Flag (42, 18) with nothing in queue and state: OCCUPIED, Woodcutter at Flag (38, 18) with nothing in queue and state: OCCUPIED, Woodcutter at Flag (141, 75) with nothing in queue and state: PLANNED, Woodcutter at Flag (137, 71) with nothing in queue and state: OCCUPIED, Sawmill at Flag (141, 27) (stacked cargo: PLANK) with [Cargo of plank to Headquarter (143, 29), at (141, 27)] in queue and state: OCCUPIED, Sawmill at Flag (35, 21) with nothing in queue and state: OCCUPIED, Sawmill at Flag (136, 78) with nothing in queue and state: OCCUPIED, CoalMine at Flag (152, 22) with [] in queue and state: OCCUPIED, CoalMine at Flag (147, 21) with nothing in queue and state: PLANNED, HunterHut at Flag (143, 31) with nothing in queue and state: OCCUPIED, Barracks at Flag (130, 28) with nothing in queue and state: OCCUPIED, Farm at Flag (147, 31) with nothing in queue and state: OCCUPIED, Well at Flag (140, 30) with nothing in queue and state: OCCUPIED, Mill at Flag (140, 24) with nothing in queue and state: OCCUPIED, Bakery at Flag (138, 28) with [] in queue and state: OCCUPIED, GuardHouse at Flag (50, 24) with nothing in queue and state: OCCUPIED, Quarry at Flag (73, 27) with nothing in queue and state: PLANNED, GuardHouse at Flag (62, 24) with nothing in queue and state: OCCUPIED, GuardHouse at Flag (152, 36) with nothing in queue and state: OCCUPIED, GuardHouse at Flag (119, 27) with nothing in queue and state: OCCUPIED, Quarry at Flag (97, 23) with nothing in queue and state: OCCUPIED, GuardHouse at Flag (106, 28) with nothing in queue and state: OCCUPIED, Barracks at Flag (80, 28) with nothing in queue and state: OCCUPIED, GuardHouse at Flag (92, 28) with nothing in queue and state: OCCUPIED]
+Caused update: Barracks at Flag (80, 28) with nothing in queue and state: OCCUPIED, MILITARY_BUILDING_OCCUPIED
+Headquarter with inventory {IRON=16, COAL=16, WOOD=24, PLANK=44, STONE=68, BREAD=8, FISH=4, MEAT=6, DONKEY=8, PRIVATE=51, FORESTER=4, WOODCUTTER_WORKER=8, STONEMASON=4, CARPENTER=4, MINER=10, ARMORER=4, GEOLOGIST=6, SCOUT=16, HUNTER=2, AXE=6, SHOVEL=4, PICK_AXE=2, FISHING_ROD=6, BOW=2, SAW=2, CLEAVER=2, ROLLING_PIN=2, CRUCIBLE=4, SCYTHE=8, METALWORKER=2, BUILDER=10, HAMMER=16, BOAT=12, PLANER=6
+Headquarter with inventory {IRON=16, COAL=31, PLANK=227, STONE=205, WATER=142, BREAD=107, MEAT=1, PRIVATE=49, FORESTER=3, WOODCUTTER_WORKER=6, STONEMASON=3, CARPENTER=3, MINER=9, ARMORER=4, GEOLOGIST=7, SCOUT=16, HUNTER=1, AXE=6, SHOVEL=4, PICK_AXE=1, FISHING_ROD=6, BOW=2, SAW=2, CLEAVER=2, ROLLING_PIN=1, CRUCIBLE=4, SCYTHE=7, METALWORKER=2, BUILDER=13, HAMMER=16, BOAT=12, PLANER=6, HELPER=-1
+Headquarter with inventory {IRON=16, COAL=16, PLANK=257, STONE=156, BREAD=8, FISH=4, MEAT=6, DONKEY=2, PRIVATE=45, FORESTER=3, WOODCUTTER_WORKER=6, STONEMASON=4, CARPENTER=3, MINER=10, ARMORER=4, GEOLOGIST=6, SCOUT=16, HUNTER=2, AXE=6, SHOVEL=4, PICK_AXE=2, FISHING_ROD=6, BOW=2, SAW=2, CLEAVER=2, ROLLING_PIN=2, CRUCIBLE=4, SCYTHE=8, METALWORKER=2, BUILDER=11, HAMMER=16, BOAT=12, PLANER=6
+Headquarter with inventory {IRON=16, COAL=16, PLANK=250, STONE=66, BREAD=8, FISH=4, MEAT=6, DONKEY=5, PRIVATE=51, FORESTER=3, WOODCUTTER_WORKER=7, STONEMASON=4, CARPENTER=3, MINER=10, ARMORER=4, GEOLOGIST=6, SCOUT=16, HUNTER=2, AXE=6, SHOVEL=4, PICK_AXE=2, FISHING_ROD=6, BOW=2, SAW=2, CLEAVER=2, ROLLING_PIN=2, CRUCIBLE=4, SCYTHE=8, METALWORKER=2, BUILDER=10, HAMMER=16, BOAT=12, PLANER=6
+ForesterHut at Flag (146, 26) with nothing in queue and state: OCCUPIED
+ForesterHut at Flag (40, 20) with nothing in queue and state: OCCUPIED
+ForesterHut at Flag (139, 73) (stacked cargo: WOOD) with nothing in queue and state: OCCUPIED
+Woodcutter at Flag (148, 24) with nothing in queue and state: OCCUPIED
+Woodcutter at Flag (144, 24) (stacked cargo: WHEAT) with nothing in queue and state: OCCUPIED
+Woodcutter at Flag (42, 18) with nothing in queue and state: OCCUPIED
+Woodcutter at Flag (38, 18) with nothing in queue and state: OCCUPIED
+Woodcutter at Flag (141, 75) with nothing in queue and state: PLANNED
+Woodcutter at Flag (137, 71) with nothing in queue and state: OCCUPIED
+Sawmill at Flag (141, 27) (stacked cargo: PLANK) with [Cargo of plank to Headquarter (143, 29), at (141, 27)] in queue and state: OCCUPIED
+Sawmill at Flag (35, 21) with nothing in queue and state: OCCUPIED
+Sawmill at Flag (136, 78) with nothing in queue and state: OCCUPIED
+CoalMine at Flag (152, 22) with [] in queue and state: OCCUPIED
+CoalMine at Flag (147, 21) with nothing in queue and state: PLANNED
+HunterHut at Flag (143, 31) with nothing in queue and state: OCCUPIED
+Barracks at Flag (130, 28) with nothing in queue and state: OCCUPIED
+Farm at Flag (147, 31) with nothing in queue and state: OCCUPIED
+Well at Flag (140, 30) with nothing in queue and state: OCCUPIED
+Mill at Flag (140, 24) with nothing in queue and state: OCCUPIED
+Bakery at Flag (138, 28) with [] in queue and state: OCCUPIED
+GuardHouse at Flag (50, 24) with nothing in queue and state: OCCUPIED
+Quarry at Flag (73, 27) with nothing in queue and state: PLANNED
+GuardHouse at Flag (62, 24) with nothing in queue and state: OCCUPIED
+GuardHouse at Flag (152, 36) with nothing in queue and state: OCCUPIED
+GuardHouse at Flag (119, 27) with nothing in queue and state: OCCUPIED
+Quarry at Flag (97, 23) with nothing in queue and state: OCCUPIED
+GuardHouse at Flag (106, 28) with nothing in queue and state: OCCUPIED
+Barracks at Flag (80, 28) with nothing in queue and state: OCCUPIED
+GuardHouse at Flag (92, 28) with nothing in queue and state: OCCUPIED
+Tearing down: Quarry at Flag (73, 27) with nothing in queue and state: PLANNED
+Exception during game loop: java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.buildings.Building.isBurningDown()" because "building" is null
+java.lang.NullPointerException: Cannot invoke "org.appland.settlers.model.buildings.Building.isBurningDown()" because "building" is null
+        at org.appland.settlers.model.GameMap.lambda$updateBorder$4(GameMap.java:965)
+        at java.base/java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:196)
+        at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1716)
+        at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:570)
+        at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:560)
+        at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:153)
+        at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:176)
+        at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:265)
+        at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:636)
+        at org.appland.settlers.model.GameMap.updateBorder(GameMap.java:971)
+        at org.appland.settlers.model.buildings.Building.deploySoldier(Building.java:306)
+        at org.appland.settlers.model.actors.Soldier.onEnterBuilding(Soldier.java:527)
+        at org.appland.settlers.model.actors.Worker.enterBuilding(Worker.java:362)
+        at org.appland.settlers.model.actors.Soldier.onArrival(Soldier.java:386)
+        at org.appland.settlers.model.actors.Worker.handleArrival(Worker.java:275)
+        at org.appland.settlers.model.actors.Worker.stepTime(Worker.java:174)
+        at org.appland.settlers.model.actors.Soldier.stepTime(Soldier.java:166)
         at org.appland.settlers.model.GameMap.stepTime(GameMap.java:321)
         at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:93)
+        at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+        at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:369)
+        at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:310)
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1095)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:619)
+
+41. Bug
+    Exception during game loop: org.appland.settlers.model.DeliveryNotPossibleException: Building Fortress at (117, 73) does not accept delivery of COIN
+org.appland.settlers.model.DeliveryNotPossibleException: Building Fortress at (117, 73) does not accept delivery of COIN
+        at org.appland.settlers.model.buildings.Building.putCargo(Building.java:354)
+        at org.appland.settlers.model.actors.Courier.deliverCargo(Courier.java:540)
+        at org.appland.settlers.model.actors.Courier.onArrival(Courier.java:327)
+        at org.appland.settlers.model.actors.Worker.handleArrival(Worker.java:275)
+        at org.appland.settlers.model.actors.Worker.stepTime(Worker.java:174)
+        at org.appland.settlers.model.GameMap.stepTime(GameMap.java:321)
+        at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:93)
+        at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+        at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:369)
+        at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:310)
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1095)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:619)
+        at java.base/java.lang.Thread.run(Thread.java:1447)
+
+42. Bug
+    Exception during game loop: org.appland.settlers.model.InvalidUserActionException: Can't place crop on non-harvested crop at (74, 58)
+org.appland.settlers.model.InvalidUserActionException: Can't place crop on non-harvested crop at (74, 58)
+        at org.appland.settlers.model.GameMap.placeCrop(GameMap.java:2045)
+        at org.appland.settlers.model.actors.Farmer.onIdle(Farmer.java:118)
+        at org.appland.settlers.model.actors.Worker.stepTime(Worker.java:201)
+        at org.appland.settlers.model.GameMap.stepTime(GameMap.java:323)
+        at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:89)
         at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
         at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:369)
         at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:310)

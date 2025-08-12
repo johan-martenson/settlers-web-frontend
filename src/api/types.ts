@@ -36,7 +36,9 @@ export type ChatMessage = {
     time: Time
 }
 
-export type GameSpeed = 'FAST' | 'NORMAL' | 'SLOW'
+const SPEED_VALUES = ['VERY_FAST', 'FAST', 'NORMAL', 'SLOW']
+export type GameSpeed = typeof SPEED_VALUES[number]
+export const GAME_SPEEDS: GameSpeed[] = [...SPEED_VALUES]
 
 export type AttackType = 'WEAK' | 'STRONG'
 
@@ -740,6 +742,11 @@ export type GameMessage = {
     )
 
 // Functions
+function isSpeed(speed: unknown): speed is GameSpeed {
+    return SPEED_VALUES.includes(speed as GameSpeed)
+}
+
+
 function isHeadquarterInformation(houseInformation: HouseInformation): houseInformation is HeadquarterInformation {
     return 'reserved' in houseInformation
 }
@@ -798,6 +805,7 @@ export {
     isBuilding,
     isNation,
     isPlayerColor,
+    isSpeed,
     WILD_ANIMAL_TYPES,
     SMALL_HOUSES,
     MEDIUM_HOUSES,

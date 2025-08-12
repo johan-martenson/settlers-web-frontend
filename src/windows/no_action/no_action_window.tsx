@@ -17,6 +17,7 @@ type NoActionWindowProps = {
     onShowAvailableConstruction: () => void
     onHideAvailableConstruction: () => void
     onStartMonitor: (point: Point) => void
+    onReturnToHeadquarters: () => void
     onRaise: () => void
     onClose: () => void
 }
@@ -31,6 +32,7 @@ function NoActionWindow({
     onShowAvailableConstruction,
     onHideAvailableConstruction,
     onStartMonitor,
+    onReturnToHeadquarters,
     onRaise,
     onClose
 }: NoActionWindowProps) {
@@ -39,13 +41,19 @@ function NoActionWindow({
     return (
         <Window className='no-action-window' heading='Monitor' onRaise={onRaise} onClose={onClose} hoverInfo={hoverInfo}>
             <ButtonRow>
+                <Button
+                    onClick={onReturnToHeadquarters}
+                    onMouseEnter={() => setHoverInfo('Show house names')}
+                    onMouseLeave={() => setHoverInfo(undefined)}>
+                    <UiIcon type='PLUS_RETURN_TO_HEADQUARTERS' scale={0.5} />
+                </Button>
                 {!areHouseTitlesVisible &&
                     <Button
                         onClick={onShowTitles}
                         onMouseEnter={() => setHoverInfo('Show house names')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' />
+                        <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
                     </Button>}
                 {areHouseTitlesVisible &&
                     <Button
@@ -53,7 +61,7 @@ function NoActionWindow({
                         onMouseEnter={() => setHoverInfo('Hide house names')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' />
+                        <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
                     </Button>}
                 {!isAvailableConstructionVisible &&
                     <Button
@@ -61,7 +69,7 @@ function NoActionWindow({
                         onMouseEnter={() => setHoverInfo('Show available construction')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='PLUS_AVAILABLE_BUILDINGS' />
+                        <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
                     </Button>}
 
                 {isAvailableConstructionVisible &&
@@ -70,7 +78,7 @@ function NoActionWindow({
                         onMouseEnter={() => setHoverInfo('Hide available construction')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
-                        <UiIcon type='PLUS_AVAILABLE_BUILDINGS' />
+                        <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
                     </Button>}
 
                 <Button
@@ -82,7 +90,7 @@ function NoActionWindow({
                     onMouseEnter={() => setHoverInfo('Open monitor')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    <UiIcon type='MAGNIFYING_GLASS' />
+                    <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
                 </Button>
             </ButtonRow>
         </Window>

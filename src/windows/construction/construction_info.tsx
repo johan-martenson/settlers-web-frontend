@@ -16,6 +16,7 @@ type ConstructionInfoProps = {
     houseTitlesVisible: boolean
     availableConstructionVisible: boolean
 
+    onSelectPoint: (point: Point) => void
     onStartMonitor: (point: Point) => void
     onRaise: () => void
     onClose: () => void
@@ -40,6 +41,7 @@ const ConstructionInfo = ({
     nation,
     houseTitlesVisible,
     availableConstructionVisible,
+    onSelectPoint,
     onStartNewRoad,
     onClose,
     onRaise,
@@ -50,12 +52,12 @@ const ConstructionInfo = ({
     onHideAvailableConstruction,
     ...props }: ConstructionInfoProps) => {
     const [point, setPoint] = useState<PointInformation>(props.point)
-    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads' | 'Monitor'>((canBuildHouse(point)) ? 'Buildings' : 'FlagsAndRoads')
+    const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads' | 'Monitor'>((canBuildHouse(point) || canBuildMine(point)) ? 'Buildings' : 'FlagsAndRoads')
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<SizeLowerCase>('small')
     const [hoverInfo, setHoverInfo] = useState<string | undefined>()
 
     const constructionOptions = new Map<'Buildings' | 'FlagsAndRoads', string>()
-    const constructionInitialSelection = canBuildHouse(point) ? 'Buildings' : 'FlagsAndRoads'
+    const constructionInitialSelection = (canBuildHouse(point) || canBuildMine(point)) ? 'Buildings' : 'FlagsAndRoads'
 
     useEffect(
         () => {
@@ -147,8 +149,9 @@ const ConstructionInfo = ({
                             <Button
                                 onClick={() => {
                                     console.info('Raising flag')
-                                    api.placeFlag(point)
 
+                                    api.placeFlag(point)
+                                    onSelectPoint(point)
                                     onClose()
                                 }}
                                 onMouseEnter={() => setHoverInfo('Raise flag')}
@@ -162,8 +165,8 @@ const ConstructionInfo = ({
                                     icon='road-1.png'
                                     onClick={() => {
                                         console.info('Starting to build road')
-                                        onStartNewRoad(point)
 
+                                        onStartNewRoad(point)
                                         onClose()
                                     }}
                                 >Build road</Button>
@@ -208,8 +211,9 @@ const ConstructionInfo = ({
                                 className='ConstructionItem'
                                 onClick={async () => {
                                     console.info('Creating house')
-                                    api.placeHouse(house, point)
 
+                                    api.placeHouse(house, point)
+                                    onSelectPoint(point)
                                     onClose()
                                 }}
                                 onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
@@ -233,8 +237,9 @@ const ConstructionInfo = ({
                                 className='ConstructionItem'
                                 onClick={async () => {
                                     console.info('Creating house')
-                                    api.placeHouse(house, point)
 
+                                    api.placeHouse(house, point)
+                                    onSelectPoint(point)
                                     onClose()
                                 }}
                                 onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}
@@ -259,8 +264,9 @@ const ConstructionInfo = ({
                                 className='ConstructionItem'
                                 onClick={async () => {
                                     console.info('Creating house')
-                                    api.placeHouse(house, point)
 
+                                    api.placeHouse(house, point)
+                                    onSelectPoint(point)
                                     onClose()
                                 }}
                                 onMouseEnter={() => setHoverInfo(`Place ${prettyHouse.toLowerCase()}`)}

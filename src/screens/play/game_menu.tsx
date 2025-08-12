@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
-import { GameSpeed } from '../../api/types'
+import { GameSpeed, isSpeed } from '../../api/types'
 import { Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle } from '@fluentui/react-components/unstable'
 import { Button, Divider, Dropdown, Field, Slider, SliderOnChangeData, Switch, SwitchOnChangeData, Option, SelectionEvents, OptionOnSelectData } from '@fluentui/react-components'
 import { Dismiss24Regular } from '@fluentui/react-icons'
@@ -126,11 +126,12 @@ const GameMenu = ({
                     <Field label='Set game speed'>
                         <Dropdown value={gameSpeed.charAt(0).toUpperCase() + gameSpeed.substring(1).toLocaleLowerCase()} onOptionSelect={(_event: SelectionEvents, data: OptionOnSelectData) => {
                             const speed = data.optionValue?.toUpperCase()
-                            if (speed === 'FAST' || speed === 'NORMAL' || speed === 'SLOW') {
-                                api.setGameSpeed(speed as GameSpeed)
+                            if (isSpeed(speed)) {
+                                api.setGameSpeed(speed)
                             }
                         }}
                         >
+                            <Option>Very_fast</Option>
                             <Option>Fast</Option>
                             <Option>Normal</Option>
                             <Option>Slow</Option>

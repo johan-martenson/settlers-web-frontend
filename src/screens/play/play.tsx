@@ -1099,6 +1099,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             onHideHouseTitles={() => setShowTitles(false)}
                             onShowAvailableConstruction={() => setShowAvailableConstruction(true)}
                             onHideAvailableConstruction={() => setShowAvailableConstruction(false)}
+                            onSelectPoint={point => setSelected(point)}
                         />
                     case 'FLAG':
                         return <FriendlyFlagInfo
@@ -1194,7 +1195,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             onHideTitles={() => setShowTitles(false)}
                             onShowAvailableConstruction={() => setShowAvailableConstruction(true)}
                             onHideAvailableConstruction={() => setShowAvailableConstruction(false)}
-                            onStartMonitor={(point: Point) => openWindow({ type: 'FOLLOW', point })} />
+                            onStartMonitor={(point: Point) => openWindow({ type: 'FOLLOW', point })}
+                            onReturnToHeadquarters={() => {
+                                const headquarter = getHeadquarterForPlayer(selfPlayerId)
+                                if (headquarter) {
+                                    scrollToPoint(headquarter)
+                                    setSelected(headquarter)
+                                }
+                            }}
+                        />
                     case 'MAP':
                         return <MapView
                             key={window.id}

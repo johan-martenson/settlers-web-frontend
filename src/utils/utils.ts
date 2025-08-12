@@ -73,37 +73,29 @@ const INT_TO_VEGETATION_COLOR = new Map<number, RgbColorArray>([
     [23, RGB_MOUNTAIN]
 ])
 
+
 // Functions
 function isContext2D(context: RenderingContext): context is CanvasRenderingContext2D {
     return true
 }
 
-function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInformation): Array<TerrainAtPoint> {
-    let start = 0
+function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInformation): TerrainAtPoint[] {
     let count = 0
 
-    const terrain = new Array(((terrainInformation.width * terrainInformation.height) / 2) + 1)
+    const terrain: TerrainAtPoint[] = []
 
-    for (let y = 0; y < terrainInformation.height; y++) {
-        for (let x = start; x + 2 < terrainInformation.width; x += 2) {
-            const point: Point = {
-                x: Number(x),
-                y: Number(y)
-            }
+    for (let y = 1; y < terrainInformation.height; y++) {
+        const startX = y % 2 === 0 ? 0 : 1
 
-            terrain[count] = {
-                point: point,
+        for (let x = startX; x + 2 < terrainInformation.width; x += 2) {
+            terrain.push({
+                point: { x, y },
                 below: terrainInformation.straightBelow[count],
                 downRight: terrainInformation.belowToTheRight[count],
                 height: terrainInformation.heights[count]
-            }
-            count++
-        }
+            })
 
-        if (start === 1) {
-            start = 0
-        } else {
-            start = 1
+            count++
         }
     }
 
@@ -309,8 +301,8 @@ async function makeImageFromMap(
 
     function drawPixel(ctx: CanvasRenderingContext2D, point: Point, color: RgbColorArray | string, transparency = 1) {
         ctx.fillStyle = typeof color === 'string'
-                        ? color
-                        : arrayToRgbStyle(color)
+            ? color
+            : arrayToRgbStyle(color)
 
         ctx.globalAlpha = transparency
 

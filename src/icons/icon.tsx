@@ -111,6 +111,7 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'PLAY'
     | 'PAUSE'
     | 'FORWARD'
+    | 'PLUS_RETURN_TO_HEADQUARTERS'
 
 type WorkerIconProps = {
     worker: WorkerType

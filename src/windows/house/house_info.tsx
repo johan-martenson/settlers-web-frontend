@@ -160,7 +160,7 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
         <Window
             className='house-info'
             onClose={onClose}
-            heading={`Military enemy building: ${buildingPretty(house.type)}`}
+            heading={`Enemy ${buildingPretty(house.type)}`}
             onRaise={onRaise}
             hoverInfo={hoverInfo}
         >
@@ -299,7 +299,7 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
                 onMouseEnter={() => setHoverInfo('Tear down')}
                 onMouseLeave={() => setHoverInfo(undefined)}
             >
-                <UiIcon type='DESTROY_BUILDING' />
+                <UiIcon type='DESTROY_BUILDING' scale={0.5} />
             </Button>
         </Window>
     )

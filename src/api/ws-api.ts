@@ -5,134 +5,6 @@ import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInforma
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
-// Using the monitor
-
-// Types
-
-// Type functions
-
-// Constants
-
-// Configuration
-
-// State
-
-// Functions exposed as part of WS API
-/**
- * Checks if a specific construction is available at a given point.
- * 
- * @param {Point} point - The point to check for construction availability.
- * @param {'FLAG'} whatToBuild - The type of construction to check availability for (e.g., 'FLAG').
- * @returns {boolean} - Returns `true` if the construction is available at the point, otherwise `false`.
- */
-function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
-    return whatToBuild === 'FLAG' && (api.availableConstruction.get(point)?.includes('FLAG') ?? false)
-}
-
-/**
- * Gets the height of the terrain at a specific point.
- * 
- * @param {Point} point - The point to retrieve the height from.
- * @returns {number} - The height of the terrain at the given point. Returns `0` if the point is not found.
- */
-function getHeight(point: Point): number {
-    return api.allTiles.get(point)?.height ?? 0
-}
-
-/**
- * Retrieves information about a house located at a specific point, if any.
- * 
- * @param {Point} point - The point to check for a house.
- * @returns {HouseInformation | undefined} - The house information at the given point, or `undefined` if no house is present.
- */
-function houseAt(point: Point): HouseInformation | undefined {
-    return api.housesAt.get(point)
-}
-
-/**
- * Retrieves local information on a specific point, including what can be built and what is present.
- * 
- * @param {Point} point - The point to retrieve information about.
- * @returns {PointInformationLocal} - Returns an object containing details about what can be built and what is currently present at the point.
- */
-function getInformationOnPointLocal(point: Point): PointInformationLocal {
-    const canBuild = api.availableConstruction.get(point)
-
-    const house = Array.from(api.houses.values())
-        .find(house => house.x === point.x && house.y === point.y)
-
-    if (house) {
-        return {
-            ...point,
-            canBuild: canBuild ?? [],
-            buildingId: house.id,
-            is: 'building'
-        }
-    }
-
-    const flag = Array.from(api.flags.values())
-        .find(flag => flag.x === point.x && flag.y === point.y)
-
-    if (flag) {
-        return {
-            x: point.x,
-            y: point.y,
-            canBuild: canBuild ?? [],
-            flagId: flag.id,
-            is: 'flag'
-        }
-    }
-
-    const road = Array.from(api.roads.values())
-        .find(road => road.points
-            .find(roadPoint => roadPoint.x === point.x && roadPoint.y === point.y))
-
-    if (road) {
-        return {
-            x: point.x,
-            y: point.y,
-            canBuild: canBuild ?? [],
-            roadId: road.id,
-            is: 'road'
-        }
-    }
-
-    return {
-        x: point.x,
-        y: point.y,
-        canBuild: canBuild ?? [],
-        is: undefined
-    }
-}
-
-/**
- * Retrieves flag information located at a specific point, if any.
- * 
- * @param {Point} point - The point to check for a flag.
- * @returns {FlagInformation | undefined} - The flag information at the given point, or `undefined` if no flag is present.
- */
-function getFlagAtPointLocal(point: Point): FlagInformation | undefined {
-    return Array.from(api.flags.values()).find(flag => flag.x === point.x && flag.y === point.y)
-}
-
-/**
- * Retrieves house information located at a specific point, if any.
- * 
- * @param {Point} point - The point to check for a house.
- * @returns {HouseInformation | undefined} - The house information at the given point, or `undefined` if no house is present.
- */
-function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
-    return Array.from(api.houses.values()).find(house => house.x === point.x && house.y === point.y)
-}
-
-// Functions used within WS
-
-
-
-// Monitoring
-
-// Constants
-
 // Types
 type WalkingTimerState = 'RUNNING' | 'NOT_RUNNING'
 type GamesListeningState = 'NOT_LISTENING' | 'LISTENING'
@@ -393,10 +265,222 @@ function isGameChangesMessage(message: unknown): message is PlayerViewChangedMes
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'PLAYER_VIEW_CHANGED'
 }
 
+// Constants
+
+// Configuration
+
+// State
+
+
+// Functions
+/**
+ * Handles changes in the connection status. If the connection is established and the game is being followed,
+ * it attempts to sync the local state with the game information and player view from the backend.
+ * 
+ * @param {ConnectionStatus} connectionStatus - The current status of the connection.
+ * @returns {void}
+ */
+function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
+    if (connectionStatus === 'CONNECTED' && followingState === 'FOLLOWING') {
+        (async () => {
+            try {
+                const gameInformation = await getGameInformation()
+                clearAndLoadGameInformationAndCallListeners(gameInformation)
+
+                if (gameInformation.status !== 'NOT_STARTED') {
+                    clearAndLoadPlayerViewAndCallListeners(await getViewForPlayer())
+                }
+            } catch (error) {
+                console.error(`Failed to sync the game with the backend: ${error}`)
+
+                api.gameState = 'EXPIRED'
+
+                gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged('EXPIRED'))
+            }
+        })()
+    }
+}
+
+/**
+ * Handles incoming messages from the WebSocket. Depending on the type of message, it processes game changes, 
+ * game information updates, game list updates, or chat messages.
+ * 
+ * @param {any} message - The received WebSocket message. The type is `any` because the exact structure is validated within the function.
+ * @returns {void}
+ */
+// eslint-disable-next-line
+function onMessageReceived(message: any): void {
+    if (wsApiDebugSettings.receive) {
+        console.log(`WS API: Got message: ${JSON.stringify(message)}`)
+    }
+
+    if (message === undefined) {
+        console.error(`Got an undefined message: ${message}`)
+    }
+
+    try {
+        if (isGameChangesMessage(message)) {
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling player view changed message')
+            }
+
+            loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
+        } else if (isGameInformationChangedMessage(message)) {
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling game information changed message')
+            }
+
+            handleGameInformationChangedMessage(message.gameInformation)
+        } else if (isGameListChangedMessage(message)) {
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling game list changed messgae')
+            }
+
+            receivedGameListChangedMessage(message)
+        } else if (isChatMessage(message)) {
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling chat message')
+            }
+
+            loadChatMessage(message.chatMessage)
+        } else if (isStatisticsChangedMessage(message)) {
+            if (wsApiDebugSettings.receive) {
+                console.log('Handling statistics changed message')
+            }
+
+            handleUpdatedStatistics(message)
+        } else {
+            console.error(`Do not know how to handle this: ${JSON.stringify(message)}`)
+        }
+    } catch (e) {
+        console.error(e)
+        console.error(JSON.stringify(e))
+        console.info(message.data)
+    }
+}
+
+/**
+ * Checks if a specific construction is available at a given point.
+ * 
+ * @param {Point} point - The point to check for construction availability.
+ * @param {'FLAG'} whatToBuild - The type of construction to check availability for (e.g., 'FLAG').
+ * @returns {boolean} - Returns `true` if the construction is available at the point, otherwise `false`.
+ */
+function isAvailable(point: Point, whatToBuild: 'FLAG'): boolean {
+    return whatToBuild === 'FLAG' && (api.availableConstruction.get(point)?.includes('FLAG') ?? false)
+}
+
+/**
+ * Gets the height of the terrain at a specific point.
+ * 
+ * @param {Point} point - The point to retrieve the height from.
+ * @returns {number} - The height of the terrain at the given point. Returns `0` if the point is not found.
+ */
+function getHeight(point: Point): number {
+    return api.allTiles.get(point)?.height ?? 0
+}
+
+/**
+ * Retrieves information about a house located at a specific point, if any.
+ * 
+ * @param {Point} point - The point to check for a house.
+ * @returns {HouseInformation | undefined} - The house information at the given point, or `undefined` if no house is present.
+ */
+function houseAt(point: Point): HouseInformation | undefined {
+    return api.housesAt.get(point)
+}
+
+/**
+ * Retrieves local information on a specific point, including what can be built and what is present.
+ * 
+ * @param {Point} point - The point to retrieve information about.
+ * @returns {PointInformationLocal} - Returns an object containing details about what can be built and what is currently present at the point.
+ */
+function getInformationOnPointLocal(point: Point): PointInformationLocal {
+    const canBuild = api.availableConstruction.get(point)
+
+    const house = Array.from(api.houses.values())
+        .find(house => house.x === point.x && house.y === point.y)
+
+    if (house) {
+        return {
+            ...point,
+            canBuild: canBuild ?? [],
+            buildingId: house.id,
+            is: 'building'
+        }
+    }
+
+    const flag = Array.from(api.flags.values())
+        .find(flag => flag.x === point.x && flag.y === point.y)
+
+    if (flag) {
+        return {
+            x: point.x,
+            y: point.y,
+            canBuild: canBuild ?? [],
+            flagId: flag.id,
+            is: 'flag'
+        }
+    }
+
+    const road = Array.from(api.roads.values())
+        .find(road => road.points
+            .find(roadPoint => roadPoint.x === point.x && roadPoint.y === point.y))
+
+    if (road) {
+        return {
+            x: point.x,
+            y: point.y,
+            canBuild: canBuild ?? [],
+            roadId: road.id,
+            is: 'road'
+        }
+    }
+
+    return {
+        x: point.x,
+        y: point.y,
+        canBuild: canBuild ?? [],
+        is: undefined
+    }
+}
+
+
+// Functions
+
+/**
+ * Retrieves flag information located at a specific point, if any.
+ * 
+ * @param {Point} point - The point to check for a flag.
+ * @returns {FlagInformation | undefined} - The flag information at the given point, or `undefined` if no flag is present.
+ */
+function getFlagAtPointLocal(point: Point): FlagInformation | undefined {
+    return Array.from(api.flags.values()).find(flag => flag.x === point.x && flag.y === point.y)
+}
+
+/**
+ * Retrieves house information located at a specific point, if any.
+ * 
+ * @param {Point} point - The point to check for a house.
+ * @returns {HouseInformation | undefined} - The house information at the given point, or `undefined` if no house is present.
+ */
+function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
+    return Array.from(api.houses.values()).find(house => house.x === point.x && house.y === point.y)
+}
+
+
+// Monitoring
+
+
+// Constants
+
+
 // Configuration
 export const wsApiDebugSettings = {
     receive: false
 }
+
 
 // State
 let gameTickLength = 200;
@@ -637,96 +721,11 @@ const ownedLandListeners: Set<OwnedLandListener> = new Set()
 // State - misc
 const objectsWithDetailedMonitoring = new Set<HouseId | FlagId>()
 
+
 // Initialization
-/**
- * Handles changes in the connection status. If the connection is established and the game is being followed,
- * it attempts to sync the local state with the game information and player view from the backend.
- * 
- * @param {ConnectionStatus} connectionStatus - The current status of the connection.
- * @returns {void}
- */
-function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
-    if (connectionStatus === 'CONNECTED' && followingState === 'FOLLOWING') {
-        (async () => {
-            try {
-                const gameInformation = await getGameInformation()
-                clearAndLoadGameInformationAndCallListeners(gameInformation)
-
-                if (gameInformation.status !== 'NOT_STARTED') {
-                    clearAndLoadPlayerViewAndCallListeners(await getViewForPlayer())
-                }
-            } catch (error) {
-                console.error(`Failed to sync the game with the backend: ${error}`)
-
-                api.gameState = 'EXPIRED'
-
-                gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged('EXPIRED'))
-            }
-        })()
-    }
-}
-
-/**
- * Handles incoming messages from the WebSocket. Depending on the type of message, it processes game changes, 
- * game information updates, game list updates, or chat messages.
- * 
- * @param {any} message - The received WebSocket message. The type is `any` because the exact structure is validated within the function.
- * @returns {void}
- */
-// eslint-disable-next-line
-function onMessageReceived(message: any): void {
-    if (wsApiDebugSettings.receive) {
-        console.log(`WS API: Got message: ${JSON.stringify(message)}`)
-    }
-
-    if (message === undefined) {
-        console.error(`Got an undefined message: ${message}`)
-    }
-
-    try {
-        if (isGameChangesMessage(message)) {
-            if (wsApiDebugSettings.receive) {
-                console.log('Handling player view changed message')
-            }
-
-            loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
-        } else if (isGameInformationChangedMessage(message)) {
-            if (wsApiDebugSettings.receive) {
-                console.log('Handling game information changed message')
-            }
-
-            handleGameInformationChangedMessage(message.gameInformation)
-        } else if (isGameListChangedMessage(message)) {
-            if (wsApiDebugSettings.receive) {
-                console.log('Handling game list changed messgae')
-            }
-
-            receivedGameListChangedMessage(message)
-        } else if (isChatMessage(message)) {
-            if (wsApiDebugSettings.receive) {
-                console.log('Handling chat message')
-            }
-
-            loadChatMessage(message.chatMessage)
-        } else if (isStatisticsChangedMessage(message)) {
-            if (wsApiDebugSettings.receive) {
-                console.log('Handling statistics changed message')
-            }
-
-            handleUpdatedStatistics(message)
-        } else {
-            console.error(`Do not know how to handle this: ${JSON.stringify(message)}`)
-        }
-    } catch (e) {
-        console.error(e)
-        console.error(JSON.stringify(e))
-        console.info(message.data)
-    }
-}
-
-
 addConnectionStatusListener(onConnectionStatusChanged)
 addMessageListener(onMessageReceived)
+
 
 // Functions exposed as part of WS API
 // Functions to add/remove listeners
@@ -1675,10 +1674,6 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     }
 
     if (playerViewChanges.workersWithStartedActions) {
-        if (playerViewChanges.workersWithStartedActions.find(w => w.startedAction === 'HIT' || w.startedAction === 'GET_HIT' || w.startedAction === 'STAND_ASIDE' || w.startedAction === 'JUMP_BACK' || w.startedAction === 'DIE')) {
-            console.log(playerViewChanges.workersWithStartedActions)
-        }
-
         playerViewChanges.workersWithStartedActions.forEach(workerWithNewAction => {
             const worker = api.workers.get(workerWithNewAction.id)
 
@@ -1869,7 +1864,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
         }
     }
 
-    if (playerViewChanges.newRoads !== undefined || playerViewChanges.removedRoads !== undefined) {
+    if (playerViewChanges.newRoads !== undefined || playerViewChanges.removedRoads !== undefined || playerViewChanges.changedRoads !== undefined) {
         roadListeners.forEach(roadListener => roadListener())
     }
 
@@ -2294,7 +2289,7 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
 
             loadPlayerViewAndCallListeners(playerView)
         } else {
-            console.log('WS API: Not loading player view')
+            console.error('WS API: Not loading player view')
         }
 
         followingState = 'FOLLOWING'

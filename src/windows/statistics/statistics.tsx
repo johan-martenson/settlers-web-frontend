@@ -10,6 +10,7 @@ import { StatisticsReply } from '../../api/ws/commands'
 import { buildingPretty, materialPretty, merchandisePretty, playerToColor } from '../../pretty_strings'
 import PlayerButton from '../../components/player_button'
 import { ItemContainer } from '../../components/item_container'
+import { MouseHandlerDataParam } from 'recharts/types/synchronisation/types'
 
 // Types
 type StatisticsProps = {
@@ -649,8 +650,8 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: Buildin
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 onMouseLeave={() => setHover(undefined)}
-                onMouseMove={(event: { activePayload?: { value?: number }[] }) => {
-                    if (event?.activePayload) {
+                onMouseMove={(event: MouseHandlerDataParam) => {
+                    /*if (event?.activePayload) {
                         const yValue = event.activePayload[0]?.value
 
                         if (yValue !== undefined) {
@@ -658,7 +659,7 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: Buildin
                         } else {
                             setHover(undefined)
                         }
-                    }
+                    }*/
                 }}
             >
                 <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
@@ -748,8 +749,8 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 onMouseLeave={() => setHover(undefined)}
-                onMouseMove={(event: { activePayload?: { value?: number }[] }) => {
-                    if (event?.activePayload) {
+                onMouseMove={(event: MouseHandlerDataParam) => {
+                    /*if (event?.activePayload) {
                         const yValue = event.activePayload[0]?.value
 
                         if (yValue !== undefined) {
@@ -757,7 +758,7 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
                         } else {
                             setHover(undefined)
                         }
-                    }
+                    }*/
                 }}
             >
                 <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />

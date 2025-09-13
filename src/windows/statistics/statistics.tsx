@@ -650,6 +650,8 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: Buildin
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 onMouseLeave={() => setHover(undefined)}
+
+                // eslint-disable-next-line
                 onMouseMove={(event: MouseHandlerDataParam) => {
                     /*if (event?.activePayload) {
                         const yValue = event.activePayload[0]?.value
@@ -749,6 +751,8 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 onMouseLeave={() => setHover(undefined)}
+
+                // eslint-disable-next-line
                 onMouseMove={(event: MouseHandlerDataParam) => {
                     /*if (event?.activePayload) {
                         const yValue = event.activePayload[0]?.value

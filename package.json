@@ -21,7 +21,7 @@
     "react-scripts": "5.0.1",
     "recharts": "3.2.1",
     "styled-components": "^6.1.16",
-    "typescript": "5.8.3",
+    "typescript": "5.9.2",
     "web-vitals": "^5.0.1"
   },
   "scripts": {

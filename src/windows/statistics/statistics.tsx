@@ -8,7 +8,7 @@ import { api } from '../../api/ws-api'
 import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, CartesianGrid, Label } from "recharts"
 import { StatisticsReply } from '../../api/ws/commands'
 import { buildingPretty, materialPretty, merchandisePretty, playerToColor } from '../../pretty_strings'
-import PlayerButton from '../../components/player_button'
+import { LivePlayerButton } from '../../components/player_icon/player_icon'
 import { ItemContainer } from '../../components/item_container'
 import { MouseHandlerDataParam } from 'recharts/types/synchronisation/types'
 
@@ -260,16 +260,21 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                                 Players:
                                 <div>
                                     {Array.from(api.players.values()).map(player => {
+                                        const selected = selectedPlayers.includes(player.id)
 
                                         return (
-                                            <PlayerButton
+                                            <LivePlayerButton
                                                 key={player.id}
                                                 playerId={player.id}
-                                                selected={selectedPlayers.includes(player.id)}
+                                                selected={selected}
                                                 onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
                                                     ? prev.filter(p => p !== player.id)
                                                     : [...prev, player.id]
                                                 )}
+                                                onMouseEnter={() => setHoverInfo(selected
+                                                    ? `Hide statistics for ${player.name}`
+                                                    : `Show statistics for ${player.name}`)}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
                                             />
                                         )
                                     })}
@@ -767,10 +772,10 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
             >
                 <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
                 <XAxis dataKey="time" stroke="#FFFFFF" type="number" domain={[0, 'dataMax']}>
-                    <Label value="Time" position="bottom" offset={-5} fill="white" style={{textTransform: 'capitalize'}} />
+                    <Label value="Time" position="bottom" offset={-5} fill="white" style={{ textTransform: 'capitalize' }} />
                 </XAxis>
                 <YAxis stroke="#FFFFFF" domain={[0, 'dataMax + 1']} allowDecimals={false}>
-                    <Label angle={-90} value={statType} position="left" offset={-5} fill="white" style={{textTransform: 'capitalize'}} />
+                    <Label angle={-90} value={statType} position="left" offset={-5} fill="white" style={{ textTransform: 'capitalize' }} />
                 </YAxis>
 
                 {statistics.players.map(player => {

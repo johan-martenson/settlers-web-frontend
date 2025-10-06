@@ -1,0 +1,19 @@
+.player-button {
+
+}
+
+.player-icon {
+    column-gap: 1em;
+    display: flex;
+    flex-direction: row;
+}
+
+.selected {
+    background-color: lightblue;
+}
+
+.colored-square {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+}

@@ -105,7 +105,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         </Field>
                         <Button onClick={() => {
                             if (api.gameId !== undefined) {
-                                api.deleteGame()
+                                api.deleteGame(api.gameId)
                             } else {
                                 console.error('Game id is not set')
                             }
@@ -175,7 +175,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                     <div id='start-or-cancel'>
                         <Button onClick={() => {
                             if (api.gameId !== undefined) {
-                                api.deleteGame()
+                                api.deleteGame(api.gameId)
                             } else {
                                 console.error('Game id is not set')
                             }
@@ -186,7 +186,11 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                             Discard game
                         </Button>
                         <Button onClick={async () => {
-                            api.startGame()
+                            if (gameInformation?.id !== undefined) {
+                                api.startGame(gameInformation?.id ?? '')
+                            } else {
+                                console.error('Game id is not set')
+                            }
 
                             onGameStarted(gameInformation?.id, selfPlayerId)
                         }}

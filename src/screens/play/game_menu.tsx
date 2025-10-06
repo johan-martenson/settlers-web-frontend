@@ -74,11 +74,9 @@ const GameMenu = ({
 }: GameMenuProps
 ) => {
     const [zoom, setZoom] = useState<number>(DEFAULT_SCALE)
-    const [gameSpeed, setGameSpeed] = useState<GameSpeed>('NORMAL')
+    const [gameSpeed, setGameSpeed] = useState<GameSpeed>(api.gameSpeed ?? 'NORMAL')
 
     useEffect(() => {
-        setGameSpeed(api.gameSpeed)
-
         const callback = {
             onGameSpeedChanged: (gameSpeed: GameSpeed) => {
                 console.log(`NEW GAME SPEED: ${gameSpeed}`)
@@ -256,11 +254,11 @@ const GameMenu = ({
                     </Field>
 
                     {api.gameState === 'STARTED' &&
-                        <Button onClick={() => api.pauseGame()} >Pause</Button>
+                        <Button onClick={() => api.gameId && api.pauseGame(api.gameId)} >Pause</Button>
                     }
 
                     {api.gameState === 'PAUSED' &&
-                        <Button onClick={() => api.resumeGame()} >Resume</Button>
+                        <Button onClick={() => api.gameId && api.resumeGame(api.gameId)} >Resume</Button>
                     }
 
                     <Divider />

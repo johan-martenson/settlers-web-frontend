@@ -89,7 +89,7 @@ describe('PointSetFast', () => {
         points.forEach(point => set.add(point))
 
         const collectedPoints = []
-        for (let point of set) {
+        for (const point of set) {
             collectedPoints.push(point)
         }
 

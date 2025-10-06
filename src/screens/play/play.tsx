@@ -412,11 +412,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 action: () => openSingletonWindow({ type: 'QUOTA' })
             })
             commands.set('Pause game', {
-                action: () => api.pauseGame(),
+                action: () => api.pauseGame(gameId),
                 icon: <PauseFilled />
             })
             commands.set('Resume game', {
-                action: () => api.resumeGame(),
+                action: () => api.resumeGame(gameId),
                 icon: <UiIcon type='RIGHT_ARROW' scale={0.5} />
             })
             commands.set('Debug', {

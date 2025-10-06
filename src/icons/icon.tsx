@@ -414,16 +414,8 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
         ref={canvasRef}
         width={dimension.width * scale}
         height={dimension.height * scale}
-        onMouseEnter={() => {
-            if (onMouseEnter) {
-                onMouseEnter()
-            }
-        }}
-        onMouseLeave={() => {
-            if (onMouseLeave) {
-                onMouseLeave()
-            }
-        }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
     />
 }
 

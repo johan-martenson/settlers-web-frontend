@@ -207,6 +207,7 @@ enum Command {
     // Road
     PlaceRoad = 'PLACE_ROAD',
     RemoveRoad = 'REMOVE_ROAD',
+    FindPossibleNewRoad = 'FIND_NEW_ROAD',
     PlaceFlagAndRoad = 'PLACE_FLAG_AND_ROAD',
 
     // Point
@@ -219,9 +220,6 @@ enum Command {
     RemoveMessages = 'REMOVE_MESSAGES',
     ListenToChatMessages = 'LISTEN_TO_CHAT_MESSAGES',
 
-    // Construction
-    FindPossibleNewRoad = 'FIND_NEW_ROAD',
-
     // Workers
 
     // Misc
@@ -229,6 +227,67 @@ enum Command {
     SetGame = 'SET_GAME',
     FullSync = 'FULL_SYNC',
 }
+
+type CancelEvacuationForHouse = { houseId: HouseId }
+type DisablePromotionsForHouse = { houseId: HouseId }
+type EnablePromotionsForHouse = { houseId: HouseId }
+type FindPossibleNewRoad = { from: Point, to: Point, avoid: Point[] | undefined }
+type PauseProductionForHouse = { houseId: HouseId }
+type ResumeProductionForHouse = { houseId: HouseId }
+type UpgradeHouse = { houseId: HouseId }
+type EvacuateHouse = { houseId: HouseId }
+type SetToolPriority = { tool: Tool, priority: number }
+type SetTransportPriority = { category: TransportCategory, priority: number }
+type AttackHouse = { houseId: HouseId, attackers: number, attackType: AttackType }
+type SetStrengthWhenPopulatingMilitaryBuildings = { strength: number }
+type SetDefenseStrength = { strength: number }
+type SetDefenseFromSurroundingFromSurroundingBuildings = { strength: number }
+type StartGame = { gameId: GameId }
+type SetMap = { mapId: MapId }
+type SetOthersCanJoin = { othersCanJoin: boolean }
+type SetInitialResources = { resources: ResourceLevel }
+type SetGameName = { name: string }
+type SetGameSpeed = { speed: GameSpeed }
+type SetMilitaryPopulationFarFromBorder = { population: number }
+type SetMilitaryPopulationCloserToBorder = { population: number }
+type SetMilitaryPopulationCloseToBorder = { population: number }
+type SetSoldiersAvailableForAttack = { amount: number }
+type AddPlayerToGame = { gameId: GameId, playerId: PlayerId }
+type RemovePlayer = { playerId: PlayerId }
+type GetChatRoomHistory = { roomId: RoomId }
+type GetTerrainForMap = { mapId: MapId }
+type GetMap = { mapId: MapId }
+type Upgrade = { houseId: HouseId }
+type GetFlagDebugInfo = { flagId: FlagId }
+type SetSelfPlayer = { playerId: PlayerId }
+type SetGame = { gameId: GameId }
+type SetReservedSoldiers = Partial<Record<SoldierType, number>>
+type AddDetailedMonitoring = { id: HouseId | FlagId }
+type RemoveDetailedMonitoring = { id: HouseId | FlagId }
+type RemoveMessage = { messageId: GameMessageId }
+type RemoveMessages = { messageIds: GameMessageId[] }
+type SetCoalQuotas = { mint: number, armory: number, ironSmelter: number }
+type SetWheatQuotas = { donkeyFarm: number, pigFarm: number, mill: number, brewery: number }
+type SetFoodQuotas = { ironMine: number, coalMine: number, goldMine: number, graniteMine: number }
+type SetWaterQuotas = { bakery: number, donkeyFarm: number, pigFarm: number, brewery: number }
+type SetIronBarQuotas = { armory: number, metalworks: number }
+type DeleteGame = { gameId: GameId }
+type PauseGame = { gameId: GameId }
+type ResumeGame = { gameId: GameId }
+type PlaceHouse = { x: number, y: number, type: AnyBuilding }
+type PlaceRoad = { road: Point[] }
+type PlaceFlag = { flag: Point }
+type PlaceRoadWithFlag = { flag: Point, road: Point[] }
+type RemoveFlag = { id: FlagId }
+type RemoveRoad = { id: RoadId }
+type RemoveBuilding = { id: HouseId }
+type CallScout = { point: Point }
+type CallGeologist = { point: Point }
+type MarkGameMessagesRead = { messageIds: GameMessageId[] }
+type ListenToChatMessages = { playerId: PlayerId, roomIds: RoomId[] }
+type ListenToStatistics = { playerId: PlayerId }
+type StopListeningToStatistics = { playerId: PlayerId }
+
 
 // Type functions
 
@@ -242,7 +301,7 @@ enum Command {
  * @param {HouseId} houseId - The identifier of the house to cancel evacuation.
  */
 function cancelEvacuationForHouse(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>(Command.CancelEvacuation, { houseId })
+    sendWithOptions<CancelEvacuationForHouse>(Command.CancelEvacuation, { houseId })
 }
 
 /**
@@ -250,7 +309,7 @@ function cancelEvacuationForHouse(houseId: HouseId): void {
  * @param {HouseId} houseId - The identifier of the house to disable promotions.
  */
 function disablePromotionsForHouse(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>(Command.DisablePromotions, { houseId })
+    sendWithOptions<DisablePromotionsForHouse>(Command.DisablePromotions, { houseId })
 }
 
 /**
@@ -258,7 +317,7 @@ function disablePromotionsForHouse(houseId: HouseId): void {
  * @param {HouseId} houseId - The identifier of the house to enable promotions.
  */
 function enablePromotionsForHouse(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>(Command.EnablePromotions, { houseId })
+    sendWithOptions<EnablePromotionsForHouse>(Command.EnablePromotions, { houseId })
 }
 
 /**
@@ -269,7 +328,7 @@ function enablePromotionsForHouse(houseId: HouseId): void {
  * @returns {Promise<PossibleNewRoad>} The possible new road.
  */
 async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[] | undefined): Promise<PossibleNewRoad> {
-    return (await sendRequestAndWaitForReplyWithOptions<PossibleNewRoad, { from: Point, to: Point, avoid: Point[] | undefined }>(
+    return (await sendRequestAndWaitForReplyWithOptions<PossibleNewRoad, FindPossibleNewRoad>(
         Command.FindPossibleNewRoad,
         { from, to, avoid }
     ))
@@ -280,7 +339,7 @@ async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[] | unde
  * @param {HouseId} houseId - The identifier of the house to pause production.
  */
 function pauseProductionForHouse(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>(Command.PauseProduction, { houseId })
+    sendWithOptions<PauseProductionForHouse>(Command.PauseProduction, { houseId })
 }
 
 /**
@@ -288,7 +347,7 @@ function pauseProductionForHouse(houseId: HouseId): void {
  * @param {HouseId} houseId - The identifier of the house to resume production.
  */
 function resumeProductionForHouse(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>(Command.ResumeProduction, { houseId })
+    sendWithOptions<ResumeProductionForHouse>(Command.ResumeProduction, { houseId })
 }
 
 /**
@@ -296,7 +355,7 @@ function resumeProductionForHouse(houseId: HouseId): void {
  * @param {HouseId} houseId - The identifier of the house to upgrade.
  */
 function upgradeHouse(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>(Command.UpgradeHouse, { houseId })
+    sendWithOptions<UpgradeHouse>(Command.UpgradeHouse, { houseId })
 }
 
 /**
@@ -304,7 +363,7 @@ function upgradeHouse(houseId: HouseId): void {
  * @param {HouseId} houseId - The identifier of the house to evacuate.
  */
 function evacuateHouse(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>(Command.EvacuateHouse, { houseId })
+    sendWithOptions<EvacuateHouse>(Command.EvacuateHouse, { houseId })
 }
 
 /**
@@ -312,7 +371,7 @@ function evacuateHouse(houseId: HouseId): void {
  * @returns {Promise<StatisticsReply>} Statistics about production, inventory (TBD), and land owned for each player
  */
 async function getStatistics(): Promise<StatisticsReply> {
-    return (await sendRequestAndWaitForReply<{statistics: StatisticsReply}>(Command.GetStatistics)).statistics
+    return (await sendRequestAndWaitForReply<{ statistics: StatisticsReply }>(Command.GetStatistics)).statistics
 }
 
 /**
@@ -339,12 +398,12 @@ async function getTransportPriority(): Promise<TransportCategory[]> {
     return (await sendRequestAndWaitForReply<{ priority: TransportCategory[] }>(Command.GetTransportPriority)).priority
 }
 
-async function getToolPriorities(): Promise<{[key in Tool]: number}> {
-    return (await sendRequestAndWaitForReply<{ toolPriorities: {[key in Tool]: number} }>(Command.GetToolPriorities)).toolPriorities
+async function getToolPriorities(): Promise<{ [key in Tool]: number }> {
+    return (await sendRequestAndWaitForReply<{ toolPriorities: { [key in Tool]: number } }>(Command.GetToolPriorities)).toolPriorities
 }
 
 function setToolPriority(tool: Tool, priority: number): void {
-    sendWithOptions<{ tool: Tool, priority: number }>(Command.SetToolPriority, { tool, priority })
+    sendWithOptions<SetToolPriority>(Command.SetToolPriority, { tool, priority })
 }
 
 /**
@@ -353,7 +412,7 @@ function setToolPriority(tool: Tool, priority: number): void {
  * @param {number} priority - The priority level to set.
  */
 function setTransportPriorityForMaterial(category: TransportCategory, priority: number): void {
-    sendWithOptions<{ category: TransportCategory, priority: number }>(Command.SetTransportPriority, { category, priority })
+    sendWithOptions<SetTransportPriority>(Command.SetTransportPriority, { category, priority })
 }
 
 /**
@@ -363,7 +422,7 @@ function setTransportPriorityForMaterial(category: TransportCategory, priority: 
  * @param {AttackType} attackType - The type of attack (e.g., strong or weak).
  */
 function attackHouse(houseId: HouseId, attackers: number, attackType: AttackType): void {
-    sendWithOptions<{ houseId: HouseId, attackers: number, attackType: AttackType }>(Command.Attack, { houseId, attackers, attackType })
+    sendWithOptions<AttackHouse>(Command.Attack, { houseId, attackers, attackType })
 }
 
 /**
@@ -371,7 +430,7 @@ function attackHouse(houseId: HouseId, attackers: number, attackType: AttackType
  * @param {number} strength - The strength value to be set.
  */
 function setStrengthWhenPopulatingMilitaryBuildings(strength: number): void {
-    sendWithOptions<{ strength: number }>(Command.SetStrength, { strength })
+    sendWithOptions<SetStrengthWhenPopulatingMilitaryBuildings>(Command.SetStrength, { strength })
 }
 
 /**
@@ -387,7 +446,7 @@ async function getStrengthWhenPopulatingMilitaryBuildings(): Promise<number> {
  * @param {number} strength - The defense strength to set.
  */
 function setDefenseStrength(strength: number): void {
-    sendWithOptions<{ strength: number }>(Command.SetDefenseStrength, { strength })
+    sendWithOptions<SetDefenseStrength>(Command.SetDefenseStrength, { strength })
 }
 
 /**
@@ -403,7 +462,7 @@ async function getDefenseStrength(): Promise<number> {
  * @param {number} strength - The surrounding defense strength to set.
  */
 function setDefenseFromSurroundingBuildings(strength: number): void {
-    sendWithOptions<{ strength: number }>(Command.SetDefenseFromSurrounding, { strength })
+    sendWithOptions<SetDefenseFromSurroundingFromSurroundingBuildings>(Command.SetDefenseFromSurrounding, { strength })
 }
 
 /**
@@ -457,8 +516,8 @@ async function getSoldiersAvailableForAttack(): Promise<number> {
 /**
  * Starts the game
  */
-function startGame(): void {
-    send(Command.StartGame)
+function startGame(gameId: GameId): void {
+    sendWithOptions<StartGame>(Command.StartGame, { gameId })
 }
 
 /**
@@ -466,7 +525,7 @@ function startGame(): void {
  * @param {MapId} mapId - The identifier for the map.
  */
 function setMap(mapId: MapId): void {
-    sendWithOptions<{ mapId: MapId }>(Command.SetMap, { mapId })
+    sendWithOptions<SetMap>(Command.SetMap, { mapId })
 }
 
 /**
@@ -476,7 +535,7 @@ function setMap(mapId: MapId): void {
  */
 async function setOthersCanJoin(othersCanJoin: boolean): Promise<GameInformation> {
     return (
-        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { othersCanJoin: boolean }>(Command.SetOthersCanJoin, { othersCanJoin })
+        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, SetOthersCanJoin>(Command.SetOthersCanJoin, { othersCanJoin })
     ).gameInformation
 }
 
@@ -485,7 +544,7 @@ async function setOthersCanJoin(othersCanJoin: boolean): Promise<GameInformation
  * @param {ResourceLevel} resources - The levels of initial resources to set.
  */
 function setInitialResources(resources: ResourceLevel): void {
-    sendWithOptions<{ resources: ResourceLevel }>(Command.SetInitialResources, { resources })
+    sendWithOptions<SetInitialResources>(Command.SetInitialResources, { resources })
 }
 
 /**
@@ -493,7 +552,7 @@ function setInitialResources(resources: ResourceLevel): void {
  * @param {string} name - The name of the game.
  */
 function setTitle(name: string): void {
-    sendWithOptions<{ name: string }>(Command.SetGameName, { name })
+    sendWithOptions<SetGameName>(Command.SetGameName, { name })
 }
 
 /**
@@ -501,7 +560,7 @@ function setTitle(name: string): void {
  * @param {GameSpeed} speed - The speed setting for the game.
  */
 function setGameSpeed(speed: GameSpeed): void {
-    sendWithOptions<{ speed: GameSpeed }>(Command.SetGameSpeed, { speed })
+    sendWithOptions<SetGameSpeed>(Command.SetGameSpeed, { speed })
 }
 
 /**
@@ -509,7 +568,7 @@ function setGameSpeed(speed: GameSpeed): void {
  * @param {number} population - The population to assign.
  */
 function setMilitaryPopulationFarFromBorder(population: number): void {
-    sendWithOptions<{ population: number }>(Command.SetMilitaryFromFromBorder, { population })
+    sendWithOptions<SetMilitaryPopulationFarFromBorder>(Command.SetMilitaryFromFromBorder, { population })
 }
 
 /**
@@ -517,7 +576,7 @@ function setMilitaryPopulationFarFromBorder(population: number): void {
  * @param {number} population - The population to assign.
  */
 function setMilitaryPopulationCloserToBorder(population: number): void {
-    sendWithOptions<{ population: number }>(Command.SetMilitaryAwayFromBorder, { population })
+    sendWithOptions<SetMilitaryPopulationCloserToBorder>(Command.SetMilitaryAwayFromBorder, { population })
 }
 
 /**
@@ -525,7 +584,7 @@ function setMilitaryPopulationCloserToBorder(population: number): void {
  * @param {number} population - The population to assign.
  */
 function setMilitaryPopulationCloseToBorder(population: number): void {
-    sendWithOptions<{ population: number }>(Command.SetMilitaryCloseToBorder, { population })
+    sendWithOptions<SetMilitaryPopulationCloseToBorder>(Command.SetMilitaryCloseToBorder, { population })
 }
 
 /**
@@ -533,7 +592,7 @@ function setMilitaryPopulationCloseToBorder(population: number): void {
  * @param {number} amount - The number of soldiers to set.
  */
 function setSoldiersAvailableForAttack(amount: number): void {
-    sendWithOptions<{ amount: number }>(Command.SetSoldiersAvailableForAttack, { amount })
+    sendWithOptions<SetSoldiersAvailableForAttack>(Command.SetSoldiersAvailableForAttack, { amount })
 }
 
 /**
@@ -557,7 +616,7 @@ async function createPlayer(name: string, color: PlayerColor, nation: Nation, ty
  * @returns {Promise<GameInformation>} The updated game information.
  */
 async function addPlayerToGame(gameId: GameId, playerId: PlayerId): Promise<GameInformation> {
-    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId, playerId: PlayerId }>(
+    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, AddPlayerToGame>(
         Command.AddPlayerToGame,
         { gameId, playerId }
     )).gameInformation
@@ -582,7 +641,7 @@ async function updatePlayer(playerId: PlayerId, name: string, color: PlayerColor
  * @param {PlayerId} playerId - The identifier of the player to remove.
  */
 function removePlayer(playerId: PlayerId): void {
-    sendWithOptions<{ playerId: PlayerId }>(Command.RemovePlayer, { playerId })
+    sendWithOptions<RemovePlayer>(Command.RemovePlayer, { playerId })
 }
 
 /**
@@ -592,7 +651,7 @@ function removePlayer(playerId: PlayerId): void {
  */
 async function getChatRoomHistory(roomId: RoomId): Promise<ChatMessage[]> {
     return (
-        await sendRequestAndWaitForReplyWithOptions<{ chatHistory: ChatMessage[] }, { roomId: RoomId }>(Command.GetChatHistory, { roomId })
+        await sendRequestAndWaitForReplyWithOptions<{ chatHistory: ChatMessage[] }, GetChatRoomHistory>(Command.GetChatHistory, { roomId })
     ).chatHistory
 }
 
@@ -610,9 +669,8 @@ async function getGames(): Promise<GameInformation[]> {
  * @returns {Promise<TerrainInformation>} The terrain information for the map.
  */
 async function getTerrainForMap(mapId: MapId): Promise<TerrainInformation> {
-    return (await sendRequestAndWaitForReplyWithOptions<{ terrain: TerrainInformation }, { mapId: MapId }>(Command.GetTerrain, { mapId })).terrain
+    return (await sendRequestAndWaitForReplyWithOptions<{ terrain: TerrainInformation }, GetTerrainForMap>(Command.GetTerrain, { mapId })).terrain
 }
-
 
 /**
  * Retrieves a list of all maps available in the game.
@@ -627,7 +685,7 @@ async function getMaps(): Promise<MapInformation[]> {
  * @returns {Promise<MapInformation>} The requested map.
  */
 async function getMap(mapId: MapId): Promise<MapInformation> {
-    return (await sendRequestAndWaitForReplyWithOptions<{ map: MapInformation }, { mapId: MapId }>(Command.GetMap, { mapId })).map
+    return (await sendRequestAndWaitForReplyWithOptions<{ map: MapInformation }, GetMap>(Command.GetMap, { mapId })).map
 }
 
 /**
@@ -643,7 +701,7 @@ async function getGameInformation(): Promise<GameInformation> {
  * @param {HouseId} houseId - The identifier of the house to upgrade.
  */
 function upgrade(houseId: HouseId): void {
-    sendWithOptions<{ houseId: HouseId }>(Command.Upgrade, { houseId })
+    sendWithOptions<Upgrade>(Command.Upgrade, { houseId })
 }
 
 /**
@@ -652,7 +710,7 @@ function upgrade(houseId: HouseId): void {
  * @returns {Promise<FlagDebugInfo>} Debugging information for the flag.
  */
 async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
-    return (await sendRequestAndWaitForReplyWithOptions<{ flag: FlagDebugInfo }, { flagId: FlagId }>(Command.GetFlagDebugInformation, { flagId })).flag
+    return (await sendRequestAndWaitForReplyWithOptions<{ flag: FlagDebugInfo }, GetFlagDebugInfo>(Command.GetFlagDebugInformation, { flagId })).flag
 }
 
 /**
@@ -663,7 +721,7 @@ async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
  */
 async function setPlayerId(playerId: PlayerId): Promise<PlayerInformation> {
     return (
-        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, { playerId: PlayerId }>(Command.SetSelfPlayer, { playerId })
+        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, SetSelfPlayer>(Command.SetSelfPlayer, { playerId })
     ).playerInformation
 }
 
@@ -675,7 +733,7 @@ async function setPlayerId(playerId: PlayerId): Promise<PlayerInformation> {
  */
 async function setGame(gameId: GameId): Promise<GameInformation> {
     return (
-        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, { gameId: GameId }>(Command.SetGame, { gameId })
+        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, SetGame>(Command.SetGame, { gameId })
     ).gameInformation
 }
 
@@ -729,7 +787,7 @@ async function getInformationOnPoints(points: Point[]): Promise<PointMap<PointIn
  * @param {number} amount - The number of soldiers to reserve.
  */
 function setReservedSoldiers(rank: SoldierType, amount: number): void {
-    sendWithOptions<Partial<Record<SoldierType, number>>>(Command.SetReservedInHeadquarters, { [rank]: amount })
+    sendWithOptions<SetReservedSoldiers>(Command.SetReservedInHeadquarters, { [rank]: amount })
 }
 
 /**
@@ -737,7 +795,7 @@ function setReservedSoldiers(rank: SoldierType, amount: number): void {
  * @param {HouseId | FlagId} id - The identifier of the house or flag to monitor.
  */
 function addDetailedMonitoring(id: HouseId | FlagId): void {
-    sendWithOptions<{ id: HouseId | FlagId }>(Command.StartDetailedMonitoring, { id })
+    sendWithOptions<AddDetailedMonitoring>(Command.StartDetailedMonitoring, { id })
 }
 
 /**
@@ -745,7 +803,7 @@ function addDetailedMonitoring(id: HouseId | FlagId): void {
  * @param {HouseId | FlagId} id - The identifier of the house or flag to stop monitoring.
  */
 function removeDetailedMonitoring(id: HouseId | FlagId): void {
-    sendWithOptions<{ id: HouseId | FlagId }>(Command.StopDetailedMonitoring, { id })
+    sendWithOptions<RemoveDetailedMonitoring>(Command.StopDetailedMonitoring, { id })
 }
 
 /**
@@ -753,7 +811,7 @@ function removeDetailedMonitoring(id: HouseId | FlagId): void {
  * @param {GameMessageId} messageId - The identifier of the message to remove.
  */
 function removeMessage(messageId: GameMessageId): void {
-    sendWithOptions<{ messageId: GameMessageId }>(Command.RemoveMessage, { messageId })
+    sendWithOptions<RemoveMessage>(Command.RemoveMessage, { messageId })
 }
 
 /**
@@ -761,7 +819,7 @@ function removeMessage(messageId: GameMessageId): void {
  * @param {GameMessage[]} messages - The list of messages to remove.
  */
 function removeMessages(messages: GameMessage[]): void {
-    sendWithOptions<{ messageIds: GameMessageId[] }>(Command.RemoveMessages, { messageIds: messages.map(message => message.id) })
+    sendWithOptions<RemoveMessages>(Command.RemoveMessages, { messageIds: messages.map(message => message.id) })
 }
 
 /**
@@ -772,10 +830,7 @@ function removeMessages(messages: GameMessage[]): void {
  * @returns {void}
  */
 function setCoalQuotas(mint: number, armory: number, ironSmelter: number): void {
-    sendWithOptions<{ mint: number, armory: number, ironSmelter: number }>(
-        Command.SetCoalQuotas,
-        { mint, armory, ironSmelter }
-    )
+    sendWithOptions<SetCoalQuotas>(Command.SetCoalQuotas, { mint, armory, ironSmelter })
 }
 
 /**
@@ -796,10 +851,7 @@ function getFoodQuotas(): Promise<FoodQuotas> {
  */
 
 function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number): void {
-    sendWithOptions<{ donkeyFarm: number, pigFarm: number, mill: number, brewery: number }>(
-        Command.SetWheatQuotas,
-        { donkeyFarm, pigFarm, mill, brewery }
-    )
+    sendWithOptions<SetWheatQuotas>(Command.SetWheatQuotas, { donkeyFarm, pigFarm, mill, brewery })
 }
 
 /**
@@ -844,7 +896,7 @@ function getIronBarQuotas(): Promise<IronBarQuotas> {
  * @returns {void}
  */
 function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, graniteMine: number): void {
-    sendWithOptions<{ ironMine: number, coalMine: number, goldMine: number, graniteMine: number }>(
+    sendWithOptions<SetFoodQuotas>(
         Command.SetFoodQuotas,
         { ironMine, coalMine, goldMine, graniteMine }
     )
@@ -859,9 +911,7 @@ function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, gra
  * @returns {void}
  */
 function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, brewery: number): void {
-    sendWithOptions<{ bakery: number, donkeyFarm: number, pigFarm: number, brewery: number }>(
-        Command.SetWaterQuotas,
-        { bakery, donkeyFarm, pigFarm, brewery })
+    sendWithOptions<SetWaterQuotas>(Command.SetWaterQuotas, { bakery, donkeyFarm, pigFarm, brewery })
 }
 
 /**
@@ -871,7 +921,7 @@ function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, bre
  * @returns {void}
  */
 function setIronBarQuotas(armory: number, metalworks: number): void {
-    sendWithOptions<{ armory: number, metalworks: number }>(Command.SetIronBarQuotas, { armory, metalworks })
+    sendWithOptions<SetIronBarQuotas>(Command.SetIronBarQuotas, { armory, metalworks })
 }
 
 /**
@@ -890,24 +940,24 @@ async function createGame(name: string, players: PlayerInformation[]): Promise<G
 /**
  * Deletes the current game.
  */
-function deleteGame(): void {
-    send(Command.DeleteGame)
+function deleteGame(gameId: GameId): void {
+    sendWithOptions<DeleteGame>(Command.DeleteGame, { gameId })
 }
 
 /**
  * Pauses the current game.
  * @returns {void}
 */
-function pauseGame(): void {
-    send(Command.PauseGame)
+function pauseGame(gameId: GameId): void {
+    sendWithOptions<PauseGame>(Command.PauseGame, { gameId })
 }
 
 /**
  * Resumes the current game after a pause.
  * @returns {void}
 */
-function resumeGame(): void {
-    send(Command.ResumeGame)
+function resumeGame(gameId: GameId): void {
+    sendWithOptions<ResumeGame>(Command.ResumeGame, { gameId })
 }
 
 /**
@@ -917,7 +967,7 @@ function resumeGame(): void {
  * @returns {void}
 */
 function placeHouse(type: AnyBuilding, point: Point): void {
-    sendWithOptions<{ x: number, y: number, type: AnyBuilding }>(Command.PlaceBuilding, { ...point, type })
+    sendWithOptions<PlaceHouse>(Command.PlaceBuilding, { ...point, type })
 }
 
 /**
@@ -925,7 +975,7 @@ function placeHouse(type: AnyBuilding, point: Point): void {
  * @param {Point[]} points - The points that define the road path.
  */
 function placeRoad(points: Point[]): void {
-    sendWithOptions<{ road: Point[] }>(Command.PlaceRoad, { road: points })
+    sendWithOptions<PlaceRoad>(Command.PlaceRoad, { road: points })
 }
 
 /**
@@ -933,7 +983,7 @@ function placeRoad(points: Point[]): void {
  * @param {Point} flag - The location to place the flag.
  */
 function placeFlag(flag: Point): void {
-    sendWithOptions<{ flag: Point }>(Command.PlaceFlag, { flag })
+    sendWithOptions<PlaceFlag>(Command.PlaceFlag, { flag })
 }
 
 /**
@@ -942,7 +992,7 @@ function placeFlag(flag: Point): void {
  * @param {Point[]} points - The points that define the road path.
  */
 function placeRoadWithFlag(flag: Point, points: Point[]): void {
-    sendWithOptions<{ flag: Point, road: Point[] }>(Command.PlaceFlagAndRoad, { flag, road: points })
+    sendWithOptions<PlaceRoadWithFlag>(Command.PlaceFlagAndRoad, { flag, road: points })
 }
 
 /**
@@ -950,7 +1000,7 @@ function placeRoadWithFlag(flag: Point, points: Point[]): void {
  * @param {FlagId} id - The identifier of the flag to remove.
  */
 function removeFlag(id: FlagId): void {
-    sendWithOptions<{ id: FlagId }>(Command.RemoveFlag, { id })
+    sendWithOptions<RemoveFlag>(Command.RemoveFlag, { id })
 }
 
 /**
@@ -958,7 +1008,7 @@ function removeFlag(id: FlagId): void {
  * @param {RoadId} id - The identifier of the road to remove.
  */
 function removeRoad(id: RoadId): void {
-    sendWithOptions<{ id: RoadId }>(Command.RemoveRoad, { id })
+    sendWithOptions<RemoveRoad>(Command.RemoveRoad, { id })
 }
 
 /**
@@ -966,7 +1016,7 @@ function removeRoad(id: RoadId): void {
  * @param {HouseId} id - The identifier of the building to remove.
  */
 function removeBuilding(id: HouseId): void {
-    sendWithOptions<{ id: HouseId }>(Command.RemoveBuilding, { id })
+    sendWithOptions<RemoveBuilding>(Command.RemoveBuilding, { id })
 }
 
 /**
@@ -974,7 +1024,7 @@ function removeBuilding(id: HouseId): void {
  * @param {Point} point - The location to send the scout.
  */
 function callScout(point: Point): void {
-    sendWithOptions<{ point: Point }>(Command.CallScout, { point })
+    sendWithOptions<CallScout>(Command.CallScout, { point })
 }
 
 /**
@@ -982,7 +1032,7 @@ function callScout(point: Point): void {
  * @param {Point} point - The location to send the geologist.
  */
 function callGeologist(point: Point): void {
-    sendWithOptions<{ point: Point }>(Command.CallGeologist, { point })
+    sendWithOptions<CallGeologist>(Command.CallGeologist, { point })
 }
 
 /**
@@ -990,7 +1040,7 @@ function callGeologist(point: Point): void {
  * @param {GameMessageId[]} messageIds - A list of ids of the messages to mark as read
  */
 function markGameMessagesRead(messageIds: GameMessageId[]): void {
-    sendWithOptions<{ messageIds: GameMessageId[] }>(Command.MarkGameMessagesRead, { messageIds })
+    sendWithOptions<MarkGameMessagesRead>(Command.MarkGameMessagesRead, { messageIds })
 }
 
 /**
@@ -1025,7 +1075,7 @@ function listenToGamesList(): void {
  * @param roomIds (optional) The id(s) of the room(s) to listen for chat messages to
  */
 function listenToChatMessages(playerId: PlayerId, roomIds: RoomId[]): void {
-    sendWithOptions<{ playerId: PlayerId, roomIds: RoomId[] }>(Command.ListenToChatMessages, { playerId, roomIds })
+    sendWithOptions<ListenToChatMessages>(Command.ListenToChatMessages, { playerId, roomIds })
 }
 
 /**
@@ -1033,11 +1083,11 @@ function listenToChatMessages(playerId: PlayerId, roomIds: RoomId[]): void {
  * @param {PlayerId} playerId - The id of the player
  */
 function listenToStatistics(playerId: PlayerId): void {
-    sendWithOptions<{ playerId: PlayerId }>(Command.ListenToStatistics, { playerId })
+    sendWithOptions<ListenToStatistics>(Command.ListenToStatistics, { playerId })
 }
 
 function stopListeningToStatistics(playerId: PlayerId): void {
-    sendWithOptions<{ playerId: PlayerId }>(Command.StopListeningToStatistics, { playerId })
+    sendWithOptions<StopListeningToStatistics>(Command.StopListeningToStatistics, { playerId })
 }
 
 export {

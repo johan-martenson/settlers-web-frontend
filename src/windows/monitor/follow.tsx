@@ -79,7 +79,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
             const newTranslateY = view.screenSize.height / 2 + point.y * view.scale - view.screenSize.height
 
             view.translate = ({ x: newTranslateX, y: newTranslateY })
-            setIsCentered(true)
+            setIsCentered(true) // FIXME: this changes the variable that the effect depends on. Fix!
         }
     }, [isCentered])
 

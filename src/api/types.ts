@@ -95,6 +95,8 @@ export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST
 
 export type HouseResources = { [key in Material]?: HouseResourceItem }
 
+export type BuildingType = 'SMALL' | 'MEDIUM' | 'LARGE'
+
 export type AnyBuilding = SmallBuilding | MediumBuilding | LargeBuilding
 
 const SMALL_HOUSE_VALUES = [

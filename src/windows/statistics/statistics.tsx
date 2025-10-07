@@ -5,7 +5,7 @@ import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/r
 import { Nation, AnyBuilding, SMALL_HOUSES, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, MEDIUM_HOUSES, LARGE_HOUSES } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon, UiIconType } from '../../icons/icon'
 import { api } from '../../api/ws-api'
-import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, CartesianGrid, Label } from "recharts"
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Label } from 'recharts'
 import { StatisticsReply } from '../../api/ws/commands'
 import { buildingPretty, materialPretty, merchandisePretty, playerToColor } from '../../pretty_strings'
 import { LivePlayerButton } from '../../components/player_icon/player_icon'
@@ -22,7 +22,27 @@ type StatisticsProps = {
 type BuildingStatisticsGraphProps = {
     statistics: StatisticsReply
     buildingType: AnyBuilding
+    selectedPlayers: PlayerId[]
 
+    setHover: (info: string | undefined) => void
+}
+
+type ChartData = {
+    time: number
+    [key: string]: number | undefined
+}
+
+type MerchandiseGraphProps = {
+    statistics: StatisticsReply
+    selectedMerchandise: Merchandise[]
+    time: number
+}
+
+type GeneralStatisticsGraphProps = {
+    statistics: StatisticsReply
+    statType: GeneralStatisticsType
+    selectedPlayers: PlayerId[]
+    time: number
     setHover: (info: string | undefined) => void
 }
 
@@ -71,65 +91,65 @@ const MERCHANDISE_STATS_COLORS: { [key in Merchandise]?: string } = {
 }
 
 const EMPTY_STATISTICS: StatisticsReply = {
-    "currentTime": 1,
-    "merchandise": {
-        "WOOD": [],
-        "PLANK": [],
-        "STONE": [],
-        "FOOD": [],
-        "WATER": [],
-        "BEER": [],
-        "COAL": [],
-        "IRON": [],
-        "GOLD": [],
-        "IRON_BAR": [],
-        "COIN": [],
-        "TOOLS": [],
-        "WEAPONS": [],
-        "BOAT": [],
+    'currentTime': 1,
+    'merchandise': {
+        'WOOD': [],
+        'PLANK': [],
+        'STONE': [],
+        'FOOD': [],
+        'WATER': [],
+        'BEER': [],
+        'COAL': [],
+        'IRON': [],
+        'GOLD': [],
+        'IRON_BAR': [],
+        'COIN': [],
+        'TOOLS': [],
+        'WEAPONS': [],
+        'BOAT': [],
     },
-    "players": []
+    'players': []
 }
 
 // Sample data
 const sampleStatisticsData: StatisticsReply = {
-    "currentTime": 523,
-    "merchandise": {
-        "WOOD": [[1, 0], [23, 1]]
+    'currentTime': 523,
+    'merchandise': {
+        'WOOD': [[1, 0], [23, 1]]
     },
-    "players": [
+    'players': [
         {
-            "id": "1",
-            "buildingStatistics": {
-                "ForesterHut": [[1, 0], [23, 1]],
-                "Woodcutter": [[1, 0], [10, 1], [50, 2]],
-                "Sawmill": [[1, 0], [15, 1]],
-                "Quarry": [[1, 0], [72, 1]],
-                "Headquarter": [[1, 1]]
+            'id': '1',
+            'buildingStatistics': {
+                'ForesterHut': [[1, 0], [23, 1]],
+                'Woodcutter': [[1, 0], [10, 1], [50, 2]],
+                'Sawmill': [[1, 0], [15, 1]],
+                'Quarry': [[1, 0], [72, 1]],
+                'Headquarter': [[1, 1]]
             },
-            "general": {
-                "houses": [[1, 1], [23, 2]],
-                "workers": [[1, 23], [123, 30]],
-                "goods": [],
-                "military": [],
-                "coins": [],
-                "production": [],
-                "killedEnemies": [],
-                "land": [[1, 20], [15, 23], [120, 70], [230, 82]]
+            'general': {
+                'houses': [[1, 1], [23, 2]],
+                'workers': [[1, 23], [123, 30]],
+                'goods': [],
+                'military': [],
+                'coins': [],
+                'production': [],
+                'killedEnemies': [],
+                'land': [[1, 20], [15, 23], [120, 70], [230, 82]]
             }
         },
         {
-            "id": "2",
-            "buildingStatistics": {},
-            "general": {
-                "houses": [[1, 1]],
-                "workers": [[1, 23], [17, 24], [52, 25], [110, 27], [200, 28], [233, 29]],
-                "goods": [],
-                "military": [],
-                "coins": [],
-                "production": [],
-                "killedEnemies": [],
-                "land": [[1, 20], [10, 20], [150, 90], [270, 92]]
+            'id': '2',
+            'buildingStatistics': {},
+            'general': {
+                'houses': [[1, 1]],
+                'workers': [[1, 23], [17, 24], [52, 25], [110, 27], [200, 28], [233, 29]],
+                'goods': [],
+                'military': [],
+                'coins': [],
+                'production': [],
+                'killedEnemies': [],
+                'land': [[1, 20], [10, 20], [150, 90], [270, 92]]
             }
         }
     ]
@@ -162,7 +182,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
         }
 
         async function statisticsUpdated() {
-            console.log("Statistics updated")
+            console.log('Statistics updated')
 
             const statistics = await api.getStatistics()
 
@@ -175,13 +195,13 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
             setStatistics(statistics)
 
-            console.log(["Got statistics", statistics])
+            console.log(['Got statistics', statistics])
 
             // Subscribe to changes
             if (api.playerId) {
                 api.addStatisticsListener(statisticsUpdated, api.playerId)
             } else {
-                console.error("No player ID found")
+                console.error('No player ID found')
             }
         }
 
@@ -481,43 +501,86 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
 
                             {buildingsView === 'HISTORICAL' &&
                                 <>
-                                    <BuildingStatisticsGraph statistics={statistics ?? sampleStatisticsData} buildingType={selectedBuilding} setHover={setHoverInfo} />
-                                    <div className='select-building'>
-                                        {SMALL_HOUSES.map(house => {
-                                            const prettyHouse = buildingPretty(house)
+                                    <BuildingStatisticsGraph
+                                        statistics={statistics ?? sampleStatisticsData}
+                                        buildingType={selectedBuilding} setHover={setHoverInfo}
+                                        selectedPlayers={selectedPlayers}
+                                    />
+                                    Players:
+                                    <div>
+                                        {Array.from(api.players.values()).map(player => {
+                                            const selected = selectedPlayers.includes(player.id)
 
-                                            return (<div
-                                                key={house}
-                                                onClick={async () => {
-                                                    setSelectedBuilding(house)
-                                                }}
-                                                onMouseEnter={() => setHoverInfo(`Show statistics for ${prettyHouse.toLowerCase()}`)}
-                                                onMouseLeave={() => setHoverInfo(undefined)}
-                                            >
-                                                <HouseIcon nation={nation} houseType={house} drawShadow scale={0.5} />
-                                            </div>)
-                                        })
-                                        }
+                                            return (
+                                                <LivePlayerButton
+                                                    key={player.id}
+                                                    playerId={player.id}
+                                                    selected={selected}
+                                                    onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
+                                                        ? prev.filter(p => p !== player.id)
+                                                        : [...prev, player.id]
+                                                    )}
+                                                    onMouseEnter={() => setHoverInfo(selected
+                                                        ? `Hide statistics for ${player.name}`
+                                                        : `Show statistics for ${player.name}`)}
+                                                    onMouseLeave={() => setHoverInfo(undefined)}
+                                                />
+                                            )
+                                        })}
                                     </div>
-                                </>}
+
+                                    {(() => {
+                                        const housesContainer = (houseTypes: AnyBuilding[]) => (
+                                            <ItemContainer rows>
+                                                {houseTypes.map(house => {
+                                                    const prettyHouse = buildingPretty(house).toLowerCase()
+                                                    const selected = selectedBuilding === house
+
+                                                    return (
+                                                        <div
+                                                            key={house}
+                                                            style={{
+                                                                borderBottomWidth: '2px',
+                                                                borderBottomStyle: selected ? 'solid' : undefined,
+                                                                borderBottomColor: 'lightblue'
+                                                            }}
+                                                            onClick={() => {
+                                                                setSelectedBuilding(house)
+                                                            }}
+                                                            onMouseEnter={() => setHoverInfo(selected
+                                                                ? `Hide statistics for ${prettyHouse}`
+                                                                : `Show statistics for ${prettyHouse}`)}
+                                                            onMouseLeave={() => setHoverInfo(undefined)}
+                                                        >
+                                                            <HouseIcon nation={nation} houseType={house} drawShadow scale={0.5} />
+                                                        </div>)
+                                                })}
+                                            </ItemContainer>
+                                        )
+
+                                        return (<>
+                                            <div>
+                                                Small buildings
+                                                {housesContainer(SMALL_HOUSES)}
+                                            </div>
+                                            <div>
+                                                Medium buildings
+                                                {housesContainer(MEDIUM_HOUSES)}
+                                            </div>
+                                            <div>
+                                                Large buildings
+                                                {housesContainer(LARGE_HOUSES)}
+                                            </div>
+                                        </>)
+                                    })()}
+                                </>
+                            }
                         </>
                     }
-
                 </div>
             </Window>
         </>
     )
-}
-
-interface ChartData {
-    time: number
-    [key: string]: number | undefined
-}
-
-type MerchandiseGraphProps = {
-    statistics: StatisticsReply
-    selectedMerchandise: Merchandise[]
-    time: number
 }
 
 const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: MerchandiseGraphProps) => {
@@ -570,29 +633,29 @@ const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: Merchandise
     }
 
     return (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width='100%' height={400}>
             <LineChart
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
-                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
+                <CartesianGrid stroke='#444' strokeDasharray='2 2' fill='lightgray' />
                 <XAxis
-                    dataKey="time"
-                    label={{ value: "Time", position: 'insideBottom', offset: -5, fill: 'white' }}
-                    stroke="#FFFFFF"
-                    type="number"
+                    dataKey='time'
+                    label={{ value: 'Time', position: 'insideBottom', offset: -5, fill: 'white' }}
+                    stroke='#FFFFFF'
+                    type='number'
                     domain={[0, 'dataMax']}
                 />
                 <YAxis
-                    label={{ value: "Merchandise", angle: -90, position: 'insideLeft', fill: 'white' }}
-                    stroke="#FFFFFF"
+                    label={{ value: 'Merchandise', angle: -90, position: 'insideLeft', fill: 'white' }}
+                    stroke='#FFFFFF'
                     allowDecimals={false}
                     domain={[0, 'dataMax + 1']}
                 />
                 {MERCHANDISE_VALUES.map(category => (
                     <Line
                         key={category}
-                        type="stepAfter"
+                        type='stepAfter'
                         dataKey={category}
                         name={category}
                         stroke={MERCHANDISE_STATS_COLORS[category] ?? 'black'}
@@ -607,50 +670,47 @@ const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: Merchandise
     )
 }
 
-const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: BuildingStatisticsGraphProps) => {
-    // Collect all unique timestamps
-    const allTimestamps = new Set<number>()
-    statistics.players.forEach(player => {
-        player.buildingStatistics[buildingType]?.forEach(([time]) => allTimestamps.add(time))
-    })
+const BuildingStatisticsGraph = ({ statistics, buildingType, selectedPlayers, setHover }: BuildingStatisticsGraphProps) => {
+    const selectedStatistics = statistics.players.filter(player => selectedPlayers.includes(player.id))
 
-    // Sort timestamps
-    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+    // Collect all unique timestamps and sort them
+    const sortedTimestamps = [
+        ...new Set(selectedStatistics.flatMap(
+            player => player.buildingStatistics[buildingType]?.map(([time]) => time) ?? []
+        ))]
+        .sort((a, b) => a - b)
 
     // Initialize chart data with all timestamps
     const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
 
     // Fill in player data
-    statistics.players.forEach(player => {
-        let lastValue: number | undefined = undefined
+    selectedStatistics.forEach(player => {
         sortedTimestamps.forEach((time, index) => {
             const entry = chartData[index]
-            const found = player.buildingStatistics[buildingType]?.find(([t]) => t === time)
-            if (found) {
-                lastValue = found[1]
-            }
-            entry[`Player ${player.id}`] = lastValue // Carry forward last known value
+            const data = player.buildingStatistics[buildingType]?.find(([t]) => t === time)
+
+            entry[`Player ${player.id}`] = data?.[1]
         })
     })
 
-    // Ensure the graph extends to the current time
-    if (chartData.length > 0) {
-        if (chartData[chartData.length - 1].time != statistics.currentTime) {
-            chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
-        }
-    } else {
-        const zeroMeasurement: { [key: string]: number } = {}
-
-        statistics.players.forEach(player => {
-            zeroMeasurement[`Player ${player.id}`] = 0
+    // Add an initial empty value if the chart data array is empty
+    if (chartData.length == 0) {
+        chartData.push({
+            time: 0,
+            ...Object.fromEntries(selectedStatistics.map(player => [`Player ${player.id}`, 0])),
         })
+    }
 
-        chartData.push({ time: 0, ...zeroMeasurement })
-        chartData.push({ time: statistics.currentTime, ...zeroMeasurement })
+    // Put in a measurement for the current time if it's missing
+    if (chartData[chartData.length - 1].time < statistics.currentTime) {
+        chartData.push({
+            ...chartData[chartData.length - 1],
+            time: statistics.currentTime
+        })
     }
 
     return (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width='100%' height={400}>
             <LineChart
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
@@ -669,25 +729,24 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: Buildin
                     }*/
                 }}
             >
-                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
+                <CartesianGrid stroke='#444' strokeDasharray='2 2' fill='lightgray' />
                 <XAxis
-                    dataKey="time"
-                    label={{ value: "Time", position: "insideBottom", offset: -5, fill: "white" }}
-                    stroke="#FFFFFF"
-                    type="number"
+                    dataKey='time'
+                    label={{ value: 'Time', position: 'insideBottom', offset: -5, fill: 'white' }}
+                    stroke='#FFFFFF'
+                    type='number'
                     domain={[0, 'dataMax']}
                 />
                 <YAxis
-                    label={{ value: "Buildings", angle: -90, position: "insideLeft", fill: "white" }}
-                    stroke="#FFFFFF"
+                    label={{ value: 'Buildings', angle: -90, position: 'insideLeft', fill: 'white' }}
+                    stroke='#FFFFFF'
                     domain={[0, 'dataMax + 1']} // Set the domain to dataMin and dataMax
                     allowDecimals={false}
                 />
-                <Legend />
                 {statistics.players.map(player => (
                     <Line
                         key={player.id}
-                        type="stepAfter"
+                        type='stepAfter'
                         dataKey={`Player ${player.id}`}
                         name={api.players.get(player.id)?.name ?? `Player ${player.id}`}
                         stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
@@ -700,14 +759,6 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, setHover }: Buildin
             </LineChart>
         </ResponsiveContainer>
     )
-}
-
-type GeneralStatisticsGraphProps = {
-    statistics: StatisticsReply
-    statType: GeneralStatisticsType
-    selectedPlayers: PlayerId[]
-    time: number
-    setHover: (info: string | undefined) => void
 }
 
 const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, setHover }: GeneralStatisticsGraphProps) => {
@@ -751,7 +802,7 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
     }
 
     return (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width='100%' height={400}>
             <LineChart
                 data={chartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
@@ -770,12 +821,12 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
                     }*/
                 }}
             >
-                <CartesianGrid stroke="#444" strokeDasharray="2 2" fill="lightgray" />
-                <XAxis dataKey="time" stroke="#FFFFFF" type="number" domain={[0, 'dataMax']}>
-                    <Label value="Time" position="bottom" offset={-5} fill="white" style={{ textTransform: 'capitalize' }} />
+                <CartesianGrid stroke='#444' strokeDasharray='2 2' fill='lightgray' />
+                <XAxis dataKey='time' stroke='#FFFFFF' type='number' domain={[0, 'dataMax']}>
+                    <Label value='Time' position='bottom' offset={-5} fill='white' style={{ textTransform: 'capitalize' }} />
                 </XAxis>
-                <YAxis stroke="#FFFFFF" domain={[0, 'dataMax + 1']} allowDecimals={false}>
-                    <Label angle={-90} value={statType} position="left" offset={-5} fill="white" style={{ textTransform: 'capitalize' }} />
+                <YAxis stroke='#FFFFFF' domain={[0, 'dataMax + 1']} allowDecimals={false}>
+                    <Label angle={-90} value={statType} position='left' offset={-5} fill='white' style={{ textTransform: 'capitalize' }} />
                 </YAxis>
 
                 {statistics.players.map(player => {
@@ -804,7 +855,3 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
 }
 
 export default Statistics
-
-
-
-

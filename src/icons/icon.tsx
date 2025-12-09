@@ -172,7 +172,7 @@ const ANIMATION_INTERVAL = 100
 const MAX_FRAMES = 10
 
 // State
-const imageCache = new Map<HTMLImageElement, ImageBitmap>()
+const imageCache = new WeakMap<HTMLImageElement, ImageBitmap>()
 
 // React components
 const WorkerIcon = ({
@@ -307,55 +307,19 @@ const WorkerIcon = ({
     return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
 }
 
-const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEnter = undefined, onMouseLeave = undefined }: HouseProps) => {
-    const canvasRef = useRef<HTMLCanvasElement | null>(null)
-
-    const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
-    const [sourceImage, setSourceImage] = useState<ImageBitmap>()
+const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEnter, onMouseLeave }: HouseProps) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
 
     useEffect(() => {
-        (async () => {
+        let isCancelled = false
+
+        async function draw() {
             await houses.load()
-            const image = houses.getSourceImage()
 
-            if (image) {
-                let imageBitmap = imageCache.get(image)
-
-                if (!imageBitmap) {
-                    imageBitmap = await createImageBitmap(image)
-                    imageCache.set(image, imageBitmap)
-                }
-
-                setSourceImage(imageBitmap)
+            if (isCancelled) {
+                return
             }
 
-            const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
-
-            if (drawArray) {
-                setDimension({
-                    width: Math.max(
-                        drawArray[0].offsetX,
-                        drawArray[1].offsetX
-                    ) + Math.max(
-                        drawArray[0].width - drawArray[0].offsetX,
-                        drawArray[1].width - drawArray[1].offsetX
-                    ),
-                    height: Math.max(
-                        drawArray[0].offsetY,
-                        drawArray[1].offsetY
-                    ) + Math.max(
-                        drawArray[0].height - drawArray[0].offsetY,
-                        drawArray[1].height - drawArray[1].offsetY
-                    )
-                })
-            } else {
-                console.error('No image')
-            }
-        })()
-    }, [nation, houseType])
-
-    useEffect(() => {
-        (async () => {
             const canvas = canvasRef.current
 
             if (!canvas) {
@@ -370,50 +334,73 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
                 return
             }
 
-            resizeCanvasToDisplaySize(canvas)
-            context.clearRect(0, 0, canvas.width, canvas.height)
+            const image = houses.getSourceImage()
 
-            const drawArray = houses?.getDrawingInformationForHouseReady(nation, houseType)
+            if (image === undefined) {
+                console.error('No image available')
+                return
+            }
+
+            let imageBitmap = imageCache.get(image)
+
+            if (!imageBitmap) {
+                imageBitmap = await createImageBitmap(image)
+
+                if (isCancelled) {
+                    return
+                }
+
+                imageCache.set(image, imageBitmap)
+            }
+
+            const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
 
             if (!drawArray) {
                 console.error('No drawing information')
                 return
             }
 
+            context.clearRect(0, 0, canvas.width, canvas.height)
+
             const drawInfo = drawArray[0]
             const shadowInfo = drawArray[1]
 
-            if (sourceImage) {
-                if (drawShadow) {
-                    context.drawImage(
-                        sourceImage,
-                        shadowInfo.sourceX, shadowInfo.sourceY,
-                        shadowInfo.width, shadowInfo.height,
-                        (drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale,
-                        shadowInfo.width * scale, shadowInfo.height * scale
-                    )
+            canvas.width = Math.max(drawInfo.width * scale, shadowInfo.width * scale)
+            canvas.height = Math.max(drawInfo.height * scale, shadowInfo.height * scale)
 
-                    context.globalCompositeOperation = 'source-in'
-                    context.fillStyle = SHADOW_COLOR
-                    context.fillRect((drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale, shadowInfo.width * scale, shadowInfo.height * scale)
-                    context.globalCompositeOperation = 'source-over'
-                }
-
+            if (drawShadow) {
                 context.drawImage(
-                    sourceImage,
-                    drawInfo.sourceX, drawInfo.sourceY,
-                    drawInfo.width, drawInfo.height,
-                    0, 0,
-                    drawInfo.width * scale, drawInfo.height * scale
+                    imageBitmap,
+                    shadowInfo.sourceX, shadowInfo.sourceY,
+                    shadowInfo.width, shadowInfo.height,
+                    (drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale,
+                    shadowInfo.width * scale, shadowInfo.height * scale
                 )
+
+                context.globalCompositeOperation = 'source-in'
+                context.fillStyle = SHADOW_COLOR
+                context.fillRect((drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale, shadowInfo.width * scale, shadowInfo.height * scale)
+                context.globalCompositeOperation = 'source-over'
             }
-        })()
-    }, [nation, houseType, scale, drawShadow, sourceImage])
+
+            context.drawImage(
+                imageBitmap,
+                drawInfo.sourceX, drawInfo.sourceY,
+                drawInfo.width, drawInfo.height,
+                0, 0,
+                drawInfo.width * scale, drawInfo.height * scale
+            )
+        }
+
+        draw()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [nation, houseType])
 
     return <canvas
         ref={canvasRef}
-        width={dimension.width * scale}
-        height={dimension.height * scale}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
     />

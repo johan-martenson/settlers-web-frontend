@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../api/types'
 import { Dimension, DrawingInformation, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets/assets'
-import { resizeCanvasToDisplaySize } from '../utils/utils'
 import './icon.css'
 
 // Types
@@ -184,14 +183,16 @@ const WorkerIcon = ({
     color = 'BLUE',
     drawShadow = false
 }: WorkerIconProps) => {
+
+    // References
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
+    // State
     // eslint-disable-next-line
     const [animationIndexHolder, setAnimationIndexHolder] = useState<AnimationIndexHolder>({ animationIndex: 0 })
-    const [dimension, setDimension] = useState<Dimension>({ width: 0, height: 0 })
-    const [sourceImage, setSourceImage] = useState<ImageBitmap>()
 
-    const draw = useCallback(() => {
+    // Functions
+    const draw = useCallback((image: ImageBitmap, worker: WorkerType, nation: Nation, direction: Direction, color: PlayerColor, animationIndex: number) => {
         const canvas = canvasRef.current
 
         if (!canvas) {
@@ -202,15 +203,12 @@ const WorkerIcon = ({
         const context = canvas.getContext('2d')
 
         if (!context) {
-            console.error('No context')
+            console.error('No 2d drawing context')
             return
         }
 
-        resizeCanvasToDisplaySize(canvas)
-        context.clearRect(0, 0, canvas.width, canvas.height)
-
         const animationHandler = workers.get(worker)
-        const drawArray = animationHandler?.getAnimationFrame(nation, direction, color, 0, animationIndexHolder.animationIndex)
+        const drawArray = animationHandler?.getAnimationFrame(nation, direction, color, 0, animationIndex)
 
         if (!drawArray) {
             console.error('No drawing information')
@@ -220,91 +218,91 @@ const WorkerIcon = ({
         const drawInfo = drawArray[0]
         const shadowInfo = drawArray[1]
 
-        if (sourceImage) {
-            if (drawShadow) {
-                context.drawImage(
-                    sourceImage,
-                    shadowInfo.sourceX, shadowInfo.sourceY,
-                    shadowInfo.width, shadowInfo.height,
-                    (drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale,
-                    shadowInfo.width * scale, shadowInfo.height * scale
-                )
+        canvas.width = Math.max(drawInfo.width, shadowInfo.width) * scale
+        canvas.height = Math.max(drawInfo.height, shadowInfo.height) * scale
 
-                context.globalCompositeOperation = 'source-in'
-                context.fillStyle = SHADOW_COLOR
-                context.fillRect(
-                    (drawInfo.offsetX - shadowInfo.offsetX) * scale,
-                    (drawInfo.offsetY - shadowInfo.offsetY) * scale,
-                    shadowInfo.width * scale,
-                    shadowInfo.height * scale
-                )
-                context.globalCompositeOperation = 'source-over'
-            }
+        context.clearRect(0, 0, canvas.width, canvas.height)
 
+        if (drawShadow) {
             context.drawImage(
-                sourceImage,
-                drawInfo.sourceX, drawInfo.sourceY,
-                drawInfo.width, drawInfo.height,
-                0, 0,
-                drawInfo.width * scale, drawInfo.height * scale
+                image,
+                shadowInfo.sourceX, shadowInfo.sourceY,
+                shadowInfo.width, shadowInfo.height,
+                (drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale,
+                shadowInfo.width * scale, shadowInfo.height * scale
             )
-        }
-    }, [worker, nation, direction, scale, color, drawShadow, canvasRef, animationIndexHolder, sourceImage])
 
+            context.globalCompositeOperation = 'source-in'
+            context.fillStyle = SHADOW_COLOR
+            context.fillRect(
+                (drawInfo.offsetX - shadowInfo.offsetX) * scale,
+                (drawInfo.offsetY - shadowInfo.offsetY) * scale,
+                shadowInfo.width * scale,
+                shadowInfo.height * scale
+            )
+            context.globalCompositeOperation = 'source-over'
+        }
+
+        context.drawImage(
+            image,
+            drawInfo.sourceX, drawInfo.sourceY,
+            drawInfo.width, drawInfo.height,
+            0, 0,
+            drawInfo.width * scale, drawInfo.height * scale
+        )
+    }, [canvasRef])
+
+    // Effects
+    // Load image and drawing information
     useEffect(() => {
-        const loadAnimation = async () => {
+        let isCancelled = false;
+
+        (async () => {
             const animationHandler = workers.get(worker)
             if (!animationHandler) {
+                console.error(`No animation handler for worker: ${worker}`)
                 return
             }
 
             await animationHandler.load()
+
+            if (isCancelled) {
+                return
+            }
+
             const image = animationHandler.getImageAtlasHandler().getSourceImage()
 
-            if (image) {
-                let imageBitmap = imageCache.get(image)
-                if (!imageBitmap) {
-                    imageBitmap = await createImageBitmap(image)
-                    imageCache.set(image, imageBitmap)
-                }
-
-                setSourceImage(imageBitmap)
-
-                const drawArray = animationHandler.getAnimationFrame(nation, direction, color, 0, 0)
-
-                if (drawArray) {
-                    setDimension({
-                        width: Math.max(...drawArray.map(draw => draw.offsetX + draw.width)),
-                        height: Math.max(...drawArray.map(draw => draw.offsetY + draw.height))
-                    })
-                }
-            } else {
-                console.error('No image available')
+            if (!image) {
+                console.error(`No image available for worker: ${worker}`)
+                return
             }
+
+            let imageBitmap = imageCache.get(image)
+
+            if (!imageBitmap) {
+                imageBitmap = await createImageBitmap(image)
+                imageCache.set(image, imageBitmap)
+            }
+
+            draw(imageBitmap, worker, nation, direction, color, 0)
+
+            if (animate) {
+                const intervalId = setInterval(() => {
+                    animationIndexHolder.animationIndex = (animationIndexHolder.animationIndex + 1) % MAX_FRAMES
+
+                    requestAnimationFrame(() => draw(imageBitmap, worker, nation, direction, color, animationIndexHolder.animationIndex))
+                }, ANIMATION_INTERVAL)
+
+                return () => clearInterval(intervalId)
+            }
+        })()
+
+        return () => {
+            isCancelled = true
         }
+    }, [worker, nation, direction, color, animate])
 
-        loadAnimation()
-    }, [worker, nation, direction, color])
-
-    useEffect(() => {
-        if (animate) {
-            const intervalId = setInterval(() => {
-                animationIndexHolder.animationIndex = (animationIndexHolder.animationIndex + 1) % MAX_FRAMES
-
-                requestAnimationFrame(draw)
-            }, ANIMATION_INTERVAL)
-
-            return () => clearInterval(intervalId)
-        }
-    }, [animate])
-
-    useEffect(() => {
-        if (!animate && sourceImage && dimension.width > 0 && dimension.height > 0) {
-            draw() // Ensure the flag is drawn when image and dimensions are ready
-        }
-    }, [sourceImage, dimension, draw])
-
-    return <canvas ref={canvasRef} width={dimension.width * scale} height={dimension.height * scale} />
+    return <canvas ref={canvasRef} width={1} height={1} />
 }
 
 const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEnter, onMouseLeave }: HouseProps) => {
@@ -431,11 +429,7 @@ const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = 
             <img
                 src={url}
                 draggable={false}
-                onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                    const image = event.target as HTMLImageElement
-
-                    setImage(image)
-                }}
+                onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => setImage(event.target as HTMLImageElement)}
             />
         </div>
     )

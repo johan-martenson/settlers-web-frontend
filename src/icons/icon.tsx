@@ -175,9 +175,6 @@ const imageCache = new WeakMap<HTMLImageElement, ImageBitmap>()
 
 // Functions
 function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, shadowInfo: DrawingInformation, drawShadow: boolean, canvas: HTMLCanvasElement, scale: number): void {
-    canvas.width = Math.max(drawInfo.width, shadowInfo.width) * scale
-    canvas.height = Math.max(drawInfo.height, shadowInfo.height) * scale
-
     const context = canvas.getContext('2d')
 
     if (!context) {
@@ -185,34 +182,72 @@ function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, sh
         return
     }
 
-    // TODO: improve the dimensions by calculating differently depending on whether the shadow should be drawn
-
     if (drawShadow) {
+
+        // Calculate distance to center point in reference space
+        // E.g., left is distance from edge of image to reference point. A higher value means the image is further to the left
+        const aRight = drawInfo.width - drawInfo.offsetX
+        const aBottom = drawInfo.height - drawInfo.offsetY
+
+        const bRight = shadowInfo.width - shadowInfo.offsetX
+        const bBottom = shadowInfo.height - shadowInfo.offsetY
+
+        // Calculate distances for the combined image, still in reference space
+        const offsetX = Math.max(drawInfo.offsetX, shadowInfo.offsetX)
+        const offsetY = Math.max(drawInfo.offsetY, shadowInfo.offsetY)
+        const right = Math.max(aRight, bRight)
+        const bottom = Math.max(aBottom, bBottom)
+
+        const width = offsetX + right
+        const height = offsetY + bottom
+
+        // Scale the combined image
+        const targetWidth = width * scale
+        const targetHeight = height * scale
+
+        canvas.width = targetWidth
+        canvas.height = targetHeight
+
+        // Clear the area
+        context.clearRect(0, 0, targetWidth, targetHeight)
+
+        // Draw the shadow
         context.drawImage(
             image,
             shadowInfo.sourceX, shadowInfo.sourceY,
             shadowInfo.width, shadowInfo.height,
-            (drawInfo.offsetX - shadowInfo.offsetX) * scale, (drawInfo.offsetY - shadowInfo.offsetY) * scale,
+            (offsetX - shadowInfo.offsetX) * scale, (offsetY - shadowInfo.offsetY) * scale,
             shadowInfo.width * scale, shadowInfo.height * scale
         )
 
         context.globalCompositeOperation = 'source-in'
         context.fillStyle = SHADOW_COLOR
         context.fillRect(
-            (drawInfo.offsetX - shadowInfo.offsetX) * scale,
-            (drawInfo.offsetY - shadowInfo.offsetY) * scale,
+            (offsetX - shadowInfo.offsetX) * scale, (offsetY - shadowInfo.offsetY) * scale,
             shadowInfo.width * scale,
             shadowInfo.height * scale
         )
         context.globalCompositeOperation = 'source-over'
-    }
 
-    context.drawImage(
-        image,
-        drawInfo.sourceX, drawInfo.sourceY,
-        drawInfo.width, drawInfo.height,
-        0, 0,
-        drawInfo.width * scale, drawInfo.height * scale)
+        // Draw the foreground image
+        context.drawImage(
+            image,
+            drawInfo.sourceX, drawInfo.sourceY,
+            drawInfo.width, drawInfo.height,
+            (offsetX - drawInfo.offsetX) * scale, (offsetY - drawInfo.offsetY) * scale,
+            drawInfo.width * scale, drawInfo.height * scale)
+    } else {
+        canvas.width = drawInfo.width * scale
+        canvas.height = drawInfo.height * scale
+
+        // Draw the foreground image only
+        context.drawImage(
+            image,
+            drawInfo.sourceX, drawInfo.sourceY,
+            drawInfo.width, drawInfo.height,
+            0, 0,
+            drawInfo.width * scale, drawInfo.height * scale)
+    }
 }
 
 // React components

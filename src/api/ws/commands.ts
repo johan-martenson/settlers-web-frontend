@@ -1,5 +1,5 @@
 import { PointMap } from "../../utils/util_types"
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, ProductionStatistics, LandStatistics, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics, Tool } from "../types"
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics, Tool } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
@@ -134,8 +134,6 @@ enum Command {
     ListenToGameInfo = 'LISTEN_TO_GAME_INFO',
     StartDetailedMonitoring = 'START_DETAILED_MONITORING',
     StopDetailedMonitoring = 'STOP_DETAILED_MONITORING',
-    GetGameStatistics = 'GET_PRODUCTION_STATISTICS',
-    GetLandStatistics = 'GET_LAND_STATISTICS',
     GetStatistics = 'GET_STATISTICS',
     ListenToStatistics = 'LISTEN_TO_STATISTICS',
     StopListeningToStatistics = 'STOP_LISTENING_TO_STATISTICS',
@@ -372,22 +370,6 @@ function evacuateHouse(houseId: HouseId): void {
  */
 async function getStatistics(): Promise<StatisticsReply> {
     return (await sendRequestAndWaitForReply<{ statistics: StatisticsReply }>(Command.GetStatistics)).statistics
-}
-
-/**
- * Retrieves land statistics from the game.
- * @returns {Promise<LandStatistics>} The land statistics.
- */
-async function getLandStatistics(): Promise<LandStatistics> {
-    return (await sendRequestAndWaitForReply<{ landStatistics: LandStatistics }>(Command.GetLandStatistics)).landStatistics
-}
-
-/**
- * Retrieves production statistics from the game.
- * @returns {Promise<ProductionStatistics>} The production statistics.
- */
-async function getProductionStatistics(): Promise<ProductionStatistics> {
-    return (await sendRequestAndWaitForReply<{ productionStatistics: ProductionStatistics }>(Command.GetGameStatistics)).productionStatistics
 }
 
 /**
@@ -1171,8 +1153,6 @@ export {
     cancelEvacuationForHouse,
     setTransportPriorityForMaterial,
     getTerrainForMap,
-    getProductionStatistics,
-    getLandStatistics,
     getStatistics,
     getTransportPriority,
     listenToStatistics,

@@ -41,6 +41,13 @@ type GameMenuProps = {
     onViewMap: () => void
 }
 
+
+// Configuration
+export const gameMenuDebugSettings = {
+    log: false
+}
+
+
 // React components
 const GameMenu = ({
     minZoom,
@@ -79,7 +86,10 @@ const GameMenu = ({
     useEffect(() => {
         const callback = {
             onGameSpeedChanged: (gameSpeed: GameSpeed) => {
-                console.log(`NEW GAME SPEED: ${gameSpeed}`)
+                if (gameMenuDebugSettings.log) {
+                    console.log(`NEW GAME SPEED: ${gameSpeed}`)
+                }
+
                 setGameSpeed(gameSpeed)
             }
         }
@@ -109,11 +119,19 @@ const GameMenu = ({
                             value={zoom}
                             step={1}
                             onChange={(_event: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
+                                if (gameMenuDebugSettings.log) {
+                                    console.log(`Zoom to ${data.value}`)
+                                }
+
                                 onChangedZoom(data.value)
                                 setZoom(data.value)
                             }}
                         />
                         <Button onClick={() => {
+                            if (gameMenuDebugSettings.log) {
+                                console.log(`Reset zoom to ${defaultZoom}`)
+                            }
+
                             onChangedZoom(defaultZoom)
                             setZoom(DEFAULT_SCALE)
                         }}

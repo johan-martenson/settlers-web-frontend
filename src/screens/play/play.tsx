@@ -135,6 +135,14 @@ const MAX_SCALE = 150
 const MIN_SCALE = 10
 const ARROW_KEY_MOVE_DISTANCE = 20
 
+
+// Configuration
+export const playConfigurationDebug = {
+    events: false,
+    effects: false
+}
+
+
 // State
 export const immediateState = {
     mouseDown: false,
@@ -214,7 +222,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [player, setPlayer] = useState<PlayerInformation>()
 
     // eslint-disable-next-line
-    const [ongoingTouches, neverSetOngoingTouched] = useState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
+    const [ongoingTouches, neverSetOngoingTouches] = useState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
 
     // eslint-disable-next-line
     const [nextWindowIdContainer, neverSetNextWindowIdContainer] = useState<{ nextWindowId: number }>({ nextWindowId: 0 })
@@ -230,10 +238,28 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     // Effects
     useEffect(() => {
+        if (playConfigurationDebug.effects) {
+            console.log(`Use effect: show menu. Show menu: ${showMenu}`)
+        }
+
+        if (!showMenu) {
+            selfContainerRef?.current?.focus()
+        }
+    }, [showMenu])
+
+    useEffect(() => {
+        if (playConfigurationDebug.effects) {
+            console.log(`Use effect: new road. New road: ${JSON.stringify(newRoad)}`)
+        }
+
         setCursor(newRoad === undefined ? 'NOTHING' : 'BUILDING_ROAD')
     }, [newRoad])
 
     useEffect(() => {
+        if (playConfigurationDebug.effects) {
+            console.log(`Use effect: gameId or playerId changed. GameId: ${gameId}, PlayerId: ${selfPlayerId}`)
+        }
+
         async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId): Promise<void> {
             await api.connectAndWaitForConnection()
 
@@ -241,18 +267,25 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             await api.followGame(gameId, selfPlayerId)
         }
 
-        console.log('Use effect: Start listening to game')
+        if (playConfigurationDebug.effects) {
+            console.log(`Start listening to game with gameId ${gameId} and playerId ${selfPlayerId}`)
+        }
 
         connectAndFollow(gameId, selfPlayerId)
 
         return () => {
-            console.log('Use effect: Stop listening to game')
+            if (playConfigurationDebug.effects) {
+                console.log('Stop listening to game')
+            }
+
             api.removeGameStateListener(gameMonitorCallbacks)
         }
     }, [gameId, selfPlayerId])
 
     useEffect(() => {
-        console.log('Use effect: start event and window resize listeners')
+        if (playConfigurationDebug.effects) {
+            console.log('Use effect: start event and window resize listeners')
+        }
 
         function nopEventListener(event: MouseEvent): void {
             event.preventDefault()
@@ -271,7 +304,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         window.addEventListener('resize', windowResizeListener)
 
         return () => {
-            console.log('Use effect: removing event and window resize listeners')
+            if (playConfigurationDebug.effects) {
+                console.log('Removing event and window resize listeners')
+            }
 
             document.removeEventListener('contextmenu', nopEventListener)
             window.removeEventListener('resize', windowResizeListener)
@@ -279,7 +314,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [selfContainerRef])
 
     useEffect(() => {
+        if (playConfigurationDebug.effects) {
+            console.log('Use effect: set commands, center on headquarters')
+        }
+
         function setTypingCommands(): void {
+            if (playConfigurationDebug.effects) {
+                console.log('Set commands')
+            }
+
             const player = api.players.get(selfPlayerId)
             const nation = player?.nation ?? 'VIKINGS'
             const color = player?.color ?? 'GREEN'
@@ -439,8 +482,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             setCommands(commands)
         }
 
-        console.log('Use effect: set commands')
-
         api.waitForGameDataAvailable().then(() => {
             setTypingCommands()
             setPlayer(api.players.get(selfPlayerId))
@@ -450,27 +491,31 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     width: selfContainerRef.current.clientWidth,
                     height: selfContainerRef.current.clientHeight
                 }
-
-                if (!showMenu) {
-                    selfContainerRef.current.focus()
-                }
             }
 
             // Center the view on the headquarter on the first update
+            if (playConfigurationDebug.effects) {
+                console.log('Center on headquarters')
+            }
+
             const headquarter = getHeadquarterForPlayer(selfPlayerId)
             if (headquarter) {
                 goToHouse(headquarter.id)
             }
         })
-    }, [monitoringReady, selfPlayerId, showMenu])
+    }, [monitoringReady, selfPlayerId])
 
     useEffect(() => {
-        console.log('Use effect: start sound effects')
+        if (playConfigurationDebug.effects) {
+            console.log('Use effect: start sound effects')
+        }
 
         sfx.startEffects(immediateState)
 
         return () => {
-            console.log('Use effect: stop sound effects')
+            if (playConfigurationDebug.effects) {
+                console.log('Stop sound effects')
+            }
 
             sfx.stopEffects()
         }

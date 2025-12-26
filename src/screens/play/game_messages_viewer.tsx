@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import './game_messages_viewer.css'
 import { api } from '../../api/ws-api'
-import { HouseId, Point, GameMessage, Nation, GameMessageId } from '../../api/types'
+import { Point, GameMessage, Nation } from '../../api/types'
 import { HouseIcon, UiIcon, WorkerIcon } from '../../icons/icon'
 import { ShipIcon } from '../../icons/ship'
 import { ItemContainer } from '../../components/item_container'
+import { useGameMessages } from '../../utils/hooks/hooks'
 
 // Types
 type GameMessagesViewerProps = {
     nation: Nation
 
-    onGoToHouse: (houseId: HouseId) => void
     onGoToPoint: (point: Point) => void
 }
 
@@ -23,31 +23,15 @@ function removeMessage(message: GameMessage): void {
 
 // React components
 // eslint-disable-next-line
-const GameMessagesViewer = ({ nation, onGoToHouse, onGoToPoint }: GameMessagesViewerProps) => {
+const GameMessagesViewer = ({ nation, onGoToPoint }: GameMessagesViewerProps) => {
+
+    // State
     const [expanded, setExpanded] = useState<boolean>(false)
-    const [messages, setMessages] = useState<GameMessage[]>(Array.from(api.messages.values()))
 
-    useEffect(() => {
+    // Monitoring hooks
+    const messages = useGameMessages()
 
-        // eslint-disable-next-line
-        const messageReceiver = (_receivedMessages: GameMessage[], _readMessages: GameMessage[], _removedMessages: GameMessageId[]) => {
-            if (expanded) {
-                const unreadMessages = Array.from(api.messages.values()).filter(message => !message.isRead)
-
-                if (unreadMessages.length > 0) {
-                    api.markGameMessagesRead(unreadMessages.map(message => message.id))
-                }
-            }
-
-            setMessages(Array.from(api.messages.values()))
-        }
-
-        // Subscribe to received messages
-        api.addMessagesListener(messageReceiver)
-
-        return () => api.removeMessagesListener(messageReceiver)
-    }, [expanded])
-
+    // Rendering
     const unreadMessages = messages.filter(message => !message.isRead)
 
     return (

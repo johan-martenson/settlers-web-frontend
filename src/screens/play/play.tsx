@@ -571,16 +571,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }, [])
 
-    const scrollToHouse = useCallback((houseId: HouseId) => {
-        console.info('Go to house: ' + houseId)
-
-        const house = api.houses.get(houseId)
-        if (house) {
-            scrollToPoint({ x: house.x, y: house.y })
-            setSelected({ x: house.x, y: house.y })
-        }
-    }, [])
-
     const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
         animator.animateSeveral('TRANSLATE', newTranslate => {
             immediateState.translate = { x: newTranslate[0], y: newTranslate[1] }
@@ -1264,7 +1254,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             <GameMessagesViewer
                 nation={player?.nation ?? 'ROMANS'}
-                onGoToHouse={scrollToHouse}
                 onGoToPoint={scrollToPoint}
             />
 

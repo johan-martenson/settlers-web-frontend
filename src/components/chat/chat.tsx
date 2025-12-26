@@ -1,10 +1,11 @@
 import { Button, Input, InputOnChangeData } from '@fluentui/react-components'
-import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
+import React, { ChangeEvent, useCallback, useRef, useState } from 'react'
 import { api } from '../../api/ws-api'
-import { ChatMessage, PlayerId, RoomId } from '../../api/types'
+import { PlayerId, RoomId } from '../../api/types'
 import './chat.css'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import { ItemContainer } from '../item_container'
+import { useChatMessages } from '../../utils/hooks/hooks'
 
 // Types
 type ChatBoxProps = {
@@ -19,24 +20,17 @@ type ExpandChatBoxProps = {
 
 // React components
 function ChatBox({ playerId, roomId }: ChatBoxProps) {
-    const inputRef = useRef<HTMLInputElement | null>(null)
 
-    const [chatLog, setChatLog] = useState<ChatMessage[]>(api.chatRoomMessages)
+    // References
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    // State
     const [messageText, setMessageText] = useState<string>('')
 
-    useEffect(
-        () => {
-            function changedChatLog(): void {
-                setChatLog([...api.chatRoomMessages])
-            }
+    // Listening hooks
+    const chatLog = useChatMessages(playerId, [roomId])
 
-            setChatLog(api.chatRoomMessages)
-            api.addChatMessagesListener(changedChatLog, playerId, [roomId])
-
-            return () => api.removeChatMessagesListener(changedChatLog)
-        }, [roomId, playerId]
-    )
-
+    // Functions
     const sendMessage = useCallback(() => {
         const message = inputRef.current?.value
         setMessageText('')
@@ -50,9 +44,6 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
         <div className='chat-box'>
             <ItemContainer>
                 {chatLog
-                    .filter(chatMessage =>
-                        chatMessage?.toRoomId === roomId ||
-                        chatMessage?.toPlayers?.some(p => p === playerId))
                     .map(chatMessage => (
                         <div key={chatMessage.id} className='chat-entry'>
                             [{chatMessage.time.hours.toString().padStart(2, '0')}:{chatMessage.time.minutes.toString().padStart(2, '0')}] {chatMessage.fromName}: {chatMessage.text}

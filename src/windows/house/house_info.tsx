@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Button, Field } from '@fluentui/react-components'
 import { AttackType, HouseInformation, Nation, PlayerId, Point, isMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
@@ -10,6 +10,7 @@ import { ButtonRow, Window } from '../../components/dialog'
 import { houseIsReady, isMilitaryBuilding } from '../../api/utils'
 import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
+import { useHouse } from '../../utils/hooks/hooks'
 
 // Types
 type HouseInfoProps = {
@@ -59,16 +60,12 @@ type ProductionBuildingProps = {
 
 // React components
 const HouseInfo = ({ selfPlayerId, nation, goToPoint, onClose, onRaise, ...props }: HouseInfoProps) => {
-    const [house, setHouse] = useState<HouseInformation>(props.house)
 
+    // Hooks
+    const house = useHouse(props.house.id)
+
+    // Rendering
     const isOwnHouse = (house.playerId === selfPlayerId)
-
-    useEffect(() => {
-        const houseListener = (house: HouseInformation) => setHouse(house)
-        api.addHouseListener(house.id, houseListener)
-
-        return () => api.removeHouseListener(house.id, houseListener)
-    }, [house.id])
 
     return (
         <>

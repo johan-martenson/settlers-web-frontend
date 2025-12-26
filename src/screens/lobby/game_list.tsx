@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { MenuTrigger, MenuPopover, Menu, MenuList, MenuItem, MenuButton, Skeleton, SkeletonItem } from '@fluentui/react-components'
 import {
     TableBody,
@@ -10,7 +10,7 @@ import {
 } from '@fluentui/react-components'
 import './game_list.css'
 import { GameId, GameInformation } from '../../api/types'
-import { api } from '../../api/ws-api'
+import { useGames } from '../../utils/hooks/hooks'
 
 // Types
 type GameListProps = {
@@ -36,26 +36,7 @@ const COLUMNS = [
 
 // React components
 const GameList = ({ onJoinGame }: GameListProps) => {
-    const [games, setGames] = useState<GameInformation[] | undefined>()
-
-    useEffect(() => {
-        function gameListChanged(gameInformations: GameInformation[]): void {
-            setGames(gameInformations)
-        }
-
-        async function connectAndHandleList(): Promise<void> {
-            await api.connectAndWaitForConnection()
-            api.addGamesListener(gameListChanged)
-
-            const games = await api.getGames()
-            console.log(games)
-            setGames(games)
-        }
-
-        connectAndHandleList()
-
-        return () => api.removeGamesListener(gameListChanged)
-    }, [])
+    const games = useGames()
 
     return (
         <>

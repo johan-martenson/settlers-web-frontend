@@ -1,36 +1,272 @@
-import { useEffect, useState } from "react"
-import { ChatMessage, GameInformation, GameMessage, GameMessageId, HouseId, HouseInformation, PlayerId, RoomId } from "../../api/types"
-import { api } from "../../api/ws-api"
+import { useEffect, useState } from 'react'
+import {
+    ChatMessage,
+    GameInformation,
+    GameMessage,
+    GameMessageId,
+    HouseId,
+    HouseInformation,
+    MapInformation,
+    PlayerId,
+    PlayerInformation,
+    RoomId,
+    TRANSPORT_CATEGORIES,
+    TransportCategory
+} from '../../api/types'
+import { api } from '../../api/ws-api'
+import { StatisticsReply } from '../../api/ws/commands'
 
 // Configuration
 export const HooksConfig = {
-    log: true
+    useTime: false,
+    useStatistics: false,
+    useTransportPriority: false,
+    usePlayer: false,
+    useMaps: false,
+    useHouse: false,
+    useChatMessages: false,
+    useGameMessages: false,
+    useGames: false
 }
 
-// Custom hooks
-function useHouse(houseId: HouseId): HouseInformation {
-    const [house, setHouse] = useState<HouseInformation | undefined>(api.houses.get(houseId))
+// Constants
+const EMPTY_STATISTICS: StatisticsReply = {
+    currentTime: 1,
+    merchandise: {
+        WOOD: [],
+        PLANK: [],
+        STONE: [],
+        FOOD: [],
+        WATER: [],
+        BEER: [],
+        COAL: [],
+        IRON: [],
+        GOLD: [],
+        IRON_BAR: [],
+        COIN: [],
+        TOOLS: [],
+        WEAPONS: [],
+        BOAT: [],
+    },
+    players: []
+}
+
+// Hooks
+function useTime(delta: number): number {
+    const [time, setTime] = useState<number>(() => {
+        const value = api.time
+
+        if (HooksConfig.useTime) {
+            console.log('Hooks (useTime): Initial state', value)
+        }
+
+        return value
+    })
 
     useEffect(() => {
-        const houseListener = (house: HouseInformation) => {
-            if (HooksConfig.log) {
-                console.log('Hooks: house changed', house)
+        const listener = (updatedTime: number) => {
+            if (HooksConfig.useTime) {
+                console.log('Hooks (useTime): Update received', updatedTime)
+            }
+
+            setTime(prev =>
+                updatedTime > prev + delta
+                    ? updatedTime
+                    : prev
+            )
+        }
+
+        api.addTimeListener(listener)
+
+        if (HooksConfig.useTime) {
+            console.log('Hooks (useTime): Listener registered')
+        }
+
+        return () => {
+            api.removeTimeListener(listener)
+
+            if (HooksConfig.useTime) {
+                console.log('Hooks (useTime): Listener removed')
+            }
+        }
+    }, [delta])
+
+    return time
+}
+
+function useStatistics(playerId: PlayerId): StatisticsReply {
+    const [statistics, setStatistics] = useState<StatisticsReply>(() => {
+        if (HooksConfig.useStatistics) {
+            console.log('Hooks (useStatistics): Initial state')
+        }
+
+        return EMPTY_STATISTICS
+    })
+
+    useEffect(() => {
+        const listener = async () => {
+            const statistics = await api.getStatistics()
+
+            if (HooksConfig.useStatistics) {
+                console.log('Hooks (useStatistics): Update received')
+            }
+
+            setStatistics(statistics)
+        }
+
+        api.addStatisticsListener(listener, playerId)
+
+        if (HooksConfig.useStatistics) {
+            console.log('Hooks (useStatistics): Listener registered', playerId)
+        }
+
+        listener()
+
+        return () => {
+            api.removeStatisticsListener(listener)
+
+            if (HooksConfig.useStatistics) {
+                console.log('Hooks (useStatistics): Listener removed', playerId)
+            }
+        }
+    }, [playerId])
+
+    return statistics
+}
+
+function useTransportPriority(): TransportCategory[] {
+    const [priority, setPriority] = useState<TransportCategory[]>(() => {
+        const value = api.transportPriority ?? Array.from(TRANSPORT_CATEGORIES)
+
+        if (HooksConfig.useTransportPriority) {
+            console.log('Hooks (useTransportPriority): Initial state', value)
+        }
+
+        return value
+    })
+
+    useEffect(() => {
+        const listener = (priority: TransportCategory[]) => {
+            if (HooksConfig.useTransportPriority) {
+                console.log('Hooks (useTransportPriority): Update received', priority)
+            }
+
+            setPriority(priority)
+        }
+
+        api.addTransportPriorityListener(listener)
+
+        if (HooksConfig.useTransportPriority) {
+            console.log('Hooks (useTransportPriority): Listener registered')
+        }
+
+        return () => {
+            api.removeTransportPriorityListener(listener)
+
+            if (HooksConfig.useTransportPriority) {
+                console.log('Hooks (useTransportPriority): Listener removed')
+            }
+        }
+    }, [])
+
+    return priority
+}
+
+function usePlayer(playerId: PlayerId): PlayerInformation {
+    const [player, setPlayer] = useState<PlayerInformation | undefined>(() => {
+        const value = api.players.get(playerId)
+
+        if (HooksConfig.usePlayer) {
+            console.log('Hooks (usePlayer): Initial state', playerId, value)
+        }
+
+        return value
+    })
+
+    useEffect(() => {
+        const listener = (player: PlayerInformation) => {
+            if (HooksConfig.usePlayer) {
+                console.log('Hooks (usePlayer): Update received', playerId)
+            }
+
+            setPlayer(player)
+        }
+
+        api.addPlayerInformationListener(playerId, listener)
+
+        if (HooksConfig.usePlayer) {
+            console.log('Hooks (usePlayer): Listener registered', playerId)
+        }
+
+        return () => {
+            api.removePlayerInformationListener(playerId, listener)
+
+            if (HooksConfig.usePlayer) {
+                console.log('Hooks (usePlayer): Listener removed', playerId)
+            }
+        }
+    }, [playerId])
+
+    if (!player) {
+        throw new Error(`Hooks: player with id ${playerId} not found`)
+    }
+
+    return player
+}
+
+function useMaps(): MapInformation[] {
+    const [maps, setMaps] = useState<MapInformation[]>(() => {
+        if (HooksConfig.useMaps) {
+            console.log('Hooks (useMaps): Initial state')
+        }
+
+        return []
+    })
+
+    useEffect(() => {
+        api.getMaps().then(maps => {
+            if (HooksConfig.useMaps) {
+                console.log('Hooks (useMaps): Update received', maps)
+            }
+
+            setMaps(maps)
+        })
+    }, [])
+
+    return maps
+}
+
+function useHouse(houseId: HouseId): HouseInformation {
+    const [house, setHouse] = useState<HouseInformation | undefined>(() => {
+        const value = api.houses.get(houseId)
+
+        if (HooksConfig.useHouse) {
+            console.log('Hooks (useHouse): Initial state', houseId, value)
+        }
+
+        return value
+    })
+
+    useEffect(() => {
+        const listener = (house: HouseInformation) => {
+            if (HooksConfig.useHouse) {
+                console.log('Hooks (useHouse): Update received', houseId, house)
             }
 
             setHouse(house)
         }
 
-        api.addHouseListener(houseId, houseListener)
+        api.addHouseListener(houseId, listener)
 
-        if (HooksConfig.log) {
-            console.log(`Hooks: started listening to changes for house with id ${houseId}`)
+        if (HooksConfig.useHouse) {
+            console.log('Hooks (useHouse): Listener registered', houseId)
         }
 
         return () => {
-            api.removeHouseListener(houseId, houseListener)
+            api.removeHouseListener(houseId, listener)
 
-            if (HooksConfig.log) {
-                console.log(`Hooks: stopped listening to changes for house with id ${houseId}`)
+            if (HooksConfig.useHouse) {
+                console.log('Hooks (useHouse): Listener removed', houseId)
             }
         }
     }, [houseId])
@@ -43,69 +279,84 @@ function useHouse(houseId: HouseId): HouseInformation {
 }
 
 function useChatMessages(playerId: PlayerId, roomIds: RoomId[]): ChatMessage[] {
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>(api.chatRoomMessages)
+    const [messages, setMessages] = useState<ChatMessage[]>(() => {
+        const value = api.chatRoomMessages
 
-    useEffect(() => {
-        const chatMessagesListener = () => {
-            if (HooksConfig.log) {
-                console.log('Hooks: chat messages changed')
-            }
-
-            setChatMessages(api.chatRoomMessages)
+        if (HooksConfig.useChatMessages) {
+            console.log('Hooks (useChatMessages): Initial state', value)
         }
 
-        api.addChatMessagesListener(chatMessagesListener, playerId, roomIds)
+        return value
+    })
 
-        if (HooksConfig.log) {
-            console.log('Hooks: started listening to chat messages')
+    useEffect(() => {
+        const listener = () => {
+            if (HooksConfig.useChatMessages) {
+                console.log('Hooks (useChatMessages): Update received')
+            }
+
+            setMessages(api.chatRoomMessages)
+        }
+
+        api.addChatMessagesListener(listener, playerId, roomIds)
+
+        if (HooksConfig.useChatMessages) {
+            console.log('Hooks (useChatMessages): Listener registered', playerId, roomIds)
         }
 
         return () => {
-            api.removeChatMessagesListener(chatMessagesListener)
+            api.removeChatMessagesListener(listener)
 
-            if (HooksConfig.log) {
-                console.log('Hooks: stopped listening to chat messages')
+            if (HooksConfig.useChatMessages) {
+                console.log('Hooks (useChatMessages): Listener removed', playerId, roomIds)
             }
         }
     }, [playerId, roomIds.join('|')])
 
-    return chatMessages
+    return messages
 }
 
 function useGameMessages(): GameMessage[] {
-    const [messages, setMessages] = useState<GameMessage[]>(Array.from(api.messages.values()))
+    const [messages, setMessages] = useState<GameMessage[]>(() => {
+        const value = Array.from(api.messages.values())
+
+        if (HooksConfig.useGameMessages) {
+            console.log('Hooks (useGameMessages): Initial state', value)
+        }
+
+        return value
+    })
 
     useEffect(() => {
-
-        // eslint-disable-next-line
-        const messageReceiver = (_receivedMessages: GameMessage[], _readMessages: GameMessage[], _removedMessages: GameMessageId[]) => {
-            if (HooksConfig.log) {
-                console.log('Hooks: game messages changed')
+        const listener = (
+            _received: GameMessage[],
+            _read: GameMessage[],
+            _removed: GameMessageId[]
+        ) => {
+            if (HooksConfig.useGameMessages) {
+                console.log('Hooks (useGameMessages): Update received')
             }
 
-            const unreadMessages = Array.from(api.messages.values()).filter(message => !message.isRead)
+            const unread = Array.from(api.messages.values()).filter(m => !m.isRead)
 
-            if (unreadMessages.length > 0) {
-                api.markGameMessagesRead(unreadMessages.map(message => message.id))
+            if (unread.length > 0) {
+                api.markGameMessagesRead(unread.map(m => m.id))
             }
 
             setMessages(Array.from(api.messages.values()))
         }
 
-        setMessages(Array.from(api.messages.values()))
+        api.addMessagesListener(listener)
 
-        // Subscribe to received messages
-        api.addMessagesListener(messageReceiver)
-
-        if (HooksConfig.log) {
-            console.log('Hooks: started listening to game messages')
+        if (HooksConfig.useGameMessages) {
+            console.log('Hooks (useGameMessages): Listener registered')
         }
 
         return () => {
-            api.removeMessagesListener(messageReceiver)
+            api.removeMessagesListener(listener)
 
-            if (HooksConfig.log) {
-                console.log('Hooks: stopped listening to game messages')
+            if (HooksConfig.useGameMessages) {
+                console.log('Hooks (useGameMessages): Listener removed')
             }
         }
     }, [])
@@ -114,52 +365,51 @@ function useGameMessages(): GameMessage[] {
 }
 
 function useGames(): GameInformation[] {
-    const [games, setGames] = useState<GameInformation[] | undefined>()
-
-    useEffect(() => {
-        function gameListChanged(gameInformations: GameInformation[]): void {
-            if (HooksConfig.log) {
-                console.log('Hooks: game list changed')
-            }
-
-            setGames(gameInformations)
+    const [games, setGames] = useState<GameInformation[]>(() => {
+        if (HooksConfig.useGames) {
+            console.log('Hooks (useGames): Initial state')
         }
 
-        async function getGamesAndAddListener(): Promise<void> {
-            api.addGamesListener(gameListChanged)
+        return []
+    })
 
-            if (HooksConfig.log) {
-                console.log('Hooks: started listening for game list')
-            }
-
-            const games = await api.getGames()
-
-            if (HooksConfig.log) {
-                console.log('Hooks: returning game list')
-                console.log(games)
+    useEffect(() => {
+        const listener = (games: GameInformation[]) => {
+            if (HooksConfig.useGames) {
+                console.log('Hooks (useGames): Update received', games)
             }
 
             setGames(games)
         }
 
-        getGamesAndAddListener()
+        api.addGamesListener(listener)
+
+        if (HooksConfig.useGames) {
+            console.log('Hooks (useGames): Listener registered')
+        }
+
+        api.getGames().then(setGames)
 
         return () => {
-            api.removeGamesListener(gameListChanged)
+            api.removeGamesListener(listener)
 
-            if (HooksConfig.log) {
-                console.log('Hooks: stopped listening for game list')
+            if (HooksConfig.useGames) {
+                console.log('Hooks (useGames): Listener removed')
             }
         }
     }, [])
 
-    return games ?? []
+    return games
 }
-
 
 export {
     useHouse,
     useChatMessages,
     useGameMessages,
-    useGames
+    useGames,
+    useMaps,
+    usePlayer,
+    useTransportPriority,
+    useStatistics,
+    useTime
 }

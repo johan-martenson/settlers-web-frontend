@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import MapInformationCard from './map_information_card'
 import './map_list.css'
 import { MapInformation } from '../../api/types'
-import { api } from '../../api/ws-api'
+import { useMaps } from '../../utils/hooks/hooks'
 
 // Types
 type MapListProps = {
@@ -28,17 +28,14 @@ const MapList = ({
     filterMaxPlayers = DEFAULT_MAX_PLAYERS,
     onMapSelected
 }: MapListProps) => {
-    const [maps, setMaps] = useState<MapInformation[]>([])
-    const [defaultSelectDone, setDefaultSelectDone] = useState<boolean>(false)
 
-    useEffect(() => {
-        (async () => {
-            const maps = await api.getMaps()
+    // State
+    const [defaultSelectDone, setDefaultSelectDone] = useState(false)
 
-            setMaps(maps)
-        })()
-    }, [])
+    // Monitoring hooks
+    const maps = useMaps()
 
+    // Effects
     useEffect(() => {
         if (defaultSelect && !defaultSelectDone && maps && maps.length > 0) {
             onMapSelected(maps[0])
@@ -47,6 +44,7 @@ const MapList = ({
         }
     }, [maps, defaultSelect, onMapSelected])
 
+    // Rendering
     const matches = maps
         .filter(map => map.maxPlayers >= minPlayers)
         .filter(map => filterTitle === '' || map.name.toLowerCase().includes(filterTitle.toLowerCase()))

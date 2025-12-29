@@ -413,11 +413,7 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
         }
     }, [nation, houseType, scale, drawShadow])
 
-    return <canvas
-        ref={canvasRef}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-    />
+    return <canvas ref={canvasRef} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} width={1} height={1} />
 }
 
 const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false, onMouseEnter, onMouseLeave }: InventoryIconProps) => {
@@ -454,6 +450,7 @@ const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = 
         </div>
     )
 }
+
 const UiIcon = ({ type, scale = 1, onMouseEnter, onMouseLeave, onClick }: UiIconProps) => {
 
     // References

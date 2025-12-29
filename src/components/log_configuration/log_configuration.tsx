@@ -30,7 +30,12 @@ const DebugLogsTable = () => {
     const [gameMenuDebug, setGameMenuDebug] = React.useState<boolean>(gameMenuDebugSettings.log)
     const [playConfigurationDebugEffects, setPlayConfigurationDebugEffects] = React.useState<boolean>(playConfigurationDebug.effects)
     const [playConfigurationDebugEvents, setPlayConfigurationDebugEvents] = React.useState<boolean>(playConfigurationDebug.events)
-    const [hooks, setHooksConfigurationDebugEvents] = React.useState<boolean>(HooksConfig.log)
+    const [hooks, setHooks] = React.useState({ ...HooksConfig })
+
+    const updateHook = (key: keyof typeof HooksConfig, value: boolean) => {
+        HooksConfig[key] = value
+        setHooks(prev => ({ ...prev, [key]: value }))
+    }
 
     const rows = [
         {
@@ -119,18 +124,31 @@ const DebugLogsTable = () => {
         {
             component: 'Hooks',
             subsystems: [
-                {
-                    name: 'Log',
-                    checked: hooks,
-                    onChange: () => {
-                        HooksConfig.log = !HooksConfig.log
-                        setHooksConfigurationDebugEvents(prev => !prev)
-                    }
-                }
-            ],
+                { name: 'useTime', key: 'useTime' },
+                { name: 'useStatistics', key: 'useStatistics' },
+                { name: 'useTransportPriority', key: 'useTransportPriority' },
+                { name: 'usePlayer', key: 'usePlayer' },
+                { name: 'useMaps', key: 'useMaps' },
+                { name: 'useHouse', key: 'useHouse' },
+                { name: 'useChatMessages', key: 'useChatMessages' },
+                { name: 'useGameMessages', key: 'useGameMessages' },
+                { name: 'useGames', key: 'useGames' }
+            ].map(({ name, key }) => ({
+                name,
+                checked: hooks[key as keyof typeof HooksConfig],
+                onChange: () =>
+                    updateHook(
+                        key as keyof typeof HooksConfig,
+                        !hooks[key as keyof typeof HooksConfig]
+                    )
+            })),
             onToggleAll: (value: boolean) => {
-                HooksConfig.log = value
-                setHooksConfigurationDebugEvents(value)
+                Object.keys(HooksConfig).forEach(key => {
+                    HooksConfig[key as keyof typeof HooksConfig] = value
+                })
+                setHooks(Object.fromEntries(
+                    Object.keys(HooksConfig).map(k => [k, value])
+                ) as typeof HooksConfig)
             }
         },
         {

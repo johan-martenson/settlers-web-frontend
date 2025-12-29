@@ -1164,6 +1164,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     case 'STATISTICS':
                         return <Statistics
                             key={window.id}
+                            playerId={selfPlayerId}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
                             nation={player?.nation ?? 'ROMANS'}

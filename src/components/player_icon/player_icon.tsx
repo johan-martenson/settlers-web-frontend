@@ -4,6 +4,7 @@ import { api } from '../../api/ws-api'
 import { Button } from '@fluentui/react-components'
 import { playerToColor } from '../../pretty_strings'
 import './player_icon.css'
+import { usePlayer } from '../../utils/hooks/hooks'
 
 // Types
 type StaticPlayerIconProps = {
@@ -48,14 +49,7 @@ const StaticPlayerIcon = ({ name, color, selected = false }: StaticPlayerIconPro
 }
 
 const LivePlayerIcon = ({ playerId }: PlayerButtonProps) => {
-    const [player, setPlayer] = useState<PlayerInformation | undefined>(api.players.get(playerId))
-
-    useEffect(() => {
-        const playerListener = (player: PlayerInformation) => setPlayer(player)
-        api.addPlayerInformationListener(playerId, playerListener)
-
-        return () => api.removePlayerInformationListener(playerId, playerListener)
-    }, [playerId])
+    const player = usePlayer(playerId)
 
     return (
         <>

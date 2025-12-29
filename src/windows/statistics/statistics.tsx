@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Window } from '../../components/dialog'
 import './statistics.css'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
@@ -11,10 +11,12 @@ import { buildingPretty, materialPretty, merchandisePretty, playerToColor } from
 import { LivePlayerButton } from '../../components/player_icon/player_icon'
 import { ItemContainer } from '../../components/item_container'
 import { MouseHandlerDataParam } from 'recharts/types/synchronisation/types'
+import { useStatistics, useTime } from '../../utils/hooks/hooks'
 
 // Types
 type StatisticsProps = {
     nation: Nation
+    playerId: PlayerId
     onRaise: () => void
     onClose: () => void
 }
@@ -163,8 +165,9 @@ const sampleStatisticsData: StatisticsReply = {
  * @param onRaise - Function to raise the window to the top
  * @param onClose - Function to close the window
  */
-const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: StatisticsProps) => {
-    const [statistics, setStatistics] = useState<StatisticsReply>(EMPTY_STATISTICS)
+const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onClose }: StatisticsProps) => {
+
+    // State
     const [state, setState] = useState<StatisticsView>('GENERAL')
     const [hoverInfo, setHoverInfo] = useState<string>()
     const [buildingsView, setBuildingsView] = useState<'CURRENT' | 'HISTORICAL'>('CURRENT')
@@ -172,111 +175,299 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
     const [generalStatistics, setGeneralStatistics] = useState<GeneralStatisticsType>('land')
     const [selectedMerchandise, setSelectedMerchandise] = useState<Merchandise[]>([])
     const [selectedPlayers, setSelectedPlayers] = useState<PlayerId[]>(Array.from(api.players.keys()))
-    const [time, setTime] = useState<number>(0)
 
-    useEffect(() => {
-        function timeUpdated(updatedTime: number) {
-            if (updatedTime > time + 20) {
-                setTime(updatedTime)
-            }
-        }
+    // Monitoring hooks
+    const statistics = useStatistics(playerId)
+    const time = useTime(20)
 
-        async function statisticsUpdated() {
-            console.log('Statistics updated')
-
-            const statistics = await api.getStatistics()
-
-            setStatistics(statistics)
-        }
-
-        async function fetchData(): Promise<void> {
-            // Fetch data
-            const statistics = await api.getStatistics()
-
-            setStatistics(statistics)
-
-            console.log(['Got statistics', statistics])
-
-            // Subscribe to changes
-            if (api.playerId) {
-                api.addStatisticsListener(statisticsUpdated, api.playerId)
-            } else {
-                console.error('No player ID found')
-            }
-        }
-
-        fetchData()
-
-        api.addTimeListener(timeUpdated)
-
-        return () => {
-            if (api.playerId) {
-                api.removeStatisticsListener(statisticsUpdated)
-            }
-
-            api.removeTimeListener(timeUpdated)
-        }
-    }, [])
-
+    // Rendering
     const titleLabel = 'Statistics'
 
-    return (
-        <>
-            <Window heading={titleLabel} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
-                <div id='stats-page'>
-                    <TabList
-                        selectedValue={state}
-                        onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
-                            if (data.value === 'INVENTORY') {
-                                setState('INVENTORY')
-                            } else if (data.value === 'BUILDINGS') {
-                                setState('BUILDINGS')
-                            } else if (data.value === 'MERCHANDISE') {
-                                setState('MERCHANDISE')
-                            } else {
-                                setState('GENERAL')
-                            }
-                        }} >
-                        <Tab
-                            value={'GENERAL'}
-                            onMouseEnter={() => setHoverInfo('General statistics')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            <UiIcon type='WREATH_ON_MAP' />
-                        </Tab>
-                        <Tab
-                            value={'MERCHANDISE'}
-                            onMouseEnter={() => setHoverInfo('Merchandise statistics')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            <UiIcon type='GOODS_ON_MAP' />
-                        </Tab>
-                        <Tab
-                            value={'INVENTORY'}
-                            onMouseEnter={() => setHoverInfo('Inventory')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            <UiIcon type='WORKERS_GOODS_AND_QUESTION_MARK' />
-                        </Tab>
-                        <Tab
-                            value={'BUILDINGS'}
-                            onMouseEnter={() => setHoverInfo('Building statistics')}
-                            onMouseLeave={() => setHoverInfo(undefined)}
-                        >
-                            <UiIcon type='HOUSE_ON_MAP' />
-                        </Tab>
-                    </TabList>
+    return (<>
+        <Window heading={titleLabel} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
+            <div id='stats-page'>
+                <TabList
+                    selectedValue={state}
+                    onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
+                        if (data.value === 'INVENTORY') {
+                            setState('INVENTORY')
+                        } else if (data.value === 'BUILDINGS') {
+                            setState('BUILDINGS')
+                        } else if (data.value === 'MERCHANDISE') {
+                            setState('MERCHANDISE')
+                        } else {
+                            setState('GENERAL')
+                        }
+                    }} >
+                    <Tab
+                        value={'GENERAL'}
+                        onMouseEnter={() => setHoverInfo('General statistics')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <UiIcon type='WREATH_ON_MAP' />
+                    </Tab>
+                    <Tab
+                        value={'MERCHANDISE'}
+                        onMouseEnter={() => setHoverInfo('Merchandise statistics')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <UiIcon type='GOODS_ON_MAP' />
+                    </Tab>
+                    <Tab
+                        value={'INVENTORY'}
+                        onMouseEnter={() => setHoverInfo('Inventory')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <UiIcon type='WORKERS_GOODS_AND_QUESTION_MARK' />
+                    </Tab>
+                    <Tab
+                        value={'BUILDINGS'}
+                        onMouseEnter={() => setHoverInfo('Building statistics')}
+                        onMouseLeave={() => setHoverInfo(undefined)}
+                    >
+                        <UiIcon type='HOUSE_ON_MAP' />
+                    </Tab>
+                </TabList>
 
-                    {state === 'GENERAL' &&
-                        <div style={{ rowGap: '1em', display: 'flex', flexDirection: 'column' }}>
-                            <GeneralStatisticsGraph
-                                statistics={statistics}
-                                statType={generalStatistics}
-                                setHover={setHoverInfo}
-                                selectedPlayers={selectedPlayers}
-                                time={time}
-                            />
+                {state === 'GENERAL' &&
+                    <div style={{ rowGap: '1em', display: 'flex', flexDirection: 'column' }}>
+                        <GeneralStatisticsGraph
+                            statistics={statistics}
+                            statType={generalStatistics}
+                            setHover={setHoverInfo}
+                            selectedPlayers={selectedPlayers}
+                            time={time}
+                        />
+                        <div>
+                            Players:
                             <div>
+                                {Array.from(api.players.values()).map(player => {
+                                    const selected = selectedPlayers.includes(player.id)
+
+                                    return (
+                                        <LivePlayerButton
+                                            key={player.id}
+                                            playerId={player.id}
+                                            selected={selected}
+                                            onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
+                                                ? prev.filter(p => p !== player.id)
+                                                : [...prev, player.id]
+                                            )}
+                                            onMouseEnter={() => setHoverInfo(selected
+                                                ? `Hide statistics for ${player.name}`
+                                                : `Show statistics for ${player.name}`)}
+                                            onMouseLeave={() => setHoverInfo(undefined)}
+                                        />
+                                    )
+                                })}
+                            </div>
+                        </div>
+                        <div>
+                            Available statistics:
+                            <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '0.5em' }}>
+                                {GENERAL_STATISTICS_LABELS.map(stat => {
+                                    const uiIcon = GENERAL_STATISTICS_UI_ICONS.get(stat)
+
+                                    return (
+                                        <Button
+                                            key={stat}
+                                            style={{ backgroundColor: generalStatistics === stat ? 'lightblue' : undefined }}
+                                            onClick={() => setGeneralStatistics(stat)}
+                                            onMouseEnter={() => setHoverInfo(GENERAL_STATISTICS[stat]?.label)}
+                                            onMouseLeave={() => setHoverInfo(undefined)}
+                                        >
+                                            {uiIcon !== undefined && <UiIcon type={uiIcon} />}
+                                        </Button>)
+                                }
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                {state == 'MERCHANDISE' &&
+                    <>
+                        <MerchandiseGraph statistics={statistics} selectedMerchandise={selectedMerchandise} time={time} />
+                        <div className='select-merchandise'>
+                            {MERCHANDISE_VALUES.map(merchandise => {
+                                const prettyMerchandise = merchandisePretty(merchandise).toLowerCase()
+
+                                return (
+                                    <Button
+                                        key={merchandise}
+                                        style={{ backgroundColor: selectedMerchandise.includes(merchandise) ? MERCHANDISE_STATS_COLORS[merchandise] : undefined }}
+                                        onClick={() => setSelectedMerchandise(prev => prev.includes(merchandise)
+                                            ? prev.filter(m => m !== merchandise)
+                                            : [...selectedMerchandise, merchandise as Merchandise])}
+                                        onMouseEnter={() => setHoverInfo(`Show statistics for ${prettyMerchandise}`)}
+                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                    >
+                                        {merchandise === 'WOOD' && <InventoryIcon material='WOOD' nation={nation} />}
+                                        {merchandise === 'PLANK' && <InventoryIcon material='PLANK' nation={nation} />}
+                                        {merchandise === 'STONE' && <InventoryIcon material='STONE' nation={nation} />}
+                                        {merchandise === 'FOOD' && <UiIcon type='FOOD' scale={0.4} />}
+                                        {merchandise === 'WATER' && <InventoryIcon material='WATER' nation={nation} />}
+                                        {merchandise === 'BEER' && <InventoryIcon material='BEER' nation={nation} />}
+                                        {merchandise === 'COAL' && <InventoryIcon material='COAL' nation={nation} />}
+                                        {merchandise === 'IRON' && <InventoryIcon material='IRON' nation={nation} />}
+                                        {merchandise === 'GOLD' && <InventoryIcon material='GOLD' nation={nation} />}
+                                        {merchandise === 'IRON_BAR' && <InventoryIcon material='IRON_BAR' nation={nation} />}
+                                        {merchandise === 'COIN' && <InventoryIcon material='COIN' nation={nation} />}
+                                        {merchandise === 'TOOLS' && <InventoryIcon material='TONGS' nation={nation} />}
+                                        {merchandise === 'WEAPONS' && <UiIcon type='WEAPONS_MOVING' scale={0.4} />}
+                                        {merchandise === 'BOAT' && <InventoryIcon material='BOAT' nation={nation} />}
+                                    </Button>
+                                )
+                            })}
+                        </div>
+                    </>
+                }
+
+                {state === 'INVENTORY' && <div>
+                    <div>
+                        Goods
+
+                        <div className='inventory-item-list' style={{ height: '10em' }}>
+                            {Array.from(GOODS).map(material =>
+                            (<div
+                                key={material}
+                                onMouseEnter={() => setHoverInfo(`${materialPretty(material)}: 0`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}>
+                                <InventoryIcon material={material} nation={nation} scale={1} inline /> 0
+                            </div>))}
+                        </div>
+                    </div>
+                    <div>
+                        Tools
+
+                        <div className='inventory-item-list'>
+                            {Array.from(TOOLS).map(tool =>
+                            (<div
+                                key={tool}
+                                onMouseEnter={() => setHoverInfo(`${materialPretty(tool)}: 0`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}>
+                                <InventoryIcon material={tool} nation={nation} scale={1} inline /> 0
+                            </div>))}
+                        </div>
+                    </div>
+                    <div>
+                        Workers
+
+                        <div className='inventory-item-list' style={{ height: '15em' }}>
+                            {Array.from(WORKERS).map(worker =>
+                            (<div
+                                key={worker}
+                                onMouseEnter={() => setHoverInfo(`${materialPretty(worker)}: 0`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}>
+                                <InventoryIcon material={worker} nation={nation} scale={1} inline /> 0
+                            </div>))}
+                        </div>
+                    </div>
+                    <div>
+                        Soldiers
+
+                        <div className='inventory-item-list' style={{ height: '6em' }}>
+                            {(SOLDIERS).map(soldier =>
+                            (<div
+                                key={soldier}
+                                onMouseEnter={() => setHoverInfo(`${materialPretty(soldier)}: 0`)}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                <InventoryIcon material={soldier} nation={nation} scale={1} inline />: 0
+                            </div>))}
+                        </div>
+                    </div>
+
+                </div>}
+
+                {state === 'BUILDINGS' &&
+                    <>
+                        <TabList
+                            selectedValue={buildingsView}
+                            onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
+                                if (data.value === 'CURRENT') {
+                                    setBuildingsView('CURRENT')
+                                } else if (data.value === 'HISTORICAL') {
+                                    setBuildingsView('HISTORICAL')
+                                }
+                            }}>
+                            <Tab
+                                value={'CURRENT'}
+                                onMouseEnter={() => setHoverInfo('Current buildings')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                Current
+                            </Tab>
+                            <Tab
+                                value={'HISTORICAL'}
+                                onMouseEnter={() => setHoverInfo('Historical buildings')}
+                                onMouseLeave={() => setHoverInfo(undefined)}
+                            >
+                                Historical
+                            </Tab>
+                        </TabList>
+
+                        {buildingsView === 'CURRENT' && <>
+                            <div>
+                                Small buildings
+
+                                <ItemContainer height='15em' rows>
+                                    {SMALL_HOUSES.map(house => {
+                                        return (
+                                            <div
+                                                key={house}
+                                                onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            >
+                                                <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
+                                            </div>)
+                                    })}
+                                </ItemContainer>
+                            </div>
+
+                            <div>
+                                Medium buildings
+
+                                <ItemContainer height='15em'>
+                                    {MEDIUM_HOUSES.map(house => {
+                                        return (
+                                            <div
+                                                key={house}
+                                                onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            >
+                                                <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
+                                            </div>)
+                                    })}
+                                </ItemContainer>
+                            </div>
+
+
+                            <div>
+                                Large buildings
+
+                                <ItemContainer height='10em'>
+                                    {LARGE_HOUSES.map(house => {
+                                        return (
+                                            <div
+                                                key={house}
+                                                onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
+                                                onMouseLeave={() => setHoverInfo(undefined)}
+                                            >
+                                                <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
+                                            </div>)
+                                    })}
+                                </ItemContainer>
+                            </div>
+                        </>}
+
+                        {buildingsView === 'HISTORICAL' &&
+                            <>
+                                <BuildingStatisticsGraph
+                                    statistics={statistics ?? sampleStatisticsData}
+                                    buildingType={selectedBuilding} setHover={setHoverInfo}
+                                    selectedPlayers={selectedPlayers}
+                                />
                                 Players:
                                 <div>
                                     {Array.from(api.players.values()).map(player => {
@@ -299,288 +490,58 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, onRaise, onClose }: Sta
                                         )
                                     })}
                                 </div>
-                            </div>
-                            <div>
-                                Available statistics:
-                                <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '0.5em' }}>
-                                    {GENERAL_STATISTICS_LABELS.map(stat => {
-                                        const uiIcon = GENERAL_STATISTICS_UI_ICONS.get(stat)
 
-                                        return (
-                                            <Button
-                                                key={stat}
-                                                style={{ backgroundColor: generalStatistics === stat ? 'lightblue' : undefined }}
-                                                onClick={() => setGeneralStatistics(stat)}
-                                                onMouseEnter={() => setHoverInfo(GENERAL_STATISTICS[stat]?.label)}
-                                                onMouseLeave={() => setHoverInfo(undefined)}
-                                            >
-                                                {uiIcon !== undefined && <UiIcon type={uiIcon} />}
-                                            </Button>)
-                                    }
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    }
+                                {(() => {
+                                    const housesContainer = (houseTypes: AnyBuilding[]) => (
+                                        <ItemContainer rows>
+                                            {houseTypes.map(house => {
+                                                const prettyHouse = buildingPretty(house).toLowerCase()
+                                                const selected = selectedBuilding === house
 
-                    {state == 'MERCHANDISE' &&
-                        <>
-                            <MerchandiseGraph statistics={statistics} selectedMerchandise={selectedMerchandise} time={time} />
-                            <div className='select-merchandise'>
-                                {MERCHANDISE_VALUES.map(merchandise => {
-                                    const prettyMerchandise = merchandisePretty(merchandise).toLowerCase()
-
-                                    return (
-                                        <Button
-                                            key={merchandise}
-                                            style={{ backgroundColor: selectedMerchandise.includes(merchandise) ? MERCHANDISE_STATS_COLORS[merchandise] : undefined }}
-                                            onClick={() => setSelectedMerchandise(prev => prev.includes(merchandise)
-                                                ? prev.filter(m => m !== merchandise)
-                                                : [...selectedMerchandise, merchandise as Merchandise])}
-                                            onMouseEnter={() => setHoverInfo(`Show statistics for ${prettyMerchandise}`)}
-                                            onMouseLeave={() => setHoverInfo(undefined)}
-                                        >
-                                            {merchandise === 'WOOD' && <InventoryIcon material='WOOD' nation={nation} />}
-                                            {merchandise === 'PLANK' && <InventoryIcon material='PLANK' nation={nation} />}
-                                            {merchandise === 'STONE' && <InventoryIcon material='STONE' nation={nation} />}
-                                            {merchandise === 'FOOD' && <UiIcon type='FOOD' scale={0.4} />}
-                                            {merchandise === 'WATER' && <InventoryIcon material='WATER' nation={nation} />}
-                                            {merchandise === 'BEER' && <InventoryIcon material='BEER' nation={nation} />}
-                                            {merchandise === 'COAL' && <InventoryIcon material='COAL' nation={nation} />}
-                                            {merchandise === 'IRON' && <InventoryIcon material='IRON' nation={nation} />}
-                                            {merchandise === 'GOLD' && <InventoryIcon material='GOLD' nation={nation} />}
-                                            {merchandise === 'IRON_BAR' && <InventoryIcon material='IRON_BAR' nation={nation} />}
-                                            {merchandise === 'COIN' && <InventoryIcon material='COIN' nation={nation} />}
-                                            {merchandise === 'TOOLS' && <InventoryIcon material='TONGS' nation={nation} />}
-                                            {merchandise === 'WEAPONS' && <UiIcon type='WEAPONS_MOVING' scale={0.4} />}
-                                            {merchandise === 'BOAT' && <InventoryIcon material='BOAT' nation={nation} />}
-                                        </Button>
+                                                return (
+                                                    <div
+                                                        key={house}
+                                                        style={{
+                                                            borderBottomWidth: '2px',
+                                                            borderBottomStyle: selected ? 'solid' : undefined,
+                                                            borderBottomColor: 'lightblue'
+                                                        }}
+                                                        onClick={() => {
+                                                            setSelectedBuilding(house)
+                                                        }}
+                                                        onMouseEnter={() => setHoverInfo(selected
+                                                            ? `Hide statistics for ${prettyHouse}`
+                                                            : `Show statistics for ${prettyHouse}`)}
+                                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                                    >
+                                                        <HouseIcon nation={nation} houseType={house} drawShadow scale={0.5} />
+                                                    </div>)
+                                            })}
+                                        </ItemContainer>
                                     )
-                                })}
-                            </div>
-                        </>
-                    }
 
-                    {state === 'INVENTORY' && <div>
-                        <div>
-                            Goods
-
-                            <div className='inventory-item-list' style={{ height: '10em' }}>
-                                {Array.from(GOODS).map(material =>
-                                (<div
-                                    key={material}
-                                    onMouseEnter={() => setHoverInfo(`${materialPretty(material)}: 0`)}
-                                    onMouseLeave={() => setHoverInfo(undefined)}>
-                                    <InventoryIcon material={material} nation={nation} scale={1} inline /> 0
-                                </div>))}
-                            </div>
-                        </div>
-                        <div>
-                            Tools
-
-                            <div className='inventory-item-list'>
-                                {Array.from(TOOLS).map(tool =>
-                                (<div
-                                    key={tool}
-                                    onMouseEnter={() => setHoverInfo(`${materialPretty(tool)}: 0`)}
-                                    onMouseLeave={() => setHoverInfo(undefined)}>
-                                    <InventoryIcon material={tool} nation={nation} scale={1} inline /> 0
-                                </div>))}
-                            </div>
-                        </div>
-                        <div>
-                            Workers
-
-                            <div className='inventory-item-list' style={{ height: '15em' }}>
-                                {Array.from(WORKERS).map(worker =>
-                                (<div
-                                    key={worker}
-                                    onMouseEnter={() => setHoverInfo(`${materialPretty(worker)}: 0`)}
-                                    onMouseLeave={() => setHoverInfo(undefined)}>
-                                    <InventoryIcon material={worker} nation={nation} scale={1} inline /> 0
-                                </div>))}
-                            </div>
-                        </div>
-                        <div>
-                            Soldiers
-
-                            <div className='inventory-item-list' style={{ height: '6em' }}>
-                                {(SOLDIERS).map(soldier =>
-                                (<div
-                                    key={soldier}
-                                    onMouseEnter={() => setHoverInfo(`${materialPretty(soldier)}: 0`)}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    <InventoryIcon material={soldier} nation={nation} scale={1} inline />: 0
-                                </div>))}
-                            </div>
-                        </div>
-
-                    </div>}
-
-                    {state === 'BUILDINGS' &&
-                        <>
-                            <TabList
-                                selectedValue={buildingsView}
-                                onTabSelect={(event: SelectTabEvent, data: SelectTabData) => {
-                                    if (data.value === 'CURRENT') {
-                                        setBuildingsView('CURRENT')
-                                    } else if (data.value === 'HISTORICAL') {
-                                        setBuildingsView('HISTORICAL')
-                                    }
-                                }}>
-                                <Tab
-                                    value={'CURRENT'}
-                                    onMouseEnter={() => setHoverInfo('Current buildings')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Current
-                                </Tab>
-                                <Tab
-                                    value={'HISTORICAL'}
-                                    onMouseEnter={() => setHoverInfo('Historical buildings')}
-                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                >
-                                    Historical
-                                </Tab>
-                            </TabList>
-
-                            {buildingsView === 'CURRENT' && <>
-                                <div>
-                                    Small buildings
-
-                                    <ItemContainer height='15em' rows>
-                                        {SMALL_HOUSES.map(house => {
-                                            return (
-                                                <div
-                                                    key={house}
-                                                    onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
-                                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                                >
-                                                    <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
-                                                </div>)
-                                        })}
-                                    </ItemContainer>
-                                </div>
-
-                                <div>
-                                    Medium buildings
-
-                                    <ItemContainer height='15em'>
-                                        {MEDIUM_HOUSES.map(house => {
-                                            return (
-                                                <div
-                                                    key={house}
-                                                    onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
-                                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                                >
-                                                    <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
-                                                </div>)
-                                        })}
-                                    </ItemContainer>
-                                </div>
-
-
-                                <div>
-                                    Large buildings
-
-                                    <ItemContainer height='10em'>
-                                        {LARGE_HOUSES.map(house => {
-                                            return (
-                                                <div
-                                                    key={house}
-                                                    onMouseEnter={() => setHoverInfo(`${house}: 0 under construction, 0 ready`)}
-                                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                                >
-                                                    <HouseIcon houseType={house} nation={nation} scale={0.5} /> 0 / 0
-                                                </div>)
-                                        })}
-                                    </ItemContainer>
-                                </div>
-                            </>}
-
-                            {buildingsView === 'HISTORICAL' &&
-                                <>
-                                    <BuildingStatisticsGraph
-                                        statistics={statistics ?? sampleStatisticsData}
-                                        buildingType={selectedBuilding} setHover={setHoverInfo}
-                                        selectedPlayers={selectedPlayers}
-                                    />
-                                    Players:
-                                    <div>
-                                        {Array.from(api.players.values()).map(player => {
-                                            const selected = selectedPlayers.includes(player.id)
-
-                                            return (
-                                                <LivePlayerButton
-                                                    key={player.id}
-                                                    playerId={player.id}
-                                                    selected={selected}
-                                                    onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
-                                                        ? prev.filter(p => p !== player.id)
-                                                        : [...prev, player.id]
-                                                    )}
-                                                    onMouseEnter={() => setHoverInfo(selected
-                                                        ? `Hide statistics for ${player.name}`
-                                                        : `Show statistics for ${player.name}`)}
-                                                    onMouseLeave={() => setHoverInfo(undefined)}
-                                                />
-                                            )
-                                        })}
-                                    </div>
-
-                                    {(() => {
-                                        const housesContainer = (houseTypes: AnyBuilding[]) => (
-                                            <ItemContainer rows>
-                                                {houseTypes.map(house => {
-                                                    const prettyHouse = buildingPretty(house).toLowerCase()
-                                                    const selected = selectedBuilding === house
-
-                                                    return (
-                                                        <div
-                                                            key={house}
-                                                            style={{
-                                                                borderBottomWidth: '2px',
-                                                                borderBottomStyle: selected ? 'solid' : undefined,
-                                                                borderBottomColor: 'lightblue'
-                                                            }}
-                                                            onClick={() => {
-                                                                setSelectedBuilding(house)
-                                                            }}
-                                                            onMouseEnter={() => setHoverInfo(selected
-                                                                ? `Hide statistics for ${prettyHouse}`
-                                                                : `Show statistics for ${prettyHouse}`)}
-                                                            onMouseLeave={() => setHoverInfo(undefined)}
-                                                        >
-                                                            <HouseIcon nation={nation} houseType={house} drawShadow scale={0.5} />
-                                                        </div>)
-                                                })}
-                                            </ItemContainer>
-                                        )
-
-                                        return (<>
-                                            <div>
-                                                Small buildings
-                                                {housesContainer(SMALL_HOUSES)}
-                                            </div>
-                                            <div>
-                                                Medium buildings
-                                                {housesContainer(MEDIUM_HOUSES)}
-                                            </div>
-                                            <div>
-                                                Large buildings
-                                                {housesContainer(LARGE_HOUSES)}
-                                            </div>
-                                        </>)
-                                    })()}
-                                </>
-                            }
-                        </>
-                    }
-                </div>
-            </Window>
-        </>
-    )
+                                    return (<>
+                                        <div>
+                                            Small buildings
+                                            {housesContainer(SMALL_HOUSES)}
+                                        </div>
+                                        <div>
+                                            Medium buildings
+                                            {housesContainer(MEDIUM_HOUSES)}
+                                        </div>
+                                        <div>
+                                            Large buildings
+                                            {housesContainer(LARGE_HOUSES)}
+                                        </div>
+                                    </>)
+                                })()}
+                            </>
+                        }
+                    </>
+                }
+            </div>
+        </Window>
+    </>)
 }
 
 const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: MerchandiseGraphProps) => {

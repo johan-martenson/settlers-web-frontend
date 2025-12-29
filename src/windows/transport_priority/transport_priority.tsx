@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Window } from '../../components/dialog'
 import './transport_priority.css'
 import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from '../../api/types'
@@ -6,6 +6,7 @@ import { InventoryIcon, UiIcon } from '../../icons/icon'
 import { api } from '../../api/ws-api'
 import { transportCategoryPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
+import { useTransportPriority } from '../../utils/hooks/hooks'
 
 // Types
 type SetTransportPriorityProps = {
@@ -37,25 +38,15 @@ const CATEGORY_MATERIALS_MAP = new Map<TransportCategory, Material[]>([
 
 // React components
 const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriorityProps) => {
+
+    // State
     const [selected, setSelected] = useState<TransportCategory>('PLANK')
-    const [priority, setPriority] = useState<TransportCategory[]>(api.transportPriority ?? Array.from(TRANSPORT_CATEGORIES))
     const [hoverInfo, setHoverInfo] = useState<string>()
 
-    useEffect(() => {
-        const listener = (priority: TransportCategory[]) => {
-            console.log('Updating transport priority')
-            setPriority(priority)
-        }
+    // Monitoring hooks
+    const priority = useTransportPriority()
 
-        async function readCurrentPriorities(): Promise<void> {
-            api.addTransportPriorityListener(listener)
-        }
-
-        readCurrentPriorities()
-
-        return () => api.removeTransportPriorityListener(listener)
-    }, [])
-
+    // Functions
     const setMaxPriority = useCallback((category: TransportCategory) => {
         api.setTransportPriorityForMaterial(category, 0)
     }, [])
@@ -84,6 +75,7 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
         }
     }, [priority])
 
+    // Rendering
     return (
         <Window heading='Transport priority' onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
             <ItemContainer>

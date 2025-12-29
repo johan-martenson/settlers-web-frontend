@@ -61,7 +61,7 @@ type ProductionBuildingProps = {
 // React components
 const HouseInfo = ({ selfPlayerId, nation, goToPoint, onClose, onRaise, ...props }: HouseInfoProps) => {
 
-    // Hooks
+    // Monitoring hooks
     const house = useHouse(props.house.id)
 
     // Rendering

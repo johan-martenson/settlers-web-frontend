@@ -132,7 +132,8 @@ const DebugLogsTable = () => {
                 { name: 'useHouse', key: 'useHouse' },
                 { name: 'useChatMessages', key: 'useChatMessages' },
                 { name: 'useGameMessages', key: 'useGameMessages' },
-                { name: 'useGames', key: 'useGames' }
+                { name: 'useGames', key: 'useGames' },
+                { name: 'useNonTriggeringState', key: 'useNonTriggeringState' },
             ].map(({ name, key }) => ({
                 name,
                 checked: hooks[key as keyof typeof HooksConfig],
@@ -185,7 +186,6 @@ const DebugLogsTable = () => {
             <Accordion collapsible multiple>
                 {rows.map(({ component, subsystems, onToggleAll }) => {
                     const allOn = subsystems.every(s => s.checked)
-                    const someOn = subsystems.some(s => s.checked)
 
                     return (
                         <AccordionItem key={component} value={component}>

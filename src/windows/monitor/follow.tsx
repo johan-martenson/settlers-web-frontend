@@ -10,6 +10,7 @@ import { calcTranslation } from '../../render/utils'
 import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../../utils/utils'
 import { MoveUpdate, api } from '../../api/ws-api'
 import { UiIcon } from '../../icons/icon'
+import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
 
 // Types
 type FollowProps = {
@@ -33,18 +34,19 @@ const MAX_SCALE = 150
 
 // React components
 function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }: FollowProps) {
+
+    // References
     const myRef = useRef<HTMLDivElement | null>(null)
 
+    // State (that triggers re-renders)
     const [size, setSize] = useState<Size>('MEDIUM')
-
-    // eslint-disable-next-line
-    const [moving, setMoving] = useState<Moving>({ moving: false, mouseAt: { x: 0, y: 0 }, translate: { x: 0, y: 0 } })
     const [isCentered, setIsCentered] = useState<boolean>(false)
     const [hoverInfo, setHoverInfo] = useState<string>()
     const [idToFollow, setIdToFollow] = useState<WorkerId>()
 
-    // eslint-disable-next-line
-    const [view, neverSetView] = useState<View>({ scale, translate: { x: 0, y: 0 }, screenSize: { width: 100, height: 100 } })
+    // State that doesn't trigger re-renders
+    const view = useNonTriggeringState<View>({ scale, translate: { x: 0, y: 0 }, screenSize: { width: 100, height: 100 } })
+    const moving = useNonTriggeringState<Moving>({ moving: false, mouseAt: { x: 0, y: 0 }, translate: { x: 0, y: 0 } })
 
     useEffect(() => {
         if (idToFollow !== undefined) {

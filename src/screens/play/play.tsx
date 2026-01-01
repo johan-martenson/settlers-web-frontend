@@ -33,6 +33,7 @@ import { canBeUpgraded, getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint 
 import { calcTranslation } from '../../render/utils'
 import Tools from '../../windows/tools/tools'
 import { MapView } from '../../windows/map/map'
+import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
 
 // Types
 type HouseWindow = {
@@ -200,7 +201,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     // References
     const selfContainerRef = useRef<HTMLDivElement | null>(null)
 
-    // State
+    // State (that triggers re-renders)
     const [commands, setCommands] = useState<Map<string, Command>>(new Map())
     const [monitoringReady, setMonitoringReady] = useState<boolean>(false)
     const [showAvailableConstruction, setShowAvailableConstruction] = useState<boolean>(false)
@@ -221,11 +222,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [possibleRoadConnections, setPossibleRoadConnections] = useState<Point[]>()
     const [player, setPlayer] = useState<PlayerInformation>()
 
-    // eslint-disable-next-line
-    const [ongoingTouches, neverSetOngoingTouches] = useState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
-
-    // eslint-disable-next-line
-    const [nextWindowIdContainer, neverSetNextWindowIdContainer] = useState<{ nextWindowId: number }>({ nextWindowId: 0 })
+    // State (that doesn't trigger re-renders)
+    const ongoingTouches = useNonTriggeringState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
+    const nextWindowIdContainer = useNonTriggeringState<{ nextWindowId: number }>({ nextWindowId: 0 })
 
     // Constants
     const gameMonitorCallbacks: GameListener = {

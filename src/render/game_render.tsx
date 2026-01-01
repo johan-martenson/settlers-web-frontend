@@ -15,6 +15,7 @@ import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_R
 import { textures } from '../render/textures'
 import { ProgramDescriptor, ProgramInstance, draw, initProgram, setBuffer } from './utils'
 import { buildingPretty } from '../pretty_strings'
+import { useNonTriggeringState } from '../utils/hooks/non_triggering'
 
 // Types
 export type ScreenPoint = {
@@ -332,11 +333,9 @@ function GameCanvas({
     const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const lightVector = [1, 1, -1]
 
-    // eslint-disable-next-line
-    const [renderState, neverSetRenderState] = useState<RenderState>(initRenderState)
-
-    // eslint-disable-next-line
-    const [doubleClickDetection, neverSetDoubleClickDetection] = useState<DoubleClickDetection>({})
+    // State that doesn't trigger re-renders
+    const renderState = useNonTriggeringState<RenderState>(initRenderState)
+    const doubleClickDetection = useNonTriggeringState<DoubleClickDetection>({})
 
     // Run once on mount
     useEffect(

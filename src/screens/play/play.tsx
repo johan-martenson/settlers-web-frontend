@@ -12,7 +12,7 @@ import MusicPlayer from '../../sound/music_player'
 import Statistics from '../../windows/statistics/statistics'
 import { printVariables } from '../../utils/stats/stats'
 import { SetTransportPriority } from '../../windows/transport_priority/transport_priority'
-import { TypeControl, Command } from './type_control'
+import { TypeControl, Command, dispatchInputKey } from './type_control'
 import { isRoadAtPoint } from '../../utils/utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState, RoadId } from '../../api/types'
 import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled } from '@fluentui/react-icons'
@@ -478,7 +478,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 icon: <UiIcon type='GLOBE_WITH_MAGNIFYING_GLASS' scale={0.5} />
             })
 
-            setCommands(commands)
+            setCommands(prev => commands)
         }
 
         api.waitForGameDataAvailable().then(() => {
@@ -880,16 +880,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 // Otherwise, send the escape to the type controller
             } else {
-                const keyEvent = new CustomEvent('key', {
-                    detail: {
-                        key: event.key,
-                        metaKey: event.metaKey,
-                        altKey: event.altKey,
-                        ctrlKey: event.ctrlKey
-                    }
+                dispatchInputKey({
+                    key: event.key,
+                    metaKey: event.metaKey,
+                    altKey: event.altKey,
+                    ctrlKey: event.ctrlKey,
+                    shiftKey: event.shiftKey
                 })
-
-                document.dispatchEvent(keyEvent)
             }
         } else if (event.key === ' ') {
             setShowTitles(true)
@@ -909,16 +906,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         } else if (event.key === 'M') {
             setShowMenu(true)
         } else {
-            const keyEvent = new CustomEvent('key', {
-                detail: {
-                    key: event.key,
-                    metaKey: event.metaKey,
-                    altKey: event.altKey,
-                    ctrlKey: event.ctrlKey
-                }
+            dispatchInputKey({
+                key: event.key,
+                metaKey: event.metaKey,
+                altKey: event.altKey,
+                ctrlKey: event.ctrlKey,
+                shiftKey: event.shiftKey
             })
-
-            document.dispatchEvent(keyEvent)
         }
     }, [windows, newRoad, possibleRoadConnections, showAvailableConstruction, moveGame, zoom, setNewRoad, setPossibleRoadConnections, setShowMenu])
 

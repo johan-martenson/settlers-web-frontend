@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useReducer, useState } from 'react'
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import { PointInformation, Point } from '../../api/types'
 import { api } from '../../api/ws-api'
 import { ItemContainer } from '../../components/item_container'
+import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
+import { useTrackedRef } from '../../utils/hooks/reference'
 
 // Types
 export type Command = {
@@ -25,147 +27,29 @@ type TypeControlKey = {
     shiftKey: boolean
 }
 
-type InputAction = {
-    type: 'set' | 'add' | 'run' | 'remove_last'
-    payload: string
-}
-
-type InputState = {
-    input: string
-}
+// Constants
+const inputListeners: Set<(key: TypeControlKey) => void> = new Set()
 
 // Functions
-function isTypingControlKeyEvent(event: unknown): event is CustomEvent<TypeControlKey> {
-    return event !== null &&
-        event !== undefined &&
-        typeof event == 'object' &&
-        'detail' in event &&
-        typeof event.detail === 'object' &&
-        event.detail !== null &&
-        'key' in event.detail
+function addInputListener(listener: (key: TypeControlKey) => void) {
+    inputListeners.add(listener)
 }
 
-// React components
+function removeInputListener(listener: (key: TypeControlKey) => void) {
+    inputListeners.delete(listener)
+}
 
-/**
- * Note: the TypeControl component is written as a functional component and uses a complex way to
- *       handle the input string state. The component needs to get new keys from a listener and
- *       append them to the input state. The listener is set up using useEffect and the callback
- *       is passed in. When this is done, the state of input is frozen in the closure and it never
- *       changes. If input is instead put as an explicit dependency, the right value will be used
- *       but instead the subscription will be unsubscribed and re-registered each time a key is typed.
- * 
- *       To work around this, useReducer is used. It lets the closure which doesn't see the current
- *       input value send a request to update the value to a reducer which can see and change the
- *       current value.
- *
- */
-const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
-    const [expanded, setExpanded] = useState<boolean>(false)
-    const [selectedPointInformation, setSelectedPointInformation] = useState<PointInformation>()
+function dispatchInputKey(key: TypeControlKey) {
+    console.log(`Dispatching input key: ${key.key}`)
 
-    const commandChosen = useCallback((commandName: string) => {
-        console.log(`Command: ${commandName} at point ${selectedPoint.x},${selectedPoint.y}`)
+    inputListeners.forEach(listener => listener(key))
+}
 
-        commands.get(commandName)?.action(selectedPoint)
-    }, [commands, selectedPoint])
-
-    const reducer = useCallback((state: InputState, action: InputAction) => {
-        switch (action.type) {
-            case 'set':
-                return { input: action.payload }
-            case 'add':
-                return { input: state.input + action.payload }
-            case 'run': {
-                const commandHit = Array.from(commands.keys())
-                    .find(command => command.toLowerCase().startsWith(state.input.toLowerCase()))
-
-                if (commandHit) {
-                    commandChosen(commandHit)
-                } else {
-                    console.log(`Can't find command matching: ${state.input}`)
-                }
-
-                return { input: '' }
-            }
-            case 'remove_last':
-                return { input: state.input.slice(0, -1) }
-            default:
-                return state
-        }
-    }, [commands, commandChosen])
-
-    const [inputState, dispatchInput] = useReducer(reducer, { input: '' })
-
-    useEffect(() => {
-        (async () => {
-
-            // Use try-catch because this can be called before the websocket is setup and will then fail
-            try {
-                const updatedPointInformation = await api.getInformationOnPoint(selectedPoint)
-
-                setSelectedPointInformation(updatedPointInformation)
-            } catch (error) {
-                console.error(`Error while getting info on selectiong point: ${selectedPoint}, ${error}`)
-            }
-        })()
-    }, [selectedPoint])
-
-    const setInput = useCallback((input: string) => {
-        dispatchInput({ type: 'set', payload: input })
-    }, [])
-
-    const addToInput = useCallback((toAdd: string) => {
-        dispatchInput({ type: 'add', payload: toAdd })
-    }, [])
-
-    useEffect(() => {
-
-        // eslint-disable-next-line
-        document.addEventListener('key', listener)
-
-        return () => document.removeEventListener('key', listener)
-    }, [])
-
-    const listener = useCallback((event: Event) => {
-        if (isTypingControlKeyEvent(event)) {
-            if (event.detail.metaKey || event.detail.altKey || event.detail.ctrlKey) {
-                return
-            }
-
-            const key = event.detail.key
-
-            if (key === 'Escape') {
-                setInput('')
-            } else if (key === 'Enter') {
-                dispatchInput({ type: 'run', payload: 'none' })
-            } else if (key === 'Backspace') {
-                console.log('Is backspace')
-
-                dispatchInput({ type: 'remove_last', payload: 'none' })
-            } else if (key.length === 1 && key !== ' ') {
-                addToInput(key)
-            }
-        }
-    }, [])
-
-    const input = inputState.input
+function findMatchingCommands(commands: Map<string, Command>, input: string, selectedPointInformation?: PointInformation) {
     const inputToMatch = input.toLowerCase()
-    const hasMatch = Array.from(commands.keys())
-        .some(command => command.toLowerCase().startsWith(inputToMatch))
-
-    let className = 'no-input'
-    if (input.length > 0) {
-        className = hasMatch ? 'input-with-matches' : 'input-with-no-matches'
-    }
-
-    className += expanded ? ' expanded' : ' closed'
-
     const invalidSelectedPointInformation = selectedPointInformation === undefined || !('canBuild' in selectedPointInformation)
 
-    const matches = Array.from(commands.entries())
-
-        // eslint-disable-next-line
+    return Array.from(commands.entries())
         .filter(
             ([, command]) =>
                 !command.filter ||
@@ -174,10 +58,97 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
         )
         .filter(
             ([commandName]) =>
-                expanded ||
-                (inputToMatch.length > 0 &&
-                    commandName.toLowerCase().startsWith(inputToMatch))
+                commandName.toLowerCase().startsWith(inputToMatch)
         )
+}
+
+// React components
+const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
+
+    // References
+    const commandsRef = useTrackedRef(commands)
+    const selectedPointRef = useRef(selectedPoint)
+
+    // State
+    const [input, setInput] = useState<string>('')
+    const [expanded, setExpanded] = useState<boolean>(true)
+    const [selectedPointInformation, setSelectedPointInformation] = useState<PointInformation>()
+
+    // State that doesn't trigger re-renders
+    const nonTriggeringInput = useNonTriggeringState<{ input: string }>({ input: '' })
+
+    // Functions
+    function runCommand(commandName: string) {
+        console.log(`Running command: ${commandName} at point ${selectedPointRef.current.x},${selectedPointRef.current.y}`)
+
+        commandsRef.current.get(commandName)?.action(selectedPointRef.current)
+    }
+
+    async function updateSelectedPointInformation() {
+        try {
+            const updatedPointInformation = await api.getInformationOnPoint(selectedPointRef.current)
+
+            setSelectedPointInformation(updatedPointInformation)
+        } catch (error) {
+            console.error(`Error while getting info on selectiong point: ${selectedPointRef.current}, ${error}`)
+        }
+    }
+
+    // Listeners
+    const inputListener = useCallback((key: TypeControlKey) => {
+        console.log(`Key pressed: ${key.key}. Current input: ${input}`)
+
+        if (key.key === 'Escape') {
+            setInput('')
+        } else if (key.key === 'Enter') {
+            const matchingCommands = findMatchingCommands(commandsRef.current, nonTriggeringInput.input, selectedPointInformation)
+
+            if (matchingCommands.length > 0) {
+                runCommand(matchingCommands[0][0])
+            } else {
+                console.log(`Can't find command matching: ${nonTriggeringInput.input}`)
+            }
+
+            setInput('')
+        } else if (key.key === 'Backspace') {
+            console.log('Is backspace')
+
+            setInput(prevInput => prevInput.slice(0, -1))
+        } else if (key.key.length === 1 && key.key !== ' ') {
+            setInput(prevInput => prevInput + key.key)
+        }
+    }, [selectedPoint, input, runCommand])
+
+    // Effects
+    // Effect: keep selected point ref in sync
+    useEffect(() => {
+        selectedPointRef.current = selectedPoint;
+
+        updateSelectedPointInformation()
+    }, [selectedPoint])
+
+    // Effect: keep non-triggering input state in sync
+    useEffect(() => {
+        nonTriggeringInput.input = input
+    }, [input])
+
+    // Effect: listen to input keys
+    useEffect(() => {
+        addInputListener(inputListener)
+
+        return () => removeInputListener(inputListener)
+    }, [])
+
+    // Rendering
+    const inputToMatch = input.toLowerCase()
+    const matches = findMatchingCommands(commands, input, selectedPointInformation)
+
+    let className = 'no-input'
+    if (input.length > 0) {
+        className = matches.length > 0 ? 'input-with-matches' : 'input-with-no-matches'
+    }
+
+    className += expanded ? ' expanded' : ' closed'
 
     return (
         <div className='type-control' onWheel={(event) => event.stopPropagation()}>
@@ -193,7 +164,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
                                 key={index}
                                 className='alternative'
                                 onClick={() => {
-                                    commandChosen(commandName)
+                                    runCommand(commandName)
                                     setInput('')
                                 }}
                             >
@@ -218,4 +189,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
     )
 }
 
-export { TypeControl }
+export {
+    TypeControl,
+    dispatchInputKey
+}

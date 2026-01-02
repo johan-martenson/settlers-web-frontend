@@ -4,7 +4,7 @@ import { HooksConfig } from './config'
 // eslint-disable-next-line
 function useNonTriggeringState<T extends object | any[]>(initialValue: T): T {
 
-    if (HooksConfig.nonTriggeringState) {
+    if (HooksConfig.useNonTriggeringState) {
         console.log('Hooks (nonTriggeringState): creating non-triggering state', initialValue)
     }
 

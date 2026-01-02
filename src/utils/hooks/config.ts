@@ -9,5 +9,5 @@ export const HooksConfig = {
     useChatMessages: false,
     useGameMessages: false,
     useGames: false,
-    nonTriggeringState: false
+    useNonTriggeringState: false
 }

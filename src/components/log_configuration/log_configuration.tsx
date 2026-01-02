@@ -20,6 +20,41 @@ import { playConfigurationDebug } from '../../screens/play/play'
 import { HooksConfig } from '../../utils/hooks/config'
 import { SOUND_EFFECTS_LOGGING } from '../../sound/sound_effects'
 
+// Types
+type SubsystemDescriptor<T> = {
+    name: string
+    key: keyof T
+}
+
+// Functions
+function buildMultiSubsystemRow<T extends Record<string, boolean>>(
+    config: T,
+    state: T,
+    setState: React.Dispatch<React.SetStateAction<T>>,
+    descriptors: SubsystemDescriptor<T>[]
+) {
+    return {
+        subsystems: descriptors.map(({ name, key }) => ({
+            name,
+            checked: state[key],
+            onChange: () => {
+                config[key] = !state[key] as T[keyof T]
+                setState(prev => ({ ...prev, [key]: !prev[key] }))
+            }
+        })),
+        onToggleAll: (value: boolean) => {
+            Object.keys(config).forEach(key => {
+                config[key as keyof T] = value as T[keyof T]
+            })
+            setState(
+                Object.fromEntries(
+                    Object.keys(config).map(k => [k, value])
+                ) as T
+            )
+        }
+    }
+}
+
 // React components
 const DebugLogsTable = () => {
     const [wsApiReceiveDebug, setWsApiReceiveDebug] = React.useState<boolean>(wsApiCoreDebugSettings.receive)
@@ -129,61 +164,39 @@ const DebugLogsTable = () => {
         },
         {
             component: 'Sound effects',
-            subsystems: [
-                { name: 'Lifecycle', key: 'lifecycle' },
-                { name: 'Loading', key: 'loading' },
-                { name: 'Actions', key: 'actions' },
-                { name: 'Events', key: 'events' },
-                { name: 'Playback', key: 'playback' },
-                { name: 'Volume', key: 'volume' },
-            ].map(({ name, key }) => ({
-                name,
-                checked: soundEffectLogging[key as keyof typeof SOUND_EFFECTS_LOGGING],
-                onChange: () =>
-                    updateSoundEffectLogging(
-                        key as keyof typeof SOUND_EFFECTS_LOGGING,
-                        !soundEffectLogging[key as keyof typeof SOUND_EFFECTS_LOGGING]
-                    )
-            })),
-            onToggleAll: (value: boolean) => {
-                Object.keys(soundEffectLogging).forEach(key => {
-                    SOUND_EFFECTS_LOGGING[key as keyof typeof SOUND_EFFECTS_LOGGING] = value
-                })
-                setSoundEffectLogging(Object.fromEntries(
-                    Object.keys(SOUND_EFFECTS_LOGGING).map(k => [k, value])
-                ) as typeof SOUND_EFFECTS_LOGGING)
-            }
+            ...buildMultiSubsystemRow(
+                SOUND_EFFECTS_LOGGING,
+                soundEffectLogging,
+                setSoundEffectLogging,
+                [
+                    { name: 'Lifecycle', key: 'lifecycle' },
+                    { name: 'Loading', key: 'loading' },
+                    { name: 'Actions', key: 'actions' },
+                    { name: 'Events', key: 'events' },
+                    { name: 'Playback', key: 'playback' },
+                    { name: 'Volume', key: 'volume' },
+                ]
+            )
         },
         {
             component: 'Hooks',
-            subsystems: [
-                { name: 'useTime', key: 'useTime' },
-                { name: 'useStatistics', key: 'useStatistics' },
-                { name: 'useTransportPriority', key: 'useTransportPriority' },
-                { name: 'usePlayer', key: 'usePlayer' },
-                { name: 'useMaps', key: 'useMaps' },
-                { name: 'useHouse', key: 'useHouse' },
-                { name: 'useChatMessages', key: 'useChatMessages' },
-                { name: 'useGameMessages', key: 'useGameMessages' },
-                { name: 'useGames', key: 'useGames' },
-                { name: 'useNonTriggeringState', key: 'useNonTriggeringState' },
-            ].map(({ name, key }) => ({
-                name,
-                checked: hooks[key as keyof typeof HooksConfig],
-                onChange: () =>
-                    updateHook(
-                        key as keyof typeof HooksConfig,
-                        !hooks[key as keyof typeof HooksConfig]
-                    )
-            })),
-            onToggleAll: (value: boolean) => {
-                Object.keys(HooksConfig).forEach(key => {
-                    HooksConfig[key as keyof typeof HooksConfig] = value
-                })
-                setHooks(Object.fromEntries(
-                    Object.keys(HooksConfig).map(k => [k, value])
-                ) as typeof HooksConfig)
-            }
+            ...buildMultiSubsystemRow(
+                HooksConfig,
+                hooks,
+                setHooks,
+                [
+                    { name: 'useTime', key: 'useTime' },
+                    { name: 'useStatistics', key: 'useStatistics' },
+                    { name: 'useTransportPriority', key: 'useTransportPriority' },
+                    { name: 'usePlayer', key: 'usePlayer' },
+                    { name: 'useMaps', key: 'useMaps' },
+                    { name: 'useHouse', key: 'useHouse' },
+                    { name: 'useChatMessages', key: 'useChatMessages' },
+                    { name: 'useGameMessages', key: 'useGameMessages' },
+                    { name: 'useGames', key: 'useGames' },
+                    { name: 'useNonTriggeringState', key: 'useNonTriggeringState' },
+                ]
+            )
         },
         {
             component: 'Play',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
     ChatMessage,
     GameInformation,
@@ -316,11 +316,9 @@ function useGameMessages(): GameMessage[] {
     })
 
     useEffect(() => {
-        const listener = (
-            _received: GameMessage[],
-            _read: GameMessage[],
-            _removed: GameMessageId[]
-        ) => {
+
+        // eslint-disable-next-line --- IGNORE ---
+        const listener = (_received: GameMessage[], _read: GameMessage[], _removed: GameMessageId[]) => {
             if (HooksConfig.useGameMessages) {
                 console.log('Hooks (useGameMessages): Update received')
             }

@@ -478,7 +478,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 icon: <UiIcon type='GLOBE_WITH_MAGNIFYING_GLASS' scale={0.5} />
             })
 
-            setCommands(prev => commands)
+            setCommands(commands)
         }
 
         api.waitForGameDataAvailable().then(() => {

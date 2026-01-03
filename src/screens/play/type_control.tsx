@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import './type_control.css'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import { PointInformation, Point } from '../../api/types'
@@ -27,25 +27,47 @@ type TypeControlKey = {
     shiftKey: boolean
 }
 
+// Log configuration
+export const TypeControlLogConfig = {
+    lifecycle: false,
+    input: false,
+    commands: false,
+    selection: false,
+}
+
 // Constants
 const inputListeners: Set<(key: TypeControlKey) => void> = new Set()
 
 // Functions
 function addInputListener(listener: (key: TypeControlKey) => void) {
+    if (TypeControlLogConfig.lifecycle) {
+        console.log('Type control (lifecycle): added input listener')
+    }
+
     inputListeners.add(listener)
 }
 
 function removeInputListener(listener: (key: TypeControlKey) => void) {
+    if (TypeControlLogConfig.lifecycle) {
+        console.log('Type control (lifecycle): removed input listener')
+    }
+
     inputListeners.delete(listener)
 }
 
 function dispatchInputKey(key: TypeControlKey) {
-    console.log(`Dispatching input key: ${key.key}`)
+    if (TypeControlLogConfig.input) {
+        console.log(`Type control (input): dispatching key "${key.key}"`)
+    }
 
     inputListeners.forEach(listener => listener(key))
 }
 
-function findMatchingCommands(commands: Map<string, Command>, input: string, selectedPointInformation?: PointInformation) {
+function findMatchingCommands(
+    commands: Map<string, Command>,
+    input: string,
+    selectedPointInformation?: PointInformation
+) {
     const inputToMatch = input.toLowerCase()
     const invalidSelectedPointInformation = selectedPointInformation === undefined || !('canBuild' in selectedPointInformation)
 
@@ -62,7 +84,7 @@ function findMatchingCommands(commands: Map<string, Command>, input: string, sel
         )
 }
 
-// React components
+// React component
 const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
     // References
@@ -79,64 +101,104 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
     // Functions
     function runCommand(commandName: string) {
-        console.log(`Running command: ${commandName} at point ${selectedPointRef.current.x},${selectedPointRef.current.y}`)
+        if (TypeControlLogConfig.commands) {
+            console.log(`Type control (commands): running "${commandName}" at ${selectedPointRef.current.x},${selectedPointRef.current.y}`)
+        }
 
         commandsRef.current.get(commandName)?.action(selectedPointRef.current)
     }
 
     async function updateSelectedPointInformation() {
+        if (TypeControlLogConfig.selection) {
+            console.log(`Type control (selection): updating info for point ${selectedPointRef.current.x},${selectedPointRef.current.y}`)
+        }
+
         try {
             const updatedPointInformation = await api.getInformationOnPoint(selectedPointRef.current)
 
             setSelectedPointInformation(updatedPointInformation)
         } catch (error) {
-            console.error(`Error while getting info on selectiong point: ${selectedPointRef.current}, ${error}`)
+            console.error('Type control (errors): error while getting selected point information', error)
         }
     }
 
     // Listeners
     const inputListener = useCallback((key: TypeControlKey) => {
-        console.log(`Key pressed: ${key.key}. Current input: ${input}`)
+        if (TypeControlLogConfig.input) {
+            console.log(`Type control (input): key "${key.key}" pressed, current input "${input}"`)
+        }
 
         if (key.key === 'Escape') {
+            if (TypeControlLogConfig.input) {
+                console.log('Type control (input): clearing input via Escape')
+            }
+
             setInput('')
         } else if (key.key === 'Enter') {
             const matchingCommands = findMatchingCommands(commandsRef.current, nonTriggeringInput.input, selectedPointInformation)
 
             if (matchingCommands.length > 0) {
+                if (TypeControlLogConfig.commands) {
+                    console.log(`Type control (commands): matched "${matchingCommands[0][0]}"`)
+                }
+
                 runCommand(matchingCommands[0][0])
             } else {
-                console.log(`Can't find command matching: ${nonTriggeringInput.input}`)
+                if (TypeControlLogConfig.commands) {
+                    console.log(`Type control (commands): no match for "${nonTriggeringInput.input}"`)
+                }
             }
 
             setInput('')
         } else if (key.key === 'Backspace') {
-            console.log('Is backspace')
+            if (TypeControlLogConfig.input) {
+                console.log('Type control (input): backspace')
+            }
 
             setInput(prevInput => prevInput.slice(0, -1))
         } else if (key.key.length === 1 && key.key !== ' ') {
             setInput(prevInput => prevInput + key.key)
         }
-    }, [selectedPoint, input, runCommand])
+    }, [input, selectedPointInformation])
 
     // Effects
+
     // Effect: keep selected point ref in sync
     useEffect(() => {
-        selectedPointRef.current = selectedPoint;
+        if (TypeControlLogConfig.selection) {
+            console.log(
+                `Type control (selection): selected point changed to ${selectedPoint.x},${selectedPoint.y}`
+            )
+        }
 
+        selectedPointRef.current = selectedPoint
         updateSelectedPointInformation()
     }, [selectedPoint])
 
     // Effect: keep non-triggering input state in sync
     useEffect(() => {
         nonTriggeringInput.input = input
+
+        if (TypeControlLogConfig.input) {
+            console.log(`Type control (input): input updated to "${input}"`)
+        }
     }, [input])
 
     // Effect: listen to input keys
     useEffect(() => {
+        if (TypeControlLogConfig.lifecycle) {
+            console.log('Type control (lifecycle): mounting')
+        }
+
         addInputListener(inputListener)
 
-        return () => removeInputListener(inputListener)
+        return () => {
+            if (TypeControlLogConfig.lifecycle) {
+                console.log('Type control (lifecycle): unmounting')
+            }
+
+            removeInputListener(inputListener)
+        }
     }, [])
 
     // Rendering
@@ -153,7 +215,23 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
     return (
         <div className='type-control' onWheel={(event) => event.stopPropagation()}>
 
-            <ExpandCollapseToggle onExpand={() => setExpanded(true)} onCollapse={() => setExpanded(false)} />
+            <ExpandCollapseToggle
+                onExpand={() => {
+                    if (TypeControlLogConfig.lifecycle) {
+                        console.log('Type control (lifecycle): expanded')
+                    }
+
+                    setExpanded(true)
+                }}
+                onCollapse={() => {
+                    if (TypeControlLogConfig.lifecycle) {
+                        console.log('Type control (lifecycle): collapsed')
+                    }
+
+                    setExpanded(false)
+                }}
+            />
+
             <div className={className}>{input}</div>
 
             {(expanded || matches.length > 0) &&
@@ -164,21 +242,29 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
                                 key={index}
                                 className='alternative'
                                 onClick={() => {
+                                    if (TypeControlLogConfig.commands) {
+                                        console.log(
+                                            `Type control (commands): clicked "${commandName}"`
+                                        )
+                                    }
+
                                     runCommand(commandName)
                                     setInput('')
                                 }}
                             >
-
-                                {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch) ?
-                                    <>
+                                {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)
+                                    ? <>
                                         <span>
-                                            <span className='MatchingPart'>{commandName.substring(0, input.length)}</span>
-                                            <span className='RemainingPart'>{commandName.substring(input.length, commandName.length)}</span>
+                                            <span className='MatchingPart'>
+                                                {commandName.substring(0, input.length)}
+                                            </span>
+                                            <span className='RemainingPart'>
+                                                {commandName.substring(input.length)}
+                                            </span>
                                         </span>
                                         {command.icon}
                                     </>
-                                    :
-                                    <>{commandName} {command.icon}</>
+                                    : <>{commandName} {command.icon}</>
                                 }
                             </div>
                         ))}

@@ -19,6 +19,7 @@ import { gameMenuDebugSettings } from '../../screens/play/game_menu'
 import { playConfigurationDebug } from '../../screens/play/play'
 import { HooksConfig } from '../../utils/hooks/config'
 import { SOUND_EFFECTS_LOGGING } from '../../sound/sound_effects'
+import { TypeControlLogConfig } from '../../screens/play/type_control'
 
 // Types
 type SubsystemDescriptor<T> = {
@@ -67,16 +68,7 @@ const DebugLogsTable = () => {
     const [playConfigurationDebugEvents, setPlayConfigurationDebugEvents] = React.useState<boolean>(playConfigurationDebug.events)
     const [hooks, setHooks] = React.useState({ ...HooksConfig })
     const [soundEffectLogging, setSoundEffectLogging] = React.useState({ ...SOUND_EFFECTS_LOGGING })
-
-    const updateHook = (key: keyof typeof HooksConfig, value: boolean) => {
-        HooksConfig[key] = value
-        setHooks(prev => ({ ...prev, [key]: value }))
-    }
-
-    const updateSoundEffectLogging = (key: keyof typeof SOUND_EFFECTS_LOGGING, value: boolean) => {
-        SOUND_EFFECTS_LOGGING[key] = value
-        setSoundEffectLogging(prev => ({ ...prev, [key]: value }))
-    }
+    const [typeControlLogging, setTypeControlLogging] = React.useState({ ...TypeControlLogConfig })
 
     const rows = [
         {
@@ -161,6 +153,20 @@ const DebugLogsTable = () => {
                 gameMenuDebugSettings.log = value
                 setGameMenuDebug(value)
             }
+        },
+        {
+            component: 'Type Control',
+            ...buildMultiSubsystemRow(
+                TypeControlLogConfig,
+                typeControlLogging,
+                setTypeControlLogging,
+                [
+                    { name: 'Lifecycle', key: 'lifecycle' },
+                    { name: 'Input', key: 'input' },
+                    { name: 'Commands', key: 'commands' },
+                    { name: 'Selection', key: 'selection' },
+                ]
+            )
         },
         {
             component: 'Sound effects',

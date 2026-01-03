@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, TerrainAtPoint, FlagInformation } from '../api/types'
 import { Duration } from '../utils/stats/duration'
 import './game_render.css'

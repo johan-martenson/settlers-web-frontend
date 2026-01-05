@@ -2189,7 +2189,7 @@ function serverSentTreeToLocal(serverTree: TreeInformation): TreeInformationLoca
  * @param {Point[]} points - The points that make up the road.
  */
 function placeLocalRoad(points: Point[]): void {
-    api.roads.set('LOCAL', { id: 'LOCAL', points, type: 'NORMAL' })
+    api.roads.set('LOCAL', { id: 'LOCAL', points, type: 'NORMAL', playerId: api.playerId ?? 'LOCAL_PLAYER' })
 }
 
 /**

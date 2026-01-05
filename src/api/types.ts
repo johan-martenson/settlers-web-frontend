@@ -268,6 +268,7 @@ export type TerrainInformation = {
 
 export type RoadInformation = {
     readonly id: RoadId
+    readonly playerId: PlayerId
     readonly points: Point[]
     readonly type: 'NORMAL' | 'MAIN'
 }

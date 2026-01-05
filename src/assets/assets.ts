@@ -183,12 +183,7 @@ class UiElementsImageAtlasHandler {
         const imageInfo = this.imageAtlasInfo.icons[type]
 
         return {
-            sourceX: imageInfo.x,
-            sourceY: imageInfo.y,
-            width: imageInfo.width,
-            height: imageInfo.height,
-            offsetX: imageInfo.offsetX,
-            offsetY: imageInfo.offsetY,
+            ...imageInfoFromSingleImage(imageInfo),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -205,12 +200,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.selectedPoint.x,
-            sourceY: this.imageAtlasInfo.selectedPoint.y,
-            width: this.imageAtlasInfo.selectedPoint.width,
-            height: this.imageAtlasInfo.selectedPoint.height,
-            offsetX: this.imageAtlasInfo.selectedPoint.offsetX,
-            offsetY: this.imageAtlasInfo.selectedPoint.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.selectedPoint),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -223,12 +213,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.hoverPoint.x,
-            sourceY: this.imageAtlasInfo.hoverPoint.y,
-            width: this.imageAtlasInfo.hoverPoint.width,
-            height: this.imageAtlasInfo.hoverPoint.height,
-            offsetX: this.imageAtlasInfo.hoverPoint.offsetX,
-            offsetY: this.imageAtlasInfo.hoverPoint.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverPoint),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -241,12 +226,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.availableBuildingLarge.x,
-            sourceY: this.imageAtlasInfo.availableBuildingLarge.y,
-            width: this.imageAtlasInfo.availableBuildingLarge.width,
-            height: this.imageAtlasInfo.availableBuildingLarge.height,
-            offsetX: this.imageAtlasInfo.availableBuildingLarge.offsetX,
-            offsetY: this.imageAtlasInfo.availableBuildingLarge.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.availableBuildingLarge),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -259,12 +239,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.availableBuildingMedium.x,
-            sourceY: this.imageAtlasInfo.availableBuildingMedium.y,
-            width: this.imageAtlasInfo.availableBuildingMedium.width,
-            height: this.imageAtlasInfo.availableBuildingMedium.height,
-            offsetX: this.imageAtlasInfo.availableBuildingMedium.offsetX,
-            offsetY: this.imageAtlasInfo.availableBuildingMedium.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.availableBuildingMedium),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -278,12 +253,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.availableBuildingSmall.x,
-            sourceY: this.imageAtlasInfo.availableBuildingSmall.y,
-            width: this.imageAtlasInfo.availableBuildingSmall.width,
-            height: this.imageAtlasInfo.availableBuildingSmall.height,
-            offsetX: this.imageAtlasInfo.availableBuildingSmall.offsetX,
-            offsetY: this.imageAtlasInfo.availableBuildingSmall.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.availableBuildingSmall),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -297,12 +267,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.availableMine.x,
-            sourceY: this.imageAtlasInfo.availableMine.y,
-            width: this.imageAtlasInfo.availableMine.width,
-            height: this.imageAtlasInfo.availableMine.height,
-            offsetX: this.imageAtlasInfo.availableMine.offsetX,
-            offsetY: this.imageAtlasInfo.availableMine.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.availableMine),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -316,12 +281,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.availableFlag.x,
-            sourceY: this.imageAtlasInfo.availableFlag.y,
-            width: this.imageAtlasInfo.availableFlag.width,
-            height: this.imageAtlasInfo.availableFlag.height,
-            offsetX: this.imageAtlasInfo.availableFlag.offsetX,
-            offsetY: this.imageAtlasInfo.availableFlag.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.availableFlag),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -335,12 +295,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.hoverAvailableBuildingLarge.x,
-            sourceY: this.imageAtlasInfo.hoverAvailableBuildingLarge.y,
-            width: this.imageAtlasInfo.hoverAvailableBuildingLarge.width,
-            height: this.imageAtlasInfo.hoverAvailableBuildingLarge.height,
-            offsetX: this.imageAtlasInfo.hoverAvailableBuildingLarge.offsetX,
-            offsetY: this.imageAtlasInfo.hoverAvailableBuildingLarge.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableBuildingLarge),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -354,12 +309,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.hoverAvailableBuildingMedium.x,
-            sourceY: this.imageAtlasInfo.hoverAvailableBuildingMedium.y,
-            width: this.imageAtlasInfo.hoverAvailableBuildingMedium.width,
-            height: this.imageAtlasInfo.hoverAvailableBuildingMedium.height,
-            offsetX: this.imageAtlasInfo.hoverAvailableBuildingMedium.offsetX,
-            offsetY: this.imageAtlasInfo.hoverAvailableBuildingMedium.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableBuildingMedium),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -373,12 +323,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.hoverAvailableBuildingSmall.x,
-            sourceY: this.imageAtlasInfo.hoverAvailableBuildingSmall.y,
-            width: this.imageAtlasInfo.hoverAvailableBuildingSmall.width,
-            height: this.imageAtlasInfo.hoverAvailableBuildingSmall.height,
-            offsetX: this.imageAtlasInfo.hoverAvailableBuildingSmall.offsetX,
-            offsetY: this.imageAtlasInfo.hoverAvailableBuildingSmall.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableBuildingSmall),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -392,12 +337,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.hoverAvailableMine.x,
-            sourceY: this.imageAtlasInfo.hoverAvailableMine.y,
-            width: this.imageAtlasInfo.hoverAvailableMine.width,
-            height: this.imageAtlasInfo.hoverAvailableMine.height,
-            offsetX: this.imageAtlasInfo.hoverAvailableMine.offsetX,
-            offsetY: this.imageAtlasInfo.hoverAvailableMine.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableMine),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -411,12 +351,7 @@ class UiElementsImageAtlasHandler {
         }
 
         return {
-            sourceX: this.imageAtlasInfo.hoverAvailableFlag.x,
-            sourceY: this.imageAtlasInfo.hoverAvailableFlag.y,
-            width: this.imageAtlasInfo.hoverAvailableFlag.width,
-            height: this.imageAtlasInfo.hoverAvailableFlag.height,
-            offsetX: this.imageAtlasInfo.hoverAvailableFlag.offsetX,
-            offsetY: this.imageAtlasInfo.hoverAvailableFlag.offsetY,
+            ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableFlag),
             image: this.image,
             textureIndex: this.textureIndex,
             texture: this.texture
@@ -480,26 +415,14 @@ class FlagImageAtlasHandler {
         const images = this.imageAtlasInfo[nation][flagType][color]
         const shadowImages = this.imageAtlasInfo[nation][flagType]['shadows']
 
-        const frameIndex = animationCounter % images.nrImages
-
         return [
             {
-                sourceX: images.startX + frameIndex * images.width,
-                sourceY: images.startY,
-                width: images.width,
-                height: images.height,
-                offsetX: images.offsetX,
-                offsetY: images.offsetY,
+                ...imageInfoFromHorizontalImageSeries(images, animationCounter),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImages.startX + frameIndex * shadowImages.width,
-                sourceY: shadowImages.startY,
-                width: shadowImages.width,
-                height: shadowImages.height,
-                offsetX: shadowImages.offsetX,
-                offsetY: shadowImages.offsetY,
+                ...imageInfoFromHorizontalImageSeries(shadowImages, animationCounter),
                 image: this.image,
                 texture: this.texture
             }
@@ -609,22 +532,12 @@ class ShipImageAtlasHandler {
 
         return [
             {
-                sourceX: imageInfo.x,
-                sourceY: imageInfo.y,
-                width: imageInfo.width,
-                height: imageInfo.height,
-                offsetX: imageInfo.offsetX,
-                offsetY: imageInfo.offsetY,
+                ...imageInfoFromSingleImage(imageInfo),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImageInfo.x,
-                sourceY: shadowImageInfo.y,
-                width: shadowImageInfo.width,
-                height: shadowImageInfo.height,
-                offsetX: shadowImageInfo.offsetX,
-                offsetY: shadowImageInfo.offsetY,
+                ...imageInfoFromSingleImage(shadowImageInfo),
                 image: this.image,
                 texture: this.texture
             }
@@ -642,22 +555,12 @@ class ShipImageAtlasHandler {
 
         return [
             {
-                sourceX: image.x,
-                sourceY: image.y,
-                width: image.width,
-                height: image.height,
-                offsetX: image.offsetX,
-                offsetY: image.offsetY,
+                ...imageInfoFromSingleImage(image),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImage.x,
-                sourceY: shadowImage.y,
-                width: shadowImage.width,
-                height: shadowImage.height,
-                offsetX: shadowImage.offsetX,
-                offsetY: shadowImage.offsetY,
+                ...imageInfoFromSingleImage(shadowImage),
                 image: this.image,
                 texture: this.texture
             }
@@ -864,22 +767,12 @@ class WorkerImageAtlasHandler {
 
         return [
             {
-                sourceX: images.startX + frameIndex * images.width,
-                sourceY: images.startY,
-                width: images.width,
-                height: images.height,
-                offsetX: images.offsetX,
-                offsetY: images.offsetY,
+                ...imageInfoFromHorizontalImageSeries(images, frameIndex),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImages.startX + frameIndex * shadowImages.width,
-                sourceY: shadowImages.startY,
-                width: shadowImages.width,
-                height: shadowImages.height,
-                offsetX: shadowImages.offsetX,
-                offsetY: shadowImages.offsetY,
+                ...imageInfoFromHorizontalImageSeries(shadowImages, frameIndex),
                 image: this.image,
                 texture: this.texture
             }
@@ -903,23 +796,13 @@ class WorkerImageAtlasHandler {
 
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
                 return {
-                    sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
-                    sourceY: actionImages.startY,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(actionImages, animationIndex),
                     image: this.image,
                     texture: this.texture
                 }
             } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
                 return {
-                    sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
-                    sourceY: actionImages.startY,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1),
                     image: this.image,
                     texture: this.texture
                 }
@@ -933,23 +816,13 @@ class WorkerImageAtlasHandler {
 
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
                 return {
-                    sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
-                    sourceY: actionImages.startY,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(actionImages, animationIndex),
                     image: this.image,
                     texture: this.texture
                 }
             } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
                 return {
-                    sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
-                    sourceY: actionImages.startY,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1),
                     image: this.image,
                     texture: this.texture
                 }
@@ -963,23 +836,13 @@ class WorkerImageAtlasHandler {
             const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
                 return {
-                    sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
-                    sourceY: actionImages.startY,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(actionImages, animationIndex),
                     image: this.image,
                     texture: this.texture
                 }
             } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
                 return {
-                    sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
-                    sourceY: actionImages.startY,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1),
                     image: this.image,
                     texture: this.texture
                 }
@@ -997,23 +860,13 @@ class WorkerImageAtlasHandler {
             const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'][color]
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
                 return {
-                    sourceX: actionImages.startX + ((animationIndex) % actionImages.nrImages) * actionImages.width,
-                    sourceY: actionImages.startY,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(actionImages, animationIndex),
                     image: this.image,
                     texture: this.texture
                 }
             } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
                 return {
-                    sourceX: actionImages.startX + (actionImages.nrImages - 1) * actionImages.width,
-                    sourceY: actionImages.startY,
-                    width: actionImages.width,
-                    height: actionImages.height,
-                    offsetX: actionImages.offsetX,
-                    offsetY: actionImages.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1),
                     image: this.image,
                     texture: this.texture
                 }
@@ -1046,12 +899,7 @@ class WorkerImageAtlasHandler {
             const cargoImages = this.imageAtlasInfo.common.cargoImages[material][direction]
 
             return {
-                sourceX: cargoImages.startX + ((animationIndex + Math.round(offset)) % cargoImages.nrImages) * cargoImages.width,
-                sourceY: cargoImages.startY,
-                width: cargoImages.width,
-                height: cargoImages.height,
-                offsetX: cargoImages.offsetX,
-                offsetY: cargoImages.offsetY,
+                ...imageInfoFromHorizontalImageSeries(cargoImages, (animationIndex + Math.round(offset))),
                 image: this.image,
                 texture: this.texture
             }
@@ -1114,12 +962,7 @@ class HouseImageAtlasHandler {
         const houseInformation = this.imageAtlasInfo.constructionJustStarted[nation].image
 
         return {
-            sourceX: houseInformation.x,
-            sourceY: houseInformation.y,
-            width: houseInformation.width,
-            height: houseInformation.height,
-            offsetX: houseInformation.offsetX,
-            offsetY: houseInformation.offsetY,
+            ...imageInfoFromSingleImage(houseInformation),
             image: this.image,
             texture: this.texture
         }
@@ -1133,12 +976,7 @@ class HouseImageAtlasHandler {
         const houseInformation = this.imageAtlasInfo.constructionPlanned[nation].image
 
         return {
-            sourceX: houseInformation.x,
-            sourceY: houseInformation.y,
-            width: houseInformation.width,
-            height: houseInformation.height,
-            offsetX: houseInformation.offsetX,
-            offsetY: houseInformation.offsetY,
+            ...imageInfoFromSingleImage(houseInformation),
             image: this.image,
             texture: this.texture
         }
@@ -1189,12 +1027,7 @@ class HouseImageAtlasHandler {
 
         if (doorImage) {
             return {
-                sourceX: doorImage.x,
-                sourceY: doorImage.y,
-                width: doorImage.width,
-                height: doorImage.height,
-                offsetX: doorImage.offsetX,
-                offsetY: doorImage.offsetY,
+                ...imageInfoFromSingleImage(doorImage),
                 image: this.image,
                 texture: this.texture
             }
@@ -1233,22 +1066,12 @@ class HouseImageAtlasHandler {
 
         return [
             {
-                sourceX: houseAnimation.startX + (animationIndex % houseAnimation.nrImages) * houseAnimation.width,
-                sourceY: houseAnimation.startY,
-                width: houseAnimation.width,
-                height: houseAnimation.height,
-                offsetX: houseAnimation.offsetX,
-                offsetY: houseAnimation.offsetY,
+                ...imageInfoFromHorizontalImageSeries(houseAnimation, animationIndex),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: houseAnimationShadow.startX + (animationIndex % houseAnimationShadow.nrImages) * houseAnimationShadow.width,
-                sourceY: houseAnimationShadow.startY,
-                width: houseAnimationShadow.width,
-                height: houseAnimationShadow.height,
-                offsetX: houseAnimationShadow.offsetX,
-                offsetY: houseAnimationShadow.offsetY,
+                ...imageInfoFromHorizontalImageSeries(houseAnimationShadow, animationIndex),
                 image: this.image,
                 texture: this.texture
             }
@@ -1276,22 +1099,12 @@ class HouseImageAtlasHandler {
 
         return [
             {
-                sourceX: houseImage.x,
-                sourceY: houseImage.y,
-                width: houseImage.width,
-                height: houseImage.height,
-                offsetX: houseImage.offsetX,
-                offsetY: houseImage.offsetY,
+                ...imageInfoFromSingleImage(houseImage),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: houseShadowImage.x,
-                sourceY: houseShadowImage.y,
-                width: houseShadowImage.width,
-                height: houseShadowImage.height,
-                offsetX: houseShadowImage.offsetX,
-                offsetY: houseShadowImage.offsetY,
+                ...imageInfoFromSingleImage(houseShadowImage),
                 image: this.image,
                 texture: this.texture
             }
@@ -1308,22 +1121,12 @@ class HouseImageAtlasHandler {
 
         return [
             {
-                sourceX: houseImage.x,
-                sourceY: houseImage.y,
-                width: houseImage.width,
-                height: houseImage.height,
-                offsetX: houseImage.offsetX,
-                offsetY: houseImage.offsetY,
+                ...imageInfoFromSingleImage(houseImage),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: houseShadowImage.x,
-                sourceY: houseShadowImage.y,
-                width: houseShadowImage.width,
-                height: houseShadowImage.height,
-                offsetX: houseShadowImage.offsetX,
-                offsetY: houseShadowImage.offsetY,
+                ...imageInfoFromSingleImage(houseShadowImage),
                 image: this.image,
                 texture: this.texture
             }]
@@ -1372,12 +1175,7 @@ class BorderImageAtlasHandler {
         }
 
         return {
-            sourceX: imageInfo.x,
-            sourceY: imageInfo.y,
-            width: imageInfo.width,
-            height: imageInfo.height,
-            offsetX: imageInfo.offsetX,
-            offsetY: imageInfo.offsetY,
+            ...imageInfoFromSingleImage(imageInfo),
             image: this.image,
             texture: this.texture
         }
@@ -1422,22 +1220,12 @@ class SignImageAtlasHandler {
 
         return [
             {
-                sourceX: image.x,
-                sourceY: image.y,
-                width: image.width,
-                height: image.height,
-                offsetX: image.offsetX,
-                offsetY: image.offsetY,
+                ...imageInfoFromSingleImage(image),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImage.x,
-                sourceY: shadowImage.y,
-                width: shadowImage.width,
-                height: shadowImage.height,
-                offsetX: shadowImage.offsetX,
-                offsetY: shadowImage.offsetY,
+                ...imageInfoFromSingleImage(shadowImage),
                 image: this.image,
                 texture: this.texture
             }
@@ -1481,27 +1269,15 @@ class FireImageAtlasHandler {
         const fireImage = this.imageAtlasInfo.fires[size].image
         const fireShadowImage = this.imageAtlasInfo.fires[size].shadowImage
 
-        const frameIndex = animationIndex % fireImage.nrImages
-
         if (fireShadowImage) {
             return [
                 {
-                    sourceX: fireImage.startX + frameIndex * fireImage.width,
-                    sourceY: fireImage.startY,
-                    width: fireImage.width,
-                    height: fireImage.height,
-                    offsetX: fireImage.offsetX,
-                    offsetY: fireImage.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(fireImage, animationIndex),
                     image: this.image,
                     texture: this.texture
                 },
                 {
-                    sourceX: fireShadowImage.startX + frameIndex * fireShadowImage.width,
-                    sourceY: fireShadowImage.startY,
-                    width: fireShadowImage.width,
-                    height: fireShadowImage.height,
-                    offsetX: fireShadowImage.offsetX,
-                    offsetY: fireShadowImage.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(fireShadowImage, animationIndex),
                     image: this.image,
                     texture: this.texture
                 }
@@ -1510,12 +1286,7 @@ class FireImageAtlasHandler {
 
         return [
             {
-                sourceX: fireImage.startX + frameIndex * fireImage.width,
-                sourceY: fireImage.startY,
-                width: fireImage.width,
-                height: fireImage.height,
-                offsetX: fireImage.offsetX,
-                offsetY: fireImage.offsetY,
+                ...imageInfoFromHorizontalImageSeries(fireImage, animationIndex),
                 image: this.image,
                 texture: this.texture
             }
@@ -1530,12 +1301,7 @@ class FireImageAtlasHandler {
         const drawingInfo = this.imageAtlasInfo.burntDown[size]
 
         return {
-            sourceX: drawingInfo.x,
-            sourceY: drawingInfo.y,
-            width: drawingInfo.width,
-            height: drawingInfo.height,
-            offsetX: drawingInfo.offsetX,
-            offsetY: drawingInfo.offsetY,
+            ...imageInfoFromSingleImage(drawingInfo),
             image: this.image,
             texture: this.texture
         }
@@ -1579,12 +1345,7 @@ class CargoImageAtlasHandler {
 
         if (genericInfo !== undefined) {
             return {
-                sourceX: genericInfo.x,
-                sourceY: genericInfo.y,
-                width: genericInfo.width,
-                height: genericInfo.height,
-                offsetX: genericInfo.offsetX,
-                offsetY: genericInfo.offsetY,
+                ...imageInfoFromSingleImage(genericInfo),
                 image: this.image,
                 texture: this.texture
             }
@@ -1596,12 +1357,7 @@ class CargoImageAtlasHandler {
             const drawInfo = nationSpecificInfo[material]
 
             return {
-                sourceX: drawInfo.x,
-                sourceY: drawInfo.y,
-                width: drawInfo.width,
-                height: drawInfo.height,
-                offsetX: drawInfo.offsetX,
-                offsetY: drawInfo.offsetY,
+                ...imageInfoFromSingleImage(drawInfo),
                 image: this.image,
                 texture: this.texture
             }
@@ -1647,12 +1403,7 @@ class RoadBuildingImageAtlasHandler {
         const startPointInfo = this.imageAtlasInfo.startPoint
 
         return {
-            sourceX: startPointInfo.x,
-            sourceY: startPointInfo.y,
-            width: startPointInfo.width,
-            height: startPointInfo.height,
-            offsetX: startPointInfo.offsetX,
-            offsetY: startPointInfo.offsetY,
+            ...imageInfoFromSingleImage(startPointInfo),
             image: this.image,
             texture: this.texture
         }
@@ -1666,12 +1417,7 @@ class RoadBuildingImageAtlasHandler {
         const sameLevelConnectionInfo = this.imageAtlasInfo.sameLevelConnection
 
         return {
-            sourceX: sameLevelConnectionInfo.x,
-            sourceY: sameLevelConnectionInfo.y,
-            width: sameLevelConnectionInfo.width,
-            height: sameLevelConnectionInfo.height,
-            offsetX: sameLevelConnectionInfo.offsetX,
-            offsetY: sameLevelConnectionInfo.offsetY,
+            ...imageInfoFromSingleImage(sameLevelConnectionInfo),
             image: this.image,
             texture: this.texture
         }
@@ -1685,12 +1431,7 @@ class RoadBuildingImageAtlasHandler {
         const connectionInfo = this.imageAtlasInfo.upwardsConnections[difference]
 
         return {
-            sourceX: connectionInfo.x,
-            sourceY: connectionInfo.y,
-            width: connectionInfo.width,
-            height: connectionInfo.height,
-            offsetX: connectionInfo.offsetX,
-            offsetY: connectionInfo.offsetY,
+            ...imageInfoFromSingleImage(connectionInfo),
             image: this.image,
             texture: this.texture
         }
@@ -1705,12 +1446,7 @@ class RoadBuildingImageAtlasHandler {
         const connectionInfo = this.imageAtlasInfo.downwardsConnections[difference]
 
         return {
-            sourceX: connectionInfo.x,
-            sourceY: connectionInfo.y,
-            width: connectionInfo.width,
-            height: connectionInfo.height,
-            offsetX: connectionInfo.offsetX,
-            offsetY: connectionInfo.offsetY,
+            ...imageInfoFromSingleImage(connectionInfo),
             image: this.image,
             texture: this.texture
         }
@@ -1754,26 +1490,14 @@ class TreeImageAtlasHandler {
         const imagesForTreeType = this.imageAtlasInfo.grownTrees[treeType]
         const shadowImagesForTreeType = this.imageAtlasInfo.grownTreeShadows[treeType]
 
-        const frameIndex = animationCounter % imagesForTreeType.nrImages
-
         return [
             {
-                sourceX: imagesForTreeType.startX + frameIndex * imagesForTreeType.width,
-                sourceY: imagesForTreeType.startY,
-                width: imagesForTreeType.width,
-                height: imagesForTreeType.height,
-                offsetX: imagesForTreeType.offsetX,
-                offsetY: imagesForTreeType.offsetY,
+                ...imageInfoFromHorizontalImageSeries(imagesForTreeType, animationCounter),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImagesForTreeType.startX + frameIndex * shadowImagesForTreeType.width,
-                sourceY: shadowImagesForTreeType.startY,
-                width: shadowImagesForTreeType.width,
-                height: shadowImagesForTreeType.height,
-                offsetX: shadowImagesForTreeType.offsetX,
-                offsetY: shadowImagesForTreeType.offsetY,
+                ...imageInfoFromHorizontalImageSeries(shadowImagesForTreeType, animationCounter),
                 image: this.image,
                 texture: this.texture
             },
@@ -1790,22 +1514,24 @@ class TreeImageAtlasHandler {
 
         return [
             {
-                sourceX: imagePerTreeType.startX + imagePerTreeType.width * step,
+                ...imageInfoFromHorizontalImageSeries(imagePerTreeType, step),
+                /*sourceX: imagePerTreeType.startX + imagePerTreeType.width * step,
                 sourceY: imagePerTreeType.startY,
                 width: imagePerTreeType.width,
                 height: imagePerTreeType.height,
                 offsetX: imagePerTreeType.offsetX,
-                offsetY: imagePerTreeType.offsetY,
+                offsetY: imagePerTreeType.offsetY,*/
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImagePerTreeType.startX + shadowImagePerTreeType.width * step,
+                ...imageInfoFromHorizontalImageSeries(shadowImagePerTreeType, step),
+                /*sourceX: shadowImagePerTreeType.startX + shadowImagePerTreeType.width * step,
                 sourceY: shadowImagePerTreeType.startY,
                 width: shadowImagePerTreeType.width,
                 height: shadowImagePerTreeType.height,
                 offsetX: shadowImagePerTreeType.offsetX,
-                offsetY: shadowImagePerTreeType.offsetY,
+                offsetY: shadowImagePerTreeType.offsetY,*/
                 image: this.image,
                 texture: this.texture
             }
@@ -1825,22 +1551,12 @@ class TreeImageAtlasHandler {
 
         return [
             {
-                sourceX: imageInfo.x,
-                sourceY: imageInfo.y,
-                width: imageInfo.width,
-                height: imageInfo.height,
-                offsetX: imageInfo.offsetX,
-                offsetY: imageInfo.offsetY,
+                ...imageInfoFromSingleImage(imageInfo),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImageInfo.x,
-                sourceY: shadowImageInfo.y,
-                width: shadowImageInfo.width,
-                height: shadowImageInfo.height,
-                offsetX: shadowImageInfo.offsetX,
-                offsetY: shadowImageInfo.offsetY,
+                ...imageInfoFromSingleImage(shadowImageInfo),
                 image: this.image,
                 texture: this.texture
             }
@@ -1890,22 +1606,12 @@ class StoneImageAtlasHandler {
 
         return [
             {
-                sourceX: image.x,
-                sourceY: image.y,
-                width: image.width,
-                height: image.height,
-                offsetX: image.offsetX,
-                offsetY: image.offsetY,
+                ...imageInfoFromSingleImage(image),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImage.x,
-                sourceY: shadowImage.y,
-                width: shadowImage.width,
-                height: shadowImage.height,
-                offsetX: shadowImage.offsetX,
-                offsetY: shadowImage.offsetY,
+                ...imageInfoFromSingleImage(shadowImage),
                 image: this.image,
                 texture: this.texture
             }
@@ -1956,23 +1662,13 @@ class DecorationsImageAtlasHandler {
         if (shadowImage) {
             return [
                 {
-                    sourceX: imageInfo.x,
-                    sourceY: imageInfo.y,
-                    width: imageInfo.width,
-                    height: imageInfo.height,
-                    offsetX: imageInfo.offsetX,
-                    offsetY: imageInfo.offsetY,
+                    ...imageInfoFromSingleImage(imageInfo),
                     image: this.image,
                     texture: this.texture
 
                 },
                 {
-                    sourceX: shadowImage.x,
-                    sourceY: shadowImage.y,
-                    width: shadowImage.width,
-                    height: shadowImage.height,
-                    offsetX: shadowImage.offsetX,
-                    offsetY: shadowImage.offsetY,
+                    ...imageInfoFromSingleImage(shadowImage),
                     image: this.image,
                     texture: this.texture
 
@@ -1982,12 +1678,7 @@ class DecorationsImageAtlasHandler {
 
         return [
             {
-                sourceX: imageInfo.x,
-                sourceY: imageInfo.y,
-                width: imageInfo.width,
-                height: imageInfo.height,
-                offsetX: imageInfo.offsetX,
-                offsetY: imageInfo.offsetY,
+                ...imageInfoFromSingleImage(imageInfo),
                 image: this.image,
                 texture: this.texture
             }
@@ -2033,22 +1724,12 @@ class CropImageAtlasHandler {
 
         return [
             {
-                sourceX: imageInfo.x,
-                sourceY: imageInfo.y,
-                width: imageInfo.width,
-                height: imageInfo.height,
-                offsetX: imageInfo.offsetX,
-                offsetY: imageInfo.offsetY,
+                ...imageInfoFromSingleImage(imageInfo),
                 image: this.image,
                 texture: this.texture
             },
             {
-                sourceX: shadowImageInfo.x,
-                sourceY: shadowImageInfo.y,
-                width: shadowImageInfo.width,
-                height: shadowImageInfo.height,
-                offsetX: shadowImageInfo.offsetX,
-                offsetY: shadowImageInfo.offsetY,
+                ...imageInfoFromSingleImage(shadowImageInfo),
                 image: this.image,
                 texture: this.texture
             }
@@ -2096,12 +1777,7 @@ class AnimalImageAtlasHandler {
 
             if (cargoImage) {
                 return {
-                    sourceX: cargoImage.x,
-                    sourceY: cargoImage.y,
-                    width: cargoImage.width,
-                    height: cargoImage.height,
-                    offsetX: cargoImage.offsetX,
-                    offsetY: cargoImage.offsetY,
+                    ...imageInfoFromSingleImage(cargoImage),
                     image: this.image,
                     texture: this.texture
                 }
@@ -2113,12 +1789,7 @@ class AnimalImageAtlasHandler {
 
             if (cargoImage) {
                 return {
-                    sourceX: cargoImage.x,
-                    sourceY: cargoImage.y,
-                    width: cargoImage.width,
-                    height: cargoImage.height,
-                    offsetX: cargoImage.offsetX,
-                    offsetY: cargoImage.offsetY,
+                    ...imageInfoFromSingleImage(cargoImage),
                     image: this.image,
                     texture: this.texture
                 }
@@ -2134,8 +1805,6 @@ class AnimalImageAtlasHandler {
         }
 
         const image = this.imageAtlasInfo.images[direction]
-
-        const frameIndex = (animationCounter) % image.nrImages
 
         if (this.imageAtlasInfo.shadowImages) {
             let shadowImage = this.imageAtlasInfo.shadowImages[direction]
@@ -2154,22 +1823,12 @@ class AnimalImageAtlasHandler {
 
             return [
                 {
-                    sourceX: image.startX + frameIndex * image.width,
-                    sourceY: image.startY,
-                    width: image.width,
-                    height: image.height,
-                    offsetX: image.offsetX,
-                    offsetY: image.offsetY,
+                    ...imageInfoFromHorizontalImageSeries(image, animationCounter),
                     image: this.image,
                     texture: this.texture
                 },
                 {
-                    sourceX: shadowImage.x,
-                    sourceY: shadowImage.y,
-                    width: shadowImage.width,
-                    height: shadowImage.height,
-                    offsetX: shadowImage.offsetX,
-                    offsetY: shadowImage.offsetY,
+                    ...imageInfoFromSingleImage(shadowImage),
                     image: this.image,
                     texture: this.texture
                 }
@@ -2178,17 +1837,36 @@ class AnimalImageAtlasHandler {
 
         return [
             {
-                sourceX: image.startX + frameIndex * image.width,
-                sourceY: image.startY,
-                width: image.width,
-                height: image.height,
-                offsetX: image.offsetX,
-                offsetY: image.offsetY,
+                ...imageInfoFromHorizontalImageSeries(image, animationCounter),
                 image: this.image,
                 texture: this.texture
             }
         ]
 
+    }
+}
+
+type PartialDrawingInformation = Omit<DrawingInformation, 'image' | 'texture'>
+
+function imageInfoFromSingleImage(imageInfo: OneImageInformation): PartialDrawingInformation {
+    return {
+        sourceX: imageInfo.x,
+        sourceY: imageInfo.y,
+        width: imageInfo.width,
+        height: imageInfo.height,
+        offsetX: imageInfo.offsetX,
+        offsetY: imageInfo.offsetY
+    }
+}
+
+function imageInfoFromHorizontalImageSeries(image: ImageSeriesInformation, animationIndex: number): PartialDrawingInformation {
+    return {
+        sourceX: image.startX + (animationIndex % image.nrImages) * image.width,
+        sourceY: image.startY,
+        width: image.width,
+        height: image.height,
+        offsetX: image.offsetX,
+        offsetY: image.offsetY,
     }
 }
 

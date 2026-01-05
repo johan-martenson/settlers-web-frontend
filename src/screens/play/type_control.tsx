@@ -11,6 +11,7 @@ import { useTrackedRef } from '../../utils/hooks/reference'
 export type Command = {
     action: (point: Point) => void
     filter?: (selectedPointInformation: PointInformation) => boolean | undefined
+    hidden?: boolean
     icon?: React.ReactNode
 }
 
@@ -93,7 +94,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
     // State
     const [input, setInput] = useState<string>('')
-    const [expanded, setExpanded] = useState<boolean>(true)
+    const [expanded, setExpanded] = useState<boolean>(false)
     const [selectedPointInformation, setSelectedPointInformation] = useState<PointInformation>()
 
     // State that doesn't trigger re-renders
@@ -234,40 +235,45 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
             <div className={className}>{input}</div>
 
-            {(expanded || matches.length > 0) &&
+            {(expanded || (inputToMatch.length > 0 && matches.length > 0)) &&
                 <div className='container-alternatives'>
                     <ItemContainer style={{ alignItems: 'stretch' }}>
-                        {matches.map(([commandName, command], index) => (
-                            <div
-                                key={index}
-                                className='alternative'
-                                onClick={() => {
-                                    if (TypeControlLogConfig.commands) {
-                                        console.log(
-                                            `Type control (commands): clicked "${commandName}"`
-                                        )
-                                    }
+                        {commandsRef.current && Array.from(commandsRef.current.entries())
 
-                                    runCommand(commandName)
-                                    setInput('')
-                                }}
-                            >
-                                {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)
-                                    ? <>
-                                        <span>
-                                            <span className='MatchingPart'>
-                                                {commandName.substring(0, input.length)}
+                            // eslint-disable-next-line
+                            .filter(([commandName, command]) => !command.hidden &&
+                                (expanded || (inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch))))
+                            .map(([commandName, command], index) => (
+                                <div
+                                    key={index}
+                                    className='alternative'
+                                    onClick={() => {
+                                        if (TypeControlLogConfig.commands) {
+                                            console.log(
+                                                `Type control (commands): clicked "${commandName}"`
+                                            )
+                                        }
+
+                                        runCommand(commandName)
+                                        setInput('')
+                                    }}
+                                >
+                                    {inputToMatch.length > 0 && commandName.toLowerCase().startsWith(inputToMatch)
+                                        ? <>
+                                            <span>
+                                                <span className='MatchingPart'>
+                                                    {commandName.substring(0, input.length)}
+                                                </span>
+                                                <span className='RemainingPart'>
+                                                    {commandName.substring(input.length)}
+                                                </span>
                                             </span>
-                                            <span className='RemainingPart'>
-                                                {commandName.substring(input.length)}
-                                            </span>
-                                        </span>
-                                        {command.icon}
-                                    </>
-                                    : <>{commandName} {command.icon}</>
-                                }
-                            </div>
-                        ))}
+                                            {command.icon}
+                                        </>
+                                        : <>{commandName} {command.icon}</>
+                                    }
+                                </div>
+                            ))}
                     </ItemContainer>
                 </div>}
 

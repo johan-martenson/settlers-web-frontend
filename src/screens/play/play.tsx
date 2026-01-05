@@ -346,6 +346,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             commands.set('Kill websocket', {
                 action: () => api.killWebsocket(),
+                hidden: true,
                 icon: <Dismiss24Filled />
             })
 
@@ -384,8 +385,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             })
             commands.set('Remove (house, flag, or road)', {
                 action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
-                filter: (pointInformation: PointInformation) => pointInformation.is === 'BUILDING' &&
-                    api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter'
+                filter: (pointInformation: PointInformation) => (pointInformation.is === 'BUILDING' &&
+                    api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter') ||
+                    (pointInformation.is === 'FLAG' && api.flags.get(pointInformation?.flagId)?.playerId === selfPlayerId) ||
+                    (pointInformation.is === 'ROAD' && api.roads.get(pointInformation?.roadId!)?.playerId === selfPlayerId),
             })
             commands.set('Statistics', {
                 action: () => {
@@ -444,6 +447,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             })
             commands.set('Fps', {
                 action: () => setShowFpsCounter(!showFpsCounter),
+                hidden: true,
                 icon: <TopSpeed24Filled />
             })
             commands.set('Menu', {
@@ -463,6 +467,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             })
             commands.set('Debug', {
                 action: () => openSingletonWindow({ type: 'DEBUG' }),
+                hidden: true,
                 icon: <UiIcon type='SPRAY_CAN' scale={0.5} />
             })
             commands.set('Follow', {

@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { Direction } from '../api/types'
-import { Dimension, shipImageAtlas } from '../assets/assets'
+import { shipImageAtlas } from '../assets/image_atlas_handlers'
 import { SHADOW_COLOR } from './icon'
+import { Dimension } from '../assets/types'
 
 // Types
 type ShipIconProps = {

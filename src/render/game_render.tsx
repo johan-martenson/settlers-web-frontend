@@ -6,7 +6,7 @@ import { api, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../utils/stats/stats'
 import { gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, loadImageNg as loadImageAsync, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
-import { animals, borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, Dimension, donkeyAnimation, DrawingInformation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, fireImageAtlas, flagAnimations, houses, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, treeImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets/assets'
+import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, houses, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
 import { shadowFragmentShader, textureFragmentShader, texturedImageVertexShaderPixelPerfect } from '../shaders/image-and-shadow'
 import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from '../shaders/terrain-and-roads'
@@ -16,6 +16,8 @@ import { textures } from '../render/textures'
 import { ProgramDescriptor, ProgramInstance, draw, initProgram, setBuffer } from './utils'
 import { buildingPretty } from '../pretty_strings'
 import { useNonTriggeringState } from '../utils/hooks/non_triggering'
+import { animals, donkeyAnimation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, flagAnimations, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, workers } from '../assets/animations'
+import { Dimension, DrawingInformation } from '../assets/types'
 
 // Types
 export type ScreenPoint = {
@@ -823,7 +825,7 @@ function GameCanvas({
             } else if (house.state === 'DESTROYED') {
                 const size = getHouseSize(house)
 
-                const fireDrawInformation = fireImageAtlas.getBurntDownDrawingInformation(size)
+                const fireDrawInformation = fireImageAtlasHandler.getBurntDownDrawingInformation(size)
 
                 toDrawNormal.push({
                     source: fireDrawInformation,

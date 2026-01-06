@@ -1,147 +1,9 @@
 import { loadImageNg } from '../utils/utils'
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, StoneAmount, StoneType, TreeSize, TreeType, WildAnimalType, WorkerAction, WorkerType } from '../api/types'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, StoneAmount, StoneType, TreeSize, TreeType, WorkerAction } from '../api/types'
 import { UiIconType } from '../icons/icon'
+import { AnimalImageAtlas, AnimationType, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
 
 // Types
-export type Dimension = {
-    width: number
-    height: number
-}
-
-export type ImageSeriesInformation = {
-    height: number
-    width: number
-    nrImages: number
-    startX: number
-    startY: number
-    offsetX: number
-    offsetY: number
-}
-
-export type DrawingInformation = {
-    sourceX: number
-    sourceY: number
-    width: number
-    height: number
-    offsetX: number
-    offsetY: number
-    image: HTMLImageElement
-    textureIndex?: number
-    texture?: WebGLTexture | null
-}
-
-export type OneImageInformation = {
-    x: number
-    y: number
-    width: number
-    height: number
-    offsetX: number
-    offsetY: number
-}
-
-type UiElementsImageAtlasInfo = {
-    selectedPoint: OneImageInformation
-    hoverPoint: OneImageInformation
-    hoverAvailableFlag: OneImageInformation
-    hoverAvailableMine: OneImageInformation
-    hoverAvailableHarbor: OneImageInformation
-    hoverAvailableBuildingLarge: OneImageInformation
-    hoverAvailableBuildingMedium: OneImageInformation
-    hoverAvailableBuildingSmall: OneImageInformation
-    availableFlag: OneImageInformation
-    availableMine: OneImageInformation
-    availableBuildingHarbor: OneImageInformation
-    availableBuildingLarge: OneImageInformation
-    availableBuildingMedium: OneImageInformation
-    availableBuildingSmall: OneImageInformation
-
-    icons: Record<UiIconType, OneImageInformation>
-}
-
-type ShipImageAtlasFormat = {
-    ready: Record<Direction, Record<'image' | 'shadowImage', OneImageInformation>>
-    underConstruction: Record<ShipConstructionProgress, Record<'image' | 'shadowImage', OneImageInformation>>
-}
-
-type WorkerCommonFormat = {
-    shadowImages: Record<Direction, ImageSeriesInformation>
-    fullImages: Record<Direction, ImageSeriesInformation>
-    bodyImages: Record<Direction, ImageSeriesInformation>
-    bodyImagesByPlayer: Record<Direction, Record<PlayerColor, ImageSeriesInformation>>
-    fullImagesByPlayer: Record<Direction, Record<PlayerColor, ImageSeriesInformation>>
-    cargoImages?: Record<Material, Record<Direction, ImageSeriesInformation>>
-    actions?: Record<WorkerAction, Record<Direction | 'any', ImageSeriesInformation>>
-    actionsByPlayer?: Record<WorkerAction, Record<Direction | 'any', Record<PlayerColor, ImageSeriesInformation>>>
-}
-
-type WorkerNationSpecificFormat = {
-    fullImages: Record<Nation, Record<Direction, ImageSeriesInformation>>
-    fullImagesByPlayer: Record<Nation, Record<Direction, Record<PlayerColor, ImageSeriesInformation>>>
-    cargoImages?: Record<Nation, Record<Material, Record<Direction, ImageSeriesInformation>>>
-    actions?: Record<Nation, Record<WorkerAction, Record<Direction | 'any', ImageSeriesInformation>>>
-    actionsByPlayer?: Record<Nation, Record<WorkerAction, Record<Direction | 'any', Record<PlayerColor, ImageSeriesInformation>>>>
-}
-
-type WorkerImageAtlasFormat = {
-    common: WorkerCommonFormat
-    nationSpecific: WorkerNationSpecificFormat
-}
-
-type HouseImages = {
-    ready: OneImageInformation
-    underConstruction: OneImageInformation
-    underConstructionShadow: OneImageInformation
-    readyShadow: OneImageInformation
-    openDoor: OneImageInformation
-    workingAnimation?: ImageSeriesInformation
-    workingAnimationShadow?: ImageSeriesInformation
-}
-
-type HouseImageAtlasInformation = {
-    buildings: Record<Nation, Record<AnyBuilding, HouseImages>>
-    constructionPlanned: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
-    constructionJustStarted: Record<Nation, Record<'image' | 'shadowImage', OneImageInformation>>
-}
-
-type SignImageAtlasFormat = {
-    images: Record<SignTypes, Record<Size, OneImageInformation>>
-    shadowImage: OneImageInformation
-}
-
-type FireImageAtlasFormat = {
-    fires: Record<FireSize, Record<'image' | 'shadowImage', ImageSeriesInformation>>
-    burntDown: Record<Size, OneImageInformation>
-}
-
-type CargoInformation = {
-    generic: Record<Material, OneImageInformation>
-    nationSpecific: Record<Nation, Record<Material, OneImageInformation>>
-}
-
-type RoadBuildingInfo = {
-    startPoint: OneImageInformation
-    sameLevelConnection: OneImageInformation
-    upwardsConnections: Record<'HIGH' | 'MEDIUM' | 'LITTLE', OneImageInformation>
-    downwardsConnections: Record<'HIGH' | 'MEDIUM' | 'LITTLE', OneImageInformation>
-}
-
-type TreeImageAtlasFormat = {
-    grownTrees: Record<TreeType, ImageSeriesInformation>
-    grownTreeShadows: Record<TreeType, ImageSeriesInformation>
-    growingTrees: Record<TreeType, Record<TreeSize, OneImageInformation>>
-    growingTreeShadows: Record<TreeType, Record<TreeSize, OneImageInformation>>
-    fallingTrees: Record<TreeType, ImageSeriesInformation>
-    fallingTreeShadows: Record<TreeType, ImageSeriesInformation>
-}
-
-type AnimalImageAtlasFormat = {
-    images: Record<Direction, ImageSeriesInformation>
-    shadowImages?: Record<Direction, OneImageInformation>
-    cargos?: Record<Material, OneImageInformation>
-    nationSpecific?: Record<Nation, Record<Material, OneImageInformation>>
-}
-
-export type AnimationType = 'SINGLE_THEN_FREEZE' | 'REPEAT' | 'SINGLE_THEN_STOP'
 
 
 // State
@@ -151,7 +13,7 @@ const reported = new Set()
 // Classes
 class UiElementsImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: UiElementsImageAtlasInfo
+    private imageAtlasInfo?: UiElementsImageAtlas
     private image?: HTMLImageElement
     private textureIndex: number
     private texture?: WebGLTexture | null
@@ -378,7 +240,7 @@ class MaterialImageAtlasHandler {
 
 class FlagImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<FlagType, Record<PlayerColor | 'shadows', ImageSeriesInformation>>>
+    private imageAtlasInfo?: Record<Nation, Record<FlagType, Record<PlayerColor | 'shadows', ImageSeries>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -460,43 +322,9 @@ class FlagImageAtlasHandler {
     }
 }
 
-class FlagAnimation {
-    private imageAtlasHandler: FlagImageAtlasHandler
-    private speedAdjust: number
-
-    constructor(prefix: string, speedAdjust: number) {
-        this.imageAtlasHandler = new FlagImageAtlasHandler(prefix)
-        this.speedAdjust = speedAdjust
-    }
-
-    async load(): Promise<void> {
-        await this.imageAtlasHandler.load()
-    }
-
-    getImage(): HTMLImageElement | undefined {
-        return this.imageAtlasHandler.getSourceImage()
-    }
-
-    getAnimationFrame(nation: Nation, color: PlayerColor, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationFor(nation, color, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
-    }
-
-    getSizeWithShadow(nation: Nation, flagType: FlagType): Dimension | undefined {
-        return this.imageAtlasHandler.getSizeWithShadow(nation, flagType)
-    }
-
-    getSize(nation: Nation, flagType: FlagType): Dimension | undefined {
-        return this.imageAtlasHandler.getSize(nation, flagType)
-    }
-
-    getImageAtlasHandler(): FlagImageAtlasHandler {
-        return this.imageAtlasHandler
-    }
-}
-
 class ShipImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: ShipImageAtlasFormat
+    private imageAtlasInfo?: ShipImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -575,131 +403,10 @@ class ShipImageAtlasHandler {
     }
 }
 
-class TreeAnimation {
-    private imageAtlasHandler: TreeImageAtlasHandler
-    private speedAdjust: number
-
-    constructor(prefix: string, speedAdjust: number) {
-        this.imageAtlasHandler = new TreeImageAtlasHandler(prefix)
-        this.speedAdjust = speedAdjust
-    }
-
-    getImageAtlasHandler(): TreeImageAtlasHandler {
-        return this.imageAtlasHandler
-    }
-
-    async load(): Promise<void> {
-        await this.imageAtlasHandler.load()
-    }
-
-    getImage(): HTMLImageElement | undefined {
-        return this.imageAtlasHandler.getSourceImage()
-    }
-
-    getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForGrownTree(treeType, Math.floor((animationIndex + offset) / this.speedAdjust))
-    }
-
-    getFallingTree(treeType: TreeType, step: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForFallingTree(treeType, step)
-    }
-}
-
-class FireAnimation {
-    private imageAtlasHandler: FireImageAtlasHandler
-    private speedAdjust: number
-
-    constructor(prefix: string, speedAdjust: number) {
-        this.imageAtlasHandler = new FireImageAtlasHandler(prefix)
-        this.speedAdjust = speedAdjust
-    }
-
-    async load(): Promise<void> {
-        await this.imageAtlasHandler.load()
-    }
-
-    getImage(): HTMLImageElement | undefined {
-        return this.imageAtlasHandler.getSourceImage()
-    }
-
-    getAnimationFrame(size: FireSize, animationIndex: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getFireDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
-    }
-
-    getImageAtlasHandler(): FireImageAtlasHandler {
-        return this.imageAtlasHandler
-    }
-}
-
-class AnimalAnimation {
-    private imageAtlasHandler: AnimalImageAtlasHandler
-    private speedAdjust: number
-
-    constructor(prefix: string, name: string, speedAdjust: number) {
-        this.imageAtlasHandler = new AnimalImageAtlasHandler(prefix, name)
-        this.speedAdjust = speedAdjust
-    }
-
-    async load(): Promise<void> {
-        await this.imageAtlasHandler.load()
-    }
-
-    getImage(): HTMLImageElement | undefined {
-        return this.imageAtlasHandler.getSourceImage()
-    }
-
-    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationFor(direction, Math.floor((animationIndex + percentageTraveled) / this.speedAdjust))
-    }
-
-    getImageAtlasHandler(): AnimalImageAtlasHandler {
-        return this.imageAtlasHandler
-    }
-}
-
-class WorkerAnimation {
-    private imageAtlasHandler: WorkerImageAtlasHandler
-    private speedAdjust: number
-
-    constructor(prefix: string, postfix: string, speedAdjust: number) {
-        this.imageAtlasHandler = new WorkerImageAtlasHandler(prefix, postfix)
-
-        this.speedAdjust = speedAdjust
-    }
-
-    async load(): Promise<void> {
-        await this.imageAtlasHandler.load()
-    }
-
-    getImage(): HTMLImageElement | undefined {
-        return this.imageAtlasHandler.getSourceImage()
-    }
-
-    getAnimationFrame(nation: Nation, direction: Direction, color: PlayerColor, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForWorker(nation, direction, color, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
-    }
-
-    getActionAnimation(nation: Nation, direction: Direction, action: WorkerAction, color: PlayerColor, animationIndex: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForAction(nation, direction, action, color, animationIndex)
-    }
-
-    getDrawingInformationForCargo(direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForCargo(direction, material, animationIndex, Math.floor(offset))
-    }
-
-    getImageAtlasHandler(): WorkerImageAtlasHandler {
-        return this.imageAtlasHandler
-    }
-
-    getSize(nation: Nation, direction: Direction, color: PlayerColor): Dimension | undefined {
-        return this.imageAtlasHandler.getSize(nation, direction, color)
-    }
-}
-
 class WorkerImageAtlasHandler {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: WorkerImageAtlasFormat
+    private imageAtlasInfo?: WorkerImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -928,7 +635,7 @@ class WorkerImageAtlasHandler {
 
 class HouseImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: HouseImageAtlasInformation
+    private imageAtlasInfo?: HouseImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1135,7 +842,7 @@ class HouseImageAtlasHandler {
 
 class BorderImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<PlayerColor, Record<'summerBorder' | 'winterBorder', OneImageInformation>>>
+    private imageAtlasInfo?: Record<Nation, Record<PlayerColor, Record<'summerBorder' | 'winterBorder', OneImage>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1184,7 +891,7 @@ class BorderImageAtlasHandler {
 
 class SignImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: SignImageAtlasFormat
+    private imageAtlasInfo?: SignImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1235,7 +942,7 @@ class SignImageAtlasHandler {
 
 class FireImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: FireImageAtlasFormat
+    private imageAtlasInfo?: FireImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1310,7 +1017,7 @@ class FireImageAtlasHandler {
 
 class CargoImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: CargoInformation
+    private imageAtlasInfo?: CargoImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1369,7 +1076,7 @@ class CargoImageAtlasHandler {
 
 class RoadBuildingImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: RoadBuildingInfo
+    private imageAtlasInfo?: RoadBuildingImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1456,7 +1163,7 @@ class RoadBuildingImageAtlasHandler {
 
 class TreeImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: TreeImageAtlasFormat
+    private imageAtlasInfo?: TreeImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1515,23 +1222,11 @@ class TreeImageAtlasHandler {
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(imagePerTreeType, step),
-                /*sourceX: imagePerTreeType.startX + imagePerTreeType.width * step,
-                sourceY: imagePerTreeType.startY,
-                width: imagePerTreeType.width,
-                height: imagePerTreeType.height,
-                offsetX: imagePerTreeType.offsetX,
-                offsetY: imagePerTreeType.offsetY,*/
                 image: this.image,
                 texture: this.texture
             },
             {
                 ...imageInfoFromHorizontalImageSeries(shadowImagePerTreeType, step),
-                /*sourceX: shadowImagePerTreeType.startX + shadowImagePerTreeType.width * step,
-                sourceY: shadowImagePerTreeType.startY,
-                width: shadowImagePerTreeType.width,
-                height: shadowImagePerTreeType.height,
-                offsetX: shadowImagePerTreeType.offsetX,
-                offsetY: shadowImagePerTreeType.offsetY,*/
                 image: this.image,
                 texture: this.texture
             }
@@ -1566,7 +1261,7 @@ class TreeImageAtlasHandler {
 
 class StoneImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<StoneType, Record<StoneAmount, Record<'image' | 'shadowImage', OneImageInformation>>>
+    private imageAtlasInfo?: Record<StoneType, Record<StoneAmount, Record<'image' | 'shadowImage', OneImage>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1621,7 +1316,7 @@ class StoneImageAtlasHandler {
 
 class DecorationsImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<DecorationType, Record<'image' | 'shadowImage', OneImageInformation>>
+    private imageAtlasInfo?: Record<DecorationType, Record<'image' | 'shadowImage', OneImage>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1688,7 +1383,7 @@ class DecorationsImageAtlasHandler {
 
 class CropImageAtlasHandler {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<CropType, Record<CropGrowth, Record<'image' | 'shadowImage', OneImageInformation>>>
+    private imageAtlasInfo?: Record<CropType, Record<CropGrowth, Record<'image' | 'shadowImage', OneImage>>>
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1740,7 +1435,7 @@ class CropImageAtlasHandler {
 class AnimalImageAtlasHandler {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: AnimalImageAtlasFormat
+    private imageAtlasInfo?: AnimalImageAtlas
     private image?: HTMLImageElement
     private texture?: WebGLTexture | null
 
@@ -1848,7 +1543,7 @@ class AnimalImageAtlasHandler {
 
 type PartialDrawingInformation = Omit<DrawingInformation, 'image' | 'texture'>
 
-function imageInfoFromSingleImage(imageInfo: OneImageInformation): PartialDrawingInformation {
+function imageInfoFromSingleImage(imageInfo: OneImage): PartialDrawingInformation {
     return {
         sourceX: imageInfo.x,
         sourceY: imageInfo.y,
@@ -1859,7 +1554,7 @@ function imageInfoFromSingleImage(imageInfo: OneImageInformation): PartialDrawin
     }
 }
 
-function imageInfoFromHorizontalImageSeries(image: ImageSeriesInformation, animationIndex: number): PartialDrawingInformation {
+function imageInfoFromHorizontalImageSeries(image: ImageSeries, animationIndex: number): PartialDrawingInformation {
     return {
         sourceX: image.startX + (animationIndex % image.nrImages) * image.width,
         sourceY: image.startY,
@@ -1871,40 +1566,6 @@ function imageInfoFromHorizontalImageSeries(image: ImageSeriesInformation, anima
 }
 
 // Constants
-const workers = new Map<WorkerType, WorkerAnimation>()
-
-workers.set('Farmer', new WorkerAnimation('assets/', 'farmer', 10))
-workers.set('Fisherman', new WorkerAnimation('assets/', 'fisher', 10))
-workers.set('Courier', new WorkerAnimation('assets/', 'helper', 10))
-workers.set('StorehouseWorker', new WorkerAnimation('assets/', 'helper', 10))
-workers.set('Hunter', new WorkerAnimation('assets/', 'hunter', 10))
-workers.set('IronFounder', new WorkerAnimation('assets/', 'iron_founder', 10))
-workers.set('Metalworker', new WorkerAnimation('assets/', 'metalworker', 10))
-workers.set('Miller', new WorkerAnimation('assets/', 'miller', 10))
-workers.set('Miner', new WorkerAnimation('assets/', 'miner', 10))
-workers.set('Minter', new WorkerAnimation('assets/', 'minter', 10))
-workers.set('PigBreeder', new WorkerAnimation('assets/', 'pig_breeder', 10))
-workers.set('Planer', new WorkerAnimation('assets/', 'planer', 10))
-workers.set('Scout', new WorkerAnimation('assets/', 'scout', 10))
-workers.set('ShipWright', new WorkerAnimation('assets/', 'ship_wright', 10))
-workers.set('DonkeyBreeder', new WorkerAnimation('assets/', 'donkey_breeder', 10))
-workers.set('Butcher', new WorkerAnimation('assets/', 'butcher', 10))
-workers.set('Builder', new WorkerAnimation('assets/', 'builder', 10))
-workers.set('Brewer', new WorkerAnimation('assets/', 'brewer', 10))
-workers.set('Baker', new WorkerAnimation('assets/', 'baker', 10))
-workers.set('Armorer', new WorkerAnimation('assets/', 'armorer', 10))
-workers.set('WoodcutterWorker', new WorkerAnimation('assets/', 'woodcutter', 10))
-workers.set('Forester', new WorkerAnimation('assets/', 'forester', 10))
-workers.set('Carpenter', new WorkerAnimation('assets/', 'carpenter', 10))
-workers.set('Stonemason', new WorkerAnimation('assets/', 'stonemason', 10))
-workers.set('Scout', new WorkerAnimation('assets/', 'scout', 10))
-workers.set('Private', new WorkerAnimation('assets/', 'private', 10))
-workers.set('Private_first_class', new WorkerAnimation('assets/', 'private_first_class', 10))
-workers.set('Sergeant', new WorkerAnimation('assets/', 'sergeant', 10))
-workers.set('Officer', new WorkerAnimation('assets/', 'officer', 10))
-workers.set('General', new WorkerAnimation('assets/', 'general', 10))
-workers.set('Geologist', new WorkerAnimation('assets/', 'geologist', 10))
-
 const uiElementsImageAtlasHandler = new UiElementsImageAtlasHandler('assets/', 0)
 
 const actionAnimationType = new Map<WorkerAction, AnimationType>()
@@ -1934,54 +1595,23 @@ ANIMAL_FALLBACK_DIRECTION.set('NORTH_EAST', 'SOUTH_WEST')
 
 const houses = new HouseImageAtlasHandler('assets/')
 const materialImageAtlasHandler = new MaterialImageAtlasHandler('assets/')
-const flagAnimations = new FlagAnimation('assets/', 2)
 const shipImageAtlas = new ShipImageAtlasHandler('assets/')
-
 const cargoImageAtlasHandler = new CargoImageAtlasHandler('assets/')
-
 const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler('assets/')
-
 const signImageAtlasHandler = new SignImageAtlasHandler('assets/')
-
 const cropsImageAtlasHandler = new CropImageAtlasHandler('assets/')
-
 const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler('assets/')
-
 const borderImageAtlasHandler = new BorderImageAtlasHandler('assets/')
-
-const treeAnimations = new TreeAnimation('assets/nature/', 2)
-const treeImageAtlasHandler = treeAnimations.getImageAtlasHandler()
-
-const fireAnimations = new FireAnimation('assets/', 2)
-const fireImageAtlas = fireAnimations.getImageAtlasHandler()
-
+const fireImageAtlasHandler = new FireImageAtlasHandler('assets/')
 const stoneImageAtlasHandler = new StoneImageAtlasHandler('assets/')
-
-const animals = new Map<WildAnimalType, AnimalAnimation>()
-
-animals.set('DEER', new AnimalAnimation('assets/nature/animals/', 'deer', 10))
-animals.set('DEER_2', new AnimalAnimation('assets/nature/animals/', 'deer2', 10))
-animals.set('DUCK', new AnimalAnimation('assets/nature/animals/', 'duck', 10))
-animals.set('DUCK_2', new AnimalAnimation('assets/nature/animals/', 'duck', 10))
-animals.set('FOX', new AnimalAnimation('assets/nature/animals/', 'fox', 10))
-animals.set('RABBIT', new AnimalAnimation('assets/nature/animals/', 'rabbit', 10))
-animals.set('SHEEP', new AnimalAnimation('assets/nature/animals/', 'sheep', 10))
-animals.set('STAG', new AnimalAnimation('assets/nature/animals/', 'stag', 10))
-
-const donkeyAnimation = new AnimalAnimation('assets/nature/animals/', 'donkey', 10)
-const thinCarrierWithCargo = new WorkerAnimation('assets/', 'thin-carrier-with-cargo', 10)
-const fatCarrierWithCargo = new WorkerAnimation('assets/', 'fat-carrier-with-cargo', 10)
-const thinCarrierNoCargo = new WorkerAnimation('assets/', 'thin-carrier-no-cargo', 10)
-const fatCarrierNoCargo = new WorkerAnimation('assets/', 'fat-carrier-no-cargo', 10)
+const treeImageAtlasHandler = new TreeImageAtlasHandler('assets/')
+const flagImageAtlasHandler = new FlagImageAtlasHandler('assets/')
 
 export {
-    WorkerAnimation,
-    workers,
     houses,
     materialImageAtlasHandler,
-    FlagImageAtlasHandler,
-    FlagAnimation,
-    flagAnimations,
+    WorkerImageAtlasHandler,
+    AnimalImageAtlasHandler,
     uiElementsImageAtlasHandler,
     shipImageAtlas,
     cargoImageAtlasHandler,
@@ -1990,15 +1620,8 @@ export {
     cropsImageAtlasHandler,
     decorationsImageAtlasHandler,
     borderImageAtlasHandler,
-    treeAnimations,
     treeImageAtlasHandler,
-    fireAnimations,
-    fireImageAtlas,
+    fireImageAtlasHandler,
     stoneImageAtlasHandler,
-    animals,
-    donkeyAnimation,
-    thinCarrierWithCargo,
-    fatCarrierWithCargo,
-    thinCarrierNoCargo,
-    fatCarrierNoCargo
+    flagImageAtlasHandler
 }

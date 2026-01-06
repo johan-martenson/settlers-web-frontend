@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../api/types'
-import { DrawingInformation, flagAnimations, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler, workers } from '../assets/assets'
+import { flagImageAtlasHandler, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import './icon.css'
+import { flagAnimations, workers } from '../assets/animations'
+import { DrawingInformation } from '../assets/types'
 
 // Types
 export type UiIconType = 'DESTROY_BUILDING'
@@ -552,13 +554,17 @@ const FlagIcon = ({
 
     // References
     const canvasRef = useRef<HTMLCanvasElement>(null)
-
-    // State
-    // eslint-disable-next-line
-    const [animationIndexHolder, setAnimationIndexHolder] = useState<AnimationIndexHolder>({ animationIndex: 0 })
+    const animationIndexRef = useRef(0)
+    const mountedRef = useRef(true)
 
     // Functions
-    const drawFlag = useCallback((image: ImageBitmap, nation: Nation, color: PlayerColor, type: FlagType, animationIndex: number) => {
+    const drawFlag = useCallback((
+        image: ImageBitmap,
+        nation: Nation,
+        color: PlayerColor,
+        type: FlagType,
+        animationIndex: number
+    ) => {
         const canvas = canvasRef.current
         if (!canvas) {
             console.error('No canvas ref set')
@@ -580,64 +586,80 @@ const FlagIcon = ({
 
         const [drawInformation, shadowInformation] = drawArray
 
-        drawImageAndShadow(image, drawInformation, shadowInformation, drawShadow, canvas, scale)
-
-    }, [canvasRef, animationIndexHolder, drawShadow, scale])
+        drawImageAndShadow(
+            image,
+            drawInformation,
+            shadowInformation,
+            drawShadow,
+            canvas,
+            scale
+        )
+    }, [drawShadow, scale])
 
     // Load image, draw, and start animation (if requested)
     useEffect(() => {
-        let isCancelled = false;
+        mountedRef.current = true
+
+        let intervalId: number | undefined;
 
         (async () => {
             await flagAnimations.load()
+            if (!mountedRef.current) return
 
-            if (isCancelled) {
-                return
-            }
-
-            const image = flagAnimations?.getImageAtlasHandler().getImage()
-
+            const image = flagImageAtlasHandler.getImage()
             if (!image) {
                 console.error('No image available')
                 return
             }
 
             let imageBitmap = imageCache.get(image)
-
             if (!imageBitmap) {
                 imageBitmap = await createImageBitmap(image)
-
-                if (isCancelled) {
-                    return
-                }
-
+                if (!mountedRef.current) return
                 imageCache.set(image, imageBitmap)
             }
 
+            animationIndexRef.current = 0
             drawFlag(imageBitmap, nation, color, type, 0)
 
             if (animate) {
-                const intervalId = setInterval(() => {
-                    animationIndexHolder.animationIndex = (animationIndexHolder.animationIndex + 1) % MAX_FRAMES
-                    requestAnimationFrame(() => drawFlag(imageBitmap, nation, color, type, animationIndexHolder.animationIndex))
-                }, ANIMATION_INTERVAL)
-                return () => clearInterval(intervalId)
+                intervalId = window.setInterval(() => {
+                    if (!mountedRef.current) return
 
+                    animationIndexRef.current =
+                        (animationIndexRef.current + 1) % MAX_FRAMES
+
+                    requestAnimationFrame(() => {
+                        if (!mountedRef.current) return
+                        drawFlag(
+                            imageBitmap!,
+                            nation,
+                            color,
+                            type,
+                            animationIndexRef.current
+                        )
+                    })
+                }, ANIMATION_INTERVAL)
             }
         })()
 
         return () => {
-            isCancelled = true
+            mountedRef.current = false
+            if (intervalId !== undefined) {
+                clearInterval(intervalId)
+            }
         }
-    }, [type, nation, drawShadow])
+    }, [type, nation, color, animate, drawFlag])
 
-    return <canvas
-        ref={canvasRef}
-        width={1}
-        height={1}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-    />
+    return (
+        <canvas
+            ref={canvasRef}
+            width={1}
+            height={1}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+        />
+    )
 }
 
 export {

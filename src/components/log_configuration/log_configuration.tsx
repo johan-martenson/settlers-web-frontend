@@ -31,7 +31,7 @@ type SubsystemDescriptor<T> = {
 function buildMultiSubsystemRow<T extends Record<string, boolean>>(
     config: T,
     state: T,
-    setState: React.Dispatch<React.SetStateAction<T>>,
+    setState: React.Dispatch<React.SetStateAction<T>> | ((updater: (prev: T) => T) => void),
     descriptors: SubsystemDescriptor<T>[]
 ) {
     return {
@@ -47,13 +47,32 @@ function buildMultiSubsystemRow<T extends Record<string, boolean>>(
             Object.keys(config).forEach(key => {
                 config[key as keyof T] = value as T[keyof T]
             })
-            setState(
+            setState(prev =>
                 Object.fromEntries(
                     Object.keys(config).map(k => [k, value])
                 ) as T
             )
         }
     }
+}
+
+// Hook
+function useDebugConfig<T extends Record<string, boolean>>(config: T) {
+    const [state, setState] = React.useState<T>({ ...config })
+
+    function setAndSync(updater: (prev: T) => T) {
+        setState(prev => {
+            const next = updater(prev)
+
+            Object.keys(next).forEach(key => {
+                config[key as keyof T] = next[key] as T[keyof T]
+            })
+
+            return next
+        })
+    }
+
+    return [state, setAndSync] as const
 }
 
 // React components
@@ -66,9 +85,9 @@ const DebugLogsTable = () => {
     const [gameMenuDebug, setGameMenuDebug] = React.useState<boolean>(gameMenuDebugSettings.log)
     const [playConfigurationDebugEffects, setPlayConfigurationDebugEffects] = React.useState<boolean>(playConfigurationDebug.effects)
     const [playConfigurationDebugEvents, setPlayConfigurationDebugEvents] = React.useState<boolean>(playConfigurationDebug.events)
-    const [hooks, setHooks] = React.useState({ ...HooksConfig })
-    const [soundEffectLogging, setSoundEffectLogging] = React.useState({ ...SOUND_EFFECTS_LOGGING })
-    const [typeControlLogging, setTypeControlLogging] = React.useState({ ...TypeControlLogConfig })
+    const [hooks, setHooks] = useDebugConfig(HooksConfig)
+    const [soundEffectLogging, setSoundEffectLogging] = useDebugConfig(SOUND_EFFECTS_LOGGING)
+    const [typeControlLogging, setTypeControlLogging] = useDebugConfig(TypeControlLogConfig)
 
     const rows = [
         {

@@ -225,18 +225,6 @@ function same(point1: Point, point2: Point): boolean {
     return point1.x === point2.x && point1.y === point2.y
 }
 
-function loadImageNg(src: string): Promise<HTMLImageElement> {
-    console.log(`Loading ${src}`)
-
-    return new Promise((resolve, reject) => {
-        const image = new Image()
-
-        image.onload = () => resolve(image)
-        image.onerror = reject
-        image.src = src
-    })
-}
-
 function getDirectionForWalkingWorker(from: Point, to: Point): Direction {
     if (to.x === from.x + 1 && to.y === from.y - 1) {
         return 'SOUTH_EAST'
@@ -594,7 +582,6 @@ export {
     getNormalForTriangle,
     INT_TO_VEGETATION_COLOR,
     sumVectors,
-    loadImageNg,
     resizeCanvasToDisplaySize,
     pointStringToPoint,
     makeImageFromMap,

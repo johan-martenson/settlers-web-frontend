@@ -1,10 +1,7 @@
-import { loadImageNg } from '../utils/utils'
 import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, StoneAmount, StoneType, TreeSize, TreeType, WorkerAction } from '../api/types'
 import { UiIconType } from '../icons/icon'
 import { AnimalImageAtlas, AnimationType, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
-
-// Types
-
+import { AssetsLogConfig } from './config'
 
 // State
 const reported = new Set()
@@ -33,7 +30,7 @@ class UiElementsImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-ui-elements.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-ui-elements.png')
         }
     }
 
@@ -258,7 +255,7 @@ class FlagImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-flags.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-flags.png')
         }
     }
 
@@ -342,7 +339,7 @@ class ShipImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-ship.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-ship.png')
         }
     }
 
@@ -425,7 +422,7 @@ class WorkerImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-' + this.name + '.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-' + this.name + '.png')
         }
     }
 
@@ -653,7 +650,7 @@ class HouseImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-buildings.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-buildings.png')
         }
     }
 
@@ -860,7 +857,7 @@ class BorderImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-border.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-border.png')
         }
     }
 
@@ -909,7 +906,7 @@ class SignImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-signs.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-signs.png')
         }
     }
 
@@ -960,7 +957,7 @@ class FireImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-fire.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-fire.png')
         }
     }
 
@@ -1035,7 +1032,7 @@ class CargoImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-cargos.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-cargos.png')
         }
     }
 
@@ -1094,7 +1091,7 @@ class RoadBuildingImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-road-building.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-road-building.png')
         }
     }
 
@@ -1181,7 +1178,7 @@ class TreeImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-trees.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-trees.png')
         }
     }
 
@@ -1279,7 +1276,7 @@ class StoneImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-stones.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-stones.png')
         }
     }
 
@@ -1334,7 +1331,7 @@ class DecorationsImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-decorations.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-decorations.png')
         }
     }
 
@@ -1401,7 +1398,7 @@ class CropImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-crops.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-crops.png')
         }
     }
 
@@ -1454,7 +1451,7 @@ class AnimalImageAtlasHandler {
 
         // Download the actual image atlas
         if (this.image === undefined) {
-            this.image = await loadImageNg(this.pathPrefix + 'image-atlas-' + this.name + '.png')
+            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-' + this.name + '.png')
         }
     }
 
@@ -1565,6 +1562,20 @@ function imageInfoFromHorizontalImageSeries(image: ImageSeries, animationIndex: 
     }
 }
 
+function loadImageAsync(src: string): Promise<HTMLImageElement> {
+    if (AssetsLogConfig.loadImage) {
+        console.log(`Loading ${src}`)
+    }
+
+    return new Promise((resolve, reject) => {
+        const image = new Image()
+
+        image.onload = () => resolve(image)
+        image.onerror = reject
+        image.src = src
+    })
+}
+
 // Constants
 const uiElementsImageAtlasHandler = new UiElementsImageAtlasHandler('assets/', 0)
 
@@ -1604,7 +1615,7 @@ const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler('assets/')
 const borderImageAtlasHandler = new BorderImageAtlasHandler('assets/')
 const fireImageAtlasHandler = new FireImageAtlasHandler('assets/')
 const stoneImageAtlasHandler = new StoneImageAtlasHandler('assets/')
-const treeImageAtlasHandler = new TreeImageAtlasHandler('assets/')
+const treeImageAtlasHandler = new TreeImageAtlasHandler('assets/nature/')
 const flagImageAtlasHandler = new FlagImageAtlasHandler('assets/')
 
 export {
@@ -1623,5 +1634,6 @@ export {
     treeImageAtlasHandler,
     fireImageAtlasHandler,
     stoneImageAtlasHandler,
-    flagImageAtlasHandler
+    flagImageAtlasHandler,
+    loadImageAsync
 }

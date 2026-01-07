@@ -311,7 +311,7 @@ function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
 // eslint-disable-next-line
 function onMessageReceived(message: any): void {
     if (wsApiDebugSettings.receive) {
-        console.log(`WS API: Got message: ${JSON.stringify(message)}`)
+        console.log(`WS API: WS API: Got message: ${JSON.stringify(message)}`)
     }
 
     if (message === undefined) {
@@ -321,31 +321,31 @@ function onMessageReceived(message: any): void {
     try {
         if (isGameChangesMessage(message)) {
             if (wsApiDebugSettings.receive) {
-                console.log('Handling player view changed message')
+                console.log('WS API: Handling player view changed message')
             }
 
             loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
         } else if (isGameInformationChangedMessage(message)) {
             if (wsApiDebugSettings.receive) {
-                console.log('Handling game information changed message')
+                console.log('WS API: Handling game information changed message')
             }
 
             handleGameInformationChangedMessage(message.gameInformation)
         } else if (isGameListChangedMessage(message)) {
             if (wsApiDebugSettings.receive) {
-                console.log('Handling game list changed messgae')
+                console.log('WS API: Handling game list changed messgae')
             }
 
             receivedGameListChangedMessage(message)
         } else if (isChatMessage(message)) {
             if (wsApiDebugSettings.receive) {
-                console.log('Handling chat message')
+                console.log('WS API: Handling chat message')
             }
 
             loadChatMessage(message.chatMessage)
         } else if (isStatisticsChangedMessage(message)) {
             if (wsApiDebugSettings.receive) {
-                console.log('Handling statistics changed message')
+                console.log('WS API: Handling statistics changed message')
             }
 
             handleUpdatedStatistics(message)
@@ -478,7 +478,9 @@ function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
 
 // Configuration
 export const wsApiDebugSettings = {
-    receive: false
+    receive: false,
+    following: false,
+    timers: false
 }
 
 
@@ -1286,7 +1288,10 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
  * @return {void}
  */
 function startTimers(): void {
-    console.log(`Starting timers with tick length: ${gameTickLength}`)
+
+    if (wsApiDebugSettings.timers) {
+        console.log(`WS API (timers): Starting timers with tick length: ${gameTickLength}`)
+    }
 
     // Drive worker animations
     workerAnimationsTimer = setInterval(async () => {
@@ -1534,7 +1539,9 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
     if (gameInformation?.tick) {
         stopTimers()
 
-        console.log(`Setting game tick length to: ${gameInformation.tick}`)
+        if (wsApiDebugSettings.timers) {
+            console.log(`WS API: Setting game tick length to: ${gameInformation.tick}`)
+        }
 
         gameTickLength = gameInformation.tick
 
@@ -1565,7 +1572,10 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
  * @param {void}
  */
 function stopTimers(): void {
-    console.log('Stopping walking timers')
+
+    if (wsApiDebugSettings.timers) {
+        console.log('WS API: Stopping walking timers')
+    }
 
     const timers = [workerAnimationsTimer, workerWalkingTimer, cropGrowerTimer, treeGrowerTimer, gameTimer]
 
@@ -1584,7 +1594,10 @@ function stopTimers(): void {
  * @param {PlayerViewInformation} playerView - The player view information to load.
  */
 function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformation): void {
-    console.log("Handling full sync message")
+
+    if (wsApiDebugSettings.receive) {
+        console.log("Handling full sync message")
+    }
 
     // Clear the local state
     api.availableConstruction.clear()
@@ -1612,7 +1625,10 @@ function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformatio
  * @param {GameState} gameState - The current game state.
  */
 function gameStateMightHaveChanged(gameState: GameState): void {
-    console.log(`Game state might have changed. Game state: ${gameState}, walking timer state: ${walkingTimerState}`)
+
+    if (wsApiDebugSettings.timers) {
+        console.log(`WS API: Game state might have changed. Game state: ${gameState}, walking timer state: ${walkingTimerState}`)
+    }
 
     if (gameState === 'STARTED' && walkingTimerState !== 'RUNNING') {
         startTimers()
@@ -1650,7 +1666,10 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     playerViewChanges.newDiscoveredLand?.forEach(point => api.discoveredPoints.add(point))
 
     if (playerViewChanges.newDiscoveredLand) {
-        console.log("Got new discovered points")
+
+        if (wsApiDebugSettings.receive) {
+            console.log("Got new discovered points")
+        }
 
         storeDiscoveredTiles(playerViewChanges.newDiscoveredLand)
     }
@@ -2036,7 +2055,7 @@ function syncChangedBorders(borderChanges: BorderChange[]): void {
             const player = api.players.get(borderChange.playerId)
 
             if (!player) {
-                console.error("UNKNOWN PLAYER: " + JSON.stringify(borderChange))
+                console.error(`WS API (receive): UNKNOWN PLAYER: ${JSON.stringify(borderChange)}`)
 
                 continue
             }
@@ -2283,18 +2302,21 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
 
         // Sync the received view
         if (playerView !== undefined) {
-            console.log('WS API: Loading player view')
+
+            if (wsApiDebugSettings.receive) {
+                console.log('WS API (receive): Loading player view')
+            }
 
             loadPlayerViewAndCallListeners(playerView)
         } else {
-            console.error('WS API: Not loading player view')
+            console.error('WS API (receive): Not loading player view')
         }
 
         followingState = 'FOLLOWING'
 
         return gameInformation
-    } else {
-        console.log(`Can't start to follow when following state is: ${followingState}. Previously requested state is: ${requestedFollowingState}`)
+    } else if (wsApiDebugSettings.following) {
+        console.log(`WS API (following): Can't start to follow when following state is: ${followingState}. Previously requested state is: ${requestedFollowingState}`)
     }
 }
 
@@ -2320,14 +2342,18 @@ async function waitForGameDataAvailable(): Promise<void> {
 
     while (Date.now() - startTime < MAX_WAIT_FOR_CONNECTION) {
         if (api.allTiles.size > 0) {
-            console.log('Game data is available')
+            if (wsApiDebugSettings.following) {
+                console.log('WS API (following): Game data is available')
+            }
+
             return
         }
 
         await delay(5)
     }
 
-    console.error('Timed out waiting for game data to be available.')
+    console.error('WS API (following): Timed out waiting for game data to be available.')
+
     throw new Error('Timed out')
 }
 

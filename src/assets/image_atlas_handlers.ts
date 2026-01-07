@@ -1570,8 +1570,20 @@ function loadImageAsync(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
         const image = new Image()
 
-        image.onload = () => resolve(image)
-        image.onerror = reject
+        image.onload = () => {
+            if (AssetsLogConfig.loadImage) {
+                console.log(`Loaded ${src}`)
+            }
+
+            resolve(image)
+        }
+
+        image.onerror = () =>{
+            console.error(`Failed to load ${src}`)
+
+            reject()
+        }
+
         image.src = src
     })
 }

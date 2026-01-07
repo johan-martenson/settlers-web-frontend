@@ -120,6 +120,22 @@ type DoubleClickDetection = {
     timer?: ReturnType<typeof setTimeout> | undefined
 }
 
+// Configuration
+export const RenderLogConfig = {
+    lifecycle: false,      // startup, listeners, setup phases
+    renderLoop: false,    // per-frame rendering / high-frequency paths
+    gl: false,             // WebGL context, programs, critical failures
+    assets: false,         // textures, atlases, asset loading
+    textures: false,       // texture slots, bindings, lookups
+    terrain: false,        // terrain types, tiles, mesh generation
+    normals: false,       // normal vectors, geometry diagnostics
+    roads: false,          // road buffers, callbacks, updates
+    fogOfWar: false,       // discovery & visibility
+    input: false,          // mouse / keyboard / interaction
+    workers: false,        // worker rendering & state
+    debug: false          // raw object dumps
+}
+
 // Constants
 const MAX_NUMBER_TRIANGLES = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
 const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
@@ -363,7 +379,9 @@ function GameCanvas({
         }, [showAvailableConstruction, selectedPoint, newRoad, possibleRoadConnections, showHouseTitles])
 
     const updateRoadDrawingBuffers = useCallback(() => {
-        console.log('Should update road drawing buffers')
+        if (RenderLogConfig.roads) {
+            console.log('Render (roads): Should update road drawing buffers')
+        }
         if (renderState.drawRoadsProgramInstance) {
             const roadRenderInformation = prepareToRenderRoads(api.roads.values(), api.flags.values(), renderState.normals)
 
@@ -371,7 +389,7 @@ function GameCanvas({
             setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_normal', roadRenderInformation.normals)
             setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_texture_mapping', roadRenderInformation.textureMapping)
         } else {
-            console.error(`Failed to update road drawing buffers`)
+            console.error(`Render (roads): Failed to update road drawing buffers`)
         }
     }, [renderState])
 
@@ -380,8 +398,9 @@ function GameCanvas({
 
             // Callback when monitoring is started
             function monitoringStarted(): void {
-                console.log('Received monitoring started callback. Calculating normals')
-
+                if (RenderLogConfig.terrain) {
+                    console.log('Render (terrain): Received monitoring started callback. Calculating normals')
+                }
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
 
                 updateRoadDrawingBuffers()
@@ -389,8 +408,9 @@ function GameCanvas({
 
             // Callback when roads are updated
             function roadsUpdated(): void {
-                console.log('Received updated road callback')
-
+                if (RenderLogConfig.roads) {
+                    console.log('Render (roads): Received updated road callback')
+                }
                 updateRoadDrawingBuffers()
             }
 
@@ -399,8 +419,9 @@ function GameCanvas({
 
                 // Update the calculated normals
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
-                console.log('New discovered points - calculated normals')
-
+                if (RenderLogConfig.fogOfWar) {
+                    console.log('Render (fog-of-war): New discovered points - calculated normals')
+                }
                 // Update the map rendering buffers
                 renderState.mapRenderInformation = prepareToRenderFromTiles(api.discoveredBelowTiles, api.discoveredDownRightTiles, api.allTiles, renderState.normals)
 
@@ -409,7 +430,7 @@ function GameCanvas({
                     setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
                     setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
                 } else {
-                    console.error(`The terrain drawing program instance is undefined`)
+                    console.error('Render (gl): The terrain drawing program instance is undefined')
                 }
 
                 // Update fog of war rendering
@@ -501,10 +522,10 @@ function GameCanvas({
                         setBuffer<DrawShadowAttributes>(renderState.drawShadowProgramInstance, 'a_position', positions)
                         setBuffer<DrawShadowAttributes>(renderState.drawShadowProgramInstance, 'a_texcoord', texCoords)
                     } else {
-                        console.error('Failed to create shadow rendering gl program')
+                        console.error('Render (gl): Failed to create shadow rendering gl program')
                     }
                 } else {
-                    console.error('No canvasRef.current')
+                    console.error('Render (gl): No canvasRef.current')
                 }
 
                 // Start tracking visible triangles
@@ -524,13 +545,13 @@ function GameCanvas({
                 api.addGameStateListener(gameStateListener)
                 api.addDiscoveredPointsListener(discoveredPointsUpdated)
 
-                console.log('Started listeners')
+                console.log('Render (lifecycle): Started listeners')
 
 
                 // Wait for asset loading to finish and for the websocket connection to be established
                 await Promise.all(allThingsToWaitFor)
 
-                console.log('Download image atlases done. Connection to websocket backend established')
+                console.log('Render (assets): Download image atlases done. Connection to websocket backend established')
 
 
                 // Make textures for the image atlases
@@ -612,7 +633,7 @@ function GameCanvas({
 
         // Ensure that the reference to the canvases are set
         if (!overlayCanvasRef?.current || !normalCanvasRef?.current) {
-            console.error('The canvas references are not set properly')
+            console.error('Render (render-loop): The canvas references are not set properly')
 
             return
         }
@@ -622,7 +643,7 @@ function GameCanvas({
 
         // Ensure that the canvas rendering context is valid
         if (!overlayCtx) {
-            console.error('No or invalid context')
+            console.error('Render (gl): No or invalid context')
 
             return
         }
@@ -635,7 +656,7 @@ function GameCanvas({
 
         // Make sure gl is available
         if (renderState.gl === undefined) {
-            console.error('Gl is not available')
+            console.error('Render (gl): Gl is not available')
 
             return
         }
@@ -720,7 +741,7 @@ function GameCanvas({
                 const textureSlot = textures.activateTextureForRendering(renderState.drawImageProgramInstance.gl, toDraw.source.image)
 
                 if (textureSlot === undefined) {
-                    console.error(`Texture slot is undefined for ${toDraw.source.image}`)
+                    console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
 
                     continue
                 }
@@ -742,7 +763,7 @@ function GameCanvas({
                     'NO_CLEAR_BEFORE_DRAW'
                 )
             } else {
-                console.error(`The texture for ${toDraw?.source?.image} is undefined`)
+                console.error(`Render (textures): The texture for ${toDraw?.source?.image} is undefined`)
             }
         }
 
@@ -1396,8 +1417,11 @@ function GameCanvas({
                                 })
                             }
                         } else {
-                            console.error(`COURIER OR STOREHOUSE WORKER DOING ACTION AND IT'S NEITHER FAT NOR THIN`)
-                            console.log(worker)
+                            console.error(`Render (workers): COURIER OR STOREHOUSE WORKER DOING ACTION AND IT'S NEITHER FAT NOR THIN`)
+
+                            if (RenderLogConfig.debug) {
+                                console.log(worker)
+                            }
                         }
                     }
 
@@ -1624,7 +1648,7 @@ function GameCanvas({
                 const textureSlot = textures.activateTextureForRendering(renderState.gl, shadow.source.image)
 
                 if (textureSlot === undefined) {
-                    console.error(`Texture slot is undefined for ${shadow.source.image}`)
+                    console.error(`Render (textures): Texture slot is undefined for ${shadow.source.image}`)
 
                     continue
                 }
@@ -1664,7 +1688,7 @@ function GameCanvas({
                 const textureSlot = textures.activateTextureForRendering(renderState.gl, toDraw.source.image)
 
                 if (textureSlot === undefined) {
-                    console.error(`Texture slot is undefined for ${toDraw.source.image}`)
+                    console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
 
                     continue
                 }
@@ -1824,7 +1848,7 @@ function GameCanvas({
                 const textureSlot = textures.activateTextureForRendering(renderState.gl, toDraw.source.image)
 
                 if (textureSlot === undefined) {
-                    console.error(`Texture slot is undefined for ${toDraw.source.image}`)
+                    console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
 
                     continue
                 }
@@ -1978,7 +2002,7 @@ function GameCanvas({
 
     const onDoubleClickInternal = useCallback((event: React.MouseEvent) => {
         if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
-            console.error('Received invalid double click event')
+            console.error('Render (input): Received invalid double click event')
 
             return
         }
@@ -2122,8 +2146,9 @@ function interpolateHeight(previous: Point, next: Point, progress: number): numb
 }
 
 function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<FlagInformation>, allNormals: PointMap<Vector>): RenderInformation {
-    console.log('Prepare to render roads')
-
+    if (RenderLogConfig.roads) {
+        console.log('Render (roads): Prepare to render roads')
+    }
     const coordinates: number[] = []
     const normals: number[] = []
     const textureMapping: number[] = []
@@ -2165,9 +2190,11 @@ function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<
             const normalRight = allNormals?.get(right)
 
             if (normalLeft === undefined || normalRight === undefined) {
-                console.error('Missing normals')
-                console.log(normalLeft)
-                console.log(normalRight)
+                console.error('Render (normals): Missing normals')
+
+                if (RenderLogConfig.normals) {
+                    console.log(normalLeft, normalRight)
+                }
 
                 continue
             }
@@ -2395,7 +2422,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         const terrainBelow = tileBelow.vegetation
 
         if (VEGETATION_INTEGERS.indexOf(terrainBelow) === -1) {
-            console.error('UNKNOWN TERRAIN: ' + terrainBelow)
+            console.error(`Render (terrain): UNKNOWN TERRAIN: ${terrainBelow}`)
         }
 
         // Add each terrain tile to the buffers (coordinates, normals, texture mapping)
@@ -2506,7 +2533,7 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
         const terrainRight = allTiles.get(pointRight)
 
         if (VEGETATION_INTEGERS.indexOf(terrainDownRight) === -1) {
-            console.log('UNKNOWN TERRAIN: ' + terrainDownRight)
+            console.log(`Render (terrain): UNKNOWN TERRAIN: ${terrainDownRight}`)
         }
 
         // Add each terrain tile to the buffers (coordinates, normals, texture mapping)

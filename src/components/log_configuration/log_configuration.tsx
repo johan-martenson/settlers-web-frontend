@@ -14,12 +14,13 @@ import {
 } from '@fluentui/react-components'
 import { wsApiDebugSettings } from '../../api/ws-api'
 import { wsApiCoreDebugSettings } from '../../api/ws/core'
-import { glUtilsDebug } from '../../render/utils'
+import { GL_UTILS_LOG_CONFIG } from '../../render/utils'
 import { gameMenuDebugSettings } from '../../screens/play/game_menu'
 import { playConfigurationDebug } from '../../screens/play/play'
 import { HooksConfig } from '../../utils/hooks/config'
 import { SOUND_EFFECTS_LOGGING } from '../../sound/sound_effects'
 import { TypeControlLogConfig } from '../../screens/play/type_control'
+import { RenderLogConfig } from '../../render/game_render'
 
 // Types
 type SubsystemDescriptor<T> = {
@@ -79,15 +80,14 @@ function useDebugConfig<T extends Record<string, boolean>>(config: T) {
 const DebugLogsTable = () => {
     const [wsApiReceiveDebug, setWsApiReceiveDebug] = React.useState<boolean>(wsApiCoreDebugSettings.receive)
     const [wsApiSendDebug, setWsApiSendDebug] = React.useState<boolean>(wsApiCoreDebugSettings.send)
-    const [glUtilsDebugSetBuffer, setGlUtilsDebugSetBuffer] = React.useState<boolean>(glUtilsDebug.setBuffer)
-    const [glUtilsDebugDraw, setGlUtilsDebugDraw] = React.useState<boolean>(glUtilsDebug.draw)
-    const [glUtilsDebugInitProgram, setGlUtilsDebugInitProgram] = React.useState<boolean>(glUtilsDebug.initProgram)
     const [gameMenuDebug, setGameMenuDebug] = React.useState<boolean>(gameMenuDebugSettings.log)
     const [playConfigurationDebugEffects, setPlayConfigurationDebugEffects] = React.useState<boolean>(playConfigurationDebug.effects)
     const [playConfigurationDebugEvents, setPlayConfigurationDebugEvents] = React.useState<boolean>(playConfigurationDebug.events)
     const [hooks, setHooks] = useDebugConfig(HooksConfig)
     const [soundEffectLogging, setSoundEffectLogging] = useDebugConfig(SOUND_EFFECTS_LOGGING)
     const [typeControlLogging, setTypeControlLogging] = useDebugConfig(TypeControlLogConfig)
+    const [glUtilsLogConfig, setGlUtilsLogConfig] = useDebugConfig(GL_UTILS_LOG_CONFIG)
+    const [renderLogConfig, setRenderLogConfig] = useDebugConfig(RenderLogConfig)
 
     const rows = [
         {
@@ -120,43 +120,6 @@ const DebugLogsTable = () => {
             }
         },
         {
-            component: 'GL Utils',
-            subsystems: [
-                {
-                    name: 'Set buffer',
-                    checked: glUtilsDebugSetBuffer,
-                    onChange: () => {
-                        glUtilsDebug.setBuffer = !glUtilsDebugSetBuffer
-                        setGlUtilsDebugSetBuffer(prev => !prev)
-                    }
-                },
-                {
-                    name: 'Draw',
-                    checked: glUtilsDebugDraw,
-                    onChange: () => {
-                        glUtilsDebug.draw = !glUtilsDebugDraw
-                        setGlUtilsDebugDraw(prev => !prev)
-                    }
-                },
-                {
-                    name: 'Init program',
-                    checked: glUtilsDebugInitProgram,
-                    onChange: () => {
-                        glUtilsDebug.initProgram = !glUtilsDebugInitProgram
-                        setGlUtilsDebugInitProgram(prev => !prev)
-                    }
-                }
-            ],
-            onToggleAll: (value: boolean) => {
-                glUtilsDebug.setBuffer = value
-                glUtilsDebug.draw = value
-                glUtilsDebug.initProgram = value
-                setGlUtilsDebugSetBuffer(value)
-                setGlUtilsDebugDraw(value)
-                setGlUtilsDebugInitProgram(value)
-            }
-        },
-        {
             component: 'Game Menu',
             subsystems: [
                 {
@@ -172,6 +135,20 @@ const DebugLogsTable = () => {
                 gameMenuDebugSettings.log = value
                 setGameMenuDebug(value)
             }
+        },
+        {
+            component: 'GL utils',
+            ...buildMultiSubsystemRow(
+                GL_UTILS_LOG_CONFIG,
+                glUtilsLogConfig,
+                setGlUtilsLogConfig,
+                [
+                    { name: 'Set buffer', key: 'setBuffer' },
+                    { name: 'Draw', key: 'draw' },
+                    { name: 'Init program', key: 'initProgram' },
+                    { name: 'Make shader', key: 'makeShader' },
+                ]
+            )
         },
         {
             component: 'Type Control',
@@ -222,6 +199,27 @@ const DebugLogsTable = () => {
                     { name: 'useNonTriggeringState', key: 'useNonTriggeringState' },
                 ]
             )
+        },
+        {
+            component: 'Render',
+            ...buildMultiSubsystemRow(
+                RenderLogConfig,
+                renderLogConfig,
+                setRenderLogConfig,
+                [
+                    { name: 'Lifecycle', key: 'lifecycle' },
+                    { name: 'Input', key: 'input' },
+                    { name: 'Render loop', key: 'renderLoop' },
+                    { name: 'gl', key: 'gl' },
+                    { name: 'Assets', key: 'assets' },
+                    { name: 'Textures', key: 'textures' },
+                    { name: 'Terrain', key: 'terrain' },
+                    { name: 'Normals', key: 'normals' },
+                    { name: 'Roads', key: 'roads' },
+                    { name: 'Fog of war', key: 'fogOfWar' },
+                    { name: 'Workers', key: 'workers' },
+                    { name: 'Debug', key: 'debug' },
+                ])
         },
         {
             component: 'Play',

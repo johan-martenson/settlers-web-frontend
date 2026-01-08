@@ -29,6 +29,12 @@ type SubsystemDescriptor<T> = {
 }
 
 // Functions
+function prettifyKey(key: string): string {
+    return key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, c => c.toUpperCase())
+}
+
 function buildMultiSubsystemRow<T extends Record<string, boolean>>(
     config: T,
     state: T,
@@ -37,7 +43,7 @@ function buildMultiSubsystemRow<T extends Record<string, boolean>>(
 ) {
     return {
         subsystems: descriptors.map(({ name, key }) => ({
-            name,
+            name: prettifyKey(name),
             checked: state[key],
             onChange: () => {
                 config[key] = !state[key] as T[keyof T]
@@ -55,6 +61,18 @@ function buildMultiSubsystemRow<T extends Record<string, boolean>>(
             )
         }
     }
+}
+
+function buildDescriptorsFromConfig<T extends Record<string, boolean>>(
+    config: T,
+    nameMapper?: (key: keyof T & string) => string
+): SubsystemDescriptor<T>[] {
+    return Object.keys(config).map(key => ({
+        key: key as keyof T,
+        name: nameMapper
+            ? nameMapper(key as keyof T & string)
+            : key
+    }))
 }
 
 // Hook
@@ -80,12 +98,12 @@ function useDebugConfig<T extends Record<string, boolean>>(config: T) {
 const DebugLogsTable = () => {
     const [wsApiReceiveDebug, setWsApiReceiveDebug] = React.useState<boolean>(wsApiCoreDebugSettings.receive)
     const [wsApiSendDebug, setWsApiSendDebug] = React.useState<boolean>(wsApiCoreDebugSettings.send)
-    const [gameMenuDebug, setGameMenuDebug] = React.useState<boolean>(gameMenuDebugSettings.log)
+    const [gameMenuLogConfig, setGameMenuLogConfig] = React.useState<boolean>(gameMenuDebugSettings.log)
     const [playConfigurationDebugEffects, setPlayConfigurationDebugEffects] = React.useState<boolean>(playConfigurationDebug.effects)
     const [playConfigurationDebugEvents, setPlayConfigurationDebugEvents] = React.useState<boolean>(playConfigurationDebug.events)
-    const [hooks, setHooks] = useDebugConfig(HooksConfig)
-    const [soundEffectLogging, setSoundEffectLogging] = useDebugConfig(SOUND_EFFECTS_LOGGING)
-    const [typeControlLogging, setTypeControlLogging] = useDebugConfig(TypeControlLogConfig)
+    const [hooksLogConfig, setHooksLogConfig] = useDebugConfig(HooksConfig)
+    const [soundEffectLogConfig, setSoundEffectLogConfig] = useDebugConfig(SOUND_EFFECTS_LOGGING)
+    const [typeControlLogConfig, setTypeControlLogConfig] = useDebugConfig(TypeControlLogConfig)
     const [glUtilsLogConfig, setGlUtilsLogConfig] = useDebugConfig(GL_UTILS_LOG_CONFIG)
     const [renderLogConfig, setRenderLogConfig] = useDebugConfig(RenderLogConfig)
 
@@ -124,16 +142,16 @@ const DebugLogsTable = () => {
             subsystems: [
                 {
                     name: 'Log',
-                    checked: gameMenuDebug,
+                    checked: gameMenuLogConfig,
                     onChange: () => {
                         gameMenuDebugSettings.log = !gameMenuDebugSettings.log
-                        setGameMenuDebug(prev => !prev)
+                        setGameMenuLogConfig(prev => !prev)
                     }
                 }
             ],
             onToggleAll: (value: boolean) => {
                 gameMenuDebugSettings.log = value
-                setGameMenuDebug(value)
+                setGameMenuLogConfig(value)
             }
         },
         {
@@ -142,62 +160,34 @@ const DebugLogsTable = () => {
                 GL_UTILS_LOG_CONFIG,
                 glUtilsLogConfig,
                 setGlUtilsLogConfig,
-                [
-                    { name: 'Set buffer', key: 'setBuffer' },
-                    { name: 'Draw', key: 'draw' },
-                    { name: 'Init program', key: 'initProgram' },
-                    { name: 'Make shader', key: 'makeShader' },
-                ]
+                buildDescriptorsFromConfig(GL_UTILS_LOG_CONFIG)
             )
         },
         {
             component: 'Type Control',
             ...buildMultiSubsystemRow(
                 TypeControlLogConfig,
-                typeControlLogging,
-                setTypeControlLogging,
-                [
-                    { name: 'Lifecycle', key: 'lifecycle' },
-                    { name: 'Input', key: 'input' },
-                    { name: 'Commands', key: 'commands' },
-                    { name: 'Selection', key: 'selection' },
-                ]
+                typeControlLogConfig,
+                setTypeControlLogConfig,
+                buildDescriptorsFromConfig(TypeControlLogConfig)
             )
         },
         {
             component: 'Sound effects',
             ...buildMultiSubsystemRow(
                 SOUND_EFFECTS_LOGGING,
-                soundEffectLogging,
-                setSoundEffectLogging,
-                [
-                    { name: 'Lifecycle', key: 'lifecycle' },
-                    { name: 'Loading', key: 'loading' },
-                    { name: 'Actions', key: 'actions' },
-                    { name: 'Events', key: 'events' },
-                    { name: 'Playback', key: 'playback' },
-                    { name: 'Volume', key: 'volume' },
-                ]
+                soundEffectLogConfig,
+                setSoundEffectLogConfig,
+                buildDescriptorsFromConfig(SOUND_EFFECTS_LOGGING)
             )
         },
         {
             component: 'Hooks',
             ...buildMultiSubsystemRow(
                 HooksConfig,
-                hooks,
-                setHooks,
-                [
-                    { name: 'useTime', key: 'useTime' },
-                    { name: 'useStatistics', key: 'useStatistics' },
-                    { name: 'useTransportPriority', key: 'useTransportPriority' },
-                    { name: 'usePlayer', key: 'usePlayer' },
-                    { name: 'useMaps', key: 'useMaps' },
-                    { name: 'useHouse', key: 'useHouse' },
-                    { name: 'useChatMessages', key: 'useChatMessages' },
-                    { name: 'useGameMessages', key: 'useGameMessages' },
-                    { name: 'useGames', key: 'useGames' },
-                    { name: 'useNonTriggeringState', key: 'useNonTriggeringState' },
-                ]
+                hooksLogConfig,
+                setHooksLogConfig,
+                buildDescriptorsFromConfig(HooksConfig)
             )
         },
         {
@@ -206,20 +196,8 @@ const DebugLogsTable = () => {
                 RenderLogConfig,
                 renderLogConfig,
                 setRenderLogConfig,
-                [
-                    { name: 'Lifecycle', key: 'lifecycle' },
-                    { name: 'Input', key: 'input' },
-                    { name: 'Render loop', key: 'renderLoop' },
-                    { name: 'gl', key: 'gl' },
-                    { name: 'Assets', key: 'assets' },
-                    { name: 'Textures', key: 'textures' },
-                    { name: 'Terrain', key: 'terrain' },
-                    { name: 'Normals', key: 'normals' },
-                    { name: 'Roads', key: 'roads' },
-                    { name: 'Fog of war', key: 'fogOfWar' },
-                    { name: 'Workers', key: 'workers' },
-                    { name: 'Debug', key: 'debug' },
-                ])
+                buildDescriptorsFromConfig(RenderLogConfig)
+)
         },
         {
             component: 'Play',

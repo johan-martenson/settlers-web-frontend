@@ -143,6 +143,22 @@ export const playConfigurationDebug = {
     effects: false
 }
 
+export const PlayLogConfig = {
+    lifecycle: true,        // mounting, effects, start/stop listeners
+    connection: true,       // connecting, following game state
+    commands: true,         // command setup, typing commands
+    camera: true,           // centering, view control
+    roads: true,            // road building, placement logic
+    flags: true,            // flag placement & interaction
+    houses: true,           // house interaction
+    selection: true,        // point / object selection
+    input: true,            // mouse, touch, click, double-click
+    touch: false,           // verbose touch-move diagnostics
+    sound: true,            // sound effects lifecycle
+    windows: true,          // opening UI windows
+    data: false,            // raw data dumps (JSON.stringify)
+    errors: true            // error situations
+}
 
 // State
 export const immediateState = {
@@ -230,33 +246,33 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const gameMonitorCallbacks: GameListener = {
         onMonitoringStarted: () => {
             setMonitoringReady(true)
-            console.log('Monitoring started')
+            if (PlayLogConfig.lifecycle) {
+                console.log('Play (lifecycle): Monitoring started')
+            }
         },
         onGameStateChanged: (gameState: GameState) => setGameState(gameState)
     }
 
     // Effects
     useEffect(() => {
-        if (playConfigurationDebug.effects) {
-            console.log(`Use effect: show menu. Show menu: ${showMenu}`)
+        if (PlayLogConfig.lifecycle) {
+            console.log(`Play (lifecycle): show menu. Show menu: ${showMenu}`)
         }
-
         if (!showMenu) {
             selfContainerRef?.current?.focus()
         }
     }, [showMenu])
 
     useEffect(() => {
-        if (playConfigurationDebug.effects) {
-            console.log(`Use effect: new road. New road: ${JSON.stringify(newRoad)}`)
+        if (PlayLogConfig.lifecycle) {
+            console.log(`Play (lifecycle): new road. New road: ${JSON.stringify(newRoad)}`)
         }
-
         setCursor(newRoad === undefined ? 'NOTHING' : 'BUILDING_ROAD')
     }, [newRoad])
 
     useEffect(() => {
-        if (playConfigurationDebug.effects) {
-            console.log(`Use effect: gameId or playerId changed. GameId: ${gameId}, PlayerId: ${selfPlayerId}`)
+        if (PlayLogConfig.lifecycle) {
+            console.log(`Play (lifecycle): gameId or playerId changed. GameId: ${gameId}, PlayerId: ${selfPlayerId}`)
         }
 
         async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId): Promise<void> {
@@ -266,24 +282,22 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             await api.followGame(gameId, selfPlayerId)
         }
 
-        if (playConfigurationDebug.effects) {
-            console.log(`Start listening to game with gameId ${gameId} and playerId ${selfPlayerId}`)
+        if (PlayLogConfig.connection) {
+            console.log(`Play (connection): Start listening to game with gameId ${gameId} and playerId ${selfPlayerId}`)
         }
-
         connectAndFollow(gameId, selfPlayerId)
 
         return () => {
-            if (playConfigurationDebug.effects) {
-                console.log('Stop listening to game')
+            if (PlayLogConfig.connection) {
+                console.log('Play (connection): Stop listening to game')
             }
-
             api.removeGameStateListener(gameMonitorCallbacks)
         }
     }, [gameId, selfPlayerId])
 
     useEffect(() => {
-        if (playConfigurationDebug.effects) {
-            console.log('Use effect: start event and window resize listeners')
+        if (PlayLogConfig.lifecycle) {
+            console.log('Play (lifecycle): start event and window resize listeners')
         }
 
         function nopEventListener(event: MouseEvent): void {
@@ -303,8 +317,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         window.addEventListener('resize', windowResizeListener)
 
         return () => {
-            if (playConfigurationDebug.effects) {
-                console.log('Removing event and window resize listeners')
+            if (PlayLogConfig.lifecycle) {
+                console.log('Play (lifecycle): Removing event and window resize listeners')
             }
 
             document.removeEventListener('contextmenu', nopEventListener)
@@ -313,13 +327,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [selfContainerRef])
 
     useEffect(() => {
-        if (playConfigurationDebug.effects) {
-            console.log('Use effect: set commands, center on headquarters')
+        if (PlayLogConfig.commands) {
+            console.log('Play (commands): set commands, center on headquarters')
         }
 
         function setTypingCommands(): void {
-            if (playConfigurationDebug.effects) {
-                console.log('Set commands')
+            if (PlayLogConfig.commands) {
+                console.log('Play (commands): Set commands')
             }
 
             const player = api.players.get(selfPlayerId)
@@ -352,7 +366,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             commands.set('Road', {
                 action: async (point: Point) => {
-                    console.log('Building road')
+                    if (PlayLogConfig.roads) {
+                        console.log('Play (roads): Building road')
+                    }
 
                     const pointDownRight = { x: point.x + 1, y: point.y - 1 }
                     const pointInformations = await api.getInformationOnPoints([point, pointDownRight])
@@ -498,8 +514,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             }
 
             // Center the view on the headquarter on the first update
-            if (playConfigurationDebug.effects) {
-                console.log('Center on headquarters')
+            if (PlayLogConfig.camera) {
+                console.log('Play (camera): Center on headquarters')
             }
 
             const headquarter = getHeadquarterForPlayer(selfPlayerId)
@@ -510,15 +526,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [monitoringReady, selfPlayerId])
 
     useEffect(() => {
-        if (playConfigurationDebug.effects) {
-            console.log('Use effect: start sound effects')
+        if (PlayLogConfig.sound) {
+            console.log('Play (sound): start sound effects')
         }
 
         sfx.startEffects(immediateState)
 
         return () => {
-            if (playConfigurationDebug.effects) {
-                console.log('Stop sound effects')
+            if (PlayLogConfig.sound) {
+                console.log('Play (sound): Stop sound effects')
             }
 
             sfx.stopEffects()
@@ -539,7 +555,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [nextWindowId])
 
     const openWindow = useCallback((window: WindowType) => {
-        console.log(`Opening: ${JSON.stringify(window)}`)
+        if (PlayLogConfig.windows) {
+            console.log(`Play (windows): Opening: ${JSON.stringify(window)}`)
+        }
+
 
         setWindows(prevWindows => (
             prevWindows.find(w => w.type === 'HOUSE' && window.type === 'HOUSE' && w.house.id === window.house.id) ||
@@ -566,7 +585,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [])
 
     const goToHouse = useCallback((houseId: HouseId) => {
-        console.info('Go to house immediately: ' + houseId)
+        if (PlayLogConfig.selection) {
+            console.info('Play (selection): Go to house immediately: ' + houseId)
+        }
 
         const house = api.houses.get(houseId)
         if (house) {
@@ -700,7 +721,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [])
 
     const onPointClicked = useCallback(async (point: Point) => {
-        console.info(`Clicked point: ${point.x}, ${point.y}`)
+        if (PlayLogConfig.selection) {
+            console.info(`Play (selection): Clicked point: ${point.x}, ${point.y}`)
+        }
 
         // Filter clicks that are really the end of moving the mouse
         if (immediateState.mouseMoving) {
@@ -725,19 +748,25 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 if (possibleNewRoadSegment) {
                     possibleNewRoad.push(...possibleNewRoadSegment.slice(1))
                 } else {
-                    console.log('Not possible to include in road. Ignoring.')
+                    if (PlayLogConfig.roads) {
+                        console.log('Play (roads): Not possible to include in road. Ignoring.')
+                    }
 
                     return
                 }
             }
 
-            console.log(`Ongoing road construction: ${JSON.stringify(possibleNewRoad)}`)
+            if (PlayLogConfig.roads) {
+                console.log(`Play (roads): Ongoing road construction: ${JSON.stringify(possibleNewRoad)}`)
+            }
 
             // Handle the case when a flag is clicked and create a road to it. Also select the point of the flag
             const flag = api.getFlagAtPointLocal(point)
 
             if (flag) {
-                console.info('Placing road directly to flag')
+                if (PlayLogConfig.roads) {
+                    console.info('Play (roads): Placing road directly to flag')
+                }
 
                 // Do this first to make the UI feel quicker
                 setNewRoad(undefined)
@@ -748,7 +777,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 // Handle the case when a piece of road is clicked but there is no flag on it. Create the road
             } else if (isRoadAtPoint(point, api.roads)) {
-                console.info('Placing flag for road')
+                if (PlayLogConfig.roads) {
+                    console.info('Play (roads): Placing flag for road')
+                }
 
                 if (api.isAvailable(point, 'FLAG')) {
 
@@ -760,12 +791,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 // Add the new possible road points to the ongoing road and don't create the road
             } else if (recent.x !== point.x || recent.y !== point.y) {
-                console.info('Continuing road building with extended road segment')
+                if (PlayLogConfig.roads) {
+                    console.info('Play (roads): Continuing road building with extended road segment')
+                }
 
                 // Get the available connections from the added point
                 const pointInformation = await api.getInformationOnPoint(point)
 
-                console.log(`Possible new road direct adjacent road connections: ${JSON.stringify(pointInformation.possibleRoadConnections)}`)
+                if (PlayLogConfig.roads) {
+                    console.log(`Play (roads): Possible new road direct adjacent road connections: ${JSON.stringify(pointInformation.possibleRoadConnections)}`)
+                }
 
                 setNewRoad(possibleNewRoad)
                 setPossibleRoadConnections(pointInformation.possibleRoadConnections)
@@ -773,21 +808,29 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             // Select the point
         } else {
-            console.info(`Selecting point: ${point.x}, ${point.y}`)
+            if (PlayLogConfig.selection) {
+                console.info(`Play (selection): Selecting point: ${point.x}, ${point.y}`)
+            }
 
             setSelected(point)
         }
     }, [newRoad, possibleRoadConnections])
 
     const onPointDoubleClicked = useCallback(async (point: Point) => {
-        console.info(`Double click on ${point.x}, ${point.y}`)
+        if (PlayLogConfig.input) {
+            console.info(`Play (input): Double click on ${point.x}, ${point.y}`)
+        }
 
         // First, handle double clicks differently if a new road is being created
         if (newRoad) {
-            console.log('New road exists')
+            if (PlayLogConfig.roads) {
+                console.log('Play (roads): New road exists')
+            }
 
             if (api.isAvailable(point, 'FLAG')) {
-                console.log('Can place flag')
+                if (PlayLogConfig.flags) {
+                    console.log('Play (flags): Can place flag')
+                }
 
                 // Keep a reference to the new road so it doesn't get lost when the state is changed
                 const newRoadPoints = [...newRoad]
@@ -805,7 +848,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 // Call the backend to make the changes take effect
                 api.placeRoadWithFlag(point, newRoadPoints)
 
-                console.info('Created flag and road')
+                if (PlayLogConfig.flags) {
+                    console.info('Play (flags): Created flag and road')
+                }
             } else {
                 console.log('Could not place flag')
             }
@@ -822,10 +867,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         // Handle click on house
         const house = api.getHouseAtPointLocal(point)
-        console.log(`House on local: ${JSON.stringify(house)}`)
+        if (PlayLogConfig.houses) {
+            console.log(`Play (houses): House on local: ${JSON.stringify(house)}`)
+        }
 
         if (house) {
-            console.info(`Clicked house: ${JSON.stringify(house)}`)
+            if (PlayLogConfig.houses) {
+                console.info(`Play (houses): Clicked house: ${JSON.stringify(house)}`)
+            }
+
 
             openWindow({ type: 'HOUSE', house })
             setShowMenu(false)
@@ -835,13 +885,19 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         // Handle the case where a flag was double clicked
         const flag = api.getFlagAtPointLocal(point)
-        console.log(`Flag on local: ${JSON.stringify(flag)}`)
+        if (PlayLogConfig.flags) {
+            console.log(`Play (flags): Flag on local: ${JSON.stringify(flag)}`)
+        }
 
         if (flag) {
-            console.info('Clicked flag')
+            if (PlayLogConfig.flags) {
+                console.info('Play (flags): Clicked flag')
+            }
 
             if (flag.playerId === selfPlayerId) {
-                console.info('Friendly flag')
+                if (PlayLogConfig.flags) {
+                    console.info('Play (flags): Friendly flag')
+                }
 
                 openWindow({ type: 'FLAG', flag })
             }
@@ -851,7 +907,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         // Ask the server for what can be done on the spot
         const pointInformation = await api.getInformationOnPoint(point)
-        console.log(`Point information: ${JSON.stringify(pointInformation)}`)
+        if (PlayLogConfig.data) {
+            console.log(`Play (data): Point information: ${JSON.stringify(pointInformation)}`)
+        }
 
         // Create a flag if it is the only possible construction
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'FLAG') {
@@ -861,7 +919,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         } else if (pointInformation.is === 'ROAD') {
             openWindow({ type: 'ROAD_INFO', roadId: pointInformation.roadId })
         } else if (pointInformation.canBuild.length !== 0) {
-            console.log(`Opening construction window`)
+            if (PlayLogConfig.windows) {
+                console.log('Play (windows): Opening construction window')
+            }
 
             openWindow({ type: 'CONSTRUCTION_WINDOW', pointInformation: pointInformation })
         } else {
@@ -924,7 +984,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const startNewRoad = useCallback(async (point: Point) => {
 
         // Start the list of points in the new road with the clicked point
-        console.info(`Start new road construction at: ${JSON.stringify({ x: point.x, y: point.y })}`)
+        if (PlayLogConfig.roads) {
+            console.info(`Play (roads): Start new road construction at: ${JSON.stringify({ x: point.x, y: point.y })}`)
+        }
 
         // Get the possible connections from the server and draw them
         const pointInformation = await api.getInformationOnPoint(point)
@@ -940,7 +1002,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onTouchStart = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
-        console.log('touchstart.')
+        if (PlayLogConfig.touch) {
+            console.log('Play (touch): touchstart')
+        }
 
         const touches = event.changedTouches
 
@@ -989,16 +1053,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             // Store ongoing touches just because ...
             if (touch) {
-                console.log('continuing touch ' + touch)
-
-                console.log('ctx.moveTo(' + touch.pageX + ', ' + touch.pageY + ')')
-
-                console.log('ctx.lineTo(' + touches[i].pageX + ', ' + touches[i].pageY + ')')
+                if (PlayLogConfig.touch) {
+                    console.log('Play (touch): continuing touch ' + touch)
+                    console.log('ctx.moveTo(' + touch.pageX + ', ' + touch.pageY + ')')
+                    console.log('ctx.lineTo(' + touches[i].pageX + ', ' + touches[i].pageY + ')')
+                }
 
                 ongoingTouches.set(touch.identifier, touches[i])
-                console.log('.')
             } else {
-                console.log("can't figure out which touch to continue")
+                console.error("can't figure out which touch to continue")
             }
         }
     }, [ongoingTouches])
@@ -1010,7 +1073,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onTouchCancel = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
 
-        console.log('touchcancel.')
+        if (PlayLogConfig.touch) {
+            console.log('Play (touch): touchcancel')
+        }
+
 
         // Stop moving
         immediateState.touchMoveOngoing = false
@@ -1034,7 +1100,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             if (touch) {
                 ongoingTouches.delete(touches[i].identifier)
             } else {
-                console.log("can't figure out which touch to end")
+                console.error("can't figure out which touch to end")
             }
         }
     }, [ongoingTouches])

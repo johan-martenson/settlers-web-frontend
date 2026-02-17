@@ -8,6 +8,8 @@ import { GameId, PlayerId, GameInformation } from '../../api/types'
 import { GameListener, api } from '../../api/ws-api'
 import { ChatBox } from '../../components/chat/chat'
 import { Center } from '../../components/center'
+import { Command, TypeControl } from '../play/type_control'
+import { UiIcon } from '../../icons/icon'
 
 // Types
 type GameCreatorProps = {
@@ -22,6 +24,23 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
     const [state, setState] = useState<'GET_NAME_FOR_GAME' | 'CREATE_GAME'>('GET_NAME_FOR_GAME')
     const [candidateTitle, setCandidateTitle] = useState<string>()
     const [gameInformation, setGameInformation] = useState<GameInformation>()
+
+    // Callbacks
+    const onStartGameClicked = () => {
+        if (gameInformation?.id !== undefined) {
+            api.startGame(gameInformation?.id ?? '')
+            onGameStarted(gameInformation?.id, selfPlayerId)
+        } else {
+            console.error('Game id is not set')
+        }
+    }
+
+    const commands = new Map<string, Command>()
+    commands.set('Start game', {
+        action: onStartGameClicked,
+        hidden: state !== 'CREATE_GAME',
+        icon: <UiIcon type='PLAY' />
+    })
 
     // Depends on the parent component:
     //  - Creating the game
@@ -185,21 +204,18 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         }} >
                             Discard game
                         </Button>
-                        <Button onClick={async () => {
-                            if (gameInformation?.id !== undefined) {
-                                api.startGame(gameInformation?.id ?? '')
-                            } else {
-                                console.error('Game id is not set')
-                            }
-
-                            onGameStarted(gameInformation?.id, selfPlayerId)
-                        }}
+                        <Button onClick={onStartGameClicked}
                             disabled={!gameInformation?.map}
                             appearance='primary'
                         >
                             Launch game
                         </Button>
                     </div>
+                    <div id='typing-control'><TypeControl commands={commands} selectedPoint={{
+                        x: 0,
+                        y: 0
+                    }} /></div>
+
                 </div>
             }
 

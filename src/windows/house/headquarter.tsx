@@ -33,6 +33,8 @@ const INVENTORY_MATERIALS: Material[] = [
     'BEER',
     'COAL',
     'IRON',
+    'GOLD',
+    'IRON_BAR',
     'COIN',
     'TONGS',
     'AXE',

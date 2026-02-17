@@ -1,7 +1,7 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
 import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory, Tool } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority, getMap } from './ws/commands'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority, getMap, cheat } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
 
@@ -22,6 +22,7 @@ type WalkerTargetChange = {
     x: number
     y: number
     path: Point[]
+    percentageTraveled: number
     direction: SimpleDirection
     cargo?: Material
     type: WorkerType
@@ -61,6 +62,7 @@ type PlayerViewChangedMessage = {
 type PlayerViewChanges = {
     time: number
     gameSpeed?: GameSpeed
+    newWorkersOutside?: ServerWorkerInformation[]
     workersWithNewTargets?: WalkerTargetChange[]
     workersWithStartedActions?: WorkerNewAction[]
     wildAnimalsWithNewTargets?: WildAnimalInformation[]
@@ -310,7 +312,7 @@ function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
  */
 // eslint-disable-next-line
 function onMessageReceived(message: any): void {
-    if (wsApiDebugSettings.receive) {
+    if (WsApiLogConfig.receive) {
         console.log(`WS API: WS API: Got message: ${JSON.stringify(message)}`)
     }
 
@@ -320,31 +322,31 @@ function onMessageReceived(message: any): void {
 
     try {
         if (isGameChangesMessage(message)) {
-            if (wsApiDebugSettings.receive) {
+            if (WsApiLogConfig.receive) {
                 console.log('WS API: Handling player view changed message')
             }
 
             loadPlayerViewChangesAndCallListeners(message.playerViewChanges)
         } else if (isGameInformationChangedMessage(message)) {
-            if (wsApiDebugSettings.receive) {
+            if (WsApiLogConfig.receive) {
                 console.log('WS API: Handling game information changed message')
             }
 
             handleGameInformationChangedMessage(message.gameInformation)
         } else if (isGameListChangedMessage(message)) {
-            if (wsApiDebugSettings.receive) {
+            if (WsApiLogConfig.receive) {
                 console.log('WS API: Handling game list changed messgae')
             }
 
             receivedGameListChangedMessage(message)
         } else if (isChatMessage(message)) {
-            if (wsApiDebugSettings.receive) {
+            if (WsApiLogConfig.receive) {
                 console.log('WS API: Handling chat message')
             }
 
             loadChatMessage(message.chatMessage)
         } else if (isStatisticsChangedMessage(message)) {
-            if (wsApiDebugSettings.receive) {
+            if (WsApiLogConfig.receive) {
                 console.log('WS API: Handling statistics changed message')
             }
 
@@ -477,7 +479,7 @@ function getHouseAtPointLocal(point: Point): HouseInformation | undefined {
 
 
 // Configuration
-export const wsApiDebugSettings = {
+export const WsApiLogConfig = {
     receive: false,
     following: false,
     timers: false
@@ -598,6 +600,7 @@ const api = {
     removeToolPrioListener,
     getToolPriorities,
     setToolPriority,
+    cheat,
 
     // Player - military
     setReservedSoldiers,
@@ -1289,7 +1292,7 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
  */
 function startTimers(): void {
 
-    if (wsApiDebugSettings.timers) {
+    if (WsApiLogConfig.timers) {
         console.log(`WS API (timers): Starting timers with tick length: ${gameTickLength}`)
     }
 
@@ -1539,7 +1542,7 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
     if (gameInformation?.tick) {
         stopTimers()
 
-        if (wsApiDebugSettings.timers) {
+        if (WsApiLogConfig.timers) {
             console.log(`WS API: Setting game tick length to: ${gameInformation.tick}`)
         }
 
@@ -1573,7 +1576,7 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
  */
 function stopTimers(): void {
 
-    if (wsApiDebugSettings.timers) {
+    if (WsApiLogConfig.timers) {
         console.log('WS API: Stopping walking timers')
     }
 
@@ -1595,7 +1598,7 @@ function stopTimers(): void {
  */
 function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformation): void {
 
-    if (wsApiDebugSettings.receive) {
+    if (WsApiLogConfig.receive) {
         console.log("Handling full sync message")
     }
 
@@ -1626,7 +1629,7 @@ function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformatio
  */
 function gameStateMightHaveChanged(gameState: GameState): void {
 
-    if (wsApiDebugSettings.timers) {
+    if (WsApiLogConfig.timers) {
         console.log(`WS API: Game state might have changed. Game state: ${gameState}, walking timer state: ${walkingTimerState}`)
     }
 
@@ -1667,11 +1670,15 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     if (playerViewChanges.newDiscoveredLand) {
 
-        if (wsApiDebugSettings.receive) {
+        if (WsApiLogConfig.receive) {
             console.log("Got new discovered points")
         }
 
         storeDiscoveredTiles(playerViewChanges.newDiscoveredLand)
+    }
+
+    if (playerViewChanges.newWorkersOutside) {
+        playerViewChanges.newWorkersOutside.forEach(worker => api.workers.set(worker.id, serverWorkerToLocalWorker(worker)))
     }
 
     if (playerViewChanges.workersWithNewTargets) {
@@ -2130,8 +2137,8 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
             plannedPath: walkerTargetChange.path?.length ? walkerTargetChange.path : undefined,
             previous: { x: walkerTargetChange.x, y: walkerTargetChange.y },
             next: walkerTargetChange.path?.[0],
-            betweenPoints: false,
-            percentageTraveled: 0,
+            betweenPoints: walkerTargetChange.percentageTraveled === undefined || walkerTargetChange.percentageTraveled === 0 || walkerTargetChange.percentageTraveled === 100,
+            percentageTraveled: walkerTargetChange.percentageTraveled !== undefined ? walkerTargetChange.percentageTraveled : 0,
             action: undefined,
             cargo: walkerTargetChange.cargo,
             bodyType: walkerTargetChange?.bodyType
@@ -2303,7 +2310,7 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
         // Sync the received view
         if (playerView !== undefined) {
 
-            if (wsApiDebugSettings.receive) {
+            if (WsApiLogConfig.receive) {
                 console.log('WS API (receive): Loading player view')
             }
 
@@ -2315,7 +2322,7 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
         followingState = 'FOLLOWING'
 
         return gameInformation
-    } else if (wsApiDebugSettings.following) {
+    } else if (WsApiLogConfig.following) {
         console.log(`WS API (following): Can't start to follow when following state is: ${followingState}. Previously requested state is: ${requestedFollowingState}`)
     }
 }
@@ -2342,7 +2349,7 @@ async function waitForGameDataAvailable(): Promise<void> {
 
     while (Date.now() - startTime < MAX_WAIT_FOR_CONNECTION) {
         if (api.allTiles.size > 0) {
-            if (wsApiDebugSettings.following) {
+            if (WsApiLogConfig.following) {
                 console.log('WS API (following): Game data is available')
             }
 

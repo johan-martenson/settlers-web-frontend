@@ -323,6 +323,27 @@ org.appland.settlers.model.InvalidUserActionException: Can't place crop on non-h
         at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1095)
         at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:619)
         at java.base/java.lang.Thread.run(Thread.java:1447)
+43. Bug
+    image_atlas_handlers.ts:603 Uncaught TypeError: Cannot read properties of undefined (reading 'SOUTH_WEST')
+    at WorkerImageAtlasHandler.getDrawingInformationForCargo (image_atlas_handlers.ts:603:1)
+    at WorkerAnimation.getDrawingInformationForCargo (animations.ts:131:1)
+    at renderGame (game_render.tsx:1498:1)
+
+44. Everyone should see changed building notifications, ex when the iron smelter is producing iron bars
+
+44. Missing iron founder carrying iron bar, armorer carrying weapon?
+
+45. Missing iron bar lying next to flag is invisible.
+
+46. At slow speed, the house/worker animations should also be slow
+
+47. Transportation from pig farm to slaughter house is weird.
+    1. Pigs are sent to headquarters although they pass by the slaughter house on the way
+    2. Courier doesn't pick up a pig until the next one is on the way
+
+48. Transportation does not handle cycles well
+
+49. Farm plants crops seeminlgy on top of headquarters (hq.x - 2)
 
 Todo 2.0
 ========

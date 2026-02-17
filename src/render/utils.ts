@@ -100,7 +100,7 @@ type SampleAttributes = 'a_coords' | 'a_normal' | 'a_texture_mapping'
 // State
 
 // Configuration
-export const GL_UTILS_LOG_CONFIG = {
+export const GlUtilsLogConfig = {
     setBuffer: false,
     draw: false,
     initProgram: false,
@@ -125,7 +125,7 @@ function setBuffer<Attribute extends string>(program: ProgramInstance, attribute
 
         attributeInstance.numberElements = content.length
 
-        if (GL_UTILS_LOG_CONFIG.setBuffer) {
+        if (GlUtilsLogConfig.setBuffer) {
             console.log(`Set buffer ${attributeName} to size ${content.length}`)
         }
     } else {
@@ -281,7 +281,7 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
                 buffer
             })
 
-            if (GL_UTILS_LOG_CONFIG.initProgram) {
+            if (GlUtilsLogConfig.initProgram) {
                 console.log(`Set attribute instance for ${attributeName}`)
             }
         }
@@ -316,7 +316,7 @@ function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType
         const shaderCompileLog = gl.getShaderInfoLog(compiledShader)
 
         if (shaderCompileLog === '') {
-            if (GL_UTILS_LOG_CONFIG.makeShader)
+            if (GlUtilsLogConfig.makeShader)
             console.info('Shader compiled correctly')
         } else {
             console.error(shaderCompileLog)

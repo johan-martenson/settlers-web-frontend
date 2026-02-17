@@ -1,5 +1,5 @@
 import { PointMap } from "../../utils/util_types"
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics, Tool } from "../types"
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics, Tool, CheatCode } from "../types"
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from "./core"
 
 
@@ -148,6 +148,7 @@ enum Command {
     SetTransportPriority = 'SET_TRANSPORT_PRIORITY',
     GetToolPriorities = 'GET_TOOL_PRODUCTION_PRIORITIES',
     SetToolPriority = 'SET_TOOL_PRODUCTION_PRIORITY',
+    Cheat = 'CHEAT',
 
     // Player - military
     GetStrength = 'GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
@@ -763,6 +764,10 @@ async function getInformationOnPoints(points: Point[]): Promise<PointMap<PointIn
     return map
 }
 
+function cheat(cheatCode: CheatCode): void {
+    sendWithOptions<{ cheatCode: CheatCode }>(Command.Cheat, { cheatCode })
+}
+
 /**
  * Sets the number of soldiers reserved in headquarters for a specific rank.
  * @param {SoldierType} rank - The soldier rank.
@@ -1160,5 +1165,6 @@ export {
     markGameMessagesRead,
     getToolPriorities,
     setToolPriority,
-    getMap
+    getMap,
+    cheat
 }

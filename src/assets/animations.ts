@@ -1,4 +1,4 @@
-import { Nation, PlayerColor, FlagType, Direction, Material, WorkerAction, WorkerType, TreeType, FireSize, WildAnimalType } from "../api/types"
+import { Nation, PlayerColor, FlagType, Direction, Material, WorkerAction, WorkerType, TreeType, FireSize, WildAnimalType, AnyBuilding } from "../api/types"
 import { WorkerImageAtlasHandler, AnimalImageAtlasHandler, fireImageAtlasHandler, treeImageAtlasHandler, flagImageAtlasHandler } from "./image_atlas_handlers"
 import { Dimension, DrawingInformation } from "./types"
 
@@ -44,6 +44,10 @@ class FireAnimation {
 
     getAnimationFrame(size: FireSize, animationIndex: number): DrawingInformation[] | undefined {
         return fireImageAtlasHandler.getFireDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
+    }
+
+    getSmokeFrameForHouse(nation: Nation, houseType: AnyBuilding, animationIndex: number): DrawingInformation | undefined {
+        return fireImageAtlasHandler.getSmokeDrawingInformation(nation, houseType, Math.floor(animationIndex / this.speedAdjust))
     }
 }
 
@@ -145,9 +149,12 @@ const flagAnimations = new FlagAnimation(2)
 
 const workers = new Map<WorkerType, WorkerAnimation>()
 
+const helperAnimation = new WorkerAnimation('assets/', 'helper', 10)
+
 workers.set('Farmer', new WorkerAnimation('assets/', 'farmer', 10))
 workers.set('Fisherman', new WorkerAnimation('assets/', 'fisher', 10))
-workers.set('Courier', new WorkerAnimation('assets/', 'helper', 10))
+workers.set('Courier', helperAnimation)
+workers.set('WellWorker', helperAnimation)
 workers.set('StorehouseWorker', new WorkerAnimation('assets/', 'helper', 10))
 workers.set('Hunter', new WorkerAnimation('assets/', 'hunter', 10))
 workers.set('IronFounder', new WorkerAnimation('assets/', 'iron_founder', 10))
@@ -199,7 +206,6 @@ animals.set('STAG', new AnimalAnimation('assets/nature/animals/', 'stag', 10))
 const donkeyAnimation = new AnimalAnimation('assets/nature/animals/', 'donkey', 10)
 
 const fireAnimations = new FireAnimation(2)
-
 
 export {
     flagAnimations,

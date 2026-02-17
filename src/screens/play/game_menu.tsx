@@ -43,8 +43,8 @@ type GameMenuProps = {
 
 
 // Configuration
-export const gameMenuDebugSettings = {
-    log: false
+export const GameMenuLogConfig = {
+    all: false
 }
 
 
@@ -86,7 +86,7 @@ const GameMenu = ({
     useEffect(() => {
         const callback = {
             onGameSpeedChanged: (gameSpeed: GameSpeed) => {
-                if (gameMenuDebugSettings.log) {
+                if (GameMenuLogConfig.all) {
                     console.log(`NEW GAME SPEED: ${gameSpeed}`)
                 }
 
@@ -119,7 +119,7 @@ const GameMenu = ({
                             value={zoom}
                             step={1}
                             onChange={(_event: ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
-                                if (gameMenuDebugSettings.log) {
+                                if (GameMenuLogConfig.all) {
                                     console.log(`Zoom to ${data.value}`)
                                 }
 
@@ -128,7 +128,7 @@ const GameMenu = ({
                             }}
                         />
                         <Button onClick={() => {
-                            if (gameMenuDebugSettings.log) {
+                            if (GameMenuLogConfig.all) {
                                 console.log(`Reset zoom to ${defaultZoom}`)
                             }
 

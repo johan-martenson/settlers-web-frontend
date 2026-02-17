@@ -1,11 +1,70 @@
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, StoneAmount, StoneType, TreeSize, TreeType, WorkerAction } from '../api/types'
+import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignTypes, Size, SmokeType, StoneAmount, StoneType, TreeSize, TreeType, WorkerAction } from '../api/types'
 import { UiIconType } from '../icons/icon'
 import { AnimalImageAtlas, AnimationType, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
 import { AssetsLogConfig } from './config'
 
+// Types
+type SmokeTable = {
+    [key in Nation]: {
+        [key in AnyBuilding]?: {
+            smokeType: SmokeType,
+            offset: [number, number]
+        }
+    }
+}
+
 // State
 const reported = new Set()
 
+// Constants
+export const BUILDING_SMOKE: SmokeTable = {
+    AFRICANS: {
+        Quarry: { smokeType: 'SMOKE_TYPE_1', offset: [3, -32] },
+        Armory: { smokeType: 'SMOKE_TYPE_1', offset: [-32, -23] },
+        Metalworks: { smokeType: 'SMOKE_TYPE_4', offset: [-26, -47] },
+        Ironsmelter: { smokeType: 'SMOKE_TYPE_2', offset: [-20, -37] },
+        Bakery: { smokeType: 'SMOKE_TYPE_4', offset: [27, -39] },
+        Mint: { smokeType: 'SMOKE_TYPE_1', offset: [17, -52] }
+    },
+
+    JAPANESE: {
+        Armory: { smokeType: 'SMOKE_TYPE_1', offset: [-22, -43] },
+        Bakery: { smokeType: 'SMOKE_TYPE_4', offset: [-30, -39] },
+        Mint: { smokeType: 'SMOKE_TYPE_3', offset: [18, -58] }
+    },
+
+    ROMANS: {
+        Brewery: { smokeType: 'SMOKE_TYPE_1', offset: [-26, -45] },
+        Armory: { smokeType: 'SMOKE_TYPE_2', offset: [-36, -34] },
+        Ironsmelter: { smokeType: 'SMOKE_TYPE_1', offset: [-16, -34] },
+        Bakery: { smokeType: 'SMOKE_TYPE_4', offset: [-15, -26] },
+        Mint: { smokeType: 'SMOKE_TYPE_4', offset: [20, -50] }
+    },
+
+    VIKINGS: {
+        Woodcutter: { smokeType: 'SMOKE_TYPE_1', offset: [2, -36] },
+        Fishery: { smokeType: 'SMOKE_TYPE_1', offset: [4, -36] },
+        Quarry: { smokeType: 'SMOKE_TYPE_1', offset: [0, -34] },
+        Forester: { smokeType: 'SMOKE_TYPE_1', offset: [-5, -29] },
+        Slaughterhouse: { smokeType: 'SMOKE_TYPE_1', offset: [7, -41] },
+        Hunter: { smokeType: 'SMOKE_TYPE_1', offset: [-6, -38] },
+        Brewery: { smokeType: 'SMOKE_TYPE_3', offset: [5, -39] },
+        Armory: { smokeType: 'SMOKE_TYPE_3', offset: [-23, -36] },
+        Metalworks: { smokeType: 'SMOKE_TYPE_1', offset: [-9, -35] },
+        Ironsmelter: { smokeType: 'SMOKE_TYPE_2', offset: [-2, -38] },
+        PigFarm: { smokeType: 'SMOKE_TYPE_2', offset: [-30, -37] },
+        Bakery: { smokeType: 'SMOKE_TYPE_4', offset: [-21, -26] },
+        Sawmill: { smokeType: 'SMOKE_TYPE_1', offset: [-11, -45] },
+        Mint: { smokeType: 'SMOKE_TYPE_1', offset: [16, -38] },
+        Farm: { smokeType: 'SMOKE_TYPE_1', offset: [-17, -48] },
+        DonkeyBreeder: { smokeType: 'SMOKE_TYPE_4', offset: [-27, -40] },
+    },
+}
+
+const OFFSET_ADJUSTMENTS_FOR_ACTIONS: Partial<Record<WorkerAction, {x: number, y: number}>> = {
+    'DRAW_WATER_1': { x: 20, y: -13 },
+    'OPEN_OVEN': { x: 5, y: -10 },
+}
 
 // Classes
 class UiElementsImageAtlasHandler {
@@ -454,6 +513,9 @@ class WorkerImageAtlasHandler {
         } else if (this.imageAtlasInfo.common?.fullImages) {
             images = this.imageAtlasInfo.common.fullImages[direction]
         } else if (this.imageAtlasInfo.common?.fullImagesByPlayer) {
+            if (this.imageAtlasInfo.common.fullImagesByPlayer[direction] == undefined) {
+                console.error(this.name, direction, color)
+            }
             images = this.imageAtlasInfo.common.fullImagesByPlayer[direction][color]
         } else if (
             this.imageAtlasInfo.common?.bodyImagesByPlayer &&
@@ -467,7 +529,7 @@ class WorkerImageAtlasHandler {
             return undefined
         }
 
-        const frameIndex = (animationCounter + Math.round(offset)) % images.nrImages
+        const frameIndex = (animationCounter + Math.round(offset))
 
         return [
             {
@@ -491,6 +553,8 @@ class WorkerImageAtlasHandler {
             return undefined
         }
 
+        let image: PartialDrawingInformation | undefined = undefined
+
         if (direction &&
             this.imageAtlasInfo.common.actionsByPlayer &&
             this.imageAtlasInfo.common.actionsByPlayer[action] &&
@@ -499,17 +563,9 @@ class WorkerImageAtlasHandler {
             const actionImages = this.imageAtlasInfo.common.actionsByPlayer[action][direction][color]
 
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                return {
-                    ...imageInfoFromHorizontalImageSeries(actionImages, animationIndex),
-                    image: this.image,
-                    texture: this.texture
-                }
+                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
             } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                return {
-                    ...imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1),
-                    image: this.image,
-                    texture: this.texture
-                }
+                image = imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1)
             }
         } else if (direction &&
             this.imageAtlasInfo.common.actionsByPlayer &&
@@ -519,17 +575,9 @@ class WorkerImageAtlasHandler {
             const actionImages = this.imageAtlasInfo.common.actionsByPlayer[action]['any'][color]
 
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                return {
-                    ...imageInfoFromHorizontalImageSeries(actionImages, animationIndex),
-                    image: this.image,
-                    texture: this.texture
-                }
+                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
             } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                return {
-                    ...imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1),
-                    image: this.image,
-                    texture: this.texture
-                }
+                image = imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1)
             }
         } else if (this.imageAtlasInfo.nationSpecific &&
             this.imageAtlasInfo.nationSpecific?.actionsByPlayer &&
@@ -539,17 +587,9 @@ class WorkerImageAtlasHandler {
             this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]) {
             const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                return {
-                    ...imageInfoFromHorizontalImageSeries(actionImages, animationIndex),
-                    image: this.image,
-                    texture: this.texture
-                }
+                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
             } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                return {
-                    ...imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1),
-                    image: this.image,
-                    texture: this.texture
-                }
+                image = imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1)
             } else if (actionAnimationType.get(action) == 'SINGLE_THEN_STOP') {
                 // SINGLE_THEN_STOP is handled in the first arm. If we get here the animation is drawn already
 
@@ -563,17 +603,9 @@ class WorkerImageAtlasHandler {
             this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'][color]) {
             const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'][color]
             if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                return {
-                    ...imageInfoFromHorizontalImageSeries(actionImages, animationIndex),
-                    image: this.image,
-                    texture: this.texture
-                }
+                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
             } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                return {
-                    ...imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1),
-                    image: this.image,
-                    texture: this.texture
-                }
+                image = imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1)
             } else if (actionAnimationType.get(action) == 'SINGLE_THEN_STOP') {
                 // SINGLE_THEN_STOP is handled in the first arm. If we get here the animation is drawn already
 
@@ -585,6 +617,18 @@ class WorkerImageAtlasHandler {
                 console.error(`FOUND NO ACTION: name: ${this.name}, nation: ${nation}, direction: ${direction}, action: ${action}, color: ${color}`)
 
                 reported.add(action)
+            }
+        }
+
+        if (image) {
+            const offsetAdjustment = OFFSET_ADJUSTMENTS_FOR_ACTIONS[action] ?? { x: 0, y: 0 }
+
+            return {
+                ...image,
+                offsetX: image.offsetX + offsetAdjustment.x,
+                offsetY: image.offsetY + offsetAdjustment.y,
+                image: this.image,
+                texture: this.texture
             }
         }
 
@@ -600,6 +644,15 @@ class WorkerImageAtlasHandler {
             this.imageAtlasInfo.nationSpecific.cargoImages) {
             return undefined // TODO: fix this when there is a nation specific cargo image
         } else if (this.imageAtlasInfo.common.cargoImages) {
+            if (this.imageAtlasInfo.common.cargoImages[material] === undefined) {
+                console.log(`No cargo images for material ${material}`)
+                console.log(this.imageAtlasInfo.common.cargoImages)
+            }
+
+            if (this.imageAtlasInfo.common.cargoImages[material] == undefined) {
+                console.error(this.name, material, direction)
+            }
+
             const cargoImages = this.imageAtlasInfo.common.cargoImages[material][direction]
 
             return {
@@ -762,12 +815,6 @@ class HouseImageAtlasHandler {
         const houseAnimation = this.imageAtlasInfo.buildings[nation][houseType].workingAnimation
         const houseAnimationShadow = this.imageAtlasInfo.buildings[nation][houseType].workingAnimationShadow
 
-        if (houseAnimationShadow === undefined) {
-            console.log([nation, houseType])
-
-            return undefined
-        }
-
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(houseAnimation, animationIndex),
@@ -775,7 +822,10 @@ class HouseImageAtlasHandler {
                 texture: this.texture
             },
             {
-                ...imageInfoFromHorizontalImageSeries(houseAnimationShadow, animationIndex),
+                ...(houseAnimationShadow
+                    ? imageInfoFromHorizontalImageSeries(houseAnimationShadow, animationIndex)
+                    : imageInfoFromSingleImage(this.imageAtlasInfo.buildings[nation][houseType].readyShadow))
+                ,
                 image: this.image,
                 texture: this.texture
             }
@@ -1009,6 +1059,33 @@ class FireImageAtlasHandler {
             image: this.image,
             texture: this.texture
         }
+    }
+
+    getSmokeDrawingInformation(nation: string, houseType: AnyBuilding, animationIndex: number): DrawingInformation | undefined {
+        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+            return undefined
+        }
+
+        const smokeType = BUILDING_SMOKE[nation]?.[houseType]
+
+        if (smokeType === undefined) {
+            return undefined
+        }
+
+        const imageSeriesInfo = this.imageAtlasInfo.smoke[smokeType.smokeType]
+
+        if (imageSeriesInfo) {
+            const imageInfo = imageInfoFromHorizontalImageSeries(imageSeriesInfo, animationIndex)
+            return {
+                ...imageInfo,
+                offsetX: -smokeType.offset[0] + imageInfo.offsetX,
+                offsetY: -smokeType.offset[1] + imageInfo.offsetY,
+                image: this.image,
+                texture: this.texture
+            }
+        }
+
+        return undefined
     }
 }
 
@@ -1578,7 +1655,7 @@ function loadImageAsync(src: string): Promise<HTMLImageElement> {
             resolve(image)
         }
 
-        image.onerror = () =>{
+        image.onerror = () => {
             console.error(`Failed to load ${src}`)
 
             reject()
@@ -1590,23 +1667,6 @@ function loadImageAsync(src: string): Promise<HTMLImageElement> {
 
 // Constants
 const uiElementsImageAtlasHandler = new UiElementsImageAtlasHandler('assets/', 0)
-
-const actionAnimationType = new Map<WorkerAction, AnimationType>()
-
-actionAnimationType.set('PLANTING_TREE', 'SINGLE_THEN_FREEZE')
-actionAnimationType.set('PLANTING_WHEAT', 'REPEAT')
-actionAnimationType.set('HARVESTING', 'REPEAT')
-actionAnimationType.set('INVESTIGATING', 'REPEAT')
-actionAnimationType.set('CUTTING', 'REPEAT')
-actionAnimationType.set('HACKING_STONE', 'REPEAT')
-actionAnimationType.set('LOWER_FISHING_ROD', 'SINGLE_THEN_FREEZE')
-actionAnimationType.set('FISHING', 'REPEAT')
-actionAnimationType.set('PULL_UP_FISHING_ROD', 'SINGLE_THEN_FREEZE')
-actionAnimationType.set('CHEW_GUM', 'SINGLE_THEN_STOP')
-actionAnimationType.set('HIT', 'SINGLE_THEN_FREEZE')
-actionAnimationType.set('JUMP_BACK', 'SINGLE_THEN_FREEZE')
-actionAnimationType.set('STAND_ASIDE', 'SINGLE_THEN_FREEZE')
-actionAnimationType.set('DIE', 'SINGLE_THEN_STOP')
 
 const ANIMAL_FALLBACK_DIRECTION = new Map<Direction, Direction>()
 
@@ -1629,6 +1689,30 @@ const fireImageAtlasHandler = new FireImageAtlasHandler('assets/')
 const stoneImageAtlasHandler = new StoneImageAtlasHandler('assets/')
 const treeImageAtlasHandler = new TreeImageAtlasHandler('assets/nature/')
 const flagImageAtlasHandler = new FlagImageAtlasHandler('assets/')
+
+const actionAnimationType = new Map<WorkerAction, AnimationType>()
+
+actionAnimationType.set('PLANTING_TREE', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('PLANTING_WHEAT', 'REPEAT')
+actionAnimationType.set('HARVESTING', 'REPEAT')
+actionAnimationType.set('INVESTIGATING', 'REPEAT')
+actionAnimationType.set('CUTTING', 'REPEAT')
+actionAnimationType.set('HACKING_STONE', 'REPEAT')
+actionAnimationType.set('LOWER_FISHING_ROD', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('FISHING', 'REPEAT')
+actionAnimationType.set('PULL_UP_FISHING_ROD', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('CHEW_GUM', 'SINGLE_THEN_STOP')
+actionAnimationType.set('HIT', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('JUMP_BACK', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('STAND_ASIDE', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('DIE', 'SINGLE_THEN_STOP')
+actionAnimationType.set('HAMMER_TO_MAKE_TOOL', 'REPEAT')
+actionAnimationType.set('SAWING_TO_MAKE_TOOL', 'REPEAT')
+actionAnimationType.set('WIPE_OFF_SWEAT_TO_MAKE_TOOL', 'SINGLE_THEN_FREEZE')
+actionAnimationType.set('SLAUGHTERING', 'REPEAT')
+actionAnimationType.set('OPEN_OVEN', 'SINGLE_THEN_STOP')
+actionAnimationType.set('DRAW_WATER_1', 'REPEAT')
+actionAnimationType.set('FEED_THE_PIGS', 'SINGLE_THEN_STOP')
 
 export {
     houses,

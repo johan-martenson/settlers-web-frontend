@@ -96,6 +96,9 @@ const ManagePlayers = ({ selfPlayerId, maxPlayers }: ManagePlayersProps) => {
                             isSelf={true}
                             availableColors={availableColors}
                             onPlayerUpdated={(name: string, nation: Nation, color: PlayerColor) => {
+                                localStorage.setItem('playerName', name)
+                                localStorage.setItem('playerNation', nation)
+
                                 api.updatePlayer(player.id, name, color, nation)
                             }}
                             player={player}

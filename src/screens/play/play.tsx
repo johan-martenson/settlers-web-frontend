@@ -157,7 +157,8 @@ export const PlayLogConfig = {
     sound: true,            // sound effects lifecycle
     windows: true,          // opening UI windows
     data: false,            // raw data dumps (JSON.stringify)
-    errors: true            // error situations
+    errors: true,           // error situations
+    ...(JSON.parse(localStorage.getItem('config.play.log') ?? '{}'))  // override log settings from local storage if it exists
 }
 
 // State
@@ -497,6 +498,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             commands.set('Map', {
                 action: () => openWindow({ type: 'MAP' }),
                 icon: <UiIcon type='GLOBE_WITH_MAGNIFYING_GLASS' scale={0.5} />
+            })
+            commands.set('GiveMeSomeMore', {
+                action: () => api.cheat('GIVE_ME_SOME_MORE'),
+                hidden: true
+            })
+            commands.set('ShowMeTheWorld', {
+                action: () => api.cheat('SHOW_ME_THE_WORLD'),
+                hidden: true
             })
 
             setCommands(commands)

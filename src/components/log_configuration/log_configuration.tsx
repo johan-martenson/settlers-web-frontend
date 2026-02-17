@@ -12,13 +12,13 @@ import {
     TableCell,
     Switch
 } from '@fluentui/react-components'
-import { wsApiDebugSettings } from '../../api/ws-api'
-import { wsApiCoreDebugSettings } from '../../api/ws/core'
-import { GL_UTILS_LOG_CONFIG } from '../../render/utils'
-import { gameMenuDebugSettings } from '../../screens/play/game_menu'
-import { playConfigurationDebug } from '../../screens/play/play'
+import { WsApiLogConfig } from '../../api/ws-api'
+import { WsCoreLogConfig } from '../../api/ws/core'
+import { GlUtilsLogConfig } from '../../render/utils'
+import { GameMenuLogConfig } from '../../screens/play/game_menu'
+import { playConfigurationDebug, PlayLogConfig } from '../../screens/play/play'
 import { HooksConfig } from '../../utils/hooks/config'
-import { SOUND_EFFECTS_LOGGING } from '../../sound/sound_effects'
+import { SoundEffectsLogConfig } from '../../sound/sound_effects'
 import { TypeControlLogConfig } from '../../screens/play/type_control'
 import { RenderLogConfig } from '../../render/game_render'
 
@@ -36,6 +36,7 @@ function prettifyKey(key: string): string {
 }
 
 function buildMultiSubsystemRow<T extends Record<string, boolean>>(
+    componentName: string,
     config: T,
     state: T,
     setState: React.Dispatch<React.SetStateAction<T>> | ((updater: (prev: T) => T) => void),
@@ -48,6 +49,7 @@ function buildMultiSubsystemRow<T extends Record<string, boolean>>(
             onChange: () => {
                 config[key] = !state[key] as T[keyof T]
                 setState(prev => ({ ...prev, [key]: !prev[key] }))
+                localStorage.setItem(`config.${componentName.toLowerCase()}.log`, JSON.stringify({ ...config }))
             }
         })),
         onToggleAll: (value: boolean) => {
@@ -59,6 +61,7 @@ function buildMultiSubsystemRow<T extends Record<string, boolean>>(
                     Object.keys(config).map(k => [k, value])
                 ) as T
             )
+            localStorage.setItem(`config.${componentName.toLowerCase()}.log`, JSON.stringify({ ...config }))
         }
     }
 }
@@ -96,76 +99,61 @@ function useDebugConfig<T extends Record<string, boolean>>(config: T) {
 
 // React components
 const DebugLogsTable = () => {
-    const [wsApiReceiveDebug, setWsApiReceiveDebug] = React.useState<boolean>(wsApiCoreDebugSettings.receive)
-    const [wsApiSendDebug, setWsApiSendDebug] = React.useState<boolean>(wsApiCoreDebugSettings.send)
-    const [gameMenuLogConfig, setGameMenuLogConfig] = React.useState<boolean>(gameMenuDebugSettings.log)
-    const [playConfigurationDebugEffects, setPlayConfigurationDebugEffects] = React.useState<boolean>(playConfigurationDebug.effects)
-    const [playConfigurationDebugEvents, setPlayConfigurationDebugEvents] = React.useState<boolean>(playConfigurationDebug.events)
+    const [wsApiLogConfig, setWsApiLogConfig] = useDebugConfig(WsApiLogConfig)
+    const [wsCoreLogConfig, setWsCoreLogConfig] = useDebugConfig(WsCoreLogConfig)
+    const [gameMenuLogConfig, setGameMenuLogConfig] = useDebugConfig(GameMenuLogConfig)
+    const [playLogConfig, setPlayLogConfig] = useDebugConfig(PlayLogConfig)
     const [hooksLogConfig, setHooksLogConfig] = useDebugConfig(HooksConfig)
-    const [soundEffectLogConfig, setSoundEffectLogConfig] = useDebugConfig(SOUND_EFFECTS_LOGGING)
+    const [soundEffectLogConfig, setSoundEffectLogConfig] = useDebugConfig(SoundEffectsLogConfig)
     const [typeControlLogConfig, setTypeControlLogConfig] = useDebugConfig(TypeControlLogConfig)
-    const [glUtilsLogConfig, setGlUtilsLogConfig] = useDebugConfig(GL_UTILS_LOG_CONFIG)
+    const [glUtilsLogConfig, setGlUtilsLogConfig] = useDebugConfig(GlUtilsLogConfig)
     const [renderLogConfig, setRenderLogConfig] = useDebugConfig(RenderLogConfig)
 
     const rows = [
         {
+            component: 'WS Core',
+            ...buildMultiSubsystemRow(
+                'wscore',
+                WsCoreLogConfig,
+                wsCoreLogConfig,
+                setWsCoreLogConfig,
+                buildDescriptorsFromConfig(WsCoreLogConfig)
+            )
+        },
+        {
             component: 'WS API',
-            subsystems: [
-                {
-                    name: 'Receive',
-                    checked: wsApiReceiveDebug,
-                    onChange: () => {
-                        wsApiCoreDebugSettings.receive = !wsApiReceiveDebug
-                        wsApiDebugSettings.receive = !wsApiReceiveDebug
-                        setWsApiReceiveDebug(prev => !prev)
-                    }
-                },
-                {
-                    name: 'Send',
-                    checked: wsApiSendDebug,
-                    onChange: () => {
-                        wsApiCoreDebugSettings.send = !wsApiSendDebug
-                        setWsApiSendDebug(prev => !prev)
-                    }
-                }
-            ],
-            onToggleAll: (value: boolean) => {
-                wsApiCoreDebugSettings.receive = value
-                wsApiCoreDebugSettings.send = value
-                wsApiDebugSettings.receive = value
-                setWsApiReceiveDebug(value)
-                setWsApiSendDebug(value)
-            }
+            ...buildMultiSubsystemRow(
+                'wsapi',
+                WsApiLogConfig,
+                wsApiLogConfig,
+                setWsApiLogConfig,
+                buildDescriptorsFromConfig(WsApiLogConfig)
+            )
         },
         {
             component: 'Game Menu',
-            subsystems: [
-                {
-                    name: 'Log',
-                    checked: gameMenuLogConfig,
-                    onChange: () => {
-                        gameMenuDebugSettings.log = !gameMenuDebugSettings.log
-                        setGameMenuLogConfig(prev => !prev)
-                    }
-                }
-            ],
-            onToggleAll: (value: boolean) => {
-                gameMenuDebugSettings.log = value
-                setGameMenuLogConfig(value)
-            }
+            ...buildMultiSubsystemRow(
+                'gamemenu',
+                GameMenuLogConfig,
+                gameMenuLogConfig,
+                setGameMenuLogConfig,
+                buildDescriptorsFromConfig(GameMenuLogConfig)
+            )
         },
         {
             component: 'GL utils',
             ...buildMultiSubsystemRow(
-                GL_UTILS_LOG_CONFIG,
+                'gl',
+                GlUtilsLogConfig,
                 glUtilsLogConfig,
                 setGlUtilsLogConfig,
-                buildDescriptorsFromConfig(GL_UTILS_LOG_CONFIG)
+                buildDescriptorsFromConfig(GlUtilsLogConfig)
             )
         },
         {
             component: 'Type Control',
             ...buildMultiSubsystemRow(
+                'typecontrol',
                 TypeControlLogConfig,
                 typeControlLogConfig,
                 setTypeControlLogConfig,
@@ -175,15 +163,17 @@ const DebugLogsTable = () => {
         {
             component: 'Sound effects',
             ...buildMultiSubsystemRow(
-                SOUND_EFFECTS_LOGGING,
+                'soundeffects',
+                SoundEffectsLogConfig,
                 soundEffectLogConfig,
                 setSoundEffectLogConfig,
-                buildDescriptorsFromConfig(SOUND_EFFECTS_LOGGING)
+                buildDescriptorsFromConfig(SoundEffectsLogConfig)
             )
         },
         {
             component: 'Hooks',
             ...buildMultiSubsystemRow(
+                'hooks',
                 HooksConfig,
                 hooksLogConfig,
                 setHooksLogConfig,
@@ -193,38 +183,22 @@ const DebugLogsTable = () => {
         {
             component: 'Render',
             ...buildMultiSubsystemRow(
+                'render',
                 RenderLogConfig,
                 renderLogConfig,
                 setRenderLogConfig,
                 buildDescriptorsFromConfig(RenderLogConfig)
-)
+            )
         },
         {
             component: 'Play',
-            subsystems: [
-                {
-                    name: 'Effects',
-                    checked: playConfigurationDebugEffects,
-                    onChange: () => {
-                        playConfigurationDebug.effects = !playConfigurationDebug.effects
-                        setPlayConfigurationDebugEffects(prev => !prev)
-                    }
-                },
-                {
-                    name: 'Events',
-                    checked: playConfigurationDebugEvents,
-                    onChange: () => {
-                        playConfigurationDebug.events = !playConfigurationDebug.events
-                        setPlayConfigurationDebugEvents(prev => !prev)
-                    }
-                }
-            ],
-            onToggleAll: (value: boolean) => {
-                playConfigurationDebug.effects = value
-                playConfigurationDebug.events = value
-                setPlayConfigurationDebugEffects(value)
-                setPlayConfigurationDebugEvents(value)
-            }
+            ...buildMultiSubsystemRow(
+                'play',
+                PlayLogConfig,
+                playLogConfig,
+                setPlayLogConfig,
+                buildDescriptorsFromConfig(PlayLogConfig)
+            ),
         }
     ]
 

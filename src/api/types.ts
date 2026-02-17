@@ -93,6 +93,8 @@ export type CropGrowth = 'JUST_PLANTED' | 'SMALL' | 'ALMOST_GROWN' | 'FULL_GROWN
 
 export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST_FULL' | 'FULL'
 
+export type SmokeType = 'SMOKE_TYPE_1' | 'SMOKE_TYPE_2' | 'SMOKE_TYPE_3' | 'SMOKE_TYPE_4'
+
 export type HouseResources = { [key in Material]?: HouseResourceItem }
 
 export type BuildingType = 'SMALL' | 'MEDIUM' | 'LARGE'
@@ -400,7 +402,7 @@ export type WorkerAction =
     | 'JUMP_SKIP_ROPE'
     | 'HAMMERING_HOUSE_HIGH_AND_LOW'
     | 'PLANTING_TREE'
-    | 'BAKING'
+    | 'OPEN_OVEN'
     | 'DIGGING_AND_STOMPING'
     | 'DRINKING_BEER'
     | 'INSPECTING_HOUSE_CONSTRUCTION'
@@ -413,6 +415,12 @@ export type WorkerAction =
     | 'STAND_ASIDE'
     | 'DIE'
     | 'GET_HIT'
+    | 'HAMMER_TO_MAKE_TOOL'
+    | 'SAWING_TO_MAKE_TOOL'
+    | 'WIPE_OFF_SWEAT_TO_MAKE_TOOL'
+    | 'SLAUGHTERING'
+    | 'DRAW_WATER_1'
+    | 'FEED_THE_PIGS'
 
 export type Action = 'FALLING_TREE' | 'HOUSE_BURNING' | WorkerAction
 
@@ -501,6 +509,8 @@ export type ShipInformation = Point & {
 const SOLDIER_TYPE_VALUES = ['PRIVATE_RANK', 'PRIVATE_FIRST_CLASS_RANK', 'SERGEANT_RANK', 'OFFICER_RANK', 'GENERAL_RANK']
 export type SoldierType = typeof SOLDIER_TYPE_VALUES[number]
 const SOLDIER_TYPES: SoldierType[] = [...SOLDIER_TYPE_VALUES]
+
+export type CheatCode = 'GIVE_ME_SOME_MORE' | 'SHOW_ME_THE_WORLD' | 'TOO_FAST'
 
 type HouseResourceItem = {
     has: number

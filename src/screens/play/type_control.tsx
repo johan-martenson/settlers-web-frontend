@@ -100,6 +100,9 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
     // State that doesn't trigger re-renders
     const nonTriggeringInput = useNonTriggeringState<{ input: string }>({ input: '' })
 
+    // Monitoring
+    //const selectedPointInformation = usePointInformation(selectedPoint)
+
     // Functions
     function runCommand(commandName: string) {
         if (TypeControlLogConfig.commands) {

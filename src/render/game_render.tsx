@@ -881,7 +881,11 @@ function GameCanvas({
                     })
                 }
             } else {
+
                 if ((house.type === 'Mill' && house.isWorking) ||
+                    (house.type === 'Mint' && house.isWorking && house.nation === 'ROMANS') ||
+                    (house.type === 'IronSmelter' && house.nation === 'ROMANS' && house.isWorking) ||
+                    (house.type === 'Armory' && house.nation === 'ROMANS' && house.isWorking) ||
                     (house.type === 'Harbor' && (house.nation === 'ROMANS' || house.nation === 'JAPANESE') && house.isWorking)) {
                     const houseDrawInformation = houses.getDrawingInformationForWorkingHouse(house.nation, house.type, renderState.animationIndex)
 
@@ -920,6 +924,18 @@ function GameCanvas({
                         gamePoint: house,
                     })
                 }
+
+                if (house.isWorking) {
+                    const smokeDrawInformation = fireAnimations.getSmokeFrameForHouse(house.nation, house.type, renderState.animationIndex)
+
+                    if (smokeDrawInformation) {
+                        toDrawNormal.push({
+                            source: smokeDrawInformation,
+                            gamePoint: house,
+                        })
+                    }
+                }
+
             }
         }
 

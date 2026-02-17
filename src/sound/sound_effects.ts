@@ -42,7 +42,7 @@ type SoundEffectInformation = {
 }
 
 // Configuration
-export const SOUND_EFFECTS_LOGGING = {
+export const SoundEffectsLogConfig = {
     lifecycle: false,
     loading: false,
     actions: false,
@@ -91,7 +91,7 @@ const ongoingEffects = new Map<string, OngoingEffect>()
 
 // Init
 SOUND_INSTANCES.forEach(sound => {
-    if (SOUND_EFFECTS_LOGGING.loading) {
+    if (SoundEffectsLogConfig.loading) {
         console.log('Sound effects (loading): loading sound')
     }
 
@@ -103,7 +103,7 @@ function play(soundName: SoundEffect, loop = false): Sound | undefined {
     const sound = SOUND_INSTANCES.get(soundName)
 
     if (sound) {
-        if (SOUND_EFFECTS_LOGGING.playback) {
+        if (SoundEffectsLogConfig.playback) {
             console.log(`Sound effects (playback): play "${soundName}", loop=${loop}`)
         }
 
@@ -114,7 +114,7 @@ function play(soundName: SoundEffect, loop = false): Sound | undefined {
 }
 
 function stopEffects(): void {
-    if (SOUND_EFFECTS_LOGGING.lifecycle) {
+    if (SoundEffectsLogConfig.lifecycle) {
         console.log('Sound effects (lifecycle): stopping all effects')
     }
 
@@ -124,14 +124,14 @@ function stopEffects(): void {
 
 function startEffects(viewToSet: View): void {
     if (soundEffectsState === 'RUNNING') {
-        if (SOUND_EFFECTS_LOGGING.lifecycle) {
+        if (SoundEffectsLogConfig.lifecycle) {
             console.log('Sound effects (lifecycle): already running')
         }
 
         return
     }
 
-    if (SOUND_EFFECTS_LOGGING.lifecycle) {
+    if (SoundEffectsLogConfig.lifecycle) {
         console.log('Sound effects (lifecycle): starting')
     }
 
@@ -143,7 +143,7 @@ function startEffects(viewToSet: View): void {
 
     api.addActionsListener({
         actionStarted: (id: string, point: Point, action: Action) => {
-            if (SOUND_EFFECTS_LOGGING.actions) {
+            if (SoundEffectsLogConfig.actions) {
                 console.log(`Sound effects (actions): started (${action})`, id)
             }
 
@@ -152,7 +152,7 @@ function startEffects(viewToSet: View): void {
 
         // eslint-disable-next-line
         actionEnded: id => {
-            if (SOUND_EFFECTS_LOGGING.actions) {
+            if (SoundEffectsLogConfig.actions) {
                 console.log('Sound effects (actions): ended', id)
             }
 
@@ -169,7 +169,7 @@ function startEffects(viewToSet: View): void {
 
     api.addBurningHousesListener({
         houseStartedToBurn: (id: HouseId, point: Point) => {
-            if (SOUND_EFFECTS_LOGGING.events) {
+            if (SoundEffectsLogConfig.events) {
                 console.log('Sound effects (events): house started burning', id)
             }
 
@@ -178,7 +178,7 @@ function startEffects(viewToSet: View): void {
 
         // eslint-disable-next-line
         houseStoppedBurning: id => {
-            if (SOUND_EFFECTS_LOGGING.events) {
+            if (SoundEffectsLogConfig.events) {
                 console.log('Sound effects (events): house stopped burning', id)
             }
 
@@ -189,7 +189,7 @@ function startEffects(viewToSet: View): void {
 
     // eslint-disable-next-line
     api.addMessagesListener(() => {
-        if (SOUND_EFFECTS_LOGGING.events) {
+        if (SoundEffectsLogConfig.events) {
             console.log('Sound effects (events): new message')
         }
 
@@ -228,7 +228,7 @@ function startEffects(viewToSet: View): void {
                 ongoingEffect.point.y < visibility.top &&
                 ongoingEffect.point.y > visibility.bottom
             ) {
-                if (SOUND_EFFECTS_LOGGING.playback) {
+                if (SoundEffectsLogConfig.playback) {
                     console.log(`Sound effects (playback): triggering "${soundEffect.audio}"`, id)
                 }
 
@@ -239,7 +239,7 @@ function startEffects(viewToSet: View): void {
 
             if (soundEffect && ongoingEffect.index === soundEffect.animationLength) {
                 if (soundEffect.type === 'ONCE') {
-                    if (SOUND_EFFECTS_LOGGING.playback) {
+                    if (SoundEffectsLogConfig.playback) {
                         console.log('Sound effects (playback): effect finished', id)
                     }
 
@@ -253,7 +253,7 @@ function startEffects(viewToSet: View): void {
 }
 
 function setSoundEffectsVolume(newVolume: number): void {
-    if (SOUND_EFFECTS_LOGGING.volume) {
+    if (SoundEffectsLogConfig.volume) {
         console.log(`Sound effects (volume): set to ${newVolume}`)
     }
 

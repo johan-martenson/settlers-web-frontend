@@ -50,7 +50,12 @@ function GameInit() {
                 setPlayer(api.players.get(playerId))
                 setState('PLAY_GAME')
             } else {
-                const selfPlayer = await api.createPlayer('', DEFAULT_PLAYER_COLOR, DEFAULT_PLAYER_NATION, 'HUMAN')
+                const selfPlayer = await api.createPlayer(
+                    localStorage.getItem('playerName') ?? '',
+                    DEFAULT_PLAYER_COLOR,
+                    localStorage.getItem('playerNation') ?? DEFAULT_PLAYER_NATION,
+                    'HUMAN'
+                )
 
                 console.log(selfPlayer)
 

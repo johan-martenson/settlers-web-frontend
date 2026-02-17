@@ -33,10 +33,11 @@ function isReplyMessage(message: unknown): message is ReplyMessage {
 }
 
 // Configuration
-export const wsApiCoreDebugSettings = {
+export const WsCoreLogConfig = {
     receive: false,
     send: false,
-    connectionHandling: true
+    connectionHandling: true,
+    ...(JSON.parse(localStorage.getItem('config.wscore.log') ?? '{}'))  // override log settings from local storage if it exists
 }
 
 // State
@@ -92,7 +93,7 @@ async function waitForConnection(): Promise<void> {
 
     while (Date.now() - startTime < MAX_WAIT_FOR_CONNECTION) {
         if (connectionStatus === 'CONNECTED') {
-            if (wsApiCoreDebugSettings.connectionHandling) {
+            if (WsCoreLogConfig.connectionHandling) {
                 console.log('WS core (connection): Connection is established')
                 console.log('WS core (connection): Connection status: CONNECTED')
             }
@@ -116,13 +117,13 @@ async function waitForConnection(): Promise<void> {
  * @returns {Promise<void>}
  */
 async function connectAndWaitForConnection(): Promise<void> {
-    if (wsApiCoreDebugSettings.connectionHandling) {
+    if (WsCoreLogConfig.connectionHandling) {
         console.log(`WS core (connection): Connect and wait until the connection is ready. Connection status: ${connectionStatus}, websocket ready state: ${websocket?.readyState}`)
     }
 
     // Re-use the existing connection if possible
     if (connectionStatus === 'CONNECTED') {
-        if (wsApiCoreDebugSettings.connectionHandling) {
+        if (WsCoreLogConfig.connectionHandling) {
             console.log('WS core (connection): Already connected')
         }
 
@@ -132,7 +133,7 @@ async function connectAndWaitForConnection(): Promise<void> {
     try {
         const websocketUrl = makeWsConnectUrl()
 
-        if (wsApiCoreDebugSettings.connectionHandling) {
+        if (WsCoreLogConfig.connectionHandling) {
             console.info(`WS core (connection): Websocket url: ${websocketUrl}`)
         }
 
@@ -140,7 +141,7 @@ async function connectAndWaitForConnection(): Promise<void> {
 
         connectionStatus = 'CONNECTING'
 
-        if (wsApiCoreDebugSettings.connectionHandling) {
+        if (WsCoreLogConfig.connectionHandling) {
             console.log('WS core (connection): Connection status: CONNECTING')
         }
 
@@ -152,13 +153,13 @@ async function connectAndWaitForConnection(): Promise<void> {
         websocket.onmessage = handleMessage
 
         // Wait for the connection to be established
-        if (wsApiCoreDebugSettings.connectionHandling) {
+        if (WsCoreLogConfig.connectionHandling) {
             console.log('WS core (connection): Waiting for connection')
         }
 
         await waitForConnection()
 
-        if (wsApiCoreDebugSettings.connectionHandling) {
+        if (WsCoreLogConfig.connectionHandling) {
             console.log(`WS core (connection): Connected. ${connectionStatus}`)
         }
     } catch (error) {
@@ -202,7 +203,7 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
 
     websocket?.send(JSON.stringify(message))
 
-    if (wsApiCoreDebugSettings.send) {
+    if (WsCoreLogConfig.send) {
         console.log(`WS core (send): Send request: ${JSON.stringify(message)} with id: ${requestId}`)
     }
 
@@ -216,7 +217,7 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
         if (reply) {
             pendingReplies.delete(requestId)
 
-            if (wsApiCoreDebugSettings.send) {
+            if (WsCoreLogConfig.send) {
                 console.log(`WS core (receive): Got reply: ${JSON.stringify(reply)} in ${Date.now() - startTime} ms`)
             }
 
@@ -249,7 +250,7 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
 
     websocket?.send(JSON.stringify({ command, requestId }))
 
-    if (wsApiCoreDebugSettings.send) {
+    if (WsCoreLogConfig.send) {
         console.log(`WS core (send): Send request: ${JSON.stringify(message)} with id: ${requestId}`)
     }
     
@@ -263,7 +264,7 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
         if (reply) {
             pendingReplies.delete(requestId)
 
-            if (wsApiCoreDebugSettings.send) {
+            if (WsCoreLogConfig.send) {
                 console.log(`WS core (receive): Got reply: ${JSON.stringify(reply)} in ${Date.now() - startTime} ms`)
             }
 
@@ -285,7 +286,7 @@ async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<R
 function send(command: string): void {
     const message = JSON.stringify({ command })
 
-    if (wsApiCoreDebugSettings.send) {
+    if (WsCoreLogConfig.send) {
         console.log(`WS core (send): SEND: ${message}`)
     }
 
@@ -300,7 +301,7 @@ function send(command: string): void {
 function sendWithOptions<Options>(command: string, options: Options): void {
     const message = JSON.stringify({ command, ...options })
 
-    if (wsApiCoreDebugSettings.send) {
+    if (WsCoreLogConfig.send) {
         console.log(`WS core (send): SEND: ${message}`)
     }
 
@@ -316,18 +317,18 @@ function handleMessage(messageFromServer: MessageEvent<any>): void {
     try {
         const message = JSON.parse(messageFromServer.data)
 
-        if (wsApiCoreDebugSettings.receive) {
+        if (WsCoreLogConfig.receive) {
             console.log(`WS core (receive): Received message: ${JSON.stringify(message)}`)
         }
 
         if (isReplyMessage(message)) {
-            if (wsApiCoreDebugSettings.receive) {
+            if (WsCoreLogConfig.receive) {
                 console.log('WS core (receive): Handling reply message')
             }
 
             pendingReplies.set(message.requestId, message)
         } else {
-            if (wsApiCoreDebugSettings.receive) {
+            if (WsCoreLogConfig.receive) {
                 console.log('WS core (receive): Notifying listeners')
             }
 
@@ -363,13 +364,13 @@ function makeRequestId(): number {
  * Handles the open event for the WebSocket connection, setting the connection status to 'CONNECTED'.
  */
 function handleOpen(): void {
-    if (wsApiCoreDebugSettings.connectionHandling) {
+    if (WsCoreLogConfig.connectionHandling) {
         console.info('WS core (connection): Websocket for subscription is open')
     }
 
     connectionStatus = 'CONNECTED'
 
-    if (wsApiCoreDebugSettings.connectionHandling) {
+    if (WsCoreLogConfig.connectionHandling) {
         console.log('WS core (connection): Connection status: CONNECTED')
     }
 
@@ -381,14 +382,14 @@ function handleOpen(): void {
  * @param {CloseEvent} event The close event object.
  */
 function handleClose(event: CloseEvent): void {
-    if (wsApiCoreDebugSettings.connectionHandling) {
+    if (WsCoreLogConfig.connectionHandling) {
         console.error(`WS core (connection): Websocket was closed: ${event}`)
         console.log(`WS core (connection): Code: ${event.code}, Reason: ${event.reason}, Clean: ${event.wasClean}`)
     }
 
     connectionStatus = 'NOT_CONNECTED'
 
-    if (wsApiCoreDebugSettings.connectionHandling) {
+    if (WsCoreLogConfig.connectionHandling) {
         console.log('WS core (connection): Notifying connection listeners')
         console.log('WS core (connection): Connection status: NOT_CONNECTED')
     }
@@ -403,20 +404,20 @@ function handleClose(event: CloseEvent): void {
  */
 async function attemptReconnect(): Promise<void> {
 
-    if (wsApiCoreDebugSettings.connectionHandling) {
+    if (WsCoreLogConfig.connectionHandling) {
         console.log('WS core (connection): Attempting to reconnect')
     }
 
     for (let i = 0; i < 100; i++) {
         try {
-            if (wsApiCoreDebugSettings.connectionHandling) {
+            if (WsCoreLogConfig.connectionHandling) {
                 console.log('WS core (connection): Attempting to reconnect')
             }
 
             await connectAndWaitForConnection()
 
             if (connectionStatus === 'CONNECTED') {
-                if (wsApiCoreDebugSettings.connectionHandling) {
+                if (WsCoreLogConfig.connectionHandling) {
                     console.log('WS core (connection): Succeeded to reconnect')
                 }
 
@@ -435,13 +436,13 @@ async function attemptReconnect(): Promise<void> {
  * @param {Event} event The error event object.
  */
 function handleError(event: Event): void {
-    if (wsApiCoreDebugSettings.connectionHandling) {
+    if (WsCoreLogConfig.connectionHandling) {
         console.error(`WS core (connection): Websocket encountered an error: ${event}`)
     }
 
     connectionStatus = 'NOT_CONNECTED'
 
-    if (wsApiCoreDebugSettings.connectionHandling) {
+    if (WsCoreLogConfig.connectionHandling) {
         console.log('WS core (connection): Connection status: NOT_CONNECTED')
     }
 

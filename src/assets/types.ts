@@ -1,4 +1,4 @@
-import { ShipConstructionProgress, PlayerColor, Material, WorkerAction, Nation, AnyBuilding, SignTypes, Size, FireSize, TreeType, TreeSize, Direction } from "../api/types"
+import { ShipConstructionProgress, PlayerColor, Material, WorkerAction, Nation, AnyBuilding, SignTypes, Size, FireSize, TreeType, TreeSize, Direction, SmokeType } from "../api/types"
 import { UiIconType } from "../icons/icon"
 
 export type Dimension = {
@@ -109,6 +109,7 @@ export type SignImageAtlas = {
 export type FireImageAtlas = {
     fires: Record<FireSize, Record<'image' | 'shadowImage', ImageSeries>>
     burntDown: Record<Size, OneImage>
+    smoke: Record<SmokeType, ImageSeries>
 }
 
 export type CargoImageAtlas = {

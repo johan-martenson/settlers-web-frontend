@@ -11,9 +11,9 @@
 
 #set-player-name-dialog {
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-end;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
     gap: 2px;
     width: 15em;
 }
@@ -26,8 +26,8 @@
 
 #label-and-input {
     display: flex;
-    flex-direction: column;
-    align-items: start;
+    flex-direction: row;
+    align-items: center;
 }
 
 #house-icon {

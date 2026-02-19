@@ -15,10 +15,25 @@ const DEFAULT_USER_NAME = localStorage.getItem('mostRecentPlayer') ?? ''
 const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInformationProps) => {
     const [userName, setUserName] = useState<string>(DEFAULT_USER_NAME)
 
+    // Render
+    const previousUserName = localStorage.getItem('mostRecentPlayer')
     return (
         <>
             <Center>
                 <div id='set-player-name-dialog'>
+
+                    {previousUserName &&
+                        <>
+                            <div>
+                                <Button
+                                    appearance='primary'
+                                    onClick={() => {
+                                        setUserName(previousUserName)
+                                        onPlayerInformationDone(previousUserName)
+                                    }}>Enter as {previousUserName}</Button>
+                            </div>
+                            <div>or</div>
+                        </>}
 
                     <div id='label-and-input'>
                         <Label>Name</Label>
@@ -37,19 +52,18 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
                                     }
                                 }
                             }}
-                            defaultValue={DEFAULT_USER_NAME}
                             autoFocus
                         />
-                    </div>
 
-                    <Button
-                        onClick={() => {
-                            localStorage.setItem('mostRecentPlayer', userName)
-                            onPlayerInformationDone(userName)
-                        }}
-                        disabled={!userName || userName === ''}
-                        appearance='primary'
-                    >Go</Button>
+                        <Button
+                            onClick={() => {
+                                localStorage.setItem('mostRecentPlayer', userName)
+                                onPlayerInformationDone(userName)
+                            }}
+                            disabled={!userName || userName === ''}
+                            appearance='primary'
+                        >Go</Button>
+                    </div>
                 </div>
             </Center>
         </>

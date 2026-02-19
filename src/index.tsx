@@ -36,6 +36,9 @@ function GameInit() {
     useEffect(() => {
         (async () => {
             const urlParams = new URLSearchParams(window.location.search)
+            console.log(window.location)
+            console.log(window.location.search)
+            console.log('URL params:' + urlParams.toString())
             const gameId = urlParams.get('gameId')
             const playerId = urlParams.get('playerId')
 
@@ -43,12 +46,20 @@ function GameInit() {
 
             setState('ENTER_PLAYER_INFORMATION')
 
-            if (gameId !== null && playerId !== null) {
+            if (window.location.pathname === '/play' && gameId !== null && playerId !== null) {
                 await api.followGame(gameId, playerId)
 
                 setGameId(gameId)
                 setPlayer(api.players.get(playerId))
                 setState('PLAY_GAME')
+            } else if (window.location.pathname === '/create' && gameId !== null && playerId !== null) {
+                await api.followGame(gameId, playerId)
+
+                console.log(`Going to create game with gameId ${gameId} and playerId ${playerId}`)
+
+                setGameId(gameId)
+                setPlayer(api.players.get(playerId))
+                setState('CREATE_GAME')
             } else {
                 const selfPlayer = await api.createPlayer(
                     localStorage.getItem('playerName') ?? '',
@@ -79,6 +90,7 @@ function GameInit() {
 
         setGameId(game.id)
         setState('CREATE_GAME')
+        history.pushState(null, 'Settlers 2', `/create?gameId=${game.id}&playerId=${player.id}`)
     }
 
     async function onJoinExistingGame(gameId: GameId): Promise<void> {
@@ -113,7 +125,7 @@ function GameInit() {
     }
 
     function onGameStarted(gameId: GameId, selfPlayerId: PlayerId): void {
-        history.pushState(null, 'Settlers 2', `/?gameId=${gameId}&playerId=${selfPlayerId}`)
+        history.pushState(null, 'Settlers 2', `/play?gameId=${gameId}&playerId=${selfPlayerId}`)
         setState('PLAY_GAME')
     }
 
@@ -158,6 +170,7 @@ function GameInit() {
                     onGameCreateCanceled={() => {
                         setState('LOBBY')
                         setGameId(undefined)
+                        history.pushState(null, 'Settlers 2', `/`)
                     }}
                     selfPlayerId={player.id}
                     onGameStarted={onGameStarted}

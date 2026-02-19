@@ -11,6 +11,7 @@ import {
 import './game_list.css'
 import { GameId, GameInformation } from '../../api/types'
 import { useGames } from '../../utils/hooks/hooks'
+import { api } from '../../api/ws-api'
 
 // Types
 type GameListProps = {
@@ -75,15 +76,21 @@ const GameList = ({ onJoinGame }: GameListProps) => {
                                                         Join
                                                     </MenuItem>
                                                 }
-                                                {game.players
+                                                {(game.status === 'STARTED' || game.status === 'EXPIRED') && game.players
                                                     .filter(player => player.type === 'HUMAN')
                                                     .map(player =>
                                                         <MenuItem
                                                             key={player.id}
-                                                            onClick={() => window.location.href = '?gameId=' + game.id + '&playerId=' + player.id}
+                                                            onClick={() => window.location.href = '/play?gameId=' + game.id + '&playerId=' + player.id}
                                                         >
                                                             Play as {player.name}
                                                         </MenuItem>)}
+                                                <MenuItem onClick={() => {
+                                                    console.log('Clicked delete ' + game.id)
+                                                    api.deleteGame(game.id)
+                                                }}>
+                                                    Delete
+                                                </MenuItem>
                                             </MenuList>
                                         </MenuPopover>
                                     </Menu>

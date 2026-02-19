@@ -42,7 +42,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
     return (
         <div className='chat-box'>
-            <ItemContainer>
+            <ItemContainer style={{ justifyContent: 'flex-start', alignItems: 'flex-start' }}>
                 {chatLog
                     .map(chatMessage => (
                         <div key={chatMessage.id} className='chat-entry'>
@@ -55,7 +55,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                     ref={inputRef}
                     onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setMessageText(data.value)}
                     onKeyDown={(event: React.KeyboardEvent) => {
-                        if (!event.metaKey && !event.altKey && !event.ctrlKey && !event.shiftKey) {
+                        if (!event.metaKey && !event.altKey && !event.ctrlKey) {
                             if (event.key === 'Enter') {
                                 sendMessage()
                             }

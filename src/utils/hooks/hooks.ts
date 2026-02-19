@@ -262,7 +262,7 @@ function useChatMessages(playerId: PlayerId, roomIds: RoomId[]): ChatMessage[] {
                 console.log('Hooks (useChatMessages): Update received')
             }
 
-            setMessages(api.chatRoomMessages)
+            setMessages(Array.from(api.chatRoomMessages))
         }
 
         api.addChatMessagesListener(listener, playerId, roomIds)

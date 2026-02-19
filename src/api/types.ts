@@ -298,6 +298,7 @@ export type GameInformation = {
     initialResources: ResourceLevel
     gameSpeed?: GameSpeed
     tick?: number // milliseconds
+    cheatingEnabled: boolean
 }
 
 export type MapInformation = {

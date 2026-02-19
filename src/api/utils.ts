@@ -1,5 +1,5 @@
-import { Direction, HouseInformation, PlayerId, Point, SimpleDirection } from "./types"
-import { api } from "./ws-api"
+import { Direction, HouseInformation, PlayerId, Point, SimpleDirection } from './types'
+import { api } from './ws-api'
 
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
     let compassDirection: Direction = 'NORTH_WEST'
@@ -20,7 +20,7 @@ function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Di
 }
 
 function isMilitaryBuilding(house: HouseInformation): boolean {
-    return house.type === "Headquarter" || house.type === "Fortress" || house.type === "WatchTower" || house.type === "GuardHouse" || house.type === "Barracks"
+    return house.type === 'Headquarter' || house.type === 'Fortress' || house.type === 'WatchTower' || house.type === 'GuardHouse' || house.type === 'Barracks'
 }
 
 function canBeEvacuated(house: HouseInformation): boolean {
@@ -28,15 +28,15 @@ function canBeEvacuated(house: HouseInformation): boolean {
 }
 
 function canBeUpgraded(house: HouseInformation): boolean {
-    return isMilitaryBuilding(house) && house.type !== "Fortress" && house.type !== "Headquarter"
+    return isMilitaryBuilding(house) && house.type !== 'Fortress' && house.type !== 'Headquarter'
 }
 
 function houseIsReady(house: HouseInformation): boolean {
-    return (house.state === "UNOCCUPIED" || house.state === "OCCUPIED")
+    return (house.state === 'UNOCCUPIED' || house.state === 'OCCUPIED')
 }
 
 function houseIsOccupied(house: HouseInformation): boolean {
-    return house.state === "OCCUPIED"
+    return house.state === 'OCCUPIED'
 }
 
 function isEvacuated(house: HouseInformation): boolean {
@@ -51,17 +51,17 @@ function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefin
 async function removeHouseOrFlagOrRoadAtPoint(point: Point): Promise<void> {
     const pointInformation = api.getInformationOnPointLocal(point)
 
-    console.log({ title: "Remove house/flag/road via websocket", localPointInformation: pointInformation })
+    console.log({ title: 'Remove house/flag/road via websocket', localPointInformation: pointInformation })
 
-    if (pointInformation.is === "building") {
+    if (pointInformation.is === 'BUILDING') {
         api.removeBuilding(pointInformation.buildingId)
     }
 
-    if (pointInformation.is === 'flag') {
+    if (pointInformation.is === 'FLAG') {
         api.removeFlag(pointInformation.flagId)
     }
 
-    if (pointInformation.is === 'road') {
+    if (pointInformation.is === 'ROAD') {
         api.removeRoad(pointInformation.roadId)
     }
 }

@@ -9,11 +9,12 @@ import {
     MapInformation,
     PlayerId,
     PlayerInformation,
+    Point,
     RoomId,
     TRANSPORT_CATEGORIES,
     TransportCategory
 } from '../../api/types'
-import { api } from '../../api/ws-api'
+import { api, GameListener, PointInformationLocal } from '../../api/ws-api'
 import { StatisticsReply } from '../../api/ws/commands'
 import { HooksConfig } from './config'
 
@@ -202,28 +203,6 @@ function usePlayer(playerId: PlayerId): PlayerInformation {
     return player
 }
 
-function useMaps(): MapInformation[] {
-    const [maps, setMaps] = useState<MapInformation[]>(() => {
-        if (HooksConfig.useMaps) {
-            console.log('Hooks (useMaps): Initial state')
-        }
-
-        return []
-    })
-
-    useEffect(() => {
-        api.getMaps().then(maps => {
-            if (HooksConfig.useMaps) {
-                console.log('Hooks (useMaps): Update received', maps)
-            }
-
-            setMaps(maps)
-        })
-    }, [])
-
-    return maps
-}
-
 function useHouse(houseId: HouseId): HouseInformation {
     const [house, setHouse] = useState<HouseInformation | undefined>(() => {
         const value = api.houses.get(houseId)
@@ -350,6 +329,84 @@ function useGameMessages(): GameMessage[] {
     return messages
 }
 
+function usePointInformation(point: Point): PointInformationLocal {
+    const [pointInformation, setPointInformation] = useState<PointInformationLocal>(() => {
+        const value = api.getInformationOnPointLocal(point)
+
+        if (HooksConfig.usePointInformation) {
+            console.log('Hooks (usePointInformation): Initial state', point, value)
+        }
+
+        return value
+    })
+
+    useEffect(() => {
+        const listener = (pointInformation: PointInformationLocal) => {
+            if (HooksConfig.usePointInformation) {
+                console.log('Hooks (usePointInformation): Update received', point, pointInformation)
+            }
+
+            setPointInformation(pointInformation)
+        }
+
+        api.addPointInformationListener(point, listener)
+
+        if (HooksConfig.usePointInformation) {
+            console.log('Hooks (usePointInformation): Listener registered', point)
+        }
+
+        return () => {
+            api.removePointInformationListener(point, listener)
+
+            if (HooksConfig.usePointInformation) {
+                console.log('Hooks (usePointInformation): Listener removed', point)
+            }
+        }
+    }, [`${point.x},${point.y}`])
+
+    return pointInformation
+}
+
+
+function useGame(gameInformation: GameInformation): GameInformation {
+    const [game, setGame] = useState<GameInformation>(() => {
+        if (HooksConfig.useGameInformation) {
+            console.log('Hooks (useGame): Initial state', gameInformation)
+        }
+
+        return gameInformation
+    })
+
+    useEffect(() => {
+        const listener: GameListener = {
+            onGameInformationChanged:
+                (updatedGameInformation: GameInformation) => {
+                    if (HooksConfig.useGameInformation) {
+                        console.log('Hooks (useGame): Update received', updatedGameInformation)
+                    }
+
+                    setGame(updatedGameInformation)
+                }
+        }
+
+        api.addGameStateListener(listener)
+
+        if (HooksConfig.useGameInformation) {
+            console.log('Hooks (useGame): Listener registered')
+        }
+
+        return () => {
+            api.removeGameStateListener(listener)
+
+            if (HooksConfig.useGameInformation) {
+                console.log('Hooks (useGame): Listener removed')
+            }
+        }
+    }, [])
+
+    return game
+}
+
 function useGames(): GameInformation[] {
     const [games, setGames] = useState<GameInformation[]>(() => {
         if (HooksConfig.useGames) {
@@ -388,6 +445,47 @@ function useGames(): GameInformation[] {
     return games
 }
 
+/**
+ * This hook provides the list of maps available in the game.
+ * 
+ * Maps are not added dynamically, so no listener is registered for updates.
+ * However, the hook is still useful for logging the initial fetch of maps and providing a consistent API for accessing maps.
+ * @returns {MapInformation[]} The list of maps available in the game. 
+ */
+function useMaps(): MapInformation[] {
+    const [maps, setMaps] = useState<MapInformation[]>(() => {
+        if (HooksConfig.useMaps) {
+            console.log('Hooks (useMaps): Initial state')
+        }
+
+        return []
+    })
+
+    useEffect(() => {
+        let cancelled = false
+
+        async function fetchMaps() {
+            const maps = await api.getMaps()
+
+            if (!cancelled) {
+                if (HooksConfig.useMaps) {
+                    console.log('Hooks (useMaps): Maps fetched', maps)
+                }
+
+                setMaps(maps)
+            }
+        }
+
+        fetchMaps()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    return maps
+}
+
 export {
     useHouse,
     useChatMessages,
@@ -397,5 +495,7 @@ export {
     usePlayer,
     useTransportPriority,
     useStatistics,
-    useTime
+    useTime,
+    useGame,
+    usePointInformation
 }

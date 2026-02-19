@@ -1,6 +1,6 @@
-import { Nation, PlayerColor, FlagType, Direction, Material, WorkerAction, WorkerType, TreeType, FireSize, WildAnimalType, AnyBuilding } from "../api/types"
-import { WorkerImageAtlasHandler, AnimalImageAtlasHandler, fireImageAtlasHandler, treeImageAtlasHandler, flagImageAtlasHandler } from "./image_atlas_handlers"
-import { Dimension, DrawingInformation } from "./types"
+import { Nation, PlayerColor, FlagType, Direction, Material, WorkerAction, WorkerType, TreeType, FireSize, WildAnimalType, AnyBuilding } from '../api/types'
+import { WorkerImageAtlasHandler, AnimalImageAtlasHandler, fireImageAtlasHandler, treeImageAtlasHandler, flagImageAtlasHandler } from './image_atlas_handlers'
+import { Dimension, DrawingInformation } from './types'
 
 // Animation handlers
 class TreeAnimation {

@@ -127,6 +127,7 @@ enum Command {
     SetOthersCanJoin = 'SET_OTHERS_CAN_JOIN',
     SetInitialResources = 'SET_INITIAL_RESOURCES',
     SetGameName = 'SET_GAME_NAME',
+    SetCheatingOnOff = 'SET_CHEATING_ON_OFF',
     SetGameSpeed = 'SET_GAME_SPEED',
     AddPlayerToGame = 'ADD_PLAYER_TO_GAME',
     GetGameInformation = 'GET_GAME_INFORMATION',
@@ -224,6 +225,7 @@ enum Command {
     // Misc
     SetSelfPlayer = 'SET_SELF_PLAYER',
     SetGame = 'SET_GAME',
+    ClearGame = 'CLEAR_GAME',
     FullSync = 'FULL_SYNC',
 }
 
@@ -246,6 +248,7 @@ type SetMap = { mapId: MapId }
 type SetOthersCanJoin = { othersCanJoin: boolean }
 type SetInitialResources = { resources: ResourceLevel }
 type SetGameName = { name: string }
+type SetCheatingOnOff = { cheatingEnabled: boolean }
 type SetGameSpeed = { speed: GameSpeed }
 type SetMilitaryPopulationFarFromBorder = { population: number }
 type SetMilitaryPopulationCloserToBorder = { population: number }
@@ -539,6 +542,14 @@ function setTitle(name: string): void {
 }
 
 /**
+ * Turns the possibility to cheat on/off in the game.
+ * @param {boolean} cheatingEnabled - Whether cheating should be enabled or not.
+ */
+function setCheating(cheatingEnabled: boolean): void {
+    sendWithOptions<SetCheatingOnOff>(Command.SetCheatingOnOff, { cheatingEnabled })
+}
+
+/**
  * Sets the speed of the game.
  * @param {GameSpeed} speed - The speed setting for the game.
  */
@@ -718,6 +729,13 @@ async function setGame(gameId: GameId): Promise<GameInformation> {
     return (
         await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, SetGame>(Command.SetGame, { gameId })
     ).gameInformation
+}
+
+/**
+ * Clears the game id from the backend, effectively disconnecting the monitor from any game. Internal function that is not exposed outside of the module.
+ */
+function clearGame(): void {
+    send(Command.ClearGame)
 }
 
 /**
@@ -1166,5 +1184,7 @@ export {
     getToolPriorities,
     setToolPriority,
     getMap,
-    cheat
+    cheat,
+    setCheating,
+    clearGame
 }

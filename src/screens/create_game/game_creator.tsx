@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Input, Button, Field, InputOnChangeData } from '@fluentui/react-components'
 import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
 import ManagePlayers from './manage_players'
-import { GameId, PlayerId, GameInformation } from '../../api/types'
+import { GameId, PlayerId, GameInformation, NATIONS } from '../../api/types'
 import { GameListener, api } from '../../api/ws-api'
 import { ChatBox } from '../../components/chat/chat'
 import { Center } from '../../components/center'
-import { Command, TypeControl } from '../play/type_control'
+import { dispatchInputKey, GenericCommand, GenericTypeControl } from '../play/type_control'
 import { UiIcon } from '../../icons/icon'
+import { useMaps } from '../../utils/hooks/hooks'
+import { addComputerPlayer } from './utils'
 
 // Types
 type GameCreatorProps = {
@@ -21,9 +23,17 @@ type GameCreatorProps = {
 
 // React component
 const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: GameCreatorProps) => {
+
+    // References
+    const selfContainerRef = useRef<HTMLDivElement | null>(null)
+
+    // State
     const [state, setState] = useState<'GET_NAME_FOR_GAME' | 'CREATE_GAME'>('GET_NAME_FOR_GAME')
     const [candidateTitle, setCandidateTitle] = useState<string>()
     const [gameInformation, setGameInformation] = useState<GameInformation>()
+
+    // Monitoring hooks
+    const maps = useMaps()
 
     // Callbacks
     const onStartGameClicked = () => {
@@ -35,12 +45,120 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
         }
     }
 
-    const commands = new Map<string, Command>()
+    const onKeyDown = useCallback((event: React.KeyboardEvent) => {
+        if (event.key === 'Escape') {
+            dispatchInputKey({
+                key: event.key,
+                metaKey: event.metaKey,
+                altKey: event.altKey,
+                ctrlKey: event.ctrlKey,
+                shiftKey: event.shiftKey
+            })
+        } else {
+            dispatchInputKey({
+                key: event.key,
+                metaKey: event.metaKey,
+                altKey: event.altKey,
+                ctrlKey: event.ctrlKey,
+                shiftKey: event.shiftKey
+            })
+        }
+    }, [dispatchInputKey])
+
+    const commands = new Map<string, GenericCommand<GameInformation>>()
     commands.set('Start game', {
         action: onStartGameClicked,
         hidden: state !== 'CREATE_GAME',
         icon: <UiIcon type='PLAY' />
     })
+    commands.set('Leave game', {
+        action: () => {
+            api.removePlayer(selfPlayerId)
+            onGameCreateCanceled()
+        },
+        hidden: state !== 'CREATE_GAME'
+    })
+    commands.set('Discard game', {
+        action: () => {
+            if (api.gameId !== undefined) {
+                console.log('Deleting game with id ' + api.gameId)
+
+                api.deleteGame(api.gameId)
+                api.stopFollowingGame()
+            } else {
+                console.error('Game id is not set')
+            }
+
+            onGameCreateCanceled()
+        },
+        hidden: state !== 'CREATE_GAME',
+        icon: <UiIcon type='TRASHCAN' />
+    })
+    commands.set('Cheating on/off', {
+        action: (gameInformation: GameInformation) => {
+            api.setCheating(!gameInformation.cheatingEnabled)
+        },
+        hidden: state !== 'CREATE_GAME'
+    })
+    NATIONS.forEach(nation => {
+        commands.set(`Play as ${nation.toLocaleLowerCase()}`, {
+            action: (gameInformation: GameInformation) => {
+                const selfPlayer = gameInformation.players.find(player => player.id === selfPlayerId)
+
+                if (selfPlayer) {
+                    api.updatePlayer(selfPlayerId, selfPlayer.name, selfPlayer.color, nation)
+                }
+            }
+        })
+    })
+    maps.forEach(map => {
+        commands.set('Map: ' + map.name, {
+            action: (gameInformation: GameInformation) => {
+                if (!gameInformation.map || gameInformation.map.id !== map.id) {
+                    api.setMap(map.id)
+                }
+            }
+        })
+    })
+    commands.set('Low resources', {
+        action: (gameInformation: GameInformation) => {
+            api.setInitialResources('LOW')
+        }
+    })
+    commands.set('Medium resources', {
+        action: (gameInformation: GameInformation) => {
+            api.setInitialResources('MEDIUM')
+        }
+    })
+    commands.set('High resources', {
+        action: (gameInformation: GameInformation) => {
+            api.setInitialResources('HIGH')
+        }
+    })
+    commands.set('Others can join', {
+        action: (gameInformation: GameInformation) => {
+            api.setOthersCanJoin(!gameInformation.othersCanJoin)
+        }
+    })
+    commands.set('Add computer player', {
+        action: (gameInformation: GameInformation) => {
+            addComputerPlayer(gameInformation.players, gameInformation.map?.maxPlayers ?? 3)
+        }
+    })
+    gameInformation?.players
+    .filter(player => player.id !== selfPlayerId)
+    .forEach(player => {
+        commands.set('Kick ' + player.name, {
+            action: (gameInformation: GameInformation) => {
+                api.removePlayer(player.id)
+            }
+        })
+    })
+
+    useEffect(() => {
+        selfContainerRef?.current?.focus()
+    }, [selfContainerRef])
+
 
     // Depends on the parent component:
     //  - Creating the game
@@ -64,6 +182,8 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
                     onGameStarted(api.gameId, api.playerId)
                 }
+
+                console.log('Game information changed', changedGameInformation)
 
                 setGameInformation(changedGameInformation)
             }
@@ -95,6 +215,8 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
         return () => api.removeGameStateListener(listener)
     }, [])
+
+    console.log('Rendering based on game information', gameInformation)
 
     return (
         <>
@@ -152,7 +274,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
             }
 
             {state === 'CREATE_GAME' && gameInformation?.id && selfPlayerId &&
-                <div id='game-creation-screen'>
+                <div id='game-creation-screen' onKeyDown={onKeyDown} ref={selfContainerRef} tabIndex={0}>
 
                     <div id='title'>Create game: {gameInformation?.name ?? ''}</div>
 
@@ -161,8 +283,10 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         <GameOptions
                             initialResources={gameInformation?.initialResources ?? 'MEDIUM'}
                             othersCanJoin={gameInformation?.othersCanJoin ?? true}
+                            cheatingEnabled={gameInformation?.cheatingEnabled ?? false}
                             setAvailableResources={resources => api.setInitialResources(resources)}
                             setOthersCanJoin={othersCanJoin => api.setOthersCanJoin(othersCanJoin)}
+                            onSetCheatingEnabled={cheatingEnabled => api.setCheating(cheatingEnabled)}
                         />
                     </div>
 
@@ -177,9 +301,6 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                     <div id='map-title'><h2>Select map</h2></div>
                     <div id='map'>
                         <MapSelection onMapSelected={map => {
-                            console.log(map)
-                            console.log(gameInformation)
-
                             if (!gameInformation?.map || gameInformation.map.id !== map.id) {
                                 api.setMap(map.id)
                             }
@@ -211,10 +332,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                             Launch game
                         </Button>
                     </div>
-                    <div id='typing-control'><TypeControl commands={commands} selectedPoint={{
-                        x: 0,
-                        y: 0
-                    }} /></div>
+                    <div id='typing-control'><GenericTypeControl<GameInformation> commands={commands} param={gameInformation} /></div>
 
                 </div>
             }

@@ -1,11 +1,12 @@
-import { AnyBuilding, Material, Merchandise, Nation, PlayerColor, SoldierType, TransportCategory } from "./api/types"
+import React from 'react'
+import { AnyBuilding, Material, Merchandise, Nation, PlayerColor, SoldierType, TransportCategory } from './api/types'
 
 // Types
 
 // Constants
 const MATERIAL_FIRST_UPPERCASE = new Map<Material, string>()
 
-MATERIAL_FIRST_UPPERCASE.set("FLOUR", 'Flour')
+MATERIAL_FIRST_UPPERCASE.set('FLOUR', 'Flour')
 MATERIAL_FIRST_UPPERCASE.set('PIG', 'Pig')
 MATERIAL_FIRST_UPPERCASE.set('GOLD', 'Gold')
 MATERIAL_FIRST_UPPERCASE.set('IRON', 'Iron')
@@ -275,6 +276,54 @@ function playerToColor(playerColor: PlayerColor): string {
     return PLAYER_COLORS[playerColor]
 }
 
+function prettyPrintFuzzyMatch(
+    command: string,
+    matchIndexes: number[]
+): React.ReactNode {
+    const indexSet = new Set(matchIndexes)
+
+    const parts: React.ReactNode[] = []
+    let buffer = ''
+    let highlighted = false
+
+    for (let i = 0; i < command.length; i++) {
+        const shouldHighlight = indexSet.has(i)
+
+        // If highlight state changes, flush buffer
+        if (shouldHighlight !== highlighted && buffer.length > 0) {
+            parts.push(
+                highlighted ? (
+                    <span key={parts.length} className='match'>
+                        {buffer}
+                    </span>
+                ) : (
+                    <span key={parts.length}>{buffer}</span>
+                )
+            )
+
+            buffer = ''
+        }
+
+        highlighted = shouldHighlight
+        buffer += command[i]
+    }
+
+    // Flush remaining buffer
+    if (buffer.length > 0) {
+        parts.push(
+            highlighted ? (
+                <span key={parts.length} className='match'>
+                    {buffer}
+                </span>
+            ) : (
+                <span key={parts.length}>{buffer}</span>
+            )
+        )
+    }
+
+    return <>{parts}</>
+}
+
 export {
     MATERIAL_FIRST_UPPERCASE,
     MATERIAL_LABELS,
@@ -286,5 +335,6 @@ export {
     transportCategoryPretty,
     materialPretty,
     merchandisePretty,
-    playerToColor
+    playerToColor,
+    prettyPrintFuzzyMatch
 }

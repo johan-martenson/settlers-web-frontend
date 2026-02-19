@@ -404,14 +404,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
                 filter: (pointInformation: PointInformation) => (pointInformation.is === 'BUILDING' &&
                     api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter') ||
-                    (pointInformation.is === 'FLAG' && api.flags.get(pointInformation?.flagId)?.playerId === selfPlayerId) ||
-                    (pointInformation.is === 'ROAD' && api.roads.get(pointInformation?.roadId!)?.playerId === selfPlayerId),
+                    (pointInformation.is === 'FLAG' && api.flags.get(pointInformation.flagId)?.playerId === selfPlayerId) ||
+                    (pointInformation.is === 'ROAD' && api.roads.get(pointInformation.roadId)?.playerId === selfPlayerId),
             })
-            commands.set('Statistics', {
-                action: () => {
-                    openSingletonWindow({ type: 'STATISTICS' })
-                }
-            })
+            commands.set('Statistics', { action: () => openSingletonWindow({ type: 'STATISTICS' }) })
             commands.set('Titles', {
                 action: () => setShowTitles(!showTitles),
                 icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
@@ -439,9 +435,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' }),
                 icon: <UiIcon type='TRANSPORT_PRIORITY' scale={0.5} />
             })
-            commands.set('List statistics', {
-                action: () => printVariables()
-            })
+            commands.set('List statistics', { action: () => printVariables() })
             commands.set('Upgrade', {
                 action: (point: Point) => {
                     const houseInformation = api.getHouseAtPointLocal(point)
@@ -471,9 +465,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 action: () => setShowMenu(true),
                 icon: <CalendarAgenda24Regular />
             })
-            commands.set('Quotas', {
-                action: () => openSingletonWindow({ type: 'QUOTA' })
-            })
+            commands.set('Quotas', { action: () => openSingletonWindow({ type: 'QUOTA' }) })
             commands.set('Pause game', {
                 action: () => api.pauseGame(gameId),
                 icon: <PauseFilled />

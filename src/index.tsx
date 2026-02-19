@@ -117,6 +117,7 @@ function GameInit() {
         setState('PLAY_GAME')
     }
 
+    // Rendering
     return (
         <div style={{
             backgroundImage: "url('assets/backgrounds/ship.png')",

@@ -1,4 +1,4 @@
-import { Direction, HouseInformation, PlayerId, Point, SimpleDirection } from './types'
+import { Direction, GameInformation, HouseInformation, PlayerId, Point, SimpleDirection } from './types'
 import { api } from './ws-api'
 
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
@@ -66,6 +66,29 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point): Promise<void> {
     }
 }
 
+function createGameInformationFromApi(): GameInformation | undefined {
+    if (
+        !api.gameId ||
+        !api.map ||
+        api.othersCanJoin === undefined ||
+        !api.initialResources
+    ) {
+        return undefined
+    }
+
+    return {
+        id: api.gameId,
+        name: api.gameName,
+        players: Array.from(api.players.values()),
+        status: api.gameState,
+        map: api.map,
+        othersCanJoin: api.othersCanJoin,
+        initialResources: api.initialResources,
+        gameSpeed: api.gameSpeed,
+        cheatingEnabled: api.cheatingEnabled ?? false
+    }
+}
+
 export {
     simpleDirectionToCompassDirection,
     houseIsOccupied,
@@ -75,5 +98,6 @@ export {
     isMilitaryBuilding,
     isEvacuated,
     getHeadquarterForPlayer,
-    removeHouseOrFlagOrRoadAtPoint
+    removeHouseOrFlagOrRoadAtPoint,
+    createGameInformationFromApi
 }

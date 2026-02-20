@@ -22,7 +22,7 @@ type PlayerButtonProps = {
 }
 
 // Functions
-function createPlayerIcon(name: string, color: PlayerColor, selected: boolean = false): JSX.Element {
+function createPlayerIcon(name: string, color: PlayerColor, selected: boolean = false, onClick?: () => void): JSX.Element {
     return (
         <div
             key={name}
@@ -30,6 +30,7 @@ function createPlayerIcon(name: string, color: PlayerColor, selected: boolean = 
             style={{
                 borderBottomColor: selected ? playerToColor(color) : undefined
             }}
+            onClick={onClick}
         >
             <span
                 className='colored-square'

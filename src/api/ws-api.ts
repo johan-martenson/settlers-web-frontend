@@ -501,6 +501,7 @@ const api = {
     playerId: undefined as PlayerId | undefined,
     othersCanJoin: undefined as boolean | undefined,
     initialResources: undefined as ResourceLevel | undefined,
+    cheatingEnabled: undefined as boolean | undefined,
     map: undefined as MapInformation | undefined,
     workers: new Map<WorkerId, WorkerInformation>(),
     ships: new Map<ShipId, ShipInformation>(),
@@ -1687,6 +1688,8 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     api.time = playerViewChanges.time
 
+    api.cheatingEnabled = playerViewChanges.cheatingEnabled
+
     // Confirm local removals if they are part of the message
     playerViewChanges.removedFlags?.forEach(removedFlagId => api.localRemovedFlags.delete(removedFlagId))
 
@@ -2328,6 +2331,9 @@ function assignGameInformation(gameInformation: GameInformation): void {
     api.gameState = gameInformation.status
     api.map = gameInformation.map
     api.othersCanJoin = gameInformation.othersCanJoin
+    api.cheatingEnabled = gameInformation.cheatingEnabled
+    api.initialResources = gameInformation.initialResources
+
 
     if (gameInformation?.gameSpeed) {
         api.gameSpeed = gameInformation.gameSpeed

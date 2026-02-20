@@ -16,7 +16,7 @@ import { WsApiLogConfig } from '../../api/ws-api'
 import { WsCoreLogConfig } from '../../api/ws/core'
 import { GlUtilsLogConfig } from '../../render/utils'
 import { GameMenuLogConfig } from '../../screens/play/game_menu'
-import { playConfigurationDebug, PlayLogConfig } from '../../screens/play/play'
+import { PlayLogConfig } from '../../screens/play/play'
 import { HooksConfig } from '../../utils/hooks/config'
 import { SoundEffectsLogConfig } from '../../sound/sound_effects'
 import { TypeControlLogConfig } from '../../screens/play/type_control'
@@ -56,6 +56,8 @@ function buildMultiSubsystemRow<T extends Record<string, boolean>>(
             Object.keys(config).forEach(key => {
                 config[key as keyof T] = value as T[keyof T]
             })
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             setState(prev =>
                 Object.fromEntries(
                     Object.keys(config).map(k => [k, value])

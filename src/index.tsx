@@ -168,6 +168,7 @@ function GameInit() {
             {state === 'CREATE_GAME' && player && gameId &&
                 <GameCreator
                     onGameCreateCanceled={() => {
+                        api.stopFollowingGame()
                         setState('LOBBY')
                         setGameId(undefined)
                         history.pushState(null, 'Settlers 2', `/`)

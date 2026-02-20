@@ -448,7 +448,7 @@ function handleError(event: Event): void {
 
     notifyConnectionListeners('NOT_CONNECTED');
 
-    (async () => attemptReconnect)()
+    attemptReconnect()
 }
 
 /**

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import './game_messages_viewer.css'
@@ -30,6 +30,15 @@ const GameMessagesViewer = ({ nation, onGoToPoint }: GameMessagesViewerProps) =>
 
     // Monitoring hooks
     const messages = useGameMessages()
+
+    // Effects
+    useEffect(() => {
+        const unread = messages.filter(m => !m.isRead)
+
+        if (unread.length > 0) {
+            api.markGameMessagesRead(unread.map(m => m.id))
+        }
+    }, [messages])
 
     // Rendering
     const unreadMessages = messages.filter(message => !message.isRead)

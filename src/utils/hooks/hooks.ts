@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
     ChatMessage,
     GameInformation,
@@ -15,8 +15,9 @@ import {
     TransportCategory
 } from '../../api/types'
 import { api, GameListener, PointInformationLocal } from '../../api/ws-api'
-import { StatisticsReply } from '../../api/ws/commands'
+import { createGame, StatisticsReply } from '../../api/ws/commands'
 import { HooksConfig } from './config'
+import { createGameInformationFromApi } from '../../api/utils'
 
 // Constants
 const EMPTY_STATISTICS: StatisticsReply = {
@@ -52,17 +53,23 @@ function useTime(delta: number): number {
         return value
     })
 
+    const lastEmittedRef = useRef<number>(api.time)
+
+    useEffect(() => {
+        lastEmittedRef.current = api.time
+        setTime(api.time)
+    }, [delta])
+
     useEffect(() => {
         const listener = (updatedTime: number) => {
             if (HooksConfig.useTime) {
                 console.log('Hooks (useTime): Update received', updatedTime)
             }
 
-            setTime(prev =>
-                updatedTime > prev + delta
-                    ? updatedTime
-                    : prev
-            )
+            if (updatedTime - lastEmittedRef.current >= delta) {
+                lastEmittedRef.current = updatedTime
+                setTime(updatedTime)
+            }
         }
 
         api.addTimeListener(listener)
@@ -93,14 +100,18 @@ function useStatistics(playerId: PlayerId): StatisticsReply {
     })
 
     useEffect(() => {
+        let cancelled = false
+
         const listener = async () => {
             const statistics = await api.getStatistics()
 
-            if (HooksConfig.useStatistics) {
-                console.log('Hooks (useStatistics): Update received')
-            }
+            if (!cancelled) {
+                if (HooksConfig.useStatistics) {
+                    console.log('Hooks (useStatistics): Update received')
+                }
 
-            setStatistics(statistics)
+                setStatistics(statistics)
+            }
         }
 
         api.addStatisticsListener(listener, playerId)
@@ -112,6 +123,7 @@ function useStatistics(playerId: PlayerId): StatisticsReply {
         listener()
 
         return () => {
+            cancelled = true
             api.removeStatisticsListener(listener)
 
             if (HooksConfig.useStatistics) {
@@ -302,12 +314,6 @@ function useGameMessages(): GameMessage[] {
                 console.log('Hooks (useGameMessages): Update received')
             }
 
-            const unread = Array.from(api.messages.values()).filter(m => !m.isRead)
-
-            if (unread.length > 0) {
-                api.markGameMessagesRead(unread.map(m => m.id))
-            }
-
             setMessages(Array.from(api.messages.values()))
         }
 
@@ -362,16 +368,22 @@ function usePointInformation(point: Point): PointInformationLocal {
                 console.log('Hooks (usePointInformation): Listener removed', point)
             }
         }
-    }, [`${point.x},${point.y}`])
+    }, [point.x, point.y])
 
     return pointInformation
 }
 
 
-function useGame(gameInformation: GameInformation): GameInformation {
+function useGame(): GameInformation {
     const [game, setGame] = useState<GameInformation>(() => {
+        const gameInformation = createGameInformationFromApi()
+
         if (HooksConfig.useGameInformation) {
             console.log('Hooks (useGame): Initial state', gameInformation)
+        }
+
+        if (!gameInformation) {
+            throw new Error('Hooks: game information not available')
         }
 
         return gameInformation
@@ -417,12 +429,16 @@ function useGames(): GameInformation[] {
     })
 
     useEffect(() => {
-        const listener = (games: GameInformation[]) => {
-            if (HooksConfig.useGames) {
-                console.log('Hooks (useGames): Update received', games)
-            }
+        let cancelled = false
 
-            setGames(games)
+        const listener = (games: GameInformation[]) => {
+            if (!cancelled) {
+                if (HooksConfig.useGames) {
+                    console.log('Hooks (useGames): Update received', games)
+                }
+
+                setGames(games)
+            }
         }
 
         api.addGamesListener(listener)
@@ -431,9 +447,14 @@ function useGames(): GameInformation[] {
             console.log('Hooks (useGames): Listener registered')
         }
 
-        api.getGames().then(setGames)
+        api.getGames().then(games => {
+            if (!cancelled) {
+                setGames(games)
+            }
+        })
 
         return () => {
+            cancelled = true
             api.removeGamesListener(listener)
 
             if (HooksConfig.useGames) {

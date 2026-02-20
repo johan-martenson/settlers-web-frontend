@@ -6,6 +6,7 @@ import { GameId, PlayerInformation } from '../../api/types'
 import { ChatBox } from '../../components/chat/chat'
 import { dispatchInputKey, GenericCommand, GenericTypeControl } from '../play/type_control'
 import { useGames } from '../../utils/hooks/hooks'
+import { api } from '../../api/ws-api'
 
 // Types
 type LobbyProps = {
@@ -65,10 +66,18 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
     })
 
     games.forEach(game => {
-        commands.set('Join ' + game.name, {
+        commands.set(`Join ${game.name}`, {
             action: () => {
                 console.log('Joining game with id ' + game.id)
                 onJoinExistingGame(game.id)
+            },
+            icon: <></>
+        })
+    })
+    games.forEach(game => {
+        commands.set(`Remove game ${game.name}`, {
+            action: () => {
+                api.deleteGame(game.id)
             },
             icon: <></>
         })

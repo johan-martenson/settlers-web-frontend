@@ -146,14 +146,14 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
         }
     })
     gameInformation?.players
-    .filter(player => player.id !== selfPlayerId)
-    .forEach(player => {
-        commands.set('Kick ' + player.name, {
-            action: (gameInformation: GameInformation) => {
-                api.removePlayer(player.id)
-            }
+        .filter(player => player.id !== selfPlayerId)
+        .forEach(player => {
+            commands.set('Kick ' + player.name, {
+                action: (gameInformation: GameInformation) => {
+                    api.removePlayer(player.id)
+                }
+            })
         })
-    })
 
     useEffect(() => {
         selfContainerRef?.current?.focus()
@@ -274,7 +274,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
             }
 
             {state === 'CREATE_GAME' && gameInformation?.id && selfPlayerId &&
-                <div id='game-creation-screen' onKeyDown={onKeyDown} ref={selfContainerRef} tabIndex={0}>
+                <div id='game-creation-screen' onKeyDown={onKeyDown} ref={selfContainerRef} tabIndex={-1}>
 
                     <div id='title'>Create game: {gameInformation?.name ?? ''}</div>
 
@@ -313,6 +313,11 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         <ChatBox playerId={selfPlayerId} roomId={`game-${gameInformation?.id}`} />
                     </div>
                     <div id='start-or-cancel'>
+                        <Button onClick={() => {
+                            onGameCreateCanceled()
+                        }} >
+                            Leave
+                        </Button>
                         <Button onClick={() => {
                             if (api.gameId !== undefined) {
                                 api.deleteGame(api.gameId)

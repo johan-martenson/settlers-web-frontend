@@ -41,13 +41,21 @@ export const WsCoreLogConfig = {
 }
 
 // State
-const pendingReplies = new Map<RequestId, ReplyMessage>()
+type PendingRequest<T> = {
+    resolve: (value: T) => void
+    reject: (reason?: unknown) => void
+    timeoutId: ReturnType<typeof setTimeout>
+}
+
+// eslint-disable-next-line
+const pendingRequests = new Map<RequestId, PendingRequest<any>>()
 const connectionListeners = new Set<ConnectionListener>()
 const messageListeners = new Set<MessageListener>()
 
 let websocket: WebSocket | undefined
 let nextRequestId = 0
 let connectionStatus: ConnectionStatus = 'NOT_CONNECTED'
+let reconnecting = false
 
 // Functions exposed as part of WS API
 /**
@@ -130,6 +138,16 @@ async function connectAndWaitForConnection(): Promise<void> {
         return
     }
 
+    if (connectionStatus === 'CONNECTING') {
+        if (WsCoreLogConfig.connectionHandling) {
+            console.log('WS core (connection): Already connecting, just wait for it to finish')
+        }
+
+        await waitForConnection()
+
+        return
+    }
+
     try {
         const websocketUrl = makeWsConnectUrl()
 
@@ -193,43 +211,37 @@ function killWebsocket(): void {
  * @returns {Promise<ReplyType>} - A promise that resolves with the reply of type `ReplyType`.
  */
 async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command: string, options: Options): Promise<ReplyType> {
-    const requestId = makeRequestId()
 
-    const message = {
-        command,
-        requestId,
-        ...options
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+        throw new Error('WebSocket not connected')
     }
 
-    websocket?.send(JSON.stringify(message))
+    const requestId = makeRequestId()
+    const message = { command, requestId, ...options }
 
     if (WsCoreLogConfig.send) {
         console.log(`WS core (send): Send request: ${JSON.stringify(message)} with id: ${requestId}`)
     }
 
-    const startTime = Date.now()
-
-    while (Date.now() - startTime < MAX_WAIT_FOR_REPLY) {
-        await delay(5)
-
-        const reply = pendingReplies.get(requestId)
-
-        if (reply) {
-            pendingReplies.delete(requestId)
-
-            if (WsCoreLogConfig.send) {
-                console.log(`WS core (receive): Got reply: ${JSON.stringify(reply)} in ${Date.now() - startTime} ms`)
-            }
-
-            if (reply.error) {
-                throw new Error(reply.error)
-            } else {
-                return reply as ReplyType
-            }
+    return new Promise<ReplyType>((resolve, reject) => {
+        if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+            reject(new Error('WebSocket not connected'))
+            return
         }
-    }
 
-    throw new Error(`Timeout waiting for reply to command: ${command}`)
+        const timeoutId = setTimeout(() => {
+            pendingRequests.delete(requestId)
+            reject(new Error(`Timeout waiting for reply to command: ${command}`))
+        }, MAX_WAIT_FOR_REPLY)
+
+        pendingRequests.set(requestId, {
+            resolve: resolve as (value: unknown) => void,
+            reject,
+            timeoutId
+        })
+
+        websocket.send(JSON.stringify(message))
+    })
 }
 
 /**
@@ -241,42 +253,37 @@ async function sendRequestAndWaitForReplyWithOptions<ReplyType, Options>(command
  * @returns {Promise<ReplyType>} - A promise that resolves with the reply of type `ReplyType`.
  */
 async function sendRequestAndWaitForReply<ReplyType>(command: string): Promise<ReplyType> {
-    const requestId = makeRequestId()
-
-    const message = {
-        command,
-        requestId
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+        throw new Error('WebSocket not connected')
     }
 
-    websocket?.send(JSON.stringify({ command, requestId }))
+    const requestId = makeRequestId()
+
+    const message = { command, requestId }
 
     if (WsCoreLogConfig.send) {
         console.log(`WS core (send): Send request: ${JSON.stringify(message)} with id: ${requestId}`)
     }
-    
-    const startTime = Date.now()
 
-    while (Date.now() - startTime < MAX_WAIT_FOR_REPLY) {
-        await delay(5)
-
-        const reply = pendingReplies.get(requestId)
-
-        if (reply) {
-            pendingReplies.delete(requestId)
-
-            if (WsCoreLogConfig.send) {
-                console.log(`WS core (receive): Got reply: ${JSON.stringify(reply)} in ${Date.now() - startTime} ms`)
-            }
-
-            if (reply.error) {
-                throw new Error(reply.error)
-            } else {
-                return reply as ReplyType
-            }
+    return new Promise<ReplyType>((resolve, reject) => {
+        if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+            reject(new Error('WebSocket not connected'))
+            return
         }
-    }
 
-    throw new Error(`Timeout waiting for reply to command: ${command}`)
+        const timeoutId = setTimeout(() => {
+            pendingRequests.delete(requestId)
+            reject(new Error(`Timeout waiting for reply to command: ${command}`))
+        }, MAX_WAIT_FOR_REPLY)
+
+        pendingRequests.set(requestId, {
+            resolve,
+            reject,
+            timeoutId
+        })
+
+        websocket.send(JSON.stringify(message))
+    })
 }
 
 /**
@@ -326,7 +333,24 @@ function handleMessage(messageFromServer: MessageEvent<any>): void {
                 console.log('WS core (receive): Handling reply message')
             }
 
-            pendingReplies.set(message.requestId, message)
+            const pending = pendingRequests.get(message.requestId)
+
+            if (!pending) {
+                if (WsCoreLogConfig.receive) {
+                    console.warn(`WS core (receive): Received reply for unknown requestId ${message.requestId}`)
+                }
+
+                return
+            }
+
+            pendingRequests.delete(message.requestId)
+            clearTimeout(pending.timeoutId)
+
+            if (message.error) {
+                pending.reject(new Error(message.error))
+            } else {
+                pending.resolve(message)
+            }
         } else {
             if (WsCoreLogConfig.receive) {
                 console.log('WS core (receive): Notifying listeners')
@@ -347,7 +371,8 @@ function handleMessage(messageFromServer: MessageEvent<any>): void {
  * @returns {string} The WebSocket URL to connect to.
  */
 function makeWsConnectUrl(): string {
-    return `ws://${window.location.hostname}:8080/ws/api`
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    return `${protocol}://${window.location.hostname}:8080/ws/api`
 }
 
 /**
@@ -394,6 +419,8 @@ function handleClose(event: CloseEvent): void {
         console.log('WS core (connection): Connection status: NOT_CONNECTED')
     }
 
+    rejectAllPendingRequests('WebSocket connection closed')
+
     notifyConnectionListeners('NOT_CONNECTED')
 
     attemptReconnect()
@@ -403,6 +430,15 @@ function handleClose(event: CloseEvent): void {
  * Tries to reconnet to the backend when the connection has been lost.
  */
 async function attemptReconnect(): Promise<void> {
+    if (reconnecting) {
+        if (WsCoreLogConfig.connectionHandling) {
+            console.log('WS core (connection): Already trying to reconnect, just wait for it to finish')
+        }
+
+        return
+    }
+
+    reconnecting = true
 
     if (WsCoreLogConfig.connectionHandling) {
         console.log('WS core (connection): Attempting to reconnect')
@@ -421,7 +457,7 @@ async function attemptReconnect(): Promise<void> {
                     console.log('WS core (connection): Succeeded to reconnect')
                 }
 
-                break    
+                break
             } else {
                 console.error(`WS core (connection): Failed to reconnect`)
             }
@@ -429,6 +465,8 @@ async function attemptReconnect(): Promise<void> {
             console.error(`WS core (connection): Failed to reconnect: ${error}`)
         }
     }
+
+    reconnecting = false
 }
 
 /**
@@ -446,9 +484,22 @@ function handleError(event: Event): void {
         console.log('WS core (connection): Connection status: NOT_CONNECTED')
     }
 
+    rejectAllPendingRequests('WebSocket connection error')
+
     notifyConnectionListeners('NOT_CONNECTED');
 
     attemptReconnect()
+}
+
+function rejectAllPendingRequests(reason: string) {
+
+    // eslint-disable-next-line
+    for (const [_, pending] of pendingRequests) {
+        clearTimeout(pending.timeoutId)
+        pending.reject(new Error(reason))
+    }
+
+    pendingRequests.clear()
 }
 
 /**

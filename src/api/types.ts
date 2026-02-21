@@ -16,7 +16,7 @@ export type ShipId = string
 export type GameMessageId = string
 export type StoneId = string
 export type RoomId = string
-export type ChatMessageId = `chat-message-${string}`
+export type ChatMessageId = string
 
 type Time = {
     hours: number
@@ -283,7 +283,7 @@ export type PlayerInformation = {
     readonly type: PlayerType
     readonly color: PlayerColor
     readonly centerPoint: Point
-    readonly discoveredPoints: Set<Point>
+    readonly discoveredPoints: Set<Point> // NOTE: uses Set which will not check equality based on values!
     readonly nation: Nation
     ownedLand: Point[]
 }
@@ -402,7 +402,6 @@ export type WorkerAction =
     | 'TOUCH_NOSE'
     | 'JUMP_SKIP_ROPE'
     | 'HAMMERING_HOUSE_HIGH_AND_LOW'
-    | 'PLANTING_TREE'
     | 'OPEN_OVEN'
     | 'DIGGING_AND_STOMPING'
     | 'DRINKING_BEER'

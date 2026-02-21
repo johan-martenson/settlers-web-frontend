@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './play.css'
 import { ConstructionInfo } from '../../windows/construction/construction_info'
 import FriendlyFlagInfo from '../../windows/flag/friendly_flag_info'
@@ -34,6 +34,7 @@ import { calcTranslation } from '../../render/utils'
 import Tools from '../../windows/tools/tools'
 import { MapView } from '../../windows/map/map'
 import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
+import { usePlayer } from '../../utils/hooks/hooks'
 
 // Types
 type HouseWindow = {
@@ -162,16 +163,18 @@ export const PlayLogConfig = {
 }
 
 // State
-export const immediateState = {
-    mouseDown: false,
-    mouseDownAt: { x: 0, y: 0 },
-    mouseMoving: false,
-    touchMoveOngoing: false,
-    touchIdentifier: 0,
-    translateAtMouseDown: { x: 0, y: 0 },
-    screenSize: { width: 0, height: 0 },
-    translate: { x: 0, y: 0 },
-    scale: DEFAULT_SCALE
+function makeDefaultImmediateState() {
+    return {
+        mouseDown: false,
+        mouseDownAt: { x: 0, y: 0 },
+        mouseMoving: false,
+        touchMoveOngoing: false,
+        touchIdentifier: 0,
+        translateAtMouseDown: { x: 0, y: 0 },
+        screenSize: { width: 0, height: 0 },
+        translate: { x: 0, y: 0 },
+        scale: DEFAULT_SCALE
+    }
 }
 
 // React components
@@ -217,6 +220,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     // References
     const selfContainerRef = useRef<HTMLDivElement | null>(null)
+    const immediateStateRef = useRef(makeDefaultImmediateState())
 
     // State (that triggers re-renders)
     const [commands, setCommands] = useState<Map<string, Command>>(new Map())
@@ -237,14 +241,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [gameState, setGameState] = useState<GameState>('STARTED')
     const [newRoad, setNewRoad] = useState<Point[]>()
     const [possibleRoadConnections, setPossibleRoadConnections] = useState<Point[]>()
-    const [player, setPlayer] = useState<PlayerInformation>()
+
+    // Monitoring
+    const player = usePlayer(selfPlayerId)
 
     // State (that doesn't trigger re-renders)
     const ongoingTouches = useNonTriggeringState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
     const nextWindowIdContainer = useNonTriggeringState<{ nextWindowId: number }>({ nextWindowId: 0 })
 
     // Constants
-    const gameMonitorCallbacks: GameListener = {
+    const gameMonitorCallbacks = useMemo<GameListener>(() => ({
         onMonitoringStarted: () => {
             setMonitoringReady(true)
             if (PlayLogConfig.lifecycle) {
@@ -252,7 +258,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             }
         },
         onGameStateChanged: (gameState: GameState) => setGameState(gameState)
-    }
+    }), [])
 
     // Effects
     useEffect(() => {
@@ -272,12 +278,18 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [newRoad])
 
     useEffect(() => {
+        let cancelled = false
+
         if (PlayLogConfig.lifecycle) {
             console.log(`Play (lifecycle): gameId or playerId changed. GameId: ${gameId}, PlayerId: ${selfPlayerId}`)
         }
 
         async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId): Promise<void> {
             await api.connectAndWaitForConnection()
+
+            if (cancelled) {
+                return
+            }
 
             api.addGameStateListener(gameMonitorCallbacks)
             await api.followGame(gameId, selfPlayerId)
@@ -286,13 +298,18 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         if (PlayLogConfig.connection) {
             console.log(`Play (connection): Start listening to game with gameId ${gameId} and playerId ${selfPlayerId}`)
         }
+
         connectAndFollow(gameId, selfPlayerId)
 
         return () => {
+            cancelled = true
+
             if (PlayLogConfig.connection) {
                 console.log('Play (connection): Stop listening to game')
             }
+
             api.removeGameStateListener(gameMonitorCallbacks)
+            api.stopFollowingGame()
         }
     }, [gameId, selfPlayerId])
 
@@ -307,7 +324,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         function windowResizeListener(): void {
             if (selfContainerRef.current) {
-                immediateState.screenSize = {
+                immediateStateRef.current.screenSize = {
                     width: selfContainerRef.current.clientWidth,
                     height: selfContainerRef.current.clientHeight
                 }
@@ -325,9 +342,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             document.removeEventListener('contextmenu', nopEventListener)
             window.removeEventListener('resize', windowResizeListener)
         }
-    }, [selfContainerRef])
+    }, [])
 
     useEffect(() => {
+        let cancelled = false
+
         if (PlayLogConfig.commands) {
             console.log('Play (commands): set commands, center on headquarters')
         }
@@ -341,6 +360,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             const nation = player?.nation ?? 'VIKINGS'
             const color = player?.color ?? 'GREEN'
 
+            // TODO: memoize commands
             const commands = new Map<string, Command>()
 
             SMALL_HOUSES.forEach(building => commands.set(building, {
@@ -409,8 +429,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             })
             commands.set('Statistics', { action: () => openSingletonWindow({ type: 'STATISTICS' }) })
             commands.set('Titles', {
-                action: () => setShowTitles(!showTitles),
+                action: () => setShowTitles(prev => !prev),
                 icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
+            })
+            commands.set('Available construction', {
+                action: () => setShowAvailableConstruction(prev => !prev),
             })
             commands.set('Geologist', {
                 action: (point: Point) => api.callGeologist(point),
@@ -504,11 +527,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         api.waitForGameDataAvailable().then(() => {
+            if (cancelled) {
+                return
+            }
+
             setTypingCommands()
-            setPlayer(api.players.get(selfPlayerId))
 
             if (selfContainerRef.current) {
-                immediateState.screenSize = {
+                immediateStateRef.current.screenSize = {
                     width: selfContainerRef.current.clientWidth,
                     height: selfContainerRef.current.clientHeight
                 }
@@ -524,14 +550,24 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 goToHouse(headquarter.id)
             }
         })
-    }, [monitoringReady, selfPlayerId])
 
+        return () => {
+            cancelled = true
+        }
+    }, [monitoringReady, selfPlayerId, gameId])
+
+    // Effect: reset if gameId changes
+    useEffect(() => {
+        immediateStateRef.current = makeDefaultImmediateState()
+    }, [gameId])
+
+    // Effect: sound effects lifecycle
     useEffect(() => {
         if (PlayLogConfig.sound) {
             console.log('Play (sound): start sound effects')
         }
 
-        sfx.startEffects(immediateState)
+        sfx.startEffects(immediateStateRef.current)
 
         return () => {
             if (PlayLogConfig.sound) {
@@ -576,7 +612,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         setWindows(prevWindows => prevWindows.filter(w => w.id !== id))
     }, [])
 
-    const closeActiveWindow = useCallback(() => setWindows(windows => windows.slice(0, -2)), [])
+    const closeActiveWindow = useCallback(() => setWindows(windows => windows.slice(0, -1)), [])
 
     const raiseWindow = useCallback((id: number) => {
         setWindows(prevWindows => {
@@ -599,29 +635,29 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
         animator.animateSeveral('TRANSLATE', newTranslate => {
-            immediateState.translate = { x: newTranslate[0], y: newTranslate[1] }
+            immediateStateRef.current.translate = { x: newTranslate[0], y: newTranslate[1] }
         },
-            [immediateState.translate.x, immediateState.translate.y],
+            [immediateStateRef.current.translate.x, immediateStateRef.current.translate.y],
             [newTranslate.x, newTranslate.y])
     }, [])
 
     const goToPoint = useCallback((point: Point) => {
-        const scaleY = immediateState.scale
+        const scaleY = immediateStateRef.current.scale
 
-        immediateState.translate = {
-            x: (immediateState.screenSize.width / 2) - point.x * immediateState.scale,
-            y: (immediateState.screenSize.height / 2) + point.y * scaleY - immediateState.screenSize.height
+        immediateStateRef.current.translate = {
+            x: (immediateStateRef.current.screenSize.width / 2) - point.x * immediateStateRef.current.scale,
+            y: (immediateStateRef.current.screenSize.height / 2) + point.y * scaleY - immediateStateRef.current.screenSize.height
 
         }
     }, [])
 
     const scrollToPoint = useCallback((point: Point) => {
         if (animateMapScrolling) {
-            const scaleY = immediateState.scale
+            const scaleY = immediateStateRef.current.scale
 
             setNewTranslatedAnimated({
-                x: (immediateState.screenSize.width / 2) - point.x * immediateState.scale,
-                y: (immediateState.screenSize.height / 2) + point.y * scaleY - immediateState.screenSize.height
+                x: (immediateStateRef.current.screenSize.width / 2) - point.x * immediateStateRef.current.scale,
+                y: (immediateStateRef.current.screenSize.height / 2) + point.y * scaleY - immediateStateRef.current.screenSize.height
             })
         } else {
             goToPoint(point)
@@ -632,7 +668,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         if (animateMapScrolling) {
             setNewTranslatedAnimated(newTranslate)
         } else {
-            immediateState.translate = newTranslate
+            immediateStateRef.current.translate = newTranslate
         }
     }, [animateMapScrolling, setNewTranslatedAnimated])
 
@@ -642,34 +678,34 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         if (animateZoom) {
             animator.animate('ZOOM', (newScale) => {
-                immediateState.translate = calcTranslation(
-                    immediateState.scale,
+                immediateStateRef.current.translate = calcTranslation(
+                    immediateStateRef.current.scale,
                     newScale,
-                    immediateState.translate,
-                    immediateState.screenSize,
+                    immediateStateRef.current.translate,
+                    immediateStateRef.current.screenSize,
                 )
-                immediateState.scale = newScale
+                immediateStateRef.current.scale = newScale
             },
-                immediateState.scale,
+                immediateStateRef.current.scale,
                 newScale)
         } else {
-            immediateState.translate = calcTranslation(
-                immediateState.scale,
+            immediateStateRef.current.translate = calcTranslation(
+                immediateStateRef.current.scale,
                 newScale,
-                immediateState.translate,
-                immediateState.screenSize
+                immediateStateRef.current.translate,
+                immediateStateRef.current.screenSize
             )
-            immediateState.scale = newScale
+            immediateStateRef.current.scale = newScale
         }
     }, [animateZoom])
 
     const onMouseDown = useCallback((event: React.MouseEvent) => {
         if (event.button === 2) {
-            immediateState.mouseDown = true
-            immediateState.mouseDownAt = { x: event.pageX, y: event.pageY }
-            immediateState.mouseMoving = false
+            immediateStateRef.current.mouseDown = true
+            immediateStateRef.current.mouseDownAt = { x: event.pageX, y: event.pageY }
+            immediateStateRef.current.mouseMoving = false
 
-            immediateState.translateAtMouseDown = { ...immediateState.translate }
+            immediateStateRef.current.translateAtMouseDown = { ...immediateStateRef.current.translate }
 
             setCursor('DRAGGING')
         } else if (event.button === 0 && newRoad !== undefined) {
@@ -677,21 +713,21 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         event.stopPropagation()
-    }, [])
+    }, [newRoad])
 
     const onMouseMove = useCallback((event: React.MouseEvent) => {
-        if (immediateState.mouseDown) {
-            const deltaX = (event.pageX - immediateState.mouseDownAt.x)
-            const deltaY = (event.pageY - immediateState.mouseDownAt.y)
+        if (immediateStateRef.current.mouseDown) {
+            const deltaX = (event.pageX - immediateStateRef.current.mouseDownAt.x)
+            const deltaY = (event.pageY - immediateStateRef.current.mouseDownAt.y)
 
             // Detect move to separate move from click
             if (deltaX ** 2 + deltaY ** 2 > 25) {
-                immediateState.mouseMoving = true
+                immediateStateRef.current.mouseMoving = true
             }
 
-            immediateState.translate = {
-                x: immediateState.translateAtMouseDown.x + deltaX,
-                y: immediateState.translateAtMouseDown.y + deltaY
+            immediateStateRef.current.translate = {
+                x: immediateStateRef.current.translateAtMouseDown.x + deltaX,
+                y: immediateStateRef.current.translateAtMouseDown.y + deltaY
             }
         }
 
@@ -699,9 +735,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [])
 
     const onMouseUp = useCallback((event: React.MouseEvent) => {
-        if (immediateState.mouseMoving) {
-            immediateState.mouseDown = false
-            immediateState.mouseMoving = false
+        if (immediateStateRef.current.mouseMoving) {
+            immediateStateRef.current.mouseDown = false
+            immediateStateRef.current.mouseMoving = false
 
             setCursor('NOTHING')
         }
@@ -717,8 +753,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onMouseLeave = useCallback((_event: React.MouseEvent) => {
         setCursor('NOTHING')
 
-        immediateState.mouseDown = false
-        immediateState.mouseMoving = false
+        immediateStateRef.current.mouseDown = false
+        immediateStateRef.current.mouseMoving = false
     }, [])
 
     const onPointClicked = useCallback(async (point: Point) => {
@@ -727,7 +763,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         // Filter clicks that are really the end of moving the mouse
-        if (immediateState.mouseMoving) {
+        if (immediateStateRef.current.mouseMoving) {
             return
         }
 
@@ -746,7 +782,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 // Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road
                 const possibleNewRoadSegment = (await api.findPossibleNewRoad(recent, point, newRoad)).possibleRoad
 
-                if (possibleNewRoadSegment) {
+                if (possibleNewRoadSegment && newRoad) {
                     possibleNewRoad.push(...possibleNewRoadSegment.slice(1))
                 } else {
                     if (PlayLogConfig.roads) {
@@ -803,8 +839,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     console.log(`Play (roads): Possible new road direct adjacent road connections: ${JSON.stringify(pointInformation.possibleRoadConnections)}`)
                 }
 
-                setNewRoad(possibleNewRoad)
-                setPossibleRoadConnections(pointInformation.possibleRoadConnections)
+                if (pointInformation !== undefined) {
+                    setNewRoad(possibleNewRoad)
+                    setPossibleRoadConnections(pointInformation.possibleRoadConnections)
+                }
             }
 
             // Select the point
@@ -928,7 +966,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         } else {
             openWindow({ type: 'NO_ACTION', point })
         }
-    }, [newRoad, selfPlayerId, setNewRoad, setSelected, setShowMenu, selfPlayerId, openWindow])
+    }, [newRoad, selfPlayerId, setNewRoad, setSelected, setShowMenu, openWindow])
 
     const onKeyDown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === 'Escape') {
@@ -958,17 +996,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             setShowTitles(true)
             setShowAvailableConstruction(!showAvailableConstruction)
         } else if (event.key === 'ArrowUp') {
-            moveGame({ ...immediateState.translate, y: immediateState.translate.y + ARROW_KEY_MOVE_DISTANCE })
+            moveGame({ ...immediateStateRef.current.translate, y: immediateStateRef.current.translate.y + ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === 'ArrowRight') {
-            moveGame({ ...immediateState.translate, x: immediateState.translate.x - ARROW_KEY_MOVE_DISTANCE })
+            moveGame({ ...immediateStateRef.current.translate, x: immediateStateRef.current.translate.x - ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === 'ArrowDown') {
-            moveGame({ ...immediateState.translate, y: immediateState.translate.y - ARROW_KEY_MOVE_DISTANCE })
+            moveGame({ ...immediateStateRef.current.translate, y: immediateStateRef.current.translate.y - ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === 'ArrowLeft') {
-            moveGame({ ...immediateState.translate, x: immediateState.translate.x + ARROW_KEY_MOVE_DISTANCE })
+            moveGame({ ...immediateStateRef.current.translate, x: immediateStateRef.current.translate.x + ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === '+') {
-            zoom(immediateState.scale + 1)
+            zoom(immediateStateRef.current.scale + 1)
         } else if (event.key === '-') {
-            zoom(immediateState.scale - 1)
+            zoom(immediateStateRef.current.scale - 1)
         } else if (event.key === 'M') {
             setShowMenu(true)
         } else {
@@ -992,8 +1030,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         // Get the possible connections from the server and draw them
         const pointInformation = await api.getInformationOnPoint(point)
 
-        setNewRoad([point])
-        setPossibleRoadConnections(pointInformation.possibleRoadConnections)
+        if (pointInformation !== undefined) {
+            setNewRoad([point])
+            setPossibleRoadConnections(pointInformation.possibleRoadConnections)
+        }
     }, [])
 
     const copyTouch = useCallback((touch: React.Touch) => {
@@ -1014,14 +1054,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         // Only move map with one movement
-        if (!immediateState.touchMoveOngoing) {
+        if (!immediateStateRef.current.touchMoveOngoing) {
             const touch = touches[0]
 
-            immediateState.touchIdentifier = touch.identifier
-            immediateState.mouseDownAt = { x: touch.pageX, y: touch.pageY }
-            immediateState.mouseMoving = false
-            immediateState.touchMoveOngoing = true
-            immediateState.translateAtMouseDown = { ...immediateState.translate }
+            immediateStateRef.current.touchIdentifier = touch.identifier
+            immediateStateRef.current.mouseDownAt = { x: touch.pageX, y: touch.pageY }
+            immediateStateRef.current.mouseMoving = false
+            immediateStateRef.current.touchMoveOngoing = true
+            immediateStateRef.current.translateAtMouseDown = { ...immediateStateRef.current.translate }
         }
     }, [ongoingTouches, copyTouch])
 
@@ -1037,18 +1077,18 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 continue
             }
 
-            if (immediateState.touchMoveOngoing && touch.identifier === immediateState.touchIdentifier) {
-                const deltaX = (touch.pageX - immediateState.mouseDownAt.x)
-                const deltaY = (touch.pageY - immediateState.mouseDownAt.y)
+            if (immediateStateRef.current.touchMoveOngoing && touch.identifier === immediateStateRef.current.touchIdentifier) {
+                const deltaX = (touch.pageX - immediateStateRef.current.mouseDownAt.x)
+                const deltaY = (touch.pageY - immediateStateRef.current.mouseDownAt.y)
 
                 // Detect move to separate move from click
                 if (deltaX ** 2 + deltaY ** 2 > 25) {
-                    immediateState.mouseMoving = true
+                    immediateStateRef.current.mouseMoving = true
                 }
 
-                immediateState.translate = {
-                    x: immediateState.translateAtMouseDown.x + deltaX,
-                    y: immediateState.translateAtMouseDown.y + deltaY
+                immediateStateRef.current.translate = {
+                    x: immediateStateRef.current.translateAtMouseDown.x + deltaX,
+                    y: immediateStateRef.current.translateAtMouseDown.y + deltaY
                 }
             }
 
@@ -1068,7 +1108,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [ongoingTouches])
 
     const onWheel = useCallback((event: React.WheelEvent) => {
-        zoom(immediateState.scale - event.deltaY / 20.0)
+        zoom(immediateStateRef.current.scale - event.deltaY / 20.0)
     }, [zoom])
 
     const onTouchCancel = useCallback((event: React.TouchEvent) => {
@@ -1080,7 +1120,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
 
         // Stop moving
-        immediateState.touchMoveOngoing = false
+        immediateStateRef.current.touchMoveOngoing = false
         const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
@@ -1092,7 +1132,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         event.preventDefault()
 
         // Stop moving
-        immediateState.touchMoveOngoing = false
+        immediateStateRef.current.touchMoveOngoing = false
         const touches = event.changedTouches
 
         for (let i = 0; i < touches.length; i++) {
@@ -1134,7 +1174,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 showAvailableConstruction={showAvailableConstruction}
                 cursor={cursor}
                 heightAdjust={heightAdjust}
-                view={immediateState}
+                viewRef={immediateStateRef}
             />
 
             <MenuButton onMenuButtonClicked={() => setShowMenu(true)} />

@@ -45,7 +45,8 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
     const [idToFollow, setIdToFollow] = useState<WorkerId>()
 
     // State that doesn't trigger re-renders
-    const view = useNonTriggeringState<View>({ scale, translate: { x: 0, y: 0 }, screenSize: { width: 100, height: 100 } })
+    const viewRef = useRef<View>({ scale, translate: { x: 0, y: 0 }, screenSize: { width: 100, height: 100 } })
+    //const view = useNonTriggeringState<View>({ scale, translate: { x: 0, y: 0 }, screenSize: { width: 100, height: 100 } })
     const moving = useNonTriggeringState<Moving>({ moving: false, mouseAt: { x: 0, y: 0 }, translate: { x: 0, y: 0 } })
 
     useEffect(() => {
@@ -68,7 +69,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
     }, [idToFollow])
 
     useEffect(() => {
-        view.screenSize = {
+        viewRef.current.screenSize = {
             width: myRef?.current?.clientWidth ?? 0,
             height: myRef?.current?.clientHeight ?? 0
 
@@ -76,11 +77,11 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
     }, [myRef])
 
     useEffect(() => {
-        if (!isCentered && view.screenSize.width > 0 && view.screenSize.height > 0) {
-            const newTranslateX = view.screenSize.width / 2 - point.x * view.scale
-            const newTranslateY = view.screenSize.height / 2 + point.y * view.scale - view.screenSize.height
+        if (!isCentered && viewRef.current.screenSize.width > 0 && viewRef.current.screenSize.height > 0) {
+            const newTranslateX = viewRef.current.screenSize.width / 2 - point.x * viewRef.current.scale
+            const newTranslateY = viewRef.current.screenSize.height / 2 + point.y * viewRef.current.scale - viewRef.current.screenSize.height
 
-            view.translate = ({ x: newTranslateX, y: newTranslateY })
+            viewRef.current.translate = ({ x: newTranslateX, y: newTranslateY })
             setIsCentered(true) // FIXME: this changes the variable that the effect depends on. Fix!
         }
     }, [isCentered])
@@ -88,7 +89,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
     useEffect(() => {
         function resizeListener(): void {
             if (myRef.current) {
-                view.screenSize = {
+                viewRef.current.screenSize = {
                     width: myRef.current.clientWidth,
                     height: myRef.current.clientHeight
                 }
@@ -109,14 +110,14 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
         const screenPointFrom = gamePointToScreenPointWithHeightAdjustment(
             from,
             heightAtFrom,
-            view,
+            viewRef.current,
             heightAdjust,
             STANDARD_HEIGHT)
 
         const screenPointTo = gamePointToScreenPointWithHeightAdjustment(
             to,
             heightAtTo,
-            view,
+            viewRef.current,
             heightAdjust,
             STANDARD_HEIGHT)
 
@@ -125,9 +126,9 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
             y: screenPointFrom.y + (screenPointTo.y - screenPointFrom.y) * progress / 100
         }
 
-        view.translate = {
-            x: view.translate.x - screenPoint.x + view.screenSize.width / 2,
-            y: view.translate.y - screenPoint.y + view.screenSize.height / 2
+        viewRef.current.translate = {
+            x: viewRef.current.translate.x - screenPoint.x + viewRef.current.screenSize.width / 2,
+            y: viewRef.current.translate.y - screenPoint.y + viewRef.current.screenSize.height / 2
         }
     }
 
@@ -138,18 +139,18 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
         const screenPoint = gamePointToScreenPointWithHeightAdjustment(
             point,
             heightAtPoint,
-            view,
+            viewRef.current,
             heightAdjust,
             STANDARD_HEIGHT)
 
-        view.translate = {
-            x: view.translate.x - screenPoint.x + view.screenSize.width / 2,
-            y: view.translate.y - screenPoint.y + view.screenSize.height / 2
+        viewRef.current.translate = {
+            x: viewRef.current.translate.x - screenPoint.x + viewRef.current.screenSize.width / 2,
+            y: viewRef.current.translate.y - screenPoint.y + viewRef.current.screenSize.height / 2
         }
     }
 
     function findHeightAdjustedCenterGamePoint(view: View): Point {
-        const screenPoint = { x: view.screenSize.width / 2, y: view.screenSize.height / 2 }
+        const screenPoint = { x: viewRef.current.screenSize.width / 2, y: viewRef.current.screenSize.height / 2 }
         return screenPointToGamePointWithHeightAdjustment(screenPoint, view, heightAdjust)
     }
 
@@ -254,14 +255,14 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                 className='follow-content'
 
                 onWheel={(event: React.WheelEvent) => {
-                    const prevScale = view.scale
+                    const prevScale = viewRef.current.scale
                     let newScale = prevScale - event.deltaY / 20.0
 
                     newScale = Math.min(newScale, MAX_SCALE)
                     newScale = Math.max(newScale, MIN_SCALE)
 
-                    view.translate = calcTranslation(prevScale, newScale, view.translate, view.screenSize)
-                    view.scale = newScale
+                    viewRef.current.translate = calcTranslation(prevScale, newScale, viewRef.current.translate, viewRef.current.screenSize)
+                    viewRef.current.scale = newScale
                 }}
 
                 // eslint-disable-next-line
@@ -271,9 +272,9 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
 
                 onMouseMove={(event: React.MouseEvent) => {
                     if (moving.moving) {
-                        view.translate = {
-                            x: event.clientX - moving.mouseAt.x + view.translate.x,
-                            y: view.translate.y + (event.clientY - moving.mouseAt.y)
+                        viewRef.current.translate = {
+                            x: event.clientX - moving.mouseAt.x + viewRef.current.translate.x,
+                            y: viewRef.current.translate.y + (event.clientY - moving.mouseAt.y)
                         }
 
                         moving.mouseAt = {
@@ -287,7 +288,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                     if (event.button === 2) {
                         moving.moving = true
                         moving.mouseAt = { x: event.clientX, y: event.clientY }
-                        moving.translate = view.translate
+                        moving.translate = viewRef.current.translate
 
                         setIdToFollow(undefined)
 
@@ -301,7 +302,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                     heightAdjust={DEFAULT_HEIGHT_ADJUSTMENT}
                     showAvailableConstruction={false}
                     showHouseTitles={false}
-                    view={view}
+                    viewRef={viewRef}
                     hideHoverPoint={true}
                     hideSelectedPoint={true}
                 />
@@ -311,20 +312,20 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                         onMouseEnter={() => setHoverInfo('Zoom in')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                         onClick={() => {
-                            const prevScale = view.scale
+                            const prevScale = viewRef.current.scale
                             let newScale = prevScale + 10
 
                             newScale = Math.min(newScale, MAX_SCALE)
                             newScale = Math.max(newScale, MIN_SCALE)
 
-                            const newTranslate = calcTranslation(prevScale, newScale, view.translate, view.screenSize)
+                            const newTranslate = calcTranslation(prevScale, newScale, viewRef.current.translate, viewRef.current.screenSize)
 
                             animator.animateSeveralNoId(
                                 (values: number[]) => {
-                                    view.scale = values[0]
-                                    view.translate = { x: values[1], y: values[2] }
+                                    viewRef.current.scale = values[0]
+                                    viewRef.current.translate = { x: values[1], y: values[2] }
                                 },
-                                [prevScale, view.translate.x, view.translate.y],
+                                [prevScale, viewRef.current.translate.x, viewRef.current.translate.y],
                                 [newScale, newTranslate.x, newTranslate.y]
                             )
                         }}
@@ -335,20 +336,20 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                         onMouseEnter={() => setHoverInfo('Zoom out')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                         onClick={() => {
-                            const prevScale = view.scale
+                            const prevScale = viewRef.current.scale
                             let newScale = prevScale - 10
 
                             newScale = Math.min(newScale, MAX_SCALE)
                             newScale = Math.max(newScale, MIN_SCALE)
 
-                            const newTranslate = calcTranslation(prevScale, newScale, view.translate, view.screenSize)
+                            const newTranslate = calcTranslation(prevScale, newScale, viewRef.current.translate, viewRef.current.screenSize)
 
                             animator.animateSeveralNoId(
                                 (values: number[]) => {
-                                    view.scale = values[0]
-                                    view.translate = { x: values[1], y: values[2] }
+                                    viewRef.current.scale = values[0]
+                                    viewRef.current.translate = { x: values[1], y: values[2] }
                                 },
-                                [prevScale, view.translate.x, view.translate.y],
+                                [prevScale, viewRef.current.translate.x, viewRef.current.translate.y],
                                 [newScale, newTranslate.x, newTranslate.y]
                             )
                         }}
@@ -390,7 +391,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                 }
 
                 {idToFollow === undefined &&
-                    <Button onClick={() => startMonitor(findHeightAdjustedCenterGamePoint(view))}
+                    <Button onClick={() => startMonitor(findHeightAdjustedCenterGamePoint(viewRef.current))}
                         onMouseEnter={() => setHoverInfo('Start monitoring')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >

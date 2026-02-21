@@ -61,36 +61,56 @@ export const BUILDING_SMOKE: SmokeTable = {
     },
 }
 
-const OFFSET_ADJUSTMENTS_FOR_ACTIONS: Partial<Record<WorkerAction, {x: number, y: number}>> = {
+const OFFSET_ADJUSTMENTS_FOR_ACTIONS: Partial<Record<WorkerAction, { x: number, y: number }>> = {
     'DRAW_WATER_1': { x: 20, y: -13 },
     'OPEN_OVEN': { x: 5, y: -10 },
 }
 
 // Classes
-class UiElementsImageAtlasHandler {
+abstract class BaseImageAtlasHandler<ImageAtlas> {
+    protected imageAtlasInfo?: ImageAtlas
+    protected image?: HTMLImageElement
+
+    private loadingPromise?: Promise<void>
+
+    async load(jsonPath: string, imagePath: string) {
+        if (!this.loadingPromise) {
+            this.loadingPromise = (async () => {
+                try {
+                    const response = await fetch(jsonPath)
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch ${jsonPath}: ${response.status}`)
+                    }
+
+                    this.imageAtlasInfo = await response.json()
+                    this.image = await loadImageAsync(imagePath)
+                } catch (err) {
+                    // Allow retry on next call
+                    this.loadingPromise = undefined
+                    throw err
+                }
+            })()
+        }
+
+        return this.loadingPromise
+    }
+}
+
+
+class UiElementsImageAtlasHandler extends BaseImageAtlasHandler<UiElementsImageAtlas> {
     private pathPrefix: string
-    private imageAtlasInfo?: UiElementsImageAtlas
-    private image?: HTMLImageElement
     private textureIndex: number
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string, textureIndex: number) {
+        super()
+
         this.pathPrefix = prefix
         this.textureIndex = textureIndex
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-ui-elements.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-ui-elements.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-ui-elements.json', this.pathPrefix + 'image-atlas-ui-elements.png')
     }
 
     getUiElement(type: UiIconType): DrawingInformation | undefined {
@@ -103,8 +123,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(imageInfo),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
         }
     }
 
@@ -120,8 +139,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.selectedPoint),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
         }
     }
 
@@ -133,8 +151,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverPoint),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
         }
     }
 
@@ -146,8 +163,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.availableBuildingLarge),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
         }
     }
 
@@ -159,8 +175,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.availableBuildingMedium),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -173,8 +188,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.availableBuildingSmall),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -187,8 +201,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.availableMine),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -201,8 +214,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.availableFlag),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -215,8 +227,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableBuildingLarge),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -229,8 +240,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableBuildingMedium),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -243,8 +253,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableBuildingSmall),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -257,8 +266,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableMine),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -271,8 +279,7 @@ class UiElementsImageAtlasHandler {
         return {
             ...imageInfoFromSingleImage(this.imageAtlasInfo.hoverAvailableFlag),
             image: this.image,
-            textureIndex: this.textureIndex,
-            texture: this.texture
+            textureIndex: this.textureIndex
 
         }
     }
@@ -294,28 +301,17 @@ class MaterialImageAtlasHandler {
     }
 }
 
-class FlagImageAtlasHandler {
+class FlagImageAtlasHandler extends BaseImageAtlasHandler<Record<Nation, Record<FlagType, Record<PlayerColor | 'shadows', ImageSeries>>>> {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<FlagType, Record<PlayerColor | 'shadows', ImageSeries>>>
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-flags.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-flags.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-flags.json', this.pathPrefix + 'image-atlas-flags.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -336,13 +332,11 @@ class FlagImageAtlasHandler {
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(images, animationCounter),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromHorizontalImageSeries(shadowImages, animationCounter),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
@@ -378,28 +372,17 @@ class FlagImageAtlasHandler {
     }
 }
 
-class ShipImageAtlasHandler {
+class ShipImageAtlasHandler extends BaseImageAtlasHandler<ShipImageAtlas> {
     private pathPrefix: string
-    private imageAtlasInfo?: ShipImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-ship.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-ship.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-ship.json', this.pathPrefix + 'image-atlas-ship.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -417,13 +400,11 @@ class ShipImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(imageInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromSingleImage(shadowImageInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
@@ -440,13 +421,11 @@ class ShipImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(image),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromSingleImage(shadowImage),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
@@ -459,30 +438,19 @@ class ShipImageAtlasHandler {
     }
 }
 
-class WorkerImageAtlasHandler {
+class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: WorkerImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string, name: string) {
+        super()
+
         this.pathPrefix = prefix
         this.name = name
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-' + this.name + '.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-' + this.name + '.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-' + this.name + '.json', this.pathPrefix + 'image-atlas-' + this.name + '.png')
     }
 
     getDrawingInformationForWorker(nation: Nation, direction: Direction, color: PlayerColor, animationCounter: number, offset: number): DrawingInformation[] | undefined {
@@ -534,18 +502,22 @@ class WorkerImageAtlasHandler {
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(images, frameIndex),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromHorizontalImageSeries(shadowImages, frameIndex),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
 
-    getDrawingInformationForAction(nation: Nation, direction: Direction, action: WorkerAction, color: PlayerColor, animationIndex: number): DrawingInformation | undefined {
+    getDrawingInformationForAction(
+        nation: Nation,
+        direction: Direction,
+        action: WorkerAction,
+        color: PlayerColor,
+        animationIndex: number
+    ): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             console.error('Undefined!')
             console.error([action, direction])
@@ -553,86 +525,61 @@ class WorkerImageAtlasHandler {
             return undefined
         }
 
-        let image: PartialDrawingInformation | undefined = undefined
+        const common = this.imageAtlasInfo.common.actionsByPlayer
+        const nationSpecific = this.imageAtlasInfo.nationSpecific?.actionsByPlayer
 
-        if (direction &&
-            this.imageAtlasInfo.common.actionsByPlayer &&
-            this.imageAtlasInfo.common.actionsByPlayer[action] &&
-            this.imageAtlasInfo.common.actionsByPlayer[action][direction] &&
-            this.imageAtlasInfo.common.actionsByPlayer[action][direction][color]) {
-            const actionImages = this.imageAtlasInfo.common.actionsByPlayer[action][direction][color]
+        const animationType = actionAnimationType.get(action)
 
-            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
-            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                image = imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1)
-            }
-        } else if (direction &&
-            this.imageAtlasInfo.common.actionsByPlayer &&
-            this.imageAtlasInfo.common.actionsByPlayer[action] &&
-            this.imageAtlasInfo.common.actionsByPlayer[action]['any'] &&
-            this.imageAtlasInfo.common.actionsByPlayer[action]['any'][color]) {
-            const actionImages = this.imageAtlasInfo.common.actionsByPlayer[action]['any'][color]
+        // Try to find action images common across nations
+        let actionImages = common?.[action]?.[direction]?.[color] ?? common?.[action]?.['any']?.[color]
 
-            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
-            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                image = imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1)
-            }
-        } else if (this.imageAtlasInfo.nationSpecific &&
-            this.imageAtlasInfo.nationSpecific?.actionsByPlayer &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation] &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action] &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction] &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]) {
-            const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action][direction][color]
-            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
-            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                image = imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1)
-            } else if (actionAnimationType.get(action) == 'SINGLE_THEN_STOP') {
-                // SINGLE_THEN_STOP is handled in the first arm. If we get here the animation is drawn already
+        // Try with nation-specific actions if there were no common ones
+        if (!actionImages) {
+            actionImages = nationSpecific?.[nation]?.[action]?.[direction]?.[color] ?? nationSpecific?.[nation]?.[action]?.['any']?.[color]
+        }
 
-                return undefined
-            }
-        } else if (this.imageAtlasInfo.nationSpecific &&
-            this.imageAtlasInfo.nationSpecific?.actionsByPlayer &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation] &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action] &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'] &&
-            this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'][color]) {
-            const actionImages = this.imageAtlasInfo.nationSpecific.actionsByPlayer[nation][action]['any'][color]
-            if (actionAnimationType.get(action) === 'REPEAT' || animationIndex < actionImages.nrImages) {
-                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
-            } else if (actionAnimationType.get(action) === 'SINGLE_THEN_FREEZE') {
-                image = imageInfoFromHorizontalImageSeries(actionImages, actionImages.nrImages - 1)
-            } else if (actionAnimationType.get(action) == 'SINGLE_THEN_STOP') {
-                // SINGLE_THEN_STOP is handled in the first arm. If we get here the animation is drawn already
-
-                return undefined
-            }
-        } else {
+        // Report if there still is no action image found
+        if (!actionImages) {
             if (!reported.has(action)) {
-
                 console.error(`FOUND NO ACTION: name: ${this.name}, nation: ${nation}, direction: ${direction}, action: ${action}, color: ${color}`)
-
                 reported.add(action)
             }
+
+            return undefined
         }
 
-        if (image) {
-            const offsetAdjustment = OFFSET_ADJUSTMENTS_FOR_ACTIONS[action] ?? { x: 0, y: 0 }
+        // Find the next frame to draw based on the animation type. Let 'REPEAT' be the default
+        let image: PartialDrawingInformation | undefined = undefined
 
-            return {
-                ...image,
-                offsetX: image.offsetX + offsetAdjustment.x,
-                offsetY: image.offsetY + offsetAdjustment.y,
-                image: this.image,
-                texture: this.texture
-            }
+        switch (animationType) {
+            case 'SINGLE_THEN_STOP':
+                if (animationIndex < actionImages.nrImages) {
+                    image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
+                }
+                break
+            case 'SINGLE_THEN_FREEZE':
+                image = imageInfoFromHorizontalImageSeries(actionImages, Math.min(animationIndex, actionImages.nrImages - 1))
+                break
+            case 'REPEAT':
+                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
+                break
+            default:
+                image = imageInfoFromHorizontalImageSeries(actionImages, animationIndex)
+                break
         }
 
-        return undefined
+        if (!image) {
+            return undefined
+        }
+
+        const { x, y } = OFFSET_ADJUSTMENTS_FOR_ACTIONS[action] ?? { x: 0, y: 0 }
+
+        return {
+            ...image,
+            offsetX: image.offsetX + x,
+            offsetY: image.offsetY + y,
+            image: this.image
+        }
     }
 
     getDrawingInformationForCargo(direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
@@ -657,8 +604,7 @@ class WorkerImageAtlasHandler {
 
             return {
                 ...imageInfoFromHorizontalImageSeries(cargoImages, (animationIndex + Math.round(offset))),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         }
 
@@ -683,28 +629,17 @@ class WorkerImageAtlasHandler {
     }
 }
 
-class HouseImageAtlasHandler {
+class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
     private pathPrefix: string
-    private imageAtlasInfo?: HouseImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-buildings.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-buildings.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-buildings.json', this.pathPrefix + 'image-atlas-buildings.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -720,8 +655,7 @@ class HouseImageAtlasHandler {
 
         return {
             ...imageInfoFromSingleImage(houseInformation),
-            image: this.image,
-            texture: this.texture
+            image: this.image
         }
     }
 
@@ -734,8 +668,7 @@ class HouseImageAtlasHandler {
 
         return {
             ...imageInfoFromSingleImage(houseInformation),
-            image: this.image,
-            texture: this.texture
+            image: this.image
         }
     }
 
@@ -755,8 +688,7 @@ class HouseImageAtlasHandler {
                 height: houseImage.height * (percentageReady / 100),
                 offsetX: houseImage.offsetX,
                 offsetY: houseImage.offsetY - houseImage.height * ((100 - percentageReady) / 100),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 sourceX: houseShadowImage.x,
@@ -765,14 +697,12 @@ class HouseImageAtlasHandler {
                 height: houseShadowImage.height * (percentageReady / 100),
                 offsetX: houseShadowImage.offsetX,
                 offsetY: houseShadowImage.offsetY - houseImage.height * ((100 - percentageReady) / 100),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
 
     getDrawingInformationForOpenDoor(nation: Nation, houseType: AnyBuilding): DrawingInformation | undefined {
-
         if (this.image === undefined || this.imageAtlasInfo === undefined) {
             console.error('Image or image atlas is undefined')
             console.error([this.image, this.imageAtlasInfo])
@@ -785,8 +715,7 @@ class HouseImageAtlasHandler {
         if (doorImage) {
             return {
                 ...imageInfoFromSingleImage(doorImage),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         }
 
@@ -818,16 +747,14 @@ class HouseImageAtlasHandler {
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(houseAnimation, animationIndex),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...(houseAnimationShadow
                     ? imageInfoFromHorizontalImageSeries(houseAnimationShadow, animationIndex)
                     : imageInfoFromSingleImage(this.imageAtlasInfo.buildings[nation][houseType].readyShadow))
                 ,
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
@@ -854,13 +781,11 @@ class HouseImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(houseImage),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromSingleImage(houseShadowImage),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
@@ -876,39 +801,26 @@ class HouseImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(houseImage),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromSingleImage(houseShadowImage),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }]
     }
 }
 
-class BorderImageAtlasHandler {
+class BorderImageAtlasHandler extends BaseImageAtlasHandler<Record<Nation, Record<PlayerColor, Record<'summerBorder' | 'winterBorder', OneImage>>>> {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<Nation, Record<PlayerColor, Record<'summerBorder' | 'winterBorder', OneImage>>>
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-border.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-border.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-border.json', this.pathPrefix + 'image-atlas-border.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -930,34 +842,22 @@ class BorderImageAtlasHandler {
 
         return {
             ...imageInfoFromSingleImage(imageInfo),
-            image: this.image,
-            texture: this.texture
+            image: this.image
         }
     }
 }
 
-class SignImageAtlasHandler {
+class SignImageAtlasHandler extends BaseImageAtlasHandler<SignImageAtlas> {
     private pathPrefix: string
-    private imageAtlasInfo?: SignImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-signs.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-signs.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-signs.json', this.pathPrefix + 'image-atlas-signs.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -975,40 +875,27 @@ class SignImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(image),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromSingleImage(shadowImage),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
 }
 
-class FireImageAtlasHandler {
+class FireImageAtlasHandler extends BaseImageAtlasHandler<FireImageAtlas> {
     private pathPrefix: string
-    private imageAtlasInfo?: FireImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-fire.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-fire.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-fire.json', this.pathPrefix + 'image-atlas-fire.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -1027,13 +914,11 @@ class FireImageAtlasHandler {
             return [
                 {
                     ...imageInfoFromHorizontalImageSeries(fireImage, animationIndex),
-                    image: this.image,
-                    texture: this.texture
+                    image: this.image
                 },
                 {
                     ...imageInfoFromHorizontalImageSeries(fireShadowImage, animationIndex),
-                    image: this.image,
-                    texture: this.texture
+                    image: this.image
                 }
             ]
         }
@@ -1041,8 +926,7 @@ class FireImageAtlasHandler {
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(fireImage, animationIndex),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
@@ -1056,12 +940,11 @@ class FireImageAtlasHandler {
 
         return {
             ...imageInfoFromSingleImage(drawingInfo),
-            image: this.image,
-            texture: this.texture
+            image: this.image
         }
     }
 
-    getSmokeDrawingInformation(nation: string, houseType: AnyBuilding, animationIndex: number): DrawingInformation | undefined {
+    getSmokeDrawingInformation(nation: Nation, houseType: AnyBuilding, animationIndex: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
@@ -1080,8 +963,7 @@ class FireImageAtlasHandler {
                 ...imageInfo,
                 offsetX: -smokeType.offset[0] + imageInfo.offsetX,
                 offsetY: -smokeType.offset[1] + imageInfo.offsetY,
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         }
 
@@ -1089,28 +971,17 @@ class FireImageAtlasHandler {
     }
 }
 
-class CargoImageAtlasHandler {
+class CargoImageAtlasHandler extends BaseImageAtlasHandler<CargoImageAtlas> {
     private pathPrefix: string
-    private imageAtlasInfo?: CargoImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-cargos.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-cargos.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-cargos.json', this.pathPrefix + 'image-atlas-cargos.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -1127,8 +998,7 @@ class CargoImageAtlasHandler {
         if (genericInfo !== undefined) {
             return {
                 ...imageInfoFromSingleImage(genericInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         }
 
@@ -1139,8 +1009,7 @@ class CargoImageAtlasHandler {
 
             return {
                 ...imageInfoFromSingleImage(drawInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         }
 
@@ -1148,28 +1017,17 @@ class CargoImageAtlasHandler {
     }
 }
 
-class RoadBuildingImageAtlasHandler {
+class RoadBuildingImageAtlasHandler extends BaseImageAtlasHandler<RoadBuildingImageAtlas> {
     private pathPrefix: string
-    private imageAtlasInfo?: RoadBuildingImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-road-building.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-road-building.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-road-building.json', this.pathPrefix + 'image-atlas-road-building.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -1185,8 +1043,7 @@ class RoadBuildingImageAtlasHandler {
 
         return {
             ...imageInfoFromSingleImage(startPointInfo),
-            image: this.image,
-            texture: this.texture
+            image: this.image
         }
     }
 
@@ -1199,8 +1056,7 @@ class RoadBuildingImageAtlasHandler {
 
         return {
             ...imageInfoFromSingleImage(sameLevelConnectionInfo),
-            image: this.image,
-            texture: this.texture
+            image: this.image
         }
     }
 
@@ -1213,8 +1069,7 @@ class RoadBuildingImageAtlasHandler {
 
         return {
             ...imageInfoFromSingleImage(connectionInfo),
-            image: this.image,
-            texture: this.texture
+            image: this.image
         }
 
     }
@@ -1228,35 +1083,23 @@ class RoadBuildingImageAtlasHandler {
 
         return {
             ...imageInfoFromSingleImage(connectionInfo),
-            image: this.image,
-            texture: this.texture
+            image: this.image
         }
 
     }
 }
 
-class TreeImageAtlasHandler {
+class TreeImageAtlasHandler extends BaseImageAtlasHandler<TreeImageAtlas> {
     private pathPrefix: string
-    private imageAtlasInfo?: TreeImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-trees.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-trees.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-trees.json', this.pathPrefix + 'image-atlas-trees.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -1274,13 +1117,11 @@ class TreeImageAtlasHandler {
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(imagesForTreeType, animationCounter),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromHorizontalImageSeries(shadowImagesForTreeType, animationCounter),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
         ]
     }
@@ -1296,13 +1137,11 @@ class TreeImageAtlasHandler {
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(imagePerTreeType, step),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromHorizontalImageSeries(shadowImagePerTreeType, step),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
@@ -1321,40 +1160,28 @@ class TreeImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(imageInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromSingleImage(shadowImageInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
 }
 
-class StoneImageAtlasHandler {
+type StoneImageAtlasInfo = Record<StoneType, Record<StoneAmount, Record<'image' | 'shadowImage', OneImage>>>
+class StoneImageAtlasHandler extends BaseImageAtlasHandler<StoneImageAtlasInfo> {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<StoneType, Record<StoneAmount, Record<'image' | 'shadowImage', OneImage>>>
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-stones.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-stones.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-stones.json', this.pathPrefix + 'image-atlas-stones.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -1366,7 +1193,7 @@ class StoneImageAtlasHandler {
             return undefined
         }
 
-        if (this.imageAtlasInfo === undefined || this.imageAtlasInfo[stoneType] === undefined || this.imageAtlasInfo[stoneType][amount] === undefined || this.imageAtlasInfo[stoneType][amount].image === undefined) {
+        if (this.imageAtlasInfo[stoneType] === undefined || this.imageAtlasInfo[stoneType][amount] === undefined || this.imageAtlasInfo[stoneType][amount].image === undefined) {
             console.log([this.imageAtlasInfo, stoneType, amount])
         }
 
@@ -1376,40 +1203,28 @@ class StoneImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(image),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromSingleImage(shadowImage),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
 }
 
-class DecorationsImageAtlasHandler {
+type DecorationImageAtlasInfo = Record<DecorationType, Record<'image' | 'shadowImage', OneImage>>
+class DecorationsImageAtlasHandler extends BaseImageAtlasHandler<DecorationImageAtlasInfo> {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<DecorationType, Record<'image' | 'shadowImage', OneImage>>
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-decorations.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-decorations.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-decorations.json', this.pathPrefix + 'image-atlas-decorations.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -1432,14 +1247,12 @@ class DecorationsImageAtlasHandler {
             return [
                 {
                     ...imageInfoFromSingleImage(imageInfo),
-                    image: this.image,
-                    texture: this.texture
+                    image: this.image
 
                 },
                 {
                     ...imageInfoFromSingleImage(shadowImage),
-                    image: this.image,
-                    texture: this.texture
+                    image: this.image
 
                 }
             ]
@@ -1448,35 +1261,24 @@ class DecorationsImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(imageInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
 }
 
-class CropImageAtlasHandler {
+type CropImageAtlasInfo = Record<CropType, Record<CropGrowth, Record<'image' | 'shadowImage', OneImage>>>
+class CropImageAtlasHandler extends BaseImageAtlasHandler<CropImageAtlasInfo> {
     private pathPrefix: string
-    private imageAtlasInfo?: Record<CropType, Record<CropGrowth, Record<'image' | 'shadowImage', OneImage>>>
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string) {
+        super()
+
         this.pathPrefix = prefix
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-crops.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-crops.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-crops.json', this.pathPrefix + 'image-atlas-crops.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -1494,42 +1296,29 @@ class CropImageAtlasHandler {
         return [
             {
                 ...imageInfoFromSingleImage(imageInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             },
             {
                 ...imageInfoFromSingleImage(shadowImageInfo),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
     }
 }
 
-class AnimalImageAtlasHandler {
+class AnimalImageAtlasHandler extends BaseImageAtlasHandler<AnimalImageAtlas> {
     private pathPrefix: string
     private name: string
-    private imageAtlasInfo?: AnimalImageAtlas
-    private image?: HTMLImageElement
-    private texture?: WebGLTexture | null
 
     constructor(prefix: string, name: string) {
+        super()
+
         this.pathPrefix = prefix
         this.name = name
     }
 
     async load(): Promise<void> {
-
-        // Get the image atlas information
-        if (this.imageAtlasInfo === undefined) {
-            const response = await fetch(this.pathPrefix + 'image-atlas-' + this.name + '.json')
-            this.imageAtlasInfo = await response.json()
-        }
-
-        // Download the actual image atlas
-        if (this.image === undefined) {
-            this.image = await loadImageAsync(this.pathPrefix + 'image-atlas-' + this.name + '.png')
-        }
+        await super.load(this.pathPrefix + 'image-atlas-' + this.name + '.json', this.pathPrefix + 'image-atlas-' + this.name + '.png')
     }
 
     getSourceImage(): HTMLImageElement | undefined {
@@ -1547,8 +1336,7 @@ class AnimalImageAtlasHandler {
             if (cargoImage) {
                 return {
                     ...imageInfoFromSingleImage(cargoImage),
-                    image: this.image,
-                    texture: this.texture
+                    image: this.image
                 }
             }
         }
@@ -1559,8 +1347,7 @@ class AnimalImageAtlasHandler {
             if (cargoImage) {
                 return {
                     ...imageInfoFromSingleImage(cargoImage),
-                    image: this.image,
-                    texture: this.texture
+                    image: this.image
                 }
             }
         }
@@ -1593,13 +1380,11 @@ class AnimalImageAtlasHandler {
             return [
                 {
                     ...imageInfoFromHorizontalImageSeries(image, animationCounter),
-                    image: this.image,
-                    texture: this.texture
+                    image: this.image
                 },
                 {
                     ...imageInfoFromSingleImage(shadowImage),
-                    image: this.image,
-                    texture: this.texture
+                    image: this.image
                 }
             ]
         }
@@ -1607,8 +1392,7 @@ class AnimalImageAtlasHandler {
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(image, animationCounter),
-                image: this.image,
-                texture: this.texture
+                image: this.image
             }
         ]
 
@@ -1629,8 +1413,10 @@ function imageInfoFromSingleImage(imageInfo: OneImage): PartialDrawingInformatio
 }
 
 function imageInfoFromHorizontalImageSeries(image: ImageSeries, animationIndex: number): PartialDrawingInformation {
+    const index = ((animationIndex % image.nrImages) + image.nrImages) % image.nrImages
+
     return {
-        sourceX: image.startX + (animationIndex % image.nrImages) * image.width,
+        sourceX: image.startX + index * image.width,
         sourceY: image.startY,
         width: image.width,
         height: image.height,
@@ -1658,7 +1444,7 @@ function loadImageAsync(src: string): Promise<HTMLImageElement> {
         image.onerror = () => {
             console.error(`Failed to load ${src}`)
 
-            reject()
+            reject(new Error(`Failed to load ${src}`))
         }
 
         image.src = src

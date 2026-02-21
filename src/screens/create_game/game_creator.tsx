@@ -11,7 +11,8 @@ import { Center } from '../../components/center'
 import { dispatchInputKey, GenericCommand, GenericTypeControl } from '../play/type_control'
 import { UiIcon } from '../../icons/icon'
 import { useMaps } from '../../utils/hooks/hooks'
-import { addComputerPlayer } from './utils'
+import { addComputerPlayer } from '../../api/utils'
+
 
 // Types
 type GameCreatorProps = {

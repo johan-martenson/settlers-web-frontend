@@ -18,7 +18,7 @@ type MonitoredBorderForPlayer = {
 }
 
 type WalkerTargetChange = {
-    id: string
+    id: WorkerId
     x: number
     y: number
     path: Point[]
@@ -311,8 +311,7 @@ function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
  * @param {any} message - The received WebSocket message. The type is `any` because the exact structure is validated within the function.
  * @returns {void}
  */
-// eslint-disable-next-line
-function onMessageReceived(message: any): void {
+function onMessageReceived(message: unknown): void {
     if (WsApiLogConfig.receive) {
         console.log(`WS API: WS API: Got message: ${JSON.stringify(message)}`)
     }
@@ -358,7 +357,7 @@ function onMessageReceived(message: any): void {
     } catch (e) {
         console.error(e)
         console.error(JSON.stringify(e))
-        console.info(message.data)
+        console.info(message)
     }
 }
 
@@ -1124,7 +1123,7 @@ function removeFlagListener(flagId: FlagId, listener: FlagListener): void {
  * @returns {void}
  */
 function addAvailableConstructionListener(point: Point, listener: AvailableConstructionListener): void {
-    if (availableConstructionListeners.has(point)) {
+    if (!availableConstructionListeners.has(point)) {
         availableConstructionListeners.set(point, new Set())
     }
 
@@ -1203,7 +1202,7 @@ function handleGameInformationChangedMessage(gameInformation: GameInformation): 
 
             gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
         }
-        )().then()
+        )()
     }
 
     loadGameInformationAndCallListeners(gameInformation)
@@ -1340,9 +1339,9 @@ function startTimers(): void {
 
                 actionListeners.forEach(actionListener => actionListener.actionEnded(fallingTree.id, fallingTree, 'FALLING_TREE'))
             }
-
-            treesToRemove.forEach(id => api.fallingTrees.delete(id))
         })
+
+        treesToRemove.forEach(id => api.fallingTrees.delete(id))
     }, gameTickLength)
 
     // Move workers locally to reduce the amount of messages from the server
@@ -1614,18 +1613,15 @@ function stopTimers(): void {
         }
     })
 
-    walkingTimerState = 'RUNNING'
+    walkingTimerState = 'NOT_RUNNING'
 }
 
 /**
- * Clears the player view and reloads it, then notifies all relevant listeners.
- * 
- * @param {PlayerViewInformation} playerView - The player view information to load.
+ * Clears the API state
  */
-function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformation): void {
-
+function clearApiState(): void {
     if (WsApiLogConfig.receive) {
-        console.log('Handling full sync message')
+        console.log('Clearing API state')
     }
 
     // Clear the local state
@@ -1643,6 +1639,29 @@ function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformatio
     api.deadTrees.clear()
     api.decorations.clear()
     api.housesAt.clear()
+    api.border.clear()
+    api.players.clear()
+    api.transportPriority = undefined
+    api.chatRoomMessages = []
+    api.messages.clear()
+    api.fallingTrees.clear()
+    api.allTiles.clear()
+    api.pointsWithBelowTileDiscovered.clear()
+    api.pointsWithDownRightTileDiscovered.clear()
+}
+
+/**
+ * Clears the player view and reloads it, then notifies all relevant listeners.
+ * 
+ * @param {PlayerViewInformation} playerView - The player view information to load.
+ */
+function clearAndLoadPlayerViewAndCallListeners(playerView: PlayerViewInformation): void {
+
+    if (WsApiLogConfig.receive) {
+        console.log('Handling full sync message')
+    }
+
+    clearApiState()
 
     // Read the full state from the backend
     loadPlayerViewAndCallListeners(playerView)
@@ -1676,8 +1695,40 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     // Clear local additions
     api.roads.delete('LOCAL')
-    api.flags.delete('LOCAL')
-    api.houses.delete('LOCAL')
+
+
+    /// Collect changes to report on, before API changes are made, so that the listeners get the correct information
+    // Identify points where information has changed based, before updating API state
+    const changedPoints = new PointSet()
+
+    playerViewChanges.newDiscoveredLand?.forEach(point => changedPoints.add(point))
+    playerViewChanges.newBuildings?.forEach(house => changedPoints.add({ x: house.x, y: house.y }))
+    playerViewChanges.removedBuildings?.forEach(id => {
+        const house = api.houses.get(id)
+
+        if (house) {
+            changedPoints.add({ x: house.x, y: house.y })
+        }
+    })
+    playerViewChanges.newFlags?.forEach(flag => changedPoints.add({ x: flag.x, y: flag.y }))
+    playerViewChanges.removedFlags?.forEach(id => {
+        const flag = api.flags.get(id)
+
+        if (flag) {
+            changedPoints.add({ x: flag.x, y: flag.y })
+        }
+    })
+    playerViewChanges.newRoads?.forEach(road => road.points.forEach(point => changedPoints.add(point)))
+    playerViewChanges.removedRoads?.forEach(id => {
+        const road = api.roads.get(id)
+
+        if (road) {
+            road.points.forEach(point => changedPoints.add(point))
+        }
+    })
+
+
+    /// Apply changes
 
     // Update game speed
     if (playerViewChanges?.gameSpeed) {
@@ -1687,8 +1738,6 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     }
 
     api.time = playerViewChanges.time
-
-    api.cheatingEnabled = playerViewChanges.cheatingEnabled
 
     // Confirm local removals if they are part of the message
     playerViewChanges.removedFlags?.forEach(removedFlagId => api.localRemovedFlags.delete(removedFlagId))
@@ -1744,9 +1793,13 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
                 worker.actionAnimationIndex = 0
             }
 
-            playerViewChanges.workersWithStartedActions?.forEach(worker => {
-                actionListeners.forEach(listener => listener.actionStarted(worker.id, { x: worker.x, y: worker.y }, worker.startedAction ?? ''))
-            })
+            actionListeners.forEach(listener => listener.actionStarted(
+                workerWithNewAction.id,
+                {
+                    x: workerWithNewAction.x,
+                    y: workerWithNewAction.y
+                },
+                workerWithNewAction.startedAction ?? ''))
         })
     }
 
@@ -1854,7 +1907,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             const player = api.players.get(changedBorder.playerId)
 
             if (player) {
-                player.ownedLand = ([...player.ownedLand, ...changedBorder.newOwnedLand]).filter(point => !changedBorder.removedOwnedLand.includes(point))
+                player.ownedLand = ([...player.ownedLand, ...changedBorder.newOwnedLand]).filter(point => !changedBorder.removedOwnedLand.find(p => p.x === point.x && p.y === point.y))
             }
         })
     }
@@ -1896,7 +1949,9 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     playerViewChanges.readMessages?.forEach(message => api.messages.set(message.id, message))
     playerViewChanges.removedMessages?.forEach(messageId => api.messages.delete(messageId))
 
-    // Notify listeners when all data is updated
+
+
+    /// Notify listeners when all data is updated
     if (playerViewChanges.newDiscoveredLand) {
         const newDiscoveredLand = new PointSet(playerViewChanges.newDiscoveredLand)
         discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
@@ -1929,43 +1984,12 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     }
 
     if (playerViewChanges.transportPriority !== undefined && api.transportPriority) {
-        for (const listener of transportPriorityListeners) {
-            listener(api.transportPriority)
-        }
+        transportPriorityListeners.forEach(listener => listener(api.transportPriority!))
     }
 
     if (playerViewChanges?.changedBorders !== undefined) {
         ownedLandListeners.forEach(listener => listener())
     }
-
-    // Notify listeners for point information
-    const changedPoints = new PointSet()
-
-    playerViewChanges.newDiscoveredLand?.forEach(point => changedPoints.add(point))
-    playerViewChanges.newBuildings?.forEach(house => changedPoints.add({ x: house.x, y: house.y }))
-    playerViewChanges.removedBuildings?.forEach(id => {
-        const house = api.houses.get(id)
-
-        if (house) {
-            changedPoints.add({ x: house.x, y: house.y })
-        }
-    })
-    playerViewChanges.newFlags?.forEach(flag => changedPoints.add({ x: flag.x, y: flag.y }))
-    playerViewChanges.removedFlags?.forEach(id => {
-        const flag = api.flags.get(id)
-
-        if (flag) {
-            changedPoints.add({ x: flag.x, y: flag.y })
-        }
-    })
-    playerViewChanges.newRoads?.forEach(road => road.points.forEach(point => changedPoints.add(point)))
-    playerViewChanges.removedRoads?.forEach(id => {
-        const road = api.roads.get(id)
-
-        if (road) {
-            road.points.forEach(point => changedPoints.add(point))
-        }
-    })
 
     changedPoints.forEach(point => {
         const pointInformation = getInformationOnPointLocal(point)
@@ -2202,7 +2226,7 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
             plannedPath: walkerTargetChange.path?.length ? walkerTargetChange.path : undefined,
             previous: { x: walkerTargetChange.x, y: walkerTargetChange.y },
             next: walkerTargetChange.path?.[0],
-            betweenPoints: walkerTargetChange.percentageTraveled === undefined || walkerTargetChange.percentageTraveled === 0 || walkerTargetChange.percentageTraveled === 100,
+            betweenPoints: walkerTargetChange.percentageTraveled === undefined || walkerTargetChange.percentageTraveled === 0 || walkerTargetChange.percentageTraveled >= 100,
             percentageTraveled: walkerTargetChange.percentageTraveled !== undefined ? walkerTargetChange.percentageTraveled : 0,
             action: undefined,
             cargo: walkerTargetChange.cargo,
@@ -2377,7 +2401,6 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
 
         // Sync the received view
         if (playerView !== undefined) {
-
             if (WsApiLogConfig.receive) {
                 console.log('WS API (receive): Loading player view')
             }
@@ -2398,14 +2421,20 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
 /**
  * Stops following the current game and clears all game data from the local state.
  */
-async function stopFollowingGame(): Promise<void> {
+function stopFollowingGame(): void {
+
+    if (WsApiLogConfig.following) {
+        console.log('WS API (following): Stopping following game')
+    }
 
     // Clear game data
     api.gameId = undefined
     api.players.clear()
 
     requestedFollowingState = 'NO_FOLLOW'
-    await clearGame()
+    clearGame()
+    stopTimers()
+
     followingState = 'NOT_FOLLOWING'
 }
 

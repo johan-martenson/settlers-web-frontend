@@ -6,6 +6,19 @@ type Texture = {
 
 const textures: Map<WebGL2RenderingContext, Map<HTMLImageElement, Texture>> = new Map()
 
+function clearTexturesForContext(gl: WebGL2RenderingContext): void {
+    const imageMap = textures.get(gl)
+    
+    if (imageMap) {
+        for (const texture of imageMap.values()) {
+            gl.deleteTexture(texture.texture)
+        }
+
+        imageMap.clear()
+    }
+}
+
+
 function registerTexture(gl: WebGL2RenderingContext, image: HTMLImageElement | undefined): void {
     if (image === undefined) {
         console.error('Image is undefined')
@@ -49,7 +62,8 @@ function activateTextureForRendering(gl: WebGL2RenderingContext, image: HTMLImag
 
 const textureManager = {
     registerTexture,
-    activateTextureForRendering
+    activateTextureForRendering,
+    clearTexturesForContext
 }
 
 export { textureManager as textures }

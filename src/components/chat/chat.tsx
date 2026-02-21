@@ -1,5 +1,5 @@
 import { Button, Input, InputOnChangeData } from '@fluentui/react-components'
-import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
+import React, { ChangeEvent, useCallback, useRef, useState } from 'react'
 import { api } from '../../api/ws-api'
 import { PlayerId, RoomId } from '../../api/types'
 import './chat.css'
@@ -29,15 +29,6 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
     // Listening hooks
     const chatLog = useChatMessages(playerId, [roomId])
-
-    // Effects
-    useEffect(() => {
-        const unread = Array.from(api.messages.values()).filter(m => !m.isRead)
-
-        if (unread.length > 0) {
-            api.markGameMessagesRead(unread.map(m => m.id))
-        }
-    }, [chatLog])
 
     // Functions
     const sendMessage = useCallback(() => {

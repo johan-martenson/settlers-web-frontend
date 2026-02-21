@@ -4,7 +4,8 @@ import { Player } from './player'
 import './manage_players.css'
 import { PlayerType, PlayerInformation, Nation, PlayerColor, PLAYER_COLORS, PlayerId, GameInformation } from '../../api/types'
 import { GameListener, api } from '../../api/ws-api'
-import { addComputerPlayer } from './utils'
+import { addComputerPlayer } from '../../api/utils'
+
 
 // Types
 export type PlayerCandidateType = {

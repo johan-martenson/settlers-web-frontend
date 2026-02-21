@@ -25,7 +25,6 @@ export type DrawingInformation = {
     offsetY: number
     image: HTMLImageElement
     textureIndex?: number
-    texture?: WebGLTexture | null
 }
 
 export type OneImage = {

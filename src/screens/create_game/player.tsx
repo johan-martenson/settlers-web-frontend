@@ -68,7 +68,7 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                                             onClick={() => setEditNation(nation)} key={nation}
                                         >
                                             <div>
-                                                <WorkerIcon worker='General' color='BLUE' nation={nation} scale={2} />
+                                                <WorkerIcon worker='General' color='BLUE' nation={nation} scale={2} animate />
                                             </div>
                                         </div>
                                     ))}

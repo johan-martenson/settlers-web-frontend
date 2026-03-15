@@ -1,4 +1,4 @@
-import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation, WATER_1, WATER_2, BUILDABLE_WATER } from '../api/types'
+import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation, WATER_1, WATER_2, BUILDABLE_WATER, LAVA_1 } from '../api/types'
 import { api } from '../api/ws-api'
 import { ScreenPoint, View } from '../render/game_render'
 import { STANDARD_HEIGHT } from '../render/constants'
@@ -79,27 +79,117 @@ function isContext2D(context: RenderingContext): context is CanvasRenderingConte
     return true
 }
 
+/**
+ * Terrain information is send as three arrays:
+ *  - tilesBelow
+ *  - tilesDownRight
+ *  - heights
+ * 
+ * Tiles have points above and below which means that there is one more row of points than tiles.
+ * The heights array includes the bottom row first:
+ * 
+ * Map file coordinates:
+ *    map-file-row-0
+ *     ...
+ *    map-file-row-n
+ * 
+ * Game coordinates:
+ *     game-row-n <-- corresponds to map-file-row-0
+ *     ...
+ *     game-row-1 <-- corresponds to map-file-row-n
+ *     game-row-0 <-- additional row of points with only heights, the tiles below and downRight are set to LAVA_1
+ * 
+ * tilesBelow:     [map-file-row-0..., map-file-row-n]
+ * tilesDownRight: [map-file-row-n..., map-file-row-n]
+ * heights:        [map-file-row-0..., map-file-row-n, game-row-0]
+ * 
+ * @param terrainInformation 
+ * @returns 
+ */
 function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInformation): TerrainAtPoint[] {
-    let count = 0
-
+    const fileWidth = gameWidthToMapFileWidth(terrainInformation.width)
+    const fileHeight = gameHeightToMapFileHeight(terrainInformation.height)
     const terrain: TerrainAtPoint[] = []
 
-    for (let y = 1; y < terrainInformation.height; y++) {
-        const startX = y % 2 === 0 ? 0 : 1
+    console.log("File dimensions", fileWidth, fileHeight)
+    console.log(
+        terrainInformation.tilesBelow.length,
+        terrainInformation.tilesDownRight.length,
+        terrainInformation.heights.length,
+        fileWidth,
+        fileHeight
+    )
 
-        for (let x = startX; x + 2 < terrainInformation.width; x += 2) {
+    // Assign all rows but the game-engine bottom row. Read data in map file order
+    for (let fileY = 0; fileY < fileHeight; fileY++) {
+        for (let fileX = 0; fileX < fileWidth; fileX++) {
+            const fileIndex = fileY * fileWidth + fileX
+            const gamePoint = mapFilePointToGamePoint(fileX, fileY, fileHeight)
+
             terrain.push({
-                point: { x, y },
-                below: terrainInformation.straightBelow[count],
-                downRight: terrainInformation.belowToTheRight[count],
-                height: terrainInformation.heights[count]
+                point: { x: gamePoint.x, y: gamePoint.y },
+                below: terrainInformation.tilesBelow[fileIndex],
+                downRight: terrainInformation.tilesDownRight[fileIndex],
+                height: terrainInformation.heights[fileIndex]
             })
-
-            count++
         }
     }
 
+    // Assign the game-engine bottom row of only heights. Re-use the last map file row.
+    for (let fileX = 0; fileX < fileWidth; fileX++) {
+        const fileIndex = fileWidth * fileHeight + fileX
+        const gamePoint = mapFilePointToGamePoint(fileX, fileHeight, fileHeight)
+
+        terrain.push({
+            point: { x: gamePoint.x, y: gamePoint.y },
+            below: LAVA_1,
+            downRight: LAVA_1,
+            height: terrainInformation.heights[fileIndex]
+        })
+    }
+
     return terrain
+}
+
+function mapFilePointToGamePoint(fileX: number, fileY: number, fileHeight: number): Point {
+    return {
+        x: 2 * fileX + (fileY & 1),
+        y: fileHeight - fileY
+    }
+}
+
+function fileIndexToGamePoint(fileIndex: number, fileWidth: number, fileHeight: number): Point {
+    const fileX = fileIndex % fileWidth
+    const fileY = (fileIndex - fileX) / fileWidth
+
+    return {
+        x: 2 * fileX + (fileY & 1),
+        y: fileHeight - fileY
+    }
+}
+
+function gameYToFileY(gameY: number, fileHeight: number): number {
+    return fileHeight - gameY
+}
+
+function fileYToGameY(fileY: number, fileHeight: number): number {
+    return fileHeight - fileY
+}
+
+function gameWidthToMapFileWidth(gameWidth: number): number {
+    return gameWidth / 2
+}
+
+function gameHeightToMapFileHeight(gameHeight: number): number {
+    return gameHeight - 1
+}
+
+function indentFromGameY(gameY: number, fileHeight: number): boolean {
+    return gameY % 2 === fileHeight % 2
+}
+
+function indentFromMapFileY(fileY: number): boolean {
+    return fileY % 2 !== 0
 }
 
 function vectorFromPoints(p1: Point3D, p2: Point3D): Vector {
@@ -330,7 +420,7 @@ async function makeImageFromMap(
 
     // Draw the non-water terrain on top
     terrain.forEach(({ point, below, downRight }) => {
-        if (point.x % renderOptions.scaleDown === 0 && point.y % renderOptions.scaleDown === 0) {
+        if ((point.x % renderOptions.scaleDown) === 0 && (point.y % renderOptions.scaleDown) === 0) {
             const colorBelow = INT_TO_VEGETATION_COLOR.get(below)
             const colorDownRight = INT_TO_VEGETATION_COLOR.get(downRight)
 
@@ -385,7 +475,7 @@ async function makeImageFromMap(
     if (renderOptions.drawFogOfWar && discovered) {
         for (let y = 0; y < map.height; y++) {
             for (let x = 0; x < map.width; x++) {
-                if (!discovered?.has({ x: x * 2 + ((y % 2 === 0) ? 0 : 1), y })) {
+                if (!discovered?.has({ x: x * 2 + ((y % 2 === 0) ? 0 : 1), y })) { // TODO: needs to be fixed!!!
                     drawPixel(ctx, { x, y }, 'black')
                 }
             }
@@ -515,7 +605,7 @@ function screenPointToGamePointNoHeightAdjustment(screenPoint: ScreenPoint, view
     const faultY = gameY - roundedGameY
 
     // Adjust to nearest valid point
-    if ((roundedGameX + roundedGameY) % 2 !== 0) {
+    if ((roundedGameX + roundedGameY) % 2 !== 0) { // TODO: needs to be fixed!!
         if (Math.abs(faultX) > Math.abs(faultY)) {
             roundedGameX += faultX > 0 ? 1 : -1
         } else {

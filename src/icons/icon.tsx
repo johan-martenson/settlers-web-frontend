@@ -4,6 +4,7 @@ import { flagImageAtlasHandler, houses, materialImageAtlasHandler, uiElementsIma
 import './icon.css'
 import { flagAnimations, workers } from '../assets/animations'
 import { DrawingInformation } from '../assets/types'
+import { useAnimatedSprite } from './utils'
 
 // Types
 export type UiIconType = 'DESTROY_BUILDING'
@@ -23,7 +24,6 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'ONE_YELLOW_SHIELD'
     | 'FIVE_YELLOW_SHIELDS'
     | 'LIGHT_ROAD_IN_NATURE'
-    | 'BROKEN_FLAG'
     | 'ROMAN_GENERAL'
     | 'ROMAN_PRIVATE'
     | 'GO_TO_POINT'
@@ -35,7 +35,6 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'RED_MEDIUM_AVAILABLE_BUILDING'
     | 'RED_LARGE_AVAILABLE_BUILDING'
     | 'SHOVEL'
-    | 'PULL_DOWN_FLAG'
     | 'GEARS'
     | 'GEARS_CROSSED_OVER'
     | 'FORTRESS_WITH_PLUS'
@@ -59,7 +58,6 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'GENERAL_WITH_QUESTION_MARK'
     | 'COINS_WITH_QUESTION_MARK'
     | 'GEARS_WITH_QUESTION_MARK'
-    | 'ANGEL_WITH_QUESTION_MARK'
     | 'WREATH_ON_MAP'
     | 'GOODS_ON_MAP'
     | 'OWNED_BUILDINGS_ON_MAP'
@@ -106,7 +104,6 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'RIGHT_ARROW'
     | 'GLOBE_WITH_MAGNIFYING_GLASS'
     | 'OWNED_AREA_ON_MAP'
-    | 'OWNED_BUILDINGS_ON_MAP'
     | 'OWNED_ROADS_ON_MAP'
     | 'GRAPH_OF_OWNED_AREA_ON_MAP'
     | 'PLAY'
@@ -163,17 +160,10 @@ type FlagIconProps = {
     onMouseLeave?: () => void
 }
 
-type AnimationIndexHolder = {
-    animationIndex: number
-}
-
 // Constants
 export const SHADOW_COLOR = '#333333'
-const ANIMATION_INTERVAL = 100
-const MAX_FRAMES = 10
 
 // State
-const imageCache = new WeakMap<HTMLImageElement, ImageBitmap>()
 
 // Functions
 function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, shadowInfo: DrawingInformation, drawShadow: boolean, canvas: HTMLCanvasElement, scale: number): void {
@@ -183,6 +173,8 @@ function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, sh
         console.error('No 2d drawing context')
         return
     }
+
+    const dpr = window.devicePixelRatio || 1
 
     if (drawShadow) {
 
@@ -200,18 +192,27 @@ function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, sh
         const right = Math.max(aRight, bRight)
         const bottom = Math.max(aBottom, bBottom)
 
-        const width = offsetX + right
-        const height = offsetY + bottom
+        const logicalWidth = (offsetX + right) * scale
+        const logicalHeight = (offsetY + bottom) * scale
 
-        // Scale the combined image
-        const targetWidth = width * scale
-        const targetHeight = height * scale
+        const physicalWidth = Math.ceil(logicalWidth * dpr)
+        const physicalHeight = Math.ceil(logicalHeight * dpr)
 
-        canvas.width = targetWidth
-        canvas.height = targetHeight
+        if (canvas.width !== physicalWidth || canvas.height !== physicalHeight) {
+            canvas.width = physicalWidth
+            canvas.height = physicalHeight
+
+
+            canvas.style.width = `${logicalWidth}px`
+            canvas.style.height = `${logicalHeight}px`
+            context.setTransform(dpr, 0, 0, dpr, 0, 0)
+        }
 
         // Clear the area
-        context.clearRect(0, 0, targetWidth, targetHeight)
+        context.clearRect(0, 0, logicalWidth, logicalHeight)
+
+        // Save the context before changing composite style
+        context.save()
 
         // Draw the shadow
         context.drawImage(
@@ -229,7 +230,8 @@ function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, sh
             shadowInfo.width * scale,
             shadowInfo.height * scale
         )
-        context.globalCompositeOperation = 'source-over'
+
+        context.restore()
 
         // Draw the foreground image
         context.drawImage(
@@ -239,8 +241,22 @@ function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, sh
             (offsetX - drawInfo.offsetX) * scale, (offsetY - drawInfo.offsetY) * scale,
             drawInfo.width * scale, drawInfo.height * scale)
     } else {
-        canvas.width = drawInfo.width * scale
-        canvas.height = drawInfo.height * scale
+        const logicalWidth = drawInfo.width * scale
+        const logicalHeight = drawInfo.height * scale
+
+        const physicalWidth = Math.ceil(logicalWidth * dpr)
+        const physicalHeight = Math.ceil(logicalHeight * dpr)
+
+        if (canvas.width !== physicalWidth || canvas.height !== physicalHeight) {
+            canvas.width = physicalWidth
+            canvas.height = physicalHeight
+
+            canvas.style.width = `${logicalWidth}px`
+            canvas.style.height = `${logicalHeight}px`
+            context.setTransform(dpr, 0, 0, dpr, 0, 0)
+        }
+
+        context.clearRect(0, 0, logicalWidth, logicalHeight)
 
         // Draw the foreground image only
         context.drawImage(
@@ -262,160 +278,103 @@ const WorkerIcon = ({
     color = 'BLUE',
     drawShadow = false
 }: WorkerIconProps) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
 
-    // References
-    const canvasRef = useRef<HTMLCanvasElement | null>(null)
-
-    // State
-    // eslint-disable-next-line
-    const [animationIndexHolder, setAnimationIndexHolder] = useState<AnimationIndexHolder>({ animationIndex: 0 })
-
-    // Functions
-    const drawWorker = useCallback((image: ImageBitmap, worker: WorkerType, nation: Nation, direction: Direction, color: PlayerColor, animationIndex: number) => {
-        const canvas = canvasRef.current
-
-        if (!canvas) {
-            console.error('No canvas ref set')
-            return
-        }
-
-        const animationHandler = workers.get(worker)
-        const drawArray = animationHandler?.getAnimationFrame(nation, direction, color, 0, animationIndex)
-
-        if (!drawArray) {
-            console.error('No drawing information')
-            return
-        }
-
-        const drawInfo = drawArray[0]
-        const shadowInfo = drawArray[1]
-
-        drawImageAndShadow(image, drawInfo, shadowInfo, drawShadow, canvas, scale)
-    }, [canvasRef])
-
-    // Effects
-    // Load image and drawing information
-    useEffect(() => {
-        let isCancelled = false;
-
-        (async () => {
-            const animationHandler = workers.get(worker)
-            if (!animationHandler) {
-                console.error(`No animation handler for worker: ${worker}`)
-                return
+    useAnimatedSprite({
+        animate,
+        fps: 10,
+        deps: [worker, nation, direction, color, scale, drawShadow],
+        loader: async () => {
+            const handler = workers.get(worker)
+            if (!handler) {
+                throw new Error(`No handler for ${worker}`)
             }
 
-            await animationHandler.load()
-
-            if (isCancelled) {
-                return
-            }
-
-            const image = animationHandler.getImageAtlasHandler().getSourceImage()
-
+            await handler.load()
+            const image = handler.getImageAtlasHandler().getSourceImage()
             if (!image) {
-                console.error(`No image available for worker: ${worker}`)
+                throw new Error('No image')
+            }
+
+            return { image }
+        },
+        getFrame: (bitmap, frameIndex) => {
+            const canvas = canvasRef.current
+            if (!canvas) {
                 return
             }
 
-            let imageBitmap = imageCache.get(image)
+            const handler = workers.get(worker)
+            const drawArray = handler?.getAnimationFrame(
+                nation,
+                direction,
+                color,
+                0,
+                frameIndex
+            )
 
-            if (!imageBitmap) {
-                imageBitmap = await createImageBitmap(image)
-                imageCache.set(image, imageBitmap)
-
-                if (isCancelled) {
-                    return
-                }
+            if (!drawArray) {
+                return
             }
 
-            drawWorker(imageBitmap, worker, nation, direction, color, 0)
+            const [drawInfo, shadowInfo] = drawArray
 
-            if (animate) {
-                const intervalId = setInterval(() => {
-                    animationIndexHolder.animationIndex = (animationIndexHolder.animationIndex + 1) % MAX_FRAMES
-
-                    requestAnimationFrame(() => drawWorker(imageBitmap, worker, nation, direction, color, animationIndexHolder.animationIndex))
-                }, ANIMATION_INTERVAL)
-
-                return () => clearInterval(intervalId)
-            }
-        })()
-
-        return () => {
-            isCancelled = true
+            drawImageAndShadow(
+                bitmap,
+                drawInfo,
+                shadowInfo,
+                drawShadow,
+                canvas,
+                scale
+            )
         }
-    }, [worker, nation, direction, color, animate])
+    })
 
-    return <canvas ref={canvasRef} width={1} height={1} />
+    return <canvas ref={canvasRef} />
 }
 
 const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEnter, onMouseLeave }: HouseProps) => {
-
-    // References
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
-    // Functions
-
-    // Effects
-    // Effect: load the image and drawing information, and draw
-    useEffect(() => {
-        let isCancelled = false
-
-        async function drawHouse() {
+    useAnimatedSprite({
+        animate: false,
+        fps: 10,
+        deps: [nation, houseType, scale, drawShadow],
+        loader: async () => {
             await houses.load()
-
-            if (isCancelled) {
-                return
-            }
-
-            const canvas = canvasRef.current
-
-            if (!canvas) {
-                console.error('No canvas ref set')
-                return
-            }
-
             const image = houses.getSourceImage()
-
-            if (image === undefined) {
-                console.error('No image available')
-                return
+            if (!image) {
+                throw new Error('No image')
             }
 
-            let imageBitmap = imageCache.get(image)
-
-            if (!imageBitmap) {
-                imageBitmap = await createImageBitmap(image)
-
-                if (isCancelled) {
-                    return
-                }
-
-                imageCache.set(image, imageBitmap)
+            return { image }
+        },
+        getFrame: (bitmap, frameIndex) => {
+            const canvas = canvasRef.current
+            if (!canvas) {
+                return
             }
 
             const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
 
             if (!drawArray) {
-                console.error('No drawing information')
                 return
             }
 
-            const drawInfo = drawArray[0]
-            const shadowInfo = drawArray[1]
+            const [drawInfo, shadowInfo] = drawArray
 
-            drawImageAndShadow(imageBitmap, drawInfo, shadowInfo, drawShadow, canvas, scale)
+            drawImageAndShadow(
+                bitmap,
+                drawInfo,
+                shadowInfo,
+                drawShadow,
+                canvas,
+                scale
+            )
         }
+    })
 
-        drawHouse()
-
-        return () => {
-            isCancelled = true
-        }
-    }, [nation, houseType, scale, drawShadow])
-
-    return <canvas ref={canvasRef} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} width={1} height={1} />
+    return <canvas ref={canvasRef} />
 }
 
 const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false, onMouseEnter, onMouseLeave }: InventoryIconProps) => {
@@ -440,7 +399,7 @@ const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = 
     return (
         <div
             className='inventory-icon'
-            style={{ display: displayStyle, opacity: transparency, width: image?.naturalWidth ?? 1 * scale, height: image?.naturalHeight ?? 1 * scale }}
+            style={{ display: displayStyle, opacity: transparency, width: (image?.naturalWidth ?? 1) * scale, height: (image?.naturalHeight ?? 1) * scale }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
@@ -454,39 +413,25 @@ const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = 
 }
 
 const UiIcon = ({ type, scale = 1, onMouseEnter, onMouseLeave, onClick }: UiIconProps) => {
-
-    // References
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
-    // Effects
-    // Effect: load and draw the image
-    useEffect(() => {
-        let isCancelled = false;
-
-        (async () => {
+    useAnimatedSprite({
+        animate: false,
+        fps: 10,
+        deps: [type, scale],
+        loader: async () => {
             await uiElementsImageAtlasHandler.load()
-
-            if (isCancelled) {
-                return
-            }
-
             const image = uiElementsImageAtlasHandler.getImage()
-
             if (!image) {
-                console.error('UiIcon: Failed to get image')
-                return
+                throw new Error('No Ui image')
             }
 
-            let imageBitmap = imageCache.get(image)
-
-            if (!imageBitmap) {
-                imageBitmap = await createImageBitmap(image)
-                imageCache.set(image, imageBitmap)
-
-
-                if (isCancelled) {
-                    return
-                }
+            return { image }
+        },
+        getFrame: (bitmap, frameIndex) => {
+            const canvas = canvasRef.current
+            if (!canvas) {
+                return
             }
 
             const drawInfo = uiElementsImageAtlasHandler.getUiElement(type)
@@ -495,50 +440,19 @@ const UiIcon = ({ type, scale = 1, onMouseEnter, onMouseLeave, onClick }: UiIcon
                 return
             }
 
-            const canvas = canvasRef.current
-
-            if (!canvas) {
-                console.error('No canvas ref set')
-                return
-            }
-
-            const context = canvas.getContext('2d')
-
-            if (!context) {
-                console.error('No context')
-                return
-            }
-
-            const width = drawInfo.width * scale
-            const height = drawInfo.height * scale
-
-            canvas.width = width
-            canvas.height = height
-
-            context.clearRect(0, 0, width, height)
-
-            context.drawImage(
-                imageBitmap,
-                drawInfo.sourceX, drawInfo.sourceY,
-                drawInfo.width, drawInfo.height,
-                0, 0,
-                width, height
+            drawImageAndShadow(
+                bitmap,
+                drawInfo,
+                drawInfo,
+                false,
+                canvas,
+                scale
             )
-        })()
-
-        return () => {
-            isCancelled = true
         }
-    }, [type])
+    })
 
     return <canvas
-        ref={canvasRef}
-        width={1}
-        height={1}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onClick={onClick}
-    />
+        ref={canvasRef} />
 }
 
 const FlagIcon = ({
@@ -551,111 +465,53 @@ const FlagIcon = ({
     onMouseEnter,
     onMouseLeave
 }: FlagIconProps) => {
-
-    // References
     const canvasRef = useRef<HTMLCanvasElement>(null)
-    const animationIndexRef = useRef(0)
-    const mountedRef = useRef(true)
 
-    // Functions
-    const drawFlag = useCallback((
-        image: ImageBitmap,
-        nation: Nation,
-        color: PlayerColor,
-        type: FlagType,
-        animationIndex: number
-    ) => {
-        const canvas = canvasRef.current
-        if (!canvas) {
-            console.error('No canvas ref set')
-            return
-        }
-
-        const drawArray = flagAnimations.getAnimationFrame(
-            nation,
-            color,
-            type,
-            animationIndex,
-            0
-        )
-
-        if (!drawArray) {
-            console.error('No drawing information', [nation, color, type])
-            return
-        }
-
-        const [drawInformation, shadowInformation] = drawArray
-
-        drawImageAndShadow(
-            image,
-            drawInformation,
-            shadowInformation,
-            drawShadow,
-            canvas,
-            scale
-        )
-    }, [drawShadow, scale])
-
-    // Load image, draw, and start animation (if requested)
-    useEffect(() => {
-        mountedRef.current = true
-
-        let intervalId: number | undefined;
-
-        (async () => {
+    useAnimatedSprite({
+        animate,
+        fps: 10,
+        deps: [type, nation, color, scale, drawShadow],
+        loader: async () => {
             await flagAnimations.load()
-            if (!mountedRef.current) return
 
             const image = flagImageAtlasHandler.getImage()
             if (!image) {
-                console.error('No image available')
-                return
+                throw new Error('FlagIcon: No image available')
             }
 
-            let imageBitmap = imageCache.get(image)
-            if (!imageBitmap) {
-                imageBitmap = await createImageBitmap(image)
-                if (!mountedRef.current) return
-                imageCache.set(image, imageBitmap)
-            }
+            return { image }
+        },
+        getFrame: (bitmap, frameIndex) => {
 
-            animationIndexRef.current = 0
-            drawFlag(imageBitmap, nation, color, type, 0)
+            const canvas = canvasRef.current
+            if (!canvas) return
 
-            if (animate) {
-                intervalId = window.setInterval(() => {
-                    if (!mountedRef.current) return
+            const drawArray = flagAnimations.getAnimationFrame(
+                nation,
+                color,
+                type,
+                frameIndex,
+                0
+            )
 
-                    animationIndexRef.current =
-                        (animationIndexRef.current + 1) % MAX_FRAMES
+            if (!drawArray) return
 
-                    requestAnimationFrame(() => {
-                        if (!mountedRef.current) return
-                        drawFlag(
-                            imageBitmap!,
-                            nation,
-                            color,
-                            type,
-                            animationIndexRef.current
-                        )
-                    })
-                }, ANIMATION_INTERVAL)
-            }
-        })()
+            const [drawInfo, shadowInfo] = drawArray
 
-        return () => {
-            mountedRef.current = false
-            if (intervalId !== undefined) {
-                clearInterval(intervalId)
-            }
+            drawImageAndShadow(
+                bitmap,
+                drawInfo,
+                shadowInfo,
+                drawShadow,
+                canvas,
+                scale
+            )
         }
-    }, [type, nation, color, animate, drawFlag])
+    })
 
     return (
         <canvas
             ref={canvasRef}
-            width={1}
-            height={1}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         />

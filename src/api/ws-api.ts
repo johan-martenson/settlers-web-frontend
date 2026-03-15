@@ -1305,9 +1305,7 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     }
 
     if (changedTransportPriority && api.transportPriority) {
-        for (const listener of transportPriorityListeners) {
-            listener(api.transportPriority)
-        }
+        transportPriorityListeners?.forEach(listener => listener(api.transportPriority!))
     }
 }
 
@@ -2022,15 +2020,15 @@ function storeDiscoveredTiles(newlyDiscoveredPoints: PointSet | Point[]): void {
         const pointRight = getPointRight(point)
         const pointUpLeft = getPointUpLeft(point)
 
-        const isLeftDiscovered = pointLeft.x > 0 && api.discoveredPoints.has(pointLeft)
-        const isDownLeftDiscovered = pointDownLeft.x > 0 && pointDownLeft.y > 0 && api.discoveredPoints.has(pointDownLeft)
+        const isLeftDiscovered = api.discoveredPoints.has(pointLeft)
+        const isDownLeftDiscovered = api.discoveredPoints.has(pointDownLeft)
         const isDownRightDiscovered = api.discoveredPoints.has(pointDownRight)
         const isRightDiscovered = api.discoveredPoints.has(pointRight)
         const isUpRightDiscovered = api.discoveredPoints.has(pointUpRight)
         const isUpLeftDiscovered = api.discoveredPoints.has(pointUpLeft)
 
-        const terrainAtPointLeft = pointLeft.x > 0 ? api.allTiles.get(pointLeft) : undefined
-        const terrainAtPointDownLeft = (pointDownLeft.x > 0 && pointDownLeft.y > 0) ? api.allTiles.get(pointDownLeft) : undefined
+        const terrainAtPointLeft = api.allTiles.get(pointLeft)
+        const terrainAtPointDownLeft = api.allTiles.get(pointDownLeft)
         const terrainAtPointDownRight = api.allTiles.get(pointDownRight)
         const terrainAtPointRight = api.allTiles.get(pointRight)
         const terrainAtPointUpRight = api.allTiles.get(pointUpRight)

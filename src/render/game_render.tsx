@@ -4,7 +4,7 @@ import { Duration } from '../utils/stats/duration'
 import './game_render.css'
 import { api, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../utils/stats/stats'
-import { gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils/utils'
+import { gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUp, getPointUpLeft, getPointUpRight, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumVectors, surroundingPoints, Vector } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
 import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, houses, loadImageAsync, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
@@ -26,11 +26,6 @@ export type ScreenPoint = {
 }
 
 export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD' | 'BUILDING_ROAD_PRESSED'
-
-type FogOfWarRenderInformation = {
-    coordinates: number[]
-    intensities: number[]
-}
 
 type MapRenderInformation = {
     coordinates: number[]
@@ -72,6 +67,7 @@ type GameCanvasProps = {
     hideHoverPoint?: boolean
     hideSelectedPoint?: boolean
     heightAdjust: number
+    fogOfWar?: boolean
 
     onPointClicked?: ((point: Point) => void)
     onDoubleClick?: ((point: Point) => void)
@@ -101,6 +97,7 @@ type RenderState = {
 
     showHouseTitles: boolean
     showAvailableConstruction: boolean
+    fogOfWar: boolean
 
     // Map of the normal for each point on the map
     normals: PointMap<Vector>
@@ -307,14 +304,15 @@ const fogOfWarProgramDescriptor: ProgramDescriptor = {
     }
 }
 
+type FogOfWarAttributes = 'a_coordinates' | 'a_intensity'
+
+
 type FogOfWarUniforms = {
     u_scale: number[]
     u_offset: number[]
     u_screen_height: number
     u_screen_width: number
 }
-
-type FogOfWarAttributes = 'a_coordinates' | 'a_intensity'
 
 // Functions
 function makeInitRenderState(): RenderState {
@@ -334,7 +332,8 @@ function makeInitRenderState(): RenderState {
         shadowsToDraw: [],
         decorationsToDraw: [],
         toDrawHover: [],
-        contextLost: false
+        contextLost: false,
+        fogOfWar: true
     }
 }
 
@@ -354,6 +353,7 @@ function GameCanvas({
     viewRef,
     hideHoverPoint = false,
     hideSelectedPoint = false,
+    fogOfWar = true,
     onPointClicked,
     onKeyDown,
     onDoubleClick }: GameCanvasProps) {
@@ -430,6 +430,7 @@ function GameCanvas({
             renderState.showAvailableConstruction = showAvailableConstruction
             renderState.selectedPoint = selectedPoint
             renderState.showHouseTitles = showHouseTitles
+            renderState.fogOfWar = fogOfWar
 
             if (newRoad !== undefined) {
                 renderState.newRoad = { newRoad: newRoad, possibleConnections: possibleRoadConnections ?? [] }
@@ -461,8 +462,8 @@ function GameCanvas({
                 if (RenderLogConfig.terrain) {
                     console.log('Render (terrain): Received monitoring started callback. Calculating normals')
                 }
-                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
 
+                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
                 updateRoadDrawingBuffers()
             }
 
@@ -483,7 +484,7 @@ function GameCanvas({
                     console.log('Render (fog-of-war): New discovered points - calculated normals')
                 }
                 // Update the map rendering buffers
-                renderState.mapRenderInformation = prepareToRenderFromTiles(api.discoveredBelowTiles, api.discoveredDownRightTiles, api.allTiles, renderState.normals)
+                renderState.mapRenderInformation = prepareToRenderFromTiles(api.allTiles, renderState.normals)
 
                 if (renderState.drawGroundProgramInstance) {
                     setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
@@ -554,7 +555,7 @@ function GameCanvas({
                 // Put together the render information from the discovered tiles
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
 
-                renderState.mapRenderInformation = prepareToRenderFromTiles(api.discoveredBelowTiles, api.discoveredDownRightTiles, api.allTiles, renderState.normals)
+                renderState.mapRenderInformation = prepareToRenderFromTiles(api.allTiles, renderState.normals)
 
                 // Start tracking visible triangles
                 if (renderState.visiblePoints.size === 0) {
@@ -1464,9 +1465,9 @@ function GameCanvas({
                         let cargoDrawInfo
 
                         if (worker?.bodyType === 'FAT') {
-                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         } else {
-                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         }
 
                         renderState.toDrawNormal.push({
@@ -1475,7 +1476,7 @@ function GameCanvas({
                             height: interpolatedHeight
                         })
                     } else {
-                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
 
                         if (cargo) {
                             renderState.toDrawNormal.push({
@@ -1618,9 +1619,9 @@ function GameCanvas({
                         let cargoDrawInfo
 
                         if (worker?.bodyType === 'FAT') {
-                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         } else {
-                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         }
 
                         renderState.toDrawNormal.push({
@@ -1628,7 +1629,7 @@ function GameCanvas({
                             gamePoint: worker
                         })
                     } else {
-                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                        const cargo = workers.get(worker.type)?.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
 
                         renderState.toDrawNormal.push({
                             source: cargo,
@@ -2049,7 +2050,7 @@ function GameCanvas({
 
 
         // Fill in the buffers to draw fog of war
-        if (renderState.fogOfWarProgramInstance) {
+        if (renderState.fogOfWar && renderState.fogOfWarProgramInstance) {
             draw<FogOfWarUniforms>(renderState.fogOfWarProgramInstance,
                 {
                     u_scale: [viewRef.current.scale, viewRef.current.scale],
@@ -2173,6 +2174,7 @@ function GameCanvas({
                 onKeyDown={onKeyDown}
                 onClick={onClickOrDoubleClick}
                 style={{ cursor: MOUSE_STYLES.get(cursor ?? 'NOTHING') }}
+                tabIndex={-1}
 
                 ref={overlayCanvasRef}
                 onMouseMove={
@@ -2523,7 +2525,245 @@ function calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDown
     }
 }
 
-function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>, allTiles: PointMap<TerrainAtPoint>, allNormals: PointMap<Vector>): MapRenderInformation {
+function addTerrainRenderInformationForTileDownRight(
+    point: Point,
+    height: number,
+    tileDownRight: TileDownRight,
+    allTiles: PointMap<TerrainAtPoint>,
+    allNormals: PointMap<Vector>,
+    coordinates: number[],
+    normals: number[],
+    textureMappings: number[],
+    transitionCoordinates: number[],
+    transitionNormals: number[],
+    transitionTextureMappings: number[]
+): void {
+    const pointUpRight = getPointUpRight(point)
+    const pointRight = getPointRight(point)
+    const pointDownRight = getPointDownRight(point)
+    const pointDownLeft = getPointDownLeft(point)
+    const pointRightDownRight = getPointDownRight(getPointRight(point))
+
+    const terrainDownRight = tileDownRight.vegetation
+    const terrainBelow = allTiles.get(point)
+    const terrainUpRight = allTiles.get(pointUpRight)
+    const terrainRight = allTiles.get(pointRight)
+
+    if (VEGETATION_INTEGERS.indexOf(terrainDownRight) === -1) {
+        console.log(`Render (terrain): UNKNOWN TERRAIN: ${terrainDownRight}`)
+    }
+
+    // Add each terrain tile to the buffers (coordinates, normals, texture mapping)
+    coordinates.push(point.x, point.y, height)
+    coordinates.push(pointDownRight.x, pointDownRight.y, tileDownRight.heightDown)
+    coordinates.push(pointRight.x, pointRight.y, tileDownRight.heightRight)
+
+    const normalLeft = allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR
+    const normalDownRight = allNormals.get(pointDownRight) ?? NORMAL_STRAIGHT_UP_VECTOR
+    const normalRight = allNormals.get(pointRight) ?? NORMAL_STRAIGHT_UP_VECTOR
+
+    normals.push(normalLeft.x, normalLeft.y, normalLeft.z)
+    normals.push(normalDownRight.x, normalDownRight.y, normalDownRight.z)
+    normals.push(normalRight.x, normalRight.y, normalRight.z)
+
+    Array.prototype.push.apply(textureMappings, VEGETATION_TO_TEXTURE_MAPPING.get(terrainDownRight)?.downRight ?? [0, 1, 0.5, 0, 1, 1])
+
+    const overlap = OVERLAPS.get(terrainDownRight)
+    const transitionTextureMapping = TRANSITION_TEXTURE_MAPPINGS.get(terrainDownRight)
+
+
+    // Add transition triangles
+
+    // Triangle below on the left
+    if (overlap && terrainBelow && overlap.has(terrainBelow.below) && transitionTextureMapping) {
+        const baseHeight = (tileDownRight.heightLeft + tileDownRight.heightDown) / 2
+        const base = { x: (point.x + pointDownRight.x) / 2, y: (point.y + pointDownRight.y) / 2 }
+
+        Array.prototype.push.apply(transitionCoordinates,
+            [
+                pointDownRight.x, pointDownRight.y, tileDownRight.heightDown,
+                point.x, point.y, tileDownRight.heightLeft,
+                base.x + (pointDownLeft.x - base.x) * OVERLAP_FACTOR, base.y + (pointDownLeft.y - base.y) * OVERLAP_FACTOR, baseHeight + (allTiles.get(pointDownLeft)?.height ?? 0 - baseHeight) * OVERLAP_FACTOR
+            ])
+
+        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
+
+        const points = [pointDownRight, point, pointDownLeft]
+
+        points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+            normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+        )
+    }
+
+    // Triangle above
+    if (overlap && terrainUpRight && overlap.has(terrainUpRight.below) && transitionTextureMapping) {
+        const baseHeight = (tileDownRight.heightLeft + tileDownRight.heightRight) / 2
+        const heightUp = allTiles.get(pointUpRight)?.height ?? 0
+
+        Array.prototype.push.apply(transitionCoordinates,
+            [
+                point.x, point.y, tileDownRight.heightLeft,
+                pointRight.x, pointRight.y, tileDownRight.heightRight,
+                point.x + 1, point.y + OVERLAP_FACTOR, baseHeight + (heightUp - baseHeight) * OVERLAP_FACTOR
+            ]
+        )
+
+        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
+
+        const points = [point, pointRight, pointUpRight]
+
+        points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+            normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+        )
+    }
+
+    // Triangle below on the right
+    if (overlap && terrainRight && overlap.has(terrainRight.below) && transitionTextureMapping) {
+        const baseHeight = (tileDownRight.heightRight + tileDownRight.heightDown) / 2
+        const base = { x: (pointRight.x + pointDownRight.x) / 2, y: (pointRight.y + pointDownRight.y) / 2 }
+        const heightRightDownRight = allTiles.get(pointRightDownRight)?.height ?? 0
+
+        Array.prototype.push.apply(transitionCoordinates,
+            [
+                pointRight.x, pointRight.y, tileDownRight.heightRight,
+                pointDownRight.x, pointDownRight.y, tileDownRight.heightDown,
+                base.x + (pointRightDownRight.x - base.x) * 0.4, base.y + (pointRightDownRight.y - base.y) * 0.4, baseHeight + (heightRightDownRight - baseHeight) * 0.4
+            ]
+        )
+
+        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
+
+        const points = [pointRight, pointDownRight, pointRightDownRight]
+
+        points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+            normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+        )
+    }
+}
+
+function addTerrainRenderInformationForTileBelow(
+    point: Point,
+    height: number,
+    tileBelow: TileBelow,
+    allTiles: PointMap<TerrainAtPoint>,
+    allNormals: PointMap<Vector>,
+    coordinates: number[],
+    normals: number[],
+    textureMappings: number[],
+    transitionCoordinates: number[],
+    transitionNormals: number[],
+    transitionTextureMappings: number[]
+): void {
+    const pointRight = getPointRight(point)
+    const pointLeft = getPointLeft(point)
+    const pointDownLeft = getPointDownLeft(point)
+    const pointDownRight = getPointDownRight(point)
+    const pointDown = getPointDown(point)
+
+    const triangleBelow = [point, pointDownLeft, pointDownRight]
+
+    const terrainBelow = tileBelow.vegetation
+
+    if (VEGETATION_INTEGERS.indexOf(terrainBelow) === -1) {
+        console.error(`Render (terrain): UNKNOWN TERRAIN: ${terrainBelow}`)
+    }
+
+    // Add each terrain tile to the buffers (coordinates, normals, texture mapping)
+    //triangleBelow.forEach(point => Array.prototype.push.apply(coordinates, [point.x, point.y, allTiles.get(point)?.height ?? 0]))
+
+    coordinates.push(point.x, point.y, height)
+    coordinates.push(pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft)
+    coordinates.push(pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight)
+
+    triangleBelow
+        .map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
+        .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
+
+    Array.prototype.push.apply(textureMappings, VEGETATION_TO_TEXTURE_MAPPING.get(terrainBelow)?.below ?? [0, 0, 0.5, 1, 1, 0])
+
+    // Add transition triangles
+    const terrainAtDownLeft = allTiles.get(pointDownLeft)
+    const terrainAtDown = allTiles.get(pointDown)
+    const terrain = allTiles.get(point)
+    const terrainLeft = allTiles.get(pointLeft)
+
+    const overlap = OVERLAPS.get(terrainBelow)
+    const transitionTextureMapping = TRANSITION_TEXTURE_MAPPINGS.get(terrainBelow)
+
+    // Transition below
+    if (overlap && terrainAtDownLeft && overlap.has(terrainAtDownLeft.downRight) && transitionTextureMapping && terrainAtDown) {
+        const baseHeight = (tileBelow.heightDownLeft + tileBelow.heightDownRight) / 2
+        const downHeight = terrainAtDown.height
+
+        Array.prototype.push.apply(
+            transitionCoordinates,
+            [
+                pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
+                pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
+                pointDown.x, pointDownLeft.y - 0.4, baseHeight + (downHeight - baseHeight) * 0.4
+            ]
+        )
+
+        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
+
+        const points = [pointDownLeft, pointDownRight, pointDown]
+
+        // TODO: interpolate the normal
+        points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+            normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+        )
+    }
+
+    // Transition up-right
+    if (overlap && terrain && overlap.has(terrain.downRight) && transitionTextureMapping) {
+        const baseHeight = (tileBelow.heightAbove + tileBelow.heightDownRight) / 2
+        const base = { x: (point.x + pointDownRight.x) / 2, y: (point.y + pointDownRight.y) / 2 }
+        const heightRight = allTiles.get(pointRight)?.height ?? 0
+
+        Array.prototype.push.apply(
+            transitionCoordinates,
+            [
+                point.x, point.y, tileBelow.heightAbove,
+                pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
+                base.x + (pointRight.x - base.x) * OVERLAP_FACTOR, base.y + (pointRight.y - base.y) * OVERLAP_FACTOR, baseHeight + (heightRight - baseHeight) * OVERLAP_FACTOR
+            ])
+
+        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
+
+        const points = [point, pointDownRight, pointRight]
+
+        // TODO: interpolate the normal
+        points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+            normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+        )
+    }
+
+    // Transition up-left
+    if (overlap && terrainLeft && overlap.has(terrainLeft?.downRight) && transitionTextureMapping) {
+        const baseHeight = (tileBelow.heightDownLeft + tileBelow.heightAbove) / 2
+        const base = { x: (point.x + pointDownLeft.x) / 2, y: (point.y + pointDownLeft.y) / 2 }
+        const heightLeft = terrainLeft.height
+
+        Array.prototype.push.apply(
+            transitionCoordinates,
+            [
+                point.x, point.y, tileBelow.heightAbove,
+                pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
+                base.x + (pointLeft.x - base.x) * OVERLAP_FACTOR, base.y + (pointLeft.y - base.y) * OVERLAP_FACTOR, baseHeight + (heightLeft - baseHeight) * OVERLAP_FACTOR
+            ])
+
+        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
+
+        const points = [point, pointDownLeft, pointLeft]
+
+        // TODO: interpolate the normal
+        points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
+            normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
+        )
+    }
+}
+
+function prepareToRenderFromTiles(allTiles: PointMap<TerrainAtPoint>, allNormals: PointMap<Vector>): MapRenderInformation {
     const coordinates: number[] = []
     const normals: number[] = []
     const textureMappings: number[] = []
@@ -2532,212 +2772,52 @@ function prepareToRenderFromTiles(tilesBelow: Set<TileBelow>, tilesDownRight: Se
     const transitionNormals: number[] = []
     const transitionTextureMappings: number[] = []
 
-    tilesBelow.forEach(tileBelow => {
-        const point = tileBelow.pointAbove
+    // For all tiles, add the corresponding terrain tile to the buffers (coordinates, normals, texture mapping)
+    allTiles.entries().forEach(([point, { height, below, downRight }]) => {
         const pointRight = getPointRight(point)
-        const pointLeft = getPointLeft(point)
         const pointDownLeft = getPointDownLeft(point)
         const pointDownRight = getPointDownRight(point)
-        const pointDown = getPointDown(point)
-
-        const triangleBelow = [point, pointDownLeft, pointDownRight]
-
-        const terrainBelow = tileBelow.vegetation
-
-        if (VEGETATION_INTEGERS.indexOf(terrainBelow) === -1) {
-            console.error(`Render (terrain): UNKNOWN TERRAIN: ${terrainBelow}`)
-        }
-
-        // Add each terrain tile to the buffers (coordinates, normals, texture mapping)
-        triangleBelow.forEach(point => Array.prototype.push.apply(coordinates, [point.x, point.y, allTiles.get(point)?.height ?? 0]))
-
-        triangleBelow
-            .map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
-            .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
-
-        Array.prototype.push.apply(textureMappings, VEGETATION_TO_TEXTURE_MAPPING.get(terrainBelow)?.below ?? [0, 0, 0.5, 1, 1, 0])
-
-        // Add transition triangles
-        const terrainAtDownLeft = allTiles.get(pointDownLeft)
-        const terrainAtDown = allTiles.get(pointDown)
-        const terrain = allTiles.get(point)
-        const terrainLeft = allTiles.get(pointLeft)
-
-        const overlap = OVERLAPS.get(terrainBelow)
-        const transitionTextureMapping = TRANSITION_TEXTURE_MAPPINGS.get(terrainBelow)
-
-        // Transition below
-        if (overlap && terrainAtDownLeft && overlap.has(terrainAtDownLeft.downRight) && transitionTextureMapping && terrainAtDown) {
-            const baseHeight = (tileBelow.heightDownLeft + tileBelow.heightDownRight) / 2
-            const downHeight = terrainAtDown.height
-
-            Array.prototype.push.apply(
-                transitionCoordinates,
-                [
-                    pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
-                    pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
-                    pointDown.x, pointDownLeft.y - 0.4, baseHeight + (downHeight - baseHeight) * 0.4
-                ]
-            )
-
-            Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-
-            const points = [pointDownLeft, pointDownRight, pointDown]
-
-            // TODO: interpolate the normal
-            points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
-                normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
-            )
-        }
-
-        // Transition up-right
-        if (overlap && terrain && overlap.has(terrain.downRight) && transitionTextureMapping) {
-            const baseHeight = (tileBelow.heightAbove + tileBelow.heightDownRight) / 2
-            const base = { x: (point.x + pointDownRight.x) / 2, y: (point.y + pointDownRight.y) / 2 }
-            const heightRight = allTiles.get(pointRight)?.height ?? 0
-
-            Array.prototype.push.apply(
-                transitionCoordinates,
-                [
-                    point.x, point.y, tileBelow.heightAbove,
-                    pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
-                    base.x + (pointRight.x - base.x) * OVERLAP_FACTOR, base.y + (pointRight.y - base.y) * OVERLAP_FACTOR, baseHeight + (heightRight - baseHeight) * OVERLAP_FACTOR
-                ])
-
-            Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-
-            const points = [point, pointDownRight, pointRight]
-
-            // TODO: interpolate the normal
-            points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
-                normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
-            )
-        }
-
-        // Transition up-left
-        if (overlap && terrainLeft && overlap.has(terrainLeft?.downRight) && transitionTextureMapping) {
-            const baseHeight = (tileBelow.heightDownLeft + tileBelow.heightAbove) / 2
-            const base = { x: (point.x + pointDownLeft.x) / 2, y: (point.y + pointDownLeft.y) / 2 }
-            const heightLeft = terrainLeft.height
-
-            Array.prototype.push.apply(
-                transitionCoordinates,
-                [
-                    point.x, point.y, tileBelow.heightAbove,
-                    pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
-                    base.x + (pointLeft.x - base.x) * OVERLAP_FACTOR, base.y + (pointLeft.y - base.y) * OVERLAP_FACTOR, baseHeight + (heightLeft - baseHeight) * OVERLAP_FACTOR
-                ])
-
-            Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-
-            const points = [point, pointDownLeft, pointLeft]
-
-            // TODO: interpolate the normal
-            points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
-                normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
-            )
-        }
-    })
 
 
-    tilesDownRight.forEach(tile => {
-        const point = tile.pointLeft
-        const pointUpRight = getPointUpRight(point)
-        const pointRight = getPointRight(point)
-        const pointDownRight = getPointDownRight(point)
-        const pointDownLeft = getPointDownLeft(point)
-        const pointRightDownRight = getPointDownRight(getPointRight(point))
+        addTerrainRenderInformationForTileBelow(
+            point,
+            height,
+            {
+                pointAbove: point,
+                heightAbove: height,
+                heightDownLeft: allTiles.get(pointDownLeft)?.height ?? 0,
+                heightDownRight: allTiles.get(pointDownRight)?.height ?? 0,
+                vegetation: below
+            },
+            allTiles,
+            allNormals,
+            coordinates,
+            normals,
+            textureMappings,
+            transitionCoordinates,
+            transitionNormals,
+            transitionTextureMappings
+        )
 
-        const triangleDownRight = [point, pointDownRight, pointRight]
-
-        const terrainDownRight = tile.vegetation
-        const terrainBelow = allTiles.get(point)
-        const terrainUpRight = allTiles.get(pointUpRight)
-        const terrainRight = allTiles.get(pointRight)
-
-        if (VEGETATION_INTEGERS.indexOf(terrainDownRight) === -1) {
-            console.log(`Render (terrain): UNKNOWN TERRAIN: ${terrainDownRight}`)
-        }
-
-        // Add each terrain tile to the buffers (coordinates, normals, texture mapping)
-        triangleDownRight.forEach(point => Array.prototype.push.apply(coordinates, [point.x, point.y, allTiles.get(point)?.height ?? 0]))
-
-        triangleDownRight
-            .map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR)
-            .forEach(normal => Array.prototype.push.apply(normals, [normal.x, normal.y, normal.z]))
-
-        Array.prototype.push.apply(textureMappings, VEGETATION_TO_TEXTURE_MAPPING.get(terrainDownRight)?.downRight ?? [0, 1, 0.5, 0, 1, 1])
-
-        const overlap = OVERLAPS.get(terrainDownRight)
-        const transitionTextureMapping = TRANSITION_TEXTURE_MAPPINGS.get(terrainDownRight)
-
-        // Add transition triangles
-
-        // Triangle below on the left
-        if (overlap && terrainBelow && overlap.has(terrainBelow.below) && transitionTextureMapping) {
-            const baseHeight = (tile.heightLeft + tile.heightDown) / 2
-            const base = { x: (point.x + pointDownRight.x) / 2, y: (point.y + pointDownRight.y) / 2 }
-
-            Array.prototype.push.apply(transitionCoordinates,
-                [
-                    pointDownRight.x, pointDownRight.y, tile.heightDown,
-                    point.x, point.y, tile.heightLeft,
-                    base.x + (pointDownLeft.x - base.x) * OVERLAP_FACTOR, base.y + (pointDownLeft.y - base.y) * OVERLAP_FACTOR, baseHeight + (allTiles.get(pointDownLeft)?.height ?? 0 - baseHeight) * OVERLAP_FACTOR
-                ])
-
-            Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-
-            const points = [pointDownRight, point, pointDownLeft]
-
-            points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
-                normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
-            )
-        }
-
-        // Triangle above
-        if (overlap && terrainUpRight && overlap.has(terrainUpRight.below) && transitionTextureMapping) {
-            const baseHeight = (tile.heightLeft + tile.heightRight) / 2
-            const heightUp = allTiles.get(pointUpRight)?.height ?? 0
-
-            Array.prototype.push.apply(transitionCoordinates,
-                [
-                    point.x, point.y, tile.heightLeft,
-                    pointRight.x, pointRight.y, tile.heightRight,
-                    point.x + 1, point.y + OVERLAP_FACTOR, baseHeight + (heightUp - baseHeight) * OVERLAP_FACTOR
-                ]
-            )
-
-            Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-
-            const points = [point, pointRight, pointUpRight]
-
-            points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
-                normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
-            )
-        }
-
-        // Triangle below on the right
-        if (overlap && terrainRight && overlap.has(terrainRight.below) && transitionTextureMapping) {
-            const baseHeight = (tile.heightRight + tile.heightDown) / 2
-            const base = { x: (pointRight.x + pointDownRight.x) / 2, y: (pointRight.y + pointDownRight.y) / 2 }
-            const heightRightDownRight = allTiles.get(pointRightDownRight)?.height ?? 0
-
-            Array.prototype.push.apply(transitionCoordinates,
-                [
-                    pointRight.x, pointRight.y, tile.heightRight,
-                    pointDownRight.x, pointDownRight.y, tile.heightDown,
-                    base.x + (pointRightDownRight.x - base.x) * 0.4, base.y + (pointRightDownRight.y - base.y) * 0.4, baseHeight + (heightRightDownRight - baseHeight) * 0.4
-                ]
-            )
-
-            Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-
-            const points = [pointRight, pointDownRight, pointRightDownRight]
-
-            points.map(point => allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR).forEach(
-                normal => Array.prototype.push.apply(transitionNormals, [normal.x, normal.y, normal.z])
-            )
-        }
+        addTerrainRenderInformationForTileDownRight(
+            point,
+            height,
+            {
+                pointLeft: point,
+                heightLeft: height,
+                heightDown: allTiles.get(pointDownRight)?.height ?? 0,
+                heightRight: allTiles.get(pointRight)?.height ?? 0,
+                vegetation: downRight
+            },
+            allTiles,
+            allNormals,
+            coordinates,
+            normals,
+            textureMappings,
+            transitionCoordinates,
+            transitionNormals,
+            transitionTextureMappings
+        )
     })
 
     return {

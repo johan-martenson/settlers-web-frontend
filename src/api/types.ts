@@ -263,8 +263,8 @@ export type TerrainAtPoint = {
 export type TerrainInformation = {
     width: number
     height: number
-    straightBelow: VegetationAsInt[]
-    belowToTheRight: VegetationAsInt[]
+    tilesBelow: VegetationAsInt[]
+    tilesDownRight: VegetationAsInt[]
     heights: HeightInformation[]
 }
 

@@ -131,8 +131,8 @@ class WorkerAnimation {
         return this.imageAtlasHandler.getDrawingInformationForAction(nation, direction, action, color, animationIndex)
     }
 
-    getDrawingInformationForCargo(direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForCargo(direction, material, animationIndex, Math.floor(offset))
+    getDrawingInformationForCargo(nation: Nation, direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
+        return this.imageAtlasHandler.getDrawingInformationForCargo(nation, direction, material, animationIndex, Math.floor(offset))
     }
 
     getImageAtlasHandler(): WorkerImageAtlasHandler {

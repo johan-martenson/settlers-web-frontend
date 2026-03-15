@@ -4,6 +4,7 @@ import { makeImageFromMap } from "../../utils/utils"
 import { api } from "../../api/ws-api"
 import { Button } from "@fluentui/react-components"
 import { UiIcon } from "../../icons/icon"
+import { MapInformation } from "../../api/types"
 
 type MapViewProps = {
     onClose: () => void
@@ -19,6 +20,7 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
     const [drawRoads, setDrawRoads] = useState<boolean>(true)
     const [drawCount, setDrawCount] = useState<number>(0)
     const [hover, setHover] = useState<string>()
+    const [map, setMap] = useState<MapInformation | undefined>(api.map)
 
     useEffect(
         () => {
@@ -51,6 +53,8 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
                 const gameInformation = await api.getGameInformation()
                 const map = await api.getMap(gameInformation.map.id)
 
+                setMap(map)
+
                 if (map) {
                     const mapImage = await makeImageFromMap(map,
                         {
@@ -80,6 +84,7 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
 
     return (
         <Window onClose={onClose} onRaise={onRaise} heading='Map' hoverInfo={hover}>
+            <div>{map?.name}</div>
             <img src={mapImage?.src ?? ''} />
             <ButtonRow>
                 <Button

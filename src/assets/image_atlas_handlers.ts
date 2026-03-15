@@ -454,59 +454,39 @@ class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
     }
 
     getDrawingInformationForWorker(nation: Nation, direction: Direction, color: PlayerColor, animationCounter: number, offset: number): DrawingInformation[] | undefined {
-        if (this.imageAtlasInfo === undefined || this.image === undefined) {
+        const atlas = this.imageAtlasInfo
+        const image = this.image
+
+        if (!atlas || !image) {
             return undefined
         }
+
+        const { common, nationSpecific } = atlas
 
         // Shadows are common for all nations
-        const shadowImages = this.imageAtlasInfo.common.shadowImages[direction]
+        const shadowImages = common.shadowImages[direction]
 
-        let images
+        const images = nationSpecific?.fullImagesByPlayer?.[nation]?.[direction]?.[color]
+                    ?? nationSpecific?.fullImages?.[nation]?.[direction]
+                    ?? common?.fullImagesByPlayer?.[direction]?.[color]
+                    ?? common?.fullImages?.[direction]
+                    ?? common?.bodyImagesByPlayer?.[direction]?.[color]
+                    ?? common?.bodyImages?.[direction]
 
-        if (this.imageAtlasInfo.nationSpecific &&
-            this.imageAtlasInfo.nationSpecific.fullImagesByPlayer &&
-            this.imageAtlasInfo.nationSpecific.fullImagesByPlayer[nation] &&
-            this.imageAtlasInfo.nationSpecific.fullImagesByPlayer[nation][direction] &&
-            this.imageAtlasInfo.nationSpecific.fullImagesByPlayer[nation][direction][color]
-        ) {
-            images = this.imageAtlasInfo.nationSpecific.fullImagesByPlayer[nation][direction][color]
-        } else if (this.imageAtlasInfo.nationSpecific?.fullImages) {
-            images = this.imageAtlasInfo.nationSpecific.fullImages[nation][direction]
-        } else if (
-            this.imageAtlasInfo.common?.fullImagesByPlayer &&
-            this.imageAtlasInfo.common.fullImagesByPlayer[direction] &&
-            this.imageAtlasInfo.common.fullImagesByPlayer[direction][color]
-        ) {
-            images = this.imageAtlasInfo.common.fullImagesByPlayer[direction][color]
-        } else if (this.imageAtlasInfo.common?.fullImages) {
-            images = this.imageAtlasInfo.common.fullImages[direction]
-        } else if (this.imageAtlasInfo.common?.fullImagesByPlayer) {
-            if (this.imageAtlasInfo.common.fullImagesByPlayer[direction] == undefined) {
-                console.error(this.name, direction, color)
-            }
-            images = this.imageAtlasInfo.common.fullImagesByPlayer[direction][color]
-        } else if (
-            this.imageAtlasInfo.common?.bodyImagesByPlayer &&
-            this.imageAtlasInfo.common.bodyImagesByPlayer[direction] &&
-            this.imageAtlasInfo.common.bodyImagesByPlayer[direction][color]
-        ) {
-            images = this.imageAtlasInfo.common.bodyImagesByPlayer[direction][color]
-        } else if (this.imageAtlasInfo.common?.bodyImages) {
-            images = this.imageAtlasInfo.common.bodyImages[direction]
-        } else {
+        if (!images) {
             return undefined
         }
 
-        const frameIndex = (animationCounter + Math.round(offset))
+        const frameIndex = animationCounter + Math.round(offset)
 
         return [
             {
                 ...imageInfoFromHorizontalImageSeries(images, frameIndex),
-                image: this.image
+                image
             },
             {
                 ...imageInfoFromHorizontalImageSeries(shadowImages, frameIndex),
-                image: this.image
+                image
             }
         ]
     }
@@ -531,12 +511,10 @@ class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
         const animationType = actionAnimationType.get(action)
 
         // Try to find action images common across nations
-        let actionImages = common?.[action]?.[direction]?.[color] ?? common?.[action]?.['any']?.[color]
-
-        // Try with nation-specific actions if there were no common ones
-        if (!actionImages) {
-            actionImages = nationSpecific?.[nation]?.[action]?.[direction]?.[color] ?? nationSpecific?.[nation]?.[action]?.['any']?.[color]
-        }
+        const actionImages = common?.[action]?.[direction]?.[color]
+                          ?? common?.[action]?.['any']?.[color]
+                          ?? nationSpecific?.[nation]?.[action]?.[direction]?.[color]
+                          ?? nationSpecific?.[nation]?.[action]?.['any']?.[color]
 
         // Report if there still is no action image found
         if (!actionImages) {
@@ -582,33 +560,27 @@ class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
         }
     }
 
-    getDrawingInformationForCargo(direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
+    getDrawingInformationForCargo(nation: Nation, direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
         if (this.imageAtlasInfo === undefined || this.image === undefined) {
             return undefined
         }
 
-        if (this.imageAtlasInfo?.nationSpecific &&
-            this.imageAtlasInfo.nationSpecific.cargoImages) {
-            return undefined // TODO: fix this when there is a nation specific cargo image
-        } else if (this.imageAtlasInfo.common.cargoImages) {
-            if (this.imageAtlasInfo.common.cargoImages[material] === undefined) {
-                console.log(`No cargo images for material ${material}`)
-                console.log(this.imageAtlasInfo.common.cargoImages)
-            }
+        const cargoImages = this.imageAtlasInfo?.nationSpecific?.cargoImages?.[nation]?.[material]?.[direction]
 
-            if (this.imageAtlasInfo.common.cargoImages[material] == undefined) {
-                console.error(this.name, material, direction)
-            }
+            ?? this.imageAtlasInfo?.common?.cargoImages?.[material]?.[direction]
 
-            const cargoImages = this.imageAtlasInfo.common.cargoImages[material][direction]
+        if (!cargoImages) {
+            console.log(`No cargo images for material ${material}`)
+            console.log(this.imageAtlasInfo.common.cargoImages)
+            console.error(this.name, material, direction)
 
-            return {
-                ...imageInfoFromHorizontalImageSeries(cargoImages, (animationIndex + Math.round(offset))),
-                image: this.image
-            }
+            return undefined
         }
 
-        return undefined
+        return {
+            ...imageInfoFromHorizontalImageSeries(cargoImages, (animationIndex + Math.round(offset))),
+            image: this.image
+        }
     }
 
     getSize(nation: Nation, direction: Direction, color: PlayerColor): Dimension | undefined {
@@ -1330,29 +1302,19 @@ class AnimalImageAtlasHandler extends BaseImageAtlasHandler<AnimalImageAtlas> {
             return undefined
         }
 
-        if (this.imageAtlasInfo.cargos) {
-            const cargoImage = this.imageAtlasInfo.cargos[material]
+        const cargoImage = this.imageAtlasInfo?.nationSpecific?.[nation]?.[material]
+            ?? this.imageAtlasInfo?.cargos?.[material]
 
-            if (cargoImage) {
-                return {
-                    ...imageInfoFromSingleImage(cargoImage),
-                    image: this.image
-                }
-            }
+        if (!cargoImage) {
+            console.error(`Didn't find cargo image`, material, nation)
+
+            return undefined
         }
 
-        if (this.imageAtlasInfo.nationSpecific) {
-            const cargoImage = this.imageAtlasInfo.nationSpecific[nation][material]
-
-            if (cargoImage) {
-                return {
-                    ...imageInfoFromSingleImage(cargoImage),
-                    image: this.image
-                }
-            }
+        return {
+            ...imageInfoFromSingleImage(cargoImage),
+            image: this.image
         }
-
-        return undefined
     }
 
     getDrawingInformationFor(direction: Direction, animationCounter: number): DrawingInformation[] | undefined {
@@ -1361,22 +1323,10 @@ class AnimalImageAtlasHandler extends BaseImageAtlasHandler<AnimalImageAtlas> {
         }
 
         const image = this.imageAtlasInfo.images[direction]
+        const shadowImage = this.imageAtlasInfo.shadowImages?.[direction]
+            ?? this.imageAtlasInfo.shadowImages?.['EAST']
 
-        if (this.imageAtlasInfo.shadowImages) {
-            let shadowImage = this.imageAtlasInfo.shadowImages[direction]
-
-            if (shadowImage === undefined) {
-                const fallbackDirection = ANIMAL_FALLBACK_DIRECTION.get(direction)
-
-                if (fallbackDirection !== undefined) {
-                    shadowImage = this.imageAtlasInfo.shadowImages[fallbackDirection]
-                }
-            }
-
-            if (shadowImage === undefined) {
-                shadowImage = this.imageAtlasInfo.shadowImages['EAST']
-            }
-
+        if (shadowImage) {
             return [
                 {
                     ...imageInfoFromHorizontalImageSeries(image, animationCounter),
@@ -1387,15 +1337,14 @@ class AnimalImageAtlasHandler extends BaseImageAtlasHandler<AnimalImageAtlas> {
                     image: this.image
                 }
             ]
+        } else {
+            return [
+                {
+                    ...imageInfoFromHorizontalImageSeries(image, animationCounter),
+                    image: this.image
+                }
+            ]
         }
-
-        return [
-            {
-                ...imageInfoFromHorizontalImageSeries(image, animationCounter),
-                image: this.image
-            }
-        ]
-
     }
 }
 

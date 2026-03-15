@@ -241,6 +241,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [gameState, setGameState] = useState<GameState>('STARTED')
     const [newRoad, setNewRoad] = useState<Point[]>()
     const [possibleRoadConnections, setPossibleRoadConnections] = useState<Point[]>()
+    const [fogOfWar, setFogOfWar] = useState<boolean>(true)
 
     // Monitoring
     const player = usePlayer(selfPlayerId)
@@ -522,34 +523,46 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 action: () => api.cheat('SHOW_ME_THE_WORLD'),
                 hidden: true
             })
+            commands.set('Fog of war', {
+                action: () => setFogOfWar(prev => !prev),
+                hidden: true
+            })
 
             setCommands(commands)
         }
 
-        api.waitForGameDataAvailable().then(() => {
-            if (cancelled) {
-                return
-            }
-
-            setTypingCommands()
-
-            if (selfContainerRef.current) {
-                immediateStateRef.current.screenSize = {
-                    width: selfContainerRef.current.clientWidth,
-                    height: selfContainerRef.current.clientHeight
+        api.waitForGameDataAvailable()
+            .then(() => {
+                if (cancelled) {
+                    return
                 }
-            }
 
-            // Center the view on the headquarter on the first update
-            if (PlayLogConfig.camera) {
-                console.log('Play (camera): Center on headquarters')
-            }
+                setTypingCommands()
 
-            const headquarter = getHeadquarterForPlayer(selfPlayerId)
-            if (headquarter) {
-                goToHouse(headquarter.id)
-            }
-        })
+                if (selfContainerRef.current) {
+                    immediateStateRef.current.screenSize = {
+                        width: selfContainerRef.current.clientWidth,
+                        height: selfContainerRef.current.clientHeight
+                    }
+                }
+
+                // Center the view on the headquarter on the first update
+                if (PlayLogConfig.camera) {
+                    console.log('Play (camera): Center on headquarters')
+                }
+
+                const headquarter = getHeadquarterForPlayer(selfPlayerId)
+                if (headquarter) {
+                    if (PlayLogConfig.camera) {
+                        console.log(`Play (camera): Center on headquarters: ${JSON.stringify(headquarter)}`)
+                    }
+
+                    goToHouse(headquarter.id)
+                } else {
+                    console.error('Failed to find headquarter for player! Cannot center view on it!')
+                }
+            })
+            .catch(console.error)
 
         return () => {
             cancelled = true
@@ -952,7 +965,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         // Create a flag if it is the only possible construction
         if (pointInformation.canBuild.length === 1 && pointInformation.canBuild[0] === 'FLAG') {
-            api.placeFlag(pointInformation)
+            api.placeFlag(point)
 
             setSelected(point)
         } else if (pointInformation.is === 'ROAD') {
@@ -1018,6 +1031,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 shiftKey: event.shiftKey
             })
         }
+
+        event.preventDefault()
     }, [windows, newRoad, possibleRoadConnections, showAvailableConstruction, moveGame, zoom, setNewRoad, setPossibleRoadConnections, setShowMenu])
 
     const startNewRoad = useCallback(async (point: Point) => {
@@ -1164,7 +1179,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             tabIndex={1}>
 
             <GameCanvas
-                onKeyDown={onKeyDown}
                 onPointClicked={onPointClicked}
                 selectedPoint={selected}
                 onDoubleClick={onPointDoubleClicked}
@@ -1175,6 +1189,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 cursor={cursor}
                 heightAdjust={heightAdjust}
                 viewRef={immediateStateRef}
+                fogOfWar={fogOfWar}
             />
 
             <MenuButton onMenuButtonClicked={() => setShowMenu(true)} />
@@ -1210,7 +1225,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 onSetSoundEffectsVolume={(newVolume: number) => animator.animate(
                     'EFFECTS_VOLUME',
                     volume => sfx.setSoundEffectsVolume(volume),
-                    musicVolume,
+                    sfx.volume,
                     newVolume,
                     0.05
                 )}

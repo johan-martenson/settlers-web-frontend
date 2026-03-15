@@ -74,6 +74,8 @@ SOUND_EFFECTS.set('INVESTIGATING', { start: 10, animationLength: 16, audio: 'GEO
 SOUND_EFFECTS.set('FALLING_TREE', { start: 0, animationLength: 4, audio: 'FALLING_TREE', type: 'ONCE' })
 
 const sfx = {
+    volume: 0,
+
     play,
     startEffects,
     stopEffects,
@@ -83,7 +85,6 @@ const sfx = {
 // State
 let soundEffectsState: SoundEffectsState = 'NOT_SUBSCRIBED'
 let visibility: Visibility = { left: 0, right: 0, top: 0, bottom: 0 }
-let volume = 0
 let soundEffectsTimer: NodeJS.Timeout | undefined
 let view: View | undefined
 
@@ -107,7 +108,7 @@ function play(soundName: SoundEffect, loop = false): Sound | undefined {
             console.log(`Sound effects (playback): play "${soundName}", loop=${loop}`)
         }
 
-        sound.play(volume, 0, loop)
+        sound.play(sfx.volume, 0, loop)
     }
 
     return sound
@@ -136,7 +137,7 @@ function startEffects(viewToSet: View): void {
     }
 
     view = viewToSet
-    volume = DEFAULT_VOLUME
+    sfx.volume = DEFAULT_VOLUME
 
     // eslint-disable-next-line
     SOUND_INSTANCES.forEach(sound => sound.load())
@@ -257,8 +258,10 @@ function setSoundEffectsVolume(newVolume: number): void {
         console.log(`Sound effects (volume): set to ${newVolume}`)
     }
 
-    volume = newVolume
+    sfx.volume = newVolume
     SOUND_INSTANCES.forEach(soundInstance => soundInstance.setVolume(newVolume))
 }
 
-export { sfx }
+export {
+    sfx
+}

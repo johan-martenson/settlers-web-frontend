@@ -88,8 +88,8 @@ export type PlayerViewInformation = {
     gameState: GameState
     width: number
     height: number
-    straightBelow: VegetationAsInt[]
-    belowToTheRight: VegetationAsInt[]
+    tilesBelow: VegetationAsInt[]
+    tilesDownRight: VegetationAsInt[]
     heights: number[]
     map: MapInformation
     othersCanJoin: boolean

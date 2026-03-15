@@ -212,6 +212,16 @@ function lengthOfVector(vector: Vector): number {
     return Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z)
 }
 
+function sumAndNormalizeVectors(vectors: Vector[]): NormalizedVector {
+    const sum = vectors.reduce((acc, v) => ({
+        x: acc.x + v.x,
+        y: acc.y + v.y,
+        z: acc.z + v.z
+    }), { x: 0, y: 0, z: 0 })
+
+    return normalize(sum)
+}
+
 function normalize(vector: Vector): NormalizedVector {
     const length = lengthOfVector(vector)
 
@@ -689,5 +699,6 @@ export {
     screenPointToGamePointWithHeightAdjustment,
     calcDistance,
     getFreeColor,
-    delay
+    delay,
+    sumAndNormalizeVectors
 }

@@ -220,15 +220,17 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
             coalConfig.forEach(config => {
                 console.log(config.houseType)
                 console.log(`Set ${config.houseType} quota`)
-                cmds.set(`Set ${config.houseType} quota`, {
+                cmds.set(`Set ${config.houseType} coal quota`, {
                     type: 'NUMBER',
                     action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                     filter: (material: MaterialQuotaToManage) => material === 'COAL'
                 })
             })
 
+            console.log(cmds)
+
             wheatConfig.forEach(config => {
-                cmds.set(`Set ${config.houseType} quota`, {
+                cmds.set(`Set ${config.houseType} wheat quota`, {
                     type: 'NUMBER',
                     action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                     filter: (material: MaterialQuotaToManage) => material === 'WHEAT'
@@ -236,7 +238,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
             })
 
             waterConfig.forEach(config => {
-                cmds.set(`Set ${config.houseType} quota`, {
+                cmds.set(`Set ${config.houseType} water quota`, {
                     type: 'NUMBER',
                     action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                     filter: (material: MaterialQuotaToManage) => material === 'WATER'
@@ -244,7 +246,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
             })
 
             ironConfig.forEach(config => {
-                cmds.set(`Set ${config.houseType} quota`, {
+                cmds.set(`Set ${config.houseType} iron bar quota`, {
                     type: 'NUMBER',
                     action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                     filter: (material: MaterialQuotaToManage) => material === 'IRON_BAR'

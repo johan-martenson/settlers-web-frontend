@@ -26,8 +26,8 @@ function addVariableIfAbsent(name: string): void {
             isLatestValueHighest: false,
             isLatestValueLowest: false,
             numberOfMeasurements: 0,
-            currentHighestValue: 0,
-            currentLowestValue: 0
+            currentHighestValue: Number.NEGATIVE_INFINITY,
+            currentLowestValue: Number.POSITIVE_INFINITY
         })
     }
 }

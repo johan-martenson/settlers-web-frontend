@@ -1,34 +1,28 @@
-import { Direction, GameInformation, HouseInformation, PLAYER_COLORS, PlayerColor, PlayerId, PlayerInformation, Point, SimpleDirection } from './types'
+import { Direction, GameInformation, HouseInformation, MILITARY_BUILDINGS, PLAYER_COLORS, PlayerColor, PlayerId, PlayerInformation, Point, SimpleDirection } from './types'
 import { api } from './ws-api'
 
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
-    let compassDirection: Direction = 'NORTH_WEST'
-
-    if (simpleDirection === 'UP_RIGHT') {
-        compassDirection = 'NORTH_EAST'
-    } else if (simpleDirection === 'RIGHT') {
-        compassDirection = 'EAST'
-    } else if (simpleDirection === 'DOWN_RIGHT') {
-        compassDirection = 'SOUTH_EAST'
-    } else if (simpleDirection === 'DOWN_LEFT') {
-        compassDirection = 'SOUTH_WEST'
-    } else if (simpleDirection === 'LEFT') {
-        compassDirection = 'WEST'
+    switch (simpleDirection) {
+        case 'UP_LEFT': return 'NORTH_WEST'
+        case 'UP_RIGHT': return 'NORTH_EAST'
+        case 'RIGHT': return 'EAST'
+        case 'DOWN_RIGHT': return 'SOUTH_EAST'
+        case 'DOWN_LEFT': return 'SOUTH_WEST'
+        case 'LEFT': return 'WEST'
+        default: throw new Error(`Unknown simple direction: ${simpleDirection}`)
     }
-
-    return compassDirection
 }
 
 function isMilitaryBuilding(house: HouseInformation): boolean {
-    return house.type === 'Headquarter' || house.type === 'Fortress' || house.type === 'WatchTower' || house.type === 'GuardHouse' || house.type === 'Barracks'
+    return MILITARY_BUILDINGS.has(house.type)
 }
 
 function canBeEvacuated(house: HouseInformation): boolean {
-    return isMilitaryBuilding(house) && houseIsReady(house)
+    return isMilitaryBuilding(house) && houseIsReady(house) && house.type !== 'Headquarter'
 }
 
 function canBeUpgraded(house: HouseInformation): boolean {
-    return isMilitaryBuilding(house) && house.type !== 'Fortress' && house.type !== 'Headquarter'
+    return isMilitaryBuilding(house) && house.type !== 'Fortress' && house.type !== 'Headquarter' && (house.state === 'OCCUPIED' || house.state === 'UNOCCUPIED')
 }
 
 function houseIsReady(house: HouseInformation): boolean {
@@ -45,7 +39,7 @@ function isEvacuated(house: HouseInformation): boolean {
 
 function getHeadquarterForPlayer(playerId: PlayerId): HouseInformation | undefined {
     return Array.from(api.houses.values())
-        .find(house => house.type === 'Headquarter' && house.playerId === playerId)
+        .find(house => house.type === 'Headquarter' && house.playerId === playerId) as HouseInformation | undefined
 }
 
 async function removeHouseOrFlagOrRoadAtPoint(point: Point): Promise<void> {
@@ -55,24 +49,29 @@ async function removeHouseOrFlagOrRoadAtPoint(point: Point): Promise<void> {
 
     if (pointInformation.is === 'BUILDING') {
         api.removeBuilding(pointInformation.buildingId)
-    }
-
-    if (pointInformation.is === 'FLAG') {
+    } else if (pointInformation.is === 'FLAG') {
         api.removeFlag(pointInformation.flagId)
-    }
-
-    if (pointInformation.is === 'ROAD') {
+    } else if (pointInformation.is === 'ROAD') {
         api.removeRoad(pointInformation.roadId)
     }
 }
 
 function createGameInformationFromApi(): GameInformation | undefined {
-    if (
-        !api.gameId ||
-        !api.map ||
+    if (api.gameName === undefined ||
+        api.gameId === undefined ||
+        api.map === undefined ||
+        api.gameState === undefined ||
+        api.players === undefined ||
         api.othersCanJoin === undefined ||
         !api.initialResources
     ) {
+        console.error('Cannot create game information from API, missing fields', {
+            gameId: api.gameId,
+            map: api.map,
+            othersCanJoin: api.othersCanJoin,
+            initialResources: api.initialResources
+        })
+
         return undefined
     }
 
@@ -90,7 +89,11 @@ function createGameInformationFromApi(): GameInformation | undefined {
 }
 
 async function addComputerPlayer(players: PlayerInformation[], maxPlayers: number): Promise<void> {
-    let nextPlayer = undefined
+    if (!api.gameId) {
+        throw new Error('No active game')
+    }
+
+    let nextPlayer: number | undefined = undefined
 
     for (let i = 0; i < maxPlayers; i++) {
         if (players.find(player => player.name === 'Computer Player ' + i) === undefined) {
@@ -107,7 +110,7 @@ async function addComputerPlayer(players: PlayerInformation[], maxPlayers: numbe
     const colorsRemaining = new Set<PlayerColor>(PLAYER_COLORS)
     players.forEach(player => colorsRemaining.delete(player.color))
 
-    const nextColor = colorsRemaining.values().next().value
+    const nextColor: PlayerColor | undefined = colorsRemaining.values().next().value
 
     if (nextColor) {
         const newPlayer = await api.createPlayer(
@@ -117,7 +120,7 @@ async function addComputerPlayer(players: PlayerInformation[], maxPlayers: numbe
             'COMPUTER'
         )
 
-        await api.addPlayerToGame(api.gameId ?? '', newPlayer.id)
+        await api.addPlayerToGame(api.gameId, newPlayer.id)
     } else {
         console.error('No color available for computer player')
     }

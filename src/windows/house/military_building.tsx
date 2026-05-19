@@ -1,13 +1,15 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Button, Field } from '@fluentui/react-components'
 import { HouseInformation, Nation, Point, SoldierType, isMaterial, rankToMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
 import { api } from '../../api/ws-api'
-import { ButtonRow, Window } from '../../components/dialog'
+import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { canBeUpgraded, isEvacuated } from '../../api/utils'
 import { buildingPretty, soldierPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
+import { GenericCommand } from '../../screens/play/type_control'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type MilitaryBuildingProps = {
@@ -21,8 +23,90 @@ type MilitaryBuildingProps = {
 
 // React components
 const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: MilitaryBuildingProps) => {
+
+    // State
     const [hoverInfo, setHoverInfo] = useState<string>()
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<HouseInformation>>()
+
+        cmds.set('evacuate', {
+            action: (house: HouseInformation) => api.evacuateHouse(house.id),
+            filter: (house: HouseInformation) => !isEvacuated(house),
+            icon: <UiIcon type='SEND_OUT_ARROWS' scale={0.5} />
+        })
+
+        cmds.set('cancel evacuation', {
+            action: (house: HouseInformation) => api.cancelEvacuationForHouse(house.id),
+            filter: (house: HouseInformation) => isEvacuated(house),
+        })
+
+        cmds.set('upgrade', {
+            action: (house: HouseInformation) => api.upgrade(house.id),
+            filter: (house: HouseInformation) => canBeUpgraded(house) && !house.upgrading,
+            icon: <span>{house.type === 'Barracks' && <HouseIcon houseType='GuardHouse' nation={nation} scale={0.5} />}
+                {house.type === 'GuardHouse' && <HouseIcon houseType='WatchTower' nation={nation} scale={0.5} />}
+                {house.type === 'WatchTower' && <HouseIcon houseType='Fortress' nation={nation} scale={0.5} />}</span>
+        })
+
+        cmds.set('enable promotions', {
+            action: (house: HouseInformation) => {
+                api.enablePromotionsForHouse(house.id)
+            },
+            filter: (house: HouseInformation) => !house.promotionsEnabled,
+            icon: <UiIcon type='COIN' scale={0.5} />
+        })
+
+        cmds.set('disable promotions', {
+            action: (house: HouseInformation) => {
+                api.disablePromotionsForHouse(house.id)
+            },
+            filter: (house: HouseInformation) => house.promotionsEnabled,
+            icon: <UiIcon type='COIN_CROSSED_OUT' scale={0.5} />
+        })
+
+        cmds.set('tear down', {
+            action: (house: HouseInformation) => {
+                api.removeBuilding(house.id)
+
+                onClose()
+            },
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            filter: (_house: HouseInformation) => true,
+            icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+        })
+
+        cmds.set('go to house', {
+            action: (house: HouseInformation) => goToPoint(house),
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            filter: (_house: HouseInformation) => true,
+            icon: <UiIcon type='GO_TO_POINT' scale={0.5} />
+        })
+
+        cmds.set('close', {
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            action: (_house: HouseInformation) => onClose(),
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            filter: (_house: HouseInformation) => true,
+            icon: <Dismiss16Filled />
+        })
+
+        cmds.set('debug', {
+            action: (house: HouseInformation) => {
+                console.log(house)
+            },
+            hidden: true
+        })
+
+        return cmds
+    }, [house.id, nation, house.type])
+
+    // Rendering
     const soldiers: (SoldierType | null)[] = []
 
     if (house.soldiers && house.maxSoldiers) {
@@ -40,12 +124,14 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
     // TODO: show resources when upgrading. Show text 'is upgrading...'
 
     return (
-        <Window
+        <WindowWithTyping<HouseInformation>
             className='house-info'
             heading={buildingPretty(house.type)}
             onClose={onClose}
             hoverInfo={hoverInfo}
             onRaise={onRaise}
+            commands={commands}
+            param={house}
         >
 
             <HouseIcon
@@ -60,22 +146,22 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
 
             {house.upgrading &&
                 Object.keys(house.resources)
-                    .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
+                    .filter(material => isMaterial(material) && house.resources[material]?.canHold !== undefined).length > 0 &&
                 <Field label='Resources'>
                     <div>
                         {Object.keys(house.resources)
-                            .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
+                            .filter(material => isMaterial(material) && house.resources[material]?.canHold !== undefined)
                             .map(material => {
                                 if (isMaterial(material)) {
-                                    const has = house.resources[material].has ?? 0
-                                    const canHold = house.resources[material].canHold ?? 0
+                                    const has = house.resources[material]?.has ?? 0
+                                    const canHold = house.resources[material]?.canHold ?? 0
                                     const gap = Math.max(canHold - has, 0)
                                     const materialLabel = material.charAt(0) + material.substring(1).toLocaleLowerCase()
 
                                     return <div key={material}>
                                         {Array.from({ length: has }, () => 1).map((value, index) => (
                                             <span
-                                                key={index}
+                                                key={`${material}-has-${index}`}
                                                 onMouseEnter={() => setHoverInfo(materialLabel)}
                                                 onMouseLeave={() => setHoverInfo(undefined)}
                                             >
@@ -84,7 +170,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                                         ))}
                                         {Array.from({ length: gap }, () => 1).map((value, index) => (
                                             <span
-                                                key={index + 10}
+                                                key={`${material}-missing-${index}`}
                                                 onMouseEnter={() => setHoverInfo(materialLabel)}
                                                 onMouseLeave={() => setHoverInfo(undefined)}
                                             >
@@ -111,7 +197,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                                     onMouseEnter={() => setHoverInfo(soldierDisplayName)}
                                     onMouseLeave={() => setHoverInfo(undefined)}
                                     style={{ display: 'inline' }}>
-                                    <InventoryIcon material={soldierMaterial} nation={nation} key={index} inline />
+                                    <InventoryIcon material={soldierMaterial} nation={nation} inline />
                                 </div>
                             )
                         } else {
@@ -120,7 +206,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                                     style={{ display: 'inline' }}
                                     key={index + 10}
                                 >
-                                    <InventoryIcon material={'PRIVATE'} nation={nation} key={index} inline missing />
+                                    <InventoryIcon material={'PRIVATE'} nation={nation} inline missing />
                                 </div>
                             )
                         }
@@ -220,7 +306,7 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
                 </Button>
 
             </ButtonRow>
-        </Window>
+        </WindowWithTyping>
     )
 }
 

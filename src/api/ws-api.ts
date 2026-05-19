@@ -1,9 +1,9 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
-import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory, Tool } from './types'
-import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setCheating, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, setGame, setPlayerId, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, upgradeHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority, getMap, cheat, clearGame } from './ws/commands'
+import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory, Tool, AttackType, SoldierType, PointInformation, AnyBuilding, CheatCode, MapId, MapWithTerrain, PointInformationWithoutPossibleRoadConnections, ToolPriorities, TerrainInformation } from './types'
+import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setCheating, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority, getMap, cheat, listenToPlayer, stopListeningToPlayer, stopSendingOutMaterial, sendOutMaterial, allowDelivery, blockDelivery, getMapsWithTerrain, getMapWithTerrain, stopListeningToGamesList } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
-import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, killWebsocket, waitForConnection, addMessageListener } from './ws/core'
+import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, waitForConnection, addMessageListener } from './ws/core'
 
 // Types
 type WalkingTimerState = 'RUNNING' | 'NOT_RUNNING'
@@ -59,6 +59,11 @@ type PlayerViewChangedMessage = {
     playerViewChanges: PlayerViewChanges
 }
 
+type PlayerChangedMessage = {
+    type: 'PLAYER_CHANGED'
+    player: PlayerInformation
+}
+
 type PlayerViewChanges = {
     time: number
     gameSpeed?: GameSpeed
@@ -101,13 +106,23 @@ type PlayerViewChanges = {
     changedToolQuotas?: { [key in Tool]: number }
 }
 
-type GameInformationChangedMessage = { gameInformation: GameInformation }
+type GameInformationChangedMessage = {
+    type: 'GAME_INFO_CHANGED'
+    gameInformation: GameInformation
+}
 
-type NewChatMessage = { chatMessage: ChatMessage }
+type NewChatMessage = {
+    type: 'NEW_CHAT_MESSAGES'
+    chatMessage: ChatMessage
+}
 
-type GameListChangedMessage = { games: GameInformation[] }
+type GameListChangedMessage = {
+    type: 'GAME_LIST_CHANGED'
+    games: GameInformation[]
+}
 
 type StatisticsChangedMessage = {
+    type: 'STATISTICS_CHANGED'
     change: ('BUILDINGS' | 'LAND' | 'PRODUCTION')[]
 }
 
@@ -154,13 +169,14 @@ export type GameListListener = (gameInformations: GameInformation[]) => void
 export type MessagesListener = (messagesReceived: GameMessage[], messagesRead: GameMessage[], messagesRemoved: GameMessageId[]) => void
 export type HouseListener = ((house: HouseInformation) => void)
 export type DiscoveredPointListener = (discoveredPoints: PointSet) => void
-export type RoadListener = () => void
+export type RoadListener = (roadId: RoadId, roadInformation?: RoadInformation) => void
+export type RoadsListener = () => void
 export type ChatListener = () => void
 export type StatisticsListener = () => void
 export type TimeListener = (time: number) => void
 export type HousesAddedOrRemovedListener = () => void
 export type OwnedLandListener = () => void
-export type PointInformationListener = (pointInformation: PointInformationLocal) => void
+export type PointInformationListener = (pointInformation: PointInformationWithoutPossibleRoadConnections) => void
 
 export type ActionListener = {
     actionStarted: (id: string, point: Point, action: Action) => void
@@ -178,10 +194,9 @@ export type FlagListener = {
 }
 
 export type TransportPriorityListener = (priority: TransportCategory[]) => void
-
 export type PlayerInformationListener = (playerInformation: PlayerInformation) => void
-
-export type ToolPrioListener = (quotas: { [key in Tool]: number }) => void
+export type PlayersListener = (players: PlayerInformation[]) => void
+export type ToolPrioListener = (quotas: ToolPriorities) => void
 
 export type GameListener = {
     onMonitoringStarted?: () => void
@@ -200,23 +215,6 @@ export type WorkerMoveListener = {
     onWorkerMoved: (move: MoveUpdate) => void
 }
 
-export type PointInformationLocal = {
-    x: number
-    y: number
-    canBuild: AvailableConstruction[]
-} & ({
-    is?: undefined
-} | {
-    is: 'BUILDING'
-    buildingId: HouseId
-} | {
-    is: 'FLAG'
-    flagId: FlagId
-} | {
-    is: 'ROAD'
-    roadId: RoadId
-})
-
 
 // Type functions
 /**
@@ -227,6 +225,16 @@ export type PointInformationLocal = {
  */
 function isGameInformationChangedMessage(message: unknown): message is GameInformationChangedMessage {
     return message !== null && typeof message === 'object' && 'type' in message && message.type === 'GAME_INFO_CHANGED'
+}
+
+/**
+ * Determines if a message is of type `PlayerChangedMessage`.
+ *
+ * @param {unknown} message - The message to check.
+ * @returns {message is PlayerChangedMessage} - Returns `true` if the message is of type `PlayerChangedMessage`.
+ */
+function isPlayerChangedMessage(message: unknown): message is PlayerChangedMessage {
+    return message !== null && typeof message === 'object' && 'type' in message && message.type === 'PLAYER_CHANGED'
 }
 
 /**
@@ -273,7 +281,7 @@ function isGameChangesMessage(message: unknown): message is PlayerViewChangedMes
 // Configuration
 
 // State
-
+let followingSessionId = 0
 
 // Functions
 /**
@@ -285,22 +293,59 @@ function isGameChangesMessage(message: unknown): message is PlayerViewChangedMes
  */
 function onConnectionStatusChanged(connectionStatus: ConnectionStatus): void {
     if (connectionStatus === 'CONNECTED' && followingState === 'FOLLOWING') {
-        (async () => {
-            try {
-                const gameInformation = await getGameInformation()
-                clearAndLoadGameInformationAndCallListeners(gameInformation)
+        const sessionId = followingSessionId
 
-                if (gameInformation.status !== 'NOT_STARTED') {
-                    clearAndLoadPlayerViewAndCallListeners(await getViewForPlayer())
+            ; (async () => {
+                try {
+                    if (api.gameId === undefined) {
+                        throw new Error('Game id is undefined. Cannot sync game information.')
+                    }
+
+                    const gameInformation = await getGameInformation(api.gameId)
+
+                    if (
+                        sessionId !== followingSessionId ||
+                        followingState !== 'FOLLOWING'
+                    ) {
+                        return
+                    }
+
+                    clearAndLoadGameInformationAndCallListeners(gameInformation)
+
+                    if (gameInformation.status !== 'NOT_STARTED') {
+                        if (api.playerId === undefined) {
+                            throw new Error('Player id is undefined. Cannot sync player view.')
+                        }
+
+                        const playerView = await getViewForPlayer(api.playerId, api.gameId)
+
+                        if (
+                            sessionId !== followingSessionId ||
+                            followingState !== 'FOLLOWING'
+                        ) {
+                            return
+                        }
+
+                        clearAndLoadPlayerViewAndCallListeners(playerView)
+                    }
+                } catch (error) {
+                    if (sessionId !== followingSessionId) {
+                        return
+                    }
+
+                    console.error(`Failed to sync the game with the backend: ${error}`)
+
+                    api.gameState = 'EXPIRED'
+
+                    gameListeners.forEach(listener => {
+                        try {
+                            listener.onGameStateChanged && listener.onGameStateChanged('EXPIRED')
+                        } catch (e) {
+                            console.error(e)
+                        }
+                    })
                 }
-            } catch (error) {
-                console.error(`Failed to sync the game with the backend: ${error}`)
-
-                api.gameState = 'EXPIRED'
-
-                gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged('EXPIRED'))
-            }
-        })()
+            })()
     }
 }
 
@@ -321,7 +366,13 @@ function onMessageReceived(message: unknown): void {
     }
 
     try {
-        if (isGameChangesMessage(message)) {
+        if (isPlayerChangedMessage(message)) {
+            if (WsApiLogConfig.receive) {
+                console.log('WS API: Handling player changed message')
+            }
+
+            handlePlayerChangedMessage(message.player)
+        } else if (isGameChangesMessage(message)) {
             if (WsApiLogConfig.receive) {
                 console.log('WS API: Handling player view changed message')
             }
@@ -396,9 +447,9 @@ function houseAt(point: Point): HouseInformation | undefined {
  * Retrieves local information on a specific point, including what can be built and what is present.
  * 
  * @param {Point} point - The point to retrieve information about.
- * @returns {PointInformationLocal} - Returns an object containing details about what can be built and what is currently present at the point.
+ * @returns {PointInformationWithoutPossibleRoadConnections} - Returns an object containing details about what can be built and what is currently present at the point.
  */
-function getInformationOnPointLocal(point: Point): PointInformationLocal {
+function getInformationOnPointLocal(point: Point): PointInformationWithoutPossibleRoadConnections {
     const canBuild = api.availableConstruction.get(point)
 
     const house = Array.from(api.houses.values())
@@ -501,6 +552,7 @@ const api = {
     othersCanJoin: undefined as boolean | undefined,
     initialResources: undefined as ResourceLevel | undefined,
     cheatingEnabled: undefined as boolean | undefined,
+    maps: new Map<MapId, MapWithTerrain>(),
     map: undefined as MapInformation | undefined,
     workers: new Map<WorkerId, WorkerInformation>(),
     ships: new Map<ShipId, ShipInformation>(),
@@ -539,7 +591,6 @@ const api = {
     // Connection
     connectAndWaitForConnection,
     waitForConnection,
-    killWebsocket,
 
     // Games
     getGames,
@@ -550,9 +601,34 @@ const api = {
     // Maps
     getMap,
     getMaps,
+    getMapsWithTerrain: async () => {
+        const maps = await getMapsWithTerrain()
+
+        if (maps !== undefined) {
+            maps.forEach(map => {
+                api.maps.set(map.id, map)
+            })
+        }
+
+        return maps
+    },
 
     // Map
     getTerrainForMap,
+    getMapWithTerrain: async (mapId: MapId) => {
+        const localMap = api.maps.get(mapId)
+
+        if (localMap !== undefined) {
+            return localMap
+        }
+
+        const remoteMap = await getMapWithTerrain(mapId)
+        if (remoteMap !== undefined) {
+            api.maps.set(mapId, remoteMap)
+        }
+
+        return remoteMap
+    },
 
     // Game
     createGame,
@@ -561,94 +637,364 @@ const api = {
     resumeGame,
     deleteGame,
     waitForGameDataAvailable,
-    getGameInformation,
+    getGameInformation: () => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot get game information.')
+        }
+
+        return getGameInformation(api.gameId)
+    },
     addGameStateListener,
     isGameDataAvailable,
     addPlayerToGame,
-    setGameSpeed,
-    setTitle,
-    setInitialResources,
-    setOthersCanJoin,
-    setMap,
-    getStatistics,
+    setGameSpeed: (speed: GameSpeed) => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot set game speed.')
+        }
+
+        setGameSpeed(speed, api.gameId)
+    },
+    setTitle: (title: string) => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot set title.')
+        }
+
+        setTitle(title, api.gameId)
+    },
+    setInitialResources: (resources: ResourceLevel) => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot set initial resources.')
+        }
+
+        setInitialResources(resources, api.gameId)
+    },
+    setOthersCanJoin: (canJoin: boolean) => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot set others can join.')
+        }
+
+        setOthersCanJoin(canJoin, api.gameId)
+    },
+    setMap: (mapId: string) => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot set map.')
+        }
+
+        setMap(mapId, api.gameId)
+    },
+    getStatistics: () => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot get statistics.')
+        }
+
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get statistics.')
+        }
+
+        return getStatistics(api.gameId, api.playerId)
+    },
     addStatisticsListener,
     removeStatisticsListener,
     addTimeListener,
     removeTimeListener,
     followGame,
     stopFollowingGame,
-    setCheating,
+    setCheating: (enabled: boolean) => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot set cheating.')
+        }
+
+        setCheating(enabled, api.gameId)
+    },
 
     // Player
     createPlayer,
     updatePlayer,
-    removePlayer,
+    removePlayer: (playerId: PlayerId) => {
+        if (api.gameId === undefined) {
+            throw new Error('Game id is undefined. Cannot remove player.')
+        }
+
+        removePlayer(playerId, api.gameId)
+    },
     addActionsListener,
+    removeActionsListener,
     addDiscoveredPointsListener,
     removeDiscoveredPointsListener,
     addOwnedLandListener,
     removeOwnedLandListener,
     addMessagesListener,
     removeMessagesListener,
-    removeMessage,
-    removeMessages,
-    markGameMessagesRead,
-    getTransportPriority,
-    setTransportPriorityForMaterial,
+    removeMessage: (messageId: GameMessageId) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot remove message.')
+        }
+
+        removeMessage(messageId, api.playerId)
+    },
+    removeMessages: (messageIds: GameMessageId[]) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot remove messages.')
+        }
+
+        removeMessages(messageIds, api.playerId)
+    },
+    markGameMessagesRead: (messageIds: GameMessageId[]) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot mark messages read.')
+        }
+
+        markGameMessagesRead(messageIds, api.playerId)
+    },
+    getTransportPriority: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get transport priority.')
+        }
+
+        return getTransportPriority(api.playerId)
+    },
+    setTransportPriorityForMaterial: (category: TransportCategory, priority: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set transport priority.')
+        }
+
+        setTransportPriorityForMaterial(api.playerId, category, priority)
+    },
     addTransportPriorityListener,
     removeTransportPriorityListener,
     addPlayerInformationListener,
     removePlayerInformationListener,
+    addPlayersListener,
+    removePlayersListener,
     addToolPrioListener,
     removeToolPrioListener,
-    getToolPriorities,
-    setToolPriority,
-    cheat,
+    getToolPriorities: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get tool priorities.')
+        }
+
+        return getToolPriorities(api.playerId)
+    },
+    setToolPriority: (tool: Tool, priority: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set tool priority.')
+        }
+
+        setToolPriority(api.playerId, tool, priority)
+    },
+    cheat: (cheatCode: CheatCode) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set cheat.')
+        }
+
+        cheat(cheatCode, api.playerId)
+    },
 
     // Player - military
-    setReservedSoldiers,
-    setStrengthWhenPopulatingMilitaryBuildings,
-    setDefenseStrength,
-    setDefenseFromSurroundingBuildings,
-    setMilitaryPopulationFarFromBorder,
-    setMilitaryPopulationCloserToBorder,
-    setMilitaryPopulationCloseToBorder,
-    setSoldiersAvailableForAttack,
+    setReservedSoldiers: (rank: SoldierType, amount: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set reserved soldiers.')
+        }
+
+        setReservedSoldiers(rank, amount, api.playerId)
+    },
+    setStrengthWhenPopulatingMilitaryBuildings: (strength: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set strength when populating military buildings.')
+        }
+
+        setStrengthWhenPopulatingMilitaryBuildings(strength, api.playerId)
+    },
+    setDefenseStrength: (defense: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set defense strength.')
+        }
+
+        setDefenseStrength(defense, api.playerId)
+    },
+    setDefenseFromSurroundingBuildings: (defense: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set defense from surrounding buildings.')
+        }
+
+        setDefenseFromSurroundingBuildings(defense, api.playerId)
+    },
+    setMilitaryPopulationFarFromBorder: (population: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set military population far from border.')
+        }
+
+        setMilitaryPopulationFarFromBorder(population, api.playerId)
+    },
+    setMilitaryPopulationCloserToBorder: (population: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set military population closer to border.')
+        }
+
+        setMilitaryPopulationCloserToBorder(population, api.playerId)
+    },
+    setMilitaryPopulationCloseToBorder: (population: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set military population close to border.')
+        }
+
+        setMilitaryPopulationCloseToBorder(population, api.playerId)
+    },
+    setSoldiersAvailableForAttack: (soldiers: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set soldiers available for attack.')
+        }
+
+        setSoldiersAvailableForAttack(soldiers, api.playerId)
+    },
 
     getStrengthWhenPopulatingMilitaryBuildings,
-    getDefenseStrength,
-    getDefenseFromSurroundingBuildings,
-    getPopulateMilitaryFarFromBorder,
-    getPopulateMilitaryCloserToBorder,
-    getPopulateMilitaryCloseToBorder,
-    getSoldiersAvailableForAttack,
-    getMilitarySettings,
+    getDefenseStrength: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get defense strength.')
+        }
+
+        return getDefenseStrength(api.playerId)
+    },
+    getDefenseFromSurroundingBuildings: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get defense from surrounding buildings.')
+        }
+
+        return getDefenseFromSurroundingBuildings(api.playerId)
+    },
+    getPopulateMilitaryFarFromBorder: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get military population far from border.')
+        }
+
+        return getPopulateMilitaryFarFromBorder(api.playerId)
+    },
+    getPopulateMilitaryCloserToBorder: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get military population closer to border.')
+        }
+
+        return getPopulateMilitaryCloserToBorder(api.playerId)
+    },
+    getPopulateMilitaryCloseToBorder: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get military population close to border.')
+        }
+
+        return getPopulateMilitaryCloseToBorder(api.playerId)
+    },
+    getSoldiersAvailableForAttack: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get soldiers available for attack.')
+        }
+
+        return getSoldiersAvailableForAttack(api.playerId)
+    },
+    getMilitarySettings: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get military settings.')
+        }
+
+        return getMilitarySettings(api.playerId)
+    },
 
     // Player - quotas
-    setCoalQuotas,
-    setFoodQuotas,
-    setWheatQuotas,
-    setWaterQuotas,
-    setIronBarQuotas,
+    setCoalQuotas: (mint: number, armory: number, ironSmelter: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set coal quotas.')
+        }
 
-    getFoodQuotas,
-    getWheatQuotas,
-    getWaterQuotas,
-    getIronBarQuotas,
-    getCoalQuotas,
+        setCoalQuotas(mint, armory, ironSmelter, api.playerId)
+    },
+    setFoodQuotas: (ironMine: number, coalMine: number, goldMine: number, graniteMine: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set food quotas.')
+        }
+
+        setFoodQuotas(ironMine, coalMine, goldMine, graniteMine, api.playerId)
+    },
+    setWheatQuotas: (donkeyFarm: number, pigFarm: number, mill: number, brewery: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set wheat quotas.')
+        }
+
+        setWheatQuotas(donkeyFarm, pigFarm, mill, brewery, api.playerId)
+    },
+    setWaterQuotas: (bakery: number, donkeyFarm: number, pigFarm: number, brewery: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set water quotas.')
+        }
+
+        setWaterQuotas(bakery, donkeyFarm, pigFarm, brewery, api.playerId)
+    },
+    setIronBarQuotas: (armory: number, metalworks: number) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot set iron bar quotas.')
+        }
+
+        setIronBarQuotas(armory, metalworks, api.playerId)
+    },
+    getFoodQuotas: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get food quotas.')
+        }
+
+        return getFoodQuotas(api.playerId)
+    },
+    getWheatQuotas: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get wheat quotas.')
+        }
+
+        return getWheatQuotas(api.playerId)
+    },
+    getWaterQuotas: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get water quotas.')
+        }
+
+        return getWaterQuotas(api.playerId)
+    },
+    getIronBarQuotas: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get iron bar quotas.')
+        }
+
+        return getIronBarQuotas(api.playerId)
+    },
+    getCoalQuotas: () => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get coal quotas.')
+        }
+
+        return getCoalQuotas(api.playerId)
+    },
 
     // Houses
     addBurningHousesListener,
+    removeBurningHousesListener,
 
     // House
-    placeHouse,
+    placeHouse: (type: AnyBuilding, point: Point) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot place house.')
+        }
+
+        return placeHouse(type, point, api.playerId)
+    },
     removeBuilding,
     getHouseAtPointLocal,
     upgrade,
     houseAt,
-    attackHouse,
+    attackHouse: (houseId: HouseId, attackers: number, attackType: AttackType) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot attack house.')
+        }
+
+        return attackHouse(houseId, attackers, attackType, api.playerId)
+    },
     evacuateHouse,
-    upgradeHouse,
     pauseProductionForHouse,
     resumeProductionForHouse,
     disablePromotionsForHouse,
@@ -659,31 +1005,87 @@ const api = {
     addHousesAddedOrRemovedListener,
     removeHousesAddedOrRemovedListener,
 
+    // House - headquarters
+    blockDelivery,
+    allowDelivery,
+    sendOutMaterial,
+    stopSendingOutMaterial,
+
     // Flags
 
     // Flag
-    placeFlag,
+    placeFlag: (flag: Point) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot place flag.')
+        }
+
+        return placeFlag(flag, api.playerId)
+    },
     removeFlag,
     getFlagAtPointLocal,
-    getFlagDebugInfo,
-    callScout,
-    callGeologist,
+    getFlagDebugInfo: (flagId: FlagId) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get flag debug info.')
+        }
+
+        return getFlagDebugInfo(flagId, api.playerId)
+    },
+    callScout: (point: Point) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot call scout.')
+        }
+
+        return callScout(point, api.playerId)
+    },
+    callGeologist: (point: Point) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot call geologist.')
+        }
+
+        return callGeologist(point, api.playerId)
+    },
     addFlagListener,
     removeFlagListener,
 
     // Road
-    placeRoad,
-    placeRoadWithFlag,
+    placeRoad: (points: Point[]) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot place road.')
+        }
+
+        return placeRoad(points, api.playerId)
+    },
+    placeRoadWithFlag: (flag: Point, points: Point[]) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot place road with flag.')
+        }
+
+        return placeRoadWithFlag(flag, points, api.playerId)
+    },
     placeLocalRoad,
     removeRoad,
     removeLocalRoad,
+    addRoadListener,
+    removeRoadListener,
     addRoadsListener,
     removeRoadsListener,
 
     // Point
     getInformationOnPointLocal,
-    getInformationOnPoint,
-    getInformationOnPoints,
+    getInformationOnPoint: (point: Point): Promise<PointInformation> => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get information on point.')
+        }
+
+        return getInformationOnPoint(point, api.playerId)
+    },
+    getInformationOnPoints: (points: Point[]): Promise<PointMap<PointInformation>> => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot get information on points.')
+        }
+
+        return getInformationOnPoints(points, api.playerId)
+    },
     getHeight,
     addPointInformationListener,
     removePointInformationListener,
@@ -694,7 +1096,13 @@ const api = {
     removeChatMessagesListener,
 
     // Construction
-    findPossibleNewRoad,
+    findPossibleNewRoad: (from: Point, to: Point, avoid: Point[] | undefined) => {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot find possible new road.')
+        }
+
+        return findPossibleNewRoad(from, to, avoid, api.playerId)
+    },
     isAvailable,
     addAvailableConstructionListener,
     removeAvailableConstructionListener,
@@ -708,7 +1116,8 @@ const api = {
 const messageListeners: Set<MessagesListener> = new Set<MessagesListener>()
 const houseListeners: Map<HouseId, Set<HouseListener>> = new Map<HouseId, Set<HouseListener>>()
 const discoveredPointListeners: Set<DiscoveredPointListener> = new Set<DiscoveredPointListener>()
-const roadListeners: Set<RoadListener> = new Set<RoadListener>()
+const roadListeners = new Map<RoadId, Set<RoadListener>>()
+const roadsListeners: Set<RoadsListener> = new Set<RoadsListener>()
 const availableConstructionListeners = new PointMap<Set<AvailableConstructionListener>>()
 const actionListeners: Set<ActionListener> = new Set<ActionListener>()
 const houseBurningListeners: Set<HouseBurningListener> = new Set<HouseBurningListener>()
@@ -721,6 +1130,7 @@ const flagListeners: Map<FlagId, Set<FlagListener>> = new Map<FlagId, Set<FlagLi
 const transportPriorityListeners: Set<TransportPriorityListener> = new Set()
 const timeListeners: Set<TimeListener> = new Set()
 const playerInformationListeners: Map<PlayerId, Set<PlayerInformationListener>> = new Map()
+const playersListeners: Map<GameId, Set<PlayersListener>> = new Map<GameId, Set<PlayersListener>>()
 const toolPrioListeners: Set<ToolPrioListener> = new Set()
 const housesAddedOrRemovedListeners: Set<HousesAddedOrRemovedListener> = new Set()
 const ownedLandListeners: Set<OwnedLandListener> = new Set()
@@ -780,11 +1190,11 @@ function removeMessagesListener(listener: MessagesListener): void {
 /**
  * Removes a listener for roads.
  * 
- * @param {RoadListener} listener - The listener to remove.
+ * @param {RoadsListener} listener - The listener to remove.
  * @returns {void}
  */
-function removeRoadsListener(listener: RoadListener): void {
-    roadListeners.delete(listener)
+function removeRoadsListener(listener: RoadsListener): void {
+    roadsListeners.delete(listener)
 }
 
 /**
@@ -916,6 +1326,8 @@ function removeTransportPriorityListener(listener: TransportPriorityListener): v
 function addPlayerInformationListener(playerId: PlayerId, listener: PlayerInformationListener): void {
     if (!playerInformationListeners.has(playerId)) {
         playerInformationListeners.set(playerId, new Set())
+
+        listenToPlayer(playerId)
     }
 
     playerInformationListeners.get(playerId)?.add(listener)
@@ -924,11 +1336,33 @@ function addPlayerInformationListener(playerId: PlayerId, listener: PlayerInform
 /**
  * Removes a listener for player information
  *
- * @param {PlayerId} playerId - Thd id of the player
+ * @param {PlayerId} playerId - The id of the player
  * @param {PlayerInformationListener} listener - The function that is called when changes are done
  */
 function removePlayerInformationListener(playerId: PlayerId, listener: PlayerInformationListener): void {
-    playerInformationListeners.get(playerId)?.delete(listener)
+    const listenersForPlayer = playerInformationListeners.get(playerId)
+
+    if (listenersForPlayer) {
+        listenersForPlayer.delete(listener)
+
+        if (listenersForPlayer.size === 0) {
+            stopListeningToPlayer(playerId)
+        }
+    } else {
+        console.warn(`Tried to remove a player information listener for player ${playerId}, but there are no listeners for this player.`)
+    }
+}
+
+function addPlayersListener(listener: PlayersListener, gameId: GameId): void {
+    if (!playersListeners.has(gameId)) {
+        playersListeners.set(gameId, new Set())
+    }
+
+    playersListeners.get(gameId)?.add(listener)
+}
+
+function removePlayersListener(listener: PlayersListener, gameId: GameId): void {
+    playersListeners.get(gameId)?.delete(listener)
 }
 
 function addToolPrioListener(listener: ToolPrioListener): void {
@@ -961,7 +1395,11 @@ function addHouseListener(houseId: HouseId, houseListener: HouseListener): void 
 
     // Add detailed monitoring for the house
     if (!objectsWithDetailedMonitoring.has(houseId)) {
-        addDetailedMonitoring(houseId)
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot add detailed monitoring for house.')
+        }
+
+        addDetailedMonitoring(houseId, api.playerId)
 
         objectsWithDetailedMonitoring.add(houseId)
     }
@@ -981,7 +1419,11 @@ function removeHouseListener(houseId: HouseId, houseListener: HouseListener): vo
         houseListeners.get(houseId)?.delete(houseListener)
 
         if (listenersForHouse.size === 0) {
-            removeDetailedMonitoring(houseId)
+            if (api.playerId === undefined) {
+                throw new Error('Player id is undefined. Cannot remove detailed monitoring for house.')
+            }
+
+            removeDetailedMonitoring(houseId, api.playerId)
 
             objectsWithDetailedMonitoring.delete(houseId)
         }
@@ -1029,13 +1471,40 @@ function removeOwnedLandListener(listener: OwnedLandListener): void {
 }
 
 /**
+ * Adds a listener for updates for the given road.
+ * @param {RoadId} roadId - The id of the road.
+ * @param {RoadListener} roadListener - The listening callback.
+ * @return {void}
+ */
+function addRoadListener(roadId: RoadId, listener: RoadListener): void {
+    let listenersForRoad = roadListeners.get(roadId)
+
+    if (!listenersForRoad) {
+        listenersForRoad = new Set()
+
+        roadListeners.set(roadId, listenersForRoad)
+    }
+
+    listenersForRoad.add(listener)
+}
+
+/**
+ * Removes a listener for updates for the given road.
+ * @param {RoadId} roadId - The id of the road.
+ * @param {RoadListener} listener - The listener to remove.
+ */
+function removeRoadListener(roadId: RoadId, listener: RoadListener): void {
+    roadListeners.get(roadId)?.delete(listener)
+}
+
+/**
  * Adds a listener for road updates.
  * 
- * @param {RoadListener} listener - The listener to add.
+ * @param {RoadsListener} listener - The listener to add.
  * @returns {void}
  */
-function addRoadsListener(listener: RoadListener): void {
-    roadListeners.add(listener)
+function addRoadsListener(listener: RoadsListener): void {
+    roadsListeners.add(listener)
 }
 
 /**
@@ -1076,7 +1545,11 @@ function addFlagListener(flagId: FlagId, listener: FlagListener): void {
 
     // Add detailed monitoring
     if (!objectsWithDetailedMonitoring.has(flagId)) {
-        addDetailedMonitoring(flagId)
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot add detailed monitoring for flag.')
+        }
+
+        addDetailedMonitoring(flagId, api.playerId)
 
         objectsWithDetailedMonitoring.add(flagId)
     }
@@ -1090,6 +1563,12 @@ function addFlagListener(flagId: FlagId, listener: FlagListener): void {
  */
 function removeGamesListener(listener: GameListListener): void {
     gamesListeners.delete(listener)
+
+    if (gamesListeners.size === 0 && gamesListeningStatus === 'LISTENING') {
+        stopListeningToGamesList()
+
+        gamesListeningStatus = 'NOT_LISTENING'
+    }
 }
 
 /**
@@ -1103,12 +1582,14 @@ function removeFlagListener(flagId: FlagId, listener: FlagListener): void {
     const listeners = flagListeners.get(flagId)
 
     if (listeners) {
-
-        // Remove the listener
         flagListeners.get(flagId)?.delete(listener)
 
         if (listeners.size === 0) {
-            removeDetailedMonitoring(flagId)
+            if (api.playerId === undefined) {
+                throw new Error('Player id is undefined. Cannot remove detailed monitoring for flag.')
+            }
+
+            removeDetailedMonitoring(flagId, api.playerId)
 
             objectsWithDetailedMonitoring.delete(flagId)
         }
@@ -1152,6 +1633,16 @@ function addActionsListener(listener: ActionListener): void {
 }
 
 /**
+ * Removes a listener for player actions.
+ * 
+ * @param {ActionListener} listener - The listener to remove.
+ * @returns {void}
+ */
+function removeActionsListener(listener: ActionListener): void {
+    actionListeners.delete(listener)
+}
+
+/**
  * Adds a listener for game list updates. If not currently listening, it will start listening.
  * 
  * @param {GameListListener} listener - The listener to add.
@@ -1187,6 +1678,16 @@ function addBurningHousesListener(listener: HouseBurningListener): void {
     houseBurningListeners.add(listener)
 }
 
+/**
+ * Removes a listener for houses that start or stop burning.
+ * 
+ * @param {HouseBurningListener} listener - The listener to remove.
+ * @returns {void}
+ */
+function removeBurningHousesListener(listener: HouseBurningListener): void {
+    houseBurningListeners.delete(listener)
+}
+
 // Functions used within WS API
 
 // Functions used within monitoring
@@ -1196,11 +1697,23 @@ function addBurningHousesListener(listener: HouseBurningListener): void {
  * @param {GameInformation} gameInformation - The updated game information.
  */
 function handleGameInformationChangedMessage(gameInformation: GameInformation): void {
+    // FIXME: it looks like this function can end up calling listeners three times. That's crazy...
+
     if (api.gameState === 'NOT_STARTED' && gameInformation.status !== 'NOT_STARTED') {
         (async () => {
-            loadPlayerViewAndCallListeners(await getViewForPlayer())
+            if (api.playerId === undefined || api.gameId === undefined) {
+                throw new Error(`Player id (${api.playerId}) or game id (${api.gameId}) is undefined. Cannot load player view.`)
+            }
 
-            gameListeners.forEach(listener => listener.onMonitoringStarted && listener.onMonitoringStarted())
+            loadPlayerViewAndCallListeners(await getViewForPlayer(api.playerId, api.gameId))
+
+            gameListeners.forEach(listener => {
+                try {
+                    listener.onMonitoringStarted && listener.onMonitoringStarted()
+                } catch (e) {
+                    console.error(e)
+                }
+            })
         }
         )()
     }
@@ -1284,28 +1797,60 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
     }
 
     // Convert the terrain to a point-list format and store it
-    const terrainPointList = terrainInformationToTerrainAtPointList(message)
+    const terrainPointList = terrainInformationToTerrainAtPointList(message as TerrainInformation)
 
     terrainPointList.forEach(terrainAtPoint => api.allTiles.set(terrainAtPoint.point, terrainAtPoint))
 
     storeDiscoveredTiles(api.discoveredPoints)
 
     // Call the listeners after all the data has been set
-    discoveredPointListeners.forEach(listener => listener(api.discoveredPoints))
-    roadListeners.forEach(roadListener => roadListener())
+    discoveredPointListeners.forEach(listener => {
+        try {
+            listener(api.discoveredPoints)
+        } catch (e) {
+            console.error(e)
+        }
+    })
+    roadsListeners.forEach(roadListener => {
+        try {
+            roadListener()
+        } catch (e) {
+            console.error(e)
+        }
+    })
 
     message?.messages.forEach(message => api.messages.set(message.id, message))
 
     if (message.messages) {
-        messageListeners.forEach(messageListener => messageListener(message.messages, [], []))
+        messageListeners.forEach(messageListener => {
+            try {
+                messageListener(message.messages, [], [])
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }
 
     if (previousGameState !== api.gameState) {
-        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(api.gameState))
+        gameListeners.forEach(listener => {
+            if (listener.onGameStateChanged) {
+                try {
+                    listener.onGameStateChanged(api.gameState)
+                } catch (e) {
+                    console.error(e)
+                }
+            }
+        })
     }
 
     if (changedTransportPriority && api.transportPriority) {
-        transportPriorityListeners?.forEach(listener => listener(api.transportPriority!))
+        transportPriorityListeners?.forEach(listener => {
+            try {
+                listener(api.transportPriority!)
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }
 }
 
@@ -1314,7 +1859,6 @@ function loadPlayerViewAndCallListeners(message: PlayerViewInformation): void {
  * @return {void}
  */
 function startTimers(): void {
-
     if (WsApiLogConfig.timers) {
         console.log(`WS API (timers): Starting timers with tick length: ${gameTickLength}`)
     }
@@ -1411,7 +1955,11 @@ function startTimers(): void {
                         }
                     }
 
-                    listener.onWorkerMoved(move)
+                    try {
+                        listener.onWorkerMoved(move)
+                    } catch (e) {
+                        console.error(e)
+                    }
                 }
             })
         }
@@ -1495,7 +2043,13 @@ function startTimers(): void {
     // Track game time
     gameTimer = setInterval(() => {
         api.time++
-        timeListeners.forEach(listener => listener(api.time))
+        timeListeners.forEach(listener => {
+            try {
+                listener(api.time)
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }, gameTickLength)
 
     walkingTimerState = 'RUNNING'
@@ -1509,7 +2063,13 @@ function startTimers(): void {
 function loadChatMessage(chatMessage: ChatMessage): void {
     api.chatRoomMessages.push(chatMessage)
 
-    chatListeners.forEach(listener => listener())
+    chatListeners.forEach(listener => {
+        try {
+            listener()
+        } catch (e) {
+            console.error(e)
+        }
+    })
 }
 
 /**
@@ -1519,7 +2079,13 @@ function loadChatMessage(chatMessage: ChatMessage): void {
  */
 // eslint-disable-next-line
 function handleUpdatedStatistics(_statisticsChangedMessage: StatisticsChangedMessage): void {
-    statisticsListeners.keys().forEach(listener => listener())
+    statisticsListeners.keys().forEach(listener => {
+        try {
+            listener()
+        } catch (e) {
+            console.error(e)
+        }
+    })
 }
 
 /**
@@ -1528,7 +2094,13 @@ function handleUpdatedStatistics(_statisticsChangedMessage: StatisticsChangedMes
  * @param {GameListChangedMessage} message - The message containing the updated game list.
  */
 function receivedGameListChangedMessage(message: GameListChangedMessage): void {
-    gamesListeners.forEach(listener => listener(message.games))
+    gamesListeners.forEach(listener => {
+        try {
+            listener(message.games)
+        } catch (e) {
+            console.error(e)
+        }
+    })
 }
 
 /**
@@ -1576,21 +2148,59 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
 
     // Call game state change listener
     if (prevState !== gameInformation.status) {
-        gameListeners.forEach(listener => listener.onGameStateChanged && listener.onGameStateChanged(gameInformation.status))
+        gameListeners.forEach(listener => {
+            if (listener.onGameStateChanged) {
+                try {
+                    listener.onGameStateChanged(gameInformation.status)
+                } catch (e) {
+                    console.error(e)
+                }
+            }
+
+        })
     }
 
     // Call game speed change listener
     if (prevSpeed !== gameInformation.gameSpeed && gameInformation.gameSpeed) {
         for (const listener of gameListeners) {
-            listener.onGameSpeedChanged && listener.onGameSpeedChanged(gameInformation.gameSpeed)
+            if (listener.onGameSpeedChanged) {
+                try {
+                    listener.onGameSpeedChanged(gameInformation.gameSpeed)
+                } catch (e) {
+                    console.error(e)
+                }
+            }
         }
     }
 
     // Call other listeners
-    gameListeners.forEach(listener => listener.onGameInformationChanged && listener.onGameInformationChanged(gameInformation))
+    gameListeners.forEach(listener => {
+        if (listener.onGameInformationChanged) {
+            try {
+                listener.onGameInformationChanged(gameInformation)
+            } catch (e) {
+                console.error(e)
+            }
+        }
+    })
 
     // Call player information listeners
-    gameInformation.players.forEach(player => playerInformationListeners.get(player.id)?.forEach(listener => listener(player)))
+    gameInformation.players.forEach(player =>
+        playerInformationListeners.get(player.id)?.forEach(listener => {
+            try {
+                listener(player)
+            } catch (e) {
+                console.error(e)
+            }
+        }))
+
+    playersListeners.get(gameInformation.id)?.forEach(listener => {
+        try {
+            listener(Array.from(api.players.values()))
+        } catch (e) {
+            console.error(e)
+        }
+    })
 }
 
 /**
@@ -1684,6 +2294,29 @@ function gameStateMightHaveChanged(gameState: GameState): void {
 }
 
 /**
+ * Handles a message indicating that a player's information has changed. It updates the player's information in the API state and notifies all relevant listeners.
+ * 
+ * @param {PlayerChangedMessage} message - The message containing the updated player information.
+ */
+function handlePlayerChangedMessage(updatedPlayer: PlayerInformation): void {
+    const player = api.players.get(updatedPlayer.id)
+
+    if (player) {
+        Object.assign(player, updatedPlayer)
+
+        playerInformationListeners.get(player.id)?.forEach(listener => {
+            try {
+                listener(player)
+            } catch (e) {
+                console.error(e)
+            }
+        })
+    } else {
+        console.error(`Received a player changed message for player ${updatedPlayer.id}, but this player is not known in the API state.`, updatedPlayer)
+    }
+}
+
+/**
  * Loads changes in the player's view and notifies all relevant listeners.
  * 
  * @param {PlayerViewChanges} playerViewChanges - The changes in the player's view.
@@ -1732,7 +2365,15 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     if (playerViewChanges?.gameSpeed) {
         api.gameSpeed = playerViewChanges.gameSpeed
 
-        gameListeners.forEach(listener => listener.onGameSpeedChanged && listener.onGameSpeedChanged(api.gameSpeed))
+        gameListeners.forEach(listener => {
+            if (listener.onGameSpeedChanged) {
+                try {
+                    listener.onGameSpeedChanged(api.gameSpeed)
+                } catch (e) {
+                    console.error(e)
+                }
+            }
+        })
     }
 
     api.time = playerViewChanges.time
@@ -1763,7 +2404,11 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             if (monitoredWorker && monitoredWorker.action) {
                 actionListeners.forEach(listener => {
                     if (monitoredWorker.action) {
-                        monitoredWorker.action && listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, monitoredWorker.action)
+                        try {
+                            listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, monitoredWorker.action)
+                        } catch (e) {
+                            console.error(e)
+                        }
                     }
                 })
             }
@@ -1779,7 +2424,11 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             if (worker) {
                 actionListeners.forEach(listener => {
                     if (worker.action) {
-                        listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, worker.action)
+                        try {
+                            listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, worker.action)
+                        } catch (e) {
+                            console.error(e)
+                        }
                     }
                 })
 
@@ -1791,13 +2440,19 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
                 worker.actionAnimationIndex = 0
             }
 
-            actionListeners.forEach(listener => listener.actionStarted(
-                workerWithNewAction.id,
-                {
-                    x: workerWithNewAction.x,
-                    y: workerWithNewAction.y
-                },
-                workerWithNewAction.startedAction ?? ''))
+            actionListeners.forEach(listener => {
+                try {
+                    listener.actionStarted(
+                        workerWithNewAction.id,
+                        {
+                            x: workerWithNewAction.x,
+                            y: workerWithNewAction.y
+                        },
+                        workerWithNewAction.startedAction ?? '')
+                } catch (e) {
+                    console.error(e)
+                }
+            })
         })
     }
 
@@ -1811,7 +2466,11 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
         if (worker?.action) {
             actionListeners.forEach(listener => {
                 if (worker.action) {
-                    listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, worker.action)
+                    try {
+                        listener.actionEnded(worker.id, { x: worker.x, y: worker.y }, worker.action)
+                    } catch (e) {
+                        console.error(e)
+                    }
                 }
             })
         }
@@ -1831,9 +2490,21 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             const oldHouse = api.houses.get(house.id)
 
             if (oldHouse && oldHouse.state !== 'BURNING' && house.state === 'BURNING') {
-                houseBurningListeners.forEach(listener => listener.houseStartedToBurn(house.id, house))
+                houseBurningListeners.forEach(listener => {
+                    try {
+                        listener.houseStartedToBurn(house.id, house)
+                    } catch (e) {
+                        console.error(e)
+                    }
+                })
             } else if (oldHouse && oldHouse.state === 'BURNING' && house.state !== 'BURNING') {
-                houseBurningListeners.forEach(listener => listener.houseStoppedBurning(house.id, house))
+                houseBurningListeners.forEach(listener => {
+                    try {
+                        listener.houseStoppedBurning(house.id, house)
+                    } catch (e) {
+                        console.error(e)
+                    }
+                })
             }
 
             api.houses.set(house.id, house)
@@ -1856,15 +2527,33 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
 
     playerViewChanges.newFlags?.forEach(flag => {
         api.flags.set(flag.id, flag)
-        flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
+        flagListeners.get(flag.id)?.forEach(listener => {
+            try {
+                listener.onUpdate(flag)
+            } catch (e) {
+                console.error(e)
+            }
+        })
     })
     playerViewChanges.changedFlags?.forEach(flag => {
         api.flags.set(flag.id, flag)
-        flagListeners.get(flag.id)?.forEach(listener => listener.onUpdate(flag))
+        flagListeners.get(flag.id)?.forEach(listener => {
+            try {
+                listener.onUpdate(flag)
+            } catch (e) {
+                console.error(e)
+            }
+        })
     })
     playerViewChanges.removedFlags?.forEach(id => {
         api.flags.delete(id)
-        flagListeners.get(id)?.forEach(listener => listener.onRemove())
+        flagListeners.get(id)?.forEach(listener => {
+            try {
+                listener.onRemove()
+            } catch (e) {
+                console.error(e)
+            }
+        })
     })
 
     playerViewChanges.newRoads?.forEach(road => api.roads.set(road.id, road))
@@ -1885,7 +2574,14 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
                     animation: 0
                 })
 
-            actionListeners.forEach(actionListener => actionListener.actionStarted(treeId, treeToRemove, 'FALLING_TREE'))
+            actionListeners.forEach(actionListener => {
+                try {
+                    actionListener.actionStarted(treeId, treeToRemove, 'FALLING_TREE')
+                } catch (e) {
+                    console.error(e)
+                }
+
+            })
 
             api.trees.delete(treeId)
         }
@@ -1935,7 +2631,13 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
                 api.availableConstruction.set(point, change.available)
             }
 
-            availableConstructionListeners.get(point)?.forEach(listener => listener.onAvailableConstructionChanged(change.available))
+            availableConstructionListeners.get(point)?.forEach(listener => {
+                try {
+                    listener.onAvailableConstructionChanged(change.available)
+                } catch (e) {
+                    console.error(e)
+                }
+            })
         }
     }
 
@@ -1952,29 +2654,73 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     /// Notify listeners when all data is updated
     if (playerViewChanges.newDiscoveredLand) {
         const newDiscoveredLand = new PointSet(playerViewChanges.newDiscoveredLand)
-        discoveredPointListeners.forEach(listener => listener(newDiscoveredLand))
+        discoveredPointListeners.forEach(listener => {
+            try {
+                listener(newDiscoveredLand)
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }
 
     if (playerViewChanges.newMessages !== undefined || playerViewChanges.readMessages !== undefined || playerViewChanges.removedMessages !== undefined) {
-        messageListeners.forEach(listener => listener(
-            playerViewChanges.newMessages ?? [],
-            playerViewChanges.readMessages ?? [],
-            playerViewChanges.removedMessages ?? []
-        ))
+        messageListeners.forEach(listener => {
+            try {
+                listener(
+                    playerViewChanges.newMessages ?? [],
+                    playerViewChanges.readMessages ?? [],
+                    playerViewChanges.removedMessages ?? []
+                )
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }
 
     if (playerViewChanges.changedToolQuotas !== undefined) {
         for (const listener of toolPrioListeners) {
-            listener(playerViewChanges.changedToolQuotas)
+            try {
+                listener(playerViewChanges.changedToolQuotas)
+            } catch (e) {
+                console.error(e)
+            }
         }
     }
 
     if (playerViewChanges.newRoads !== undefined || playerViewChanges.removedRoads !== undefined || playerViewChanges.changedRoads !== undefined) {
-        roadListeners.forEach(roadListener => roadListener())
+        roadsListeners.forEach(roadsListener => {
+            try {
+                roadsListener()
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }
+    console.log('Changed roads', playerViewChanges.changedRoads)
+    playerViewChanges.changedRoads?.forEach(road => roadListeners.get(road.id)?.forEach(listener => {
+        try {
+            listener(road.id, road)
+        } catch (e) {
+            console.error(e)
+        }
+    }))
+    console.log('Removed roads', playerViewChanges.removedRoads)
+    playerViewChanges.removedRoads?.forEach(roadId => roadListeners.get(roadId)?.forEach(listener => {
+        try {
+            listener(roadId)
+        } catch (e) {
+            console.error(e)
+        }
+    }))
 
     if (playerViewChanges.newBuildings !== undefined || playerViewChanges.removedBuildings !== undefined) {
-        housesAddedOrRemovedListeners.forEach(listener => listener())
+        housesAddedOrRemovedListeners.forEach(listener => {
+            try {
+                listener()
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }
 
     if (playerViewChanges.changedBuildings) {
@@ -1982,22 +2728,46 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     }
 
     if (playerViewChanges.transportPriority !== undefined && api.transportPriority) {
-        transportPriorityListeners.forEach(listener => listener(api.transportPriority!))
+        transportPriorityListeners.forEach(listener => {
+            try {
+                listener(api.transportPriority!)
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }
 
     if (playerViewChanges?.changedBorders !== undefined) {
-        ownedLandListeners.forEach(listener => listener())
+        ownedLandListeners.forEach(listener => {
+            try {
+                listener()
+            } catch (e) {
+                console.error(e)
+            }
+        })
     }
 
     changedPoints.forEach(point => {
         const pointInformation = getInformationOnPointLocal(point)
 
         if (pointInformation) {
-            pointInformationListeners.get(point)?.forEach(listener => listener(pointInformation))
+            pointInformationListeners.get(point)?.forEach(listener => {
+                try {
+                    listener(pointInformation)
+                } catch (e) {
+                    console.error(e)
+                }
+            })
         }
     })
 
-    timeListeners.forEach(listener => listener(api.time))
+    timeListeners.forEach(listener => {
+        try {
+            listener(api.time)
+        } catch (e) {
+            console.error(e)
+        }
+    })
 }
 
 /**
@@ -2242,7 +3012,13 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
  */
 function notifyHouseListeners(houses: HouseInformation[]): void {
     houses.forEach(house => {
-        houseListeners.get(house.id)?.forEach(listener => listener(house))
+        houseListeners.get(house.id)?.forEach(listener => {
+            try {
+                listener(house)
+            } catch (e) {
+                console.error(e)
+            }
+        })
     })
 }
 
@@ -2376,41 +3152,73 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
         requestedFollowingState = 'FOLLOW'
         followingState = 'STARTING_TO_FOLLOW'
 
+        const sessionId = ++followingSessionId
+
         api.gameId = gameId
         api.playerId = playerId
 
-        // Register the gameId and playerId with the backend
-        await setGame(gameId)
-        await setPlayerId(playerId)
+        try {
 
-        // Start listening to the game's metadata
-        const gameInformation = await listenToGameMetadata()
+            // Start listening to the game's metadata
+            const gameInformation = await listenToGameMetadata(gameId)
 
-        // Sync the received metadata
-        loadGameInformationAndCallListeners(gameInformation)
+            if (sessionId !== followingSessionId) {
+                console.error(`WS API (follow): new session started during async call.`, sessionId, followingSessionId)
 
-        // Get the chat history for the game's chat room
-        const chatRoomHistory = await getChatRoomHistory(`game-${gameId}`)
-
-        loadChatRoomHistoryAndCallListeners(chatRoomHistory)
-
-        // Start listening to the actual game state from the player's point of view
-        const playerView = await listenToGameViewForPlayer()
-
-        // Sync the received view
-        if (playerView !== undefined) {
-            if (WsApiLogConfig.receive) {
-                console.log('WS API (receive): Loading player view')
+                return
             }
 
-            loadPlayerViewAndCallListeners(playerView)
-        } else {
-            console.error('WS API (receive): Not loading player view')
+            // Sync the received metadata
+            await loadGameInformationAndCallListeners(gameInformation)
+
+            // Get the chat history for the game's chat room
+            const chatRoomHistory = await getChatRoomHistory(`game-${gameId}`)
+
+            if (sessionId !== followingSessionId) {
+                console.error(`WS API (follow): new session started during async call`, sessionId, followingSessionId)
+
+                return
+            }
+
+            loadChatRoomHistoryAndCallListeners(chatRoomHistory)
+
+            // Start listening to the actual game state from the player's point of view
+            const playerView = await listenToGameViewForPlayer(playerId, gameId)
+
+            if (sessionId !== followingSessionId) {
+                console.error(`WS API (follow): new session started during async call.`, sessionId, followingSessionId)
+
+                return
+            }
+
+            // Sync the received view
+            if (playerView !== undefined) {
+                if (WsApiLogConfig.receive) {
+                    console.log('WS API (receive): Loading player view')
+                }
+
+                loadPlayerViewAndCallListeners(playerView)
+            } else {
+                console.error('WS API (receive): Not loading player view')
+            }
+
+            followingState = 'FOLLOWING'
+
+            return gameInformation
+        } catch (e) {
+            console.error(`WS API (follow): Failed starting to follow.`, e)
+
+            if (sessionId === followingSessionId) {
+                console.info('Clearing API state')
+
+                followingState = 'NOT_FOLLOWING'
+                requestedFollowingState = 'NO_FOLLOW'
+
+                clearApiState()
+            }
+
+            throw e
         }
-
-        followingState = 'FOLLOWING'
-
-        return gameInformation
     } else if (WsApiLogConfig.following) {
         console.log(`WS API (following): Can't start to follow when following state is: ${followingState}. Previously requested state is: ${requestedFollowingState}`)
     }
@@ -2420,18 +3228,23 @@ async function followGame(gameId: GameId, playerId: PlayerId): Promise<GameInfor
  * Stops following the current game and clears all game data from the local state.
  */
 function stopFollowingGame(): void {
-
     if (WsApiLogConfig.following) {
         console.log('WS API (following): Stopping following game')
     }
 
+    followingSessionId++
+
     // Clear game data
     api.gameId = undefined
+    api.playerId = undefined
     api.players.clear()
 
+    // TODO: stop following game
+
     requestedFollowingState = 'NO_FOLLOW'
-    clearGame()
+
     stopTimers()
+    clearApiState()
 
     followingState = 'NOT_FOLLOWING'
 }
@@ -2444,7 +3257,13 @@ function stopFollowingGame(): void {
 function loadChatRoomHistoryAndCallListeners(chatRoomHistory: ChatMessage[]): void {
     chatRoomHistory.forEach(chatMessage => api.chatRoomMessages.push(chatMessage))
 
-    chatListeners.forEach(listener => listener())
+    chatListeners.forEach(listener => {
+        try {
+            listener()
+        } catch (e) {
+            console.error(e)
+        }
+    })
 }
 
 /**

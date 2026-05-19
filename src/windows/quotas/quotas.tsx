@@ -1,118 +1,239 @@
-import React, { useEffect, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { HouseIcon, UiIcon } from '../../icons/icon'
 import './quotas.css'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { Nation } from '../../api/types'
+import { AnyBuilding, Nation, PlayerId, PlayerInformation } from '../../api/types'
 import { api } from '../../api/ws-api'
-import { Window } from '../../components/dialog'
+import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
+import { usePlayer } from '../../utils/hooks/hooks'
+import { clamp } from '../house/headquarter'
+import { buildingPretty } from '../../pretty_strings'
 
 // Types
 type QuotasProps = {
     nation: Nation
+    playerId: PlayerId
 
     onRaise: () => void
     onClose: () => void
 }
 
+type QuotaRowProps = {
+    houseType: AnyBuilding
+    nation: Nation
+    value: number
+    setHover: (text?: string) => void
+    onDecrease: () => void
+    onIncrease: () => void
+}
+
+type QuotaConfig = {
+    houseType: AnyBuilding
+    get: (p: PlayerInformation) => number
+    set: (p: PlayerInformation, v: number) => void
+}
+
+type MaterialQuotaToManage = 'COAL' | 'WHEAT' | 'WATER' | 'PLANK' | 'FOOD' | 'IRON_BAR'
+
+
+// Configuration
+const coalConfig: QuotaConfig[] = [
+    {
+        houseType: 'Mint',
+        get: (p: PlayerInformation) => p.coalQuota.mint,
+        set: (p: PlayerInformation, v: number) => api.setCoalQuotas(v, p.coalQuota.armory, p.coalQuota.ironSmelter)
+    },
+    {
+        houseType: 'Armory',
+        get: (p: PlayerInformation) => p.coalQuota.armory,
+        set: (p: PlayerInformation, v: number) => api.setCoalQuotas(p.coalQuota.mint, v, p.coalQuota.ironSmelter)
+    },
+    {
+        houseType: 'IronSmelter',
+        get: (p: PlayerInformation) => p.coalQuota.ironSmelter,
+        set: (p: PlayerInformation, v: number) => api.setCoalQuotas(p.coalQuota.mint, p.coalQuota.armory, v)
+    }
+]
+
+const foodConfig: QuotaConfig[] = [
+    {
+        houseType: 'IronMine',
+        get: (p: PlayerInformation) => p.foodQuota.ironMine,
+        set: (p: PlayerInformation, v: number) => api.setFoodQuotas(v, p.foodQuota.coalMine, p.foodQuota.goldMine, p.foodQuota.graniteMine)
+    },
+    {
+        houseType: 'CoalMine',
+        get: (p: PlayerInformation) => p.foodQuota.coalMine,
+        set: (p: PlayerInformation, v: number) => api.setFoodQuotas(p.foodQuota.ironMine, v, p.foodQuota.goldMine, p.foodQuota.graniteMine)
+    },
+    {
+        houseType: 'GoldMine',
+        get: (p: PlayerInformation) => p.foodQuota.goldMine,
+        set: (p: PlayerInformation, v: number) => api.setFoodQuotas(p.foodQuota.ironMine, p.foodQuota.coalMine, v, p.foodQuota.graniteMine)
+    },
+    {
+        houseType: 'GraniteMine',
+        get: (p: PlayerInformation) => p.foodQuota.graniteMine,
+        set: (p: PlayerInformation, v: number) => api.setFoodQuotas(p.foodQuota.ironMine, p.foodQuota.coalMine, p.foodQuota.goldMine, v)
+    }
+]
+
+const waterConfig: QuotaConfig[] = [
+    {
+        houseType: 'Bakery',
+        get: (p: PlayerInformation) => p.waterQuota.bakery,
+        set: (p: PlayerInformation, v: number) => api.setWaterQuotas(v, p.waterQuota.donkeyFarm, p.waterQuota.pigFarm, p.waterQuota.brewery)
+    },
+    {
+        houseType: 'DonkeyFarm',
+        get: (p: PlayerInformation) => p.waterQuota.donkeyFarm,
+        set: (p: PlayerInformation, v: number) => api.setWaterQuotas(p.waterQuota.bakery, v, p.waterQuota.pigFarm, p.waterQuota.brewery)
+    },
+    {
+        houseType: 'PigFarm',
+        get: (p: PlayerInformation) => p.waterQuota.pigFarm,
+        set: (p: PlayerInformation, v: number) => api.setWaterQuotas(p.waterQuota.bakery, p.waterQuota.donkeyFarm, v, p.waterQuota.brewery)
+    },
+    {
+        houseType: 'Brewery',
+        get: (p: PlayerInformation) => p.waterQuota.brewery,
+        set: (p: PlayerInformation, v: number) => api.setWaterQuotas(p.waterQuota.bakery, p.waterQuota.donkeyFarm, p.waterQuota.pigFarm, v)
+    }
+]
+
+const wheatConfig: QuotaConfig[] = [
+    {
+        houseType: 'Mill',
+        get: (p: PlayerInformation) => p.wheatQuota.mill,
+        set: (p: PlayerInformation, v: number) => api.setWheatQuotas(p.wheatQuota.donkeyFarm, p.wheatQuota.pigFarm, v, p.wheatQuota.brewery)
+    },
+    {
+        houseType: 'DonkeyFarm',
+        get: (p: PlayerInformation) => p.wheatQuota.donkeyFarm,
+        set: (p: PlayerInformation, v: number) => api.setWheatQuotas(v, p.wheatQuota.pigFarm, p.wheatQuota.mill, p.wheatQuota.brewery)
+    },
+    {
+        houseType: 'PigFarm',
+        get: (p: PlayerInformation) => p.wheatQuota.pigFarm,
+        set: (p: PlayerInformation, v: number) => api.setWheatQuotas(p.wheatQuota.donkeyFarm, v, p.wheatQuota.mill, p.wheatQuota.brewery)
+    },
+    {
+        houseType: 'Brewery',
+        get: (p: PlayerInformation) => p.wheatQuota.brewery,
+        set: (p: PlayerInformation, v: number) => api.setWheatQuotas(p.wheatQuota.donkeyFarm, p.wheatQuota.pigFarm, p.wheatQuota.mill, v)
+    }
+]
+
+const ironConfig: QuotaConfig[] = [
+    {
+        houseType: 'Armory',
+        get: (p: PlayerInformation) => p.ironQuota.armory,
+        set: (p: PlayerInformation, v: number) => api.setIronBarQuotas(v, p.ironQuota.metalworks)
+    },
+    {
+        houseType: 'Metalworks',
+        get: (p: PlayerInformation) => p.ironQuota.metalworks,
+        set: (p: PlayerInformation, v: number) => api.setIronBarQuotas(p.ironQuota.armory, v)
+    }
+]
+
+
 // React components
-const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
+const QuotaRow = ({ houseType, nation, value, setHover, onDecrease, onIncrease }: QuotaRowProps) => {
+    const label = buildingPretty(houseType)
+
+    return <Field label={label} style={{ width: '100%' }}>
+        <div className='quota-for-house'>
+            <HouseIcon
+                houseType={houseType}
+                nation={nation}
+                drawShadow
+                onMouseEnter={() => setHover(label)}
+                onMouseLeave={() => setHover(undefined)}
+            />
+
+            <div className='quota'>
+                <UiIcon type='MINUS' scale={0.5}
+                    onClick={onDecrease}
+                    onMouseEnter={() => setHover(`Decrease ${label.toLowerCase()} quota`)}
+                    onMouseLeave={() => setHover(undefined)}
+                />
+                <meter
+                    value={value}
+                    min={0}
+                    max={10}
+                    onMouseEnter={() => setHover(`${value} / 10`)}
+                    onMouseLeave={() => setHover(undefined)}
+                />
+                <UiIcon type='PLUS' scale={0.5}
+                    onClick={onIncrease}
+                    onMouseEnter={() => setHover(`Increase ${label.toLowerCase()} quota`)}
+                    onMouseLeave={() => setHover(undefined)}
+                />
+            </div>
+        </div>
+    </Field>
+}
+
+const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
+
+    // State
     const [hover, setHover] = useState<string>()
-    const [materialToManage, setMaterialToManage] = useState<'COAL' | 'WHEAT' | 'WATER' | 'PLANK' | 'FOOD' | 'IRON_BAR'>('COAL')
-    const [mintAmount, setMintAmount] = useState<number>(5)
-    const [armoryCoalAmount, setArmoryCoalAmount] = useState<number>(5)
-    const [ironSmelterAmount, setIronSmelterAmount] = useState<number>(5)
-    const [ironMineAmount, setIronMineAmount] = useState<number>(5)
-    const [coalMineAmount, setCoalMineAmount] = useState<number>(5)
-    const [goldMineAmount, setGoldMineAmount] = useState<number>(5)
-    const [graniteMineAmount, setGraniteMineAmount] = useState<number>(5)
-    const [bakeryAmount, setBakeryAmount] = useState<number>(5)
-    const [pigFarmWaterAmount, setPigFarmWaterAmount] = useState<number>(5)
-    const [donkeyFarmWaterAmount, setDonkeyFarmWaterAmount] = useState<number>(5)
-    const [millAmount, setMillAmount] = useState<number>(5)
-    const [donkeyFarmWheatAmount, setDonkeyFarmWheatAmount] = useState<number>(5)
-    const [pigFarmWheatAmount, setPigFarmWheatAmount] = useState<number>(5)
-    const [constructionAmount, setConstructionAmount] = useState<number>(5)
-    const [boatsAndShipsAmount, setBoatsAndShipsAmount] = useState<number>(5)
-    const [breweryWaterAmount, setBreweryWaterAmount] = useState<number>(5)
-    const [breweryWheatAmount, setBreweryWheatAmount] = useState<number>(5)
-    const [metalworksIronBarAmount, setMetalworksIronBarAmount] = useState<number>(5)
-    const [armoryIronBarAmount, setArmoryIronBarAmount] = useState<number>(5)
+    const [materialToManage, setMaterialToManage] = useState<MaterialQuotaToManage>('COAL')
 
-    useEffect(() => {
-        (async () => {
-            const coalQuotas = await api.getCoalQuotas()
+    // Monitoring hooks
+    const player = usePlayer(playerId)
 
-            setMintAmount(coalQuotas.mint)
-            setArmoryCoalAmount(coalQuotas.armory)
-            setIronSmelterAmount(coalQuotas.ironSmelter)
-        })()
+    // Functions
+
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map()
+
+        cmds.set('Manage coal quota', {
+            action: () => setMaterialToManage('COAL')
+        })
+
+        cmds.set('Manage wheat quota', {
+            action: () => setMaterialToManage('WHEAT')
+        })
+
+        cmds.set('Manage water quota', {
+            action: () => setMaterialToManage('WATER')
+        })
+
+        cmds.set('Manage plank quota', {
+            action: () => setMaterialToManage('PLANK')
+        })
+
+        cmds.set('Manage food quota', {
+            action: () => setMaterialToManage('FOOD')
+        })
+
+        cmds.set('Manage iron bar quota', {
+            action: () => setMaterialToManage('IRON_BAR')
+        })
+
+        cmds.set('Close window', {
+            action: onClose
+        })
+
+        return cmds
     }, [])
 
-    useEffect(() => {
-        (async () => {
-            const foodQuotas = await api.getFoodQuotas()
+    // Effects
 
-            setIronMineAmount(foodQuotas.ironMine)
-            setCoalMineAmount(foodQuotas.coalMine)
-            setGoldMineAmount(foodQuotas.goldMine)
-            setGraniteMineAmount(foodQuotas.graniteMine)
-        })()
-    }, [])
-
-    useEffect(() => {
-        (async () => {
-            const wheatQuotas = await api.getWheatQuotas()
-
-            setPigFarmWheatAmount(wheatQuotas.pigFarm)
-            setDonkeyFarmWheatAmount(wheatQuotas.donkeyFarm)
-            setMillAmount(wheatQuotas.mill)
-            setBreweryWheatAmount(wheatQuotas.brewery)
-        })()
-    }, [])
-
-    useEffect(() => {
-        (async () => {
-            const waterQuotas = await api.getWaterQuotas()
-
-            setBakeryAmount(waterQuotas.bakery)
-            setDonkeyFarmWaterAmount(waterQuotas.donkeyFarm)
-            setPigFarmWaterAmount(waterQuotas.pigFarm)
-            setBreweryWaterAmount(waterQuotas.brewery)
-        })()
-    }, [])
-
-    useEffect(() => {
-        (async () => {
-            const ironBarQuotas = await api.getIronBarQuotas()
-
-            setArmoryIronBarAmount(ironBarQuotas.armory)
-            setMetalworksIronBarAmount(ironBarQuotas.metalworks)
-        })()
-    }, [])
-
-    useEffect(() => {
-        api.setWaterQuotas(bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount)
-    }, [bakeryAmount, donkeyFarmWaterAmount, pigFarmWaterAmount, breweryWaterAmount])
-
-    useEffect(() => {
-        api.setCoalQuotas(mintAmount, armoryCoalAmount, ironSmelterAmount)
-    }, [mintAmount, armoryCoalAmount, ironSmelterAmount])
-
-    useEffect(() => {
-        api.setFoodQuotas(ironMineAmount, coalMineAmount, goldMineAmount, graniteMineAmount)
-    }, [ironMineAmount, coalMineAmount, goldMineAmount, graniteMineAmount])
-
-    useEffect(() => {
-        api.setWheatQuotas(donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount)
-    }, [donkeyFarmWheatAmount, pigFarmWheatAmount, millAmount, breweryWheatAmount])
-
-    useEffect(() => {
-        api.setIronBarQuotas(armoryIronBarAmount, metalworksIronBarAmount)
-    }, [armoryIronBarAmount, metalworksIronBarAmount])
+    // Rendering
+    if (player === undefined) {
+        console.error('Quotas window: player is undefined')
+        return null
+    }
 
     return (
-        <Window
+        <WindowWithTyping<MaterialQuotaToManage>
+            commands={commands}
+            param={materialToManage}
             className='quotas-window'
             heading='Quotas'
             onClose={onClose}
@@ -123,656 +244,90 @@ const Quotas = ({ nation, onClose, onRaise }: QuotasProps) => {
             <TabList
                 defaultSelectedValue={materialToManage}
                 onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
-                    const value = data.value as typeof materialToManage
-                    setMaterialToManage(value)
+                    setMaterialToManage(data.value as typeof materialToManage)
                 }}
             >
-                <Tab
-                    value={'COAL'}
-                    onMouseEnter={() => setHover('Manage coal quotas')}
-                    onMouseLeave={() => setHover(undefined)}
-                >Coal</Tab>
-                <Tab
-                    value={'WHEAT'}
-                    onMouseEnter={() => setHover('Manage wheat quotas')}
-                    onMouseLeave={() => setHover(undefined)}
-                >Wheat</Tab>
-                <Tab
-                    value={'WATER'}
-                    onMouseEnter={() => setHover('Manage water quotas')}
-                    onMouseLeave={() => setHover(undefined)}
-                >Water</Tab>
-                <Tab
-                    value={'PLANK'}
-                    onMouseEnter={() => setHover('Manage plank quotas')}
-                    onMouseLeave={() => setHover(undefined)}
-                >Plank</Tab>
-                <Tab
-                    value={'FOOD'}
-                    onMouseEnter={() => setHover('Manage food quotas')}
-                    onMouseLeave={() => setHover(undefined)}
-                >Food</Tab>
-                <Tab
-                    value={'IRON_BAR'}
-                    onMouseEnter={() => setHover('Manage iron quotas')}
-                    onMouseLeave={() => setHover(undefined)}
-                >Iron bars</Tab>
+                <Tab value={'COAL'}>Coal</Tab>
+                <Tab value={'WHEAT'}>Wheat</Tab>
+                <Tab value={'WATER'}>Water</Tab>
+                <Tab value={'PLANK'}>Plank</Tab>
+                <Tab value={'FOOD'}>Food</Tab>
+                <Tab value={'IRON_BAR'}>Iron bars</Tab>
             </TabList>
 
             {materialToManage === 'COAL' &&
-                <>
-                    <ItemContainer width='20em'>
-                        <Field label='Mint' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='Mint'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Mint')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setMintAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease mint quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={mintAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${mintAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setMintAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase mint quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-
-                        <Field label='Armory' style={{width: '100%'}}>
-                            <div className='quota-for-house'>
-                                <HouseIcon
-                                    houseType='Armory'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Armory')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setArmoryCoalAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease armory quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={armoryCoalAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${armoryCoalAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setArmoryCoalAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase armory quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-
-                        <Field label='Iron smelter' style={{width: '100%'}}>
-                            <div className='quota-for-house'>
-                                <HouseIcon
-                                    houseType='IronSmelter'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Iron smelter')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setIronSmelterAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease iron smelter quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={ironSmelterAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${ironSmelterAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setIronSmelterAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase iron smelter quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                    </ItemContainer>
-                </>
+                <ItemContainer width='20em'>
+                    {coalConfig.map(config => (
+                        <QuotaRow
+                            key={config.houseType}
+                            {...config}
+                            nation={nation}
+                            setHover={setHover}
+                            value={config.get(player)}
+                            onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
+                            onIncrease={() => config.set(player, clamp(config.get(player) + 1, 0, 10))}
+                        />
+                    ))}
+                </ItemContainer>
             }
 
             {materialToManage === 'FOOD' &&
-                <>
-                    <ItemContainer width='20em'>
-
-                        <Field label='Iron mine' style={{width: '100%'}}>
-                            <div className='quota-for-house'>
-                                <HouseIcon
-                                    houseType='IronMine'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Iron mine')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setIronMineAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease iron mine quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={ironMineAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${ironMineAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setIronMineAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase iron mine quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-
-                        <Field label='Coal mine' style={{width: '100%'}}>
-                            <div className='quota-for-house'>
-                                <HouseIcon
-                                    houseType='CoalMine'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Coal mine')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setCoalMineAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease coal mine quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={coalMineAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${coalMineAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setCoalMineAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase coal mine quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-
-                        <Field label='Gold mine' style={{width: '100%'}}>
-                            <div className='quota-for-house'>
-                                <HouseIcon
-                                    houseType='GoldMine'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Gold mine')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setGoldMineAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease gold mine quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={goldMineAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${goldMineAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setGoldMineAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase gold mine quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-
-                        <Field label='Granite mine' style={{width: '100%'}}>
-                            <div className='quota-for-house'>
-                                <HouseIcon
-                                    houseType='GraniteMine'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Granite mine')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setGraniteMineAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease granite mine quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={graniteMineAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${graniteMineAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setGraniteMineAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase granite mine quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                    </ItemContainer>
-                </>
+                <ItemContainer width='20em'>
+                    {foodConfig.map(config => (
+                        <QuotaRow
+                            key={config.houseType}
+                            {...config}
+                            nation={nation}
+                            setHover={setHover}
+                            value={config.get(player)}
+                            onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
+                            onIncrease={() => config.set(player, clamp(config.get(player) + 1, 0, 10))}
+                        />
+                    ))}
+                </ItemContainer>
             }
 
             {materialToManage === 'WATER' &&
-                <>
-                    <ItemContainer width='20em'>
-                        <Field label='Bakery' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='Bakery'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Bakery')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setBakeryAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease bakery quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={bakeryAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${bakeryAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setBakeryAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase bakery quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                        <Field label='Donkey farm' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='DonkeyFarm'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Donkey farm')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setDonkeyFarmWaterAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease donkey farm water quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={donkeyFarmWaterAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${donkeyFarmWaterAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setDonkeyFarmWaterAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase donkey farm water quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                        <Field label='Pig farm' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='PigFarm'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Mint')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setPigFarmWaterAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease pig farm water quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={pigFarmWaterAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${pigFarmWaterAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setPigFarmWaterAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase pig farm water quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                        <Field label='Brewery' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='Brewery'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Brewer')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setBreweryWaterAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease brewery water quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={breweryWaterAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${breweryWaterAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setBreweryWaterAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase brewery water quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                    </ItemContainer>
-                </>
-            }
-
-            {materialToManage === 'PLANK' &&
-                <>
-                    <div>(not implemented yet)</div>
-                    <ItemContainer width='20em'>
-                        <Field label='Construction' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <div>Construction</div>
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setConstructionAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease construction quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={constructionAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${constructionAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setConstructionAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase construction quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                        <Field label='Boats and ships' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <div>Boats and ships</div>
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setBoatsAndShipsAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease boat and ship building quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={boatsAndShipsAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${boatsAndShipsAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setBoatsAndShipsAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase boat and ship building quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                    </ItemContainer>
-                </>
+                <ItemContainer width='20em'>
+                    {waterConfig.map(config => (
+                        <QuotaRow
+                            key={config.houseType}
+                            {...config}
+                            nation={nation}
+                            setHover={setHover}
+                            value={config.get(player)}
+                            onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
+                            onIncrease={() => config.set(player, clamp(config.get(player) + 1, 0, 10))}
+                        />
+                    ))}
+                </ItemContainer>
             }
 
             {materialToManage === 'WHEAT' &&
-                <>
-                    <ItemContainer width='20em'>
-                        <Field label='Mill' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='Mill'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Mill')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setMillAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease mill quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={millAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${millAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setMillAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase mill quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                        <Field label='Donkey farm' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='DonkeyFarm'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Donkey farm')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setDonkeyFarmWheatAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease donkey farm wheat quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={donkeyFarmWheatAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${donkeyFarmWheatAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setDonkeyFarmWheatAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase donkey farm wheat quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                        <Field label='Pig farm' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='PigFarm'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Pig farm')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setPigFarmWheatAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease pig farm wheat quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={pigFarmWheatAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${pigFarmWheatAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setPigFarmWheatAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase pig farm wheat quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                        <Field label='Brewery' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='Brewery'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Brewery')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setBreweryWheatAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease brewery wheat quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={breweryWheatAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${breweryWheatAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setBreweryWheatAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase brewery wheat quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                    </ItemContainer>
-                </>
+                <ItemContainer width='20em'>
+                    {wheatConfig.map(config => (
+                        <QuotaRow key={config.houseType} {...config} nation={nation} setHover={setHover}
+                            value={config.get(player)}
+                            onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
+                            onIncrease={() => config.set(player, clamp(config.get(player) + 1, 0, 10))}
+                        />
+                    ))}
+                </ItemContainer>
             }
 
             {materialToManage === 'IRON_BAR' &&
-                <>
-                    <ItemContainer width='20em'>
-                        <Field label='Armory' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='Armory'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Armory')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setArmoryIronBarAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease armory iron bar quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={armoryIronBarAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${armoryIronBarAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setArmoryIronBarAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase armory iron bar quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                        <Field label='Metalworks' style={{width: '100%'}}>
-                            <div className='quota-for-house' >
-                                <HouseIcon
-                                    houseType='Metalworks'
-                                    nation={nation}
-                                    drawShadow
-                                    onMouseEnter={() => setHover('Metalworks')}
-                                    onMouseLeave={() => setHover(undefined)}
-                                />
-                                <div className='quota'>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onClick={() => setMetalworksIronBarAmount((previous) => Math.max(0, previous - 1))}
-                                        onMouseEnter={() => setHover('Decrease metalworks iron bar quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <meter
-                                        value={metalworksIronBarAmount}
-                                        min={0}
-                                        max={10}
-                                        onMouseEnter={() => setHover(`${metalworksIronBarAmount} / 10`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onClick={() => setMetalworksIronBarAmount((previous) => Math.min(10, previous + 1))}
-                                        onMouseEnter={() => setHover('Increase metalworks iron bar quota')}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    />
-                                </div>
-                            </div>
-                        </Field>
-                    </ItemContainer>
-                </>
+                <ItemContainer width='20em'>
+                    {ironConfig.map(config => (
+                        <QuotaRow key={config.houseType} {...config} nation={nation} setHover={setHover}
+                            value={config.get(player)}
+                            onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
+                            onIncrease={() => config.set(player, clamp(config.get(player) + 1, 0, 10))}
+                        />
+                    ))}
+                </ItemContainer>
             }
-        </Window>
+
+        </WindowWithTyping>
     )
 }
 

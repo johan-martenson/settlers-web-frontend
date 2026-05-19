@@ -56,10 +56,19 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
     }, [songs, currentSong, volume])
 
     useEffect(() => {
-        if (songs && currentSong) {
+        if (songs && currentSong !== undefined && songs[currentSong] !== undefined) {
             songs[currentSong].song.onended = () => next(currentSong, mode, songs, volume)
         }
     }, [mode, currentSong, songs, volume])
+
+    useEffect(() => {
+        return () => {
+            songs.forEach(s => {
+                s.song.pause()
+                s.song.src = ''
+            })
+        }
+    }, [songs])
 
     function pause(songToPause: number, songs: SongAndTitle[]): void {
         songs[songToPause].song.pause()
@@ -78,17 +87,17 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
     function next(previous: number, mode: Mode, songs: SongAndTitle[], volume: number): void {
         songs[previous].song.pause()
 
+        // Loop song by default, but if in loop list or shuffle mode, get the next song index
         let newSong = previous
 
         if (mode === 'LOOP_LIST') {
             newSong = (previous < songs.length - 1) ? previous + 1 : 0
         } else if (mode === 'SHUFFLE_LIST') {
-            newSong = Math.floor(Math.random() * songs.length)
-
-            if (newSong === previous) {
-                newSong = (newSong < songs.length) ? newSong : 0
+            while (newSong === previous) {
+                newSong = Math.floor(Math.random() * songs.length)
             }
         }
+
 
         if (playing) {
             songs[newSong].song.volume = volume
@@ -101,7 +110,9 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
     }
 
     function play(index: number, songs: SongAndTitle[], volume: number): void {
-        songs[currentSong].song.pause()
+        if (songs && songs[currentSong] && songs[currentSong].song) {
+            songs[currentSong].song.pause()
+        }
 
         songs[index].song.volume = volume
         songs[index].song.currentTime = 0
@@ -117,7 +128,7 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
             <div className='music-player-content'>
                 <div><b>Music</b></div>
 
-                {playing && songs && expanded &&
+                {playing && songs.length > 0 && expanded &&
                     <div> Playing: {songs[currentSong].title} </div>
                 }
 
@@ -158,6 +169,10 @@ const MusicPlayer = ({ volume }: MusicPlayerProps) => {
 }
 
 function secondsToString(seconds: number): string {
+    if (isNaN(seconds)) {
+        return '--:--'
+    }
+
     const minutes = Math.floor(seconds / 60.0)
     const secondsDisplay = (seconds - minutes * 60).toFixed(0)
 

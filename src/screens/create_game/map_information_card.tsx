@@ -4,6 +4,7 @@ import { Button, Text, Caption1 } from '@fluentui/react-components'
 import { Card, CardHeader } from '@fluentui/react-components'
 import './map_information_card.css'
 import { makeImageFromMap } from '../../utils/utils'
+import { useMapWithTerrain } from '../../utils/hooks/hooks'
 
 // Types
 type MapInformationCardProps = {
@@ -16,16 +17,24 @@ const cachedMapImages = new Map<MapId, HTMLImageElement>()
 
 // React components
 function MapInformationCard({ map, onMapSelected }: MapInformationCardProps) {
+
+    // State
     const [mapImage, setMapImage] = useState<HTMLImageElement>()
 
+    // Hooks
+    const mapWithTerrain = useMapWithTerrain(map.id)
+
+    // Effects
     useEffect(() => {
+        let cancelled = false
         const cachedImage = cachedMapImages.get(map.id)
 
         if (cachedImage) {
             setMapImage(cachedImage)
-        } else {
-            makeImageFromMap(map,
-                { scaleDown: 1,
+        } else if (mapWithTerrain !== undefined) {
+            const image = makeImageFromMap(mapWithTerrain,
+                {
+                    scaleDown: 1,
                     blockSize: 2,
                     drawStartingPoints: true
                 },
@@ -33,15 +42,18 @@ function MapInformationCard({ map, onMapSelected }: MapInformationCardProps) {
                 undefined,
                 undefined,
                 undefined
-            ).then(image => {
-                if (image) {
-                    setMapImage(image)
+            )
 
-                    cachedMapImages.set(map.id, image)
-                }
-            })
+            if (image && !cancelled) {
+                setMapImage(image)
+                cachedMapImages.set(map.id, image)
+            }
         }
-    }, [map.id])
+
+        return () => {
+            cancelled = true
+        }
+    }, [mapWithTerrain])
 
     return (
         <Card>

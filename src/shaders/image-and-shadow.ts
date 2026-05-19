@@ -19,7 +19,6 @@ vec2 adjusted_image_center;
 vec2 vertex_pixels;
 vec2 vertex;
 vec2 onePixel;
-vec2 pixel_scale;
 vec2 adjusted_coord;
 
 out vec2 v_texcoord;
@@ -50,9 +49,13 @@ void main() {
 
 
    // Get the individual vertex coordinate (pixel space)
-   vertex_pixels.x = round(adjusted_image_center.x + a_position.x * u_source_dimensions.x * u_scale / DEFAULT_SCALE);
-   vertex_pixels.y = round(adjusted_image_center.y + a_position.y * u_source_dimensions.y * u_scale / DEFAULT_SCALE);
+   vertex_pixels.x = adjusted_image_center.x + a_position.x * u_source_dimensions.x * u_scale / DEFAULT_SCALE;
+   vertex_pixels.y = adjusted_image_center.y + a_position.y * u_source_dimensions.y * u_scale / DEFAULT_SCALE;
 
+   //vertex_pixels.x = floor(vertex_pixels.x + 0.5);
+   //vertex_pixels.y = floor(vertex_pixels.y + 0.5);
+
+   vertex_pixels = round(vertex_pixels);
 
    // Convert to gl space
    vertex.x = (float(vertex_pixels.x) / u_screen_dimensions.x) * 2.0 - 1.0;
@@ -69,7 +72,7 @@ void main() {
 
    // Setting vertex position for shape assembler
    //   -- 0.0 is a Z coordinate
-   //   -- 1.1 is a W, special value needed for 3D math, just leave it 1 for now
+   //   -- w should always be 1.0 for position vectors
    gl_Position = vec4(vertex, 0.0, 1.0);
 }`
 
@@ -99,7 +102,6 @@ out vec4 outColor;
 
 void main() {
    textureColor = texture(u_texture, v_texcoord);
-
    outColor = vec4(0.0, 0.0, 0.0, textureColor[3] * 0.6);
 }`
 

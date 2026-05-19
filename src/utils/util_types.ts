@@ -50,7 +50,7 @@ class PointSetIterator implements IterableIterator<Point> {
     next(): IteratorResult<Point> {
         const result = this.pointFastSetIterator.next()
 
-        if (result.value) {
+        if (!result.done) {
             return {
                 done: result.done,
                 value: keyToPoint(result.value[0])
@@ -58,7 +58,7 @@ class PointSetIterator implements IterableIterator<Point> {
         } else {
             return {
                 done: true,
-                value: { x: 2, y: 3 }
+                value: undefined
             }
         }
     }

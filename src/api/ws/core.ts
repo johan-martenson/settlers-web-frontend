@@ -10,7 +10,8 @@ import { delay } from "../../utils/utils"
 
 // Constants
 export const MAX_WAIT_FOR_CONNECTION = 10_000 // milliseconds
-const MAX_WAIT_FOR_REPLY = 1000 // milliseconds
+const MAX_WAIT_FOR_REPLY = 5_000 // milliseconds
+const RECONNECT_DELAY = 1_000 // milliseconds
 
 // Types
 export type ConnectionStatus = 'CONNECTED' | 'CONNECTING' | 'NOT_CONNECTED'
@@ -155,7 +156,8 @@ async function connectAndWaitForConnection(): Promise<void> {
             console.info(`WS core (connection): Websocket url: ${websocketUrl}`)
         }
 
-        websocket = new WebSocket(websocketUrl)
+        const socket = new WebSocket(websocketUrl)
+        websocket = socket
 
         connectionStatus = 'CONNECTING'
 
@@ -165,9 +167,9 @@ async function connectAndWaitForConnection(): Promise<void> {
 
         notifyConnectionListeners(connectionStatus)
 
-        websocket.onopen = handleOpen
-        websocket.onclose = handleClose
-        websocket.onerror = handleError
+        websocket.onopen = () => handleOpen(socket)
+        websocket.onclose = event => handleClose(socket, event)
+        websocket.onerror = event => handleError(socket, event)
         websocket.onmessage = handleMessage
 
         // Wait for the connection to be established
@@ -188,14 +190,9 @@ async function connectAndWaitForConnection(): Promise<void> {
         console.log('WS core (connection): Connection status: NOT_CONNECTED')
 
         notifyConnectionListeners(connectionStatus)
-    }
-}
 
-/**
- * Closes the connection to the WS backend. Used to test the error case when the connection is broken.
- */
-function killWebsocket(): void {
-    websocket?.close()
+        throw error
+    }
 }
 
 
@@ -356,7 +353,14 @@ function handleMessage(messageFromServer: MessageEvent<any>): void {
                 console.log('WS core (receive): Notifying listeners')
             }
 
-            messageListeners.forEach(listener => listener(message))
+            messageListeners.forEach(listener => {
+                try {
+                    listener(message)
+                } catch (e) {
+                    console.error('WS core (receive): Error handling message', e)
+                    console.error('WS core (receive): Message:', JSON.stringify(message))
+                }
+            })
         }
     } catch (e) {
         console.error('WS core (receive): Error handling message', e)
@@ -388,9 +392,17 @@ function makeRequestId(): number {
 /**
  * Handles the open event for the WebSocket connection, setting the connection status to 'CONNECTED'.
  */
-function handleOpen(): void {
+function handleOpen(socket: WebSocket): void {
     if (WsCoreLogConfig.connectionHandling) {
         console.info('WS core (connection): Websocket for subscription is open')
+    }
+
+    if (socket !== websocket) {
+        if (WsCoreLogConfig.connectionHandling) {
+            console.info('WS core (connection): other socket was opened.')
+        }
+
+        return
     }
 
     connectionStatus = 'CONNECTED'
@@ -406,10 +418,16 @@ function handleOpen(): void {
  * Handles the close event for the WebSocket connection, setting the connection status to 'NOT_CONNECTED' and attempting to reconnect.
  * @param {CloseEvent} event The close event object.
  */
-function handleClose(event: CloseEvent): void {
+function handleClose(socket: WebSocket, event: CloseEvent): void {
     if (WsCoreLogConfig.connectionHandling) {
-        console.error(`WS core (connection): Websocket was closed: ${event}`)
-        console.log(`WS core (connection): Code: ${event.code}, Reason: ${event.reason}, Clean: ${event.wasClean}`)
+        console.error(`WS core (connection): Websocket was closed. Code: ${event.code}, Reason: ${event.reason}, Clean: ${event.wasClean}`)
+    }
+
+    if (socket !== websocket) {
+        if (WsCoreLogConfig.connectionHandling) {
+            console.info('WS core (connection): other socket was closed.')
+        }
+        return
     }
 
     connectionStatus = 'NOT_CONNECTED'
@@ -427,7 +445,7 @@ function handleClose(event: CloseEvent): void {
 }
 
 /**
- * Tries to reconnet to the backend when the connection has been lost.
+ * Tries to reconnect to the backend when the connection has been lost.
  */
 async function attemptReconnect(): Promise<void> {
     if (reconnecting) {
@@ -440,58 +458,58 @@ async function attemptReconnect(): Promise<void> {
 
     reconnecting = true
 
-    if (WsCoreLogConfig.connectionHandling) {
-        console.log('WS core (connection): Attempting to reconnect')
-    }
+    try {
+        if (WsCoreLogConfig.connectionHandling) {
+            console.log('WS core (connection): Attempting to reconnect')
+        }
 
-    for (let i = 0; i < 100; i++) {
-        try {
-            if (WsCoreLogConfig.connectionHandling) {
-                console.log('WS core (connection): Attempting to reconnect')
-            }
-
-            await connectAndWaitForConnection()
-
-            if (connectionStatus === 'CONNECTED') {
+        for (let i = 0; i < 100; i++) {
+            try {
                 if (WsCoreLogConfig.connectionHandling) {
-                    console.log('WS core (connection): Succeeded to reconnect')
+                    console.log('WS core (connection): Attempting to reconnect')
                 }
 
-                break
-            } else {
-                console.error(`WS core (connection): Failed to reconnect`)
-            }
-        } catch (error) {
-            console.error(`WS core (connection): Failed to reconnect: ${error}`)
-        }
-    }
+                await connectAndWaitForConnection()
 
-    reconnecting = false
+                if (connectionStatus === 'CONNECTED') {
+                    if (WsCoreLogConfig.connectionHandling) {
+                        console.log('WS core (connection): Succeeded to reconnect')
+                    }
+
+                    return
+                } else {
+                    console.error(`WS core (connection): Failed to reconnect`)
+                }
+            } catch (error) {
+                console.error(`WS core (connection): Failed to reconnect: ${error}`)
+            }
+
+            await delay(RECONNECT_DELAY)
+        }
+    } finally {
+        reconnecting = false
+    }
 }
 
 /**
  * Handles errors that occur during WebSocket communication.
  * @param {Event} event The error event object.
  */
-function handleError(event: Event): void {
+function handleError(socket: WebSocket, event: Event): void {
     if (WsCoreLogConfig.connectionHandling) {
-        console.error(`WS core (connection): Websocket encountered an error: ${event}`)
+        console.error('WS core (connection): WebSocket encountered an error', event)
     }
 
-    connectionStatus = 'NOT_CONNECTED'
-
-    if (WsCoreLogConfig.connectionHandling) {
-        console.log('WS core (connection): Connection status: NOT_CONNECTED')
+    if (socket !== websocket) {
+        if (WsCoreLogConfig.connectionHandling) {
+            console.info('WS core (connection): other socket was closed.')
+        }
     }
 
-    rejectAllPendingRequests('WebSocket connection error')
-
-    notifyConnectionListeners('NOT_CONNECTED');
-
-    attemptReconnect()
+    // Rely on handleClose to perform reconnection attempts
 }
 
-function rejectAllPendingRequests(reason: string) {
+function rejectAllPendingRequests(reason: string): void {
 
     // eslint-disable-next-line
     for (const [_, pending] of pendingRequests) {
@@ -507,17 +525,24 @@ function rejectAllPendingRequests(reason: string) {
  * @param {ConnectionStatus} connectionStatus The new connection status.
  */
 function notifyConnectionListeners(connectionStatus: ConnectionStatus): void {
-    connectionListeners.forEach(listener => listener(connectionStatus))
+    connectionListeners.forEach(listener => {
+        try {
+            listener(connectionStatus)
+        } catch (e) {
+            console.error('WS core (connection): Error notifying connection listener', e)
+        }
+    })
 }
 
 export {
     addConnectionStatusListener,
+    removeConnectionStatusListener,
     addMessageListener,
+    removeMessageListener,
     sendRequestAndWaitForReply,
     sendRequestAndWaitForReplyWithOptions,
     send,
     sendWithOptions,
     connectAndWaitForConnection,
-    killWebsocket,
     waitForConnection
 }

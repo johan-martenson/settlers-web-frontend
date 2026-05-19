@@ -55,3 +55,30 @@
     overflow: scroll;
     max-height: 70vh;
 }
+
+.type-match {
+    text-align: left;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+}
+
+.highlight-on-hover:hover {
+    background-color: lightblue;
+    cursor: pointer;
+}
+
+.type-match-list {
+    background-color: rgba(0, 0, 0, 0.50);
+    padding: 0.5em;
+    border-radius: 0.5em;
+    width: 20em;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 0.25em;
+    margin-top: 0.5em;
+}

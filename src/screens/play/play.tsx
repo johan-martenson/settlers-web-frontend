@@ -14,8 +14,8 @@ import { printVariables } from '../../utils/stats/stats'
 import { SetTransportPriority } from '../../windows/transport_priority/transport_priority'
 import { TypeControl, Command, dispatchInputKey } from './type_control'
 import { isRoadAtPoint } from '../../utils/utils'
-import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSES, MEDIUM_HOUSES, LARGE_HOUSES, HouseId, PlayerInformation, GameState, RoadId } from '../../api/types'
-import { Dismiss24Filled, CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled } from '@fluentui/react-icons'
+import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, HouseId, GameState, RoadId } from '../../api/types'
+import { CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled } from '@fluentui/react-icons'
 import { FlagIcon, HouseIcon, UiIcon } from '../../icons/icon'
 import { HouseInfo } from '../../windows/house/house_info'
 import { sfx } from '../../sound/sound_effects'
@@ -34,7 +34,7 @@ import { calcTranslation } from '../../render/utils'
 import Tools from '../../windows/tools/tools'
 import { MapView } from '../../windows/map/map'
 import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
-import { usePlayer } from '../../utils/hooks/hooks'
+import { useGame, usePlayer } from '../../utils/hooks/hooks'
 
 // Types
 type HouseWindow = {
@@ -137,6 +137,7 @@ const MAX_SCALE = 150
 const MIN_SCALE = 10
 const ARROW_KEY_MOVE_DISTANCE = 20
 
+const PLAY_TYPING_SOURCE = 'PLAY'
 
 // Configuration
 export const playConfigurationDebug = {
@@ -231,6 +232,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [windows, setWindows] = useState<Window[]>([])
     const [showTitles, setShowTitles] = useState<boolean>(true)
     const [cursor, setCursor] = useState<CursorState>('NOTHING')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [showFpsCounter, setShowFpsCounter] = useState<boolean>(false)
     const [showMusicPlayer, setShowMusicPlayer] = useState<boolean>(true)
     const [showTypingController, setShowTypingController] = useState<boolean>(true)
@@ -244,6 +246,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [fogOfWar, setFogOfWar] = useState<boolean>(true)
 
     // Monitoring
+    const gameInformation = useGame()
     const player = usePlayer(selfPlayerId)
 
     // State (that doesn't trigger re-renders)
@@ -266,17 +269,19 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         if (PlayLogConfig.lifecycle) {
             console.log(`Play (lifecycle): show menu. Show menu: ${showMenu}`)
         }
+
         if (!showMenu) {
             selfContainerRef?.current?.focus()
         }
-    }, [showMenu])
+    }, [PlayLogConfig.lifecycle, showMenu])
 
     useEffect(() => {
         if (PlayLogConfig.lifecycle) {
             console.log(`Play (lifecycle): new road. New road: ${JSON.stringify(newRoad)}`)
         }
+
         setCursor(newRoad === undefined ? 'NOTHING' : 'BUILDING_ROAD')
-    }, [newRoad])
+    }, [PlayLogConfig.lifecycle, newRoad])
 
     useEffect(() => {
         let cancelled = false
@@ -312,7 +317,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             api.removeGameStateListener(gameMonitorCallbacks)
             api.stopFollowingGame()
         }
-    }, [gameId, selfPlayerId])
+    }, [PlayLogConfig.connection, gameId, selfPlayerId, gameMonitorCallbacks])
 
     useEffect(() => {
         if (PlayLogConfig.lifecycle) {
@@ -340,7 +345,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 console.log('Play (lifecycle): Removing event and window resize listeners')
             }
 
-            document.removeEventListener('contextmenu', nopEventListener)
+            document.removeEventListener('contextmenu', nopEventListener, false)
             window.removeEventListener('resize', windowResizeListener)
         }
     }, [])
@@ -364,27 +369,21 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             // TODO: memoize commands
             const commands = new Map<string, Command>()
 
-            SMALL_HOUSES.forEach(building => commands.set(building, {
+            SMALL_HOUSE_VALUES.forEach(building => commands.set(building, {
                 action: (point: Point) => api.placeHouse(building, point),
                 filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('SMALL'),
                 icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
             }))
-            MEDIUM_HOUSES.forEach(building => commands.set(building, {
+            MEDIUM_HOUSE_VALUES.forEach(building => commands.set(building, {
                 action: (point: Point) => api.placeHouse(building, point),
                 filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('MEDIUM'),
                 icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
             }))
-            LARGE_HOUSES.forEach(building => building !== 'Headquarter' && commands.set(building, {
+            LARGE_HOUSE_VALUES.forEach(building => building !== 'Headquarter' && commands.set(building, {
                 action: (point: Point) => api.placeHouse(building, point),
                 filter: (pointInformation: PointInformation) => pointInformation.canBuild.includes('LARGE'),
                 icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
             }))
-
-            commands.set('Kill websocket', {
-                action: () => api.killWebsocket(),
-                hidden: true,
-                icon: <Dismiss24Filled />
-            })
 
             commands.set('Road', {
                 action: async (point: Point) => {
@@ -404,10 +403,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     }
 
                     // If a house is selected, start the road from the flag
-                    if (pointInformation.is === 'BUILDING' && pointDownRightInformation !== undefined) {
+                    if (pointInformation.is === 'BUILDING' && pointDownRightInformation !== undefined && pointDownRightInformation.possibleRoadConnections.length > 0) {
                         setNewRoad([pointDownRight])
                         setPossibleRoadConnections(pointDownRightInformation.possibleRoadConnections)
-                    } else if (pointInformation.is === 'FLAG') {
+                    } else if (pointInformation.is === 'FLAG' && pointInformation.possibleRoadConnections.length > 0) {
                         setNewRoad([point])
                         setPossibleRoadConnections(pointInformation.possibleRoadConnections)
                     }
@@ -465,7 +464,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     const houseInformation = api.getHouseAtPointLocal(point)
 
                     if (houseInformation && canBeUpgraded(houseInformation)) {
-                        api.upgradeHouse(houseInformation.id)
+                        api.upgrade(houseInformation.id)
                     }
                 },
                 filter: (pointInformation: PointInformation) => {
@@ -481,7 +480,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 icon: <AddCircle24Regular />
             })
             commands.set('Fps', {
-                action: () => setShowFpsCounter(!showFpsCounter),
+                action: () => setShowFpsCounter(prev => !prev),
                 hidden: true,
                 icon: <TopSpeed24Filled />
             })
@@ -545,29 +544,19 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                         height: selfContainerRef.current.clientHeight
                     }
                 }
-
-                // Center the view on the headquarter on the first update
-                if (PlayLogConfig.camera) {
-                    console.log('Play (camera): Center on headquarters')
-                }
-
-                const headquarter = getHeadquarterForPlayer(selfPlayerId)
-                if (headquarter) {
-                    if (PlayLogConfig.camera) {
-                        console.log(`Play (camera): Center on headquarters: ${JSON.stringify(headquarter)}`)
-                    }
-
-                    goToHouse(headquarter.id)
-                } else {
-                    console.error('Failed to find headquarter for player! Cannot center view on it!')
-                }
             })
-            .catch(console.error)
+            .catch(error => {
+                if (cancelled) {
+                    return
+                }
+
+                console.error('Failed to get initial game data', error)
+            })
 
         return () => {
             cancelled = true
         }
-    }, [monitoringReady, selfPlayerId, gameId])
+    }, [monitoringReady, selfPlayerId, gameId, PlayLogConfig.roads, PlayLogConfig.commands])
 
     // Effect: reset if gameId changes
     useEffect(() => {
@@ -591,6 +580,26 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }, [])
 
+    // Effect: center on headquarters when game loads
+    useEffect(() => {
+        if (PlayLogConfig.lifecycle) {
+            console.log('Play (lifecycle): Center on headquarters on game load')
+        }
+
+        const headquarter = getHeadquarterForPlayer(selfPlayerId)
+        if (headquarter) {
+            if (PlayLogConfig.lifecycle) {
+                console.log(`Play (lifecycle): Center on headquarters: ${JSON.stringify(headquarter)}`)
+            }
+
+            goToHouse(headquarter.id)
+        } else {
+            console.error('Failed to find headquarter for player! Cannot center view on it!')
+            console.log(`Player id: ${selfPlayerId}, buildings: ${JSON.stringify(Array.from(api.houses.values()))}`)
+            console.log(`Player id: ${selfPlayerId}, flags: ${JSON.stringify(Array.from(api.flags.values()))}`)
+        }
+    }, [selfPlayerId, gameId])
+
     // Functions
     const nextWindowId = useCallback(() => {
         nextWindowIdContainer.nextWindowId += 1
@@ -612,13 +621,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         setWindows(prevWindows => (
             prevWindows.find(w => w.type === 'HOUSE' && window.type === 'HOUSE' && w.house.id === window.house.id) ||
-            prevWindows.find(w => w.type === 'FLAG' && window.type === 'FLAG' && w.flag.id === window.flag.id) ||
-            prevWindows.find(w => w.type === 'ROAD_INFO' && window.type === 'ROAD_INFO' && w.roadId === window.roadId) ||
-            prevWindows.find(w => w.type === 'CONSTRUCTION_WINDOW' && window.type === 'CONSTRUCTION_WINDOW' &&
-                (w.pointInformation.x === window.pointInformation.x && w.pointInformation.y === window.pointInformation.y))
-        )
-            ? prevWindows
-            : [...prevWindows, { ...window, id: nextWindowId() }])
+                prevWindows.find(w => w.type === 'FLAG' && window.type === 'FLAG' && w.flag.id === window.flag.id) ||
+                prevWindows.find(w => w.type === 'ROAD_INFO' && window.type === 'ROAD_INFO' && w.roadId === window.roadId) ||
+                (window.type === 'MAP' && prevWindows.find(w => w.type === 'MAP')) ||
+                (prevWindows.find(w => w.type === 'CONSTRUCTION_WINDOW' && window.type === 'CONSTRUCTION_WINDOW' &&
+                    (w.pointInformation.x === window.pointInformation.x && w.pointInformation.y === window.pointInformation.y)))
+                ? prevWindows
+                : [...prevWindows, { ...window, id: nextWindowId() }]))
     }, [nextWindowId])
 
     const closeWindow = useCallback((id: number) => {
@@ -634,26 +643,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         })
     }, [])
 
-    const goToHouse = useCallback((houseId: HouseId) => {
-        if (PlayLogConfig.selection) {
-            console.info('Play (selection): Go to house immediately: ' + houseId)
-        }
-
-        const house = api.houses.get(houseId)
-        if (house) {
-            goToPoint({ x: house.x, y: house.y })
-            setSelected({ x: house.x, y: house.y })
-        }
-    }, [])
-
-    const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
-        animator.animateSeveral('TRANSLATE', newTranslate => {
-            immediateStateRef.current.translate = { x: newTranslate[0], y: newTranslate[1] }
-        },
-            [immediateStateRef.current.translate.x, immediateStateRef.current.translate.y],
-            [newTranslate.x, newTranslate.y])
-    }, [])
-
     const goToPoint = useCallback((point: Point) => {
         const scaleY = immediateStateRef.current.scale
 
@@ -664,7 +653,28 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }, [])
 
+    const goToHouse = useCallback((houseId: HouseId) => {
+        if (PlayLogConfig.selection) {
+            console.info('Play (selection): Go to house immediately: ' + houseId)
+        }
+
+        const house = api.houses.get(houseId)
+        if (house) {
+            goToPoint({ x: house.x, y: house.y })
+            setSelected({ x: house.x, y: house.y })
+        }
+    }, [goToPoint, setSelected])
+
+    const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
+        animator.animateSeveral('TRANSLATE', newTranslate => {
+            immediateStateRef.current.translate = { x: newTranslate[0], y: newTranslate[1] }
+        },
+            [immediateStateRef.current.translate.x, immediateStateRef.current.translate.y],
+            [newTranslate.x, newTranslate.y])
+    }, [])
+
     const scrollToPoint = useCallback((point: Point) => {
+        console.log(`Scrolling to point: ${JSON.stringify(point)}, animate: ${animateMapScrolling}`)
         if (animateMapScrolling) {
             const scaleY = immediateStateRef.current.scale
 
@@ -743,32 +753,28 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 y: immediateStateRef.current.translateAtMouseDown.y + deltaY
             }
         }
-
-        event.stopPropagation()
     }, [])
 
     const onMouseUp = useCallback((event: React.MouseEvent) => {
-        if (immediateStateRef.current.mouseMoving) {
-            immediateStateRef.current.mouseDown = false
-            immediateStateRef.current.mouseMoving = false
-
-            setCursor('NOTHING')
-        }
+        immediateStateRef.current.mouseDown = false
+        immediateStateRef.current.mouseMoving = false
 
         if (newRoad !== undefined) {
             setCursor('BUILDING_ROAD')
+        } else {
+            setCursor('NOTHING')
         }
-
-        event.stopPropagation()
     }, [newRoad])
 
     // eslint-disable-next-line
     const onMouseLeave = useCallback((_event: React.MouseEvent) => {
-        setCursor('NOTHING')
+        if (newRoad === undefined) {
+            setCursor('NOTHING')
+        }
 
         immediateStateRef.current.mouseDown = false
         immediateStateRef.current.mouseMoving = false
-    }, [])
+    }, [newRoad, setCursor])
 
     const onPointClicked = useCallback(async (point: Point) => {
         if (PlayLogConfig.selection) {
@@ -866,7 +872,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             setSelected(point)
         }
-    }, [newRoad, possibleRoadConnections])
+    }, [newRoad, possibleRoadConnections, setNewRoad, setPossibleRoadConnections, setSelected])
 
     const onPointDoubleClicked = useCallback(async (point: Point) => {
         if (PlayLogConfig.input) {
@@ -889,7 +895,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 const lastPoint = newRoad[newRoad.length - 1]
 
                 // Only add this point to the road points if the distance is acceptable - otherwise let the backend fill in
-                if (Math.abs(lastPoint.x - point.x) <= 2 && Math.abs(lastPoint.y - point.y) <= 2) {
+                if (Math.abs(lastPoint.x - point.x) <= 2 && Math.abs(lastPoint.y - point.y) < 2) {
                     newRoadPoints.push(point)
                 }
 
@@ -992,6 +998,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             } else if (newRoad || possibleRoadConnections) {
                 setNewRoad(undefined)
                 setPossibleRoadConnections(undefined)
+                setCursor('NOTHING')
 
                 api.removeLocalRoad('LOCAL')
 
@@ -1003,11 +1010,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     altKey: event.altKey,
                     ctrlKey: event.ctrlKey,
                     shiftKey: event.shiftKey
-                })
+                },
+                    PLAY_TYPING_SOURCE)
             }
         } else if (event.key === ' ') {
-            setShowTitles(true)
-            setShowAvailableConstruction(!showAvailableConstruction)
+            setShowTitles(prev => !prev)
+            setShowAvailableConstruction(prev => !prev)
         } else if (event.key === 'ArrowUp') {
             moveGame({ ...immediateStateRef.current.translate, y: immediateStateRef.current.translate.y + ARROW_KEY_MOVE_DISTANCE })
         } else if (event.key === 'ArrowRight') {
@@ -1029,11 +1037,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 altKey: event.altKey,
                 ctrlKey: event.ctrlKey,
                 shiftKey: event.shiftKey
-            })
+            },
+                PLAY_TYPING_SOURCE)
         }
 
         event.preventDefault()
-    }, [windows, newRoad, possibleRoadConnections, showAvailableConstruction, moveGame, zoom, setNewRoad, setPossibleRoadConnections, setShowMenu])
+    }, [windows, newRoad, possibleRoadConnections, moveGame, zoom, setNewRoad, setPossibleRoadConnections, setShowMenu, closeActiveWindow, dispatchInputKey])
 
     const startNewRoad = useCallback(async (point: Point) => {
 
@@ -1124,6 +1133,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     const onWheel = useCallback((event: React.WheelEvent) => {
         zoom(immediateStateRef.current.scale - event.deltaY / 20.0)
+
+        event.preventDefault()
     }, [zoom])
 
     const onTouchCancel = useCallback((event: React.TouchEvent) => {
@@ -1292,6 +1303,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     case 'QUOTA':
                         return <Quotas
                             key={window.id}
+                            playerId={selfPlayerId}
                             nation={player?.nation ?? 'ROMANS'}
                             onClose={() => closeWindow(window.id)}
                             onRaise={() => raiseWindow(window.id)}
@@ -1361,16 +1373,21 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                             }}
                         />
                     case 'MAP':
-                        return <MapView
-                            key={window.id}
-                            onClose={() => closeWindow(window.id)}
-                            onRaise={() => raiseWindow(window.id)}
-                        />
+                        if (gameInformation?.map?.id !== undefined) {
+                            return <MapView
+                                mapId={gameInformation.map.id}
+                                key={window.id}
+                                onClose={() => closeWindow(window.id)}
+                                onRaise={() => raiseWindow(window.id)}
+                            />
+                        } else {
+                            return null
+                        }
                 }
             })}
 
             {showTypingController &&
-                <TypeControl commands={commands} selectedPoint={selected} />
+                <TypeControl commands={commands} selectedPoint={selected} typingSource={PLAY_TYPING_SOURCE} />
             }
 
             <GameMessagesViewer

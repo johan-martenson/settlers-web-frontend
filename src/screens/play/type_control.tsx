@@ -25,6 +25,7 @@ type FuzzyMatchResult = {
 type TypeControlProps = {
     commands: Map<string, Command>
     selectedPoint: Point
+    typingSource: TypingSource
 }
 
 type TypeControlKey = {
@@ -35,6 +36,8 @@ type TypeControlKey = {
     shiftKey: boolean
 }
 
+type TypingSource = string
+
 // Log configuration
 export const TypeControlLogConfig = {
     lifecycle: false,
@@ -44,31 +47,45 @@ export const TypeControlLogConfig = {
 }
 
 // Constants
-const inputListeners: Set<(key: TypeControlKey) => void> = new Set()
+const inputListeners: Map<TypingSource, Set<(key: TypeControlKey) => void>> = new Map()
 
 // Functions
-function addInputListener(listener: (key: TypeControlKey) => void) {
+function addInputListener(listener: (key: TypeControlKey) => void, typingSource: TypingSource) {
     if (TypeControlLogConfig.lifecycle) {
         console.log('Type control (lifecycle): added input listener')
     }
 
-    inputListeners.add(listener)
+    if (!inputListeners.has(typingSource)) {
+        inputListeners.set(typingSource, new Set())
+    }
+
+    inputListeners.get(typingSource)?.add(listener)
 }
 
-function removeInputListener(listener: (key: TypeControlKey) => void) {
+function removeInputListener(listener: (key: TypeControlKey) => void, typingSource: TypingSource) {
     if (TypeControlLogConfig.lifecycle) {
         console.log('Type control (lifecycle): removed input listener')
     }
 
-    inputListeners.delete(listener)
+    const listeners = inputListeners.get(typingSource)
+
+    if (!listeners) {
+        return
+    }
+
+    listeners.delete(listener)
+
+    if (listeners.size === 0) {
+        inputListeners.delete(typingSource)
+    }
 }
 
-function dispatchInputKey(key: TypeControlKey) {
+function dispatchInputKey(key: TypeControlKey, typingSource: TypingSource) {
     if (TypeControlLogConfig.input) {
         console.log(`Type control (input): dispatching key '${key.key}'`)
     }
 
-    inputListeners.forEach(listener => listener(key))
+    inputListeners.get(typingSource)?.forEach(listener => listener(key))
 }
 
 function isFuzzyMatch(input: string, command: string): FuzzyMatchResult {
@@ -165,29 +182,32 @@ function findMatchingCommandsGeneric<T>(
 ): Map<string, { command: GenericCommand<T>, fuzzyMatch: FuzzyMatchResult }> {
     const inputToMatch = input.toLowerCase()
 
-    return new Map(Array.from(commands.entries()
-        .filter(
-            ([, command]) =>
-                !command.filter ||
-                param === undefined ||
-                command.filter(param)
-        )
-        .map(([name, command]) => {
-            const result = isFuzzyMatch(inputToMatch, name)
+    if (TypeControlLogConfig.commands) {
+        console.log(`Type control (find matching commands): finding matching commands for input "${input}" and param`, param)
+    }
 
-            return {
-                name,
-                command,
-                fuzzyMatch: result
-            }
+    const matches = [...commands]
+        .filter(([, command]) => !command.filter || (param !== undefined && command.filter(param)))
+        .map(([name, command]) => {
+            const fuzzyMatch = isFuzzyMatch(inputToMatch, name)
+            return { name, command, fuzzyMatch }
         })
-        .filter(result => result.fuzzyMatch.matched))
+        .filter(({ fuzzyMatch }) => fuzzyMatch.matched)
         .sort((a, b) => b.fuzzyMatch.score - a.fuzzyMatch.score)
-        .map(result => [result.name, { command: result.command, fuzzyMatch: result.fuzzyMatch }] as const))
+
+    if (TypeControlLogConfig.commands) {
+        console.log(`Type control (find matching commands): matches after filtering and sorting:`, matches)
+    }
+
+    return new Map(
+        matches.map(({ name, command, fuzzyMatch }) => [
+            name, { command, fuzzyMatch }
+        ])
+    )
 }
 
 // React components
-const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
+const TypeControl = ({ commands, selectedPoint, typingSource }: TypeControlProps) => {
 
     // References
     const commandsRef = useTrackedRef(commands)
@@ -210,16 +230,20 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
             console.log(`Type control (commands): running '${commandName}' at ${selectedPointRef.current.x},${selectedPointRef.current.y}`)
         }
 
-        commandsRef.current.get(commandName)?.action(selectedPointRef.current)
+        try {
+            commandsRef.current.get(commandName)?.action(selectedPointRef.current)
+        } catch (error) {
+            console.error('Type control (errors): error occurred while running command', error)
+        }
     }
 
-    async function updateSelectedPointInformation() {
+    async function updateSelectedPointInformation(point: Point) {
         if (TypeControlLogConfig.selection) {
-            console.log(`Type control (selection): updating info for point ${selectedPointRef.current.x},${selectedPointRef.current.y}`)
+            console.log(`Type control (selection): updating info for point ${point.x},${point.y}`)
         }
 
         try {
-            const updatedPointInformation = await api.getInformationOnPoint(selectedPointRef.current)
+            const updatedPointInformation = await api.getInformationOnPoint(point)
 
             setSelectedPointInformation(updatedPointInformation)
         } catch (error) {
@@ -244,7 +268,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
 
             if (matches.size > 0) {
                 if (TypeControlLogConfig.commands) {
-                    console.log(`Type control (commands): matched '${matches.keys()}'`)
+                    console.log(`Type control (commands): matched '${Array.from(matches.keys())}'`)
                 }
 
                 runCommand(Array.from(matches.keys())[0])
@@ -277,7 +301,7 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
         }
 
         selectedPointRef.current = selectedPoint
-        updateSelectedPointInformation()
+        updateSelectedPointInformation(selectedPoint)
     }, [selectedPoint])
 
     // Effect: keep non-triggering input state in sync
@@ -295,16 +319,16 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
             console.log('Type control (lifecycle): mounting')
         }
 
-        addInputListener(inputListener)
+        addInputListener(inputListener, typingSource)
 
         return () => {
             if (TypeControlLogConfig.lifecycle) {
                 console.log('Type control (lifecycle): unmounting')
             }
 
-            removeInputListener(inputListener)
+            removeInputListener(inputListener, typingSource)
         }
-    }, [])
+    }, [inputListener, typingSource])
 
     // Rendering
     const inputToMatch = input.toLowerCase()
@@ -348,9 +372,9 @@ const TypeControl = ({ commands, selectedPoint }: TypeControlProps) => {
                             // eslint-disable-next-line
                             .filter(([commandName, command]) => !command.hidden &&
                                 (expanded || (inputToMatch.length > 0 && matches.has(commandName.toLowerCase()))))
-                            .map(([commandName, command], index) => (
+                            .map(([commandName, command]) => (
                                 <div
-                                    key={index}
+                                    key={commandName}
                                     className='alternative'
                                     onClick={() => {
                                         if (TypeControlLogConfig.commands) {
@@ -389,9 +413,10 @@ export type GenericCommand<T> = {
 type GenecricTypeControlProps<T> = {
     commands: Map<string, GenericCommand<T>>
     param: T
+    typingSource: TypingSource
 }
 
-function GenericTypeControl<T>({ commands, param }: GenecricTypeControlProps<T>) {
+function GenericTypeControl<T>({ commands, param, typingSource }: GenecricTypeControlProps<T>) {
 
     // References
     const commandsRef = useTrackedRef(commands)
@@ -411,7 +436,11 @@ function GenericTypeControl<T>({ commands, param }: GenecricTypeControlProps<T>)
         }
 
         if (paramRef.current !== undefined) {
-            commandsRef.current.get(commandName)?.action(paramRef.current)
+            try {
+                commandsRef.current.get(commandName)?.action(paramRef.current)
+            } catch (error) {
+                console.error('Type control: error occurred while running command', error)
+            }
         } else {
             console.error('Type control: parameter value is undefined, cannot run command')
         }
@@ -484,16 +513,16 @@ function GenericTypeControl<T>({ commands, param }: GenecricTypeControlProps<T>)
             console.log('Type control (lifecycle): mounting')
         }
 
-        addInputListener(inputListener)
+        addInputListener(inputListener, typingSource)
 
         return () => {
             if (TypeControlLogConfig.lifecycle) {
                 console.log('Type control (lifecycle): unmounting')
             }
 
-            removeInputListener(inputListener)
+            removeInputListener(inputListener, typingSource)
         }
-    }, [])
+    }, [inputListener, typingSource])
 
     // Rendering
     const inputToMatch = input.toLowerCase()
@@ -533,13 +562,11 @@ function GenericTypeControl<T>({ commands, param }: GenecricTypeControlProps<T>)
                 <div className='container-alternatives'>
                     <ItemContainer style={{ alignItems: 'stretch' }}>
                         {commandsRef.current && Array.from(commandsRef.current.entries())
-
-                            // eslint-disable-next-line
                             .filter(([commandName, command]) => !command.hidden &&
                                 (expanded || (inputToMatch.length > 0 && matches.has(commandName.toLowerCase()))))
-                            .map(([commandName, command], index) => (
+                            .map(([commandName, command]) => (
                                 <div
-                                    key={index}
+                                    key={commandName}
                                     className='alternative'
                                     onClick={() => {
                                         if (TypeControlLogConfig.commands) {
@@ -568,8 +595,55 @@ function GenericTypeControl<T>({ commands, param }: GenecricTypeControlProps<T>)
     )
 }
 
+function TypeMatch<T>({ commandName, fuzzyMatch, command, highlightOnHover = false, onClick }: TypeMatchProps<T>) {
+    return (
+        <div
+            className={`type-match ${highlightOnHover ? 'highlight-on-hover' : ''}`}
+            onClick={() => onClick && onClick(command)}
+        >
+            {prettyPrintFuzzyMatch(commandName, fuzzyMatch.matchIndexes)}
+            {command?.icon}
+        </div>
+    )
+}
+
+function TypeMatchList<T>({ matches, highlightOnHover = false, onClick }: TypeMatchListProps<T>) {
+    return (
+        <div className='type-match-list'>
+            {matches.map(({ commandName, fuzzyMatch, command }) => (
+                <TypeMatch
+                    key={commandName}
+                    commandName={commandName}
+                    fuzzyMatch={fuzzyMatch}
+                    command={command}
+                    highlightOnHover={highlightOnHover}
+                    onClick={onClick}
+                />
+            ))}
+        </div>
+    )
+}
+
+type TypeMatchListProps<T> = {
+    matches: { commandName: string, fuzzyMatch: FuzzyMatchResult, command: GenericCommand<T> }[]
+    highlightOnHover?: boolean
+    onClick?: (command: GenericCommand<T>) => void
+}
+
+type TypeMatchProps<T> = {
+    commandName: string
+    command: GenericCommand<T>
+    fuzzyMatch: FuzzyMatchResult
+    highlightOnHover?: boolean
+    onClick?: (command: GenericCommand<T>) => void
+}
+
+// Exports
 export {
     TypeControl,
     GenericTypeControl,
-    dispatchInputKey
+    dispatchInputKey,
+    findMatchingCommandsGeneric,
+    TypeMatch,
+    TypeMatchList
 }

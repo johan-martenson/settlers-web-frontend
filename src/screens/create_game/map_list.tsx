@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import MapInformationCard from './map_information_card'
 import './map_list.css'
-import { MapInformation } from '../../api/types'
-import { useMaps } from '../../utils/hooks/hooks'
+import { MapWithTerrain } from '../../api/types'
+import { useMapsWithTerrain } from '../../utils/hooks/hooks'
 
 // Types
 type MapListProps = {
@@ -12,7 +12,7 @@ type MapListProps = {
     filterAuthor?: string
     filterMinPlayers?: number
     filterMaxPlayers?: number
-    onMapSelected: (map: MapInformation) => void
+    onMapSelected: (map: MapWithTerrain) => void
 }
 
 // Constants
@@ -33,7 +33,7 @@ const MapList = ({
     const [defaultSelectDone, setDefaultSelectDone] = useState(false)
 
     // Monitoring hooks
-    const maps = useMaps()
+    const maps = useMapsWithTerrain()
 
     // Effects
     useEffect(() => {
@@ -42,7 +42,7 @@ const MapList = ({
 
             setDefaultSelectDone(true)
         }
-    }, [maps, defaultSelect, onMapSelected])
+    }, [maps, defaultSelect, onMapSelected, defaultSelectDone])
 
     // Rendering
     const matches = maps
@@ -52,16 +52,15 @@ const MapList = ({
         .filter(map => filterMinPlayers <= map.maxPlayers)
         .filter(map => filterMaxPlayers >= map.maxPlayers)
 
+    // Rendering
     return (
         <div>
             <div>
                 {`${matches.length} of ${maps.length}`}
             </div>
             <div className='map-list'>
-                {matches.map((map, index) => (
-                    <div key={index} >
-                        <MapInformationCard map={map} onMapSelected={() => onMapSelected(map)} />
-                    </div>
+                {matches.map((map) => (
+                    <div key={map.id}><MapInformationCard map={map} onMapSelected={() => onMapSelected(map)} /></div>
                 ))}
             </div>
         </div>

@@ -1,6 +1,9 @@
 Todo 1.0
 ========
 
+-32. Pressing escape - with active window should only close active window, when building new road without active window, should stop road building.
+-31. Test Player::getInventory
+-30. When soldiers start walking apart / back again they are initially at 100% progress even if they are just starting to walk...
 -29. Leaving a game and joining a new game needs to reset the state of the API and of the UI
 -28. Soldiers should flash white when they get hit
 -27. Soldiers should not stop for a short time between each move in a fight

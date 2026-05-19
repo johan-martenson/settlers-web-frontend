@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react'
-import { AvailableConstruction, LARGE_HOUSES, MEDIUM_HOUSES, Nation, Point, PointInformation, SMALL_HOUSES, SmallBuilding } from '../../api/types'
+import React, { useCallback, useMemo, useState } from 'react'
+import { LARGE_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, Nation, Point, PointInformation, PointInformationWithoutPossibleRoadConnections, SMALL_HOUSE_VALUES, SmallBuilding } from '../../api/types'
 import './construction_info.css'
-import { ButtonRow, Window } from '../../components/dialog'
+import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { api } from '../../api/ws-api'
 import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildMine, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils/utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { FlagIcon, HouseIcon, UiIcon } from '../../icons/icon'
 import { buildingPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
+import { usePointInformation } from '../../utils/hooks/hooks'
+import { GenericCommand } from '../../screens/play/type_control'
 
 // Types
 type ConstructionInfoProps = {
@@ -29,10 +31,10 @@ type ConstructionInfoProps = {
 
 type SizeLowerCase = 'small' | 'medium' | 'large'
 
-// Constancs
+// Constants
 const MINES: SmallBuilding[] = ['GoldMine', 'IronMine', 'CoalMine', 'GraniteMine']
 const MINES_SET = new Set<SmallBuilding>(MINES)
-const SMALL_BUILDINGS_EXCEPT_MINES: SmallBuilding[] = SMALL_HOUSES.filter(house => !MINES_SET.has(house))
+const SMALL_BUILDINGS_EXCEPT_MINES: SmallBuilding[] = SMALL_HOUSE_VALUES.filter(house => !MINES_SET.has(house))
 
 // TODO: add monitor tab
 
@@ -51,31 +53,48 @@ const ConstructionInfo = ({
     onShowAvailableConstruction,
     onHideAvailableConstruction,
     ...props }: ConstructionInfoProps) => {
-    const [point, setPoint] = useState<PointInformation>(props.point)
+
+    // Monitoring hooks
+    const point = usePointInformation(props.point)
+
+    // State
     const [selected, setSelected] = useState<'Buildings' | 'FlagsAndRoads' | 'Monitor'>((canBuildHouse(point) || canBuildMine(point)) ? 'Buildings' : 'FlagsAndRoads')
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<SizeLowerCase>('small')
     const [hoverInfo, setHoverInfo] = useState<string | undefined>()
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
+
+        return cmds
+    }, [])
+
+    // Functions
+    const raiseFlagAndClose = useCallback(() => {
+        console.info('Construction window: raising flag')
+
+        api.placeFlag(point)
+        onSelectPoint(point)
+        onClose()
+    }, [point.x, point.y, onClose, onSelectPoint])
+
+    const startNewRoadAndClose = useCallback(() => {
+        console.info('Construction window: starting to build road')
+
+        onStartNewRoad(point)
+        onClose()
+    }, [point.x, point.y, onStartNewRoad, onClose])
+
+    const startMonitorAndClose = useCallback(() => {
+        console.info(`Construction window: starting monitor for point: ${JSON.stringify(point)}`)
+
+        onStartMonitor(point)
+        onClose()
+    }, [point.x, point.y, onClose, onStartMonitor])
+
+    // Rendering
     const constructionOptions = new Map<'Buildings' | 'FlagsAndRoads', string>()
     const constructionInitialSelection = (canBuildHouse(point) || canBuildMine(point)) ? 'Buildings' : 'FlagsAndRoads'
-
-    useEffect(
-        () => {
-            const listener = {
-                onAvailableConstructionChanged: (availableConstruction: AvailableConstruction[]) => {
-                    const updatedPoint: PointInformation = {
-                        ...point,
-                        canBuild: availableConstruction,
-                    }
-
-                    setPoint(updatedPoint)
-                }
-            }
-
-            api.addAvailableConstructionListener(point, listener)
-
-            return () => api.removeAvailableConstructionListener(point, listener)
-        }, [point])
 
     if (canBuildHouse(point) || canBuildMine(point)) {
         constructionOptions.set('Buildings', 'Buildings')
@@ -100,8 +119,10 @@ const ConstructionInfo = ({
     }
 
     return (
-        <Window
+        <WindowWithTyping<PointInformationWithoutPossibleRoadConnections>
             id='ConstructionInfo'
+            commands={commands}
+            param={point}
             className='construction-info-window'
             heading='Construction'
             onClose={onClose}
@@ -111,7 +132,7 @@ const ConstructionInfo = ({
 
             <div className='construction-info'>
                 <TabList
-                    defaultSelectedValue={constructionInitialSelection}
+                    selectedValue={selected}
                     onTabSelect={
                         (_event: SelectTabEvent, data: SelectTabData) => {
                             const value = data.value
@@ -121,11 +142,10 @@ const ConstructionInfo = ({
                             }
                         }}
                 >
-                    {Array.from(constructionOptions.entries(), ([key, value], index) => {
-
+                    {Array.from(constructionOptions.entries(), ([key, value]) => {
                         return <Tab
                             value={key}
-                            key={index}
+                            key={key}
                             onMouseEnter={() => setHoverInfo(`Construct ${value.toLowerCase()}`)}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
@@ -147,13 +167,7 @@ const ConstructionInfo = ({
 
                         <ButtonRow>
                             <Button
-                                onClick={() => {
-                                    console.info('Raising flag')
-
-                                    api.placeFlag(point)
-                                    onSelectPoint(point)
-                                    onClose()
-                                }}
+                                onClick={raiseFlagAndClose}
                                 onMouseEnter={() => setHoverInfo('Raise flag')}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
@@ -163,12 +177,7 @@ const ConstructionInfo = ({
                             {canBuildRoad(point) &&
                                 <Button
                                     icon='road-1.png'
-                                    onClick={() => {
-                                        console.info('Starting to build road')
-
-                                        onStartNewRoad(point)
-                                        onClose()
-                                    }}
+                                    onClick={startNewRoadAndClose}
                                 >Build road</Button>
                             }
                         </ButtonRow>
@@ -177,7 +186,7 @@ const ConstructionInfo = ({
 
                 {selected === 'Buildings' &&
                     <TabList
-                        defaultSelectedValue={'small'}
+                        selectedValue={buildingSizeSelected}
                         onTabSelect={
                             (_event: SelectTabEvent, data: SelectTabData) => {
                                 const value = data.value
@@ -189,7 +198,7 @@ const ConstructionInfo = ({
                         {Array.from(houseOptions.entries(), ([key, value]) => {
                             return <Tab
                                 value={key}
-                                key={value}
+                                key={key}
                                 onMouseEnter={() => setHoverInfo(`Place ${key} building`)}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                             >
@@ -209,8 +218,8 @@ const ConstructionInfo = ({
                             return (<div
                                 key={house}
                                 className='ConstructionItem'
-                                onClick={async () => {
-                                    console.info('Creating house')
+                                onClick={() => {
+                                    console.info('Construction window: creating house')
 
                                     api.placeHouse(house, point)
                                     onSelectPoint(point)
@@ -229,14 +238,14 @@ const ConstructionInfo = ({
 
                 {selected === 'Buildings' && canBuildMediumHouse(point) && buildingSizeSelected === 'medium' &&
                     <ItemContainer rows>
-                        {MEDIUM_HOUSES.map(house => {
+                        {MEDIUM_HOUSE_VALUES.map(house => {
                             const prettyHouse = buildingPretty(house)
 
                             return (<div
                                 key={house}
                                 className='ConstructionItem'
-                                onClick={async () => {
-                                    console.info('Creating house')
+                                onClick={() => {
+                                    console.info('Construction window: creating house')
 
                                     api.placeHouse(house, point)
                                     onSelectPoint(point)
@@ -256,14 +265,14 @@ const ConstructionInfo = ({
 
                 {selected === 'Buildings' && canBuildLargeHouse(point) && buildingSizeSelected === 'large' &&
                     <ItemContainer rows>
-                        {LARGE_HOUSES.filter(house => house !== 'Headquarter').map(house => {
+                        {LARGE_HOUSE_VALUES.filter(house => house !== 'Headquarter').map(house => {
                             const prettyHouse = buildingPretty(house)
 
                             return (<div
                                 key={house}
                                 className='ConstructionItem'
-                                onClick={async () => {
-                                    console.info('Creating house')
+                                onClick={() => {
+                                    console.info('Construction window: creating house')
 
                                     api.placeHouse(house, point)
                                     onSelectPoint(point)
@@ -316,11 +325,7 @@ const ConstructionInfo = ({
                                 <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
                             </Button>}
                         <Button
-                            onClick={() => {
-                                onStartMonitor(point)
-
-                                onClose()
-                            }}
+                            onClick={startMonitorAndClose}
                             onMouseEnter={() => setHoverInfo('Open monitor')}
                             onMouseLeave={() => setHoverInfo(undefined)}
                         >
@@ -329,7 +334,7 @@ const ConstructionInfo = ({
                     </ButtonRow>
                 }
             </div>
-        </Window >
+        </WindowWithTyping>
     )
 }
 

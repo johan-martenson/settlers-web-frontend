@@ -36,9 +36,12 @@ export type ChatMessage = {
     time: Time
 }
 
-const SPEED_VALUES = ['VERY_FAST', 'FAST', 'NORMAL', 'SLOW']
+const MILITARY_BUILDING_VALUES = ['Barracks', 'GuardHouse', 'WatchTower', 'Fortress', 'Headquarter'] as const
+export const MILITARY_BUILDINGS = new Set<AnyBuilding>(MILITARY_BUILDING_VALUES)
+
+const SPEED_VALUES = ['VERY_FAST', 'FAST', 'NORMAL', 'SLOW'] as const
 export type GameSpeed = typeof SPEED_VALUES[number]
-export const GAME_SPEEDS: GameSpeed[] = [...SPEED_VALUES]
+export const GAME_SPEEDS = [...SPEED_VALUES] as const
 
 export type AttackType = 'WEAK' | 'STRONG'
 
@@ -48,37 +51,37 @@ export type AvailableConstruction = Size | 'FLAG' | 'MINE'
 
 export type ResourceLevel = 'LOW' | 'MEDIUM' | 'HIGH'
 
-const TRANSPORT_CATEGORY_VALUES = ['FOOD', 'WEAPONS', 'TOOLS', 'IRON', 'IRON_BAR', 'COAL', 'GOLD', 'PLANK', 'WOOD', 'STONE', 'COIN', 'WHEAT', 'WATER', 'PIG', 'FLOUR', 'BOAT']
+const TRANSPORT_CATEGORY_VALUES = ['FOOD', 'WEAPONS', 'TOOLS', 'IRON', 'IRON_BAR', 'COAL', 'GOLD', 'PLANK', 'WOOD', 'STONE', 'COIN', 'WHEAT', 'WATER', 'PIG', 'FLOUR', 'BOAT'] as const
 
 export type TransportCategory = typeof TRANSPORT_CATEGORY_VALUES[number]
 export const TRANSPORT_CATEGORIES = new Set<TransportCategory>(TRANSPORT_CATEGORY_VALUES)
 
-const SOLDIER_VALUES = ['PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL']
+const SOLDIER_VALUES = ['PRIVATE', 'PRIVATE_FIRST_CLASS', 'SERGEANT', 'OFFICER', 'GENERAL'] as const
 
 export type Soldier = typeof SOLDIER_VALUES[number]
-export const SOLDIERS: Soldier[] = [...SOLDIER_VALUES]
+export const SOLDIERS = [...SOLDIER_VALUES] as const
 
-const TOOLS_VALUES = ['AXE', 'HAMMER', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE']
+const TOOLS_VALUES = ['AXE', 'HAMMER', 'SHOVEL', 'PICK_AXE', 'FISHING_ROD', 'BOW', 'SAW', 'CLEAVER', 'ROLLING_PIN', 'CRUCIBLE', 'TONGS', 'SCYTHE'] as const
 
 export type Tool = typeof TOOLS_VALUES[number]
-export const TOOLS: Set<Tool> = new Set(TOOLS_VALUES as Tool[])
+export const TOOLS: Set<Tool> = new Set(TOOLS_VALUES)
 
-const GOODS_VALUES = ['FLOUR', 'PIG', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'WHEAT', 'IRON_BAR', 'BOAT']
+const GOODS_VALUES = ['FLOUR', 'PIG', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 'WOOD', 'PLANK', 'BREAD', 'FISH', 'MEAT', 'SHIELD', 'SWORD', 'BEER', 'COIN', 'WHEAT', 'IRON_BAR', 'BOAT'] as const
 
 export type Goods = typeof GOODS_VALUES[number]
-export const GOODS = new Set<Goods>(GOODS_VALUES as Goods[])
+export const GOODS = new Set<Goods>(GOODS_VALUES)
 
-const WORKER_VALUES = ['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'CARPENTER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'BUILDER', 'PLANER', 'SHIPWRIGHT', ...SOLDIER_VALUES]
+const WORKER_VALUES = ['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'CARPENTER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'BUILDER', 'PLANER', 'SHIPWRIGHT', ...SOLDIER_VALUES] as const
 
 export type Worker = typeof WORKER_VALUES[number]
 export const WORKERS = new Set<Worker>(WORKER_VALUES)
 
-const MATERIAL_VALUES = [...SOLDIERS, ...TOOLS, ...GOODS, ...WORKERS]
+const MATERIAL_VALUES = [...TOOLS_VALUES, ...GOODS_VALUES, ...WORKER_VALUES] as const
 
 export type Material = typeof MATERIAL_VALUES[number]
 export const MATERIALS = new Set<Material>(MATERIAL_VALUES)
 
-const NATION_VALUES = ['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS']
+const NATION_VALUES = ['ROMANS', 'AFRICANS', 'JAPANESE', 'VIKINGS'] as const
 
 export type Nation = typeof NATION_VALUES[number]
 export const NATIONS = new Set<Nation>(NATION_VALUES)
@@ -95,7 +98,7 @@ export type StoneAmount = 'MINI' | 'LITTLE' | 'LITTLE_MORE' | 'MIDDLE' | 'ALMOST
 
 export type SmokeType = 'SMOKE_TYPE_1' | 'SMOKE_TYPE_2' | 'SMOKE_TYPE_3' | 'SMOKE_TYPE_4'
 
-export type HouseResources = { [key in Material]?: HouseResourceItem }
+export type HouseResources = Partial<Record<Material, HouseResourceItem>>
 
 export type BuildingType = 'SMALL' | 'MEDIUM' | 'LARGE'
 
@@ -115,11 +118,10 @@ const SMALL_HOUSE_VALUES = [
     'CoalMine',
     'GraniteMine',
     'LookoutTower'
-]
+] as const
 
 export type SmallBuilding = typeof SMALL_HOUSE_VALUES[number]
-const SMALL_HOUSES: SmallBuilding[] = [...SMALL_HOUSE_VALUES]
-const SMALL_HOUSES_SET = new Set<SmallBuilding>(SMALL_HOUSES)
+const SMALL_HOUSES_SET = new Set<SmallBuilding>(SMALL_HOUSE_VALUES)
 
 const MEDIUM_HOUSE_VALUES = [
     'Sawmill',
@@ -135,30 +137,33 @@ const MEDIUM_HOUSE_VALUES = [
     'Metalworks',
     'Shipyard',
     'Storehouse'
-]
+] as const
 
 export type MediumBuilding = typeof MEDIUM_HOUSE_VALUES[number]
-const MEDIUM_HOUSES: MediumBuilding[] = [...MEDIUM_HOUSE_VALUES]
-const MEDIUM_HOUSES_SET = new Set<MediumBuilding>(MEDIUM_HOUSES)
+const MEDIUM_HOUSES_SET = new Set<MediumBuilding>(MEDIUM_HOUSE_VALUES)
 
 const LARGE_HOUSE_VALUES = [
     'Headquarter',
     'Farm',
     'PigFarm',
     'DonkeyFarm',
-    'Fortress'
-]
+    'Fortress',
+    'Harbor'
+] as const
 
 export type LargeBuilding = typeof LARGE_HOUSE_VALUES[number]
-const LARGE_HOUSES: LargeBuilding[] = [...LARGE_HOUSE_VALUES]
-const LARGE_HOUSES_SET = new Set<LargeBuilding>(LARGE_HOUSES)
+const LARGE_HOUSES_SET = new Set<LargeBuilding>(LARGE_HOUSE_VALUES)
 
-export const HOUSES: Set<AnyBuilding> = new Set(SMALL_HOUSES.concat(MEDIUM_HOUSES).concat(LARGE_HOUSES))
+export const HOUSES = new Set<AnyBuilding>([
+    ...SMALL_HOUSE_VALUES,
+    ...MEDIUM_HOUSE_VALUES,
+    ...LARGE_HOUSE_VALUES
+])
 
-const WILD_ANIMAL_TYPE_VALUES = ['RABBIT', 'FOX', 'STAG', 'DEER', 'DUCK', 'SHEEP', 'DEER_2', 'DUCK_2', 'PACK_DONKEY']
+const WILD_ANIMAL_TYPE_VALUES = ['RABBIT', 'FOX', 'STAG', 'DEER', 'DUCK', 'SHEEP', 'DEER_2', 'DUCK_2', 'PACK_DONKEY'] as const
 
 export type WildAnimalType = typeof WILD_ANIMAL_TYPE_VALUES[number]
-const WILD_ANIMAL_TYPES = [...WILD_ANIMAL_TYPE_VALUES]
+const WILD_ANIMAL_TYPES = [...WILD_ANIMAL_TYPE_VALUES] as const
 const WILD_ANIMAL_TYPES_SET = new Set<WildAnimalType>(WILD_ANIMAL_TYPES)
 
 export type WildAnimalInformation = Point & {
@@ -171,10 +176,10 @@ export type WildAnimalInformation = Point & {
     path?: Point[]
 }
 
-const PLAYER_COLOR_VALUES = ['BLUE', 'YELLOW', 'RED', 'PURPLE', 'GRAY', 'GREEN', 'BROWN', 'WHITE']
+const PLAYER_COLOR_VALUES = ['BLUE', 'YELLOW', 'RED', 'PURPLE', 'GRAY', 'GREEN', 'BROWN', 'WHITE'] as const
 
 export type PlayerColor = typeof PLAYER_COLOR_VALUES[number]
-export const PLAYER_COLORS: PlayerColor[] = [...PLAYER_COLOR_VALUES]
+export const PLAYER_COLORS = [...PLAYER_COLOR_VALUES] as const
 const PLAYER_COLORS_SET = new Set<PlayerColor>(PLAYER_COLORS)
 
 export type Player = {
@@ -188,11 +193,10 @@ export type Point = {
     y: number
 }
 
-export type PointInformation = {
-    canBuild: AvailableConstruction[]
-    possibleRoadConnections: Point[]
+export type PointInformationWithoutPossibleRoadConnections = {
     x: number
     y: number
+    canBuild: AvailableConstruction[]
 } & ({
     is?: undefined
 } | {
@@ -206,10 +210,14 @@ export type PointInformation = {
     roadId: RoadId
 })
 
-const TREE_TYPE_VALUES = ['PINE', 'BIRCH', 'OAK', 'PALM_1', 'PALM_2', 'PINE_APPLE', 'CYPRESS', 'CHERRY', 'FIR']
+export type PointInformation = PointInformationWithoutPossibleRoadConnections & {
+    possibleRoadConnections: Point[]
+}
+
+const TREE_TYPE_VALUES = ['PINE', 'BIRCH', 'OAK', 'PALM_1', 'PALM_2', 'PINE_APPLE', 'CYPRESS', 'CHERRY', 'FIR'] as const
 
 export type TreeType = typeof TREE_TYPE_VALUES[number]
-const TREE_TYPES: TreeType[] = [...TREE_TYPE_VALUES]
+const TREE_TYPES = [...TREE_TYPE_VALUES] as const
 
 export type TreeSize = 'NEWLY_PLANTED' | 'SMALL' | 'MEDIUM' | 'FULL_GROWN'
 
@@ -223,10 +231,10 @@ export type FireSize = 'LARGE' | 'MEDIUM' | 'SMALL' | 'MINI'
 
 export type HeightInformation = number
 
-const VEGETATION_INTEGERS_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+const VEGETATION_INTEGERS_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23] as const
 
 export type VegetationIntegers = typeof VEGETATION_INTEGERS_VALUES[number]
-const VEGETATION_INTEGERS: VegetationIntegers[] = [...VEGETATION_INTEGERS_VALUES]
+const VEGETATION_INTEGERS = [...VEGETATION_INTEGERS_VALUES] as const
 
 export const SAVANNAH = 0
 export const MOUNTAIN_1 = 1
@@ -263,8 +271,8 @@ export type TerrainAtPoint = {
 export type TerrainInformation = {
     width: number
     height: number
-    tilesBelow: VegetationAsInt[]
-    tilesDownRight: VegetationAsInt[]
+    tilesBelow: VegetationIntegers[]
+    tilesDownRight: VegetationIntegers[]
     heights: HeightInformation[]
 }
 
@@ -286,6 +294,40 @@ export type PlayerInformation = {
     readonly discoveredPoints: Set<Point> // NOTE: uses Set which will not check equality based on values!
     readonly nation: Nation
     ownedLand: Point[]
+    readonly strengthWhenPopulatingBuildings: number
+    readonly defenseStrength: number
+    readonly defenseFromSurroundingBuildings: number
+    readonly militaryPopulationFarFromBorder: number
+    readonly militaryPopulationAwayFromBorder: number
+    readonly militaryPopulationCloseToBorder: number
+    readonly soldiersAvailableForAttack: number
+    coalQuota: {
+        mint: number
+        armory: number
+        ironSmelter: number
+    }
+    wheatQuota: {
+        mill: number
+        donkeyFarm: number
+        pigFarm: number
+        brewery: number
+    }
+    waterQuota: {
+        bakery: number
+        donkeyFarm: number
+        pigFarm: number
+        brewery: number
+    }
+    ironQuota: {
+        armory: number
+        metalworks: number
+    }
+    foodQuota: {
+        ironMine: number
+        coalMine: number
+        goldMine: number
+        graniteMine: number
+    }
 }
 
 export type GameInformation = {
@@ -311,6 +353,10 @@ export type MapInformation = {
     startingPoints: Point[]
 }
 
+export type MapWithTerrain = MapInformation & {
+    terrain: TerrainInformation
+}
+
 export type CropInformation = Point & {
     id: CropId
     state: CropGrowth
@@ -331,7 +377,7 @@ export type FallingTreeInformation = Point & {
     animation: number
 }
 
-export type SignTypes = 'IRON' | 'GOLD' | 'COAL' | 'STONE' | 'WATER' | 'NOTHING'
+export type SignType = 'IRON' | 'GOLD' | 'COAL' | 'STONE' | 'WATER' | 'NOTHING'
 
 export type Size = 'SMALL' | 'MEDIUM' | 'LARGE'
 
@@ -339,7 +385,7 @@ export type FlagType = 'MAIN' | 'MARINE' | 'NORMAL'
 
 export type SignInformation = Point & {
     id: SignId
-    type?: SignTypes
+    type?: SignType
     amount?: Size
 }
 
@@ -375,15 +421,15 @@ const WORKER_TYPE_VALUES = ['Armorer'
     , 'WellWorker'
     , 'WoodcutterWorker'
     , 'Private'
-    , 'Private_first_class'
+    , 'PrivateFirstClass'
     , 'Sergeant'
     , 'Officer'
     , 'General'
     , 'Builder'
     , 'Planer'
-    , 'ShipWright']
+    , 'Shipwright'] as const
 export type WorkerType = typeof WORKER_TYPE_VALUES[number]
-const WORKER_TYPES: WorkerType[] = [...WORKER_TYPE_VALUES]
+const WORKER_TYPES = [...WORKER_TYPE_VALUES] as const
 
 export type BodyType = 'FAT' | 'THIN'
 
@@ -506,9 +552,9 @@ export type ShipInformation = Point & {
     constructionState: ShipConstructionProgress
 }
 
-const SOLDIER_TYPE_VALUES = ['PRIVATE_RANK', 'PRIVATE_FIRST_CLASS_RANK', 'SERGEANT_RANK', 'OFFICER_RANK', 'GENERAL_RANK']
+const SOLDIER_TYPE_VALUES = ['PRIVATE_RANK', 'PRIVATE_FIRST_CLASS_RANK', 'SERGEANT_RANK', 'OFFICER_RANK', 'GENERAL_RANK'] as const
 export type SoldierType = typeof SOLDIER_TYPE_VALUES[number]
-const SOLDIER_TYPES: SoldierType[] = [...SOLDIER_TYPE_VALUES]
+const SOLDIER_TYPES = [...SOLDIER_TYPE_VALUES] as const
 
 export type CheatCode = 'GIVE_ME_SOME_MORE' | 'SHOW_ME_THE_WORLD' | 'TOO_FAST'
 
@@ -528,7 +574,7 @@ export type HouseInformation = Point & {
     soldiers?: SoldierType[]
     maxSoldiers?: number
     constructionProgress?: number
-    resources: { [key in Material]: HouseResourceItem }
+    resources: Partial<Record<Material, HouseResourceItem>>
     produces?: Material[]
     promotionsEnabled: boolean
     productionEnabled: boolean
@@ -541,8 +587,8 @@ export type HouseInformation = Point & {
 }
 
 export type HeadquarterInformation = HouseInformation & {
-    inReserve: { [key in SoldierType]: number }
-    reserved: { [key in SoldierType]: number }
+    inReserve: Record<SoldierType, number>
+    reserved: Record<SoldierType, number>
 }
 
 export type FlagInformation = Point & {
@@ -553,6 +599,8 @@ export type FlagInformation = Point & {
     stackedCargo?: Material[]
     nation: Nation
 }
+
+export type ToolPriorities = Record<Tool, number>
 
 export type CargoInformation = {
     material: Material
@@ -584,25 +632,21 @@ type MeasurementTime = number
 type MeasurementValue = number
 export type Measurement = [MeasurementTime, MeasurementValue]
 
-export type ProductionStatistics = {
-    [key in Material]?: Measurement[]
-}
+export type ProductionStatistics = Partial<Record<Material, Measurement[]>>
 
 export type LandStatistics = Measurement[]
 
-export type InventoryStatistics = {
-    [key in Material]?: Measurement[]
-}
+export type InventoryStatistics = Partial<Record<Material, Measurement[]>>
 
-export type BuildingStatistics = {
-    [key in AnyBuilding]?: Measurement[]
-}
+export type BuildingStatistics = Partial<Record<AnyBuilding, Measurement[]>>
 
-export type GeneralStatisticsType = 'land' | 'houses' | 'workers' | 'goods' | 'military' | 'coins' | 'production' | 'killedEnemies'
+export const GENERAL_STATISTICS_TYPES = ['land', 'houses', 'workers', 'goods', 'military', 'coins', 'production', 'killedEnemies']
+export type GeneralStatisticsType = typeof GENERAL_STATISTICS_TYPES[number]
 
-export type GeneralStatistics = {
-    [key in GeneralStatisticsType]: Measurement[]
-}
+export type GeneralStatistics = Record<GeneralStatisticsType, Measurement[]>
+
+export const STATISTICS_VIEWS = ['GENERAL', 'MERCHANDISE', 'INVENTORY', 'BUILDINGS'] as const
+export type StatisticsView = typeof STATISTICS_VIEWS[number]
 
 const MERCHANDISE_VALUES = ['WOOD',
     'PLANK',
@@ -617,21 +661,17 @@ const MERCHANDISE_VALUES = ['WOOD',
     'COIN',
     'TOOLS',
     'WEAPONS',
-    'BOAT']
+    'BOAT'] as const
 
 export type Merchandise = typeof MERCHANDISE_VALUES[number]
 
-export type MerchandiseStatistics = {
-    [key in Merchandise]?: Measurement[]
-}
+export type MerchandiseStatistics = Partial<Record<Merchandise, Measurement[]>>
 
 export type StatisticsPerPlayer = {
     id: PlayerId
     buildingStatistics: BuildingStatistics
     general: GeneralStatistics
 }
-
-export type TransportPriorityInformation = Material[]
 
 export type GameEndedMessage = {
     type: 'GAME_ENDED'
@@ -761,7 +801,7 @@ function isSpeed(speed: unknown): speed is GameSpeed {
 
 
 function isHeadquarterInformation(houseInformation: HouseInformation): houseInformation is HeadquarterInformation {
-    return 'reserved' in houseInformation
+    return houseInformation.type === 'Headquarter'
 }
 
 function isNation(maybeNation: unknown): maybeNation is Nation {
@@ -820,9 +860,9 @@ export {
     isPlayerColor,
     isSpeed,
     WILD_ANIMAL_TYPES,
-    SMALL_HOUSES,
-    MEDIUM_HOUSES,
-    LARGE_HOUSES,
+    SMALL_HOUSE_VALUES,
+    MEDIUM_HOUSE_VALUES,
+    LARGE_HOUSE_VALUES,
     VEGETATION_INTEGERS,
     SOLDIER_TYPES,
     MERCHANDISE_VALUES,

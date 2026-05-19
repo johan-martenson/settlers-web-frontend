@@ -1,21 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+    AvailableConstruction,
     ChatMessage,
+    FlagId,
+    FlagInformation,
+    GameId,
     GameInformation,
     GameMessage,
     GameMessageId,
     HouseId,
     HouseInformation,
+    MapId,
     MapInformation,
+    MapWithTerrain,
     PlayerId,
     PlayerInformation,
     Point,
+    PointInformationWithoutPossibleRoadConnections,
+    RoadId,
+    RoadInformation,
     RoomId,
+    ToolPriorities,
     TRANSPORT_CATEGORIES,
     TransportCategory
 } from '../../api/types'
-import { api, GameListener, PointInformationLocal } from '../../api/ws-api'
-import { createGame, StatisticsReply } from '../../api/ws/commands'
+import { api, GameListener } from '../../api/ws-api'
+import { StatisticsReply } from '../../api/ws/commands'
 import { HooksConfig } from './config'
 import { createGameInformationFromApi } from '../../api/utils'
 
@@ -173,7 +183,47 @@ function useTransportPriority(): TransportCategory[] {
     return priority
 }
 
-function usePlayer(playerId: PlayerId): PlayerInformation {
+function usePlayers(gameId: GameId): PlayerInformation[] {
+    const [players, setPlayers] = useState<PlayerInformation[]>(() => {
+        const value = Array.from(api.players.values())
+
+        if (HooksConfig.usePlayers) {
+            console.log('Hooks (usePlayers): Initial state', value)
+        }
+
+        return value
+    })
+
+    useEffect(() => {
+        const listener = () => {
+            const updatedPlayers = Array.from(api.players.values())
+
+            if (HooksConfig.usePlayers) {
+                console.log('Hooks (usePlayers): Update received', updatedPlayers)
+            }
+
+            setPlayers(updatedPlayers)
+        }
+
+        api.addPlayersListener(listener, gameId)
+
+        if (HooksConfig.usePlayers) {
+            console.log('Hooks (usePlayers): Listener registered')
+        }
+
+        return () => {
+            api.removePlayersListener(listener, gameId)
+
+            if (HooksConfig.usePlayers) {
+                console.log('Hooks (usePlayers): Listener removed')
+            }
+        }
+    }, [gameId])
+
+    return players
+}
+
+function usePlayer(playerId: PlayerId): PlayerInformation | undefined {
     const [player, setPlayer] = useState<PlayerInformation | undefined>(() => {
         const value = api.players.get(playerId)
 
@@ -209,13 +259,13 @@ function usePlayer(playerId: PlayerId): PlayerInformation {
     }, [playerId])
 
     if (!player) {
-        throw new Error(`Hooks: player with id ${playerId} not found`)
+        console.error(`Hooks: player with id ${playerId} not found`)
     }
 
     return player
 }
 
-function useHouse(houseId: HouseId): HouseInformation {
+function useHouse(houseId: HouseId): HouseInformation | undefined {
     const [house, setHouse] = useState<HouseInformation | undefined>(() => {
         const value = api.houses.get(houseId)
 
@@ -251,7 +301,7 @@ function useHouse(houseId: HouseId): HouseInformation {
     }, [houseId])
 
     if (!house) {
-        throw new Error(`Hooks: house with id ${houseId} not found`)
+        console.error(`Hooks: house with id ${houseId} not found`)
     }
 
     return house
@@ -335,8 +385,8 @@ function useGameMessages(): GameMessage[] {
     return messages
 }
 
-function usePointInformation(point: Point): PointInformationLocal {
-    const [pointInformation, setPointInformation] = useState<PointInformationLocal>(() => {
+function usePointInformation(point: Point): PointInformationWithoutPossibleRoadConnections {
+    const [pointInformation, setPointInformation] = useState<PointInformationWithoutPossibleRoadConnections>(() => {
         const value = api.getInformationOnPointLocal(point)
 
         if (HooksConfig.usePointInformation) {
@@ -347,7 +397,7 @@ function usePointInformation(point: Point): PointInformationLocal {
     })
 
     useEffect(() => {
-        const listener = (pointInformation: PointInformationLocal) => {
+        const pointInformationListener = (pointInformation: PointInformationWithoutPossibleRoadConnections) => {
             if (HooksConfig.usePointInformation) {
                 console.log('Hooks (usePointInformation): Update received', point, pointInformation)
             }
@@ -355,14 +405,27 @@ function usePointInformation(point: Point): PointInformationLocal {
             setPointInformation(pointInformation)
         }
 
-        api.addPointInformationListener(point, listener)
+        const availableConstructionListener = {
+            onAvailableConstructionChanged: (availableConstruction: AvailableConstruction[]) => {
+                const updatedPoint: PointInformationWithoutPossibleRoadConnections = {
+                    ...point,
+                    canBuild: availableConstruction,
+                }
+
+                setPointInformation(updatedPoint)
+            }
+        }
+
+        api.addPointInformationListener(point, pointInformationListener)
+        api.addAvailableConstructionListener(point, availableConstructionListener)
 
         if (HooksConfig.usePointInformation) {
             console.log('Hooks (usePointInformation): Listener registered', point)
         }
 
         return () => {
-            api.removePointInformationListener(point, listener)
+            api.removePointInformationListener(point, pointInformationListener)
+            api.removeAvailableConstructionListener(point, availableConstructionListener)
 
             if (HooksConfig.usePointInformation) {
                 console.log('Hooks (usePointInformation): Listener removed', point)
@@ -373,32 +436,33 @@ function usePointInformation(point: Point): PointInformationLocal {
     return pointInformation
 }
 
+function useGame(): GameInformation | undefined {
+    const [game, setGame] = useState<GameInformation | undefined>(() => {
+        try {
+            const gameInformation = createGameInformationFromApi()
 
-function useGame(): GameInformation {
-    const [game, setGame] = useState<GameInformation>(() => {
-        const gameInformation = createGameInformationFromApi()
+            if (HooksConfig.useGameInformation) {
+                console.log('Hooks (useGame): Initial state', gameInformation)
+            }
 
-        if (HooksConfig.useGameInformation) {
-            console.log('Hooks (useGame): Initial state', gameInformation)
+            return gameInformation
+        } catch (error) {
+            console.error('Hooks (useGame): Failed to create game information', error)
+            return undefined
         }
-
-        if (!gameInformation) {
-            throw new Error('Hooks: game information not available')
-        }
-
-        return gameInformation
     })
 
     useEffect(() => {
-        const listener: GameListener = {
-            onGameInformationChanged:
-                (updatedGameInformation: GameInformation) => {
-                    if (HooksConfig.useGameInformation) {
-                        console.log('Hooks (useGame): Update received', updatedGameInformation)
-                    }
+        let mounted = true
 
-                    setGame(updatedGameInformation)
+        const listener: GameListener = {
+            onGameInformationChanged: (updatedGameInformation: GameInformation) => {
+                if (HooksConfig.useGameInformation) {
+                    console.log('Hooks (useGame): Update received', updatedGameInformation)
                 }
+
+                setGame(updatedGameInformation)
+            }
         }
 
         api.addGameStateListener(listener)
@@ -407,18 +471,35 @@ function useGame(): GameInformation {
             console.log('Hooks (useGame): Listener registered')
         }
 
+        // Fetch if nothing was available initially
+        if (!game) {
+            api.getGameInformation()
+                .then((data: GameInformation) => {
+                    if (!mounted) return
+
+                    if (HooksConfig.useGameInformation) {
+                        console.log('Hooks (useGame): Loaded from API', data)
+                    }
+
+                    setGame(data)
+                })
+                .catch(err => {
+                    console.error('Hooks (useGame): Failed to load game info', err)
+                })
+        }
+
         return () => {
+            mounted = false
             api.removeGameStateListener(listener)
 
             if (HooksConfig.useGameInformation) {
                 console.log('Hooks (useGame): Listener removed')
             }
         }
-    }, [])
+    }, []) // intentional: run once on mount
 
     return game
 }
-
 function useGames(): GameInformation[] {
     const [games, setGames] = useState<GameInformation[]>(() => {
         if (HooksConfig.useGames) {
@@ -507,6 +588,194 @@ function useMaps(): MapInformation[] {
     return maps
 }
 
+function useMapWithTerrain(mapId: MapId): MapWithTerrain | undefined {
+
+    // State
+    const [map, setMap] = useState<MapWithTerrain | undefined>(() => {
+        const mapFromApi = api.maps.get(mapId)
+
+        if (HooksConfig.useMapWithTerrain) {
+            console.log('Hooks (useMapWithTerrain): Initial state', mapId, mapFromApi)
+        }
+
+        return mapFromApi
+    })
+
+    // Effects
+    // Effect: load the map and its terrain if it's not already loaded
+    useEffect(() => {
+        if (map) {
+            return
+        }
+
+        api.getMapWithTerrain(mapId)
+            .then((map: MapWithTerrain) => setMap(map))
+            .catch((err: Error) => {
+                console.error('Hooks (useMapWithTerrain): Failed to load map', err)
+            })
+    }, [mapId, map])
+
+    return map
+}
+
+function useMapsWithTerrain(): MapWithTerrain[] {
+    const [maps, setMaps] = useState<MapWithTerrain[]>(() => {
+        if (HooksConfig.useMapsWithTerrain) {
+            console.log('Hooks (useMapsWithTerrain): Initial state')
+        }
+
+        return []
+    })
+
+    useEffect(() => {
+        let cancelled = false
+
+        async function fetchMaps() {
+            const maps = await api.getMapsWithTerrain()
+
+            if (!cancelled) {
+                if (HooksConfig.useMapsWithTerrain) {
+                    console.log('Hooks (useMapsWithTerrain): Maps fetched', maps)
+                }
+
+                setMaps(maps)
+            }
+
+        }
+
+        fetchMaps()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    return maps
+}
+
+function useFlag(flagId: FlagId): FlagInformation | undefined {
+    const [flag, setFlag] = useState<FlagInformation | undefined>(() => {
+        const value = api.flags.get(flagId)
+
+        if (HooksConfig.useFlag) {
+            console.log('Hooks (useFlag): Initial state', flagId, value)
+        }
+
+        return value
+    })
+
+    useEffect(() => {
+        const listener = {
+            onUpdate: (flag: FlagInformation) => {
+                if (HooksConfig.useFlag) {
+                    console.log('Hooks (useFlag): Update received', flagId, flag)
+                }
+
+                setFlag(flag)
+            },
+            onRemove: () => {
+                setFlag(undefined)
+
+                if (HooksConfig.useFlag) {
+                    console.log('Hooks (useFlag): Flag removed', flagId)
+                }
+            }
+        }
+
+        api.addFlagListener(flagId, listener)
+
+        if (HooksConfig.useFlag) {
+            console.log('Hooks (useFlag): Listener registered', flagId)
+        }
+
+        return () => {
+            api.removeFlagListener(flagId, listener)
+        }
+    }, [flagId])
+
+    if (!flag) {
+        console.error(`Hooks: flag with id ${flagId} not found`)
+    }
+
+    return flag
+}
+
+function useRoad(roadId: RoadId): RoadInformation | undefined {
+
+    // State
+    const [road, setRoad] = useState<RoadInformation | undefined>(() => {
+        const value = api.roads.get(roadId)
+
+        if (HooksConfig.useRoad) {
+            console.log('Hooks (useRoad): Initial state', roadId, value)
+        }
+
+        return value
+    })
+
+    // Effects
+    // Effect: listen for changes to the road
+    useEffect(() => {
+        const listener = (roadId: RoadId, road?: RoadInformation) => {
+            if (HooksConfig.useRoad) {
+                console.log('Hooks (useRoad): Update received', roadId, road)
+            }
+
+            setRoad(api.roads.get(roadId))
+        }
+
+        api.addRoadListener(roadId, listener)
+
+        if (HooksConfig.useRoad) {
+            console.log('Hooks (useRoad): Listener registered', roadId)
+        }
+
+        return () => {
+            api.removeRoadListener(roadId, listener)
+        }
+    }, [roadId])
+
+    if (!road) {
+        console.error(`Hooks: road with id ${roadId} not found`)
+    }
+
+    return road
+}
+
+function useToolPriorities(): ToolPriorities | undefined {
+    const [toolPriorities, setToolPriorities] = useState<ToolPriorities>()
+
+    // Effects
+    useEffect(() => {
+        let cancelled = false
+
+        function toolPrioUpdated(toolPrios: ToolPriorities) {
+            setToolPriorities(toolPrios)
+        }
+
+        (async () => {
+            const toolPrio = await api.getToolPriorities()
+
+            if (cancelled) {
+                return
+            }
+
+            setToolPriorities(toolPrio)
+        })()
+
+        api.addToolPrioListener(toolPrioUpdated)
+
+        return () => {
+            cancelled = true
+            api.removeToolPrioListener(toolPrioUpdated)
+        }
+    }, [])
+
+    return toolPriorities
+}
+
+
+
 export {
     useHouse,
     useChatMessages,
@@ -514,9 +783,15 @@ export {
     useGames,
     useMaps,
     usePlayer,
+    usePlayers,
     useTransportPriority,
     useStatistics,
     useTime,
     useGame,
-    usePointInformation
+    usePointInformation,
+    useMapsWithTerrain,
+    useMapWithTerrain,
+    useFlag,
+    useToolPriorities,
+    useRoad
 }

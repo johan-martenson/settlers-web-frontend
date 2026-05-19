@@ -1,18 +1,36 @@
-.TransportContainer {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
+.material,
+.chosen-material {
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
+
+    padding: 0.4rem;
+
+    border: 2px solid transparent;
+    border-radius: 8px;
+
+    transition:
+        transform 120ms ease,
+        filter 120ms ease,
+        border-color 120ms ease,
+        background-color 120ms ease;
+
+    cursor: pointer;
 }
 
-.transport-priority-list {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-start;
+.material:hover,
+.chosen-material:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.material:focus-visible,
+.chosen-material:focus-visible {
+    outline: none;
+    border-color: white;
 }
 
 .chosen-material {
+    border-color: gold;
     filter: brightness(120%);
-    transform: scale(2);
+    transform: scale(1.1);
 }

@@ -1,17 +1,18 @@
-import React, { useState } from 'react'
-import { Window } from '../../components/dialog'
+import React, { useMemo, useState } from 'react'
+import { Window, WindowWithTyping } from '../../components/dialog'
 import './statistics.css'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { Nation, AnyBuilding, SMALL_HOUSES, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, MEDIUM_HOUSES, LARGE_HOUSES } from '../../api/types'
+import { Nation, AnyBuilding, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, PlayerInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, GENERAL_STATISTICS_TYPES, StatisticsView, STATISTICS_VIEWS } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon, UiIconType } from '../../icons/icon'
 import { api } from '../../api/ws-api'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Label } from 'recharts'
 import { StatisticsReply } from '../../api/ws/commands'
-import { buildingPretty, materialPretty, merchandisePretty, playerToColor } from '../../pretty_strings'
+import { buildingPretty, generalStatisticsTypePretty, materialPretty, merchandisePretty, playerToColor, statisticsViewPretty } from '../../pretty_strings'
 import { LivePlayerButton } from '../../components/player_icon/player_icon'
 import { ItemContainer } from '../../components/item_container'
 import { MouseHandlerDataParam } from 'recharts/types/synchronisation/types'
 import { useStatistics, useTime } from '../../utils/hooks/hooks'
+import { GenericCommand } from '../../screens/play/type_control'
 
 // Types
 type StatisticsProps = {
@@ -48,7 +49,6 @@ type GeneralStatisticsGraphProps = {
     setHover: (info: string | undefined) => void
 }
 
-type StatisticsView = 'GENERAL' | 'MERCHANDISE' | 'INVENTORY' | 'BUILDINGS'
 
 // Constants
 const GENERAL_STATISTICS_LABELS: GeneralStatisticsType[] = ['land', 'production', 'workers', 'houses', 'goods', 'coins', 'military', 'killedEnemies']
@@ -157,6 +157,69 @@ const sampleStatisticsData: StatisticsReply = {
     ]
 }
 
+// Functions
+const getSelectedPlayers = (statistics: StatisticsReply, selectedPlayers: PlayerId[]) =>
+    statistics.players.filter(player => selectedPlayers.includes(player.id))
+
+const collectSortedTimestamps = (timestamps: number[]) =>
+    [...new Set(timestamps)].sort((a, b) => a - b)
+
+const fillSeriesWithCarryForward = (
+    timestamps: number[],
+    entries: [number, number][],
+): (number | undefined)[] => {
+    let lastValue: number | undefined = undefined
+
+    return timestamps.map(time => {
+        const found = entries.find(([t]) => t === time)
+        if (found) lastValue = found[1]
+        return lastValue
+    })
+}
+
+const extendToTime = (
+    chartData: ChartData[],
+    targetTime: number
+) => {
+    if (chartData.length === 0) return
+
+    const last = chartData[chartData.length - 1]
+
+    if (last.time !== targetTime) {
+        chartData.push({ ...last, time: targetTime })
+    }
+}
+
+const buildZeroMeasurement = (keys: string[]) =>
+    Object.fromEntries(keys.map(k => [k, 0]))
+
+const renderPlayerLines = (
+    players: PlayerInformation[],
+    selectedPlayers: PlayerId[],
+    getColor: (player: PlayerInformation, index: number) => string
+) =>
+    players
+        .filter(player => selectedPlayers.includes(player.id))
+        .map((player, index) => (
+            <Line
+                key={player.id}
+                type='stepAfter'
+                dataKey={`Player ${player.id}`}
+                name={`Player ${player.id}`}
+                stroke={getColor(player, index)}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+                connectNulls
+            />
+        ))
+
+const hoverHandlers = (setHover: (s?: string) => void, text?: string) => ({
+    onMouseEnter: () => setHover(text),
+    onMouseLeave: () => setHover(undefined)
+})
+
+
 // React components
 /**
  * The Statistics component displays production and land statistics for players in the game.
@@ -180,11 +243,68 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
     const statistics = useStatistics(playerId)
     const time = useTime(20)
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<StatisticsView>>()
+
+        STATISTICS_VIEWS.forEach(view => {
+            cmds.set(`Show ${statisticsViewPretty(view)} statistics`, {
+                action: () => setState(view)
+            })
+        })
+
+        GENERAL_STATISTICS_TYPES.forEach(statsType => {
+            cmds.set(`Show ${generalStatisticsTypePretty(statsType)} statistics`, {
+                action: () => setGeneralStatistics(statsType),
+                filter: (view: StatisticsView) => view === 'GENERAL' && generalStatistics !== statsType
+            })
+        })
+
+        MERCHANDISE_VALUES.forEach(merchandise => {
+            cmds.set(`Show ${merchandisePretty(merchandise)} statistics`, {
+                action: () => setSelectedMerchandise(prev => [...prev, merchandise]),
+                filter: (view: StatisticsView) => view === 'MERCHANDISE' && !selectedMerchandise.includes(merchandise)
+            })
+
+            cmds.set(`Hide ${merchandisePretty(merchandise)} statistics`, {
+                action: () => setSelectedMerchandise(prev => prev.filter(merch => merch !== merchandise)),
+                filter: (view: StatisticsView) => view === 'MERCHANDISE' && selectedMerchandise.includes(merchandise)
+            })
+        })
+
+        api.players.forEach(player => {
+            cmds.set(`Show statistics for ${player.name}`, {
+                action: () => setSelectedPlayers(prev => [...prev, player.id]),
+                filter: (view: StatisticsView) => view === 'GENERAL' && !selectedPlayers.includes(player.id)
+            })
+
+            cmds.set(`Hide statistics for ${player.name}`, {
+                action: () => setSelectedPlayers(prev => prev.filter(playerId => playerId !== player.id)),
+                filter: (view: StatisticsView) => view === 'GENERAL' && selectedPlayers.includes(player.id)
+            })
+        })
+
+        cmds.set('Close window',
+            {
+                action: () => onClose()
+            }
+        )
+
+        return cmds
+    }, [onClose, generalStatistics, selectedMerchandise, selectedPlayers])
+
     // Rendering
     const titleLabel = 'Statistics'
 
     return (<>
-        <Window heading={titleLabel} onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
+        <WindowWithTyping<StatisticsView>
+            commands={commands}
+            param={state}
+            heading={titleLabel}
+            onClose={onClose}
+            hoverInfo={hoverInfo}
+            onRaise={onRaise}
+        >
             <div id='stats-page'>
                 <TabList
                     selectedValue={state}
@@ -201,29 +321,25 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                     }} >
                     <Tab
                         value={'GENERAL'}
-                        onMouseEnter={() => setHoverInfo('General statistics')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
+                        {...hoverHandlers(setHoverInfo, 'General statistics')}
                     >
                         <UiIcon type='WREATH_ON_MAP' />
                     </Tab>
                     <Tab
                         value={'MERCHANDISE'}
-                        onMouseEnter={() => setHoverInfo('Merchandise statistics')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
+                        {...hoverHandlers(setHoverInfo, 'Merchandise statistics')}
                     >
                         <UiIcon type='GOODS_ON_MAP' />
                     </Tab>
                     <Tab
                         value={'INVENTORY'}
                         onMouseEnter={() => setHoverInfo('Inventory')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
                     >
                         <UiIcon type='WORKERS_GOODS_AND_QUESTION_MARK' />
                     </Tab>
                     <Tab
                         value={'BUILDINGS'}
-                        onMouseEnter={() => setHoverInfo('Building statistics')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
+                        {...hoverHandlers(setHoverInfo, 'Buildings')}
                     >
                         <UiIcon type='HOUSE_ON_MAP' />
                     </Tab>
@@ -253,10 +369,9 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                                 ? prev.filter(p => p !== player.id)
                                                 : [...prev, player.id]
                                             )}
-                                            onMouseEnter={() => setHoverInfo(selected
+                                            {...hoverHandlers(setHoverInfo, selected
                                                 ? `Hide statistics for ${player.name}`
                                                 : `Show statistics for ${player.name}`)}
-                                            onMouseLeave={() => setHoverInfo(undefined)}
                                         />
                                     )
                                 })}
@@ -273,8 +388,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                             key={stat}
                                             style={{ backgroundColor: generalStatistics === stat ? 'lightblue' : undefined }}
                                             onClick={() => setGeneralStatistics(stat)}
-                                            onMouseEnter={() => setHoverInfo(GENERAL_STATISTICS[stat]?.label)}
-                                            onMouseLeave={() => setHoverInfo(undefined)}
+                                            {...hoverHandlers(setHoverInfo, GENERAL_STATISTICS[stat]?.label)}
                                         >
                                             {uiIcon !== undefined && <UiIcon type={uiIcon} />}
                                         </Button>)
@@ -285,7 +399,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                     </div>
                 }
 
-                {state == 'MERCHANDISE' &&
+                {state === 'MERCHANDISE' &&
                     <>
                         <MerchandiseGraph statistics={statistics} selectedMerchandise={selectedMerchandise} time={time} />
                         <div className='select-merchandise'>
@@ -298,9 +412,8 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                         style={{ backgroundColor: selectedMerchandise.includes(merchandise) ? MERCHANDISE_STATS_COLORS[merchandise] : undefined }}
                                         onClick={() => setSelectedMerchandise(prev => prev.includes(merchandise)
                                             ? prev.filter(m => m !== merchandise)
-                                            : [...selectedMerchandise, merchandise as Merchandise])}
-                                        onMouseEnter={() => setHoverInfo(`Show statistics for ${prettyMerchandise}`)}
-                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                            : [...prev, merchandise as Merchandise])}
+                                        {...hoverHandlers(setHoverInfo, `Show statistics for ${prettyMerchandise}`)}
                                     >
                                         {merchandise === 'WOOD' && <InventoryIcon material='WOOD' nation={nation} />}
                                         {merchandise === 'PLANK' && <InventoryIcon material='PLANK' nation={nation} />}
@@ -331,8 +444,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                             {Array.from(GOODS).map(material =>
                             (<div
                                 key={material}
-                                onMouseEnter={() => setHoverInfo(`${materialPretty(material)}: 0`)}
-                                onMouseLeave={() => setHoverInfo(undefined)}>
+                                {...hoverHandlers(setHoverInfo, `${materialPretty(material)}: 0`)}>
                                 <InventoryIcon material={material} nation={nation} scale={1} inline /> 0
                             </div>))}
                         </div>
@@ -412,7 +524,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                 Small buildings
 
                                 <ItemContainer height='15em' rows>
-                                    {SMALL_HOUSES.map(house => {
+                                    {SMALL_HOUSE_VALUES.map(house => {
                                         return (
                                             <div
                                                 key={house}
@@ -429,7 +541,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                 Medium buildings
 
                                 <ItemContainer height='15em'>
-                                    {MEDIUM_HOUSES.map(house => {
+                                    {MEDIUM_HOUSE_VALUES.map(house => {
                                         return (
                                             <div
                                                 key={house}
@@ -447,7 +559,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                 Large buildings
 
                                 <ItemContainer height='10em'>
-                                    {LARGE_HOUSES.map(house => {
+                                    {LARGE_HOUSE_VALUES.map(house => {
                                         return (
                                             <div
                                                 key={house}
@@ -492,7 +604,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                 </div>
 
                                 {(() => {
-                                    const housesContainer = (houseTypes: AnyBuilding[]) => (
+                                    const housesContainer = (houseTypes: readonly AnyBuilding[]) => (
                                         <ItemContainer rows>
                                             {houseTypes.map(house => {
                                                 const prettyHouse = buildingPretty(house).toLowerCase()
@@ -509,10 +621,9 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                                         onClick={() => {
                                                             setSelectedBuilding(house)
                                                         }}
-                                                        onMouseEnter={() => setHoverInfo(selected
+                                                        {...hoverHandlers(setHoverInfo, selected
                                                             ? `Hide statistics for ${prettyHouse}`
                                                             : `Show statistics for ${prettyHouse}`)}
-                                                        onMouseLeave={() => setHoverInfo(undefined)}
                                                     >
                                                         <HouseIcon nation={nation} houseType={house} drawShadow scale={0.5} />
                                                     </div>)
@@ -523,15 +634,15 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                     return (<>
                                         <div>
                                             Small buildings
-                                            {housesContainer(SMALL_HOUSES)}
+                                            {housesContainer(SMALL_HOUSE_VALUES)}
                                         </div>
                                         <div>
                                             Medium buildings
-                                            {housesContainer(MEDIUM_HOUSES)}
+                                            {housesContainer(MEDIUM_HOUSE_VALUES)}
                                         </div>
                                         <div>
                                             Large buildings
-                                            {housesContainer(LARGE_HOUSES)}
+                                            {housesContainer(LARGE_HOUSE_VALUES)}
                                         </div>
                                     </>)
                                 })()}
@@ -540,7 +651,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                     </>
                 }
             </div>
-        </Window>
+        </WindowWithTyping>
     </>)
 }
 
@@ -557,35 +668,32 @@ const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: Merchandise
     })
 
     // Sort timestamps
-    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+    const sortedTimestamps = collectSortedTimestamps(Array.from(allTimestamps))
 
     // Initialize chart data with all timestamps
     const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
 
     // Fill in merchandise data
     selectedMerchandise.forEach(category => {
-        let lastValue: number | undefined = undefined
-        sortedTimestamps.forEach((time, index) => {
-            const entry = chartData[index]
-            const found = statistics.merchandise[category]?.find(([t]) => t === time)
-            if (found) {
-                lastValue = found[1]
-            }
-            entry[category] = lastValue // Carry forward last known value
+        const values = fillSeriesWithCarryForward(
+            sortedTimestamps,
+            statistics.merchandise[category] ?? []
+        )
+
+        values.forEach((value, index) => {
+            chartData[index][category] = value
         })
     })
 
     // Sort data by time to ensure correct visualization
     chartData.sort((a, b) => a.time - b.time)
 
-    if (chartData.length > 0) {
-        if (chartData[chartData.length - 1].time != statistics.currentTime) {
-            chartData.push({ ...chartData[chartData.length - 1], time: latest })
-        }
-    } else {
-        const zeroMeasurement: { [key: string]: number } = {}
+    extendToTime(chartData, latest)
 
-        MERCHANDISE_VALUES.forEach(category => {
+    if (chartData.length === 0) {
+        const zeroMeasurement = buildZeroMeasurement(selectedMerchandise)
+
+        selectedMerchandise.forEach(category => {
             zeroMeasurement[category] = 0
         })
 
@@ -613,7 +721,7 @@ const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: Merchandise
                     allowDecimals={false}
                     domain={[0, 'dataMax + 1']}
                 />
-                {MERCHANDISE_VALUES.map(category => (
+                {selectedMerchandise.map(category => (
                     <Line
                         key={category}
                         type='stepAfter'
@@ -632,20 +740,18 @@ const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: Merchandise
 }
 
 const BuildingStatisticsGraph = ({ statistics, buildingType, selectedPlayers, setHover }: BuildingStatisticsGraphProps) => {
-    const selectedStatistics = statistics.players.filter(player => selectedPlayers.includes(player.id))
+    const selectedPlayerStatistics = getSelectedPlayers(statistics, selectedPlayers)
 
     // Collect all unique timestamps and sort them
-    const sortedTimestamps = [
-        ...new Set(selectedStatistics.flatMap(
-            player => player.buildingStatistics[buildingType]?.map(([time]) => time) ?? []
-        ))]
-        .sort((a, b) => a - b)
+    const sortedTimestamps = collectSortedTimestamps(selectedPlayerStatistics.flatMap(
+        player => player.buildingStatistics[buildingType]?.map(([time]) => time) ?? []
+    ))
 
     // Initialize chart data with all timestamps
     const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
 
     // Fill in player data
-    selectedStatistics.forEach(player => {
+    selectedPlayerStatistics.forEach(player => {
         sortedTimestamps.forEach((time, index) => {
             const entry = chartData[index]
             const data = player.buildingStatistics[buildingType]?.find(([t]) => t === time)
@@ -655,20 +761,15 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, selectedPlayers, se
     })
 
     // Add an initial empty value if the chart data array is empty
-    if (chartData.length == 0) {
+    if (chartData.length === 0) {
         chartData.push({
             time: 0,
-            ...Object.fromEntries(selectedStatistics.map(player => [`Player ${player.id}`, 0])),
+            ...Object.fromEntries(selectedPlayerStatistics.map(player => [`Player ${player.id}`, 0])),
         })
     }
 
     // Put in a measurement for the current time if it's missing
-    if (chartData[chartData.length - 1].time < statistics.currentTime) {
-        chartData.push({
-            ...chartData[chartData.length - 1],
-            time: statistics.currentTime
-        })
-    }
+    extendToTime(chartData, statistics.currentTime)
 
     return (
         <ResponsiveContainer width='100%' height={400}>
@@ -704,39 +805,43 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, selectedPlayers, se
                     domain={[0, 'dataMax + 1']} // Set the domain to dataMin and dataMax
                     allowDecimals={false}
                 />
-                {statistics.players.map(player => (
-                    <Line
-                        key={player.id}
-                        type='stepAfter'
-                        dataKey={`Player ${player.id}`}
-                        name={api.players.get(player.id)?.name ?? `Player ${player.id}`}
-                        stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
-                        strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
-                        connectNulls
-                    />
-                ))}
+                {statistics.players
+                    .filter(playerId => selectedPlayers.includes(playerId.id))
+                    .map(player => (
+                        <Line
+                            key={player.id}
+                            type='stepAfter'
+                            dataKey={`Player ${player.id}`}
+                            name={api.players.get(player.id)?.name ?? `Player ${player.id}`}
+                            stroke={`hsl(${Number(player.id) * 100}, 70%, 50%)`}
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={false}
+                            connectNulls
+                        />
+                    ))}
             </LineChart>
         </ResponsiveContainer>
     )
 }
 
-const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, setHover }: GeneralStatisticsGraphProps) => {
+const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers: selectedPlayerIds, time, setHover }: GeneralStatisticsGraphProps) => {
 
     // Collect all unique timestamps where selected players have data for the current stat type
     const allTimestamps = new Set<number>()
 
-    statistics.players.filter(p => selectedPlayers.includes(p.id)).forEach(player => {
+    const selectedPlayerStatistics = getSelectedPlayers(statistics, selectedPlayerIds)
+
+    selectedPlayerStatistics.forEach(player => {
         player.general[statType]?.forEach(([time]) => allTimestamps.add(time))
     })
 
     // Sort timestamps chronologically and initialize chart data with time-only entries
-    const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+    const sortedTimestamps = collectSortedTimestamps([...allTimestamps])
     const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
 
     // For each selected player, fill the chartData with the most recent known value at each timestamp
-    statistics.players.filter(p => selectedPlayers.includes(p.id)).forEach(player => {
+    selectedPlayerStatistics.forEach(player => {
         let lastValue: number | undefined = undefined
         sortedTimestamps.forEach((time, index) => {
             const entry = chartData[index]
@@ -747,15 +852,12 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
     })
 
     // Extend chart data to current time if it’s not already included
-    if (chartData.length > 0) {
-        if (chartData[chartData.length - 1].time !== statistics.currentTime) {
-            chartData.push({ ...chartData[chartData.length - 1], time: statistics.currentTime })
-        }
-    } else {
+    extendToTime(chartData, statistics.currentTime)
 
-        // Handle case where there’s no data: add zero-filled placeholders from time 0 to max time
-        const zeroMeasurement: { [key: string]: number } = {}
-        statistics.players.filter(p => selectedPlayers.includes(p.id)).forEach(player => {
+    // Handle case where there’s no data: add zero-filled placeholders from time 0 to max time
+    if (chartData.length === 0) {
+        const zeroMeasurement = buildZeroMeasurement(selectedPlayerStatistics.map(player => `Player ${player.id}`))
+        selectedPlayerStatistics.forEach(player => {
             zeroMeasurement[`Player ${player.id}`] = 0
         })
         chartData.push({ time: 0, ...zeroMeasurement })
@@ -790,26 +892,28 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers, time, s
                     <Label angle={-90} value={statType} position='left' offset={-5} fill='white' style={{ textTransform: 'capitalize' }} />
                 </YAxis>
 
-                {statistics.players.map(player => {
-                    const playerColor: PlayerColor = api.players.get(player.id)?.color ?? 'BLUE'
-                    const color = playerToColor(playerColor)
+                {statistics.players
+                    .filter(playerId => selectedPlayerIds.includes(playerId.id))
+                    .map(player => {
+                        const playerColor: PlayerColor = api.players.get(player.id)?.color ?? 'BLUE'
+                        const color = playerToColor(playerColor)
 
-                    return (
-                        <Line
-                            key={player.id}
-                            type='linear'
-                            dataKey={`Player ${player.id}`}
-                            name={`Player ${player.id}`}
-                            stroke={color}
-                            strokeWidth={2}
-                            dot={false}
-                            isAnimationActive={false}
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                            connectNulls
-                        />
-                    )
-                })}
+                        return (
+                            <Line
+                                key={player.id}
+                                type='linear'
+                                dataKey={`Player ${player.id}`}
+                                name={`Player ${player.id}`}
+                                stroke={color}
+                                strokeWidth={2}
+                                dot={false}
+                                isAnimationActive={false}
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                connectNulls
+                            />
+                        )
+                    })}
             </LineChart>
         </ResponsiveContainer>
     )

@@ -1,15 +1,12 @@
 // Types
 type AnimationTarget = 'ZOOM' | 'TRANSLATE' | 'MUSIC_VOLUME' | 'EFFECTS_VOLUME'
 type AnimatorState = 'RUNNING' | 'STOPPED'
-type OneOrMany = 'ONE' | 'MANY'
-
 type OnUpdatedValue = (value: number) => void
 type OnUpdatedValues = (values: number[]) => void
 
 type OngoingAnimation = {
     current: number[]
     target: number[]
-    oneOrMany: OneOrMany
     speed: number
     onUpdatedValue?: OnUpdatedValue
     onUpdatedValues?: OnUpdatedValues
@@ -28,7 +25,7 @@ const ongoingAnimations = new Map<string, OngoingAnimation>()
 // Can't be canceled (because they are without ids)
 const ongoingAnimationsWithoutIds = new Set<OngoingAnimation>()
 
-let timer: NodeJS.Timeout | undefined
+let timer: ReturnType<typeof setInterval> | undefined
 let state: AnimatorState = 'STOPPED'
 
 // Functions
@@ -36,6 +33,8 @@ let state: AnimatorState = 'STOPPED'
  * Executes a step in the animation process, updating ongoing animations.
  */
 function step(): void {
+    const animationVariablesToDelete: string[] = []
+
     ongoingAnimations.forEach((animation, variable) => {
         let allReachedTarget = true
 
@@ -47,11 +46,13 @@ function step(): void {
                 current += (target - current) * (1 - Math.exp(- animation.speed * DT))
                 animation.current[i] = current
                 allReachedTarget = false
+            } else {
+                animation.current[i] = target
             }
         }
 
         if (allReachedTarget) {
-            ongoingAnimations.delete(variable)
+            animationVariablesToDelete.push(variable)
 
             if (ongoingAnimations.size === 0 && ongoingAnimationsWithoutIds.size === 0) {
                 clearInterval(timer)
@@ -59,12 +60,24 @@ function step(): void {
             }
         }
 
+        animationVariablesToDelete.forEach(variable => ongoingAnimations.delete(variable))
+
         if (animation.onUpdatedValue) {
-            animation.onUpdatedValue(animation.current[0])
+            try {
+                animation.onUpdatedValue(animation.current[0])
+            } catch (err) {
+                console.error('Animator: callback failed', err)
+            }
         } else if (animation.onUpdatedValues) {
-            animation.onUpdatedValues(animation.current)
+            try {
+                animation.onUpdatedValues(animation.current)
+            } catch (err) {
+                console.error('Animator: callback failed', err)
+            }
         }
     })
+
+    const animationsToDelete: OngoingAnimation[] = []
 
     ongoingAnimationsWithoutIds.forEach(animation => {
         let allReachedTarget = true
@@ -77,17 +90,25 @@ function step(): void {
                 current += (target - current) * (1 - Math.exp(- animation.speed * DT))
                 animation.current[i] = current
                 allReachedTarget = false
+            } else {
+                animation.current[i] = target
             }
         }
 
         if (allReachedTarget) {
-            ongoingAnimationsWithoutIds.delete(animation)
+            animationsToDelete.push(animation)
 
             if (ongoingAnimations.size === 0 && ongoingAnimationsWithoutIds.size === 0) {
-                clearInterval(timer)
+                if (timer) {
+                    clearInterval(timer)
+                }
+
                 state = 'STOPPED'
             }
         }
+
+        animationsToDelete.forEach(animation => ongoingAnimationsWithoutIds.delete(animation))
+
 
         if (animation.onUpdatedValue) {
             animation.onUpdatedValue(animation.current[0])
@@ -109,7 +130,6 @@ function animateSeveralNoId(onUpdatedValues: OnUpdatedValues, current: number[],
     ongoingAnimationsWithoutIds.add({
         current: current,
         target: target,
-        oneOrMany: 'MANY',
         onUpdatedValues,
         speed
     })
@@ -132,7 +152,6 @@ function animateNoId(onUpdatedValue: OnUpdatedValue, current: number, target: nu
     ongoingAnimationsWithoutIds.add({
         current: [current],
         target: [target],
-        oneOrMany: 'ONE',
         onUpdatedValue,
         speed
     })
@@ -156,7 +175,6 @@ function animate(animationTarget: AnimationTarget, onUpdatedValue: OnUpdatedValu
     ongoingAnimations.set(animationTarget, {
         current: [current],
         target: [target],
-        oneOrMany: 'ONE',
         onUpdatedValue,
         speed
     })
@@ -180,7 +198,6 @@ function animateSeveral(animationTarget: AnimationTarget, onUpdatedValues: OnUpd
     ongoingAnimations.set(animationTarget, {
         current,
         target: targets,
-        oneOrMany: 'MANY',
         onUpdatedValues,
         speed
     })
@@ -199,8 +216,11 @@ function animateSeveral(animationTarget: AnimationTarget, onUpdatedValues: OnUpd
 function stopAnimation(animationTarget: AnimationTarget): void {
     ongoingAnimations.delete(animationTarget)
 
-    if (ongoingAnimations.size === 0 && ongoingAnimationsWithoutIds.size === 0 && timer) {
-        clearInterval(timer)
+    if (ongoingAnimations.size === 0 && ongoingAnimationsWithoutIds.size === 0) {
+        if (timer) {
+            clearInterval(timer)
+        }
+
         state = 'STOPPED'
     }
 }

@@ -194,7 +194,7 @@ function draw<Uniforms extends object>(
     let length = 0
 
     for (const [attributeName, attributeInstance] of Array.from(program.attributes.entries())) {
-        if (attributeInstance.buffer === undefined || attributeInstance.location === undefined || attributeInstance.buffer === undefined) {
+        if (attributeInstance.buffer === undefined || attributeInstance.location === undefined) {
             console.error(`Attribute ${attributeName} is partly undefined`)
 
             continue
@@ -242,6 +242,10 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
 
         gl.linkProgram(programInstance.program)
 
+        if (!gl.getProgramParameter(programInstance.program, gl.LINK_STATUS)) {
+            console.error(`Failed to link webgl program: ${gl.getProgramInfoLog(programInstance.program)}`)
+        }
+
         gl.detachShader(programInstance.program, compiledVertexShader)
         gl.detachShader(programInstance.program, compiledFragmentShader)
 
@@ -271,13 +275,14 @@ function initProgram(programDescriptor: ProgramDescriptor, gl: WebGL2RenderingCo
             }
 
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-            gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * attributeDescriptor.maxElements, gl.STATIC_DRAW)
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW)
+            gl.bufferData(gl.ARRAY_BUFFER, Float32Array.BYTES_PER_ELEMENT * attributeDescriptor.maxElements, gl.DYNAMIC_DRAW)
+
+            const location = gl.getAttribLocation(programInstance.program, attributeName)
 
             programInstance.attributes.set(attributeName, {
                 elementsPerVertex: attributeDescriptor.elementsPerVertex,
                 maxElements: attributeDescriptor.maxElements,
-                location: gl.getAttribLocation(programInstance.program, attributeName) ?? undefined,
+                location: location >= 0 ? location : undefined,
                 buffer
             })
 
@@ -307,25 +312,32 @@ function findCenterGamePoint(dimension: Dimension, scale: number, translate: Poi
 }
 
 function makeShader(gl: WebGL2RenderingContext, shaderSource: string, shaderType: number): WebGLShader | null {
-    const compiledShader = gl.createShader(shaderType)
+    const shader = gl.createShader(shaderType)
 
-    if (compiledShader) {
-        gl.shaderSource(compiledShader, shaderSource)
-        gl.compileShader(compiledShader)
+    if (!shader) {
+        console.error('Failed to create shader')
 
-        const shaderCompileLog = gl.getShaderInfoLog(compiledShader)
-
-        if (shaderCompileLog === '') {
-            if (GlUtilsLogConfig.makeShader)
-            console.info('Shader compiled correctly')
-        } else {
-            console.error(shaderCompileLog)
-        }
-    } else {
-        console.error('Failed to get the shader')
+        return null
     }
 
-    return compiledShader
+    gl.shaderSource(shader, shaderSource)
+    gl.compileShader(shader)
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(`Failed to compile shader: ${gl.getShaderInfoLog(shader)}`)
+
+        gl.deleteShader(shader)
+
+        return null
+    }
+
+    const shaderCompileLog = gl.getShaderInfoLog(shader)
+
+    if (GlUtilsLogConfig.makeShader) {
+        console.info(`Shader compile log: ${shaderCompileLog}`)
+    }
+
+    return shader
 }
 
 function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement, flipYAxis: 'FLIP_Y' | 'NO_FLIP_Y' = 'NO_FLIP_Y'): WebGLTexture | null {
@@ -344,8 +356,8 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     gl.generateMipmap(gl.TEXTURE_2D)
     //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
     //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
     //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
@@ -353,11 +365,39 @@ function makeTextureFromImage(gl: WebGLRenderingContext, image: HTMLImageElement
     return texture
 }
 
+function destroyProgram(program: ProgramInstance | undefined): void {
+    if (program === undefined) {
+        return
+    }
+
+    const { gl } = program
+
+    // Delete attribute buffers
+    for (const attribute of program.attributes.values()) {
+        if (attribute.buffer) {
+            gl.deleteBuffer(attribute.buffer)
+            attribute.buffer = undefined
+        }
+    }
+
+    // Delete program
+    if (program.program) {
+        gl.deleteProgram(program.program)
+        program.program = undefined
+    }
+
+    // Clear references
+    program.attributes.clear()
+    program.uniforms.clear()
+}
+
+// Exports
 export {
     calcTranslation,
     findCenterGamePoint,
     initProgram,
     setBuffer,
     draw,
-    makeTextureFromImage
+    makeTextureFromImage,
+    destroyProgram
 }

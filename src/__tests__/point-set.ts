@@ -1,5 +1,5 @@
 import { Point } from "../api/types"
-import { keyToPoint, PointMap, PointSet, pointToKey } from "../utils/util_types"
+import { keyToPoint, PointMap, PointSet, pointToKey } from "../utils/util_types_ng"
 
 describe('Point encoding and decoding', () => {
     it('should encode and decode points within the valid range', () => {
@@ -42,9 +42,9 @@ describe('PointSetFast', () => {
 
     test('should add points correctly', () => {
         set.add({ x: 1, y: 2 })
-        expect(set.size()).toBe(1)
+        expect(set.size).toBe(1)
         set.add({ x: 3, y: 4 })
-        expect(set.size()).toBe(2)
+        expect(set.size).toBe(2)
 
         expect(set.has({ x: 1, y: 2 }))
         expect(set.has({ x: 3, y: 4 }))
@@ -54,7 +54,7 @@ describe('PointSetFast', () => {
         set.add({ x: 1, y: 2 })
         set.add({ x: 1, y: 2 })
 
-        expect(set.size()).toBe(1)
+        expect(set.size).toBe(1)
         expect(set.has({ x: 1, y: 2 }))
     })
 
@@ -70,7 +70,7 @@ describe('PointSetFast', () => {
         set.add({ x: 2, y: 3 })
         set.delete({ x: 1, y: 2 })
 
-        expect(set.size()).toBe(1)
+        expect(set.size).toBe(1)
         expect(set.has({ x: 1, y: 2 })).toBeFalsy()
     })
 
@@ -79,7 +79,7 @@ describe('PointSetFast', () => {
         set.add({ x: 2, y: 3 })
         set.clear()
 
-        expect(set.size()).toBe(0)
+        expect(set.size).toBe(0)
         expect(!set.has({ x: 1, y: 2 }))
         expect(!set.has({ x: 2, y: 3 }))
     })
@@ -114,7 +114,7 @@ describe('PointSetFast', () => {
         points.forEach(point => set.add(point))
         const filteredSet = set.filter(point => point.x > 2)
 
-        expect(filteredSet.size()).toBe(2)
+        expect(filteredSet.size).toBe(2)
         expect(filteredSet.has({ x: 3, y: 4 })).toBeTruthy()
         expect(filteredSet.has({ x: 5, y: 6 })).toBeTruthy()
         expect(filteredSet.has({ x: 1, y: 2 })).toBeFalsy()
@@ -125,7 +125,7 @@ describe('PointSetFast', () => {
         points.forEach(point => set.add(point))
         const mappedSet = set.map(point => ({ x: point.x * 2, y: point.y * 2 }))
 
-        expect(mappedSet.size()).toBe(3)
+        expect(mappedSet.size).toBe(3)
         expect(mappedSet.has({ x: 2, y: 4 })).toBeTruthy()
         expect(mappedSet.has({ x: 6, y: 8 })).toBeTruthy()
         expect(mappedSet.has({ x: 10, y: 12 })).toBeTruthy()
@@ -194,5 +194,164 @@ describe('PointMapFast', () => {
         pointMap.forEach(mockCallback)
 
         expect(mockCallback.mock.calls.length).toBe(2)
+    })
+})
+
+// =====================
+// Additional robustness tests
+// =====================
+
+describe('Point encoding robustness', () => {
+
+    test('should throw on non-integer coordinates', () => {
+        expect(() => pointToKey({ x: 1.5, y: 2 })).toThrow()
+        expect(() => pointToKey({ x: NaN, y: 2 })).toThrow()
+        expect(() => pointToKey({ x: Infinity, y: 2 })).toThrow()
+    })
+
+    test('should roundtrip random points', () => {
+        for (let i = 0; i < 1000; i++) {
+            const point = {
+                x: Math.floor(Math.random() * 2001) - 1000,
+                y: Math.floor(Math.random() * 2001) - 1000
+            }
+
+            expect(keyToPoint(pointToKey(point))).toEqual(point)
+        }
+    })
+
+    test('different points should produce different keys', () => {
+        const a = pointToKey({ x: 1, y: 2 })
+        const b = pointToKey({ x: 2, y: 1 })
+
+        expect(a).not.toBe(b)
+    })
+})
+
+describe('PointSet additional behavior', () => {
+    let set: PointSet
+
+    beforeEach(() => {
+        set = new PointSet()
+    })
+
+    test('should preserve insertion order', () => {
+        const points = [{ x: 3, y: 4 }, { x: 1, y: 2 }, { x: 5, y: 6 }]
+        points.forEach(p => set.add(p))
+
+        expect(Array.from(set)).toEqual(points)
+    })
+
+    test('re-adding a deleted point should move it to the end', () => {
+        set.add({ x: 1, y: 2 })
+        set.add({ x: 3, y: 4 })
+        set.delete({ x: 1, y: 2 })
+        set.add({ x: 1, y: 2 })
+
+        expect(Array.from(set)).toEqual([
+            { x: 3, y: 4 },
+            { x: 1, y: 2 }
+        ])
+    })
+
+    test('should iterate over empty set correctly', () => {
+        expect(Array.from(set)).toEqual([])
+    })
+
+    test('filter + map chain should behave correctly', () => {
+        const points = [{ x: 1, y: 2 }, { x: 3, y: 4 }, { x: 5, y: 6 }]
+        points.forEach(p => set.add(p))
+
+        const result = set
+            .filter(p => p.x > 1)
+            .map(p => ({ x: p.x + 1, y: p.y + 1 }))
+
+        expect(Array.from(result)).toEqual([
+            { x: 4, y: 5 },
+            { x: 6, y: 7 }
+        ])
+    })
+})
+
+describe('PointMap additional behavior', () => {
+    let pointMap: PointMap<string>
+
+    beforeEach(() => {
+        pointMap = new PointMap()
+    })
+
+    test('should overwrite existing value for same point', () => {
+        const point = { x: 1, y: 2 }
+
+        pointMap.set(point, 'A')
+        pointMap.set(point, 'B')
+
+        expect(pointMap.get(point)).toBe('B')
+    })
+
+    test('size should not increase when overwriting same key', () => {
+        const point = { x: 1, y: 2 }
+
+        pointMap.set(point, 'A')
+        pointMap.set({ x: 1, y: 2 }, 'B')
+
+        expect(pointMap.size).toBe(1)
+    })
+
+    test('should preserve insertion order in entries', () => {
+        pointMap.set({ x: 1, y: 2 }, 'A')
+        pointMap.set({ x: 3, y: 4 }, 'B')
+
+        expect(Array.from(pointMap.entries())).toEqual([
+            [{ x: 1, y: 2 }, 'A'],
+            [{ x: 3, y: 4 }, 'B']
+        ])
+    })
+
+    test('delete should return false for non-existing key', () => {
+        expect(pointMap.delete({ x: 99, y: 99 })).toBe(false)
+    })
+
+    test('forEach should pass correct arguments', () => {
+        const entries: any[] = []
+
+        pointMap.set({ x: 1, y: 2 }, 'A')
+
+        pointMap.forEach((value, key, map) => {
+            entries.push([key, value, map])
+        })
+
+        expect(entries[0][0]).toEqual({ x: 1, y: 2 })
+        expect(entries[0][1]).toBe('A')
+        expect(entries[0][2]).toBe(pointMap)
+    })
+
+    test('should use value-based equality, not reference equality', () => {
+        const p1 = { x: 1, y: 2 }
+        const p2 = { x: 1, y: 2 }
+
+        pointMap.set(p1, 'A')
+
+        expect(pointMap.get(p2)).toBe('A')
+    })
+
+    test('mutating a point after insertion should not affect stored key', () => {
+        const p = { x: 1, y: 2 }
+        pointMap.set(p, 'A')
+
+        p.x = 999
+
+        expect(pointMap.get({ x: 1, y: 2 })).toBe('A')
+    })
+
+    test('should handle many points efficiently', () => {
+        for (let i = 0; i < 10000; i++) {
+            pointMap.set(
+                { x: i % 1000, y: Math.floor(i / 1000) },
+                `v${i}`
+            )
+        }
+
+        expect(pointMap.size).toBe(10000)
     })
 })

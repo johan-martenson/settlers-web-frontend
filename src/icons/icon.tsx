@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../api/types'
 import { flagImageAtlasHandler, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import './icon.css'
@@ -70,6 +70,8 @@ export type UiIconType = 'DESTROY_BUILDING'
     | 'HOUSE_ON_MAP'
     | 'WEAPONS_MOVING'
     | 'FOOD'
+    | 'HAMMER_AND_PLUS'
+    | 'HAMMER_AND_MINUS'
     | 'SAW_AND_PLUS'
     | 'SAW_AND_MINUS'
     | 'AXE_AND_MINUS'
@@ -166,7 +168,21 @@ export const SHADOW_COLOR = '#333333'
 // State
 
 // Functions
-function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, shadowInfo: DrawingInformation, drawShadow: boolean, canvas: HTMLCanvasElement, scale: number): void {
+function drawImageAndShadow(
+    image: CanvasImageSource,
+    drawInfo: DrawingInformation,
+    shadowInfo: DrawingInformation | undefined,
+    drawShadow: boolean,
+    canvas: HTMLCanvasElement,
+    scale: number
+): void {
+
+    // Validate input early
+    if (scale <= 0 || !Number.isFinite(scale)) {
+        console.error('Invalid scale', scale)
+        return
+    }
+
     const context = canvas.getContext('2d')
 
     if (!context) {
@@ -176,96 +192,128 @@ function drawImageAndShadow(image: ImageBitmap, drawInfo: DrawingInformation, sh
 
     const dpr = window.devicePixelRatio || 1
 
-    if (drawShadow) {
+    // Pixel art should remain crisp
+    context.imageSmoothingEnabled = false
 
-        // Calculate distance to center point in reference space
-        // E.g., left is distance from edge of image to reference point. A higher value means the image is further to the left
-        const aRight = drawInfo.width - drawInfo.offsetX
-        const aBottom = drawInfo.height - drawInfo.offsetY
+    // Compute logical bounds
+    let logicalWidth: number
+    let logicalHeight: number
+    let originX = 0
+    let originY = 0
 
-        const bRight = shadowInfo.width - shadowInfo.offsetX
-        const bBottom = shadowInfo.height - shadowInfo.offsetY
+    if (drawShadow && shadowInfo) {
 
-        // Calculate distances for the combined image, still in reference space
-        const offsetX = Math.max(drawInfo.offsetX, shadowInfo.offsetX)
-        const offsetY = Math.max(drawInfo.offsetY, shadowInfo.offsetY)
-        const right = Math.max(aRight, bRight)
-        const bottom = Math.max(aBottom, bBottom)
+        // Distance from reference point to right/bottom edge
+        const drawRight = drawInfo.width - drawInfo.offsetX
+        const drawBottom = drawInfo.height - drawInfo.offsetY
 
-        const logicalWidth = (offsetX + right) * scale
-        const logicalHeight = (offsetY + bottom) * scale
+        const shadowRight = shadowInfo.width - shadowInfo.offsetX
+        const shadowBottom = shadowInfo.height - shadowInfo.offsetY
 
-        const physicalWidth = Math.ceil(logicalWidth * dpr)
-        const physicalHeight = Math.ceil(logicalHeight * dpr)
+        // Combined reference-space bounds
+        originX = Math.max(drawInfo.offsetX, shadowInfo.offsetX)
+        originY = Math.max(drawInfo.offsetY, shadowInfo.offsetY)
 
-        if (canvas.width !== physicalWidth || canvas.height !== physicalHeight) {
-            canvas.width = physicalWidth
-            canvas.height = physicalHeight
+        const right = Math.max(drawRight, shadowRight)
+        const bottom = Math.max(drawBottom, shadowBottom)
 
+        logicalWidth = Math.ceil((originX + right) * scale)
+        logicalHeight = Math.ceil((originY + bottom) * scale)
+    } else {
+        logicalWidth = Math.ceil(drawInfo.width * scale)
+        logicalHeight = Math.ceil(drawInfo.height * scale)
+    }
 
-            canvas.style.width = `${logicalWidth}px`
-            canvas.style.height = `${logicalHeight}px`
-            context.setTransform(dpr, 0, 0, dpr, 0, 0)
-        }
+    // Avoid invalid canvas sizes
+    logicalWidth = Math.max(1, logicalWidth)
+    logicalHeight = Math.max(1, logicalHeight)
 
-        // Clear the area
-        context.clearRect(0, 0, logicalWidth, logicalHeight)
+    const physicalWidth = Math.max(1, Math.ceil(logicalWidth * dpr))
+    const physicalHeight = Math.max(1, Math.ceil(logicalHeight * dpr))
 
-        // Save the context before changing composite style
-        context.save()
+    // Resize backing store only when necessary
+    if (canvas.width !== physicalWidth ||
+        canvas.height !== physicalHeight) {
+        canvas.width = physicalWidth
+        canvas.height = physicalHeight
+    }
 
-        // Draw the shadow
+    // Keep CSS size stable
+    const cssWidth = `${logicalWidth}px`
+    const cssHeight = `${logicalHeight}px`
+
+    if (canvas.style.width !== cssWidth) {
+        canvas.style.width = cssWidth
+    }
+
+    if (canvas.style.height !== cssHeight) {
+        canvas.style.height = cssHeight
+    }
+
+    // Always reset transform completely
+    context.setTransform(1, 0, 0, 1, 0, 0)
+
+    // Clear full physical canvas
+    context.clearRect(0, 0, canvas.width, canvas.height)
+
+    // Apply DPR scaling
+    context.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    // Draw shadow first
+    if (drawShadow && shadowInfo) {
+        const shadowX = (originX - shadowInfo.offsetX) * scale
+        const shadowY = (originY - shadowInfo.offsetY) * scale
+        const shadowWidth = shadowInfo.width * scale
+        const shadowHeight = shadowInfo.height * scale
+
+        // Draw shadow sprite mask
         context.drawImage(
             image,
-            shadowInfo.sourceX, shadowInfo.sourceY,
-            shadowInfo.width, shadowInfo.height,
-            (offsetX - shadowInfo.offsetX) * scale, (offsetY - shadowInfo.offsetY) * scale,
-            shadowInfo.width * scale, shadowInfo.height * scale
+            shadowInfo.sourceX,
+            shadowInfo.sourceY,
+            shadowInfo.width,
+            shadowInfo.height,
+            shadowX,
+            shadowY,
+            shadowWidth,
+            shadowHeight
         )
 
+        // Tint only the drawn pixels
         context.globalCompositeOperation = 'source-in'
         context.fillStyle = SHADOW_COLOR
+
         context.fillRect(
-            (offsetX - shadowInfo.offsetX) * scale, (offsetY - shadowInfo.offsetY) * scale,
-            shadowInfo.width * scale,
-            shadowInfo.height * scale
+            shadowX,
+            shadowY,
+            shadowWidth,
+            shadowHeight
         )
 
-        context.restore()
-
-        // Draw the foreground image
-        context.drawImage(
-            image,
-            drawInfo.sourceX, drawInfo.sourceY,
-            drawInfo.width, drawInfo.height,
-            (offsetX - drawInfo.offsetX) * scale, (offsetY - drawInfo.offsetY) * scale,
-            drawInfo.width * scale, drawInfo.height * scale)
-    } else {
-        const logicalWidth = drawInfo.width * scale
-        const logicalHeight = drawInfo.height * scale
-
-        const physicalWidth = Math.ceil(logicalWidth * dpr)
-        const physicalHeight = Math.ceil(logicalHeight * dpr)
-
-        if (canvas.width !== physicalWidth || canvas.height !== physicalHeight) {
-            canvas.width = physicalWidth
-            canvas.height = physicalHeight
-
-            canvas.style.width = `${logicalWidth}px`
-            canvas.style.height = `${logicalHeight}px`
-            context.setTransform(dpr, 0, 0, dpr, 0, 0)
-        }
-
-        context.clearRect(0, 0, logicalWidth, logicalHeight)
-
-        // Draw the foreground image only
-        context.drawImage(
-            image,
-            drawInfo.sourceX, drawInfo.sourceY,
-            drawInfo.width, drawInfo.height,
-            0, 0,
-            drawInfo.width * scale, drawInfo.height * scale)
+        // Restore normal drawing
+        context.globalCompositeOperation = 'source-over'
     }
+
+    // Draw foreground image
+    const drawX = drawShadow && shadowInfo
+        ? (originX - drawInfo.offsetX) * scale
+        : 0
+
+    const drawY = drawShadow && shadowInfo
+        ? (originY - drawInfo.offsetY) * scale
+        : 0
+
+    context.drawImage(
+        image,
+        drawInfo.sourceX,
+        drawInfo.sourceY,
+        drawInfo.width,
+        drawInfo.height,
+        drawX,
+        drawY,
+        drawInfo.width * scale,
+        drawInfo.height * scale
+    )
 }
 
 // React components
@@ -285,7 +333,7 @@ const WorkerIcon = ({
         fps: 10,
         deps: [worker, nation, direction, color, scale, drawShadow],
         loader: async () => {
-            const handler = workers.get(worker)
+            const handler = workers[worker]
             if (!handler) {
                 throw new Error(`No handler for ${worker}`)
             }
@@ -304,7 +352,7 @@ const WorkerIcon = ({
                 return
             }
 
-            const handler = workers.get(worker)
+            const handler = workers[worker]
             const drawArray = handler?.getAnimationFrame(
                 nation,
                 direction,
@@ -349,6 +397,8 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
 
             return { image }
         },
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         getFrame: (bitmap, frameIndex) => {
             const canvas = canvasRef.current
             if (!canvas) {
@@ -374,7 +424,7 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
         }
     })
 
-    return <canvas ref={canvasRef} />
+    return <canvas ref={canvasRef} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} />
 }
 
 const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false, onMouseEnter, onMouseLeave }: InventoryIconProps) => {
@@ -382,18 +432,10 @@ const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = 
     // State
     const [image, setImage] = useState<HTMLImageElement>()
 
-    // Effects
-    // Effect: scale the image when it's loaded or when the scale is changed
-    useEffect(() => {
-        if (image) {
-            image.width = image.naturalWidth * scale
-            image.height = image.naturalHeight * scale
-        }
-    }, [scale, image])
-
+    // Rendering
     const url = materialImageAtlasHandler.getInventoryIconUrl(nation, material)
 
-    const displayStyle = inline ? 'inline' : 'block'
+    const displayStyle = inline ? 'inline-block' : 'block'
     const transparency = missing ? '0.5' : '1.0'
 
     return (
@@ -405,6 +447,10 @@ const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = 
         >
             <img
                 src={url}
+                style={{
+                    width: image ? image.naturalWidth * scale : 0,
+                    height: image ? image.naturalHeight * scale : 0
+                }}
                 draggable={false}
                 onLoad={(event: React.SyntheticEvent<HTMLImageElement, Event>) => setImage(event.target as HTMLImageElement)}
             />
@@ -428,6 +474,8 @@ const UiIcon = ({ type, scale = 1, onMouseEnter, onMouseLeave, onClick }: UiIcon
 
             return { image }
         },
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         getFrame: (bitmap, frameIndex) => {
             const canvas = canvasRef.current
             if (!canvas) {
@@ -452,6 +500,9 @@ const UiIcon = ({ type, scale = 1, onMouseEnter, onMouseLeave, onClick }: UiIcon
     })
 
     return <canvas
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
         ref={canvasRef} />
 }
 
@@ -474,7 +525,7 @@ const FlagIcon = ({
         loader: async () => {
             await flagAnimations.load()
 
-            const image = flagImageAtlasHandler.getImage()
+            const image = flagImageAtlasHandler.getSourceImage()
             if (!image) {
                 throw new Error('FlagIcon: No image available')
             }
@@ -523,5 +574,6 @@ export {
     HouseIcon,
     InventoryIcon,
     FlagIcon,
-    UiIcon
+    UiIcon,
+    drawImageAndShadow
 }

@@ -11,5 +11,11 @@ export const HooksConfig = {
     useGameMessages: false,
     useGames: false,
     useNonTriggeringState: false,
-    usePointInformation: false
+    usePointInformation: false,
+    usePlayers: false,
+    useTypingInput: false,
+    useMapsWithTerrain: true,
+    useMapWithTerrain: true,
+    useFlag: true,
+    useRoad: true
 }

@@ -1,4 +1,4 @@
-import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, SMALL_HOUSES, MEDIUM_HOUSES, MapInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation, WATER_1, WATER_2, BUILDABLE_WATER, LAVA_1 } from '../api/types'
+import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation, WATER_1, WATER_2, BUILDABLE_WATER, LAVA_1, MapWithTerrain, PointInformationWithoutPossibleRoadConnections, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES } from '../api/types'
 import { api } from '../api/ws-api'
 import { ScreenPoint, View } from '../render/game_render'
 import { STANDARD_HEIGHT } from '../render/constants'
@@ -37,12 +37,12 @@ type MapRenderOptions = {
 // Constants
 const STARTING_POINT_COLOR = 'yellow'
 
-const RGB_SAVANNAH: RgbColorArray = [50, 82, 56]
-const RGB_MOUNTAIN: RgbColorArray = [140, 140, 140]
+const RGB_SAVANNAH: RgbColorArray = [93, 133, 28]
+const RGB_MOUNTAIN: RgbColorArray = [173, 150, 124]
 const RGB_SNOW: RgbColorArray = [220, 220, 220]
 const RGB_SWAMP: RgbColorArray = [0, 110, 0]
 const RGB_DESERT: RgbColorArray = [110, 0, 110]
-const RGB_WATER: RgbColorArray = [56, 62, 140]
+const RGB_WATER: RgbColorArray = [3, 72, 96]
 const RGB_LAVA: RgbColorArray = [110, 57, 48]
 const RGB_MAGENTA: RgbColorArray = [99, 61, 99]
 
@@ -80,7 +80,7 @@ function isContext2D(context: RenderingContext): context is CanvasRenderingConte
 }
 
 /**
- * Terrain information is send as three arrays:
+ * Terrain information is sent as three arrays:
  *  - tilesBelow
  *  - tilesDownRight
  *  - heights
@@ -110,15 +110,6 @@ function terrainInformationToTerrainAtPointList(terrainInformation: TerrainInfor
     const fileWidth = gameWidthToMapFileWidth(terrainInformation.width)
     const fileHeight = gameHeightToMapFileHeight(terrainInformation.height)
     const terrain: TerrainAtPoint[] = []
-
-    console.log("File dimensions", fileWidth, fileHeight)
-    console.log(
-        terrainInformation.tilesBelow.length,
-        terrainInformation.tilesDownRight.length,
-        terrainInformation.heights.length,
-        fileWidth,
-        fileHeight
-    )
 
     // Assign all rows but the game-engine bottom row. Read data in map file order
     for (let fileY = 0; fileY < fileHeight; fileY++) {
@@ -158,38 +149,12 @@ function mapFilePointToGamePoint(fileX: number, fileY: number, fileHeight: numbe
     }
 }
 
-function fileIndexToGamePoint(fileIndex: number, fileWidth: number, fileHeight: number): Point {
-    const fileX = fileIndex % fileWidth
-    const fileY = (fileIndex - fileX) / fileWidth
-
-    return {
-        x: 2 * fileX + (fileY & 1),
-        y: fileHeight - fileY
-    }
-}
-
-function gameYToFileY(gameY: number, fileHeight: number): number {
-    return fileHeight - gameY
-}
-
-function fileYToGameY(fileY: number, fileHeight: number): number {
-    return fileHeight - fileY
-}
-
 function gameWidthToMapFileWidth(gameWidth: number): number {
     return gameWidth / 2
 }
 
 function gameHeightToMapFileHeight(gameHeight: number): number {
     return gameHeight - 1
-}
-
-function indentFromGameY(gameY: number, fileHeight: number): boolean {
-    return gameY % 2 === fileHeight % 2
-}
-
-function indentFromMapFileY(fileY: number): boolean {
-    return fileY % 2 !== 0
 }
 
 function vectorFromPoints(p1: Point3D, p2: Point3D): Vector {
@@ -342,9 +307,9 @@ function getDirectionForWalkingWorker(from: Point, to: Point): Direction {
 }
 
 function getHouseSize(house: HouseInformation): Size {
-    if (SMALL_HOUSES.find(houseType => houseType === house.type)) {
+    if (SMALL_HOUSE_VALUES.find(houseType => houseType === house.type)) {
         return 'SMALL'
-    } else if (MEDIUM_HOUSES.find(houseType => houseType === house.type)) {
+    } else if (MEDIUM_HOUSE_VALUES.find(houseType => houseType === house.type)) {
         return 'MEDIUM'
     }
 
@@ -373,14 +338,14 @@ function pointStringToPoint(pointString: string): Point {
     return { x, y }
 }
 
-async function makeImageFromMap(
-    map: MapInformation,
+function makeImageFromMap(
+    map: MapWithTerrain,
     renderOptions: MapRenderOptions,
     discovered: PointSet | undefined,
     houses: Iterable<HouseInformation> | undefined,
     roads: Iterable<RoadInformation> | undefined,
     players: Iterable<PlayerInformation> | undefined
-): Promise<HTMLImageElement | undefined> {
+): HTMLImageElement | undefined {
 
     // Utility functions
     const pixelWidth = renderOptions.blockSize
@@ -402,8 +367,7 @@ async function makeImageFromMap(
     }
 
     // Load data - tbd: move this to the caller
-    const terrainInformation = await api.getTerrainForMap(map.id)
-    const terrain = terrainInformationToTerrainAtPointList(terrainInformation)
+    const terrain = terrainInformationToTerrainAtPointList(map.terrain)
 
     const offscreenCanvas = document.createElement('canvas')
     offscreenCanvas.width = map.width * 2 * pixelWidth / scaleDown
@@ -505,31 +469,31 @@ function canRemoveRoad(point: PointInformation): boolean {
     return point.is === 'ROAD'
 }
 
-function canRaiseFlag(point: PointInformation): boolean {
+function canRaiseFlag(point: PointInformationWithoutPossibleRoadConnections): boolean {
     return point.canBuild.includes('FLAG')
 }
 
-function canBuildHouse(point: PointInformation): boolean {
+function canBuildHouse(point: PointInformationWithoutPossibleRoadConnections): boolean {
     return canBuildSmallHouse(point) || canBuildMediumHouse(point) || canBuildLargeHouse(point)
 }
 
-function canBuildLargeHouse(point: PointInformation): boolean {
+function canBuildLargeHouse(point: PointInformationWithoutPossibleRoadConnections): boolean {
     return point.canBuild.includes('LARGE')
 }
 
-function canBuildMediumHouse(point: PointInformation): boolean {
+function canBuildMediumHouse(point: PointInformationWithoutPossibleRoadConnections): boolean {
     return point.canBuild.includes('MEDIUM')
 }
 
-function canBuildSmallHouse(point: PointInformation): boolean {
+function canBuildSmallHouse(point: PointInformationWithoutPossibleRoadConnections): boolean {
     return point.canBuild.includes('SMALL')
 }
 
-function canBuildMine(point: PointInformation): boolean {
+function canBuildMine(point: PointInformationWithoutPossibleRoadConnections): boolean {
     return point.canBuild.includes('MINE')
 }
 
-function canBuildRoad(point: PointInformation): boolean {
+function canBuildRoad(point: PointInformationWithoutPossibleRoadConnections): boolean {
     return point.is === 'FLAG'
 }
 

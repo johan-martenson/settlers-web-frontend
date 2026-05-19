@@ -1,15 +1,21 @@
 .road-info {
-    background-color: darkgray;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
     color: white;
     position: absolute;
     left: 10vw;
     top: 10vh;
+
+    min-height: 5em;
+    max-width: 90vw;
+    max-height: 90vh;
+
+    overflow: auto;
+
     border-radius: 10px;
     background-color: darkslategray;
-    padding-left: 2em;
-    padding-right: 2em;
-    padding-bottom: 2em;
-    gap: 10px;
-    height: auto;
-    min-height: 5em;
+
+    padding: 0 2em 2em;
 }

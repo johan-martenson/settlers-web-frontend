@@ -1,27 +1,35 @@
-import React, { useEffect, useState } from "react"
-import { ButtonRow, Window } from "../../components/dialog"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
+import { ButtonRow, WindowWithTyping } from "../../components/dialog"
 import { makeImageFromMap } from "../../utils/utils"
 import { api } from "../../api/ws-api"
 import { Button } from "@fluentui/react-components"
 import { UiIcon } from "../../icons/icon"
-import { MapInformation } from "../../api/types"
+import { MapId } from "../../api/types"
+import { useMapWithTerrain } from "../../utils/hooks/hooks"
+import { GenericCommand } from "../../screens/play/type_control"
 
 type MapViewProps = {
+    mapId: MapId
     onClose: () => void
     onRaise: () => void
 }
 
-const MapView = ({ onClose, onRaise }: MapViewProps) => {
+const MapView = ({ mapId, onClose, onRaise }: MapViewProps) => {
+
+    // State
     // eslint-disable-next-line
     const [drawFogOfWar, setDrawFogOfWar] = useState<boolean>(true)
     const [drawPlayerLand, setDrawPlayerLand] = useState<boolean>(true)
     const [drawHouses, setDrawHouses] = useState<boolean>(true)
-    const [mapImage, setMapImage] = useState<HTMLImageElement>()
     const [drawRoads, setDrawRoads] = useState<boolean>(true)
     const [drawCount, setDrawCount] = useState<number>(0)
     const [hover, setHover] = useState<string>()
-    const [map, setMap] = useState<MapInformation | undefined>(api.map)
 
+    // Hooks
+    const mapWithTerrain = useMapWithTerrain(mapId)
+
+    // Effects
+    // Effect: make the component redraw when the game changes
     useEffect(
         () => {
             function redraw() {
@@ -47,70 +55,118 @@ const MapView = ({ onClose, onRaise }: MapViewProps) => {
             return () => unsubscribeFromChanges()
         }, [])
 
-    useEffect(
-        () => {
-            async function getAndRenderMap() {
-                const gameInformation = await api.getGameInformation()
-                const map = await api.getMap(gameInformation.map.id)
+    // Functions
+    const toggleDrawPlayerLand = useCallback(() => {
+        setDrawPlayerLand(prev => !prev)
+    }, [])
 
-                setMap(map)
+    const toggleDrawHouses = useCallback(() => {
+        setDrawHouses(prev => !prev)
+    }, [])
 
-                if (map) {
-                    const mapImage = await makeImageFromMap(map,
-                        {
-                            scaleDown: 2,
-                            blockSize: 4,
-                            drawStartingPoints: false,
-                            drawFogOfWar
-                        },
-                        api.discoveredPoints,
-                        drawHouses ? api.houses.values() : undefined,
-                        drawRoads ? api.roads.values() : undefined,
-                        drawPlayerLand ? api.players.values() : undefined
-                    )
+    const toggleDrawRoads = useCallback(() => {
+        setDrawRoads(prev => !prev)
+    }, [])
 
-                    setMapImage(mapImage)
+    const clearHover = useCallback(() => {
+        setHover(undefined)
+    }, [])
 
-                    if (!mapImage) {
-                        console.error('Failed to create map image')
-                    }
-                } else {
-                    console.error('Failed to get map')
-                }
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<MapViewProps>>()
+
+        cmds.set('Draw player land', {
+            action: (_props: MapViewProps) => {
+                setDrawPlayerLand(prev => !prev)
+            }
+        })
+
+        cmds.set('Draw houses', {
+            action: (_props: MapViewProps) => {
+                setDrawHouses(prev => !prev)
+            }
+        })
+
+        cmds.set('Draw roads', {
+            action: (_props: MapViewProps) => {
+                setDrawRoads(prev => !prev)
+            }
+        })
+
+        cmds.set('Close window', {
+            action: (_props: MapViewProps) => onClose()
+        })
+
+        return cmds
+    }, [onClose])
+
+    const mapImage = useMemo(() => {
+        if (mapWithTerrain) {
+            const mapImage = makeImageFromMap(mapWithTerrain,
+                {
+                    scaleDown: 2,
+                    blockSize: 4,
+                    drawStartingPoints: false,
+                    drawFogOfWar
+                },
+                api.discoveredPoints,
+                drawHouses ? api.houses.values() : undefined,
+                drawRoads ? api.roads.values() : undefined,
+                drawPlayerLand ? api.players.values() : undefined
+            )
+
+            if (!mapImage) {
+                console.error('Failed to create map image')
             }
 
-            getAndRenderMap()
-        }, [api.map, api.discoveredPoints, drawFogOfWar, drawHouses, drawPlayerLand, drawRoads, drawCount])
+            return mapImage
+        } else {
+            console.error('Failed to get map')
+        }
 
+        return undefined
+    }, [mapWithTerrain, api.discoveredPoints.size, drawFogOfWar, drawHouses, drawPlayerLand, drawRoads, drawCount])
+
+    // Rendering
     return (
-        <Window onClose={onClose} onRaise={onRaise} heading='Map' hoverInfo={hover}>
-            <div>{map?.name}</div>
+        <WindowWithTyping<MapViewProps>
+            onClose={onClose}
+            onRaise={onRaise}
+            heading='Map'
+            commands={commands}
+            param={{ mapId, onClose, onRaise }}
+            hoverInfo={hover}>
+            <div>{mapWithTerrain?.name}</div>
             <img src={mapImage?.src ?? ''} />
             <ButtonRow>
                 <Button
-                    onClick={() => setDrawPlayerLand(prev => !prev)}
+                    style={{ backgroundColor: drawPlayerLand ? 'lightblue' : undefined }}
+                    onClick={toggleDrawPlayerLand}
                     onMouseEnter={() => setHover('Show player land')}
-                    onMouseLeave={() => setHover(undefined)}
+                    onMouseLeave={clearHover}
                 >
                     <UiIcon type='OWNED_AREA_ON_MAP' scale={0.5} />
                 </Button>
                 <Button
-                    onClick={() => setDrawHouses(prev => !prev)}
+                    style={{ backgroundColor: drawHouses ? 'lightblue' : undefined }}
+                    onClick={toggleDrawHouses}
                     onMouseEnter={() => setHover('Show houses')}
-                    onMouseLeave={() => setHover(undefined)}
+                    onMouseLeave={clearHover}
                 >
                     <UiIcon type='OWNED_BUILDINGS_ON_MAP' scale={0.5} />
                 </Button>
                 <Button
-                    onClick={() => setDrawRoads(prev => !prev)}
+                    style={{ backgroundColor: drawRoads ? 'lightblue' : undefined }}
+                    onClick={toggleDrawRoads}
                     onMouseEnter={() => setHover('Show roads')}
-                    onMouseLeave={() => setHover(undefined)}
+                    onMouseLeave={clearHover}
                 >
                     <UiIcon type='OWNED_ROADS_ON_MAP' scale={0.5} />
                 </Button>
 
             </ButtonRow>
-        </Window>
+        </WindowWithTyping>
     )
 }
 

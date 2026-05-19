@@ -1,16 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { ButtonRow, Window } from '../../components/dialog'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { Point, Size, WorkerId } from '../../api/types'
-import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE, STANDARD_HEIGHT } from '../../render/constants'
+import { DEFAULT_SCALE, STANDARD_HEIGHT } from '../../render/constants'
 import { GameCanvas, View } from '../../render/game_render'
 import './follow.css'
 import { Button } from '@fluentui/react-components'
 import { animator } from '../../utils/animator'
 import { calcTranslation } from '../../render/utils'
 import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../../utils/utils'
-import { MoveUpdate, api } from '../../api/ws-api'
+import { MoveUpdate, WorkerMoveListener, api } from '../../api/ws-api'
 import { UiIcon } from '../../icons/icon'
 import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
+import { GenericCommand } from '../../screens/play/type_control'
 
 // Types
 type FollowProps = {
@@ -25,7 +26,15 @@ type FollowProps = {
 type Moving = {
     moving: boolean
     mouseAt: Point
-    translate: Point
+}
+
+type PositionedEntity = {
+    x: number
+    y: number
+    betweenPoints?: boolean
+    previous?: Point
+    next?: Point
+    percentageTraveled?: number
 }
 
 // Constants
@@ -40,70 +49,120 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
 
     // State (that triggers re-renders)
     const [size, setSize] = useState<Size>('MEDIUM')
-    const [isCentered, setIsCentered] = useState<boolean>(false)
     const [hoverInfo, setHoverInfo] = useState<string>()
     const [idToFollow, setIdToFollow] = useState<WorkerId>()
 
     // State that doesn't trigger re-renders
     const viewRef = useRef<View>({ scale, translate: { x: 0, y: 0 }, screenSize: { width: 100, height: 100 } })
-    //const view = useNonTriggeringState<View>({ scale, translate: { x: 0, y: 0 }, screenSize: { width: 100, height: 100 } })
-    const moving = useNonTriggeringState<Moving>({ moving: false, mouseAt: { x: 0, y: 0 }, translate: { x: 0, y: 0 } })
+    const moving = useNonTriggeringState<Moving>({ moving: false, mouseAt: { x: 0, y: 0 } })
 
-    useEffect(() => {
-        if (idToFollow !== undefined) {
-            const moveListener = {
-                id: idToFollow,
-                onWorkerMoved: (move: MoveUpdate) => {
-                    if (move.state === 'ON_POINT') {
-                        //goToPoint(move.point)
-                    } else if (move.state === 'BETWEEN_POINTS') {
-                        goToBetweenPoints(move.previous, move.next, move.progress)
-                    }
-                }
-            }
+    // Functions
 
-            api.addMovementForWorkerListener(moveListener)
-
-            return () => api.removeMovementForWorkerListener(moveListener)
-        }
-    }, [idToFollow])
-
-    useEffect(() => {
-        viewRef.current.screenSize = {
-            width: myRef?.current?.clientWidth ?? 0,
-            height: myRef?.current?.clientHeight ?? 0
-
-        }
-    }, [myRef])
-
-    useEffect(() => {
-        if (!isCentered && viewRef.current.screenSize.width > 0 && viewRef.current.screenSize.height > 0) {
-            const newTranslateX = viewRef.current.screenSize.width / 2 - point.x * viewRef.current.scale
-            const newTranslateY = viewRef.current.screenSize.height / 2 + point.y * viewRef.current.scale - viewRef.current.screenSize.height
-
-            viewRef.current.translate = ({ x: newTranslateX, y: newTranslateY })
-            setIsCentered(true) // FIXME: this changes the variable that the effect depends on. Fix!
-        }
-    }, [isCentered])
-
-    useEffect(() => {
-        function resizeListener(): void {
-            if (myRef.current) {
-                viewRef.current.screenSize = {
-                    width: myRef.current.clientWidth,
-                    height: myRef.current.clientHeight
-                }
+    const findEntityPosition = useCallback((entity: {
+        betweenPoints?: boolean
+        previous?: Point
+        next?: Point
+        percentageTraveled?: number
+        x: number
+        y: number
+    }): Point => {
+        if (entity.betweenPoints && entity.previous && entity.next) {
+            return {
+                x: entity.previous.x + (entity.next.x - entity.previous.x) * (entity.percentageTraveled ?? 0) / 100.0,
+                y: entity.previous.y + (entity.next.y - entity.previous.y) * (entity.percentageTraveled ?? 0) / 100.0
             }
         }
 
-        if (myRef?.current) {
-            myRef.current.addEventListener('resize', resizeListener)
+        return {
+            x: entity.x,
+            y: entity.y
+        }
+    }, [])
+
+    const findClosestEntity = useCallback((
+        gamePoint: Point,
+        entities: Map<WorkerId, PositionedEntity>,
+        currentDistance: number
+    ): { id?: WorkerId, distance: number } => {
+        let closestId: WorkerId | undefined
+        let closestDistance = currentDistance
+
+        for (const [id, entity] of entities) {
+            const position = findEntityPosition(entity)
+
+            if (position.x === gamePoint.x && position.y === gamePoint.y) {
+                return {
+                    id,
+                    distance: 0
+                }
+            }
+
+            const distance = calcDistance(gamePoint, position)
+
+            if (distance < closestDistance) {
+                closestDistance = distance
+                closestId = id
+            }
         }
 
-        return () => myRef?.current?.removeEventListener('resize', resizeListener)
-    }, [myRef])
+        return {
+            id: closestId,
+            distance: closestDistance
+        }
+    }, [findEntityPosition])
 
-    function goToBetweenPoints(from: Point, to: Point, progress: number): void {
+    const centerViewOnScreenPoint = useCallback((screenPoint: Point): void => {
+        viewRef.current.translate = {
+            x: viewRef.current.translate.x - screenPoint.x + viewRef.current.screenSize.width / 2,
+            y: viewRef.current.translate.y - screenPoint.y + viewRef.current.screenSize.height / 2
+        }
+    }, [])
+
+    const zoomToScale = useCallback((newScale: number) => {
+        const prevScale = viewRef.current.scale
+
+        const clampedScale = Math.max(MIN_SCALE, Math.min(newScale, MAX_SCALE))
+
+        const newTranslate = calcTranslation(
+            prevScale,
+            clampedScale,
+            viewRef.current.translate,
+            viewRef.current.screenSize
+        )
+
+        animator.animateSeveralNoId(
+            (values: number[]) => {
+                viewRef.current.scale = values[0]
+                viewRef.current.translate = {
+                    x: values[1],
+                    y: values[2]
+                }
+            },
+            [
+                prevScale,
+                viewRef.current.translate.x,
+                viewRef.current.translate.y
+            ],
+            [
+                clampedScale,
+                newTranslate.x,
+                newTranslate.y
+            ]
+        )
+    }, [])
+
+    const centerView = useCallback((): void => {
+        if (viewRef.current.screenSize.width <= 0 || viewRef.current.screenSize.height <= 0) {
+            return
+        }
+
+        viewRef.current.translate = {
+            x: viewRef.current.screenSize.width / 2 - point.x * viewRef.current.scale,
+            y: viewRef.current.screenSize.height / 2 + point.y * viewRef.current.scale - viewRef.current.screenSize.height
+        }
+    }, [point])
+
+    const goToBetweenPoints = useCallback((from: Point, to: Point, progress: number) => {
         const heightAtFrom = api.allTiles.get(from)?.height ?? 0
         const heightAtTo = api.allTiles.get(to)?.height ?? 0
 
@@ -126,14 +185,10 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
             y: screenPointFrom.y + (screenPointTo.y - screenPointFrom.y) * progress / 100
         }
 
-        viewRef.current.translate = {
-            x: viewRef.current.translate.x - screenPoint.x + viewRef.current.screenSize.width / 2,
-            y: viewRef.current.translate.y - screenPoint.y + viewRef.current.screenSize.height / 2
-        }
-    }
+        centerViewOnScreenPoint(screenPoint)
+    }, [heightAdjust])
 
-    // eslint-disable-next-line
-    function goToPoint(point: Point): void {
+    const goToPoint = useCallback((point: Point): void => {
         const heightAtPoint = api.allTiles.get(point)?.height ?? 0
 
         const screenPoint = gamePointToScreenPointWithHeightAdjustment(
@@ -141,103 +196,150 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
             heightAtPoint,
             viewRef.current,
             heightAdjust,
-            STANDARD_HEIGHT)
+            STANDARD_HEIGHT
+        )
 
-        viewRef.current.translate = {
-            x: viewRef.current.translate.x - screenPoint.x + viewRef.current.screenSize.width / 2,
-            y: viewRef.current.translate.y - screenPoint.y + viewRef.current.screenSize.height / 2
+        centerViewOnScreenPoint(screenPoint)
+    }, [heightAdjust])
+
+    const findCenterGamePoint = useCallback((): Point => {
+        const screenPoint = {
+            x: viewRef.current.screenSize.width / 2,
+            y: viewRef.current.screenSize.height / 2
         }
-    }
 
-    function findHeightAdjustedCenterGamePoint(view: View): Point {
-        const screenPoint = { x: viewRef.current.screenSize.width / 2, y: viewRef.current.screenSize.height / 2 }
-        return screenPointToGamePointWithHeightAdjustment(screenPoint, view, heightAdjust)
-    }
+        return screenPointToGamePointWithHeightAdjustment(
+            screenPoint,
+            viewRef.current,
+            heightAdjust
+        )
+    }, [heightAdjust])
 
     function startMonitor(gamePoint: Point): void {
         let distance = 2000
-        let newIdToFollow
+        let newIdToFollow: WorkerId | undefined
 
-        for (const [id, worker] of api.workers) {
-            let position
+        const closestWorker = findClosestEntity(gamePoint, api.workers, distance)
 
-            if (worker.betweenPoints && worker.previous && worker.next) {
-                position = {
-                    x: worker.previous.x + (worker.next.x - worker.previous.x) * (worker.percentageTraveled / 100.0),
-                    y: worker.previous.y + (worker.next.y - worker.previous.y) * (worker.percentageTraveled / 100.0)
-                }
-            } else {
-                position = { x: worker.x, y: worker.y }
-            }
-
-            if (position.x === gamePoint.x && position.y === gamePoint.y) {
-                newIdToFollow = id
-                distance = 0
-
-                break
-            }
-
-            const tempDistance = calcDistance(gamePoint, position)
-
-            if (tempDistance < distance) {
-                distance = tempDistance
-
-                newIdToFollow = id
-            }
-        }
+        distance = closestWorker.distance
+        newIdToFollow = closestWorker.id
 
         if (distance > 0) {
-            for (const [id, animal] of api.wildAnimals) {
-                let position
+            const closestAnimal = findClosestEntity(gamePoint, api.wildAnimals, distance)
 
-                if (animal.betweenPoints && animal.previous && animal.next) {
-                    position = {
-                        x: animal.previous.x + (animal.next.x - animal.previous.x) * (animal.percentageTraveled / 100.0),
-                        y: animal.previous.y + (animal.next.y - animal.previous.y) * (animal.percentageTraveled / 100.0)
-                    }
-                } else {
-                    position = { x: animal.x, y: animal.y }
-                }
+            distance = closestAnimal.distance
 
-                if (position.x === gamePoint.x && position.y === gamePoint.y) {
-                    newIdToFollow = id
-                    distance = 0
-
-                    break
-                }
-
-                const tempDistance = calcDistance(gamePoint, position)
-
-                if (tempDistance < distance) {
-                    distance = tempDistance
-
-                    newIdToFollow = id
-                }
+            if (closestAnimal.id !== undefined) {
+                newIdToFollow = closestAnimal.id
             }
         }
 
-        if (newIdToFollow) {
+        if (newIdToFollow !== undefined) {
             setIdToFollow(newIdToFollow)
 
             const worker = api.workers.get(newIdToFollow) ?? api.wildAnimals.get(newIdToFollow)
 
             if (worker) {
-                let position
-
-                if (worker.betweenPoints && worker.previous && worker.next) {
-                    position = {
-                        x: worker.previous.x + (worker.next.x - worker.previous.x) * (worker.percentageTraveled / 100.0),
-                        y: worker.previous.y + (worker.next.y - worker.previous.y) * (worker.percentageTraveled / 100.0)
-                    }
-                } else {
-                    position = { x: worker.x, y: worker.y }
-                }
+                const position = findEntityPosition(worker)
 
                 goToPoint(position)
             }
         }
     }
 
+    const zoomIn = useCallback(() => {
+        zoomToScale(viewRef.current.scale + 10)
+    }, [zoomToScale])
+
+    const zoomOut = useCallback(() => {
+        zoomToScale(viewRef.current.scale - 10)
+    }, [zoomToScale])
+
+    // Effects
+    // Effect: handle following worker
+    useEffect(() => {
+        if (idToFollow !== undefined) {
+            const moveListener: WorkerMoveListener = {
+                id: idToFollow,
+                onWorkerMoved: (move: MoveUpdate) => {
+                    if (move.state === 'ON_POINT') {
+                        //goToPoint(move.point)
+                    } else if (move.state === 'BETWEEN_POINTS') {
+                        goToBetweenPoints(move.previous, move.next, move.progress)
+                    }
+                }
+            }
+
+            api.addMovementForWorkerListener(moveListener)
+
+            return () => api.removeMovementForWorkerListener(moveListener)
+        }
+    }, [idToFollow, goToBetweenPoints])
+
+
+    // Effect: keep screen size synchronized with container size
+    useEffect(() => {
+        if (!myRef.current) {
+            return
+        }
+
+        const element = myRef.current
+
+        const updateScreenSize = (): void => {
+            viewRef.current.screenSize = {
+                width: element.clientWidth,
+                height: element.clientHeight
+            }
+        }
+
+        updateScreenSize()
+        centerView()
+
+        const resizeObserver = new ResizeObserver(() => {
+            updateScreenSize()
+            centerView()
+        })
+
+        resizeObserver.observe(element)
+
+        return () => {
+            resizeObserver.disconnect()
+        }
+    }, [centerView])
+
+    // Effect: handle 'mouse up' for the full browser window to know when to stop moving the game view
+    useEffect(() => {
+        const stopMoving = (): void => {
+            moving.moving = false
+        }
+
+        window.addEventListener('mouseup', stopMoving)
+
+        return () => {
+            window.removeEventListener('mouseup', stopMoving)
+        }
+    }, [moving])
+
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<WorkerId | undefined>>()
+
+        cmds.set('Zoom in', {
+            action: () => zoomIn()
+        })
+
+        cmds.set('Zoom out', {
+            action: () => zoomOut()
+        })
+
+        cmds.set('Close window', {
+            action: () => onClose()
+        })
+
+        return cmds
+    }, [zoomIn, zoomOut, onClose])
+
+    // Rendering
     let className
 
     if (size === 'LARGE') {
@@ -249,25 +351,21 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
     }
 
     return (
-        <Window className={className} heading='Monitor' onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
+        <WindowWithTyping<WorkerId>
+            commands={commands}
+            param={idToFollow}
+            className={className}
+            heading='Monitor'
+            onClose={onClose}
+            onRaise={onRaise}
+            hoverInfo={hoverInfo}
+        >
             <div
                 ref={myRef}
                 className='follow-content'
 
                 onWheel={(event: React.WheelEvent) => {
-                    const prevScale = viewRef.current.scale
-                    let newScale = prevScale - event.deltaY / 20.0
-
-                    newScale = Math.min(newScale, MAX_SCALE)
-                    newScale = Math.max(newScale, MIN_SCALE)
-
-                    viewRef.current.translate = calcTranslation(prevScale, newScale, viewRef.current.translate, viewRef.current.screenSize)
-                    viewRef.current.scale = newScale
-                }}
-
-                // eslint-disable-next-line
-                onMouseUp={(event: React.MouseEvent) => {
-                    moving.moving = false
+                    zoomToScale(viewRef.current.scale - event.deltaY / 20.0)
                 }}
 
                 onMouseMove={(event: React.MouseEvent) => {
@@ -284,11 +382,12 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                     }
                 }}
 
+                onContextMenu={e => e.preventDefault()}
+
                 onMouseDown={(event: React.MouseEvent) => {
                     if (event.button === 2) {
                         moving.moving = true
                         moving.mouseAt = { x: event.clientX, y: event.clientY }
-                        moving.translate = viewRef.current.translate
 
                         setIdToFollow(undefined)
 
@@ -299,7 +398,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
             >
                 <GameCanvas
                     cursor='NOTHING'
-                    heightAdjust={DEFAULT_HEIGHT_ADJUSTMENT}
+                    heightAdjust={heightAdjust}
                     showAvailableConstruction={false}
                     showHouseTitles={false}
                     viewRef={viewRef}
@@ -311,50 +410,17 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                         appearance='subtle'
                         onMouseEnter={() => setHoverInfo('Zoom in')}
                         onMouseLeave={() => setHoverInfo(undefined)}
-                        onClick={() => {
-                            const prevScale = viewRef.current.scale
-                            let newScale = prevScale + 10
-
-                            newScale = Math.min(newScale, MAX_SCALE)
-                            newScale = Math.max(newScale, MIN_SCALE)
-
-                            const newTranslate = calcTranslation(prevScale, newScale, viewRef.current.translate, viewRef.current.screenSize)
-
-                            animator.animateSeveralNoId(
-                                (values: number[]) => {
-                                    viewRef.current.scale = values[0]
-                                    viewRef.current.translate = { x: values[1], y: values[2] }
-                                },
-                                [prevScale, viewRef.current.translate.x, viewRef.current.translate.y],
-                                [newScale, newTranslate.x, newTranslate.y]
-                            )
-                        }}
+                        onClick={zoomIn}
                     >
+                        <UiIcon type='PLUS' />
                     </Button>
                     <Button
                         appearance='subtle'
                         onMouseEnter={() => setHoverInfo('Zoom out')}
                         onMouseLeave={() => setHoverInfo(undefined)}
-                        onClick={() => {
-                            const prevScale = viewRef.current.scale
-                            let newScale = prevScale - 10
-
-                            newScale = Math.min(newScale, MAX_SCALE)
-                            newScale = Math.max(newScale, MIN_SCALE)
-
-                            const newTranslate = calcTranslation(prevScale, newScale, viewRef.current.translate, viewRef.current.screenSize)
-
-                            animator.animateSeveralNoId(
-                                (values: number[]) => {
-                                    viewRef.current.scale = values[0]
-                                    viewRef.current.translate = { x: values[1], y: values[2] }
-                                },
-                                [prevScale, viewRef.current.translate.x, viewRef.current.translate.y],
-                                [newScale, newTranslate.x, newTranslate.y]
-                            )
-                        }}
+                        onClick={zoomOut}
                     >
-                        -
+                        <UiIcon type='MINUS' />
                     </Button>
                 </div>
             </div>
@@ -391,7 +457,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
                 }
 
                 {idToFollow === undefined &&
-                    <Button onClick={() => startMonitor(findHeightAdjustedCenterGamePoint(viewRef.current))}
+                    <Button onClick={() => startMonitor(findCenterGamePoint())}
                         onMouseEnter={() => setHoverInfo('Start monitoring')}
                         onMouseLeave={() => setHoverInfo(undefined)}
                     >
@@ -410,7 +476,7 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
 
 
             </ButtonRow>
-        </Window>
+        </WindowWithTyping>
     )
 }
 

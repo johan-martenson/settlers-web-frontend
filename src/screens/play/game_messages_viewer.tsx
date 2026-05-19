@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import './game_messages_viewer.css'
@@ -28,6 +28,11 @@ const GameMessagesViewer = ({ nation, onGoToPoint }: GameMessagesViewerProps) =>
     // State
     const [expanded, setExpanded] = useState<boolean>(false)
 
+    // References
+    const bottomRef = useRef<HTMLDivElement>(null)
+    const previousCountRef = useRef(0)
+    const listRef = useRef<HTMLDivElement>(null)
+
     // Monitoring hooks
     const messages = useGameMessages()
 
@@ -35,10 +40,39 @@ const GameMessagesViewer = ({ nation, onGoToPoint }: GameMessagesViewerProps) =>
     useEffect(() => {
         const unread = messages.filter(m => !m.isRead)
 
-        if (unread.length > 0) {
+        if (expanded && unread.length > 0) {
             api.markGameMessagesRead(unread.map(m => m.id))
         }
-    }, [messages])
+    }, [messages, expanded])
+
+    useEffect(() => {
+        if (!expanded) {
+            previousCountRef.current = messages.length
+            return
+        }
+
+        const hasNewMessages = messages.length > previousCountRef.current
+
+        if (hasNewMessages) {
+            const list = listRef.current
+
+            if (list) {
+                const distanceFromBottom =
+                    list.scrollHeight - list.scrollTop - list.clientHeight
+
+                const isCloseToBottom = distanceFromBottom < 80
+
+                if (isCloseToBottom) {
+                    bottomRef.current?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'end'
+                    })
+                }
+            }
+        }
+
+        previousCountRef.current = messages.length
+    }, [messages, expanded])
 
     // Rendering
     const unreadMessages = messages.filter(message => !message.isRead)
@@ -48,10 +82,7 @@ const GameMessagesViewer = ({ nation, onGoToPoint }: GameMessagesViewerProps) =>
 
             <ExpandCollapseToggle
                 onExpand={() => {
-                    console.log('xpanded')
-
                     api.markGameMessagesRead(messages.map(message => message.id))
-
                     setExpanded(true)
                 }}
                 onCollapse={() => setExpanded(false)}
@@ -63,11 +94,11 @@ const GameMessagesViewer = ({ nation, onGoToPoint }: GameMessagesViewerProps) =>
             </div>
 
             {expanded &&
-                <div className='game-message-list'>
+                <div className='game-message-list' ref={listRef}>
                     {messages.length > 0 &&
                         <ItemContainer>
-                            {messages.map((message, index) =>
-                                <div className='game-message' key={index}>
+                            {messages.map((message) =>
+                                <div className='game-message' key={message.id}>
                                     {message.type === 'MILITARY_BUILDING_OCCUPIED' &&
                                         <>
                                             <HouseIcon houseType={message.houseType} nation={nation} scale={0.5} />
@@ -192,9 +223,13 @@ const GameMessagesViewer = ({ nation, onGoToPoint }: GameMessagesViewerProps) =>
                                     <UiIcon type='TRASHCAN' scale={0.5} onClick={() => removeMessage(message)} />
                                 </div>
                             )}
+
+                            <div ref={bottomRef} />
                         </ItemContainer>
                     }
-                    <Button onClick={() => api.removeMessages(messages)} >Clear all</Button>
+                    {messages && messages.length > 0 &&
+                        <Button onClick={() => api.removeMessages(messages.map(m => m.id))} >Clear all</Button>
+                    }
 
                 </div>
             }

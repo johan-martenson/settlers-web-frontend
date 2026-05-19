@@ -64,7 +64,7 @@ function GameInit() {
                 const selfPlayer = await api.createPlayer(
                     localStorage.getItem('playerName') ?? '',
                     DEFAULT_PLAYER_COLOR,
-                    localStorage.getItem('playerNation') ?? DEFAULT_PLAYER_NATION,
+                    (localStorage.getItem('playerNation') ?? DEFAULT_PLAYER_NATION) as Nation,
                     'HUMAN'
                 )
 

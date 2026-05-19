@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import { Button } from '@fluentui/react-components'
 import GameList from './game_list'
 import './lobby.css'
@@ -16,6 +16,9 @@ type LobbyProps = {
     onCreateNewGame: () => void
 }
 
+// Constants
+const LOBBY_TYPING_SOURCE = 'LOBBY'
+
 // React components
 /**
  * Lobby component that displays the available games and a chat box for the lobby.
@@ -31,58 +34,51 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
     // Effects
     useEffect(() => {
         selfContainerRef?.current?.focus()
-    }, [selfContainerRef])
+    }, [])
 
     // Monitoring
     const games = useGames()
 
     // Callbacks
     const onKeyDown = useCallback((event: React.KeyboardEvent) => {
-        if (event.key === 'Escape') {
-            dispatchInputKey({
-                key: event.key,
-                metaKey: event.metaKey,
-                altKey: event.altKey,
-                ctrlKey: event.ctrlKey,
-                shiftKey: event.shiftKey
+        dispatchInputKey({
+            key: event.key,
+            metaKey: event.metaKey,
+            altKey: event.altKey,
+            ctrlKey: event.ctrlKey,
+            shiftKey: event.shiftKey
+        },
+    LOBBY_TYPING_SOURCE)
+    }, [])
+
+    // Memos
+    const commands = useMemo(() => {
+        const commands = new Map<string, GenericCommand<object>>()
+
+        commands.set('Create new game', {
+            action: () => onCreateNewGame()
+        })
+
+        games.forEach(game => {
+            commands.set(`Join ${game.name}`, {
+                action: () => {
+                    console.log('Joining game with id ' + game.id)
+                    onJoinExistingGame(game.id)
+                }
             })
-        } else {
-            dispatchInputKey({
-                key: event.key,
-                metaKey: event.metaKey,
-                altKey: event.altKey,
-                ctrlKey: event.ctrlKey,
-                shiftKey: event.shiftKey
+        })
+        games.forEach(game => {
+            commands.set(`Remove game ${game.name}`, {
+                action: () => {
+                    api.deleteGame(game.id)
+                }
             })
-        }
-    }, [dispatchInputKey])
+        })
+
+        return commands
+    }, [games, onCreateNewGame, onJoinExistingGame])
 
     // Rendering
-    const commands = new Map<string, GenericCommand<object>>()
-
-    commands.set('Create new game', {
-        action: () => onCreateNewGame(),
-        icon: <></>
-    })
-
-    games.forEach(game => {
-        commands.set(`Join ${game.name}`, {
-            action: () => {
-                console.log('Joining game with id ' + game.id)
-                onJoinExistingGame(game.id)
-            },
-            icon: <></>
-        })
-    })
-    games.forEach(game => {
-        commands.set(`Remove game ${game.name}`, {
-            action: () => {
-                api.deleteGame(game.id)
-            },
-            icon: <></>
-        })
-    })
-
     return (
         <div id='lobby-screen' tabIndex={0} ref={selfContainerRef} onKeyDown={onKeyDown}>
             <div id='lobby-title'>Lobby</div>
@@ -100,7 +96,7 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
                 <ChatBox playerId={player.id} roomId='lobby' />
             </div>
 
-            <GenericTypeControl<object> commands={commands} param={{} as object} />
+            <GenericTypeControl<object> commands={commands} param={{} as object} typingSource={LOBBY_TYPING_SOURCE}/>
 
         </div>
     )

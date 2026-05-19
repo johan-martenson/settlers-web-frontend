@@ -1,6 +1,13 @@
-import React, { ChangeEvent } from 'react'
+import React from 'react'
+import {
+    Switch,
+    Select,
+    Field,
+    SwitchOnChangeData,
+    SelectOnChangeData
+} from '@fluentui/react-components'
+
 import './game_options.css'
-import { Switch, Select, SelectOnChangeData, Field, SwitchOnChangeData } from '@fluentui/react-components'
 import { ResourceLevel } from '../../api/types'
 
 // Types
@@ -9,68 +16,63 @@ type GameOptionsProps = {
     othersCanJoin: boolean
     cheatingEnabled: boolean
 
-    onSetCheatingEnabled: (cheatingEnabled: boolean) => void
-    setAvailableResources: (level: ResourceLevel) => void
-    setOthersCanJoin: (otherCanJoin: boolean) => void
+    onResourcesChange: (level: ResourceLevel) => void
+    onOthersCanJoinChange: (allowed: boolean) => void
+    onCheatingEnabledChange: (enabled: boolean) => void
 }
 
 // Constants
-const OPTIONS = new Map<ResourceLevel, string>()
+const RESOURCE_LABELS: Record<ResourceLevel, string> = {
+    LOW: 'Sparse',
+    MEDIUM: 'Medium',
+    HIGH: 'Plenty'
+}
 
-OPTIONS.set('LOW', 'Sparse')
-OPTIONS.set('MEDIUM', 'Medium')
-OPTIONS.set('HIGH', 'Plenty')
-
-// React components
-/**
- * GameOptions component allows configuring game settings like resource levels and whether others can join.
- * 
- * @param {GameOptionsProps} props - The properties for configuring game options.
- */
-const GameOptions = ({ othersCanJoin, initialResources = 'HIGH', cheatingEnabled, onSetCheatingEnabled, setAvailableResources, setOthersCanJoin }: GameOptionsProps) => {
+// React component
+function GameOptions({
+    initialResources,
+    othersCanJoin,
+    cheatingEnabled,
+    onResourcesChange,
+    onOthersCanJoinChange,
+    onCheatingEnabledChange
+}: GameOptionsProps) {
     return (
         <div className='settings'>
-
-            <Field label='Allow others to join?'>
+            <Field label='Allow others to join'>
                 <Switch
                     checked={othersCanJoin}
-                    onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => {
-                        setOthersCanJoin(data.checked)
+                    onChange={(_, data: SwitchOnChangeData) => {
+                        onOthersCanJoinChange(data.checked)
                     }}
                 />
             </Field>
 
             <Field label='Initial resources'>
                 <Select
-                    className='ResourceButtons'
-                    value={OPTIONS.get(initialResources) ?? 'High'}
-                    onChange={(_event: ChangeEvent<HTMLSelectElement>, data: SelectOnChangeData) => {
-                        const value = data.value as 'Sparse' | 'Medium' | 'Plenty'
-                        console.log(data)
-
-                        // FIXME: change SelectableButtonRow to be parameterized so the callback can be more specific in types
-                        if (value === 'Sparse') {
-                            setAvailableResources('LOW')
-                        } else if (value === 'Medium') {
-                            setAvailableResources('MEDIUM')
-                        } else {
-                            setAvailableResources('HIGH')
-                        }
+                    className='resource-buttons'
+                    value={initialResources}
+                    onChange={(_, data: SelectOnChangeData) => {
+                        onResourcesChange(data.value as ResourceLevel)
                     }}
                 >
-                    <option>Plenty</option>
-                    <option>Medium</option>
-                    <option>Sparse</option>
+                    <option value='LOW'>
+                        {RESOURCE_LABELS.LOW}
+                    </option>
+                    <option value='MEDIUM'>
+                        {RESOURCE_LABELS.MEDIUM}
+                    </option>
+                    <option value='HIGH'>
+                        {RESOURCE_LABELS.HIGH}
+                    </option>
                 </Select>
-
             </Field>
 
-            <Field label='Cheating enabled?'>
+            <Field label='Enable cheating'>
                 <Switch
                     checked={cheatingEnabled}
-                    onChange={(_event: ChangeEvent<HTMLInputElement>, data: SwitchOnChangeData) => {
-                        console.log(data)
-                        onSetCheatingEnabled(data.checked)
+                    onChange={(_, data: SwitchOnChangeData) => {
+                        onCheatingEnabledChange(data.checked)
                     }}
                 />
             </Field>

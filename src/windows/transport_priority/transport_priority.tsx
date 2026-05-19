@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react'
-import { Window } from '../../components/dialog'
+import React, { useCallback, useMemo, useState } from 'react'
+import { WindowWithTyping } from '../../components/dialog'
 import './transport_priority.css'
 import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from '../../api/types'
 import { InventoryIcon, UiIcon } from '../../icons/icon'
@@ -7,6 +7,7 @@ import { api } from '../../api/ws-api'
 import { transportCategoryPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { useTransportPriority } from '../../utils/hooks/hooks'
+import { GenericCommand } from '../../screens/play/type_control'
 
 // Types
 type SetTransportPriorityProps = {
@@ -41,7 +42,7 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
 
     // State
     const [selected, setSelected] = useState<TransportCategory>('PLANK')
-    const [hoverInfo, setHoverInfo] = useState<string>()
+    const [hoverInfo, setHoverInfo] = useState<string | undefined>()
 
     // Monitoring hooks
     const priority = useTransportPriority()
@@ -52,7 +53,7 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
     }, [])
 
     const setMinPriority = useCallback((category: TransportCategory) => {
-        api.setTransportPriorityForMaterial(category, TRANSPORT_CATEGORIES.size + 1)
+        api.setTransportPriorityForMaterial(category, TRANSPORT_CATEGORIES.size)
     }, [])
 
     const increasePriority = useCallback((category: TransportCategory) => {
@@ -75,9 +76,43 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
         }
     }, [priority])
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<TransportCategory>>()
+
+        priority.forEach(category => {
+            cmds.set(`Select ${transportCategoryPretty(category).toLowerCase()}`, {
+                action: (category: TransportCategory) => {
+                    setSelected(category)
+                }
+            })
+        })
+
+        cmds.set('Set max priority', {
+            action: (category: TransportCategory) => setMaxPriority(category)
+        })
+
+        cmds.set('Set min priority', {
+            action: (category: TransportCategory) => setMinPriority(category)
+        })
+
+        cmds.set('Close window', {
+            action: (_: TransportCategory) => onClose()
+        })
+
+        return cmds
+    }, [onClose, priority, setMaxPriority, setMinPriority])
+
     // Rendering
     return (
-        <Window heading='Transport priority' onClose={onClose} onRaise={onRaise} hoverInfo={hoverInfo}>
+        <WindowWithTyping<TransportCategory>
+            heading='Transport priority'
+            onClose={onClose}
+            onRaise={onRaise}
+            commands={commands}
+            param={selected}
+            hoverInfo={hoverInfo}
+        >
             <ItemContainer>
                 {priority.map(category => {
                     const className = selected === category ? 'chosen-material' : 'material'
@@ -87,7 +122,7 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
                         <div key={category}>
                             <div
                                 className={className}
-                                style={{ display: 'inline' }}
+                                style={{ display: 'inline-block' }}
                                 onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
                                     if (event.code === 'ArrowUp') {
                                         increasePriority(selected)
@@ -95,11 +130,11 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
                                         decreasePriority(selected)
                                     }
                                 }}
-                                onMouseEnter={() => setHoverInfo(`Set priority for ${categoryDisplayName.toLocaleLowerCase()}`)}
+                                onMouseEnter={() => setHoverInfo(`Set priority for ${categoryDisplayName.toLowerCase()}`)}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                                 onClick={() => setSelected(category)}
 
-                                tabIndex={-1}
+                                tabIndex={0}
                             >{CATEGORY_MATERIALS_MAP.get(category)?.map(material =>
                                 <InventoryIcon material={material} nation={nation} inline key={material} scale={selected === category ? 2 : 1} />
                             )}
@@ -135,7 +170,7 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
                 />
             </div>
 
-        </Window >)
+        </WindowWithTyping>)
 }
 
 export { SetTransportPriority }

@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { Button } from "@fluentui/react-components"
-import { ButtonRow, Window } from "../../components/dialog"
+import { ButtonRow, WindowWithTyping } from "../../components/dialog"
 import { Point } from "../../api/types"
 import { useState } from "react"
 import './no_action_window.css'
 import { UiIcon } from '../../icons/icon'
+import { GenericCommand } from '../../screens/play/type_control'
 
 // Types
 type NoActionWindowProps = {
@@ -36,14 +37,80 @@ function NoActionWindow({
     onRaise,
     onClose
 }: NoActionWindowProps) {
-    const [hoverInfo, setHoverInfo] = useState<string>()
 
+    // State
+    const [hoverInfo, setHoverInfo] = useState<string | undefined>()
+
+    // Functions
+    const startMonitor = useCallback(() => {
+        console.info(`No action window: starting monitor for point: ${JSON.stringify(point)}`)
+
+        onStartMonitor({ x: point.x, y: point.y })
+        onClose()
+    }, [point.x, point.y, onClose, onStartMonitor])
+
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<Point>>()
+
+        cmds.set('Return to headquarters', {
+            action: onReturnToHeadquarters
+        })
+
+        cmds.set('Show house names', {
+            action: onShowTitles,
+            hidden: areHouseTitlesVisible
+        })
+
+        cmds.set('Hide house names', {
+            action: onHideTitles,
+            hidden: !areHouseTitlesVisible
+        })
+
+        cmds.set('Show available construction', {
+            action: onShowAvailableConstruction,
+            hidden: isAvailableConstructionVisible
+        })
+
+        cmds.set('Hide available construction', {
+            action: onHideAvailableConstruction,
+            hidden: !isAvailableConstructionVisible
+        })
+
+        cmds.set('Open monitor', {
+            action: startMonitor
+        })
+
+        cmds.set('close window', {
+            action: onClose
+        })
+
+        return cmds
+    }, [onReturnToHeadquarters,
+        onShowTitles,
+        onHideTitles,
+        onShowAvailableConstruction,
+        onHideAvailableConstruction,
+        startMonitor,
+        onClose,
+        areHouseTitlesVisible,
+        isAvailableConstructionVisible])
+
+    // Rendering
     return (
-        <Window className='no-action-window' heading='Monitor' onRaise={onRaise} onClose={onClose} hoverInfo={hoverInfo}>
+        <WindowWithTyping<Point>
+            commands={commands}
+            param={point}
+            className='no-action-window'
+            heading='Monitor'
+            onRaise={onRaise}
+            onClose={onClose}
+            hoverInfo={hoverInfo}
+        >
             <ButtonRow>
                 <Button
                     onClick={onReturnToHeadquarters}
-                    onMouseEnter={() => setHoverInfo('Show house names')}
+                    onMouseEnter={() => setHoverInfo('Go to headquarters')}
                     onMouseLeave={() => setHoverInfo(undefined)}>
                     <UiIcon type='PLUS_RETURN_TO_HEADQUARTERS' scale={0.5} />
                 </Button>
@@ -82,18 +149,14 @@ function NoActionWindow({
                     </Button>}
 
                 <Button
-                    onClick={() => {
-                        onStartMonitor(point)
-
-                        onClose()
-                    }}
+                    onClick={startMonitor}
                     onMouseEnter={() => setHoverInfo('Open monitor')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
                     <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
                 </Button>
             </ButtonRow>
-        </Window>
+        </WindowWithTyping>
     )
 }
 

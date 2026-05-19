@@ -7,9 +7,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start; /* was space-between */
     margin: auto;
     gap: 1em;
+    user-select: none;
 
     .h2 {
         text-align: left;
@@ -53,8 +54,6 @@
 @media screen and (min-width: 1000px) {
     .window {
         position: absolute;
-        left: 20vw;
-        top: 10vh;
         width: 33em;
         height: auto;
         min-height: 20em;
@@ -74,4 +73,18 @@
     column-gap: 0.5em;
     flex-wrap: wrap;
     justify-content: center;
+}
+
+.no-match {
+    font-style: italic;
+    color: lightgray;
+}
+
+
+.type-match-and-list-toggle {
+    width: 20em;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5em;
 }

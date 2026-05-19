@@ -1,13 +1,15 @@
-import React, { useEffect } from 'react'
+import React, { useMemo } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { HouseInformation, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
 import { useState } from 'react'
 import { api } from '../../api/ws-api'
-import { Window } from '../../components/dialog'
+import { WindowWithTyping } from '../../components/dialog'
 import { MATERIAL_LABELS, soldierPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
+import { usePlayer } from '../../utils/hooks/hooks'
+import { GenericCommand } from '../../screens/play/type_control'
 
 // Types
 type HeadquarterInfoProps = {
@@ -81,90 +83,91 @@ const INVENTORY_MATERIALS: Material[] = [
     'OFFICER',
     'GENERAL'
 ]
+const MAX_RESERVED = 100
+
+// Functions
+export function clamp(value: number, min: number, max: number) {
+    return Math.min(Math.max(value, min), max)
+}
+
 
 // React components
 const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoProps) => {
+
+    // State
     const [panel, setPanel] = useState<'INVENTORY' | 'RESERVED' | 'MILITARY_SETTINGS'>('INVENTORY')
-    const [strengthWhenPopulatingBuildings, setStrengthWhenPopulatingBuildings] = useState<number>(5)
-    const [defenseFromSurroundingBuildings, setDefenseFromSurroundingBuildings] = useState<number>(5)
-    const [defenseStrength, setDefenseStrength] = useState<number>(5)
-    const [soldiersAvailableForAttack, setSoldiersAvailableForAttack] = useState<number>(5)
-    const [populateFarFromBorder, setPopulateFarFromBorder] = useState<number>(5)
-    const [populateCloserToBorder, setPopulateCloserToBorder] = useState<number>(5)
-    const [populateCloseToBorder, setPopulateCloseToBorder] = useState<number>(5)
-    const [loaded, setLoaded] = useState<boolean>(false)
     const [hover, setHover] = useState<string>()
 
-    useEffect(() => {
-        api.getMilitarySettings().then(
-            (settings) => {
-                setStrengthWhenPopulatingBuildings(settings.soldierStrengthWhenPopulatingBuildings)
-                setDefenseFromSurroundingBuildings(settings.defenseFromSurroundingBuildings)
-                setDefenseStrength(settings.defenseStrength)
-                setSoldiersAvailableForAttack(settings.soldierAmountsAvailableForAttack)
-                setPopulateFarFromBorder(settings.soldierAmountWhenPopulatingFarFromBorder)
-                setPopulateCloserToBorder(settings.soldierAmountWhenPopulatingAwayFromBorder)
-                setPopulateCloseToBorder(settings.soldierAmountWhenPopulatingCloseToBorder)
+    // Monitoring hooks
+    const player = usePlayer(house.playerId)
 
-                setLoaded(true)
-            }
-        )
-    }, [])
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<HouseInformation>>()
 
-    useEffect(() => {
-        if (loaded) {
-            api.setMilitaryPopulationFarFromBorder(populateFarFromBorder)
-        }
-    }, [populateFarFromBorder, loaded])
+        cmds.set('Inventory', {
+            action: () => setPanel('INVENTORY'),
+        })
 
-    useEffect(() => {
-        if (loaded) {
-            api.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
-        }
-    }, [soldiersAvailableForAttack, loaded])
+        cmds.set('Reserved soldiers', {
+            action: () => setPanel('RESERVED'),
+        })
 
-    useEffect(() => {
-        if (loaded) {
-            api.setMilitaryPopulationCloserToBorder(populateCloserToBorder)
-        }
-    }, [populateCloserToBorder, loaded])
+        cmds.set('Military settings', {
+            action: () => setPanel('MILITARY_SETTINGS'),
+        })
 
-    useEffect(() => {
-        if (loaded) {
-            api.setMilitaryPopulationCloseToBorder(populateCloseToBorder)
-        }
-    }, [populateCloseToBorder, loaded])
+        cmds.set('Close window', {
+            action: onClose,
+        })
 
-    useEffect(() => {
-        if (loaded) {
-            api.setDefenseFromSurroundingBuildings(defenseFromSurroundingBuildings)
-        }
-    }, [defenseFromSurroundingBuildings, loaded])
+        INVENTORY_MATERIALS.forEach(material => {
+            cmds.set(`Block ${material} from inventory`, {
+                action: (house: HouseInformation) => api.blockDelivery(house.id, material),
+            })
 
-    useEffect(() => {
-        if (loaded) {
-            api.setSoldiersAvailableForAttack(soldiersAvailableForAttack)
-        }
-    }, [soldiersAvailableForAttack, loaded])
+            cmds.set(`Unblock ${material} from inventory`, {
+                action: (house: HouseInformation) => api.allowDelivery(house.id, material),
+            })
 
-    useEffect(() => {
-        if (loaded) {
-            api.setStrengthWhenPopulatingMilitaryBuildings(strengthWhenPopulatingBuildings)
-        }
-    }, [strengthWhenPopulatingBuildings, loaded])
+            cmds.set(`Send out ${material}`, {
+                action: (house: HouseInformation) => api.sendOutMaterial(house.id, material),
+            })
 
-    useEffect(() => {
-        if (loaded) {
-            api.setDefenseStrength(defenseStrength)
-        }
-    }, [defenseStrength, loaded])
+            cmds.set(`Stop sending out ${material}`, {
+                action: (house: HouseInformation) => api.stopSendingOutMaterial(house.id, material),
+            })
+        })
+
+        SOLDIER_TYPES.forEach(rank => {
+            cmds.set(`Set reserved ${rank} soldiers`, {
+                action: (house: HouseInformation) => {
+                    if (isHeadquarterInformation(house)) {
+                        const soldierDisplayName = soldierPretty(rank)
+                        setHover(`Manage reserved ${soldierDisplayName}s`)
+                    }
+                },
+            })
+        })
+
+        return cmds
+    }, [onClose])
+
+    // Rendering
+    if (player === undefined) {
+        console.error(`Headquarters window: player ${house.playerId} is undefined`)
+
+        return null
+    }
 
     return (
-        <Window
+        <WindowWithTyping<HouseInformation>
+            commands={commands}
+            param={house}
+            hoverInfo={hover}
             className='house-info'
             onClose={onClose}
             heading='Headquarters'
-            hoverInfo={hover}
             onRaise={onRaise}
         >
             <HouseIcon
@@ -176,9 +179,10 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
             />
 
             <TabList
-                defaultSelectedValue={'INVENTORY'}
+                selectedValue={panel}
                 onTabSelect={
-                    (event: SelectTabEvent, data: SelectTabData) => {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    (_event: SelectTabEvent, data: SelectTabData) => {
                         const value = data.value as 'INVENTORY' | 'RESERVED' | 'MILITARY_SETTINGS'
 
                         setPanel(value)
@@ -204,11 +208,11 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
 
             {panel === 'INVENTORY' &&
                 <ItemContainer rows >
-                    {Array.from(INVENTORY_MATERIALS)
+                    {INVENTORY_MATERIALS
                         .filter(material => material !== 'STOREHOUSE_WORKER' && material !== 'WELL_WORKER')
                         .map(material => {
                             const amount = house.resources[material]?.has ?? 0
-                            const label = MATERIAL_LABELS.get(material) ?? material.toLocaleLowerCase()
+                            const label = MATERIAL_LABELS.get(material) ?? material.toLowerCase()
 
                             return (
                                 <div className='headquarter-inventory-item' key={material} >
@@ -228,40 +232,44 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
             {panel === 'RESERVED' &&
                 <ItemContainer>
                     {SOLDIER_TYPES.map(rank => {
-                        if (isHeadquarterInformation(house)) {
-                            const soldierDisplayName = soldierPretty(rank)
+                        if (!isHeadquarterInformation(house)) {
+                            console.error(`Headquarters window: house ${house.id} is not a headquarters`)
 
-                            return (
-                                <div className='headquarter-inventory-item' key={rank} style={{ display: 'block' }}>
-                                    ({house.inReserve[rank]} / {house.reserved[rank]})
-                                    <div
-                                        style={{ display: 'inline' }}
-                                        onMouseEnter={() => setHover(soldierDisplayName)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                    >
-                                        <InventoryIcon material={rankToMaterial(rank)} nation={nation} inline />
-                                    </div>
-                                    <UiIcon type='MINUS' scale={0.5}
-                                        onMouseEnter={() => setHover(`Reduce reserved ${soldierDisplayName}s`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                        onClick={() => {
-                                            if (house.reserved[rank] !== 0) {
-                                                api.setReservedSoldiers(rank, house.reserved[rank] - 1)
-                                            }
-                                        }}
-                                    />
-                                    <UiIcon type='PLUS' scale={0.5}
-                                        onMouseEnter={() => setHover(`Increase reserved ${soldierDisplayName}s`)}
-                                        onMouseLeave={() => setHover(undefined)}
-                                        onClick={() => {
-                                            if (house.reserved[rank] !== 100) {
-                                                api.setReservedSoldiers(rank, house.reserved[rank] + 1)
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            )
+                            return null
                         }
+
+                        const soldierDisplayName = soldierPretty(rank)
+
+                        return (
+                            <div className='headquarter-inventory-item' key={rank} style={{ display: 'block' }}>
+                                ({house.inReserve[rank]} / {house.reserved[rank]})
+                                <div
+                                    style={{ display: 'inline' }}
+                                    onMouseEnter={() => setHover(soldierDisplayName)}
+                                    onMouseLeave={() => setHover(undefined)}
+                                >
+                                    <InventoryIcon material={rankToMaterial(rank)} nation={nation} inline />
+                                </div>
+                                <UiIcon type='MINUS' scale={0.5}
+                                    onMouseEnter={() => setHover(`Reduce reserved ${soldierDisplayName}s`)}
+                                    onMouseLeave={() => setHover(undefined)}
+                                    onClick={() => {
+                                        if (house.reserved[rank] !== 0) {
+                                            api.setReservedSoldiers(rank, house.reserved[rank] - 1)
+                                        }
+                                    }}
+                                />
+                                <UiIcon type='PLUS' scale={0.5}
+                                    onMouseEnter={() => setHover(`Increase reserved ${soldierDisplayName}s`)}
+                                    onMouseLeave={() => setHover(undefined)}
+                                    onClick={() => {
+                                        if (house.reserved[rank] !== MAX_RESERVED) {
+                                            api.setReservedSoldiers(rank, house.reserved[rank] + 1)
+                                        }
+                                    }}
+                                />
+                            </div>
+                        )
                     })}
                 </ItemContainer>
             }
@@ -274,19 +282,19 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 type='WEAK_SOLDIER_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Populate new military buildings with weaker soldiers`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setStrengthWhenPopulatingBuildings(prev => Math.max(0, prev - 1))} />
+                                onClick={() => api.setStrengthWhenPopulatingMilitaryBuildings(clamp(player.strengthWhenPopulatingBuildings - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={strengthWhenPopulatingBuildings}
-                                onMouseEnter={() => setHover(`${strengthWhenPopulatingBuildings}/10`)}
+                                value={player.strengthWhenPopulatingBuildings}
+                                onMouseEnter={() => setHover(`${player.strengthWhenPopulatingBuildings}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='STRONG_SOLDIER_WITH_PLUS'
                                 onMouseEnter={() => setHover(`Populate new military buildings with stronger soldiers`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setStrengthWhenPopulatingBuildings(prev => Math.min(10, prev + 1))} />
+                                onClick={() => api.setStrengthWhenPopulatingMilitaryBuildings(clamp(player.strengthWhenPopulatingBuildings + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -296,19 +304,19 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 type='ONE_SHIELD_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Weaken defense`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setDefenseStrength(prev => Math.max(0, prev - 1))} />
+                                onClick={() => api.setDefenseStrength(clamp(player.defenseStrength - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={defenseStrength}
-                                onMouseEnter={() => setHover(`${defenseStrength}/10`)}
+                                value={player.defenseStrength}
+                                onMouseEnter={() => setHover(`${player.defenseStrength}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='TWO_SHIELDS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`Strengthen defense`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setDefenseStrength(prev => Math.min(10, prev + 1))} />
+                                onClick={() => api.setDefenseStrength(clamp(player.defenseStrength + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -318,19 +326,19 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 type='MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_MINUS'
                                 onMouseEnter={() => setHover(`Fewer defenders from surrounding buildings`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setDefenseFromSurroundingBuildings(prev => Math.max(0, prev - 1))} />
+                                onClick={() => api.setDefenseFromSurroundingBuildings(clamp(player.defenseFromSurroundingBuildings - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={defenseFromSurroundingBuildings}
-                                onMouseEnter={() => setHover(`${defenseFromSurroundingBuildings}/10`)}
+                                value={player.defenseFromSurroundingBuildings}
+                                onMouseEnter={() => setHover(`${player.defenseFromSurroundingBuildings}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_PLUS'
                                 onMouseEnter={() => setHover(`More defenders from surrounding buildings`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setDefenseFromSurroundingBuildings(prev => Math.min(10, prev + 1))} />
+                                onClick={() => api.setDefenseFromSurroundingBuildings(clamp(player.defenseFromSurroundingBuildings + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -340,19 +348,19 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 type='MILITARY_BUILDING_WITH_SWORDS_AND_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers available for attacks`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setSoldiersAvailableForAttack(prev => Math.max(0, prev - 1))} />
+                                onClick={() => api.setSoldiersAvailableForAttack(clamp(player.soldiersAvailableForAttack - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={soldiersAvailableForAttack}
-                                onMouseEnter={() => setHover(`${soldiersAvailableForAttack}/10`)}
+                                value={player.soldiersAvailableForAttack}
+                                onMouseEnter={() => setHover(`${player.soldiersAvailableForAttack}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='MILITARY_BUILDING_WITH_SWORDS_AND_PLUS'
-                                onMouseEnter={() => setHover(`More soliders available for attacks`)}
+                                onMouseEnter={() => setHover(`More soldiers available for attacks`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setSoldiersAvailableForAttack(prev => Math.min(10, prev + 1))} />
+                                onClick={() => api.setSoldiersAvailableForAttack(clamp(player.soldiersAvailableForAttack + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -362,19 +370,19 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 type='SMALLEST_FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers far from the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setPopulateFarFromBorder(prev => Math.max(0, prev - 1))} />
+                                onClick={() => api.setMilitaryPopulationFarFromBorder(clamp(player.militaryPopulationFarFromBorder - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={populateFarFromBorder}
-                                onMouseEnter={() => setHover(`${populateFarFromBorder}/10`)}
+                                value={player.militaryPopulationFarFromBorder}
+                                onMouseEnter={() => setHover(`${player.militaryPopulationFarFromBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='SMALLEST_FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers far from the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setPopulateFarFromBorder(prev => Math.min(10, prev + 1))} />
+                                onClick={() => api.setMilitaryPopulationFarFromBorder(clamp(player.militaryPopulationFarFromBorder + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -384,19 +392,19 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 type='SMALLER_FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers closer to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setPopulateCloserToBorder(prev => Math.max(0, prev - 1))} />
+                                onClick={() => api.setMilitaryPopulationCloserToBorder(clamp(player.militaryPopulationAwayFromBorder - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={populateCloserToBorder}
-                                onMouseEnter={() => setHover(`${populateCloserToBorder}/10`)}
+                                value={player.militaryPopulationAwayFromBorder}
+                                onMouseEnter={() => setHover(`${player.militaryPopulationAwayFromBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='SMALLER_FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers closer to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setPopulateCloserToBorder(prev => Math.min(10, prev + 1))} />
+                                onClick={() => api.setMilitaryPopulationCloserToBorder(clamp(player.militaryPopulationAwayFromBorder + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -406,27 +414,26 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
                                 type='FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers close to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setPopulateCloseToBorder(prev => Math.max(0, prev - 1))}
-                            />
+                                onClick={() => api.setMilitaryPopulationCloseToBorder(clamp(player.militaryPopulationCloseToBorder - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={populateCloseToBorder}
-                                onMouseEnter={() => setHover(`${populateCloseToBorder}/10`)}
+                                value={player.militaryPopulationCloseToBorder}
+                                onMouseEnter={() => setHover(`${player.militaryPopulationCloseToBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers close to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => setPopulateCloseToBorder(prev => Math.min(10, prev + 1))}
+                                onClick={() => api.setMilitaryPopulationCloseToBorder(clamp(player.militaryPopulationCloseToBorder + 1, 0, 10))}
                             />
                         </div>
                     </Field>
                 </ItemContainer>
             }
 
-        </Window>
+        </WindowWithTyping>
     )
 }
 

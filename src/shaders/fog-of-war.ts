@@ -4,12 +4,11 @@ precision highp float;
 
 in float v_brightness;
 
-vec4 textureColor;
-
 out vec4 outColor;
 
 void main() {
-   outColor = vec4(0.0, 0.0, 0.0, 1.0 - v_brightness);
+    float alpha = clamp(1.0 - v_brightness, 0.0, 1.0);
+    outColor = vec4(0.0, 0.0, 0.0, alpha);
 }`
 
 /**
@@ -18,6 +17,7 @@ void main() {
  * Provides brightness for linear interpolation (gouraud shading) to the fragment shader
  */
 const fogOfWarVertexShader = /* glsl */`#version 300 es
+precision highp float;
 in vec2 a_coordinates;   // game coordinate (x, y)
 in float a_intensity;    // intensity: 0-1
 
@@ -30,7 +30,6 @@ uniform float u_screen_width;
 out float v_brightness;
 
 vec2 vertex;
-vec2 temp;
 
 void main (void) {
 
@@ -42,7 +41,7 @@ void main (void) {
     vertex.y = (((a_coordinates.y * u_scale.y - u_offset.y) / u_screen_height) * 2.0) - 1.0;
 
     // Calculate the lighting
-    v_brightness = a_intensity;
+    v_brightness = clamp(a_intensity, 0.0, 1.0);
 
     // Setting vertex position for shape assembler
     gl_Position = vec4(vertex, 0.0, 1.0);

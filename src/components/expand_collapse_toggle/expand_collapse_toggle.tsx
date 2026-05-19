@@ -12,8 +12,11 @@ type ExpandCollapseToggleProps = {
 
 // React components
 const ExpandCollapseToggle = ({ inverted, onCollapse, onExpand }: ExpandCollapseToggleProps) => {
+
+    // State
     const [expanded, setExpanded] = useState<boolean>(false)
 
+    // Rendering
     function onClick(): void {
         if (expanded) {
             onCollapse()

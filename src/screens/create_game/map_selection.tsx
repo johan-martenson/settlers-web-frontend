@@ -86,7 +86,6 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
 
             <MapList
                 onMapSelected={selectedMap => {
-                    setMap(selectedMap)
                     onMapSelected(selectedMap)
                 }}
                 minPlayers={minPlayers}

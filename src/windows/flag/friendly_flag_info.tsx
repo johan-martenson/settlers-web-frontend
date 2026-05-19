@@ -1,42 +1,153 @@
-import React, { useEffect, useState } from 'react'
-import { FlagInformation, Nation } from '../../api/types'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { FlagInformation, Nation, Point } from '../../api/types'
 import './friendly_flag_info.css'
 import { api } from '../../api/ws-api'
 import { Button, Field } from '@fluentui/react-components'
 import { FlagIcon, InventoryIcon, UiIcon } from '../../icons/icon'
-import { ButtonRow, Window } from '../../components/dialog'
+import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { materialPretty } from '../../pretty_strings'
+import { useFlag } from '../../utils/hooks/hooks'
+import { GenericCommand } from '../../screens/play/type_control'
 
 // Types
 type FriendlyFlagInfoProps = {
     flag: FlagInformation
     nation: Nation
 
-    onRaise: (() => void)
-    onStartNewRoad: ((flag: FlagInformation) => void)
-    onClose: (() => void)
+    onRaise: () => void
+    onStartNewRoad: (point: Point) => void
+    onClose: () => void
 }
 
 // TODO: add monitor tab
 
 // React components
 const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }: FriendlyFlagInfoProps) => {
-    const [flag, setFlag] = useState<FlagInformation>(props.flag)
-    const [hoverInfo, setHoverInfo] = useState<string>()
 
-    useEffect(() => {
-        const listener = {
-            onUpdate: setFlag,
-            onRemove: onClose
+    // State
+    const [hoverInfo, setHoverInfo] = useState<string | undefined>()
+
+    // Monitoring hooks
+    const flag = useFlag(props.flag.id)
+
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<FlagInformation>>()
+
+        cmds.set('Build road', {
+            action: (flag: FlagInformation) => {
+                onStartNewRoad({ x: flag.x, y: flag.y })
+                onClose()
+            }
+        })
+
+        cmds.set('Remove flag', {
+            action: (flag: FlagInformation) => {
+                api.removeFlag(flag.id)
+                onClose()
+            }
+        })
+        cmds.set('Call geologist', {
+            action: (flag: FlagInformation) => {
+                api.callGeologist({ x: flag.x, y: flag.y })
+            }
+        })
+
+        cmds.set('Close window', {
+            action: (_flag: FlagInformation) => onClose()
+        })
+
+        return cmds
+    }, [onStartNewRoad, onClose])
+
+    const flagListener = useMemo(() => ({
+        onUpdate: () => { },
+        onRemove: onClose
+    }), [onClose])
+
+    // Functions
+    const callScout = useCallback(() => {
+        if (flag !== undefined) {
+            api.callScout({ x: flag.x, y: flag.y })
+        }
+    }, [flag?.x, flag?.y])
+
+    const callGeologist = useCallback(() => {
+        if (flag !== undefined) {
+            api.callGeologist({ x: flag.x, y: flag.y })
+        }
+    }, [flag?.x, flag?.y])
+
+    const removeFlagAndClose = useCallback(() => {
+        if (flag !== undefined) {
+            api.removeFlag(flag.id)
         }
 
-        api.addFlagListener(flag.id, listener)
+        onClose()
+    }, [flag?.id, onClose])
 
-        return () => api.removeFlagListener(flag.id, listener)
-    }, [flag.id, onClose])
+    const startNewRoadAndClose = useCallback(() => {
+        if (flag !== undefined) {
+            onStartNewRoad({ x: flag.x, y: flag.y })
+        }
+
+        onClose()
+    }, [flag?.x, flag?.y, onClose, onStartNewRoad])
+
+    const hoverFlag = useCallback(() => {
+        setHoverInfo('Flag')
+    }, [setHoverInfo])
+
+    const hoverRemoveFlag = useCallback(() => {
+        setHoverInfo('Remove flag')
+    }, [setHoverInfo])
+
+    const hoverCallGeologist = useCallback(() => {
+        setHoverInfo('Call geologist')
+    }, [setHoverInfo])
+
+    const hoverCallScout = useCallback(() => {
+        setHoverInfo('Call scout')
+    }, [setHoverInfo])
+
+    const hoverBuildRoad = useCallback(() => {
+        setHoverInfo('Build road')
+    }, [setHoverInfo])
+
+    const clearHover = useCallback(() => {
+        setHoverInfo(undefined)
+    }, [setHoverInfo])
+
+    // Effects
+    // Effect: close the window if the flag is removed
+    useEffect(() => {
+        if (flag !== undefined) {
+            api.addFlagListener(flag.id, flagListener)
+        }
+
+        return () => {
+            if (flag !== undefined) {
+                api.removeFlagListener(flag.id, flagListener)
+            }
+        }
+    }, [flag?.id, flagListener])
+
+    // Rendering
+    if (flag === undefined) {
+        console.error(`Friendly flag window: flag with id ${props.flag.id} not found`)
+
+        return null
+    }
 
     return (
-        <Window className='friendly-flag-info' heading='Flag' onClose={onClose} hoverInfo={hoverInfo} onRaise={onRaise}>
+        <WindowWithTyping<FlagInformation>
+            commands={commands}
+            param={flag}
+            className='friendly-flag-info'
+            heading='Flag'
+            onClose={onClose}
+            hoverInfo={hoverInfo}
+            onRaise={onRaise}>
             <div className='flag-information'>
                 <FlagIcon
                     type={flag.type}
@@ -45,42 +156,30 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                     color={flag.color}
                     animate
                     drawShadow
-                    onMouseEnter={() => setHoverInfo('Flag')}
-                    onMouseLeave={() => setHoverInfo(undefined)}
+                    onMouseEnter={hoverFlag}
+                    onMouseLeave={clearHover}
                 />
 
                 <ButtonRow>
                     <Button
-                        onClick={() => {
-                            onStartNewRoad(flag)
-
-                            onClose()
-                        }}
-                        onMouseEnter={() => setHoverInfo('Build road')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
+                        onClick={startNewRoadAndClose}
+                        onMouseEnter={hoverBuildRoad}
+                        onMouseLeave={clearHover}
                     >
                         <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
                     </Button>
                     <Button
-                        onClick={async () => {
-                            api.removeFlag(flag.id)
-
-                            onClose()
-                        }}
-                        onMouseEnter={() => setHoverInfo('Remove flag')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
+                        onClick={removeFlagAndClose}
+                        onMouseEnter={hoverRemoveFlag}
+                        onMouseLeave={clearHover}
                     >
                         <UiIcon type='BROKEN_FLAG' scale={0.5} />
                     </Button>
 
                     <Button
-                        onClick={async () => {
-                            api.callGeologist(flag)
-
-                            onClose()
-                        }}
-                        onMouseEnter={() => setHoverInfo('Call geologist')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
+                        onClick={callGeologist}
+                        onMouseEnter={hoverCallGeologist}
+                        onMouseLeave={clearHover}
                     >
                         <div className='friendly-flag-info-button-icon-and-label'>
                             <UiIcon type='GEOLOGIST' scale={0.5} />
@@ -88,13 +187,9 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                     </Button>
 
                     <Button
-                        onClick={async () => {
-                            api.callScout(flag)
-
-                            onClose()
-                        }}
-                        onMouseEnter={() => setHoverInfo('Call scout')}
-                        onMouseLeave={() => setHoverInfo(undefined)}
+                        onClick={callScout}
+                        onMouseEnter={hoverCallScout}
+                        onMouseLeave={clearHover}
                     >
                         <div className='friendly-flag-info-button-icon-and-label'>
                             <InventoryIcon material='SCOUT' nation={nation} />
@@ -103,18 +198,18 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
 
                 </ButtonRow>
 
-                {flag.stackedCargo &&
+                {flag.stackedCargo && flag.stackedCargo.length > 0 &&
                     <div className='friendly-flag-info-stacked-cargo'>
                         <Field label='Cargo waiting'>
                             <div className='friendly-flag-info-cargo-list'>
                                 {flag.stackedCargo.map((material, index) => (
                                     <InventoryIcon
                                         material={material}
-                                        key={index}
+                                        key={`${material}-${index}`}
                                         nation={nation}
                                         inline
                                         onMouseEnter={() => setHoverInfo(`${materialPretty(material)}`)}
-                                        onMouseLeave={() => setHoverInfo(undefined)}
+                                        onMouseLeave={clearHover}
                                     />
                                 ))}
                             </div>
@@ -122,7 +217,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                     </div>
                 }
             </div>
-        </Window>
+        </WindowWithTyping>
     )
 }
 

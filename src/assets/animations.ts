@@ -8,6 +8,10 @@ class TreeAnimation {
 
     constructor(speedAdjust: number) {
         this.speedAdjust = speedAdjust
+
+        if (speedAdjust === 0) {
+            throw new Error('Speed adjust cannot be 0')
+        }
     }
 
     async load(): Promise<void> {
@@ -19,7 +23,7 @@ class TreeAnimation {
     }
 
     getAnimationFrame(treeType: TreeType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
-        return treeImageAtlasHandler.getDrawingInformationForGrownTree(treeType, Math.floor((animationIndex + offset) / this.speedAdjust))
+        return treeImageAtlasHandler.getDrawingInformationForGrownTree(treeType, Math.floor((animationIndex / this.speedAdjust) + offset))
     }
 
     getFallingTree(treeType: TreeType, step: number): DrawingInformation[] | undefined {
@@ -32,6 +36,10 @@ class FireAnimation {
 
     constructor(speedAdjust: number) {
         this.speedAdjust = speedAdjust
+
+        if (speedAdjust === 0) {
+            throw new Error('Speed adjust cannot be 0')
+        }
     }
 
     async load(): Promise<void> {
@@ -58,6 +66,10 @@ class AnimalAnimation {
     constructor(prefix: string, name: string, speedAdjust: number) {
         this.imageAtlasHandler = new AnimalImageAtlasHandler(prefix, name)
         this.speedAdjust = speedAdjust
+
+        if (speedAdjust === 0) {
+            throw new Error('Speed adjust cannot be 0')
+        }
     }
 
     async load(): Promise<void> {
@@ -68,8 +80,8 @@ class AnimalAnimation {
         return this.imageAtlasHandler.getSourceImage()
     }
 
-    getAnimationFrame(direction: Direction, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationFor(direction, Math.floor((animationIndex + percentageTraveled) / this.speedAdjust))
+    getAnimationFrame(direction: Direction, animationIndex: number): DrawingInformation[] | undefined {
+        return this.imageAtlasHandler.getDrawingInformationFor(direction, Math.floor((animationIndex / this.speedAdjust)))
     }
 
     getImageAtlasHandler(): AnimalImageAtlasHandler {
@@ -82,6 +94,10 @@ class FlagAnimation {
 
     constructor(speedAdjust: number) {
         this.speedAdjust = speedAdjust
+
+        if (speedAdjust === 0) {
+            throw new Error('Speed adjust cannot be 0')
+        }
     }
 
     async load(): Promise<void> {
@@ -93,7 +109,7 @@ class FlagAnimation {
     }
 
     getAnimationFrame(nation: Nation, color: PlayerColor, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
-        return flagImageAtlasHandler.getDrawingInformationFor(nation, color, flagType, Math.floor((animationIndex + offset) / this.speedAdjust))
+        return flagImageAtlasHandler.getDrawingInformationFor(nation, color, flagType, Math.floor((animationIndex / this.speedAdjust) + offset))
     }
 
     getSizeWithShadow(nation: Nation, flagType: FlagType): Dimension | undefined {
@@ -113,6 +129,10 @@ class WorkerAnimation {
         this.imageAtlasHandler = new WorkerImageAtlasHandler(prefix, postfix)
 
         this.speedAdjust = speedAdjust
+
+        if (speedAdjust === 0) {
+            throw new Error('Speed adjust cannot be 0')
+        }
     }
 
     async load(): Promise<void> {
@@ -128,11 +148,11 @@ class WorkerAnimation {
     }
 
     getActionAnimation(nation: Nation, direction: Direction, action: WorkerAction, color: PlayerColor, animationIndex: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForAction(nation, direction, action, color, animationIndex)
+        return this.imageAtlasHandler.getDrawingInformationForAction(nation, direction, action, color, Math.floor(animationIndex / this.speedAdjust))
     }
 
     getDrawingInformationForCargo(nation: Nation, direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForCargo(nation, direction, material, animationIndex, Math.floor(offset))
+        return this.imageAtlasHandler.getDrawingInformationForCargo(nation, direction, material, Math.floor(animationIndex / this.speedAdjust), Math.floor(offset))
     }
 
     getImageAtlasHandler(): WorkerImageAtlasHandler {
@@ -147,42 +167,41 @@ class WorkerAnimation {
 // Animation instances
 const flagAnimations = new FlagAnimation(2)
 
-const workers = new Map<WorkerType, WorkerAnimation>()
-
 const helperAnimation = new WorkerAnimation('assets/', 'helper', 10)
 
-workers.set('Farmer', new WorkerAnimation('assets/', 'farmer', 10))
-workers.set('Fisherman', new WorkerAnimation('assets/', 'fisher', 10))
-workers.set('Courier', helperAnimation)
-workers.set('WellWorker', helperAnimation)
-workers.set('StorehouseWorker', new WorkerAnimation('assets/', 'helper', 10))
-workers.set('Hunter', new WorkerAnimation('assets/', 'hunter', 10))
-workers.set('IronFounder', new WorkerAnimation('assets/', 'iron_founder', 10))
-workers.set('Metalworker', new WorkerAnimation('assets/', 'metalworker', 10))
-workers.set('Miller', new WorkerAnimation('assets/', 'miller', 10))
-workers.set('Miner', new WorkerAnimation('assets/', 'miner', 10))
-workers.set('Minter', new WorkerAnimation('assets/', 'minter', 10))
-workers.set('PigBreeder', new WorkerAnimation('assets/', 'pig_breeder', 10))
-workers.set('Planer', new WorkerAnimation('assets/', 'planer', 10))
-workers.set('Scout', new WorkerAnimation('assets/', 'scout', 10))
-workers.set('ShipWright', new WorkerAnimation('assets/', 'ship_wright', 10))
-workers.set('DonkeyBreeder', new WorkerAnimation('assets/', 'donkey_breeder', 10))
-workers.set('Butcher', new WorkerAnimation('assets/', 'butcher', 10))
-workers.set('Builder', new WorkerAnimation('assets/', 'builder', 10))
-workers.set('Brewer', new WorkerAnimation('assets/', 'brewer', 10))
-workers.set('Baker', new WorkerAnimation('assets/', 'baker', 10))
-workers.set('Armorer', new WorkerAnimation('assets/', 'armorer', 10))
-workers.set('WoodcutterWorker', new WorkerAnimation('assets/', 'woodcutter', 10))
-workers.set('Forester', new WorkerAnimation('assets/', 'forester', 10))
-workers.set('Carpenter', new WorkerAnimation('assets/', 'carpenter', 10))
-workers.set('Stonemason', new WorkerAnimation('assets/', 'stonemason', 10))
-workers.set('Scout', new WorkerAnimation('assets/', 'scout', 10))
-workers.set('Private', new WorkerAnimation('assets/', 'private', 10))
-workers.set('Private_first_class', new WorkerAnimation('assets/', 'private_first_class', 10))
-workers.set('Sergeant', new WorkerAnimation('assets/', 'sergeant', 10))
-workers.set('Officer', new WorkerAnimation('assets/', 'officer', 10))
-workers.set('General', new WorkerAnimation('assets/', 'general', 10))
-workers.set('Geologist', new WorkerAnimation('assets/', 'geologist', 10))
+const workers: Partial<Record<WorkerType, WorkerAnimation>> = {
+    Armorer: new WorkerAnimation('assets/', 'armorer', 10),
+    Baker: new WorkerAnimation('assets/', 'baker', 10),
+    Brewer: new WorkerAnimation('assets/', 'brewer', 10),
+    Butcher: new WorkerAnimation('assets/', 'butcher', 10),
+    Builder: new WorkerAnimation('assets/', 'builder', 10),
+    Carpenter: new WorkerAnimation('assets/', 'carpenter', 10),
+    Courier: helperAnimation,
+    DonkeyBreeder: new WorkerAnimation('assets/', 'donkey_breeder', 10),
+    Farmer: new WorkerAnimation('assets/', 'farmer', 10),
+    Fisherman: new WorkerAnimation('assets/', 'fisher', 10),
+    Forester: new WorkerAnimation('assets/', 'forester', 10),
+    General: new WorkerAnimation('assets/', 'general', 10),
+    Geologist: new WorkerAnimation('assets/', 'geologist', 10),
+    Hunter: new WorkerAnimation('assets/', 'hunter', 10),
+    IronFounder: new WorkerAnimation('assets/', 'iron_founder', 10),
+    Metalworker: new WorkerAnimation('assets/', 'metalworker', 10),
+    Miller: new WorkerAnimation('assets/', 'miller', 10),
+    Miner: new WorkerAnimation('assets/', 'miner', 10),
+    Minter: new WorkerAnimation('assets/', 'minter', 10),
+    Officer: new WorkerAnimation('assets/', 'officer', 10),
+    PigBreeder: new WorkerAnimation('assets/', 'pig_breeder', 10),
+    Planer: new WorkerAnimation('assets/', 'planer', 10),
+    Private: new WorkerAnimation('assets/', 'private', 10),
+    PrivateFirstClass: new WorkerAnimation('assets/', 'private_first_class', 10),
+    Scout: new WorkerAnimation('assets/', 'scout', 10),
+    Sergeant: new WorkerAnimation('assets/', 'sergeant', 10),
+    Shipwright: new WorkerAnimation('assets/', 'ship_wright', 10),
+    Stonemason: new WorkerAnimation('assets/', 'stonemason', 10),
+    StorehouseWorker: new WorkerAnimation('assets/', 'helper', 10),
+    WellWorker: helperAnimation,
+    WoodcutterWorker: new WorkerAnimation('assets/', 'woodcutter', 10)
+}
 
 const thinCarrierWithCargo = new WorkerAnimation('assets/', 'thin-carrier-with-cargo', 10)
 const fatCarrierWithCargo = new WorkerAnimation('assets/', 'fat-carrier-with-cargo', 10)
@@ -190,7 +209,6 @@ const thinCarrierNoCargo = new WorkerAnimation('assets/', 'thin-carrier-no-cargo
 const fatCarrierNoCargo = new WorkerAnimation('assets/', 'fat-carrier-no-cargo', 10)
 
 const treeAnimations = new TreeAnimation(2)
-
 
 const animals = new Map<WildAnimalType, AnimalAnimation>()
 
@@ -218,8 +236,4 @@ export {
     animals,
     donkeyAnimation,
     fireAnimations
-}
-
-export type {
-    FlagAnimation
 }

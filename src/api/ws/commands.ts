@@ -1,5 +1,5 @@
 import { PointMap } from '../../utils/util_types'
-import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics, Tool, CheatCode } from '../types'
+import { Player, PlayerType, PlayerInformation, PlayerId, PlayerColor, Nation, PointInformation, MapId, GameInformation, ResourceLevel, GameSpeed, GameId, RoomId, ChatMessage, MapInformation, HouseId, FlagId, FlagDebugInfo, Point, SoldierType, GameMessageId, GameMessage, AnyBuilding, RoadId, AvailableConstruction, BorderInformation, CropInformation, Decoration, FlagInformation, GameState, HouseInformation, RoadInformation, ServerWorkerInformation, ShipInformation, SignInformation, StoneInformation, TreeInformation, WildAnimalInformation, AttackType, TransportCategory, TerrainInformation, VegetationAsInt, StatisticsPerPlayer, MerchandiseStatistics, Tool, CheatCode, Material, MapWithTerrain } from '../types'
 import { send, sendWithOptions, sendRequestAndWaitForReply, sendRequestAndWaitForReplyWithOptions } from './core'
 
 
@@ -50,9 +50,19 @@ export type StatisticsReply = {
     merchandise: MerchandiseStatistics
 }
 
+type ExistingPlayerById = {
+    id: PlayerId
+}
+
+type NewPlayerToCreate = {
+    name: string
+    color: PlayerColor
+    nation: Nation
+}
+
 type CreateNewGameOptions = {
     name: string
-    players: Player[]
+    players: (ExistingPlayerById | NewPlayerToCreate)[]
 }
 
 type InformationOnPointsReply = { pointsWithInformation: PointInformation[] }
@@ -109,10 +119,13 @@ enum Command {
     // Games
     GetGames = 'GET_GAMES',
     ListenToGameList = 'LISTEN_TO_GAME_LIST',
+    StopListeningToGameList = 'STOP_LISTENING_TO_GAME_LIST',
 
     // Maps
     GetMap = 'GET_MAP',
     GetMaps = 'GET_MAPS',
+    GetMapsWithTerrain = 'GET_MAPS_WITH_TERRAIN',
+    GetMapWithTerrain = 'GET_MAP_WITH_TERRAIN',
 
     // Map
     GetTerrain = 'GET_TERRAIN',
@@ -138,6 +151,7 @@ enum Command {
     GetStatistics = 'GET_STATISTICS',
     ListenToStatistics = 'LISTEN_TO_STATISTICS',
     StopListeningToStatistics = 'STOP_LISTENING_TO_STATISTICS',
+    StopListeningToGameInfo = 'STOP_LISTENING_TO_GAME_INFO',
 
     // Player
     CreatePlayer = 'CREATE_PLAYER',
@@ -150,6 +164,8 @@ enum Command {
     GetToolPriorities = 'GET_TOOL_PRODUCTION_PRIORITIES',
     SetToolPriority = 'SET_TOOL_PRODUCTION_PRIORITY',
     Cheat = 'CHEAT',
+    ListenToPlayer = 'LISTEN_TO_PLAYER',
+    StopListeningToPlayer = 'STOP_LISTENING_TO_PLAYER',
 
     // Player - military
     GetStrength = 'GET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
@@ -164,7 +180,7 @@ enum Command {
     SetStrength = 'SET_STRENGTH_WHEN_POPULATING_MILITARY_BUILDING',
     SetDefenseStrength = 'SET_DEFENSE_STRENGTH',
     SetDefenseFromSurrounding = 'SET_DEFENSE_FROM_SURROUNDING_BUILDINGS',
-    SetMilitaryFromFromBorder = 'SET_MILITARY_POPULATION_FAR_FROM_BORDER',
+    SetMilitaryFarFromFromBorder = 'SET_MILITARY_POPULATION_FAR_FROM_BORDER',
     SetMilitaryAwayFromBorder = 'SET_MILITARY_POPULATION_CLOSER_TO_BORDER',
     SetMilitaryCloseToBorder = 'SET_MILITARY_POPULATION_CLOSE_TO_BORDER',
     SetSoldiersAvailableForAttack = 'SET_SOLDIERS_AVAILABLE_FOR_ATTACK',
@@ -190,12 +206,18 @@ enum Command {
     Upgrade = 'UPGRADE',
     Attack = 'ATTACK_HOUSE',
     EvacuateHouse = 'EVACUATE_HOUSE',
-    UpgradeHouse = 'UPGRADE_HOUSE',
     PauseProduction = 'PAUSE_PRODUCTION',
     ResumeProduction = 'RESUME_PRODUCTION',
     DisablePromotions = 'DISABLE_PROMOTIONS',
     EnablePromotions = 'ENABLE_PROMOTIONS',
     CancelEvacuation = 'CANCEL_EVACUATION',
+
+    // House - headquarters
+    BlockMaterial = 'BLOCK_MATERIAL',
+    AllowMaterial = 'ALLOW_MATERIAL',
+    SendOut = 'SEND_OUT_MATERIAL',
+    StopSendingOut = 'STOP_SENDING_OUT_MATERIAL',
+
 
     // Flag
     PlaceFlag = 'PLACE_FLAG',
@@ -223,72 +245,92 @@ enum Command {
     // Workers
 
     // Misc
-    SetSelfPlayer = 'SET_SELF_PLAYER',
-    SetGame = 'SET_GAME',
-    ClearGame = 'CLEAR_GAME',
     FullSync = 'FULL_SYNC',
 }
 
 type CancelEvacuationForHouse = { houseId: HouseId }
 type DisablePromotionsForHouse = { houseId: HouseId }
 type EnablePromotionsForHouse = { houseId: HouseId }
-type FindPossibleNewRoad = { from: Point, to: Point, avoid: Point[] | undefined }
+type FindPossibleNewRoad = { from: Point, to: Point, avoid: Point[] | undefined, playerId: PlayerId }
 type PauseProductionForHouse = { houseId: HouseId }
 type ResumeProductionForHouse = { houseId: HouseId }
-type UpgradeHouse = { houseId: HouseId }
 type EvacuateHouse = { houseId: HouseId }
-type SetToolPriority = { tool: Tool, priority: number }
-type SetTransportPriority = { category: TransportCategory, priority: number }
-type AttackHouse = { houseId: HouseId, attackers: number, attackType: AttackType }
-type SetStrengthWhenPopulatingMilitaryBuildings = { strength: number }
-type SetDefenseStrength = { strength: number }
-type SetDefenseFromSurroundingFromSurroundingBuildings = { strength: number }
+type SetToolPriority = { playerId: PlayerId, tool: Tool, priority: number }
+type GetToolPriorities = { playerId: PlayerId }
+type GetStatistics = {gameId: GameId, playerId: PlayerId}
+type GetTransportPriority = {playerId: PlayerId}
+type SetTransportPriority = { playerId: PlayerId, category: TransportCategory, priority: number }
+type AttackHouse = { houseId: HouseId, attackers: number, attackType: AttackType, playerId: PlayerId }
+type SetStrengthWhenPopulatingMilitaryBuildings = { strength: number, playerId: PlayerId }
+type SetDefenseStrength = { strength: number, playerId: PlayerId }
+type SetDefenseFromSurroundingBuildings = { strength: number, playerId: PlayerId }
 type StartGame = { gameId: GameId }
-type SetMap = { mapId: MapId }
-type SetOthersCanJoin = { othersCanJoin: boolean }
-type SetInitialResources = { resources: ResourceLevel }
-type SetGameName = { name: string }
-type SetCheatingOnOff = { cheatingEnabled: boolean }
-type SetGameSpeed = { speed: GameSpeed }
-type SetMilitaryPopulationFarFromBorder = { population: number }
-type SetMilitaryPopulationCloserToBorder = { population: number }
-type SetMilitaryPopulationCloseToBorder = { population: number }
-type SetSoldiersAvailableForAttack = { amount: number }
+type SetMap = { mapId: MapId, gameId: GameId }
+type SetOthersCanJoin = { othersCanJoin: boolean, gameId: GameId }
+type SetInitialResources = { resources: ResourceLevel, gameId: GameId }
+type SetGameName = { name: string, gameId: GameId }
+type SetCheatingOnOff = { cheatingEnabled: boolean, gameId: GameId }
+type SetGameSpeed = { speed: GameSpeed, gameId: GameId }
+type SetMilitaryPopulationFarFromBorder = { population: number, playerId: PlayerId }
+type SetMilitaryPopulationCloserToBorder = { population: number, playerId: PlayerId }
+type SetMilitaryPopulationCloseToBorder = { population: number, playerId: PlayerId }
+type SetSoldiersAvailableForAttack = { amount: number, playerId: PlayerId }
 type AddPlayerToGame = { gameId: GameId, playerId: PlayerId }
-type RemovePlayer = { playerId: PlayerId }
+type RemovePlayer = { playerId: PlayerId, gameId: GameId }
+type ListenToPlayer = { playerId: PlayerId }
+type StopListeningToPlayer = { playerId: PlayerId }
 type GetChatRoomHistory = { roomId: RoomId }
 type GetTerrainForMap = { mapId: MapId }
 type GetMap = { mapId: MapId }
 type Upgrade = { houseId: HouseId }
-type GetFlagDebugInfo = { flagId: FlagId }
-type SetSelfPlayer = { playerId: PlayerId }
-type SetGame = { gameId: GameId }
-type SetReservedSoldiers = Partial<Record<SoldierType, number>>
-type AddDetailedMonitoring = { id: HouseId | FlagId }
-type RemoveDetailedMonitoring = { id: HouseId | FlagId }
-type RemoveMessage = { messageId: GameMessageId }
-type RemoveMessages = { messageIds: GameMessageId[] }
-type SetCoalQuotas = { mint: number, armory: number, ironSmelter: number }
-type SetWheatQuotas = { donkeyFarm: number, pigFarm: number, mill: number, brewery: number }
-type SetFoodQuotas = { ironMine: number, coalMine: number, goldMine: number, graniteMine: number }
-type SetWaterQuotas = { bakery: number, donkeyFarm: number, pigFarm: number, brewery: number }
-type SetIronBarQuotas = { armory: number, metalworks: number }
+type GetFlagDebugInfo = { flagId: FlagId, gameId: GameId }
+type SetReservedSoldiers = Partial<Record<SoldierType, number>> & { playerId: PlayerId }
+type AddDetailedMonitoring = { id: HouseId | FlagId, playerId: PlayerId }
+type RemoveDetailedMonitoring = { id: HouseId | FlagId, playerId: PlayerId }
+type RemoveMessage = { messageId: GameMessageId, playerId: PlayerId }
+type RemoveMessages = { messageIds: GameMessageId[], playerId: PlayerId }
+type SetCoalQuotas = { mint: number, armory: number, ironSmelter: number, playerId: PlayerId}
+type SetWheatQuotas = { donkeyFarm: number, pigFarm: number, mill: number, brewery: number, playerId: PlayerId }
+type SetFoodQuotas = { ironMine: number, coalMine: number, goldMine: number, graniteMine: number, playerId: PlayerId }
+type SetWaterQuotas = { bakery: number, donkeyFarm: number, pigFarm: number, brewery: number, playerId: PlayerId }
+type SetIronBarQuotas = { armory: number, metalworks: number, playerId: PlayerId }
 type DeleteGame = { gameId: GameId }
 type PauseGame = { gameId: GameId }
 type ResumeGame = { gameId: GameId }
-type PlaceHouse = { x: number, y: number, type: AnyBuilding }
-type PlaceRoad = { road: Point[] }
-type PlaceFlag = { flag: Point }
-type PlaceRoadWithFlag = { flag: Point, road: Point[] }
+type PlaceHouse = { x: number, y: number, type: AnyBuilding, playerId: PlayerId }
+type BlockDelivery = {houseId: HouseId, material: Material}
+type AllowDelivery = {houseId: HouseId, material: Material}
+type SendOut = {houseId: HouseId, material: Material}
+type StopSendingOut = {houseId: HouseId, material: Material}
+type PlaceRoad = { road: Point[], playerId: PlayerId }
+type PlaceFlag = { flag: Point, playerId: PlayerId }
+type PlaceRoadWithFlag = { flag: Point, road: Point[], playerId: PlayerId }
 type RemoveFlag = { id: FlagId }
 type RemoveRoad = { id: RoadId }
 type RemoveBuilding = { id: HouseId }
-type CallScout = { point: Point }
-type CallGeologist = { point: Point }
-type MarkGameMessagesRead = { messageIds: GameMessageId[] }
+type CallScout = { point: Point, playerId: PlayerId }
+type CallGeologist = { point: Point, playerId: PlayerId }
+type MarkGameMessagesRead = { messageIds: GameMessageId[], playerId: PlayerId }
 type ListenToChatMessages = { playerId: PlayerId, roomIds: RoomId[] }
+type ListenToGameMetadata = { gameId: GameId }
 type ListenToStatistics = { playerId: PlayerId }
 type StopListeningToStatistics = { playerId: PlayerId }
+type StartMonitoringGame = { playerId: PlayerId, gameId: GameId }
+type GetGameInformation = { gameId: GameId }
+type GetSoldiersAvailableForAttack = { playerId: PlayerId }
+type GetPopulateMilitaryFarFromBorder = { playerId: PlayerId }
+type GetMilitaryAwayFromBorder = { playerId: PlayerId }
+type GetMilitaryCloseToBorder = { playerId: PlayerId }
+type GetMilitarySettings = {playerId: PlayerId}
+type GetDefenseFromSurrounding = {playerId: PlayerId}
+type GetDefenseStrength = {playerId: PlayerId}
+type GetStrengthWhenPopulatingMilitaryBuildings = {playerId: PlayerId}
+type GetIronBarQuotas = { playerId: PlayerId }
+type GetWaterQuotas = { playerId: PlayerId }
+type GetWheatQuotas = { playerId: PlayerId }
+type GetFoodQuotas = { playerId: PlayerId }
+type GetCoalQuotas = { playerId: PlayerId }
+type GetViewForPlayer = { playerId: PlayerId, gameId: GameId }
 
 
 // Type functions
@@ -326,13 +368,13 @@ function enablePromotionsForHouse(houseId: HouseId): void {
  * Finds a possible new road between two points, optionally avoiding certain points.
  * @param {Point} from - The starting point.
  * @param {Point} to - The ending point.
- * @param {Point[]} avoid - Points to avoid during the search (optional).
+ * @param {Point[] | undefined} avoid - Points to avoid during the search (optional).
  * @returns {Promise<PossibleNewRoad>} The possible new road.
  */
-async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[] | undefined): Promise<PossibleNewRoad> {
+async function findPossibleNewRoad(from: Point, to: Point, avoid: Point[] | undefined, playerId: PlayerId): Promise<PossibleNewRoad> {
     return (await sendRequestAndWaitForReplyWithOptions<PossibleNewRoad, FindPossibleNewRoad>(
         Command.FindPossibleNewRoad,
-        { from, to, avoid }
+        { from, to, avoid, playerId }
     ))
 }
 
@@ -353,14 +395,6 @@ function resumeProductionForHouse(houseId: HouseId): void {
 }
 
 /**
- * Upgrades a military house to the next level. I.e. upgrade a barracks to a guard house.
- * @param {HouseId} houseId - The identifier of the house to upgrade.
- */
-function upgradeHouse(houseId: HouseId): void {
-    sendWithOptions<UpgradeHouse>(Command.UpgradeHouse, { houseId })
-}
-
-/**
  * Evacuates a specific military house.
  * @param {HouseId} houseId - The identifier of the house to evacuate.
  */
@@ -369,36 +403,44 @@ function evacuateHouse(houseId: HouseId): void {
 }
 
 /**
- * Retrieves statistics about the ongoing game for each player. Includes production, land owned, and inventory (inventory TBD).
+ * Retrieves statistics about the ongoing game for each player. Includes production, land owned, and inventory.
+ * @param {GameId} gameId - The identifier of the game for which to retrieve statistics.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the statistics.
  * @returns {Promise<StatisticsReply>} Statistics about production, inventory (TBD), and land owned for each player
  */
-async function getStatistics(): Promise<StatisticsReply> {
-    return (await sendRequestAndWaitForReply<{ statistics: StatisticsReply }>(Command.GetStatistics)).statistics
+async function getStatistics(gameId: GameId, playerId: PlayerId): Promise<StatisticsReply> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ statistics: StatisticsReply }, GetStatistics>(Command.GetStatistics, { gameId, playerId })).statistics
 }
 
 /**
  * Retrieves the current transport priority settings.
  * @returns {Promise<TransportCategory[]>} The transport priority categories.
  */
-async function getTransportPriority(): Promise<TransportCategory[]> {
-    return (await sendRequestAndWaitForReply<{ priority: TransportCategory[] }>(Command.GetTransportPriority)).priority
+async function getTransportPriority(playerId: PlayerId): Promise<TransportCategory[]> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ priority: TransportCategory[] }, GetTransportPriority>(Command.GetTransportPriority, { playerId })).priority
 }
 
-async function getToolPriorities(): Promise<{ [key in Tool]: number }> {
-    return (await sendRequestAndWaitForReply<{ toolPriorities: { [key in Tool]: number } }>(Command.GetToolPriorities)).toolPriorities
+/**
+ * Retrieves the current tool production priorities for the player.
+ * @param {PlayerId} playerId - The identifier of the player.
+ * @returns {Promise<{ [key in Tool]: number }>} The tool production priorities.
+ */
+async function getToolPriorities(playerId: PlayerId): Promise<{ [key in Tool]: number }> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ toolPriorities: { [key in Tool]: number } }, GetToolPriorities>(Command.GetToolPriorities, { playerId })).toolPriorities
 }
 
-function setToolPriority(tool: Tool, priority: number): void {
-    sendWithOptions<SetToolPriority>(Command.SetToolPriority, { tool, priority })
+function setToolPriority(playerId: PlayerId, tool: Tool, priority: number): void {
+    sendWithOptions<SetToolPriority>(Command.SetToolPriority, { playerId, tool, priority })
 }
 
 /**
  * Sets the transport priority for a specific material category.
+ * @param {PlayerId} playerId - The id of the player.
  * @param {TransportCategory} category - The material category.
  * @param {number} priority - The priority level to set.
  */
-function setTransportPriorityForMaterial(category: TransportCategory, priority: number): void {
-    sendWithOptions<SetTransportPriority>(Command.SetTransportPriority, { category, priority })
+function setTransportPriorityForMaterial(playerId: PlayerId, category: TransportCategory, priority: number): void {
+    sendWithOptions<SetTransportPriority>(Command.SetTransportPriority, { playerId, category, priority })
 }
 
 /**
@@ -407,96 +449,106 @@ function setTransportPriorityForMaterial(category: TransportCategory, priority: 
  * @param {number} attackers - The number of attackers to deploy.
  * @param {AttackType} attackType - The type of attack (e.g., strong or weak).
  */
-function attackHouse(houseId: HouseId, attackers: number, attackType: AttackType): void {
-    sendWithOptions<AttackHouse>(Command.Attack, { houseId, attackers, attackType })
+function attackHouse(houseId: HouseId, attackers: number, attackType: AttackType, playerId: PlayerId): void {
+    sendWithOptions<AttackHouse>(Command.Attack, { houseId, attackers, attackType, playerId })
 }
 
 /**
  * Sets the strength for populating military buildings.
+ * 
  * @param {number} strength - The strength value to be set.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the strength.
  */
-function setStrengthWhenPopulatingMilitaryBuildings(strength: number): void {
-    sendWithOptions<SetStrengthWhenPopulatingMilitaryBuildings>(Command.SetStrength, { strength })
+function setStrengthWhenPopulatingMilitaryBuildings(strength: number, playerId: PlayerId): void {
+    sendWithOptions<SetStrengthWhenPopulatingMilitaryBuildings>(Command.SetStrength, { strength, playerId })
 }
 
 /**
  * Retrieves the current strength used when populating military buildings.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the strength setting.
  * @returns {Promise<number>} The current strength setting.
  */
-async function getStrengthWhenPopulatingMilitaryBuildings(): Promise<number> {
-    return (await sendRequestAndWaitForReply<{ amount: number }>(Command.GetStrength)).amount
+async function getStrengthWhenPopulatingMilitaryBuildings(playerId: PlayerId): Promise<number> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ amount: number }, GetStrengthWhenPopulatingMilitaryBuildings>(Command.GetStrength, { playerId })).amount
 }
 
 /**
  * Sets the overall defense strength.
+ * 
  * @param {number} strength - The defense strength to set.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the defense strength.
  */
-function setDefenseStrength(strength: number): void {
-    sendWithOptions<SetDefenseStrength>(Command.SetDefenseStrength, { strength })
+function setDefenseStrength(strength: number, playerId: PlayerId): void {
+    sendWithOptions<SetDefenseStrength>(Command.SetDefenseStrength, { strength, playerId })
 }
 
 /**
  * Retrieves the overall defense strength.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the defense strength.
  * @returns {Promise<number>} The current defense strength.
  */
-async function getDefenseStrength(): Promise<number> {
-    return (await sendRequestAndWaitForReply<{ amount: number }>(Command.GetDefenseStrength)).amount
+async function getDefenseStrength(playerId: PlayerId): Promise<number> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ amount: number }, GetDefenseStrength>(Command.GetDefenseStrength, { playerId })).amount
 }
 
 /**
  * Sets the defense strength derived from surrounding buildings.
  * @param {number} strength - The surrounding defense strength to set.
  */
-function setDefenseFromSurroundingBuildings(strength: number): void {
-    sendWithOptions<SetDefenseFromSurroundingFromSurroundingBuildings>(Command.SetDefenseFromSurrounding, { strength })
+function setDefenseFromSurroundingBuildings(strength: number, playerId: PlayerId): void {
+    sendWithOptions<SetDefenseFromSurroundingBuildings>(Command.SetDefenseFromSurrounding, { strength, playerId })
 }
 
 /**
  * Retrieves the defense strength from surrounding buildings.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the defense strength.
  * @returns {Promise<number>} The current surrounding defense strength.
  */
-async function getDefenseFromSurroundingBuildings(): Promise<number> {
-    return (await sendRequestAndWaitForReply<{ amount: number }>(Command.GetDefenseFromSurrounding)).amount
+async function getDefenseFromSurroundingBuildings(playerId: PlayerId): Promise<number> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ amount: number }, GetDefenseFromSurrounding>(Command.GetDefenseFromSurrounding, { playerId })).amount
 }
 
 /**
  * Retrieves the current setting for populating military buildings far from the border.
+ * @param {PlayerId} playerId - The identifier of the player.
  * @returns {Promise<number>} The current setting value.
  */
-async function getPopulateMilitaryFarFromBorder(): Promise<number> {
-    return (await sendRequestAndWaitForReply<{ amount: number }>(Command.GetMilitaryFarFromBorder)).amount
+async function getPopulateMilitaryFarFromBorder(playerId: PlayerId): Promise<number> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ amount: number }, GetPopulateMilitaryFarFromBorder>(Command.GetMilitaryFarFromBorder, { playerId })).amount
 }
 
 /**
  * Retrieves the current setting for populating military buildings closer to the border.
  * @returns {Promise<number>} The current setting value.
  */
-async function getPopulateMilitaryCloserToBorder(): Promise<number> {
-    return (await sendRequestAndWaitForReply<{ amount: number }>(Command.GetMilitaryAwayFromBorder)).amount
+async function getPopulateMilitaryCloserToBorder(playerId: PlayerId): Promise<number> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ amount: number }, GetMilitaryAwayFromBorder>(Command.GetMilitaryAwayFromBorder, { playerId })).amount
 }
 
 /**
  * Retrieves the current setting for populating military buildings close to the border.
  * @returns {Promise<number>} The current setting value.
  */
-async function getPopulateMilitaryCloseToBorder(): Promise<number> {
-    return (await sendRequestAndWaitForReply<{ amount: number }>(Command.GetMilitaryCloseToBorder)).amount
+async function getPopulateMilitaryCloseToBorder(playerId: PlayerId): Promise<number> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ amount: number }, GetMilitaryCloseToBorder>(Command.GetMilitaryCloseToBorder, { playerId })).amount
 }
 
 /**
  * Retrieves the overall military settings of the game.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the military settings.
  * @returns {Promise<MilitarySettings>} The current military settings.
  */
-async function getMilitarySettings(): Promise<MilitarySettings> {
-    return await sendRequestAndWaitForReply<MilitarySettings>(Command.GetMilitarySettings)
+async function getMilitarySettings(playerId: PlayerId): Promise<MilitarySettings> {
+    return await sendRequestAndWaitForReplyWithOptions<MilitarySettings, GetMilitarySettings>(Command.GetMilitarySettings, { playerId })
 }
 
 /**
  * Retrieves the number of soldiers currently available for attack.
+ * @param {PlayerId} playerId - The identifier of the player.
  * @returns {Promise<number>} The number of available soldiers.
  */
-async function getSoldiersAvailableForAttack(): Promise<number> {
-    return (await sendRequestAndWaitForReply<{ amount: number }>(Command.GetSoldiersAvailableForAttack)).amount
+async function getSoldiersAvailableForAttack(playerId: PlayerId): Promise<number> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ amount: number }, GetSoldiersAvailableForAttack>(Command.GetSoldiersAvailableForAttack, { playerId })).amount
 }
 
 /**
@@ -509,84 +561,95 @@ function startGame(gameId: GameId): void {
 /**
  * Sets the map to be used for the game by specifying a map id.
  * @param {MapId} mapId - The identifier for the map.
+ * @param {GameId} gameId - The identifier of the game for which to set the map.
  */
-function setMap(mapId: MapId): void {
-    sendWithOptions<SetMap>(Command.SetMap, { mapId })
+function setMap(mapId: MapId, gameId: GameId): void {
+    sendWithOptions<SetMap>(Command.SetMap, { mapId, gameId })
 }
 
 /**
  * Sets whether other players can join the game.
  * @param {boolean} othersCanJoin - Whether others can join the game.
+ * @param {GameId} gameId - The identifier of the game for which to set the joinability.
  * @returns {Promise<GameInformation>} Updated game information after setting the joinability.
  */
-async function setOthersCanJoin(othersCanJoin: boolean): Promise<GameInformation> {
+async function setOthersCanJoin(othersCanJoin: boolean, gameId: GameId): Promise<GameInformation> {
     return (
-        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, SetOthersCanJoin>(Command.SetOthersCanJoin, { othersCanJoin })
+        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, SetOthersCanJoin>(Command.SetOthersCanJoin, { othersCanJoin, gameId })
     ).gameInformation
 }
 
 /**
  * Sets the initial resources for the game.
  * @param {ResourceLevel} resources - The levels of initial resources to set.
+ * @param {GameId} gameId - The identifier of the game for which to set the initial resources.
+ * @returns {Promise<GameInformation>} Updated game information after setting the initial resources.
  */
-function setInitialResources(resources: ResourceLevel): void {
-    sendWithOptions<SetInitialResources>(Command.SetInitialResources, { resources })
+function setInitialResources(resources: ResourceLevel, gameId: GameId): void {
+    sendWithOptions<SetInitialResources>(Command.SetInitialResources, { resources, gameId })
 }
 
 /**
  * Sets the title of the game.
  * @param {string} name - The name of the game.
+ * @param {GameId} gameId - The identifier of the game for which to set the title.
  */
-function setTitle(name: string): void {
-    sendWithOptions<SetGameName>(Command.SetGameName, { name })
+function setTitle(name: string, gameId: GameId): void {
+    sendWithOptions<SetGameName>(Command.SetGameName, { name, gameId })
 }
 
 /**
  * Turns the possibility to cheat on/off in the game.
  * @param {boolean} cheatingEnabled - Whether cheating should be enabled or not.
+ * @param {GameId} gameId - The identifier of the game.
  */
-function setCheating(cheatingEnabled: boolean): void {
-    sendWithOptions<SetCheatingOnOff>(Command.SetCheatingOnOff, { cheatingEnabled })
+function setCheating(cheatingEnabled: boolean, gameId: GameId): void {
+    sendWithOptions<SetCheatingOnOff>(Command.SetCheatingOnOff, { cheatingEnabled, gameId })
 }
 
 /**
  * Sets the speed of the game.
  * @param {GameSpeed} speed - The speed setting for the game.
+ * @param {GameId} gameId - The identifier of the game.
  */
-function setGameSpeed(speed: GameSpeed): void {
-    sendWithOptions<SetGameSpeed>(Command.SetGameSpeed, { speed })
+function setGameSpeed(speed: GameSpeed, gameId: GameId): void {
+    sendWithOptions<SetGameSpeed>(Command.SetGameSpeed, { speed, gameId })
 }
 
 /**
  * Sets the military population allocation for buildings far from the border.
  * @param {number} population - The population to assign.
+ * @param {PlayerId} playerId - The identifier of the player.
  */
-function setMilitaryPopulationFarFromBorder(population: number): void {
-    sendWithOptions<SetMilitaryPopulationFarFromBorder>(Command.SetMilitaryFromFromBorder, { population })
+function setMilitaryPopulationFarFromBorder(population: number, playerId: PlayerId): void {
+    sendWithOptions<SetMilitaryPopulationFarFromBorder>(Command.SetMilitaryFarFromFromBorder, { population, playerId })
 }
 
 /**
  * Sets the military population allocation for buildings closer to the border.
  * @param {number} population - The population to assign.
+ * @param {PlayerId} playerId - The identifier of the player.
  */
-function setMilitaryPopulationCloserToBorder(population: number): void {
-    sendWithOptions<SetMilitaryPopulationCloserToBorder>(Command.SetMilitaryAwayFromBorder, { population })
+function setMilitaryPopulationCloserToBorder(population: number, playerId: PlayerId): void {
+    sendWithOptions<SetMilitaryPopulationCloserToBorder>(Command.SetMilitaryAwayFromBorder, { population, playerId })
 }
 
 /**
  * Sets the military population allocation for buildings close to the border.
  * @param {number} population - The population to assign.
+ * @param {PlayerId} playerId - The identifier of the player.
  */
-function setMilitaryPopulationCloseToBorder(population: number): void {
-    sendWithOptions<SetMilitaryPopulationCloseToBorder>(Command.SetMilitaryCloseToBorder, { population })
+function setMilitaryPopulationCloseToBorder(population: number, playerId: PlayerId): void {
+    sendWithOptions<SetMilitaryPopulationCloseToBorder>(Command.SetMilitaryCloseToBorder, { population, playerId })
 }
 
 /**
  * Sets the number of soldiers available for attack.
  * @param {number} amount - The number of soldiers to set.
+ * @param {PlayerId} playerId - The identifier of the player.
  */
-function setSoldiersAvailableForAttack(amount: number): void {
-    sendWithOptions<SetSoldiersAvailableForAttack>(Command.SetSoldiersAvailableForAttack, { amount })
+function setSoldiersAvailableForAttack(amount: number, playerId: PlayerId): void {
+    sendWithOptions<SetSoldiersAvailableForAttack>(Command.SetSoldiersAvailableForAttack, { amount, playerId })
 }
 
 /**
@@ -633,9 +696,26 @@ async function updatePlayer(playerId: PlayerId, name: string, color: PlayerColor
 /**
  * Removes a player from the game.
  * @param {PlayerId} playerId - The identifier of the player to remove.
+ * @param {GameId} gameId - The identifier of the game from which to remove the player.
  */
-function removePlayer(playerId: PlayerId): void {
-    sendWithOptions<RemovePlayer>(Command.RemovePlayer, { playerId })
+function removePlayer(playerId: PlayerId, gameId: GameId): void {
+    sendWithOptions<RemovePlayer>(Command.RemovePlayer, { playerId, gameId })
+}
+
+/**
+ * Listen to changes to the given player.
+ * @param {PlayerId} playerId - The identifier of the player to listen to.
+ */
+function listenToPlayer(playerId: PlayerId): void {
+    sendWithOptions<ListenToPlayer>(Command.ListenToPlayer, { playerId })
+}
+
+/**
+ * Stop listening to changes to the given player.
+ * @param {PlayerId} playerId - The identifier of the player to stop listening to.
+ */
+function stopListeningToPlayer(playerId: PlayerId): void {
+    sendWithOptions<StopListeningToPlayer>(Command.StopListeningToPlayer, { playerId })
 }
 
 /**
@@ -675,6 +755,23 @@ async function getMaps(): Promise<MapInformation[]> {
 }
 
 /**
+ * Retrieves a list of all maps available in the game including their terrain.
+ * @returns {Promise<MapWithTerrain[]>} The list of available maps with terrain.
+ */
+async function getMapsWithTerrain(): Promise<MapWithTerrain[]> {
+    return (await sendRequestAndWaitForReply<{ maps: MapWithTerrain[] }>(Command.GetMapsWithTerrain)).maps
+}
+
+/**
+ * Retrieves metadata and terrain information about the map with the given id.
+ * @param {MapId} mapId - The id of the map.
+ * @returns {Promise<MapWithTerrain>} The metadata and terrain for the map.
+ */
+async function getMapWithTerrain(mapId: MapId): Promise<MapWithTerrain> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ map: MapWithTerrain }, GetMap>(Command.GetMapWithTerrain, { mapId })).map
+}
+
+/**
  * Retrieves a map
  * @returns {Promise<MapInformation>} The requested map.
  */
@@ -684,10 +781,11 @@ async function getMap(mapId: MapId): Promise<MapInformation> {
 
 /**
  * Retrieves game information by querying the game state.
+ * @param {GameId} gameId - The identifier of the game for which to retrieve information.
  * @returns {Promise<GameInformation>} Current game information.
  */
-async function getGameInformation(): Promise<GameInformation> {
-    return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>(Command.GetGameInformation)).gameInformation
+async function getGameInformation(gameId: GameId): Promise<GameInformation> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, GetGameInformation>(Command.GetGameInformation, { gameId })).gameInformation
 }
 
 /**
@@ -701,41 +799,11 @@ function upgrade(houseId: HouseId): void {
 /**
  * Retrieves debug information for a specific flag by its ID.
  * @param {FlagId} flagId - The identifier of the flag.
+ * @param {GameId} gameId - The identifier of the game.
  * @returns {Promise<FlagDebugInfo>} Debugging information for the flag.
  */
-async function getFlagDebugInfo(flagId: FlagId): Promise<FlagDebugInfo> {
-    return (await sendRequestAndWaitForReplyWithOptions<{ flag: FlagDebugInfo }, GetFlagDebugInfo>(Command.GetFlagDebugInformation, { flagId })).flag
-}
-
-/**
- * Tells the backend which player the monitor should be connected to. All instructions that don't take a player as an explicit parameter
- * operate on the set player. Internal function that is not exposed outside of the module.
- * @param {PlayerId} playerId - The id of the player.
- * @returns {Promise<PlayerInformation>} Information about the player
- */
-async function setPlayerId(playerId: PlayerId): Promise<PlayerInformation> {
-    return (
-        await sendRequestAndWaitForReplyWithOptions<{ playerInformation: PlayerInformation }, SetSelfPlayer>(Command.SetSelfPlayer, { playerId })
-    ).playerInformation
-}
-
-/**
- * Tells the backend what game the monitor should be connected to. All instructions that don't take a game as an explicit parameter
- * operate on the set game. Internal function that is not exposed outside of the module.
- * @param {GameId} gameId - The id of the game
- * @returns {Promise<GameInformation>} Metadata about the game
- */
-async function setGame(gameId: GameId): Promise<GameInformation> {
-    return (
-        await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, SetGame>(Command.SetGame, { gameId })
-    ).gameInformation
-}
-
-/**
- * Clears the game id from the backend, effectively disconnecting the monitor from any game. Internal function that is not exposed outside of the module.
- */
-function clearGame(): void {
-    send(Command.ClearGame)
+async function getFlagDebugInfo(flagId: FlagId, gameId: GameId): Promise<FlagDebugInfo> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ flag: FlagDebugInfo }, GetFlagDebugInfo>(Command.GetFlagDebugInformation, { flagId, gameId })).flag
 }
 
 /**
@@ -752,28 +820,30 @@ function sendChatMessageToRoom(text: string, roomId: RoomId, from: PlayerId): vo
  * Instructs the backend to start sending updates on any changes to the game visible to the player set through followGame. Internal function that is not exposed outside of the module.
  * @returns {Promise<PlayerViewInformation>} The current view of the game visible to the player.
  */
-async function listenToGameViewForPlayer(): Promise<PlayerViewInformation | undefined> {
-    return (await sendRequestAndWaitForReply<{ playerView?: PlayerViewInformation }>(Command.StartMonitoringGame))?.playerView
+async function listenToGameViewForPlayer(playerId: PlayerId, gameId: GameId): Promise<PlayerViewInformation | undefined> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ playerView?: PlayerViewInformation }, StartMonitoringGame>(Command.StartMonitoringGame, { playerId, gameId }))?.playerView
 }
 
 /**
  * Retrieves information about a specific point in the game world.
  * @param {Point} point - The point to get information on.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the point information.
  * @returns {Promise<PointInformation>} Information about the specified point.
  */
-async function getInformationOnPoint(point: Point): Promise<PointInformation> {
+async function getInformationOnPoint(point: Point, playerId: PlayerId): Promise<PointInformation> {
     return (
-        await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, { points: Point[] }>(Command.GetInformationOnPoint, { points: [point] })
+        await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, { points: Point[], playerId: PlayerId }>(Command.GetInformationOnPoint, { points: [point], playerId })
     ).pointsWithInformation[0]
 }
 
 /**
  * Retrieves information about multiple points in the game world.
  * @param {Point[]} points - The points to get information on.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the point information.
  * @returns {Promise<PointMap<PointInformation>>} A map of point information.
  */
-async function getInformationOnPoints(points: Point[]): Promise<PointMap<PointInformation>> {
-    const reply = await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, { points: Point[] }>(Command.GetInformationOnPoint, { points })
+async function getInformationOnPoints(points: Point[], playerId: PlayerId): Promise<PointMap<PointInformation>> {
+    const reply = await sendRequestAndWaitForReplyWithOptions<InformationOnPointsReply, { points: Point[], playerId: PlayerId }>(Command.GetInformationOnPoint, { points, playerId })
 
     const map = new PointMap<PointInformation>()
 
@@ -782,49 +852,62 @@ async function getInformationOnPoints(points: Point[]): Promise<PointMap<PointIn
     return map
 }
 
-function cheat(cheatCode: CheatCode): void {
-    sendWithOptions<{ cheatCode: CheatCode }>(Command.Cheat, { cheatCode })
+/**
+ * Turns on a cheat for the given player.
+ * @param cheatCode The cheat code to activate.
+ * @param playerId The identifier of the player for whom to activate the cheat.
+ * @returns void
+ */
+function cheat(cheatCode: CheatCode, playerId: PlayerId): void {
+    sendWithOptions<{ cheatCode: CheatCode, playerId: PlayerId}>(Command.Cheat, { cheatCode, playerId })
 }
 
 /**
  * Sets the number of soldiers reserved in headquarters for a specific rank.
  * @param {SoldierType} rank - The soldier rank.
  * @param {number} amount - The number of soldiers to reserve.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the reserved soldiers.
  */
-function setReservedSoldiers(rank: SoldierType, amount: number): void {
-    sendWithOptions<SetReservedSoldiers>(Command.SetReservedInHeadquarters, { [rank]: amount })
+function setReservedSoldiers(rank: SoldierType, amount: number, playerId: PlayerId): void {
+    const options = { [rank]: amount, playerId } as SetReservedSoldiers
+
+    sendWithOptions<SetReservedSoldiers>(Command.SetReservedInHeadquarters, options)
 }
 
 /**
  * Adds detailed monitoring for a specific house or flag.
  * @param {HouseId | FlagId} id - The identifier of the house or flag to monitor.
+ * @param {PlayerId} playerId - The identifier of the player for whom to add detailed monitoring.
  */
-function addDetailedMonitoring(id: HouseId | FlagId): void {
-    sendWithOptions<AddDetailedMonitoring>(Command.StartDetailedMonitoring, { id })
+function addDetailedMonitoring(id: HouseId | FlagId, playerId: PlayerId): void {
+    sendWithOptions<AddDetailedMonitoring>(Command.StartDetailedMonitoring, { id, playerId })
 }
 
 /**
  * Removes detailed monitoring for a specific house or flag.
  * @param {HouseId | FlagId} id - The identifier of the house or flag to stop monitoring.
+ * @param {PlayerId} playerId - The identifier of the player for whom to remove detailed monitoring.
  */
-function removeDetailedMonitoring(id: HouseId | FlagId): void {
-    sendWithOptions<RemoveDetailedMonitoring>(Command.StopDetailedMonitoring, { id })
+function removeDetailedMonitoring(id: HouseId | FlagId, playerId: PlayerId): void {
+    sendWithOptions<RemoveDetailedMonitoring>(Command.StopDetailedMonitoring, { id, playerId })
 }
 
 /**
  * Removes a specific message from the game.
  * @param {GameMessageId} messageId - The identifier of the message to remove.
+ * @param {PlayerId} playerId - The identifier of the player for whom to remove the message.
  */
-function removeMessage(messageId: GameMessageId): void {
-    sendWithOptions<RemoveMessage>(Command.RemoveMessage, { messageId })
+function removeMessage(messageId: GameMessageId, playerId: PlayerId): void {
+    sendWithOptions<RemoveMessage>(Command.RemoveMessage, { messageId, playerId })
 }
 
 /**
  * Removes multiple messages from the game.
- * @param {GameMessage[]} messages - The list of messages to remove.
+ * @param {GameMessageId[]} messageIds - The list of message IDs to remove.
+ * @param {PlayerId} playerId - The identifier of the player for whom to remove the messages.
  */
-function removeMessages(messages: GameMessage[]): void {
-    sendWithOptions<RemoveMessages>(Command.RemoveMessages, { messageIds: messages.map(message => message.id) })
+function removeMessages(messageIds: GameMessageId[], playerId: PlayerId): void {
+    sendWithOptions<RemoveMessages>(Command.RemoveMessages, { messageIds: messageIds, playerId })
 }
 
 /**
@@ -832,18 +915,20 @@ function removeMessages(messages: GameMessage[]): void {
  * @param {number} mint - The quota for the mint.
  * @param {number} armory - The quota for the armory.
  * @param {number} ironSmelter - The quota for the iron smelter.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the quotas.
  * @returns {void}
  */
-function setCoalQuotas(mint: number, armory: number, ironSmelter: number): void {
-    sendWithOptions<SetCoalQuotas>(Command.SetCoalQuotas, { mint, armory, ironSmelter })
+function setCoalQuotas(mint: number, armory: number, ironSmelter: number, playerId: PlayerId): void {
+    sendWithOptions<SetCoalQuotas>(Command.SetCoalQuotas, { mint, armory, ironSmelter, playerId })
 }
 
 /**
  * Retrieves the current food quotas.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the food quotas.
  * @returns {Promise<FoodQuotas>} The current food quotas.
  */
-function getFoodQuotas(): Promise<FoodQuotas> {
-    return sendRequestAndWaitForReply<FoodQuotas>(Command.GetFoodQuotas)
+function getFoodQuotas(playerId: PlayerId): Promise<FoodQuotas> {
+    return sendRequestAndWaitForReplyWithOptions<FoodQuotas, GetFoodQuotas>(Command.GetFoodQuotas, { playerId })
 }
 
 /**
@@ -852,44 +937,48 @@ function getFoodQuotas(): Promise<FoodQuotas> {
  * @param {number} pigFarm - The quota for the pig farm.
  * @param {number} mill - The quota for the mill.
  * @param {number} brewery - The quota for the brewery.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the quotas.
  * @returns {void}
  */
-
-function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number): void {
-    sendWithOptions<SetWheatQuotas>(Command.SetWheatQuotas, { donkeyFarm, pigFarm, mill, brewery })
+function setWheatQuotas(donkeyFarm: number, pigFarm: number, mill: number, brewery: number, playerId: PlayerId): void {
+    sendWithOptions<SetWheatQuotas>(Command.SetWheatQuotas, { donkeyFarm, pigFarm, mill, brewery, playerId })
 }
 
 /**
  * Retrieves the current wheat quotas.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the wheat quotas.
  * @returns {Promise<WheatQuotas>} The current wheat quotas.
  */
 
-function getWheatQuotas(): Promise<WheatQuotas> {
-    return sendRequestAndWaitForReply<WheatQuotas>(Command.GetWheatQuotas)
+function getWheatQuotas(playerId: PlayerId): Promise<WheatQuotas> {
+    return sendRequestAndWaitForReplyWithOptions<WheatQuotas, GetWheatQuotas>(Command.GetWheatQuotas, { playerId })
 }
 
 /**
  * Retrieves the current water quotas.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the water quotas.
  * @returns {Promise<WaterQuotas>} The current water quotas.
  */
-function getWaterQuotas(): Promise<WaterQuotas> {
-    return sendRequestAndWaitForReply<WaterQuotas>(Command.GetWaterQuotas)
+function getWaterQuotas(playerId: PlayerId): Promise<WaterQuotas> {
+    return sendRequestAndWaitForReplyWithOptions<WaterQuotas, GetWaterQuotas>(Command.GetWaterQuotas, { playerId })
 }
 
 /**
  * Retrieves the current coal quotas.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the coal quotas.
  * @returns {Promise<CoalQuotas>} The current coal quotas.
  */
-function getCoalQuotas(): Promise<CoalQuotas> {
-    return sendRequestAndWaitForReply<CoalQuotas>(Command.GetCoalQuotas)
+function getCoalQuotas(playerId: PlayerId): Promise<CoalQuotas> {
+    return sendRequestAndWaitForReplyWithOptions<CoalQuotas, GetCoalQuotas>(Command.GetCoalQuotas, { playerId })
 }
 
 /**
  * Retrieves the current iron bar quotas.
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the iron bar quotas.
  * @returns {Promise<IronBarQuotas>} The current iron bar quotas.
  */
-function getIronBarQuotas(): Promise<IronBarQuotas> {
-    return sendRequestAndWaitForReply<IronBarQuotas>(Command.GetIronBarQuotas)
+function getIronBarQuotas(playerId: PlayerId): Promise<IronBarQuotas> {
+    return sendRequestAndWaitForReplyWithOptions<IronBarQuotas, GetIronBarQuotas>(Command.GetIronBarQuotas, { playerId })
 }
 
 /**
@@ -898,12 +987,13 @@ function getIronBarQuotas(): Promise<IronBarQuotas> {
  * @param {number} coalMine - The quota for the coal mine.
  * @param {number} goldMine - The quota for the gold mine.
  * @param {number} graniteMine - The quota for the granite mine.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the quotas.
  * @returns {void}
  */
-function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, graniteMine: number): void {
+function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, graniteMine: number, playerId: PlayerId): void {
     sendWithOptions<SetFoodQuotas>(
         Command.SetFoodQuotas,
-        { ironMine, coalMine, goldMine, graniteMine }
+        { ironMine, coalMine, goldMine, graniteMine, playerId }
     )
 }
 
@@ -913,29 +1003,31 @@ function setFoodQuotas(ironMine: number, coalMine: number, goldMine: number, gra
  * @param {number} donkeyFarm - The quota for the donkey farm.
  * @param {number} pigFarm - The quota for the pig farm.
  * @param {number} brewery - The quota for the brewery.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the quotas.
  * @returns {void}
  */
-function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, brewery: number): void {
-    sendWithOptions<SetWaterQuotas>(Command.SetWaterQuotas, { bakery, donkeyFarm, pigFarm, brewery })
+function setWaterQuotas(bakery: number, donkeyFarm: number, pigFarm: number, brewery: number, playerId: PlayerId): void {
+    sendWithOptions<SetWaterQuotas>(Command.SetWaterQuotas, { bakery, donkeyFarm, pigFarm, brewery, playerId })
 }
 
 /**
  * Sets the iron bar quotas for different production facilities.
  * @param {number} armory - The quota for the armory.
  * @param {number} metalworks - The quota for the metalworks.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the quotas.
  * @returns {void}
  */
-function setIronBarQuotas(armory: number, metalworks: number): void {
-    sendWithOptions<SetIronBarQuotas>(Command.SetIronBarQuotas, { armory, metalworks })
+function setIronBarQuotas(armory: number, metalworks: number, playerId: PlayerId): void {
+    sendWithOptions<SetIronBarQuotas>(Command.SetIronBarQuotas, { armory, metalworks, playerId })
 }
 
 /**
  * Creates a new game with the given name and players.
  * @param {string} name - The name of the game
- * @param {PlayerInformation[]} players - The players in the game
- * @returns {GameInformation} Metadata about the game
+ * @param {(ExistingPlayerById | NewPlayerToCreate)[]} players - The players in the game
+ * @returns {Promise<GameInformation>} Metadata about the game
  */
-async function createGame(name: string, players: PlayerInformation[]): Promise<GameInformation> {
+async function createGame(name: string, players: (ExistingPlayerById | NewPlayerToCreate)[]): Promise<GameInformation> {
     return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, CreateNewGameOptions>(Command.CreateGame, {
         name,
         players
@@ -943,7 +1035,8 @@ async function createGame(name: string, players: PlayerInformation[]): Promise<G
 }
 
 /**
- * Deletes the current game.
+ * Deletes the given game.
+ * @param {GameId} - The id of the game to delete.
  */
 function deleteGame(gameId: GameId): void {
     sendWithOptions<DeleteGame>(Command.DeleteGame, { gameId })
@@ -951,6 +1044,7 @@ function deleteGame(gameId: GameId): void {
 
 /**
  * Pauses the current game.
+ * @param {GameId} gameId - The id of the game.
  * @returns {void}
 */
 function pauseGame(gameId: GameId): void {
@@ -959,6 +1053,7 @@ function pauseGame(gameId: GameId): void {
 
 /**
  * Resumes the current game after a pause.
+ * @param {GameId} gameId - The id of the game.
  * @returns {void}
 */
 function resumeGame(gameId: GameId): void {
@@ -969,35 +1064,76 @@ function resumeGame(gameId: GameId): void {
  * Places a house at a specific point on the map.
  * @param {AnyBuilding} type - The type of house to place.
  * @param {Point} point - The location to place the house.
+ * @param {PlayerId} playerId - The identifier of the player placing the house.
  * @returns {void}
 */
-function placeHouse(type: AnyBuilding, point: Point): void {
-    sendWithOptions<PlaceHouse>(Command.PlaceBuilding, { ...point, type })
+function placeHouse(type: AnyBuilding, point: Point, playerId: PlayerId): void {
+    sendWithOptions<PlaceHouse>(Command.PlaceBuilding, { ...point, type, playerId })
+}
+
+/**
+ * Blocks delivery of the given material to the given storehouse.
+ * @param {HouseId} houseId - The id of the storehouse to block delivery to
+ * @param {Material} material - The material to block delivery of
+ */
+function blockDelivery(houseId: HouseId, material: Material): void {
+    sendWithOptions<BlockDelivery>(Command.BlockMaterial, { houseId, material })
+}
+ 
+/**
+ * Allow delivery of the given material to the given storehouse.
+ * @param {HouseId} houseId - The id of the storehouse to allow delivery to
+ * @param {Material} material - The material to allow delivery of
+ */
+function allowDelivery(houseId: HouseId, material: Material): void {
+    sendWithOptions<AllowDelivery>(Command.AllowMaterial, { houseId, material })
+}
+
+/**
+ * Sends out all available material from a storehouse to the surrounding area.
+ * @param {HouseId} houseId - The id of the storehouse to send out material from
+ * @param {Material} material - The material to send out
+ */
+function sendOutMaterial(houseId: HouseId, material: Material): void {
+    sendWithOptions<SendOut>(Command.SendOut, { houseId, material })
+}
+
+/**
+ * Stops sending out material from a storehouse to the surrounding area.
+ * @param {HouseId} houseId - The id of the storehouse to stop sending out material from
+ * @param {Material} material - The material to stop sending out
+ */
+function stopSendingOutMaterial(houseId: HouseId, material: Material): void {
+    sendWithOptions<StopSendingOut>(Command.StopSendingOut, { houseId, material })
 }
 
 /**
  * Places a road along specified points on the map.
  * @param {Point[]} points - The points that define the road path.
+ * @param {PlayerId} playerId - The identifier of the player placing the road.
+ * @returns {void}
  */
-function placeRoad(points: Point[]): void {
-    sendWithOptions<PlaceRoad>(Command.PlaceRoad, { road: points })
+function placeRoad(points: Point[], playerId: PlayerId): void {
+    sendWithOptions<PlaceRoad>(Command.PlaceRoad, { road: points, playerId })
 }
 
 /**
  * Places a flag at a specific point on the map.
  * @param {Point} flag - The location to place the flag.
+ * @param {PlayerId} playerId - The identifier of the player placing the flag.
  */
-function placeFlag(flag: Point): void {
-    sendWithOptions<PlaceFlag>(Command.PlaceFlag, { flag })
+function placeFlag(flag: Point, playerId: PlayerId): void {
+    sendWithOptions<PlaceFlag>(Command.PlaceFlag, { flag, playerId })
 }
 
 /**
  * Places a flag and a road at specified points on the map.
  * @param {Point} flag - The location to place the flag.
  * @param {Point[]} points - The points that define the road path.
+ * @param {PlayerId} playerId - The identifier of the player placing the flag and road.
  */
-function placeRoadWithFlag(flag: Point, points: Point[]): void {
-    sendWithOptions<PlaceRoadWithFlag>(Command.PlaceFlagAndRoad, { flag, road: points })
+function placeRoadWithFlag(flag: Point, points: Point[], playerId: PlayerId): void {
+    sendWithOptions<PlaceRoadWithFlag>(Command.PlaceFlagAndRoad, { flag, road: points, playerId })
 }
 
 /**
@@ -1026,44 +1162,51 @@ function removeBuilding(id: HouseId): void {
 
 /**
  * Calls a scout to explore a specific point on the map.
+ * 
  * @param {Point} point - The location to send the scout.
+ * @param {PlayerId} playerId - The identifier of the player calling the scout.
  */
-function callScout(point: Point): void {
-    sendWithOptions<CallScout>(Command.CallScout, { point })
+function callScout(point: Point, playerId: PlayerId): void {
+    sendWithOptions<CallScout>(Command.CallScout, { point, playerId })
 }
 
 /**
  * Calls a geologist to survey a specific point on the map.
  * @param {Point} point - The location to send the geologist.
+ * @param {PlayerId} playerId - The identifier of the player calling the geologist.
  */
-function callGeologist(point: Point): void {
-    sendWithOptions<CallGeologist>(Command.CallGeologist, { point })
+function callGeologist(point: Point, playerId: PlayerId): void {
+    sendWithOptions<CallGeologist>(Command.CallGeologist, { point, playerId })
 }
 
 /**
  * Marks a set of messages as read.
  * @param {GameMessageId[]} messageIds - A list of ids of the messages to mark as read
+ * @param {PlayerId} playerId - The identifier of the player marking messages as read
  */
-function markGameMessagesRead(messageIds: GameMessageId[]): void {
-    sendWithOptions<MarkGameMessagesRead>(Command.MarkGameMessagesRead, { messageIds })
+function markGameMessagesRead(messageIds: GameMessageId[], playerId: PlayerId): void {
+    sendWithOptions<MarkGameMessagesRead>(Command.MarkGameMessagesRead, { messageIds, playerId })
 }
 
 /**
  * Retrieves the player's current view of the game. Internal function not exposed outside the module.
+ * 
+ * @param {PlayerId} playerId - The identifier of the player for whom to retrieve the game view.
+ * @param {GameId} gameId - The identifier of the game for which to retrieve the view.
  * @returns {Promise<PlayerViewInformation>} The current view of the game.
  */
-// eslint-disable-next-line
-async function getViewForPlayer(): Promise<PlayerViewInformation> {
-    return (await sendRequestAndWaitForReply<{ playerView: PlayerViewInformation }>(Command.FullSync)).playerView
+async function getViewForPlayer(playerId: PlayerId, gameId: GameId): Promise<PlayerViewInformation> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ playerView: PlayerViewInformation }, GetViewForPlayer>(Command.FullSync, { playerId, gameId })).playerView
 }
 
 // Functions internal to WS API
 /**
- * Listens for updates on game metadata.
+ * Listens for updates on game metadata. Also returns the current game metadata.
+ * @param {GameId} - The id of the game.
  * @returns {Promise<GameInformation>} The latest game metadata.
  */
-async function listenToGameMetadata(): Promise<GameInformation> {
-    return (await sendRequestAndWaitForReply<{ gameInformation: GameInformation }>(Command.ListenToGameInfo)).gameInformation
+async function listenToGameMetadata(gameId: GameId): Promise<GameInformation> {
+    return (await sendRequestAndWaitForReplyWithOptions<{ gameInformation: GameInformation }, ListenToGameMetadata>(Command.ListenToGameInfo, { gameId })).gameInformation
 }
 
 /**
@@ -1072,6 +1215,13 @@ async function listenToGameMetadata(): Promise<GameInformation> {
  */
 function listenToGamesList(): void {
     send(Command.ListenToGameList)
+}
+
+/**
+ * Stop listening to changes to the list of games.
+ */
+function stopListeningToGamesList(): void {
+    send(Command.StopListeningToGameList)
 }
 
 /**
@@ -1127,8 +1277,6 @@ export {
     getGameInformation,
     upgrade,
     getFlagDebugInfo,
-    setPlayerId,
-    setGame,
     sendChatMessageToRoom,
     listenToGameViewForPlayer,
     getInformationOnPoint,
@@ -1166,7 +1314,6 @@ export {
     listenToChatMessages,
     attackHouse,
     evacuateHouse,
-    upgradeHouse,
     findPossibleNewRoad,
     deleteGame,
     disablePromotionsForHouse,
@@ -1186,5 +1333,13 @@ export {
     getMap,
     cheat,
     setCheating,
-    clearGame
+    listenToPlayer,
+    stopListeningToPlayer,
+    blockDelivery,
+    allowDelivery,
+    sendOutMaterial,
+    stopSendingOutMaterial,
+    getMapsWithTerrain,
+    getMapWithTerrain,
+    stopListeningToGamesList
 }

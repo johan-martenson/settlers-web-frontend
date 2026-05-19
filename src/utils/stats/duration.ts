@@ -25,26 +25,23 @@ class Duration {
     }
 
     reportStats(): void {
-        let previous = null
+        let previousTime = this.timestampAtStart
 
         for (const stamp of this.stamps) {
-            if (previous) {
-                const variableName = this.name + "." + stamp.name
+            const variableName = this.name + "." + stamp.name
 
-                addVariableIfAbsent(variableName)
+            addVariableIfAbsent(variableName)
+            reportValueForVariable(variableName, stamp.time - previousTime)
 
-                reportValueForVariable(variableName, stamp.time - previous.time)
-            }
-
-            previous = stamp
+            previousTime = stamp.time
         }
 
-        if (previous) {
+        if (previousTime !== this.timestampAtStart) {
             const totalName = this.name + ".total"
 
             addVariableIfAbsent(totalName)
 
-            reportValueForVariable(totalName, previous.time - this.timestampAtStart)
+            reportValueForVariable(totalName, previousTime - this.timestampAtStart)
         }
     }
 }
@@ -69,7 +66,7 @@ class AggregatedDuration {
         const timeNow = Date.now()
         const timePassed = timeNow - this.previousTimestamp
 
-        if (current) {
+        if (current !== undefined) {
             this.stamps.set(name, current + timePassed)
         } else {
             this.stamps.set(name, timePassed)
@@ -80,7 +77,7 @@ class AggregatedDuration {
 
     reportStats(): void {
         for (const [name, value] of this.stamps.entries()) {
-            addVariableIfAbsent(name + ".aggregated")
+            addVariableIfAbsent(this.name + '.' + name + ".aggregated")
 
             reportValueForVariable(name + ".aggregated", value)
         }

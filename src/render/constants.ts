@@ -6,6 +6,24 @@ type BelowAndDownRight = {
     downRight: number[]
 }
 
+
+// Functions
+const uv = (
+    a: number,
+    b: number,
+    c: number,
+    d: number,
+    e: number,
+    f: number
+): number[] => [
+    a / 255,
+    b / 255,
+    c / 255,
+    d / 255,
+    e / 255,
+    f / 255
+]
+
 // Constants
 export const DEFAULT_SCALE = 35.0
 export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
@@ -113,7 +131,7 @@ TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_1, MOUNTAIN_TRANSITION)
 TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_2, MOUNTAIN_TRANSITION)
 TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_3, MOUNTAIN_TRANSITION)
 TRANSITION_TEXTURE_MAPPINGS.set(MOUNTAIN_4, MOUNTAIN_TRANSITION)
-TRANSITION_TEXTURE_MAPPINGS.set(BUILDABLE_MOUNTAIN, DESERT_TRANSITION)
+TRANSITION_TEXTURE_MAPPINGS.set(BUILDABLE_MOUNTAIN, DESERT_TRANSITION) // TODO: verify that this is correct. Should it be MOUNTAIN_TRANSITION instead?
 TRANSITION_TEXTURE_MAPPINGS.set(SWAMP, GRASS_TRANSITION)
 TRANSITION_TEXTURE_MAPPINGS.set(SAVANNAH, GRASS_TRANSITION)
 TRANSITION_TEXTURE_MAPPINGS.set(MEADOW_1, GRASS_TRANSITION)
@@ -128,274 +146,295 @@ TRANSITION_TEXTURE_MAPPINGS.set(STEPPE, DESERT_TRANSITION)
 export const VEGETATION_TO_TEXTURE_MAPPING = new Map<VegetationIntegers, BelowAndDownRight>()
 
 VEGETATION_TO_TEXTURE_MAPPING.set(SAVANNAH, {
-    below: [
+    below: uv(
         1, 143,
         24, 96,
         47, 143
-    ].map(v => v / 255.0),
-    downRight: [
+    ),
+    downRight: uv(
         1, 96,
         24, 143,
         47, 96
-    ].map(v => v / 255.0)
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_1, {
-    below: [
+    below: uv(
         1, 95,
         24, 48,
-        47, 95].map(v => v / 255.0),
-    downRight: [
+        47, 95
+    ),
+    downRight: uv(
         1, 48,
         24, 95,
-        47, 48].map(v => v / 255.0)
+        47, 48)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(SNOW, {
-    below: [
+    below: uv(
         1, 47,
         24, 1,
         47, 47
-    ].map(v => v / 255.0),
-    downRight: [
+    ),
+    downRight: uv(
         1, 1,
         24, 47,
         47, 1
-    ].map(v => v / 255.0)
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(SWAMP, {
-    below: [
+    below: uv(
         96, 47,
         120, 1,
-        143, 47].map(v => v / 255.0),
-    downRight: [
+        143, 47
+    ),
+    downRight: uv(
         96, 1,
         120, 47,
-        143, 1].map(v => v / 255.0)
+        143, 1
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(DESERT_1, {
-    below: [
+    below: uv(
         48, 47,
         72, 1,
         95, 47
-    ].map(v => v / 255.0),
-    downRight: [
+    ),
+    downRight: uv(
         48, 1,
         72, 47,
         95, 1
-    ].map(v => v / 255.0)
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(WATER_1, {
-    below: [
+    below: uv(
         194, 76,
         219, 50,
-        245, 76].map(v => v / 255.0),
-    downRight: [
+        245, 76
+    ),
+    downRight: uv(
         194, 77,
         219, 101,
-        245, 77].map(v => v / 255.0)
+        245, 77
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(BUILDABLE_WATER, {
-    below: [
+    below: uv(
         194, 76,
         219, 50,
-        245, 76].map(v => v / 255.0),
-    downRight: [
+        245, 76
+    ),
+    downRight: uv(
         194, 77,
         219, 101,
-        245, 77].map(v => v / 255.0)
+        245, 77
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(DESERT_2, {
-    below: [
+    below: uv(
         48, 47,
         72, 1,
         95, 47
-    ].map(v => v / 255.0),
-    downRight: [
+    ),
+    downRight: uv(
         48, 1,
         72, 47,
-        95, 1].map(v => v / 255.0)
+        95, 1
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MEADOW_1, {
-    below: [
+    below: uv(
         48, 143,
         72, 96,
-        95, 143].map(v => v / 255.0),
-    downRight: [
+        95, 143
+    ),
+    downRight: uv(
         48, 96,
         72, 143,
-        95, 96].map(v => v / 255.0)
+        95, 96
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MEADOW_2, {
-    below: [
+    below: uv(
         96, 143,
         129, 96,
         143, 143
-    ].map(v => v / 255.0),
-    downRight: [
+    ),
+    downRight: uv(
         96, 96,
         120, 143,
         143, 96
-    ].map(v => v / 255.0)
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MEADOW_3, {
-    below: [
+    below: uv(
         144, 143,
         168, 96,
-        191, 143].map(v => v / 255.0),
-    downRight: [
+        191, 143
+    ),
+    downRight: uv(
         144, 96,
         168, 143,
-        191, 96].map(v => v / 255.0)
+        191, 96
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_2, {
-    below: [
+    below: uv(
         48, 95,
         72, 48,
-        95, 95].map(v => v / 255.0),
-    downRight: [
+        95, 95
+    ),
+    downRight: uv(
         48, 48,
         72, 95,
-        95, 48].map(v => v / 255.0)
+        95, 48
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_3, {
-    below: [
+    below: uv(
         96, 95,
         120, 48,
-        143, 95].map(v => v / 255.0),
-    downRight: [
+        143, 95
+    ),
+    downRight: uv(
         96, 48,
         120, 95,
-        143, 48].map(v => v / 255.0)
+        143, 48
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_4, {
-    below: [
+    below: uv(
         144, 95,
         168, 48,
-        191, 95].map(v => v / 255.0),
-    downRight: [
+        191, 95
+    ),
+    downRight: uv(
         144, 48,
         168, 95,
-        191, 48].map(v => v / 255.0)
+        191, 48
+    )
 })
 
+// TODO: verify coordinates for STEPPE texture
 VEGETATION_TO_TEXTURE_MAPPING.set(STEPPE, {
-    below: [
+    below: uv(
         1, 191,
         24, 144,
-        47, 191].map(v => v / 255.0),
-    downRight: [
+        47, 191
+    ),
+    downRight: uv(
         1, 191,
         24, 144,
-        47, 191].map(v => v / 255.0)
+        47, 191
+    )
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(FLOWER_MEADOW, {
-    below: [
+    below: uv(
         144, 47,
         168, 1,
-        191, 47].map(v => v / 255.0),
-    downRight: [
+        191, 47),
+    downRight: uv(
         144, 1,
         168, 47,
-        191, 1].map(v => v / 255.0)
+        191, 1)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(LAVA_1, {
-    below: [
+    below: uv(
         192, 132,
         219, 104,
-        247, 132].map(v => v / 255.0),
-    downRight: [
+        247, 132),
+    downRight: uv(
         192, 133,
         220, 160,
-        246, 132].map(v => v / 255.0)
+        246, 132)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MAGENTA, {
-    below: [
+    below: uv(
         96, 191,
         120, 144,
-        143, 191].map(v => v / 255.0),
-    downRight: [
+        143, 191),
+    downRight: uv(
         96, 144,
         120, 191,
-        143, 144].map(v => v / 255.0)
+        143, 144)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(MOUNTAIN_MEADOW, {
-    below: [
+    below: uv(
         48, 191,
         72, 144,
-        95, 191].map(v => v / 255.0),
-    downRight: [
+        95, 191),
+    downRight: uv(
         48, 144,
         72, 191,
-        95, 144].map(v => v / 255.0)
+        95, 144)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(WATER_2, {
-    below: [
+    below: uv(
         194, 76,
         219, 50,
-        245, 76].map(v => v / 255.0),
-    downRight: [
+        245, 76),
+    downRight: uv(
         194, 77,
         219, 101,
-        245, 77].map(v => v / 255.0)
+        245, 77)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(LAVA_2, {
-    below: [
+    below: uv(
         192, 132,
         219, 104,
-        247, 132].map(v => v / 255.0),
-    downRight: [
+        247, 132),
+    downRight: uv(
         192, 133,
         220, 160,
-        246, 132].map(v => v / 255.0)
+        246, 132)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(LAVA_3, {
-    below: [
+    below: uv(
         192, 132,
         219, 104,
-        247, 132].map(v => v / 255.0),
-    downRight: [
+        247, 132),
+    downRight: uv(
         192, 133,
         220, 160,
-        246, 132].map(v => v / 255.0)
+        246, 132)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(LAVA_4, {
-    below: [
+    below: uv(
         192, 132,
         219, 104,
-        247, 132].map(v => v / 255.0),
-    downRight: [
+        247, 132),
+    downRight: uv(
         192, 133,
         220, 160,
-        246, 132].map(v => v / 255.0)
+        246, 132)
 })
 
 VEGETATION_TO_TEXTURE_MAPPING.set(BUILDABLE_MOUNTAIN, {
-    below: [
+    below: uv(
         48, 95,
         72, 48,
-        95, 95].map(v => v / 255.0),
-    downRight: [
+        95, 95),
+    downRight: uv(
         48, 48,
         72, 95,
-        95, 48].map(v => v / 255.0)
+        95, 48)
 })

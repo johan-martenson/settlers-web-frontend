@@ -1,16 +1,18 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Button, Field } from '@fluentui/react-components'
-import { AttackType, HouseInformation, Nation, PlayerId, Point, isMaterial } from '../../api/types'
+import { AttackType, HouseInformation, Material, Nation, PlayerId, Point, isMaterial } from '../../api/types'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
 import { HeadquarterInfo } from './headquarter'
 import { MilitaryBuilding } from './military_building'
 import { api } from '../../api/ws-api'
-import { ButtonRow, Window } from '../../components/dialog'
+import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { houseIsReady, isMilitaryBuilding } from '../../api/utils'
 import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { useHouse } from '../../utils/hooks/hooks'
+import { GenericCommand } from '../../screens/play/type_control'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type HouseInfoProps = {
@@ -27,6 +29,7 @@ type PlannedHouseInfoProps = {
     nation: Nation
     onRaise: () => void
     onClose: () => void
+    goToPoint: (point: Point) => void
 }
 
 type EnemyHouseInfoProps = {
@@ -34,6 +37,7 @@ type EnemyHouseInfoProps = {
     nation: Nation
     onRaise: () => void
     onClose: () => void
+    goToPoint: (point: Point) => void
 }
 
 type MilitaryEnemyHouseInfoProps = {
@@ -58,23 +62,97 @@ type ProductionBuildingProps = {
     goToPoint: (point: Point) => void
 }
 
+type ResourceDisplayProps = {
+    house: HouseInformation
+    nation: Nation
+    setHoverInfo?: (text?: string) => void
+    inline?: boolean
+    padding?: string
+}
+
 // React components
+export const ResourceDisplay = ({
+    house,
+    nation,
+    setHoverInfo,
+    inline,
+    padding
+}: ResourceDisplayProps) => {
+
+    // Rendering
+    const materials = Object.keys(house.resources)
+        .filter((m): m is Material => isMaterial(m) && house.resources[m]?.canHold !== undefined)
+
+    if (materials.length === 0) {
+        return null
+    }
+
+    return (
+        <ItemContainer padding={padding} inline={inline}>
+            {materials.map(material => {
+                const has = house.resources[material]?.has ?? 0
+                const canHold = house.resources[material]?.canHold ?? 0
+                const gap = Math.max(canHold - has, 0)
+
+                return (
+                    <div key={material}>
+                        {Array.from({ length: has }).map((_, index) => (
+                            <span
+                                key={`${material}-has-${index}`}
+                                onMouseEnter={() => setHoverInfo?.(materialPretty(material))}
+                                onMouseLeave={() => setHoverInfo?.(undefined)}
+                            >
+                                <InventoryIcon
+                                    material={material}
+                                    nation={nation}
+                                    inline
+                                />
+                            </span>
+                        ))}
+
+                        {Array.from({ length: gap }).map((_, index) => (
+                            <span
+                                key={`${material}-missing-${index}`}
+                                onMouseEnter={() => setHoverInfo?.(materialPretty(material))}
+                                onMouseLeave={() => setHoverInfo?.(undefined)}
+                            >
+                                <InventoryIcon
+                                    material={material}
+                                    nation={nation}
+                                    inline
+                                    missing
+                                />
+                            </span>
+                        ))}
+                    </div>
+                )
+            })}
+        </ItemContainer>
+    )
+}
+
 const HouseInfo = ({ selfPlayerId, nation, goToPoint, onClose, onRaise, ...props }: HouseInfoProps) => {
 
     // Monitoring hooks
     const house = useHouse(props.house.id)
 
     // Rendering
-    const isOwnHouse = (house.playerId === selfPlayerId)
+    const isOwnHouse = (house?.playerId === selfPlayerId)
+
+    if (house === undefined) {
+        console.error(`House window: house ${props.house.id} is undefined`)
+
+        return null
+    }
 
     return (
-        <>
+        <div>
             {isOwnHouse && house.type === 'Headquarter' &&
                 <HeadquarterInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
 
             {isOwnHouse && house.state === 'PLANNED' &&
-                <PlannedHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <PlannedHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} goToPoint={goToPoint} />
             }
 
             {isOwnHouse && house.state === 'UNFINISHED' &&
@@ -90,26 +168,60 @@ const HouseInfo = ({ selfPlayerId, nation, goToPoint, onClose, onRaise, ...props
             }
 
             {!isOwnHouse && !isMilitaryBuilding(house) &&
-                <EnemyHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <EnemyHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} goToPoint={goToPoint} />
             }
 
             {!isOwnHouse && isMilitaryBuilding(house) &&
                 <MilitaryEnemyHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
             }
-        </>
+        </div>
     )
 }
 
-const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoProps) => {
+const PlannedHouseInfo = ({ house, nation, onClose, onRaise, goToPoint }: PlannedHouseInfoProps) => {
+
+    // State
     const [hoverInfo, setHoverInfo] = useState<string>()
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<HouseInformation>>()
+
+        cmds.set('go to house', {
+            action: (house: HouseInformation) => goToPoint(house),
+            icon: <UiIcon type='GO_TO_POINT' scale={0.5} />
+        })
+
+        cmds.set('tear down', {
+            action: (house: HouseInformation) => {
+                api.removeBuilding(house.id)
+                onClose()
+            },
+            icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+        })
+
+        cmds.set('close window', {
+            action: () => onClose(),
+            icon: <Dismiss16Filled />
+        })
+
+        cmds.set('debug', {
+            action: (house: HouseInformation) => console.log(house)
+        })
+
+        return cmds
+    }, [onClose, goToPoint])
+
+    // Rendering
     return (
-        <Window
+        <WindowWithTyping<HouseInformation>
+            commands={commands}
             className='house-info'
             heading={`Planned ${buildingPretty(house.type)}`}
             onClose={onClose}
             onRaise={onRaise}
             hoverInfo={hoverInfo}
+            param={house}
         >
             <HouseIcon
                 houseType={house.type}
@@ -118,48 +230,140 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise }: PlannedHouseInfoP
                 onMouseEnter={() => setHoverInfo(`Planned ${house.type}`)}
                 onMouseLeave={() => setHoverInfo(undefined)}
             />
-            <Button
-                onClick={() => {
-                    api.removeBuilding(house.id)
+            <ButtonRow>
+                <Button
+                    onClick={() => {
+                        api.removeBuilding(house.id)
 
-                    onClose()
-                }}
-                onMouseEnter={() => setHoverInfo('Tear down')}
-                onMouseLeave={() => setHoverInfo(undefined)}
-            >
-                <UiIcon type='DESTROY_BUILDING' />
-            </Button>
-        </Window>
+                        onClose()
+                    }}
+                    onMouseEnter={() => setHoverInfo('Tear down')}
+                    onMouseLeave={() => setHoverInfo(undefined)}
+                >
+                    <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+                </Button>
+                <Button
+                    onClick={() => {
+                        goToPoint(house)
+                    }}
+                    onMouseEnter={() => setHoverInfo('Go to house')}
+                    onMouseLeave={() => setHoverInfo(undefined)}
+                >
+                    <UiIcon type='GO_TO_POINT' scale={0.5} />
+                </Button>
+
+            </ButtonRow>
+        </WindowWithTyping>
     )
 }
 
-const EnemyHouseInfo = ({ house, nation, onClose, onRaise }: EnemyHouseInfoProps) => {
+const EnemyHouseInfo = ({ house, nation, onClose, onRaise, goToPoint }: EnemyHouseInfoProps) => {
+
+    // State
+    const [hoverInfo, setHoverInfo] = useState<string>()
+
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<HouseInformation>>()
+
+        cmds.set('go to building', {
+            action: (house: HouseInformation) => goToPoint(house),
+            filter: (house: HouseInformation) => houseIsReady(house)
+        })
+
+        cmds.set('close window', {
+            action: () => onClose()
+        })
+
+        cmds.set('debug', {
+            action: (house: HouseInformation) => console.log(house),
+            hidden: true
+        })
+
+        return cmds
+    }, [onClose, goToPoint])
+
+    // Rendering
     return (
-        <Window
+        <WindowWithTyping<HouseInformation>
+            commands={commands}
             className='house-info'
             onClose={onClose}
             heading={`Enemy building: ${buildingPretty(house.type)}`}
             onRaise={onRaise}
+            hoverInfo={hoverInfo}
+            param={house}
         >
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
-        </Window>
+            <Button
+                onClick={() => goToPoint(house)}
+                onMouseEnter={() => setHoverInfo('Go to house')}
+                onMouseLeave={() => setHoverInfo(undefined)}
+            >
+                <UiIcon type='GO_TO_POINT' scale={0.5} />
+            </Button>
+        </WindowWithTyping>
     )
 }
 
 const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEnemyHouseInfoProps) => {
+
+    // State
     const [chosenAttackers, setChosenAttackers] = useState<number>(1)
     const [attackType, setAttackType] = useState<AttackType>('STRONG')
     const [hoverInfo, setHoverInfo] = useState<string>()
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<HouseInformation>>()
+
+        cmds.set('attack', {
+            action: (house: HouseInformation) => api.attackHouse(house.id, chosenAttackers, attackType),
+            filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && house.availableAttackers > 0
+        })
+
+        cmds.set('weaker attackers', {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            action: (_house: HouseInformation) => setAttackType('WEAK'),
+            filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && house.availableAttackers > 0 && attackType !== 'WEAK'
+        })
+
+        cmds.set('stronger attackers', {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            action: (_house: HouseInformation) => setAttackType('STRONG'),
+            filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && house.availableAttackers > 0 && attackType !== 'STRONG'
+        })
+
+        cmds.set('more attackers', {
+            action: (house: HouseInformation) => setChosenAttackers(Math.min(chosenAttackers + 1, house.availableAttackers ?? 0)),
+            filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && chosenAttackers < (house.availableAttackers ?? 0)
+        })
+
+        cmds.set('fewer attackers', {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            action: (_house: HouseInformation) => setChosenAttackers(Math.max(chosenAttackers - 1, 1)),
+            filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && chosenAttackers > 1
+        })
+
+        cmds.set('close window', {
+            action: () => onClose()
+        })
+
+        return cmds
+    }, [chosenAttackers, attackType, onClose])
+
+    // Rendering
     const availableAttackers = house.availableAttackers ?? 0
 
     return (
-        <Window
+        <WindowWithTyping<HouseInformation>
+            commands={commands}
             className='house-info'
             onClose={onClose}
             heading={`Enemy ${buildingPretty(house.type)}`}
             onRaise={onRaise}
             hoverInfo={hoverInfo}
+            param={house}
         >
             <HouseIcon houseType={house.type} nation={nation} drawShadow />
 
@@ -216,20 +420,51 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
                     </Button>
                 </div>
             }
-        </Window>
+        </WindowWithTyping>
     )
 }
 
 const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHouseInfo) => {
+
+    // State
     const [hoverInfo, setHoverInfo] = useState<string>()
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<HouseInformation>>()
+
+        cmds.set('tear down', {
+            action: (house: HouseInformation) => {
+                api.removeBuilding(house.id)
+                onClose()
+            },
+            icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+        })
+
+        cmds.set('debug', {
+            action: () => {
+                console.log(house)
+            }
+        })
+
+        cmds.set('close window', {
+            action: () => onClose(),
+            icon: <Dismiss16Filled />
+        })
+
+        return cmds
+    }, [onClose])
+
+    // Rendering
     return (
-        <Window
+        <WindowWithTyping
             className='house-info'
             heading={`${buildingPretty(house.type)}`}
             onClose={onClose}
             onRaise={onRaise}
             hoverInfo={hoverInfo}
+            commands={commands}
+            param={house}
         >
             <HouseIcon
                 houseType={house.type}
@@ -244,48 +479,9 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
                 onMouseEnter={() => setHoverInfo(`${house.constructionProgress} / 100`)}
                 onMouseLeave={() => setHoverInfo(undefined)} />
 
-            {Object.keys(house.resources)
-                .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
-                <Field label='Resources'>
-                    <ItemContainer>
-                        {Object.keys(house.resources)
-                            .filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
-                            .map(material => {
-
-                                if (isMaterial(material)) {
-                                    const has = house.resources[material].has ?? 0
-                                    const canHold = house.resources[material].canHold ?? 0
-                                    const gap = Math.max(canHold - has, 0)
-
-                                    return <div key={material}>
-                                        {Array.from({ length: has }, () => 1).map((value, index) => (
-                                            <span key={index}><InventoryIcon
-                                                material={material}
-                                                nation={nation}
-                                                key={index}
-                                                inline
-                                                onMouseEnter={() => setHoverInfo(materialPretty(material))}
-                                                onMouseLeave={() => setHoverInfo(undefined)}
-                                            /></span>
-                                        ))}
-                                        {Array.from({ length: gap }, () => 1).map((value, index) => (
-                                            <span key={index + 10}><InventoryIcon
-                                                material={material}
-                                                nation={nation}
-                                                key={index}
-                                                inline
-                                                missing
-                                                onMouseEnter={() => setHoverInfo(materialPretty(material))}
-                                                onMouseLeave={() => setHoverInfo(undefined)}
-                                            /></span>
-                                        ))}
-                                    </div>
-                                }
-                            })
-                        }
-                    </ItemContainer>
-                </Field>
-            }
+            <Field label='Resources'>
+                <ResourceDisplay house={house} nation={nation} setHoverInfo={setHoverInfo} />
+            </Field>
 
             <Button
                 onClick={() => {
@@ -298,15 +494,63 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
             >
                 <UiIcon type='DESTROY_BUILDING' scale={0.5} />
             </Button>
-        </Window>
+        </WindowWithTyping>
     )
 }
 
 const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: ProductionBuildingProps) => {
+
+    // State
     const [hoverInfo, setHoverInfo] = useState<string>()
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<HouseInformation>>()
+
+        cmds.set('go to building', {
+            action: (house: HouseInformation) => goToPoint(house),
+            icon: <UiIcon type='GO_TO_POINT' scale={0.5} />
+        })
+
+        cmds.set('pause production', {
+            action: (house: HouseInformation) => api.pauseProductionForHouse(house.id),
+            filter: (house: HouseInformation) => house.productionEnabled
+        })
+
+        cmds.set('resume production', {
+            action: (house: HouseInformation) => api.resumeProductionForHouse(house.id),
+            filter: (house: HouseInformation) => !house.productionEnabled
+        })
+
+        cmds.set('tear down', {
+            action: (house: HouseInformation) => {
+                api.removeBuilding(house.id)
+                onClose()
+            },
+            icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+        })
+
+        cmds.set('debug', {
+            action: () => {
+                console.log(house)
+            },
+            hidden: true
+        })
+
+        cmds.set('close window', {
+            action: () => onClose(),
+            icon: <Dismiss16Filled />
+        })
+
+        return cmds
+    }, [onClose, goToPoint])
+
+
+    // Rendering
     return (
-        <Window
+        <WindowWithTyping<HouseInformation>
+            commands={commands}
+            param={house}
             className='house-info production-building'
             onClose={onClose}
             heading={buildingPretty(house.type)}
@@ -337,42 +581,7 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
 
                 {!house.productionEnabled && <div>Production disabled</div>}
 
-                {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined).length > 0 &&
-                    <ItemContainer padding='0.5em' inline>
-
-                        {Object.keys(house.resources).filter(material => isMaterial(material) && house.resources[material].canHold !== undefined)
-                            .map(material => {
-
-                                if (isMaterial(material)) {
-                                    const has = house.resources[material].has ?? 0
-                                    const canHold = house.resources[material].canHold ?? 0
-                                    const gap = Math.max(canHold - has, 0)
-
-                                    return <div key={material}>
-                                        {Array.from({ length: has }, () => 1).map(
-                                            (value, index) => <span
-                                                key={index}
-                                                onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
-                                                onMouseLeave={() => setHoverInfo(undefined)}
-                                            >
-                                                <InventoryIcon material={material} nation={nation} key={index} inline />
-                                            </span>
-                                        )}
-                                        {Array.from({ length: gap }, () => 1).map(
-                                            (value, index) => <span
-                                                key={index + 10}
-                                                onMouseEnter={() => setHoverInfo(MATERIAL_FIRST_UPPERCASE.get(material))}
-                                                onMouseLeave={() => setHoverInfo(undefined)}
-                                            >
-                                                <InventoryIcon material={material} nation={nation} key={index + 10} inline missing />
-                                            </span>
-                                        )}
-                                    </div>
-                                }
-                            })
-                        }
-                    </ItemContainer>
-                }
+                <ResourceDisplay house={house} nation={nation} setHoverInfo={setHoverInfo} />
 
                 {house.produces &&
                     <div>Produces:
@@ -415,7 +624,6 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
 
                 <Button onClick={() => {
                     api.removeBuilding(house.id)
-
                     onClose()
                 }}
                     onMouseEnter={() => setHoverInfo('Tear down')}
@@ -433,7 +641,7 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
                     <UiIcon type='GO_TO_POINT' scale={0.5} />
                 </Button>
             </ButtonRow>
-        </Window >
+        </WindowWithTyping>
     )
 }
 

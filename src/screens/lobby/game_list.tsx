@@ -19,7 +19,7 @@ type GameListProps = {
 }
 
 // Constants
-const STATUS_TO_TEXT: { [key in GameInformation['status']]: string } = {
+const STATUS_TO_TEXT: Record<GameInformation['status'], string> = {
     STARTED: 'Started',
     NOT_STARTED: 'Not started',
     PAUSED: 'Paused',
@@ -40,83 +40,77 @@ const GameList = ({ onJoinGame }: GameListProps) => {
     const games = useGames()
 
     return (
-        <>
-            {<div className='games-list'>
-                <Table size='small'>
-                    <TableHeader>
-                        <TableRow>
-                            {COLUMNS.map(column => (
-                                <TableHeaderCell key={column.columnKey}>
-                                    {column.label}
-                                </TableHeaderCell>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-
-                    <TableBody>
-                        {games && games.map(game => (
-                            <TableRow key={game.id}>
-                                <TableCell>{game.name}</TableCell>
-                                <TableCell>{(game?.map) ? game.map.name : '-'}</TableCell>
-                                <TableCell>{game.players.length}</TableCell>
-                                <TableCell>{(game?.map) ? game.map.maxPlayers : '-'}</TableCell>
-                                <TableCell>{STATUS_TO_TEXT[game.status]}</TableCell>
-                                <TableCell>
-                                    <Menu>
-                                        <MenuTrigger disableButtonEnhancement>
-                                            <MenuButton>Actions</MenuButton>
-                                        </MenuTrigger>
-                                        <MenuPopover>
-                                            <MenuList>
-                                                <MenuItem onClick={() => console.log('Clicked view ' + game.id)}>
-                                                    View
-                                                </MenuItem>
-                                                {game.status === 'NOT_STARTED' && game.othersCanJoin &&
-                                                    <MenuItem onClick={() => onJoinGame(game.id)} >
-                                                        Join
-                                                    </MenuItem>
-                                                }
-                                                {(game.status === 'STARTED' || game.status === 'EXPIRED') && game.players
-                                                    .filter(player => player.type === 'HUMAN')
-                                                    .map(player =>
-                                                        <MenuItem
-                                                            key={player.id}
-                                                            onClick={() => window.location.href = '/play?gameId=' + game.id + '&playerId=' + player.id}
-                                                        >
-                                                            Play as {player.name}
-                                                        </MenuItem>)}
-                                                <MenuItem onClick={() => {
-                                                    console.log('Clicked delete ' + game.id)
-                                                    api.deleteGame(game.id)
-                                                }}>
-                                                    Delete
-                                                </MenuItem>
-                                            </MenuList>
-                                        </MenuPopover>
-                                    </Menu>
-                                </TableCell>
-                            </TableRow>
+        <div className='games-list'>
+            <Table size='small'>
+                <TableHeader>
+                    <TableRow>
+                        {COLUMNS.map(column => (
+                            <TableHeaderCell key={column.columnKey}>
+                                {column.label}
+                            </TableHeaderCell>
                         ))}
+                    </TableRow>
+                </TableHeader>
 
-                        {!games &&
-                            <>
-                                {[0, 1, 2, 3, 4].map(i =>
-                                    <TableRow key={i}>
-                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                        <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
-                                    </TableRow>)}
-                            </>
-                        }
+                <TableBody>
+                    {games && games.length > 0 && games.map(game => (
+                        <TableRow key={game.id}>
+                            <TableCell>{game.name}</TableCell>
+                            <TableCell>{(game.map) ? game.map.name : '-'}</TableCell>
+                            <TableCell>{game.players.length}</TableCell>
+                            <TableCell>{(game.map) ? game.map.maxPlayers : '-'}</TableCell>
+                            <TableCell>{STATUS_TO_TEXT[game.status]}</TableCell>
+                            <TableCell>
+                                <Menu>
+                                    <MenuTrigger disableButtonEnhancement>
+                                        <MenuButton>Actions</MenuButton>
+                                    </MenuTrigger>
+                                    <MenuPopover>
+                                        <MenuList>
+                                            {game.status === 'NOT_STARTED' && game.othersCanJoin &&
+                                                <MenuItem onClick={() => onJoinGame(game.id)} >
+                                                    Join
+                                                </MenuItem>
+                                            }
+                                            {(game.status === 'STARTED' || game.status === 'EXPIRED') && game.players
+                                                .filter(player => player.type === 'HUMAN')
+                                                .map(player =>
+                                                    <MenuItem
+                                                        key={player.id}
+                                                        onClick={() => window.location.href = '/play?gameId=' + game.id + '&playerId=' + player.id}
+                                                    >
+                                                        Play as {player.name}
+                                                    </MenuItem>)}
+                                            <MenuItem onClick={() => {
+                                                console.log('Clicked delete ' + game.id)
+                                                api.deleteGame(game.id)
+                                            }}>
+                                                Delete
+                                            </MenuItem>
+                                        </MenuList>
+                                    </MenuPopover>
+                                </Menu>
+                            </TableCell>
+                        </TableRow>
+                    ))}
 
-                    </TableBody>
-                </Table>
-            </div>
-            }
-        </>
+                    {!games &&
+                        <>
+                            {[0, 1, 2, 3, 4].map(i =>
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                    <TableCell><Skeleton><SkeletonItem /></Skeleton></TableCell>
+                                </TableRow>)}
+                        </>
+                    }
+
+                </TableBody>
+            </Table>
+        </div>
     )
 }
 

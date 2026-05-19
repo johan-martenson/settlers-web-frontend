@@ -74,6 +74,8 @@ export const HouseTable: React.FC<HouseTableProps> = ({ houses, goToPoint }) => 
                     {item.type === 'Headquarter'
                         ? '...'
                         : Object.entries(item.resources)
+                            .filter(([, value]) => value !== undefined)
+
                             .map(([mat, { has, canHold }]) => <><Value>{mat}</Value>: <Value>{has}/{canHold}</Value></>)
                     }
                 </Text>

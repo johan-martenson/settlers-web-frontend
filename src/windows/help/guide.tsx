@@ -10,15 +10,17 @@ type GuideProps = {
     onClose: () => void
 }
 
-
 type PageProps = {
     page: PageType
 }
 
 // React components
 const Guide = ({ onClose, onRaise }: GuideProps) => {
+
+    // State
     const [pageNumber, setPageNumber] = useState<number>(0)
 
+    // Rendering
     const currentPage: PageType = HELP_PAGES[pageNumber]
 
     return (
@@ -27,13 +29,13 @@ const Guide = ({ onClose, onRaise }: GuideProps) => {
 
             <div>
                 {pageNumber > 0 &&
-                    <Button onClick={() => { setPageNumber(pageNumber - 1) }} >
+                    <Button onClick={() => { setPageNumber(prev => prev - 1) }} >
                         Previous
                     </Button>
                 }
 
                 {pageNumber < HELP_PAGES.length - 1 &&
-                    <Button onClick={() => { setPageNumber(pageNumber + 1) }} >
+                    <Button onClick={() => { setPageNumber(prev => prev + 1) }} >
                         Next
                     </Button>
                 }
@@ -43,6 +45,8 @@ const Guide = ({ onClose, onRaise }: GuideProps) => {
 }
 
 const Page = ({ page }: PageProps) => {
+
+    // Rendering
     return (
         <div className='page'>
             <div className='DialogSection PageIllustrations'>

@@ -9,7 +9,7 @@ import { View } from "../render/game_render"
 export type SoundEffect =
     | 'NEW-MESSAGE'
     | 'WOODCUTTER_CUTTING'
-    | 'HAMMERING'
+    | 'STANDING_HAMMERING_HOUSE'
     | 'FORESTER_PLANTING'
     | 'STONEMASON_HACKING'
     | 'FIRE'
@@ -62,10 +62,11 @@ SOUND_INSTANCES.set('FIRE', new Sound("assets/audio/fire.wave"))
 SOUND_INSTANCES.set('GEOLOGIST_FINDING', new Sound("assets/audio/geologist-finding.wave"))
 SOUND_INSTANCES.set('GEOLOGIST_DIGGING', new Sound("assets/audio/geologist-digging-1.wave"))
 SOUND_INSTANCES.set('FALLING_TREE', new Sound('assets/audio/falling-tree.wave'))
+SOUND_INSTANCES.set('STANDING_HAMMERING_HOUSE', new Sound('assets/audio/builder-standing-hammering.wave'))
 
 const SOUND_EFFECTS = new Map<Action, SoundEffectInformation>()
 
-SOUND_EFFECTS.set("HAMMERING_HOUSE_HIGH_AND_LOW", { start: 0, animationLength: 8, audio: "HAMMERING", type: 'PERIODIC' })
+SOUND_EFFECTS.set("HAMMERING_HOUSE_HIGH_AND_LOW", { start: 0, animationLength: 8, audio: "STANDING_HAMMERING_HOUSE", type: 'PERIODIC' })
 SOUND_EFFECTS.set("CUTTING", { start: 4, animationLength: 8, audio: "WOODCUTTER_CUTTING", type: 'PERIODIC' })
 SOUND_EFFECTS.set('PLANTING_TREE', { start: 36, animationLength: 36, audio: "FORESTER_PLANTING", type: 'ONCE' })
 SOUND_EFFECTS.set('HACKING_STONE', { start: 4, animationLength: 8, audio: 'STONEMASON_HACKING', type: 'PERIODIC' })
@@ -85,7 +86,7 @@ const sfx = {
 // State
 let soundEffectsState: SoundEffectsState = 'NOT_SUBSCRIBED'
 let visibility: Visibility = { left: 0, right: 0, top: 0, bottom: 0 }
-let soundEffectsTimer: NodeJS.Timeout | undefined
+let soundEffectsTimer: ReturnType<typeof setInterval> | undefined
 let view: View | undefined
 
 const ongoingEffects = new Map<string, OngoingEffect>()
@@ -121,6 +122,66 @@ function stopEffects(): void {
 
     soundEffectsState = 'STOPPED'
     clearInterval(soundEffectsTimer)
+
+    api.removeActionsListener(actionsListener)
+
+    api.removeBurningHousesListener(burningHouseListener)
+
+    api.removeMessagesListener(messagesListener)
+}
+
+const actionsListener = {
+    actionStarted: (id: string, point: Point, action: Action) => {
+        if (SoundEffectsLogConfig.actions) {
+            console.log(`Sound effects (actions): started (${action})`, id)
+        }
+
+        ongoingEffects.set(id, { id, point, action, index: 0 })
+    },
+
+    // eslint-disable-next-line
+    actionEnded: (id: string) => {
+        if (SoundEffectsLogConfig.actions) {
+            console.log('Sound effects (actions): ended', id)
+        }
+
+        const ongoingEffect = ongoingEffects.get(id)
+        const soundEffect = ongoingEffect && SOUND_EFFECTS.get(ongoingEffect.action)
+
+        if (ongoingEffect?.playing && soundEffect?.type === 'LOOPING') {
+            ongoingEffect.playing.stop()
+        }
+
+        ongoingEffects.delete(id)
+    }
+}
+
+const burningHouseListener = {
+    houseStartedToBurn: (id: HouseId, point: Point) => {
+        if (SoundEffectsLogConfig.events) {
+            console.log('Sound effects (events): house started burning', id)
+        }
+
+        ongoingEffects.set(id, { id, point, action: 'HOUSE_BURNING', index: 0 })
+    },
+
+    // eslint-disable-next-line
+    houseStoppedBurning: (id: HouseId) => {
+        if (SoundEffectsLogConfig.events) {
+            console.log('Sound effects (events): house stopped burning', id)
+        }
+
+        ongoingEffects.get(id)?.playing?.stop()
+        ongoingEffects.delete(id)
+    },
+}
+
+const messagesListener = () => {
+    if (SoundEffectsLogConfig.events) {
+        console.log('Sound effects (events): new message')
+    }
+
+    play('NEW-MESSAGE')
 }
 
 function startEffects(viewToSet: View): void {
@@ -139,63 +200,11 @@ function startEffects(viewToSet: View): void {
     view = viewToSet
     sfx.volume = DEFAULT_VOLUME
 
-    // eslint-disable-next-line
     SOUND_INSTANCES.forEach(sound => sound.load())
 
-    api.addActionsListener({
-        actionStarted: (id: string, point: Point, action: Action) => {
-            if (SoundEffectsLogConfig.actions) {
-                console.log(`Sound effects (actions): started (${action})`, id)
-            }
-
-            ongoingEffects.set(id, { id, point, action, index: 0 })
-        },
-
-        // eslint-disable-next-line
-        actionEnded: id => {
-            if (SoundEffectsLogConfig.actions) {
-                console.log('Sound effects (actions): ended', id)
-            }
-
-            const ongoingEffect = ongoingEffects.get(id)
-            const soundEffect = ongoingEffect && SOUND_EFFECTS.get(ongoingEffect.action)
-
-            if (ongoingEffect?.playing && soundEffect?.type === 'LOOPING') {
-                ongoingEffect.playing.stop()
-            }
-
-            ongoingEffects.delete(id)
-        }
-    })
-
-    api.addBurningHousesListener({
-        houseStartedToBurn: (id: HouseId, point: Point) => {
-            if (SoundEffectsLogConfig.events) {
-                console.log('Sound effects (events): house started burning', id)
-            }
-
-            ongoingEffects.set(id, { id, point, action: 'HOUSE_BURNING', index: 0 })
-        },
-
-        // eslint-disable-next-line
-        houseStoppedBurning: id => {
-            if (SoundEffectsLogConfig.events) {
-                console.log('Sound effects (events): house stopped burning', id)
-            }
-
-            ongoingEffects.get(id)?.playing?.stop()
-            ongoingEffects.delete(id)
-        },
-    })
-
-    // eslint-disable-next-line
-    api.addMessagesListener(() => {
-        if (SoundEffectsLogConfig.events) {
-            console.log('Sound effects (events): new message')
-        }
-
-        SOUND_INSTANCES.get('NEW-MESSAGE')?.play()
-    })
+    api.addActionsListener(actionsListener)
+    api.addBurningHousesListener(burningHouseListener)
+    api.addMessagesListener(messagesListener)
 
     soundEffectsState = 'RUNNING'
 
@@ -217,6 +226,8 @@ function startEffects(viewToSet: View): void {
             top: upperLeftGamePoint.y,
             bottom: lowerRightGamePoint.y
         }
+
+        const endedEffects: string[] = []
 
         ongoingEffects.forEach((ongoingEffect, id) => {
             const soundEffect = SOUND_EFFECTS.get(ongoingEffect.action)
@@ -244,12 +255,14 @@ function startEffects(viewToSet: View): void {
                         console.log('Sound effects (playback): effect finished', id)
                     }
 
-                    ongoingEffects.delete(id)
+                    endedEffects.push(id)
                 } else {
                     ongoingEffect.index = 0
                 }
             }
         })
+
+        endedEffects.forEach(id => ongoingEffects.delete(id))
     }, 300)
 }
 

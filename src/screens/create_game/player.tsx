@@ -17,7 +17,7 @@ type PlayerProps = {
 
 // React components
 const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpdated }: PlayerProps) => {
-    const [editName, setEditName] = useState<string | undefined>()
+    const [editName, setEditName] = useState<string | undefined>(player.name)
     const [editNation, setEditNation] = useState<Nation>(player.nation)
     const [editColor, setEditColor] = useState<PlayerColor>(player.color)
     const [isEditing, setIsEditing] = useState<boolean>(false)
@@ -48,9 +48,10 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                                     placeholder={player.name}
                                     onChange={(_event: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => setEditName(data.value)}
                                     onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-                                        if (event.key === 'Enter') {
+                                        if (event.key === 'Enter' && isEditing && editName?.trim() !== '') {
                                             updatePlayer()
-
+                                            setIsEditing(false)
+                                        } else if (event.key === 'Escape') {
                                             setIsEditing(false)
                                         }
                                     }} />
@@ -98,11 +99,15 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                             </Field>
 
                             <Button onClick={() => {
-                                updatePlayer()
-
-                                setIsEditing(false)
+                                if (isEditing && editName !== undefined && editName.trim() !== '') {
+                                    updatePlayer()
+                                    setIsEditing(false)
+                                }
                             }} >
                                 Ok
+                            </Button>
+                            <Button onClick={() => setIsEditing(false)} >
+                                Cancel
                             </Button>
 
                         </div>
@@ -117,7 +122,7 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
                         {isSelf && 'me'}, {colorPretty(player.color)}
                     </Caption1>
                 }
-                action={<Menu>
+                action={< Menu >
                     <MenuTrigger disableButtonEnhancement>
                         <Button
                             appearance='transparent'
@@ -128,14 +133,19 @@ const Player = ({ player, isSelf, availableColors, onPlayerRemoved, onPlayerUpda
 
                     <MenuPopover>
                         <MenuList>
-                            <MenuItem onClick={() => setIsEditing(true)}>Edit</MenuItem>
-                            <MenuItem onClick={() => onPlayerRemoved && onPlayerRemoved()}>Remove</MenuItem>
+                            <MenuItem
+                                disabled={isEditing}
+                                onClick={() => setIsEditing(true)}>Edit</MenuItem
+                            >
+                            <MenuItem
+                                onClick={() => onPlayerRemoved && onPlayerRemoved()}>Remove</MenuItem
+                            >
                         </MenuList>
                     </MenuPopover>
-                </Menu>
+                </Menu >
                 }
             />
-        </Card>
+        </Card >
     )
 }
 

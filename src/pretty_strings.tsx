@@ -1,5 +1,5 @@
 import React from 'react'
-import { AnyBuilding, Material, Merchandise, Nation, PlayerColor, SoldierType, TransportCategory } from './api/types'
+import { AnyBuilding, GameSpeed, GameState, GeneralStatisticsType, Material, Merchandise, Nation, PlayerColor, SoldierType, StatisticsView, TransportCategory } from './api/types'
 
 // Types
 
@@ -233,6 +233,17 @@ const PLAYER_COLORS: { [key in PlayerColor]: string } = {
     WHITE: '#FFFFFF'    // true white
 }
 
+const GENERAL_STATISTICS: Record<GeneralStatisticsType, string> = {
+    'land': 'land',
+    'houses': 'houses',
+    'workers': 'workers',
+    'goods': 'goods',
+    'military': 'military',
+    'coins': 'coins',
+    'production': 'production',
+    'killedEnemies': 'vanquished enemies'
+}
+
 // Functions
 function nationPretty(nation: Nation): string {
     return NATION_PRETTY.get(nation) ?? ''
@@ -321,9 +332,34 @@ function prettyPrintFuzzyMatch(
         )
     }
 
-    return <>{parts}</>
+    return <span>{parts}</span>
 }
 
+function speedPretty(speed: GameSpeed): string {
+    return speed
+        .toLowerCase()
+        .split('_')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ')
+}
+
+function gameStatePretty(state: GameState): string {
+    return state
+        .toLowerCase()
+        .split('_')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ')
+}
+
+function statisticsViewPretty(view: StatisticsView): string {
+    return view.toLowerCase()
+}
+
+function generalStatisticsTypePretty(statsType: GeneralStatisticsType): string {
+    return GENERAL_STATISTICS[statsType]
+}
+
+// Exports
 export {
     MATERIAL_FIRST_UPPERCASE,
     MATERIAL_LABELS,
@@ -336,5 +372,9 @@ export {
     materialPretty,
     merchandisePretty,
     playerToColor,
-    prettyPrintFuzzyMatch
+    prettyPrintFuzzyMatch,
+    speedPretty,
+    gameStatePretty,
+    statisticsViewPretty,
+    generalStatisticsTypePretty
 }

@@ -4,18 +4,14 @@ type Texture = {
     texture: WebGLTexture
 }
 
-const textures: Map<WebGL2RenderingContext, Map<HTMLImageElement, Texture>> = new Map()
+const textures: WeakMap<WebGL2RenderingContext, Map<HTMLImageElement, Texture>> = new WeakMap()
 
 function clearTexturesForContext(gl: WebGL2RenderingContext): void {
-    const imageMap = textures.get(gl)
-    
-    if (imageMap) {
-        for (const texture of imageMap.values()) {
-            gl.deleteTexture(texture.texture)
-        }
-
-        imageMap.clear()
+    if (!textures.has(gl)) {
+        return
     }
+
+    textures.delete(gl)
 }
 
 

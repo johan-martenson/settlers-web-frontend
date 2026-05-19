@@ -5,13 +5,6 @@
     align-self: stretch;
 }
 
-.select-materials {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
 .select-building {
     display: flex;
     flex-direction: row;

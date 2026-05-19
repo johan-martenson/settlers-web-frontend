@@ -18,55 +18,57 @@ const FillInPlayerInformation = ({ onPlayerInformationDone }: FillInPlayerInform
     // Render
     const previousUserName = localStorage.getItem('mostRecentPlayer')
     return (
-        <>
-            <Center>
-                <div id='set-player-name-dialog'>
+        <Center>
+            <div id='set-player-name-dialog'>
 
-                    {previousUserName &&
-                        <>
-                            <div>
-                                <Button
-                                    appearance='primary'
-                                    onClick={() => {
-                                        setUserName(previousUserName)
-                                        onPlayerInformationDone(previousUserName)
-                                    }}>Enter as {previousUserName}</Button>
-                            </div>
-                            <div>or</div>
-                        </>}
+                {previousUserName &&
+                    <>
+                        <div>
+                            <Button
+                                appearance='primary'
+                                onClick={() => {
+                                    onPlayerInformationDone(previousUserName)
+                                }}>Enter as {previousUserName}</Button>
+                        </div>
+                        <div>or</div>
+                    </>}
 
-                    <div id='label-and-input'>
-                        <Label>Name</Label>
-                        <Input
-                            id='set-player-name'
-                            type='text'
-                            onChange={(_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
-                                setUserName(data.value)
-                            }}
+                <div id='label-and-input'>
+                    <Label>Name</Label>
+                    <Input
+                        id='set-player-name'
+                        type='text'
+                        value={userName}
+                        onChange={(_event: React.FormEvent<HTMLInputElement>, data: InputOnChangeData) => {
+                            setUserName(data.value)
+                        }}
 
-                            onKeyDown={(event: React.KeyboardEvent) => {
-                                if (event.code === 'Enter') {
-                                    if (userName && userName !== '') {
-                                        localStorage.setItem('mostRecentPlayer', userName)
-                                        onPlayerInformationDone(userName)
-                                    }
+                        onKeyDown={(event: React.KeyboardEvent) => {
+                            if (event.key === 'Enter') {
+                                const userNameTrimmed = userName.trim()
+
+                                if (userNameTrimmed && userNameTrimmed !== '') {
+                                    localStorage.setItem('mostRecentPlayer', userNameTrimmed)
+                                    onPlayerInformationDone(userNameTrimmed)
                                 }
-                            }}
-                            autoFocus
-                        />
+                            }
+                        }}
+                        autoFocus
+                    />
 
-                        <Button
-                            onClick={() => {
-                                localStorage.setItem('mostRecentPlayer', userName)
-                                onPlayerInformationDone(userName)
-                            }}
-                            disabled={!userName || userName === ''}
-                            appearance='primary'
-                        >Go</Button>
-                    </div>
+                    <Button
+                        onClick={() => {
+                            const userNameTrimmed = userName.trim()
+
+                            localStorage.setItem('mostRecentPlayer', userNameTrimmed)
+                            onPlayerInformationDone(userNameTrimmed)
+                        }}
+                        disabled={!userName || userName.trim() === ''}
+                        appearance='primary'
+                    >Go</Button>
                 </div>
-            </Center>
-        </>
+            </div>
+        </Center>
     )
 }
 

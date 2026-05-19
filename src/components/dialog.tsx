@@ -4,7 +4,7 @@ import { Dismiss16Filled } from '@fluentui/react-icons'
 import './dialog.css'
 import { Point } from '../api/types'
 import { useTypingInput } from '../utils/hooks/input'
-import { findMatchingCommandsGeneric, GenericCommand, TypeMatch } from '../screens/play/type_control'
+import { executeCommand, findMatchingCommands, GenericCommand, TypeMatch } from '../utils/typing_command_utils'
 import { UiIcon } from '../icons/icon'
 
 // Types
@@ -97,19 +97,6 @@ function WindowWithTyping<T extends object | string>({
         setShowAlternativeMatches(prev => !prev)
     }, [])
 
-    const runCommand = useCallback((command: GenericCommand<T>) => {
-
-        if (param) {
-            try {
-                command.action(param)
-            } catch (error) {
-                console.error('Error occurred while running command', error)
-            }
-        } else {
-            console.error('Parameter value is undefined, cannot run command')
-        }
-    }, [param])
-
     // Effects
     // Effect: listen to mouse movements and handle window dragging
     useEffect(() => {
@@ -145,9 +132,17 @@ function WindowWithTyping<T extends object | string>({
     }, [])
 
     // Rendering
-    const matches = findMatchingCommandsGeneric(commands, inputValue, param)
-    const topMatchName = matches.keys().next().value
-    const topMatch = topMatchName ? matches.get(topMatchName) : undefined
+    const matches = findMatchingCommands(commands, inputValue, param)
+    const topMatch = matches.length > 0 ? matches[0] : undefined
+
+    const runMatch = useCallback((match: typeof matches[number]) => {
+        if (param === undefined) {
+            console.error('Cannot run command without parameter/context')
+            return
+        }
+
+        executeCommand(match, param)
+    }, [param])
 
     return (
         <div
@@ -157,8 +152,14 @@ function WindowWithTyping<T extends object | string>({
             ref={windowRef}
             className={className !== undefined ? `window ${className}` : 'window'}
             id={id}
-            style={{ width: width, left: windowPosition?.x ?? undefined, top: windowPosition?.y ?? undefined }}
+            style={{
+                width,
+                left: windowPosition?.x ?? undefined,
+                top: windowPosition?.y ?? undefined
+            }}
+
             onWheel={(event) => event.stopPropagation()}
+
             onMouseDown={(event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
                 if (event.button === 2) {
                     onClose()
@@ -167,11 +168,19 @@ function WindowWithTyping<T extends object | string>({
                     event.stopPropagation()
                 } else if (event.button === 0) {
                     draggingRef.current = {
-                        mouseDragStart: { x: event.clientX, y: event.clientY },
-                        windowDragStart: { x: event.currentTarget.offsetLeft, y: event.currentTarget.offsetTop }
+                        mouseDragStart: {
+                            x: event.clientX,
+                            y: event.clientY
+                        },
+
+                        windowDragStart: {
+                            x: event.currentTarget.offsetLeft,
+                            y: event.currentTarget.offsetTop
+                        }
                     }
 
                     onRaise()
+
                     event.stopPropagation()
                 }
             }}
@@ -182,22 +191,10 @@ function WindowWithTyping<T extends object | string>({
                         onClose()
                     }
                 } else if (event.key === 'Enter') {
-                    console.log('Enter key pressed, attempting to run command')
-                    const bestMatchName = matches.keys().next().value
-
-                    console.log('Best match for command:', bestMatchName)
-
-                    if (bestMatchName && param) {
-                        console.log('Running command')
-                        const bestMatch = matches.get(bestMatchName)
-
-                        try {
-                            bestMatch?.command.action(param)
-                        } catch (error) {
-                            console.error('Error occurred while running command', error)
-                        }
+                    if (topMatch) {
+                        runMatch(topMatch)
                     } else {
-                        console.error('No matching command found or parameter is undefined, cannot run command')
+                        console.error(`No matching command found for '${inputValue}'`)
                     }
                 }
 
@@ -208,37 +205,58 @@ function WindowWithTyping<T extends object | string>({
         >
             <div className='window-content'>
                 {heading && <h1>{heading}</h1>}
+
                 {children}
             </div>
+
             <div className='hover-info-label'>
                 {windowHoverInfo ?? hoverInfo}
             </div>
-            {inputValue && topMatchName && topMatch &&
+
+            {inputValue && topMatch &&
                 <div className='type-match-and-list-toggle'>
-                    <Button appearance='subtle' size='small' onClick={toggleShowAlternativeMatches}>
-                        {showAlternativeMatches && <UiIcon type='DOWN_ARROW' />}
-                        {!showAlternativeMatches && <UiIcon type='RIGHT_ARROW' />}
+
+                    <Button
+                        appearance='subtle'
+                        size='small'
+                        onClick={toggleShowAlternativeMatches}
+                    >
+                        {showAlternativeMatches &&
+                            <UiIcon type='DOWN_ARROW' />
+                        }
+
+                        {!showAlternativeMatches &&
+                            <UiIcon type='RIGHT_ARROW' />
+                        }
                     </Button>
-                    <TypeMatch commandName={topMatchName} fuzzyMatch={topMatch.fuzzyMatch} command={topMatch.command} />
+
+                    <TypeMatch match={topMatch} />
                 </div>
             }
+
             {inputValue && !topMatch &&
-                <div className='type-match no-match'>No match for &quot;{inputValue}&quot;</div>
+                <div className='type-match no-match'>
+                    No match for &quot;{inputValue}&quot;
+                </div>
             }
-            {inputValue && matches.size > 1 && showAlternativeMatches &&
+
+            {inputValue &&
+                matches.length > 1 &&
+                showAlternativeMatches &&
+
                 <div className='alternative-matches'>
-                    {Array.from(matches.entries()).map(([commandName, { fuzzyMatch, command }]) => (
+
+                    {matches.slice(1).map(match => (
                         <TypeMatch
-                            key={commandName}
-                            commandName={commandName}
-                            fuzzyMatch={fuzzyMatch}
-                            command={command}
+                            key={`${match.type}-${match.commandName}`}
+                            match={match}
                             highlightOnHover
-                            onClick={runCommand}
+                            onClick={runMatch}
                         />
                     ))}
                 </div>
             }
+
             <Button
                 onClick={onClose}
                 onMouseEnter={() => setWindowHoverInfo('Close window')}
@@ -246,7 +264,7 @@ function WindowWithTyping<T extends object | string>({
             >
                 <Dismiss16Filled />
             </Button>
-        </div >
+        </div>
     )
 }
 

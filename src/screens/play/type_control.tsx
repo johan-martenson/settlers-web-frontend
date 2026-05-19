@@ -9,6 +9,52 @@ import { useTrackedRef } from '../../utils/hooks/reference'
 import { prettyPrintFuzzyMatch } from '../../pretty_strings'
 
 // Types
+type CommandKind =
+    | 'FIXED'
+    | 'NUMBER'
+    | 'ENUM'
+    | 'STRING'
+
+type BaseCommand<CommandContext> = {
+    filter?: (context: CommandContext) => boolean
+    hidden?: boolean
+    icon?: React.ReactNode
+}
+
+type FixedCommand<TContext> = BaseCommand<TContext> & {
+    kind: 'FIXED'
+    name: string
+    action: (context: TContext) => void
+}
+
+type NumberCommand<TContext> = BaseCommand<TContext> & {
+    kind: 'NUMBER'
+    prefix: string
+    action: (context: TContext, value: number) => void
+    min?: number
+    max?: number
+}
+
+type EnumCommand<TContext, TValue extends string> = BaseCommand<TContext> & {
+    kind: 'ENUM'
+    prefix: string
+    values: readonly TValue[]
+    action: (context: TContext, value: TValue) => void
+}
+
+type StringCommand<TContext> = BaseCommand<TContext> & {
+    kind: 'STRING'
+    prefix: string
+    action: (context: TContext, value: string) => void
+    allowEmpty?: boolean
+}
+
+export type GenericCommandNg<CommandContext> =
+    | FixedCommand<CommandContext>
+    | NumberCommand<CommandContext>
+    | EnumCommand<CommandContext, string>
+    | StringCommand<CommandContext>
+
 export type Command = {
     action: (point: Point) => void
     filter?: (selectedPointInformation: PointInformation) => boolean | undefined

@@ -66,6 +66,10 @@ const ConstructionInfo = ({
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
 
+        cmds.set('Close window', {
+            action: () => onClose()
+        })
+
         return cmds
     }, [])
 

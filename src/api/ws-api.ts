@@ -2696,7 +2696,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             }
         })
     }
-    console.log('Changed roads', playerViewChanges.changedRoads)
+
     playerViewChanges.changedRoads?.forEach(road => roadListeners.get(road.id)?.forEach(listener => {
         try {
             listener(road.id, road)
@@ -2704,7 +2704,7 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             console.error(e)
         }
     }))
-    console.log('Removed roads', playerViewChanges.removedRoads)
+
     playerViewChanges.removedRoads?.forEach(roadId => roadListeners.get(roadId)?.forEach(listener => {
         try {
             listener(roadId)

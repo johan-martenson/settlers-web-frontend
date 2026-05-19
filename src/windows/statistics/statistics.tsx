@@ -12,7 +12,7 @@ import { LivePlayerButton } from '../../components/player_icon/player_icon'
 import { ItemContainer } from '../../components/item_container'
 import { MouseHandlerDataParam } from 'recharts/types/synchronisation/types'
 import { useStatistics, useTime } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../screens/play/type_control'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type StatisticsProps = {
@@ -282,6 +282,22 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                 action: () => setSelectedPlayers(prev => prev.filter(playerId => playerId !== player.id)),
                 filter: (view: StatisticsView) => view === 'GENERAL' && selectedPlayers.includes(player.id)
             })
+        })
+
+        cmds.set('Set player name', {
+            type: 'STRING',
+            action: (name: string, plupp: string) => console.log(name, plupp)
+        })
+
+        cmds.set('Set player age', {
+            type: 'NUMBER',
+            action: (context: string, age: number) => console.log(age)
+        })
+
+        cmds.set('Set color', {
+            type: 'ENUM',
+            values: ['red', 'green', 'blue'],
+            action: (context: string, color: string) => console.log(color)
         })
 
         cmds.set('Close window',

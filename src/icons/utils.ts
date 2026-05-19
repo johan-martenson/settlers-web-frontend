@@ -49,7 +49,6 @@ function useAnimatedSprite<T>({
         }
 
         ;(async () => {
-
             const { image } = await loader()
             if (!mountedRef.current) return
 

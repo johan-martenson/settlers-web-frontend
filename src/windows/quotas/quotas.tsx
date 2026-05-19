@@ -9,6 +9,7 @@ import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
 import { clamp } from '../house/headquarter'
 import { buildingPretty } from '../../pretty_strings'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type QuotasProps = {
@@ -189,7 +190,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
     // Memos
     const commands = useMemo(() => {
-        const cmds = new Map()
+        const cmds = new Map<string, GenericCommand<MaterialQuotaToManage>>()
 
         cmds.set('Manage coal quota', {
             action: () => setMaterialToManage('COAL')
@@ -215,12 +216,48 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
             action: () => setMaterialToManage('IRON_BAR')
         })
 
+        if (player !== undefined) {
+            coalConfig.forEach(config => {
+                console.log(config.houseType)
+                console.log(`Set ${config.houseType} quota`)
+                cmds.set(`Set ${config.houseType} quota`, {
+                    type: 'NUMBER',
+                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
+                    filter: (material: MaterialQuotaToManage) => material === 'COAL'
+                })
+            })
+
+            wheatConfig.forEach(config => {
+                cmds.set(`Set ${config.houseType} quota`, {
+                    type: 'NUMBER',
+                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
+                    filter: (material: MaterialQuotaToManage) => material === 'WHEAT'
+                    })
+            })
+
+            waterConfig.forEach(config => {
+                cmds.set(`Set ${config.houseType} quota`, {
+                    type: 'NUMBER',
+                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
+                    filter: (material: MaterialQuotaToManage) => material === 'WATER'
+                })
+            })
+
+            ironConfig.forEach(config => {
+                cmds.set(`Set ${config.houseType} quota`, {
+                    type: 'NUMBER',
+                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
+                    filter: (material: MaterialQuotaToManage) => material === 'IRON_BAR'
+                })
+            })
+        }
+
         cmds.set('Close window', {
             action: onClose
         })
 
         return cmds
-    }, [])
+    }, [player, onClose])
 
     // Effects
 
@@ -242,7 +279,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
         >
 
             <TabList
-                defaultSelectedValue={materialToManage}
+                selectedValue={materialToManage}
                 onTabSelect={(_event: SelectTabEvent, data: SelectTabData) => {
                     setMaterialToManage(data.value as typeof materialToManage)
                 }}

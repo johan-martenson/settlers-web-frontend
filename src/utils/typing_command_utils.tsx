@@ -1,5 +1,16 @@
-import React from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import './typing_command_utils.css'
+import { Button } from '@fluentui/react-components'
+import { UiIcon } from '../icons/icon'
+import { ItemContainer } from '../components/item_container'
+
+/*
+TODO: add an additional state for commands with parameters to separate between when the prefix is matching and 
+        when the complete (prefix + argument) is matched.
+
+        Matching is used by the UI to filter arguments so it's important to know that the prefix matches even if the 
+        parameter is not entered yet
+*/
 
 /// Types
 type BaseCommand<CommandContext> = {
@@ -49,43 +60,45 @@ type FuzzyMatchResult = {
     matchIndexes: number[]
 }
 
-export type FixedCommandMatch<CommandContext> = {
+type ParameterMatchState =
+    | 'NONE'
+    | 'COMMAND_ONLY'
+    | 'COMPLETE'
+
+type BaseCommandMatch= {
+    commandName: string
+    score: number
+    matchIndexes: number[]
+}
+
+export type FixedCommandMatch<CommandContext> = BaseCommandMatch & {
     type: 'FIXED'
-    commandName: string
     command: FixedCommand<CommandContext>
-    score: number
     parsedParam: undefined
-    matchIndexes: number[]
 }
 
-export type NumberCommandMatch<CommandContext> = {
+export type NumberCommandMatch<CommandContext> = BaseCommandMatch & {
     type: 'NUMBER'
-    commandName: string
     command: NumberCommand<CommandContext>
-    score: number
     parsedParam: number
-    matchIndexes: number[]
     parameterMatchIndexes: number[]
+    parameterMatchState: ParameterMatchState
 }
 
-export type EnumCommandMatch<TContext, TValue extends string> = {
+export type EnumCommandMatch<CommandMatch, TValue extends string> = BaseCommandMatch & {
     type: 'ENUM'
-    commandName: string
-    command: EnumCommand<TContext, TValue>
+    command: EnumCommand<CommandMatch, TValue>
     parsedParam: TValue
-    score: number
-    matchIndexes: number[]
     parameterMatchIndexes: number[]
+    parameterMatchState: ParameterMatchState
 }
 
-export type StringCommandMatch<CommandContext> = {
+export type StringCommandMatch<CommandContext> = BaseCommandMatch & {
     type: 'STRING'
-    commandName: string
     command: StringCommand<CommandContext>
-    score: number
     parsedParam: string
-    matchIndexes: number[]
     parameterMatchIndexes: number[]
+    parameterMatchState: ParameterMatchState
 }
 
 export type CommandMatch<CommandContext> =
@@ -107,10 +120,6 @@ type TypeMatchProps<T> = {
 }
 
 /// Functions
-function escapeRegex(text: string): string {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 function isFuzzyMatch(input: string, command: string): FuzzyMatchResult {
     const pattern = input.toLowerCase().replace(/\s+/g, '')
     const text = command
@@ -175,6 +184,7 @@ function parseStringCommand(input: string, commandName: string): {
     score: number
     commandMatchIndexes: number[]
     parameterMatchIndexes: number[]
+    parameterMatchState: ParameterMatchState
 } | undefined {
     const trimmedInput = input.trimStart()
 
@@ -184,6 +194,7 @@ function parseStringCommand(input: string, commandName: string): {
             score: number
             commandMatchIndexes: number[]
             parameterMatchIndexes: number[]
+            parameterMatchState: ParameterMatchState
         }
         | undefined
 
@@ -216,7 +227,10 @@ function parseStringCommand(input: string, commandName: string): {
                 parameterMatchIndexes:
                     parameterPart.length > 0
                         ? [...parameterPart].map((_, index) => index)
-                        : []
+                        : [],
+                parameterMatchState: parameterPart.length > 0
+                    ? 'COMPLETE'
+                    : 'COMMAND_ONLY'
             }
         }
     }
@@ -229,6 +243,7 @@ function parseNumberCommand(input: string, commandName: string): {
     score: number
     commandMatchIndexes: number[]
     parameterMatchIndexes: number[]
+    parameterMatchState: ParameterMatchState
 } | undefined {
     const trimmedInput = input.trimStart()
 
@@ -238,6 +253,7 @@ function parseNumberCommand(input: string, commandName: string): {
             score: number
             commandMatchIndexes: number[]
             parameterMatchIndexes: number[]
+            parameterMatchState: ParameterMatchState
         }
         | undefined
 
@@ -282,7 +298,10 @@ function parseNumberCommand(input: string, commandName: string): {
                 score,
                 commandMatchIndexes: commandMatch.matchIndexes,
                 parameterMatchIndexes:
-                    [...parameterPart].map((_, index) => index)
+                    [...parameterPart].map((_, index) => index),
+                parameterMatchState: value !== undefined
+                    ? 'COMPLETE'
+                    : 'COMMAND_ONLY'
             }
         }
     }
@@ -295,6 +314,7 @@ function parseEnumCommand<T extends string>(input: string, commandName: string, 
     score: number
     commandMatchIndexes: number[]
     parameterMatchIndexes: number[]
+    parameterMatchState: ParameterMatchState
 } | undefined {
     const trimmedInput = input.trimStart()
 
@@ -304,6 +324,7 @@ function parseEnumCommand<T extends string>(input: string, commandName: string, 
             score: number
             commandMatchIndexes: number[]
             parameterMatchIndexes: number[]
+            parameterMatchState: ParameterMatchState
         }
         | undefined
 
@@ -344,7 +365,10 @@ function parseEnumCommand<T extends string>(input: string, commandName: string, 
                     value,
                     score,
                     commandMatchIndexes: commandMatch.matchIndexes,
-                    parameterMatchIndexes: valueMatch.matchIndexes
+                    parameterMatchIndexes: valueMatch.matchIndexes,
+                    parameterMatchState: valueMatch.matched
+                        ? 'COMPLETE'
+                        : 'COMMAND_ONLY'
                 }
             }
         }
@@ -387,7 +411,8 @@ function findMatchingCommands<CommandContext>(
                             score: parsed.score,
                             parsedParam: parsed.value,
                             matchIndexes: parsed.commandMatchIndexes,
-                            parameterMatchIndexes: parsed.parameterMatchIndexes
+                            parameterMatchIndexes: parsed.parameterMatchIndexes,
+                            parameterMatchState: parsed.parameterMatchState
                         })
                     }
                 }
@@ -410,7 +435,8 @@ function findMatchingCommands<CommandContext>(
                         score: parsed.score,
                         parsedParam: parsed.value,
                         matchIndexes: parsed.commandMatchIndexes,
-                        parameterMatchIndexes: parsed.parameterMatchIndexes
+                        parameterMatchIndexes: parsed.parameterMatchIndexes,
+                        parameterMatchState: parsed.parameterMatchState
                     })
                 }
 
@@ -431,7 +457,8 @@ function findMatchingCommands<CommandContext>(
                         score: parsed.score,
                         parsedParam: parsed.value,
                         matchIndexes: parsed.commandMatchIndexes,
-                        parameterMatchIndexes: parsed.parameterMatchIndexes
+                        parameterMatchIndexes: parsed.parameterMatchIndexes,
+                        parameterMatchState: parsed.parameterMatchState
                     })
                 }
 
@@ -461,7 +488,16 @@ function findMatchingCommands<CommandContext>(
         }
     }
 
-    return matches.sort((a, b) => b.score - a.score)
+    // Stable sorting, then return
+    return matches.sort((a, b) => {
+        const scoreDifference = b.score - a.score
+
+        if (scoreDifference !== 0) {
+            return scoreDifference
+        }
+
+        return a.commandName.localeCompare(b.commandName)
+    })
 }
 
 export function executeCommand<TContext>(match: CommandMatch<TContext>, context: TContext): void {
@@ -473,16 +509,28 @@ export function executeCommand<TContext>(match: CommandMatch<TContext>, context:
             }
 
             case 'NUMBER': {
+                if (match.parameterMatchState !== 'COMPLETE') {
+                    break
+                }
+
                 match.command.action(context, match.parsedParam)
                 break
             }
 
             case 'ENUM': {
+                if (match.parameterMatchState !== 'COMPLETE') {
+                    break
+                }
+
                 match.command.action(context, match.parsedParam)
                 break
             }
 
             case 'STRING': {
+                if (match.parameterMatchState !== 'COMPLETE') {
+                    break
+                }
+
                 match.command.action(context, match.parsedParam)
                 break
             }
@@ -526,7 +574,7 @@ function buildHighlightedParts(text: string, matchIndexes: number[]): Highlighte
 
     return parts
 }
-function prettyPrintFuzzyMatch(match: CommandMatch<any>): React.ReactNode {
+function prettyPrintFuzzyMatch<T>(match: CommandMatch<T>): React.ReactNode {
     switch (match.type) {
         case 'FIXED': {
             return renderHighlightedText(
@@ -548,7 +596,7 @@ function prettyPrintFuzzyMatch(match: CommandMatch<any>): React.ReactNode {
                     <span className='type-match-parameter'>
                         {renderHighlightedText(
                             String(match.parsedParam),
-                            match.parameterMatchIndexes ?? []
+                            match.parameterMatchIndexes
                         )}
                     </span>
                 </>
@@ -568,7 +616,7 @@ function prettyPrintFuzzyMatch(match: CommandMatch<any>): React.ReactNode {
                     <span className='type-match-parameter'>
                         {renderHighlightedText(
                             match.parsedParam,
-                            match.parameterMatchIndexes ?? []
+                            match.parameterMatchIndexes
                         )}
                     </span>
                 </>
@@ -588,7 +636,7 @@ function prettyPrintFuzzyMatch(match: CommandMatch<any>): React.ReactNode {
                     <span className='type-match-parameter'>
                         {renderHighlightedText(
                             match.parsedParam,
-                            match.parameterMatchIndexes ?? []
+                            match.parameterMatchIndexes
                         )}
                     </span>
                 </>
@@ -618,22 +666,21 @@ function renderHighlightedText(text: string, matchIndexes: number[]): React.Reac
     )
 }
 
-function toFuzzyMatchResult(match: CommandMatch<any>): FuzzyMatchResult {
-    return {
-        matched: true,
-        score: match.score,
-        matchIndexes: match.matchIndexes
-    }
-}
-
 /// React components
 function TypeMatch<T>({ match, highlightOnHover = false, onClick }: TypeMatchProps<T>) {
     return (
         <div
-            className={`type-match ${highlightOnHover ? 'highlight-on-hover' : ''}`}
+            className={`typing-match-and-icon ${highlightOnHover ? 'highlight-on-hover' : ''}`}
             onClick={() => onClick?.(match)}
+            onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    onClick?.(match)
+                }
+            }}
+            role='button'
+            tabIndex={0}
         >
-            {prettyPrintFuzzyMatch(match)}
+            <div className='typing-match-text'>{prettyPrintFuzzyMatch(match)}</div>
 
             {match.command.icon}
         </div>
@@ -655,8 +702,94 @@ function TypeMatchList<T>({ matches, highlightOnHover = false, onClick }: TypeMa
     )
 }
 
+type DialogTypingProps<T> = {
+    inputValue: string | undefined
+    matches: CommandMatch<T>[]
+    available?: Map<string, GenericCommand<T>>
+}
+
+function DialogTyping<T>({ inputValue, matches, available }: DialogTypingProps<T>) {
+
+    // State
+    const [showAlternativeMatches, setShowAlternativeMatches] = useState<boolean>(false)
+
+    // Functions
+    const toggleShowAlternativeMatches = useCallback(() => {
+        setShowAlternativeMatches(prev => !prev)
+    }, [])
+
+    // Memos
+    const matchesMap = useMemo(() => new Map(matches.map(match => [match.commandName, match])), [matches])
+
+    // Rendering
+    const topMatch = matches.length > 0 ? matches[0] : undefined
+
+    return (<ItemContainer>
+        {inputValue && topMatch &&
+            <div className='typing-match-and-list-toggle'>
+
+                <Button
+                    appearance='subtle'
+                    size='small'
+                    onClick={toggleShowAlternativeMatches}
+                >
+                    {showAlternativeMatches &&
+                        <UiIcon type='DOWN_ARROW' />
+                    }
+
+                    {!showAlternativeMatches &&
+                        <UiIcon type='RIGHT_ARROW' />
+                    }
+                </Button>
+
+                <TypeMatch match={topMatch} />
+            </div>
+        }
+
+        {inputValue && !topMatch &&
+            <div className='typing-match typing-no-match'>
+                No match for &quot;{inputValue}&quot;
+            </div>
+        }
+
+        {inputValue && matches.length > 1 && showAlternativeMatches &&
+            <div className='typing-alternative-matches'>
+
+                {matches.slice(1).map(match => (
+                    <TypeMatch
+                        key={`${match.type}-${match.commandName}`}
+                        match={match}
+                        highlightOnHover
+                    />
+                ))}
+            </div>
+        }
+
+        {(inputValue === undefined || inputValue.trim().length === 0) && available !== undefined &&
+            [...available.keys()].map(name => {
+                if (matchesMap.has(name)) {
+                    return (
+                        <TypeMatch
+                            key={name}
+                            match={matchesMap.get(name) as CommandMatch<T>}
+                        />)
+                } else {
+                    return (<div key={name}>
+                        {name}
+                    </div>)
+                }
+            })
+        }
+    </ItemContainer>)
+}
+
 export {
     findMatchingCommands,
     TypeMatch,
-    TypeMatchList
+    TypeMatchList,
+    DialogTyping,
+    isFuzzyMatch,
+    parseEnumCommand,
+    parseNumberCommand,
+    parseStringCommand
 }

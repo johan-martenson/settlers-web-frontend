@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { WindowWithTyping } from '../../components/dialog';
-import { ItemContainer } from '../../components/item_container';
-import { Tool, TOOLS } from '../../api/types';
-import { api } from '../../api/ws-api';
-import { UiIcon, UiIconType } from '../../icons/icon';
-import { materialPretty } from '../../pretty_strings';
+import { WindowWithTyping } from '../../components/dialog'
+import { ItemContainer } from '../../components/item_container'
+import { Tool, TOOLS } from '../../api/types'
+import { api } from '../../api/ws-api'
+import { UiIcon, UiIconType } from '../../icons/icon'
+import { materialPretty } from '../../pretty_strings'
 import './tools.css'
-import { useToolPriorities } from '../../utils/hooks/hooks';
-import { clamp } from '../house/headquarter';
-import { GenericCommand } from '../../screens/play/type_control';
+import { useToolPriorities } from '../../utils/hooks/hooks'
+import { clamp } from '../house/headquarter'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type ToolsProps = {
@@ -143,4 +143,4 @@ const Tools = ({ onClose, onRaise }: ToolsProps) => {
     )
 }
 
-export default Tools;
+export default Tools

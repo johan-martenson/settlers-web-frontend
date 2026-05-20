@@ -9,7 +9,8 @@ import { WindowWithTyping } from '../../components/dialog'
 import { MATERIAL_LABELS, soldierPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../screens/play/type_control'
+import { GenericCommand } from '../../utils/typing_command_utils'
+
 
 // Types
 type HeadquarterInfoProps = {

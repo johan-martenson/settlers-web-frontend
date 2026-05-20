@@ -7,7 +7,7 @@ import { FlagIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { materialPretty } from '../../pretty_strings'
 import { useFlag } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../screens/play/type_control'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type FriendlyFlagInfoProps = {
@@ -54,6 +54,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
         })
 
         cmds.set('Close window', {
+            // eslint-disable-next-line
             action: (_flag: FlagInformation) => onClose()
         })
 

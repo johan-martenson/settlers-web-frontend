@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { AnyBuilding, FlagDebugInfo, GameInformation, HOUSES, Nation, NATIONS, PlayerId, Point, PointInformation, TREE_TYPES, TreeType, WORKER_TYPES, WorkerType } from '../../api/types'
 import { api } from '../../api/ws-api'
 import './debug.css'
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel } from '@fluentui/react-components'
 import { VEGETATION } from './translate'
-import { Window } from '../../components/dialog'
+import { WindowWithTyping } from '../../components/dialog'
 import Selector from './select'
 import { UiIcon } from '../../icons/icon'
 import { DebugLogsTable } from '../../components/log_configuration/log_configuration'
@@ -80,12 +80,31 @@ function Debug({ point, onGoToPoint, onClose, onRaise }: DebugProps) {
         }, [point.x, point.y, point]
     )
 
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map()
+
+        cmds.set('Close window', {
+            action: () => onClose()
+        })
+
+        return cmds
+    }, [onClose])
+
     // Rendering
     const vegetationBelow = api.allTiles.get(point)?.below
     const vegetationDownRight = api.allTiles.get(point)?.downRight
     const tree = Array.from(api.trees.values()).find(tree => tree.x === point.x && tree.y === point.y)
 
-    return (<Window className='debug-window' heading='Debug' onClose={onClose} onRaise={onRaise} width={'60em'}>
+    return (<WindowWithTyping<PointInformation>
+        commands={commands}
+        param={pointInformation}
+        className='debug-window'
+        heading='Debug'
+        onClose={onClose}
+        onRaise={onRaise}
+        width={'60em'}
+    >
         <div className='debug-window-contents'>
 
             <Accordion multiple>
@@ -276,7 +295,7 @@ function Debug({ point, onGoToPoint, onClose, onRaise }: DebugProps) {
                 </AccordionItem>
             </Accordion>
         </div>
-    </Window>)
+    </WindowWithTyping>)
 }
 
 export {

@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { Button } from '@fluentui/react-components'
 import GameList from './game_list'
 import './lobby.css'
 import { GameId, PlayerInformation } from '../../api/types'
 import { ChatBox } from '../../components/chat/chat'
-import { dispatchInputKey, GenericCommand, GenericTypeControl } from '../play/type_control'
 import { useGames } from '../../utils/hooks/hooks'
 import { api } from '../../api/ws-api'
+import { useTypingInput } from '../../utils/hooks/input'
+import { DialogTyping, executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type LobbyProps = {
@@ -16,9 +17,6 @@ type LobbyProps = {
     onCreateNewGame: () => void
 }
 
-// Constants
-const LOBBY_TYPING_SOURCE = 'LOBBY'
-
 // React components
 /**
  * Lobby component that displays the available games and a chat box for the lobby.
@@ -26,7 +24,6 @@ const LOBBY_TYPING_SOURCE = 'LOBBY'
  * @param {LobbyProps} props - The props for the Lobby component.
  */
 const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
-
 
     // References
     const selfContainerRef = React.useRef<HTMLDivElement>(null)
@@ -36,20 +33,9 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
         selfContainerRef?.current?.focus()
     }, [])
 
-    // Monitoring
+    // Hooks
     const games = useGames()
-
-    // Callbacks
-    const onKeyDown = useCallback((event: React.KeyboardEvent) => {
-        dispatchInputKey({
-            key: event.key,
-            metaKey: event.metaKey,
-            altKey: event.altKey,
-            ctrlKey: event.ctrlKey,
-            shiftKey: event.shiftKey
-        },
-    LOBBY_TYPING_SOURCE)
-    }, [])
+    const { inputValue, keyTyped } = useTypingInput()
 
     // Memos
     const commands = useMemo(() => {
@@ -59,28 +45,51 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
             action: () => onCreateNewGame()
         })
 
-        games.forEach(game => {
-            commands.set(`Join ${game.name}`, {
-                action: () => {
-                    console.log('Joining game with id ' + game.id)
+        commands.set('Join game', {
+            type: 'ENUM',
+            values: games.map(game => game.name),
+            action: (context: unknown, gameName: string) => {
+                const game = games.find(game => game.name === gameName)
+                if (game) {
                     onJoinExistingGame(game.id)
                 }
-            })
+            }
         })
-        games.forEach(game => {
-            commands.set(`Remove game ${game.name}`, {
-                action: () => {
+
+        commands.set('Remove game', {
+            type: 'ENUM',
+            values: games.map(game => game.name),
+            action: (context: unknown, gameName: string) => {
+                const game = games.find(game => game.name === gameName)
+                if (game) {
                     api.deleteGame(game.id)
                 }
-            })
+            }
         })
 
         return commands
     }, [games, onCreateNewGame, onJoinExistingGame])
 
     // Rendering
+    const matches = findMatchingCommands(commands, inputValue, new Object())
+    const topMatch = matches[0]
+
     return (
-        <div id='lobby-screen' tabIndex={0} ref={selfContainerRef} onKeyDown={onKeyDown}>
+        <div
+            id='lobby-screen'
+            tabIndex={0}
+            ref={selfContainerRef}
+            onKeyDown={(event: React.KeyboardEvent) => {
+                if (event.key === 'Enter') {
+                    try {
+                        executeCommand(topMatch, 'inputValue')
+                    } catch (error) {
+                        console.error(`Lobby: failed to execute command ${inputValue}`, error)
+                    }
+                }
+
+                keyTyped(event)
+            }}>
             <div id='lobby-title'>Lobby</div>
             <div id='game-list-title'><h1>Available games</h1></div>
             <div id='game-list'>
@@ -96,7 +105,11 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
                 <ChatBox playerId={player.id} roomId='lobby' />
             </div>
 
-            <GenericTypeControl<object> commands={commands} param={{} as object} typingSource={LOBBY_TYPING_SOURCE}/>
+            {inputValue && inputValue.length > 0 &&
+                <div id='typing-input'>
+                    <DialogTyping inputValue={inputValue} matches={matches} />
+                </div>
+            }
 
         </div>
     )

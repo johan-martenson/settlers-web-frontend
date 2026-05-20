@@ -8,8 +8,8 @@ import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { canBeUpgraded, isEvacuated } from '../../api/utils'
 import { buildingPretty, soldierPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
-import { GenericCommand } from '../../screens/play/type_control'
 import { Dismiss16Filled } from '@fluentui/react-icons'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type MilitaryBuildingProps = {

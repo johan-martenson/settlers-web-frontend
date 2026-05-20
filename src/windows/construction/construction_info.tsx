@@ -9,7 +9,7 @@ import { FlagIcon, HouseIcon, UiIcon } from '../../icons/icon'
 import { buildingPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { usePointInformation } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../screens/play/type_control'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type ConstructionInfoProps = {
@@ -98,7 +98,6 @@ const ConstructionInfo = ({
 
     // Rendering
     const constructionOptions = new Map<'Buildings' | 'FlagsAndRoads', string>()
-    const constructionInitialSelection = (canBuildHouse(point) || canBuildMine(point)) ? 'Buildings' : 'FlagsAndRoads'
 
     if (canBuildHouse(point) || canBuildMine(point)) {
         constructionOptions.set('Buildings', 'Buildings')

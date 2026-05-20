@@ -4,8 +4,7 @@ import { Dismiss16Filled } from '@fluentui/react-icons'
 import './dialog.css'
 import { Point } from '../api/types'
 import { useTypingInput } from '../utils/hooks/input'
-import { executeCommand, findMatchingCommands, GenericCommand, TypeMatch } from '../utils/typing_command_utils'
-import { UiIcon } from '../icons/icon'
+import { DialogTyping, executeCommand, findMatchingCommands, GenericCommand } from '../utils/typing_command_utils'
 
 // Types
 type WindowProps = {
@@ -83,7 +82,6 @@ function WindowWithTyping<T extends object | string>({
         x: window.innerWidth * 0.2,
         y: window.innerHeight * 0.1
     })
-    const [showAlternativeMatches, setShowAlternativeMatches] = useState(false)
 
     // References
     const draggingRef = useRef<Drag>()
@@ -91,11 +89,6 @@ function WindowWithTyping<T extends object | string>({
 
     // Hooks
     const { inputValue, keyTyped } = useTypingInput()
-
-    // Functions
-    const toggleShowAlternativeMatches = useCallback(() => {
-        setShowAlternativeMatches(prev => !prev)
-    }, [])
 
     // Effects
     // Effect: listen to mouse movements and handle window dragging
@@ -213,49 +206,7 @@ function WindowWithTyping<T extends object | string>({
                 {windowHoverInfo ?? hoverInfo}
             </div>
 
-            {inputValue && topMatch &&
-                <div className='type-match-and-list-toggle'>
-
-                    <Button
-                        appearance='subtle'
-                        size='small'
-                        onClick={toggleShowAlternativeMatches}
-                    >
-                        {showAlternativeMatches &&
-                            <UiIcon type='DOWN_ARROW' />
-                        }
-
-                        {!showAlternativeMatches &&
-                            <UiIcon type='RIGHT_ARROW' />
-                        }
-                    </Button>
-
-                    <TypeMatch match={topMatch} />
-                </div>
-            }
-
-            {inputValue && !topMatch &&
-                <div className='type-match no-match'>
-                    No match for &quot;{inputValue}&quot;
-                </div>
-            }
-
-            {inputValue &&
-                matches.length > 1 &&
-                showAlternativeMatches &&
-
-                <div className='alternative-matches'>
-
-                    {matches.slice(1).map(match => (
-                        <TypeMatch
-                            key={`${match.type}-${match.commandName}`}
-                            match={match}
-                            highlightOnHover
-                            onClick={runMatch}
-                        />
-                    ))}
-                </div>
-            }
+            {inputValue && inputValue.length > 0 && <DialogTyping inputValue={inputValue} matches={matches} />}
 
             <Button
                 onClick={onClose}

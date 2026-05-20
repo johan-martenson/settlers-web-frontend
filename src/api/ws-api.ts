@@ -450,7 +450,18 @@ function houseAt(point: Point): HouseInformation | undefined {
  * @returns {PointInformationWithoutPossibleRoadConnections} - Returns an object containing details about what can be built and what is currently present at the point.
  */
 function getInformationOnPointLocal(point: Point): PointInformationWithoutPossibleRoadConnections {
-    const canBuild = api.availableConstruction.get(point)
+    const canBuildMax = api.availableConstruction.get(point)
+
+    const canBuild = canBuildMax ? [...canBuildMax] : undefined
+
+    if (canBuildMax) {
+        if (canBuildMax.includes('LARGE')) {
+            canBuild?.push('MEDIUM')
+            canBuild?.push('SMALL')
+        } else if (canBuildMax.includes('MEDIUM')) {
+            canBuild?.push('SMALL')
+        }
+    }
 
     const house = Array.from(api.houses.values())
         .find(house => house.x === point.x && house.y === point.y)

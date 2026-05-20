@@ -7,7 +7,7 @@ import { api } from '../../api/ws-api'
 import { transportCategoryPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { useTransportPriority } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../screens/play/type_control'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type SetTransportPriorityProps = {
@@ -97,7 +97,8 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
         })
 
         cmds.set('Close window', {
-            action: (_: TransportCategory) => onClose()
+            // eslint-disable-next-line
+            action: (_category: TransportCategory) => onClose()
         })
 
         return cmds

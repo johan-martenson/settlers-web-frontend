@@ -11,7 +11,7 @@ import { calcDistance, gamePointToScreenPointWithHeightAdjustment, screenPointTo
 import { MoveUpdate, WorkerMoveListener, api } from '../../api/ws-api'
 import { UiIcon } from '../../icons/icon'
 import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
-import { GenericCommand } from '../../screens/play/type_control'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type FollowProps = {

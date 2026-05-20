@@ -53,6 +53,8 @@ const EMPTY_STATISTICS: StatisticsReply = {
 
 // Hooks
 function useTime(delta: number): number {
+
+    // State
     const [time, setTime] = useState<number>(() => {
         const value = api.time
 
@@ -63,13 +65,20 @@ function useTime(delta: number): number {
         return value
     })
 
+    // References
     const lastEmittedRef = useRef<number>(api.time)
 
+    // Effects
+    // Effect: Sync time when delta changes
     useEffect(() => {
         lastEmittedRef.current = api.time
         setTime(api.time)
+        if (HooksConfig.useTime) {
+            console.log('Hooks (useTime): Delta changed, synchronizing time', delta, api.time)
+        }
     }, [delta])
 
+    // Effects: Start listening to time changes
     useEffect(() => {
         const listener = (updatedTime: number) => {
             if (HooksConfig.useTime) {
@@ -101,6 +110,8 @@ function useTime(delta: number): number {
 }
 
 function useStatistics(playerId: PlayerId): StatisticsReply {
+
+    // State
     const [statistics, setStatistics] = useState<StatisticsReply>(() => {
         if (HooksConfig.useStatistics) {
             console.log('Hooks (useStatistics): Initial state')
@@ -109,10 +120,16 @@ function useStatistics(playerId: PlayerId): StatisticsReply {
         return EMPTY_STATISTICS
     })
 
+    // Effects
+    // Effect: Listen to statistics changes
     useEffect(() => {
         let cancelled = false
 
         const listener = async () => {
+            if (HooksConfig.useStatistics) {
+                console.log('Hooks (useStatistics): Fetching statistics')
+            }
+
             const statistics = await api.getStatistics()
 
             if (!cancelled) {
@@ -121,6 +138,10 @@ function useStatistics(playerId: PlayerId): StatisticsReply {
                 }
 
                 setStatistics(statistics)
+            } else {
+                if (HooksConfig.useStatistics) {
+                    console.log('Hooks (useStatistics): Ignoring update after unmount')
+                }
             }
         }
 
@@ -146,6 +167,8 @@ function useStatistics(playerId: PlayerId): StatisticsReply {
 }
 
 function useTransportPriority(): TransportCategory[] {
+
+    // State
     const [priority, setPriority] = useState<TransportCategory[]>(() => {
         const value = api.transportPriority ?? Array.from(TRANSPORT_CATEGORIES)
 
@@ -156,6 +179,8 @@ function useTransportPriority(): TransportCategory[] {
         return value
     })
 
+    // Effects
+    // Effect: Listen to changes in transport priority
     useEffect(() => {
         const listener = (priority: TransportCategory[]) => {
             if (HooksConfig.useTransportPriority) {
@@ -184,6 +209,8 @@ function useTransportPriority(): TransportCategory[] {
 }
 
 function usePlayers(gameId: GameId): PlayerInformation[] {
+
+    // State
     const [players, setPlayers] = useState<PlayerInformation[]>(() => {
         const value = Array.from(api.players.values())
 
@@ -194,6 +221,8 @@ function usePlayers(gameId: GameId): PlayerInformation[] {
         return value
     })
 
+    // Effects
+    // Effect: Listen to changes to players
     useEffect(() => {
         const listener = () => {
             const updatedPlayers = Array.from(api.players.values())
@@ -208,14 +237,14 @@ function usePlayers(gameId: GameId): PlayerInformation[] {
         api.addPlayersListener(listener, gameId)
 
         if (HooksConfig.usePlayers) {
-            console.log('Hooks (usePlayers): Listener registered')
+            console.log('Hooks (usePlayers): Listener registered', gameId)
         }
 
         return () => {
             api.removePlayersListener(listener, gameId)
 
             if (HooksConfig.usePlayers) {
-                console.log('Hooks (usePlayers): Listener removed')
+                console.log('Hooks (usePlayers): Listener removed', gameId)
             }
         }
     }, [gameId])
@@ -224,6 +253,8 @@ function usePlayers(gameId: GameId): PlayerInformation[] {
 }
 
 function usePlayer(playerId: PlayerId): PlayerInformation | undefined {
+
+    // State
     const [player, setPlayer] = useState<PlayerInformation | undefined>(() => {
         const value = api.players.get(playerId)
 
@@ -234,10 +265,27 @@ function usePlayer(playerId: PlayerId): PlayerInformation | undefined {
         return value
     })
 
+    // Effects
+    // Effect: synchronize state when playerId changes
+    useEffect(() => {
+        const updatedPlayer = api.players.get(playerId)
+
+        if (HooksConfig.usePlayer) {
+            console.log(
+                'Hooks (usePlayer): Player changed',
+                playerId,
+                updatedPlayer
+            )
+        }
+
+        setPlayer(updatedPlayer)
+    }, [playerId])
+
+    // Effect: listen to changes in the player
     useEffect(() => {
         const listener = (player: PlayerInformation) => {
             if (HooksConfig.usePlayer) {
-                console.log('Hooks (usePlayer): Update received', playerId)
+                console.log('Hooks (usePlayer): Update received', playerId, player)
             }
 
             setPlayer(player)
@@ -259,13 +307,15 @@ function usePlayer(playerId: PlayerId): PlayerInformation | undefined {
     }, [playerId])
 
     if (!player) {
-        console.error(`Hooks: player with id ${playerId} not found`)
+        console.error('Hooks (usePlayer): Player not found', playerId)
     }
 
     return player
 }
 
 function useHouse(houseId: HouseId): HouseInformation | undefined {
+
+    // State
     const [house, setHouse] = useState<HouseInformation | undefined>(() => {
         const value = api.houses.get(houseId)
 
@@ -276,6 +326,23 @@ function useHouse(houseId: HouseId): HouseInformation | undefined {
         return value
     })
 
+    // Effects
+    // Effect: synchronize state when houseId changes
+    useEffect(() => {
+        const updatedHouse = api.houses.get(houseId)
+
+        if (HooksConfig.useHouse) {
+            console.log(
+                'Hooks (useHouse): House changed',
+                houseId,
+                updatedHouse
+            )
+        }
+
+        setHouse(updatedHouse)
+    }, [houseId])
+
+    // Effect: listen to changes to the house
     useEffect(() => {
         const listener = (house: HouseInformation) => {
             if (HooksConfig.useHouse) {
@@ -301,13 +368,15 @@ function useHouse(houseId: HouseId): HouseInformation | undefined {
     }, [houseId])
 
     if (!house) {
-        console.error(`Hooks: house with id ${houseId} not found`)
+        console.error('Hooks (useHouse): House not found', houseId)
     }
 
     return house
 }
 
 function useChatMessages(playerId: PlayerId, roomIds: RoomId[]): ChatMessage[] {
+
+    // State
     const [messages, setMessages] = useState<ChatMessage[]>(() => {
         const value = api.chatRoomMessages
 
@@ -318,10 +387,12 @@ function useChatMessages(playerId: PlayerId, roomIds: RoomId[]): ChatMessage[] {
         return value
     })
 
+    // Effects
+    // Effect: listen to new chat room messages
     useEffect(() => {
         const listener = () => {
             if (HooksConfig.useChatMessages) {
-                console.log('Hooks (useChatMessages): Update received')
+                console.log('Hooks (useChatMessages): Update received', api.chatRoomMessages)
             }
 
             setMessages(Array.from(api.chatRoomMessages))
@@ -346,6 +417,8 @@ function useChatMessages(playerId: PlayerId, roomIds: RoomId[]): ChatMessage[] {
 }
 
 function useGameMessages(): GameMessage[] {
+
+    // State
     const [messages, setMessages] = useState<GameMessage[]>(() => {
         const value = Array.from(api.messages.values())
 
@@ -356,12 +429,19 @@ function useGameMessages(): GameMessage[] {
         return value
     })
 
+    // Effects
+    // Effect: listen to game messages
     useEffect(() => {
-
-        // eslint-disable-next-line --- IGNORE ---
         const listener = (_received: GameMessage[], _read: GameMessage[], _removed: GameMessageId[]) => {
             if (HooksConfig.useGameMessages) {
-                console.log('Hooks (useGameMessages): Update received')
+                console.log(
+                    'Hooks (useGameMessages): Update received',
+                    {
+                        received: _received,
+                        read: _read,
+                        removed: _removed
+                    }
+                )
             }
 
             setMessages(Array.from(api.messages.values()))
@@ -386,6 +466,8 @@ function useGameMessages(): GameMessage[] {
 }
 
 function usePointInformation(point: Point): PointInformationWithoutPossibleRoadConnections {
+
+    // State
     const [pointInformation, setPointInformation] = useState<PointInformationWithoutPossibleRoadConnections>(() => {
         const value = api.getInformationOnPointLocal(point)
 
@@ -396,23 +478,54 @@ function usePointInformation(point: Point): PointInformationWithoutPossibleRoadC
         return value
     })
 
+    // Effects
+    // Effect: synchronize state when point changes
     useEffect(() => {
-        const pointInformationListener = (pointInformation: PointInformationWithoutPossibleRoadConnections) => {
+        const updatedPointInformation = api.getInformationOnPointLocal(point)
+
+        if (HooksConfig.usePointInformation) {
+            console.log(
+                'Hooks (usePointInformation): Point changed',
+                point,
+                updatedPointInformation
+            )
+        }
+
+        setPointInformation(updatedPointInformation)
+    }, [point.x, point.y])
+
+    // Effect: listen for updates for the current point
+    useEffect(() => {
+        const pointInformationListener = (
+            pointInformation: PointInformationWithoutPossibleRoadConnections
+        ) => {
             if (HooksConfig.usePointInformation) {
-                console.log('Hooks (usePointInformation): Update received', point, pointInformation)
+                console.log(
+                    'Hooks (usePointInformation): Update received',
+                    point,
+                    pointInformation
+                )
             }
 
             setPointInformation(pointInformation)
         }
 
         const availableConstructionListener = {
-            onAvailableConstructionChanged: (availableConstruction: AvailableConstruction[]) => {
-                const updatedPoint: PointInformationWithoutPossibleRoadConnections = {
-                    ...point,
-                    canBuild: availableConstruction,
+            onAvailableConstructionChanged: (
+                availableConstruction: AvailableConstruction[]
+            ) => {
+                if (HooksConfig.usePointInformation) {
+                    console.log(
+                        'Hooks (usePointInformation): Available construction updated',
+                        point,
+                        availableConstruction
+                    )
                 }
 
-                setPointInformation(updatedPoint)
+                setPointInformation(prev => ({
+                    ...prev,
+                    canBuild: availableConstruction,
+                }))
             }
         }
 
@@ -420,7 +533,10 @@ function usePointInformation(point: Point): PointInformationWithoutPossibleRoadC
         api.addAvailableConstructionListener(point, availableConstructionListener)
 
         if (HooksConfig.usePointInformation) {
-            console.log('Hooks (usePointInformation): Listener registered', point)
+            console.log(
+                'Hooks (usePointInformation): Listener registered',
+                point
+            )
         }
 
         return () => {
@@ -428,7 +544,10 @@ function usePointInformation(point: Point): PointInformationWithoutPossibleRoadC
             api.removeAvailableConstructionListener(point, availableConstructionListener)
 
             if (HooksConfig.usePointInformation) {
-                console.log('Hooks (usePointInformation): Listener removed', point)
+                console.log(
+                    'Hooks (usePointInformation): Listener removed',
+                    point
+                )
             }
         }
     }, [point.x, point.y])
@@ -437,11 +556,13 @@ function usePointInformation(point: Point): PointInformationWithoutPossibleRoadC
 }
 
 function useGame(): GameInformation | undefined {
+
+    // State
     const [game, setGame] = useState<GameInformation | undefined>(() => {
         try {
             const gameInformation = createGameInformationFromApi()
 
-            if (HooksConfig.useGameInformation) {
+            if (HooksConfig.useGame) {
                 console.log('Hooks (useGame): Initial state', gameInformation)
             }
 
@@ -452,12 +573,14 @@ function useGame(): GameInformation | undefined {
         }
     })
 
+    // Effects
+    // Effect: listen to changes to the game information
     useEffect(() => {
         let mounted = true
 
         const listener: GameListener = {
             onGameInformationChanged: (updatedGameInformation: GameInformation) => {
-                if (HooksConfig.useGameInformation) {
+                if (HooksConfig.useGame) {
                     console.log('Hooks (useGame): Update received', updatedGameInformation)
                 }
 
@@ -467,17 +590,24 @@ function useGame(): GameInformation | undefined {
 
         api.addGameStateListener(listener)
 
-        if (HooksConfig.useGameInformation) {
+        if (HooksConfig.useGame) {
             console.log('Hooks (useGame): Listener registered')
         }
 
         // Fetch if nothing was available initially
         if (!game) {
+            if (HooksConfig.useGame) {
+                console.log('Hooks (useGame): Fetching game information')
+            }
+
             api.getGameInformation()
                 .then((data: GameInformation) => {
-                    if (!mounted) return
+                    if (!mounted) {
+                        console.log('Hooks (useGame): Ignoring update after unmount')
+                        return
+                    }
 
-                    if (HooksConfig.useGameInformation) {
+                    if (HooksConfig.useGame) {
                         console.log('Hooks (useGame): Loaded from API', data)
                     }
 
@@ -492,7 +622,7 @@ function useGame(): GameInformation | undefined {
             mounted = false
             api.removeGameStateListener(listener)
 
-            if (HooksConfig.useGameInformation) {
+            if (HooksConfig.useGame) {
                 console.log('Hooks (useGame): Listener removed')
             }
         }
@@ -500,7 +630,10 @@ function useGame(): GameInformation | undefined {
 
     return game
 }
+
 function useGames(): GameInformation[] {
+
+    // State
     const [games, setGames] = useState<GameInformation[]>(() => {
         if (HooksConfig.useGames) {
             console.log('Hooks (useGames): Initial state')
@@ -509,6 +642,8 @@ function useGames(): GameInformation[] {
         return []
     })
 
+    // Effects
+    // Effect: listen to changes to the list of games
     useEffect(() => {
         let cancelled = false
 
@@ -528,9 +663,21 @@ function useGames(): GameInformation[] {
             console.log('Hooks (useGames): Listener registered')
         }
 
+        if (HooksConfig.useGames) {
+            console.log('Hooks (useGames): Fetching games')
+        }
+
         api.getGames().then(games => {
             if (!cancelled) {
                 setGames(games)
+
+                if (HooksConfig.useGames) {
+                    console.log('Hooks (useGames): Games fetched', games)
+                }
+            } else {
+                if (HooksConfig.useGames) {
+                    console.log('Hooks (useGames): Ignoring fetched games after unmount')
+                }
             }
         })
 
@@ -555,6 +702,8 @@ function useGames(): GameInformation[] {
  * @returns {MapInformation[]} The list of maps available in the game. 
  */
 function useMaps(): MapInformation[] {
+
+    // State
     const [maps, setMaps] = useState<MapInformation[]>(() => {
         if (HooksConfig.useMaps) {
             console.log('Hooks (useMaps): Initial state')
@@ -563,6 +712,8 @@ function useMaps(): MapInformation[] {
         return []
     })
 
+    // Effects
+    // Effect: load the list of maps
     useEffect(() => {
         let cancelled = false
 
@@ -575,7 +726,15 @@ function useMaps(): MapInformation[] {
                 }
 
                 setMaps(maps)
+            } else {
+                if (HooksConfig.useMaps) {
+                    console.log('Hooks (useMaps): Ignoring fetched maps after unmount')
+                }
             }
+        }
+
+        if (HooksConfig.useMaps) {
+            console.log('Hooks (useMaps): Fetching maps')
         }
 
         fetchMaps()
@@ -602,23 +761,68 @@ function useMapWithTerrain(mapId: MapId): MapWithTerrain | undefined {
     })
 
     // Effects
+    // Effect: synchronize state when mapId changes
+    useEffect(() => {
+        const updatedMap = api.maps.get(mapId)
+
+        if (HooksConfig.useMapWithTerrain) {
+            console.log('Hooks (useMapWithTerrain): Map changed', mapId, updatedMap)
+        }
+
+        setMap(updatedMap)
+    }, [mapId])
+
     // Effect: load the map and its terrain if it's not already loaded
     useEffect(() => {
+        let mounted = true
+
         if (map) {
+            if (HooksConfig.useMapWithTerrain) {
+                console.log('Hooks (useMapWithTerrain): Map already loaded', mapId)
+            }
+
             return
         }
 
+        if (HooksConfig.useMapWithTerrain) {
+            console.log('Hooks (useMapWithTerrain): Fetching map', mapId)
+        }
+
         api.getMapWithTerrain(mapId)
-            .then((map: MapWithTerrain) => setMap(map))
+            .then((map: MapWithTerrain) => {
+                if (HooksConfig.useMapWithTerrain) {
+                    console.log(
+                        'Hooks (useMapWithTerrain): Map fetched',
+                        mapId,
+                        map
+                    )
+                }
+
+                if (!mounted) {
+                    if (HooksConfig.useMapWithTerrain) {
+                        console.log('Hooks (useMapWithTerrain): Ignoring fetched map after unmount')
+                    }
+
+                    return
+                }
+
+                setMap(map)
+            })
             .catch((err: Error) => {
                 console.error('Hooks (useMapWithTerrain): Failed to load map', err)
             })
+
+        return () => {
+            mounted = false
+        }
     }, [mapId, map])
 
     return map
 }
 
 function useMapsWithTerrain(): MapWithTerrain[] {
+
+    // State
     const [maps, setMaps] = useState<MapWithTerrain[]>(() => {
         if (HooksConfig.useMapsWithTerrain) {
             console.log('Hooks (useMapsWithTerrain): Initial state')
@@ -627,10 +831,16 @@ function useMapsWithTerrain(): MapWithTerrain[] {
         return []
     })
 
+    // Effects
+    // Effect: load the maps and their terrain
     useEffect(() => {
         let cancelled = false
 
         async function fetchMaps() {
+            if (HooksConfig.useMapsWithTerrain) {
+                console.log('Hooks (useMapsWithTerrain): Fetching maps')
+            }
+
             const maps = await api.getMapsWithTerrain()
 
             if (!cancelled) {
@@ -639,6 +849,10 @@ function useMapsWithTerrain(): MapWithTerrain[] {
                 }
 
                 setMaps(maps)
+            } else {
+                if (HooksConfig.useMapsWithTerrain) {
+                    console.log('Hooks (useMapsWithTerrain): Ignoring fetched maps after unmount')
+                }
             }
 
         }
@@ -654,6 +868,8 @@ function useMapsWithTerrain(): MapWithTerrain[] {
 }
 
 function useFlag(flagId: FlagId): FlagInformation | undefined {
+
+    // State
     const [flag, setFlag] = useState<FlagInformation | undefined>(() => {
         const value = api.flags.get(flagId)
 
@@ -664,6 +880,23 @@ function useFlag(flagId: FlagId): FlagInformation | undefined {
         return value
     })
 
+    // Effects
+    // Effect: synchronize state when flagId changes
+    useEffect(() => {
+        const updatedFlag = api.flags.get(flagId)
+
+        if (HooksConfig.useFlag) {
+            console.log(
+                'Hooks (useFlag): Flag changed',
+                flagId,
+                updatedFlag
+            )
+        }
+
+        setFlag(updatedFlag)
+    }, [flagId])
+
+    // Effect: listen to changes to the flag
     useEffect(() => {
         const listener = {
             onUpdate: (flag: FlagInformation) => {
@@ -690,11 +923,15 @@ function useFlag(flagId: FlagId): FlagInformation | undefined {
 
         return () => {
             api.removeFlagListener(flagId, listener)
+
+            if (HooksConfig.useFlag) {
+                console.log('Hooks (useFlag): Listener removed', flagId)
+            }
         }
     }, [flagId])
 
     if (!flag) {
-        console.error(`Hooks: flag with id ${flagId} not found`)
+        console.error('Hooks (useFlag): Flag not found', flagId)
     }
 
     return flag
@@ -714,6 +951,21 @@ function useRoad(roadId: RoadId): RoadInformation | undefined {
     })
 
     // Effects
+    // Effect: synchronize state when roadId changes
+    useEffect(() => {
+        const updatedRoad = api.roads.get(roadId)
+
+        if (HooksConfig.useRoad) {
+            console.log(
+                'Hooks (useRoad): Road changed',
+                roadId,
+                updatedRoad
+            )
+        }
+
+        setRoad(updatedRoad)
+    }, [roadId])
+
     // Effect: listen for changes to the road
     useEffect(() => {
         const listener = (roadId: RoadId, road?: RoadInformation) => {
@@ -721,7 +973,7 @@ function useRoad(roadId: RoadId): RoadInformation | undefined {
                 console.log('Hooks (useRoad): Update received', roadId, road)
             }
 
-            setRoad(api.roads.get(roadId))
+            setRoad(road)
         }
 
         api.addRoadListener(roadId, listener)
@@ -732,31 +984,55 @@ function useRoad(roadId: RoadId): RoadInformation | undefined {
 
         return () => {
             api.removeRoadListener(roadId, listener)
+
+            if (HooksConfig.useRoad) {
+                console.log('Hooks (useRoad): Listener removed', roadId)
+            }
         }
     }, [roadId])
 
     if (!road) {
-        console.error(`Hooks: road with id ${roadId} not found`)
+        console.error('Hooks (useRoad): Road not found', roadId)
     }
 
     return road
 }
 
 function useToolPriorities(): ToolPriorities | undefined {
+
+    // State
+    // TODO: should initialize from player.toolPriorities
     const [toolPriorities, setToolPriorities] = useState<ToolPriorities>()
 
     // Effects
+    // Effect: listen to changes to the tool priorities
     useEffect(() => {
         let cancelled = false
 
         function toolPrioUpdated(toolPrios: ToolPriorities) {
+            if (HooksConfig.useToolPriorities) {
+                console.log('Hooks (useToolPriorities): Update received', toolPrios)
+            }
+
             setToolPriorities(toolPrios)
         }
 
         (async () => {
+            if (HooksConfig.useToolPriorities) {
+                console.log('Hooks (useToolPriorities): Fetching tool priorities')
+            }
+
             const toolPrio = await api.getToolPriorities()
 
+            if (HooksConfig.useToolPriorities) {
+                console.log('Hooks (useToolPriorities): Tool priorities fetched', toolPrio)
+            }
+
             if (cancelled) {
+                if (HooksConfig.useToolPriorities) {
+                    console.log('Hooks (useToolPriorities): Ignoring fetched tool priorities after unmount')
+                }
+
                 return
             }
 
@@ -765,9 +1041,17 @@ function useToolPriorities(): ToolPriorities | undefined {
 
         api.addToolPrioListener(toolPrioUpdated)
 
+        if (HooksConfig.useToolPriorities) {
+            console.log('Hooks (useToolPriorities): Listener registered')
+        }
+
         return () => {
             cancelled = true
             api.removeToolPrioListener(toolPrioUpdated)
+
+            if (HooksConfig.useToolPriorities) {
+                console.log('Hooks (useToolPriorities): Listener removed')
+            }
         }
     }, [])
 

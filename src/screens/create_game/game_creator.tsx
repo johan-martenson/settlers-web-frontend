@@ -4,14 +4,15 @@ import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
 import ManagePlayers from './manage_players'
-import { GameId, PlayerId, GameInformation, NATIONS } from '../../api/types'
+import { GameId, PlayerId, GameInformation, NATIONS, isNation, MapInformation, ResourceLevel } from '../../api/types'
 import { GameListener, api } from '../../api/ws-api'
 import { ChatBox } from '../../components/chat/chat'
 import { Center } from '../../components/center'
-import { dispatchInputKey, GenericCommand, GenericTypeControl } from '../play/type_control'
 import { UiIcon } from '../../icons/icon'
 import { useMaps } from '../../utils/hooks/hooks'
 import { addComputerPlayer } from '../../api/utils'
+import { useTypingInput } from '../../utils/hooks/input'
+import { DialogTyping, executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing_command_utils'
 
 
 // Types
@@ -21,9 +22,6 @@ type GameCreatorProps = {
     onGameStarted: (gameId: GameId, selfPlayerId: PlayerId) => void
     onGameCreateCanceled: () => void
 }
-
-// Constants
-const LOBBY_TYPING_SOURCE = 'LOBBY'
 
 // React component
 const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: GameCreatorProps) => {
@@ -39,8 +37,9 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
     // Monitoring hooks
     const maps = useMaps()
+    const { inputValue, keyTyped } = useTypingInput()
 
-    // Callbacks
+    // Functions
     const onStartGameClicked = () => {
         if (gameInformation?.id !== undefined) {
             api.startGame(gameInformation?.id ?? '')
@@ -50,26 +49,68 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
         }
     }
 
-    const onKeyDown = useCallback((event: React.KeyboardEvent) => {
-        dispatchInputKey({
-            key: event.key,
-            metaKey: event.metaKey,
-            altKey: event.altKey,
-            ctrlKey: event.ctrlKey,
-            shiftKey: event.shiftKey
-        },
-            LOBBY_TYPING_SOURCE)
-    }, [dispatchInputKey])
+    const cancelAndRemoveGame = useCallback(() => {
+        if (api.gameId !== undefined) {
+            api.deleteGame(api.gameId)
+        } else {
+            console.error('Game id is not set')
+        }
+
+        onGameCreateCanceled()
+
+    }, [])
+
+    const selectMap = useCallback((map: MapInformation) => {
+        console.log('Selected map', map)
+        if (!gameInformation?.map || gameInformation.map.id !== map.id) {
+            api.setMap(map.id)
+        }
+    }, [gameInformation])
+
+    const setInitialResources = useCallback((resources: ResourceLevel) => api.setInitialResources(resources), [])
+
+    const setOthersCanJoin = useCallback((othersCanJoin: boolean) => api.setOthersCanJoin(othersCanJoin), [])
+
+    const setCheatingEnabled = useCallback((cheatingEnabled: boolean) => api.setCheating(cheatingEnabled), [])
 
     // Memoized values
     const commands = useMemo(() => {
         const commands = new Map<string, GenericCommand<GameInformation>>()
 
+        commands.set('Change game name ', {
+            type: 'STRING',
+            action: (gameInformation: GameInformation, name: string) => {
+                if (api.gameId !== undefined) {
+                    api.setTitle(name)
+                } else {
+                    console.error('Game id is not set')
+                }
+            }
+        })
+
+        commands.set('Change my name ', {
+            type: 'STRING',
+            action: (gameInformation: GameInformation, name: string) => {
+                if (api.playerId !== undefined) {
+                    const selfPlayer = api.players.get(api.playerId)
+
+                    if (selfPlayer) {
+                        api.updatePlayer(api.playerId, name, selfPlayer.color, selfPlayer.nation)
+                    } else {
+                        console.error('Failed to look up self player')
+                    }
+                } else {
+                    console.error('Player id is not set')
+                }
+            }
+        })
+
         commands.set('Start game', {
             action: onStartGameClicked,
             hidden: state !== 'CREATE_GAME',
-            icon: <UiIcon type='PLAY' />
+            icon: <UiIcon type='PLAY' scale={0.5} />
         })
+
         commands.set('Leave game', {
             action: () => {
                 api.removePlayer(selfPlayerId)
@@ -77,11 +118,10 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
             },
             hidden: state !== 'CREATE_GAME'
         })
+
         commands.set('Discard game', {
             action: () => {
                 if (api.gameId !== undefined) {
-                    console.log('Deleting game with id ' + api.gameId)
-
                     api.deleteGame(api.gameId)
                     api.stopFollowingGame()
                 } else {
@@ -93,70 +133,92 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
             hidden: state !== 'CREATE_GAME',
             icon: <UiIcon type='TRASHCAN' />
         })
+
         commands.set('Cheating on/off', {
             action: (gameInformation: GameInformation) => {
                 api.setCheating(!gameInformation.cheatingEnabled)
             },
             hidden: state !== 'CREATE_GAME'
         })
-        NATIONS.forEach(nation => {
-            commands.set(`Play as ${nation.toLocaleLowerCase()}`, {
-                action: (gameInformation: GameInformation) => {
-                    const selfPlayer = gameInformation.players.find(player => player.id === selfPlayerId)
 
-                    if (selfPlayer) {
-                        api.updatePlayer(selfPlayerId, selfPlayer.name, selfPlayer.color, nation)
-                    }
+        commands.set('Play as ', {
+            type: 'ENUM',
+            values: Array.from(NATIONS),
+            action: (gameInformation: GameInformation, nationAsString: string) => {
+                if (!isNation(nationAsString)) {
+                    console.error(`${nationAsString} is not a valid nation`)
+
+                    return
                 }
-            })
-        })
-        maps.forEach(map => {
-            commands.set('Map: ' + map.name, {
-                action: (gameInformation: GameInformation) => {
-                    if (!gameInformation.map || gameInformation.map.id !== map.id) {
-                        api.setMap(map.id)
-                    }
+
+                const selfPlayer = gameInformation.players.find(player => player.id === selfPlayerId)
+
+                if (selfPlayer) {
+                    api.updatePlayer(selfPlayerId, selfPlayer.name, selfPlayer.color, nationAsString)
                 }
-            })
+            }
         })
+
+        commands.set('Set map ', {
+            type: 'ENUM',
+            values: maps.map(map => map.name),
+            action: (_gameInformation: GameInformation, mapName: string) => {
+                const map = maps.find(map => map.name === mapName)
+
+                if (map) {
+                    api.setMap(map.id)
+                } else {
+                    console.error(`${mapName} is not a valid map`)
+                }
+            }
+        })
+
+        commands.set('Kick player ', {
+            type: 'ENUM',
+            values: gameInformation?.players.map(player => player.name) ?? [],
+            action: (gameInformation: GameInformation, playerName: string) => {
+                const player = gameInformation.players.find(player => player.name === playerName)
+
+                if (player) {
+                    api.removePlayer(player.id)
+                } else {
+                    console.error(`${playerName} is not a valid player`)
+                }
+            }
+        })
+
         commands.set('Low resources', {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             action: (_gameInformation: GameInformation) => {
                 api.setInitialResources('LOW')
             }
         })
+
         commands.set('Medium resources', {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             action: (_gameInformation: GameInformation) => {
                 api.setInitialResources('MEDIUM')
             }
         })
+
         commands.set('High resources', {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             action: (_gameInformation: GameInformation) => {
                 api.setInitialResources('HIGH')
             }
         })
+
         commands.set('Others can join', {
             action: (gameInformation: GameInformation) => {
                 api.setOthersCanJoin(!gameInformation.othersCanJoin)
             }
         })
+
         commands.set('Add computer player', {
             action: (gameInformation: GameInformation) => {
                 addComputerPlayer(gameInformation.players, gameInformation.map?.maxPlayers ?? 3)
             }
         })
-        gameInformation?.players
-            .filter(player => player.id !== selfPlayerId)
-            .forEach(player => {
-                commands.set('Kick ' + player.name, {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    action: (_gameInformation: GameInformation) => {
-                        api.removePlayer(player.id)
-                    }
-                })
-            })
 
         return commands
     }, [state, maps, gameInformation, selfPlayerId, onStartGameClicked, onGameCreateCanceled])
@@ -245,7 +307,9 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
         }
     }, [])
 
-    console.log('Rendering based on game information', gameInformation)
+    // Rendering
+    const matches = findMatchingCommands(commands, inputValue, gameInformation)
+    const topMatch = matches[0]
 
     return (
         <>
@@ -273,18 +337,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                                 tabIndex={-1}
                             />
                         </Field>
-                        <Button onClick={() => {
-                            if (api.gameId !== undefined) {
-                                api.deleteGame(api.gameId)
-                            } else {
-                                console.error('Game id is not set')
-                            }
-
-                            onGameCreateCanceled()
-                        }}
-                        >
-                            Cancel
-                        </Button>
+                        <Button onClick={cancelAndRemoveGame}>Cancel</Button>
                         <Button
                             disabled={!candidateTitle}
                             appearance='primary'
@@ -303,7 +356,22 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
             }
 
             {state === 'CREATE_GAME' && gameInformation?.id && selfPlayerId &&
-                <div id='game-creation-screen' onKeyDown={onKeyDown} ref={selfContainerRef} tabIndex={-1}>
+                <div
+                    id='game-creation-screen'
+                    onKeyDown={(event: React.KeyboardEvent) => {
+                        if (event.key === 'Enter') {
+                            try {
+                                executeCommand(topMatch, gameInformation)
+                            } catch (error) {
+                                console.error(`Lobby: failed to execute command ${inputValue}`, error)
+                            }
+                        }
+
+                        keyTyped(event)
+                    }}
+                    ref={selfContainerRef}
+                    tabIndex={-1}
+                >
 
                     <div id='title'>Create game: {gameInformation?.name ?? ''}</div>
 
@@ -313,9 +381,9 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                             initialResources={gameInformation?.initialResources ?? 'MEDIUM'}
                             othersCanJoin={gameInformation?.othersCanJoin ?? true}
                             cheatingEnabled={gameInformation?.cheatingEnabled ?? false}
-                            onResourcesChange={resources => api.setInitialResources(resources)}
-                            onOthersCanJoinChange={othersCanJoin => api.setOthersCanJoin(othersCanJoin)}
-                            onCheatingEnabledChange={cheatingEnabled => api.setCheating(cheatingEnabled)}
+                            onResourcesChange={setInitialResources}
+                            onOthersCanJoinChange={setOthersCanJoin}
+                            onCheatingEnabledChange={setCheatingEnabled}
                         />
                     </div>
 
@@ -330,12 +398,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
                     <div id='map-title'><h2>Select map</h2></div>
                     <div id='map'>
-                        <MapSelection onMapSelected={map => {
-                            console.log('Selected map', map)
-                            if (!gameInformation?.map || gameInformation.map.id !== map.id) {
-                                api.setMap(map.id)
-                            }
-                        }}
+                        <MapSelection onMapSelected={selectMap}
                             minPlayers={gameInformation?.players.length ?? 0} />
                     </div>
 
@@ -344,21 +407,10 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                         <ChatBox playerId={selfPlayerId} roomId={`game-${gameInformation?.id}`} />
                     </div>
                     <div id='start-or-cancel'>
-                        <Button onClick={() => {
-                            onGameCreateCanceled()
-                        }} >
+                        <Button onClick={onGameCreateCanceled} >
                             Leave
                         </Button>
-                        <Button onClick={() => {
-                            if (api.gameId !== undefined) {
-                                api.deleteGame(api.gameId)
-                            } else {
-                                console.error('Game id is not set')
-                            }
-
-                            onGameCreateCanceled()
-
-                        }} >
+                        <Button onClick={cancelAndRemoveGame} >
                             Discard game
                         </Button>
                         <Button onClick={onStartGameClicked}
@@ -368,13 +420,11 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                             Launch game
                         </Button>
                     </div>
-                    <div id='typing-control'>
-                        <GenericTypeControl<GameInformation>
-                        commands={commands}
-                        param={gameInformation}
-                        typingSource={LOBBY_TYPING_SOURCE}
-                        />
-                    </div>
+                    {inputValue && inputValue.length > 0 &&
+                        <div id='game-creator-typing'>
+                            <DialogTyping inputValue={inputValue} matches={matches} />
+                        </div>
+                    }
 
                 </div>
             }

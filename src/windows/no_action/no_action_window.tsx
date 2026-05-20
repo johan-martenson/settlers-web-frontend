@@ -5,7 +5,7 @@ import { Point } from "../../api/types"
 import { useState } from "react"
 import './no_action_window.css'
 import { UiIcon } from '../../icons/icon'
-import { GenericCommand } from '../../screens/play/type_control'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type NoActionWindowProps = {

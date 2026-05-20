@@ -125,3 +125,10 @@
     justify-content: flex-end;
     gap: 10px;
 }
+
+#game-creator-typing {
+    position: absolute;
+    bottom: 1em;
+    right: 5em;
+    width: 20em;
+}

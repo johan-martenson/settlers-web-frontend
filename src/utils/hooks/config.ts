@@ -4,7 +4,7 @@ export const HooksConfig = {
     useStatistics: false,
     useTransportPriority: false,
     usePlayer: false,
-    useGameInformation: false,
+    useGame: false,
     useMaps: false,
     useHouse: false,
     useChatMessages: false,
@@ -14,8 +14,9 @@ export const HooksConfig = {
     usePointInformation: false,
     usePlayers: false,
     useTypingInput: false,
-    useMapsWithTerrain: true,
-    useMapWithTerrain: true,
-    useFlag: true,
-    useRoad: true
+    useMapsWithTerrain: false,
+    useMapWithTerrain: false,
+    useFlag: false,
+    useRoad: false,
+    useToolPriorities: false
 }

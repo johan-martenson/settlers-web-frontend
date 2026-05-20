@@ -186,8 +186,6 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
     // Monitoring hooks
     const player = usePlayer(playerId)
 
-    // Functions
-
     // Memos
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<MaterialQuotaToManage>>()
@@ -222,24 +220,28 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
                 console.log(`Set ${config.houseType} quota`)
                 cmds.set(`Set ${config.houseType} coal quota`, {
                     type: 'NUMBER',
+                    max: 10,
+                    min: 0,
                     action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                     filter: (material: MaterialQuotaToManage) => material === 'COAL'
                 })
             })
 
-            console.log(cmds)
-
             wheatConfig.forEach(config => {
                 cmds.set(`Set ${config.houseType} wheat quota`, {
                     type: 'NUMBER',
+                    max: 10,
+                    min: 0,
                     action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                     filter: (material: MaterialQuotaToManage) => material === 'WHEAT'
-                    })
+                })
             })
 
             waterConfig.forEach(config => {
                 cmds.set(`Set ${config.houseType} water quota`, {
                     type: 'NUMBER',
+                    max: 10,
+                    min: 0,
                     action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                     filter: (material: MaterialQuotaToManage) => material === 'WATER'
                 })
@@ -248,8 +250,20 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
             ironConfig.forEach(config => {
                 cmds.set(`Set ${config.houseType} iron bar quota`, {
                     type: 'NUMBER',
+                    max: 10,
+                    min: 0,
                     action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                     filter: (material: MaterialQuotaToManage) => material === 'IRON_BAR'
+                })
+            })
+
+            foodConfig.forEach(config => {
+                cmds.set(`Set ${config.houseType} food quota`, {
+                    type: 'NUMBER',
+                    max: 10,
+                    min: 0,
+                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
+                    filter: (material: MaterialQuotaToManage) => material === 'FOOD'
                 })
             })
         }
@@ -260,8 +274,6 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
         return cmds
     }, [player, onClose])
-
-    // Effects
 
     // Rendering
     if (player === undefined) {

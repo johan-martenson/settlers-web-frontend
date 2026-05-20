@@ -37,8 +37,21 @@
     cursor: pointer;
 }
 
+.typing-match-and-icon {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 
-.type-match {
+    text-align: left;
+
+    border-radius: 0.25em;
+
+    transition: background-color 0.1s ease;
+}
+
+.typing-match-text {
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
@@ -47,7 +60,18 @@
     text-align: left;
 
     border-radius: 0.25em;
+}
 
-    transition: background-color 0.1s ease;
+.typing-match-and-list-toggle {
+    width: 20em;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5em;
+}
+
+.typing-no-match {
+    font-style: italic;
+    color: lightgray;
 }
 

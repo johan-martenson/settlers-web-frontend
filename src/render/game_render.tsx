@@ -4,7 +4,7 @@ import { Duration } from '../utils/stats/duration'
 import './game_render.css'
 import { api, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../utils/stats/stats'
-import { gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUp, getPointUpLeft, getPointUpRight, normalize, resizeCanvasToDisplaySize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumAndNormalizeVectors, sumVectors, surroundingPoints, Vector } from '../utils/utils'
+import { gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumAndNormalizeVectors, surroundingPoints, Vector } from '../utils/utils'
 import { PointMap, PointSet } from '../utils/util_types'
 import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, houses, loadImageAsync, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import { fogOfWarFragmentShader, fogOfWarVertexShader } from '../shaders/fog-of-war'
@@ -1855,11 +1855,6 @@ function GameCanvas({
         }
 
         renderState.gl = gl
-
-        // For debug purposes.
-        const loseExt = gl.getExtension('WEBGL_lose_context')
-            ; (window as any).__gl = gl
-            ; (window as any).__loseExt = loseExt
 
         // Set up WebGL programs
         renderState.drawGroundProgramInstance = initProgram(drawGroundProgramDescriptor, gl)

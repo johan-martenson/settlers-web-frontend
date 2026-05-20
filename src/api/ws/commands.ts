@@ -1036,7 +1036,7 @@ async function createGame(name: string, players: (ExistingPlayerById | NewPlayer
 
 /**
  * Deletes the given game.
- * @param {GameId} - The id of the game to delete.
+ * @param {GameId} gameId - The id of the game to delete.
  */
 function deleteGame(gameId: GameId): void {
     sendWithOptions<DeleteGame>(Command.DeleteGame, { gameId })

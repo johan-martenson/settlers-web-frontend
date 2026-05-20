@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { ButtonRow, WindowWithTyping } from "../../components/dialog"
-import { makeImageFromMap } from "../../utils/utils"
-import { api } from "../../api/ws-api"
-import { Button } from "@fluentui/react-components"
-import { UiIcon } from "../../icons/icon"
-import { MapId } from "../../api/types"
-import { useMapWithTerrain } from "../../utils/hooks/hooks"
-import { GenericCommand } from "../../screens/play/type_control"
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { ButtonRow, WindowWithTyping } from '../../components/dialog'
+import { makeImageFromMap } from '../../utils/utils'
+import { api } from '../../api/ws-api'
+import { Button } from '@fluentui/react-components'
+import { UiIcon } from '../../icons/icon'
+import { MapId } from '../../api/types'
+import { useMapWithTerrain } from '../../utils/hooks/hooks'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 type MapViewProps = {
     mapId: MapId
@@ -77,24 +77,28 @@ const MapView = ({ mapId, onClose, onRaise }: MapViewProps) => {
         const cmds = new Map<string, GenericCommand<MapViewProps>>()
 
         cmds.set('Draw player land', {
+            // eslint-disable-next-line
             action: (_props: MapViewProps) => {
                 setDrawPlayerLand(prev => !prev)
             }
         })
 
         cmds.set('Draw houses', {
+            // eslint-disable-next-line
             action: (_props: MapViewProps) => {
                 setDrawHouses(prev => !prev)
             }
         })
 
         cmds.set('Draw roads', {
+            // eslint-disable-next-line
             action: (_props: MapViewProps) => {
                 setDrawRoads(prev => !prev)
             }
         })
 
         cmds.set('Close window', {
+            // eslint-disable-next-line
             action: (_props: MapViewProps) => onClose()
         })
 

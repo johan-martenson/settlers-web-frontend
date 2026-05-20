@@ -74,17 +74,3 @@
     flex-wrap: wrap;
     justify-content: center;
 }
-
-.no-match {
-    font-style: italic;
-    color: lightgray;
-}
-
-
-.type-match-and-list-toggle {
-    width: 20em;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin-top: 0.5em;
-}

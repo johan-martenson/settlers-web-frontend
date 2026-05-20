@@ -11,8 +11,8 @@ import { houseIsReady, isMilitaryBuilding } from '../../api/utils'
 import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { useHouse } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../screens/play/type_control'
 import { Dismiss16Filled } from '@fluentui/react-icons'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type HouseInfoProps = {

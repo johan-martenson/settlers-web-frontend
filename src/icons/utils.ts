@@ -1,10 +1,10 @@
-import React, { useEffect, useRef } from "react"
+import { useEffect, useRef } from 'react'
 
 // State
 const imageCache = new WeakMap<HTMLImageElement, ImageBitmap>()
 
 // Hooks
-function useAnimatedSprite<T>({
+function useAnimatedSprite({
     loader,
     getFrame,
     animate,
@@ -17,7 +17,7 @@ function useAnimatedSprite<T>({
     getFrame: (image: ImageBitmap, frameIndex: number) => void
     animate: boolean
     fps?: number
-    deps: any[]
+    deps?: React.DependencyList
 }) {
 
     // References

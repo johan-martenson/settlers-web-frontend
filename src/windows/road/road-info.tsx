@@ -5,8 +5,8 @@ import { Point, RoadId, RoadInformation } from '../../api/types'
 import { api } from '../../api/ws-api'
 import './road-info.css'
 import { ButtonRow, WindowWithTyping } from '../../components/dialog'
-import { GenericCommand } from '../../screens/play/type_control'
 import { useRoad } from '../../utils/hooks/hooks'
+import { GenericCommand } from '../../utils/typing_command_utils'
 
 // Types
 type RoadInfoProps = {
@@ -119,54 +119,63 @@ const RoadInfo = ({
         const cmds = new Map<string, GenericCommand<RoadInformation>>()
 
         cmds.set('Manage road', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => {
                 setSelected('ROAD')
             }
         })
 
         cmds.set('Monitor', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => {
                 setSelected('MONITOR')
             }
         })
 
         cmds.set('Show house names', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => {
                 onShowHouseTitles()
             }
         })
 
         cmds.set('Hide house names', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => {
                 onHideHouseTitles()
             }
         })
 
         cmds.set('Show available construction', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => {
                 onShowAvailableConstruction()
             }
         })
 
         cmds.set('Hide available construction', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => {
                 onHideAvailableConstruction()
             }
         })
 
         cmds.set('Open monitor', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => {
                 openMonitor()
             }
         })
 
         cmds.set('Remove road', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => {
                 removeRoad()
             }
         })
 
         cmds.set('Close window', {
+            // eslint-disable-next-line
             action: (_roadInfo: RoadInformation) => onClose()
         })
 

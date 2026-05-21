@@ -1,5 +1,5 @@
-import { ShipConstructionProgress, PlayerColor, Material, WorkerAction, Nation, AnyBuilding, SignType, Size, FireSize, TreeType, TreeSize, Direction, SmokeType } from "../api/types"
-import { UiIconType } from "../icons/icon"
+import { ShipConstructionProgress, PlayerColor, Material, WorkerAction, Nation, AnyBuilding, SignType, Size, FireSize, TreeType, TreeSize, Direction, SmokeType } from '../api/types'
+import { UiIconType } from '../components/icons/icon'
 
 export type Dimension = {
     width: number

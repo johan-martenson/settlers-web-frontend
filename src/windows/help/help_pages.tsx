@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react'
 import { isBuilding, isMaterial } from '../../api/types'
-import { HouseIcon, InventoryIcon } from '../../icons/icon'
+import { HouseIcon, InventoryIcon } from '../../components/icons/icon'
 
 // Types
 export type PageType = {

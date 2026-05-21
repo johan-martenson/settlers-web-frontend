@@ -3,8 +3,8 @@ import { Text, CardHeader, Caption1, Card, Button, Input, InputOnChangeData, Fie
 import './player.css'
 import { NATIONS, Nation, PLAYER_COLORS, PlayerColor, PlayerInformation } from '../../api/types'
 import { MoreHorizontal20Regular } from '@fluentui/react-icons'
-import { WorkerIcon } from '../../icons/icon'
-import { nationPretty, colorPretty } from '../../pretty_strings'
+import { colorPretty, nationPretty } from '../../utils/pretty_strings'
+import { WorkerIcon } from '../../components/icons/icon'
 
 // Types
 type PlayerProps = {

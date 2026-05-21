@@ -2,12 +2,12 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { WindowWithTyping } from '../../components/dialog'
 import './transport_priority.css'
 import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from '../../api/types'
-import { InventoryIcon, UiIcon } from '../../icons/icon'
 import { api } from '../../api/ws-api'
-import { transportCategoryPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { useTransportPriority } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { transportCategoryPretty } from '../../utils/pretty_strings'
+import { InventoryIcon, UiIcon } from '../../components/icons/icon'
 
 // Types
 type SetTransportPriorityProps = {

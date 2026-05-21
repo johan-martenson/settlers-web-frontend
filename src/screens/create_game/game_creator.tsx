@@ -8,11 +8,11 @@ import { GameId, PlayerId, GameInformation, NATIONS, isNation, MapInformation, R
 import { GameListener, api } from '../../api/ws-api'
 import { ChatBox } from '../../components/chat/chat'
 import { Center } from '../../components/center'
-import { UiIcon } from '../../icons/icon'
 import { useMaps } from '../../utils/hooks/hooks'
 import { addComputerPlayer } from '../../api/utils'
 import { useTypingInput } from '../../utils/hooks/input'
 import { DialogTyping, executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing_command_utils'
+import { UiIcon } from '../../components/icons/icon'
 
 
 // Types

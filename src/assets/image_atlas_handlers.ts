@@ -1,7 +1,7 @@
 import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignType, Size, SmokeType, StoneAmount, StoneType, TreeSize, TreeType, WorkerAction } from '../api/types'
-import { UiIconType } from '../icons/icon'
 import { AnimalImageAtlas, AnimationType, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
 import { AssetsLogConfig } from './config'
+import { UiIconType } from '../components/icons/icon'
 
 // Types
 type SmokeTable = Record<

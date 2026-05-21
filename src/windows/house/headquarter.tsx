@@ -1,15 +1,15 @@
 import React, { useMemo } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { HouseInformation, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
-import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
 import { useState } from 'react'
 import { api } from '../../api/ws-api'
 import { WindowWithTyping } from '../../components/dialog'
-import { MATERIAL_LABELS, soldierPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { MATERIAL_LABELS, soldierPretty } from '../../utils/pretty_strings'
+import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 
 
 // Types

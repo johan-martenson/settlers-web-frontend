@@ -1,5 +1,5 @@
 import React from 'react'
-import { AnyBuilding, GameSpeed, GameState, GeneralStatisticsType, Material, Merchandise, Nation, PlayerColor, SoldierType, StatisticsView, TransportCategory } from './api/types'
+import { Material, Nation, PlayerColor, AnyBuilding, TransportCategory, Merchandise, GeneralStatisticsType, SoldierType, GameSpeed, GameState, StatisticsView } from '../api/types'
 
 // Types
 

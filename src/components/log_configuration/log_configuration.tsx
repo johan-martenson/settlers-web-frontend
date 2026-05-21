@@ -14,13 +14,13 @@ import {
 } from '@fluentui/react-components'
 import { WsApiLogConfig } from '../../api/ws-api'
 import { WsCoreLogConfig } from '../../api/ws/core'
-import { GlUtilsLogConfig } from '../../render/utils'
-import { GameMenuLogConfig } from '../../screens/play/game_menu'
+import { GlUtilsLogConfig } from '../../render/webgl-utils'
+import { GameMenuLogConfig } from '../../components/game-menu/game-menu'
 import { PlayLogConfig } from '../../screens/play/play'
 import { HooksConfig } from '../../utils/hooks/config'
 import { SoundEffectsLogConfig } from '../../sound/sound_effects'
 import { TypeControlLogConfig } from '../../screens/play/type_control'
-import { RenderLogConfig } from '../../render/game_render'
+import { RenderLogConfig } from '../../render/game-render'
 
 // Types
 type SubsystemDescriptor<T> = {

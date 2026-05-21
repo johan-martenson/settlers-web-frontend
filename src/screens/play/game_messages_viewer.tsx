@@ -4,10 +4,10 @@ import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand
 import './game_messages_viewer.css'
 import { api } from '../../api/ws-api'
 import { Point, GameMessage, Nation } from '../../api/types'
-import { HouseIcon, UiIcon, WorkerIcon } from '../../icons/icon'
-import { ShipIcon } from '../../icons/ship'
 import { ItemContainer } from '../../components/item_container'
 import { useGameMessages } from '../../utils/hooks/hooks'
+import { HouseIcon, UiIcon, WorkerIcon } from '../../components/icons/icon'
+import { ShipIcon } from '../../components/icons/ship'
 
 // Types
 type GameMessagesViewerProps = {

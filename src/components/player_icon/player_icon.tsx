@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { PlayerColor, PlayerId, PlayerInformation } from '../../api/types'
 import { api } from '../../api/ws-api'
 import { Button } from '@fluentui/react-components'
-import { playerToColor } from '../../pretty_strings'
 import './player_icon.css'
 import { usePlayer } from '../../utils/hooks/hooks'
+import { playerToColor } from '../../utils/pretty_strings'
 
 // Types
 type StaticPlayerIconProps = {

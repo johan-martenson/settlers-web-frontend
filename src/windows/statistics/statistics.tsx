@@ -3,16 +3,16 @@ import { WindowWithTyping } from '../../components/dialog'
 import './statistics.css'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { Nation, AnyBuilding, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, PlayerInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, GENERAL_STATISTICS_TYPES, StatisticsView, STATISTICS_VIEWS } from '../../api/types'
-import { HouseIcon, InventoryIcon, UiIcon, UiIconType } from '../../icons/icon'
 import { api } from '../../api/ws-api'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Label } from 'recharts'
 import { StatisticsReply } from '../../api/ws/commands'
-import { buildingPretty, generalStatisticsTypePretty, materialPretty, merchandisePretty, playerToColor, statisticsViewPretty } from '../../pretty_strings'
 import { LivePlayerButton } from '../../components/player_icon/player_icon'
 import { ItemContainer } from '../../components/item_container'
 import { MouseHandlerDataParam } from 'recharts/types/synchronisation/types'
 import { useStatistics, useTime } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { buildingPretty, generalStatisticsTypePretty, materialPretty, merchandisePretty, playerToColor, statisticsViewPretty } from '../../utils/pretty_strings'
+import { HouseIcon, InventoryIcon, UiIcon, UiIconType } from '../../components/icons/icon'
 
 // Types
 type StatisticsProps = {

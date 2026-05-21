@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react'
-import { HouseIcon, UiIcon } from '../../icons/icon'
 import './quotas.css'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { AnyBuilding, Nation, PlayerId, PlayerInformation } from '../../api/types'
@@ -8,8 +7,9 @@ import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
 import { clamp } from '../house/headquarter'
-import { buildingPretty } from '../../pretty_strings'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { buildingPretty } from '../../utils/pretty_strings'
+import { HouseIcon, UiIcon } from '../../components/icons/icon'
 
 // Types
 type QuotasProps = {

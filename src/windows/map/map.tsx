@@ -3,10 +3,10 @@ import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { makeImageFromMap } from '../../utils/utils'
 import { api } from '../../api/ws-api'
 import { Button } from '@fluentui/react-components'
-import { UiIcon } from '../../icons/icon'
 import { MapId } from '../../api/types'
 import { useMapWithTerrain } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { UiIcon } from '../../components/icons/icon'
 
 type MapViewProps = {
     mapId: MapId

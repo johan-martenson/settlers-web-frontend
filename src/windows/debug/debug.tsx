@@ -6,9 +6,9 @@ import { Accordion, AccordionHeader, AccordionItem, AccordionPanel } from '@flue
 import { VEGETATION } from './translate'
 import { WindowWithTyping } from '../../components/dialog'
 import Selector from './select'
-import { UiIcon } from '../../icons/icon'
 import { DebugLogsTable } from '../../components/log_configuration/log_configuration'
 import { HouseTable } from '../../components/house_table/house_table'
+import { UiIcon } from '../../components/icons/icon'
 
 // Types
 type DebugProps = {

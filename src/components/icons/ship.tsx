@@ -1,8 +1,8 @@
 import React, { useRef } from 'react'
-import { Direction } from '../api/types'
-import { shipImageAtlas } from '../assets/image_atlas_handlers'
 import { useAnimatedSprite } from './utils'
 import { drawImageAndShadow } from './icon'
+import { shipImageAtlas } from '../../assets/image_atlas_handlers'
+import { Direction } from '../../api/types'
 
 // Types
 type ShipIconProps = {

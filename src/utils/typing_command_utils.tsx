@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import './typing_command_utils.css'
 import { Button } from '@fluentui/react-components'
-import { UiIcon } from '../icons/icon'
 import { ItemContainer } from '../components/item_container'
+import { UiIcon } from '../components/icons/icon'
 
 /*
 TODO: add an additional state for commands with parameters to separate between when the prefix is matching and 

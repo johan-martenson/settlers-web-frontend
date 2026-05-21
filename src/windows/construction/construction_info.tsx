@@ -5,11 +5,11 @@ import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { api } from '../../api/ws-api'
 import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildMine, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils/utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { FlagIcon, HouseIcon, UiIcon } from '../../icons/icon'
-import { buildingPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { usePointInformation } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { FlagIcon, HouseIcon, UiIcon } from '../../components/icons/icon'
+import { buildingPretty } from '../../utils/pretty_strings'
 
 // Types
 type ConstructionInfoProps = {

@@ -3,11 +3,11 @@ import { FlagInformation, Nation, Point } from '../../api/types'
 import './friendly_flag_info.css'
 import { api } from '../../api/ws-api'
 import { Button, Field } from '@fluentui/react-components'
-import { FlagIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import { ButtonRow, WindowWithTyping } from '../../components/dialog'
-import { materialPretty } from '../../pretty_strings'
 import { useFlag } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { FlagIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
+import { materialPretty } from '../../utils/pretty_strings'
 
 // Types
 type FriendlyFlagInfoProps = {

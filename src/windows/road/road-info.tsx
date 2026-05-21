@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { UiIcon } from '../../icons/icon'
 import { Point, RoadId, RoadInformation } from '../../api/types'
 import { api } from '../../api/ws-api'
 import './road-info.css'
 import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { useRoad } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { UiIcon } from '../../components/icons/icon'
 
 // Types
 type RoadInfoProps = {

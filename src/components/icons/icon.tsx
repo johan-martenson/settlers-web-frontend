@@ -1,10 +1,9 @@
 import React, { useRef, useState } from 'react'
-import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../api/types'
-import { flagImageAtlasHandler, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
-import './icon.css'
-import { flagAnimations, workers } from '../assets/animations'
-import { DrawingInformation } from '../assets/types'
 import { useAnimatedSprite } from './utils'
+import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../../api/types'
+import { DrawingInformation } from '../../assets/types'
+import { flagAnimations, workers } from '../../assets/animations'
+import { flagImageAtlasHandler, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler } from '../../assets/image_atlas_handlers'
 
 // Types
 export type UiIconType = 'DESTROY_BUILDING'

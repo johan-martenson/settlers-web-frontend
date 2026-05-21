@@ -3,7 +3,7 @@ import { Button } from '@fluentui/react-components'
 import ExpandCollapseToggle from '../components/expand_collapse_toggle/expand_collapse_toggle'
 import './music_player.css'
 import { ItemContainer } from '../components/item_container'
-import { UiIcon } from '../icons/icon'
+import { UiIcon } from '../components/icons/icon'
 
 // Types
 type AudioAtlasSongs = {

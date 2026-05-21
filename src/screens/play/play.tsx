@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './play.css'
 import { ConstructionInfo } from '../../windows/construction/construction_info'
 import FriendlyFlagInfo from '../../windows/flag/friendly_flag_info'
-import GameMenu from './game_menu'
+import GameMenu from '../../components/game-menu/game-menu'
 import GameMessagesViewer from './game_messages_viewer'
-import { CursorState, GameCanvas } from '../../render/game_render'
+import { CursorState, GameCanvas } from '../../render/game-render'
 import Guide from '../../windows/help/guide'
 import MenuButton from './menu_button'
 import { GameListener, api } from '../../api/ws-api'
@@ -16,7 +16,6 @@ import { TypeControl } from './type_control'
 import { isRoadAtPoint } from '../../utils/utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, HouseId, GameState, RoadId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
 import { CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled } from '@fluentui/react-icons'
-import { FlagIcon, HouseIcon, UiIcon } from '../../icons/icon'
 import { HouseInfo } from '../../windows/house/house_info'
 import { sfx } from '../../sound/sound_effects'
 import { Quotas } from '../../windows/quotas/quotas'
@@ -30,12 +29,13 @@ import { Button } from '@fluentui/react-components'
 import { NoActionWindow } from '../../windows/no_action/no_action_window'
 import { ExpandChatBox } from '../../components/chat/chat'
 import { canBeUpgraded, getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint } from '../../api/utils'
-import { calcTranslation } from '../../render/utils'
+import { calcTranslation } from '../../render/webgl-utils'
 import Tools from '../../windows/tools/tools'
 import { MapView } from '../../windows/map/map'
 import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
 import { useGame, usePlayer } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { FlagIcon, HouseIcon, UiIcon } from '../../components/icons/icon'
 
 // Types
 type HouseWindow = {
@@ -1149,10 +1149,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             hidden: true
         })
 
-        console.log(commands)
-
         return commands
-    }, [])
+    }, [selfPlayerId, gameId, openSingletonWindow, openWindow, scrollToPoint, goToPoint])
 
     // Rendering
     return (

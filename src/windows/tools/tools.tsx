@@ -3,12 +3,12 @@ import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
 import { Tool, TOOLS } from '../../api/types'
 import { api } from '../../api/ws-api'
-import { UiIcon, UiIconType } from '../../icons/icon'
-import { materialPretty } from '../../pretty_strings'
 import './tools.css'
 import { useToolPriorities } from '../../utils/hooks/hooks'
 import { clamp } from '../house/headquarter'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { UiIcon, UiIconType } from '../../components/icons/icon'
+import { materialPretty } from '../../utils/pretty_strings'
 
 // Types
 type ToolsProps = {

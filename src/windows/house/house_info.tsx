@@ -1,18 +1,18 @@
 import React, { useMemo, useState } from 'react'
 import { Button, Field } from '@fluentui/react-components'
 import { AttackType, HouseInformation, Material, Nation, PlayerId, Point, isMaterial } from '../../api/types'
-import { HouseIcon, InventoryIcon, UiIcon } from '../../icons/icon'
 import './house_info.css'
 import { HeadquarterInfo } from './headquarter'
 import { MilitaryBuilding } from './military_building'
 import { api } from '../../api/ws-api'
 import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { houseIsReady, isMilitaryBuilding } from '../../api/utils'
-import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { useHouse } from '../../utils/hooks/hooks'
 import { Dismiss16Filled } from '@fluentui/react-icons'
 import { GenericCommand } from '../../utils/typing_command_utils'
+import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../utils/pretty_strings'
+import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 
 // Types
 type HouseInfoProps = {

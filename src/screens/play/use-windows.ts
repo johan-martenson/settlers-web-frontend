@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { PlayLogConfig } from './config'
 
 // Types
-type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
+export type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
 
 type WindowWithId<WindowType extends string = string> = {
     id: number
@@ -38,18 +38,6 @@ function useWindows<Window extends WindowWithId>({
     const nextWindowIdRef = useRef(0)
 
     // Functions
-    const nextWindowId = useCallback(() => {
-        nextWindowIdRef.current += 1
-
-        const id = nextWindowIdRef.current - 1
-
-        if (PlayLogConfig.windows) {
-            console.log('Windows: Allocated window id', id)
-        }
-
-        return id
-    }, [])
-
     function withWindowId<Window extends WindowWithId>(
         window: DistributiveOmit<Window, 'id'>,
         id: number
@@ -86,9 +74,17 @@ function useWindows<Window extends WindowWithId>({
                 }
             }
 
+            nextWindowIdRef.current += 1
+
+            const id = nextWindowIdRef.current - 1
+
+            if (PlayLogConfig.windows) {
+                console.log('Windows: Allocated window id', id)
+            }
+
             const createdWindow = withWindowId(
                 window,
-                nextWindowId()
+                id
             )
 
             if (PlayLogConfig.windows) {
@@ -100,7 +96,7 @@ function useWindows<Window extends WindowWithId>({
                 createdWindow
             ]
         })
-    }, [isDuplicateWindow, nextWindowId])
+    }, [isDuplicateWindow])
 
     const openSingletonWindow = useCallback((window: DistributiveOmit<Window, 'id'>) => {
         setWindows(prevWindows => {
@@ -124,9 +120,17 @@ function useWindows<Window extends WindowWithId>({
                 ]
             }
 
+            nextWindowIdRef.current += 1
+
+            const id = nextWindowIdRef.current - 1
+
+            if (PlayLogConfig.windows) {
+                console.log('Windows: Allocated window id', id)
+            }
+
             const createdWindow = withWindowId(
                 window,
-                nextWindowId()
+                id
             )
 
             if (PlayLogConfig.windows) {
@@ -138,7 +142,7 @@ function useWindows<Window extends WindowWithId>({
                 createdWindow
             ]
         })
-    }, [nextWindowId])
+    }, [])
 
     const closeWindow = useCallback((id: number) => {
         setWindows(prevWindows => {

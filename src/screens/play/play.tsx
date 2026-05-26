@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './play.css'
 import { ConstructionInfo } from '../../windows/construction/construction_info'
 import FriendlyFlagInfo from '../../windows/flag/friendly_flag_info'
@@ -34,7 +34,7 @@ import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
 import { useGame, usePlayer, usePointInformation } from '../../utils/hooks/hooks'
 import { CommandMatch, executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing-commands'
 import { FlagIcon, HouseIcon, UiIcon } from '../../components/icons/icon'
-import { useWindows } from './use-windows'
+import { DistributiveOmit, useWindows } from './use-windows'
 import { PlayLogConfig } from './config'
 import { useTouchNavigation } from './use-touch-navigation'
 import { ImmediateState } from './types'
@@ -206,15 +206,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const selectedPointInformationRef = useRef(selectedPointInformation)
 
     // Use the windowing system hook
-    const {
-        windows,
-        openWindow,
-        openSingletonWindow,
-        closeWindow,
-        closeActiveWindow,
-        raiseWindow
-    } = useWindows<Window>({
-        isDuplicateWindow: (existing, window) => (
+    const isDuplicateWindow = useCallback((existing: Window, window: DistributiveOmit<Window, 'id'>) => {
+        return (
             (existing.type === 'HOUSE' && window.type === 'HOUSE' && existing.house.id === window.house.id) ||
             (existing.type === 'FLAG' && window.type === 'FLAG' && existing.flag.id === window.flag.id) ||
             (existing.type === 'ROAD_INFO' && window.type === 'ROAD_INFO' && existing.roadId === window.roadId) ||
@@ -224,7 +217,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 existing.pointInformation.x === window.pointInformation.x &&
                 existing.pointInformation.y === window.pointInformation.y)
         )
-    })
+    }, [])
+
+    const {
+        windows,
+        openWindow,
+        openSingletonWindow,
+        closeWindow,
+        closeActiveWindow,
+        raiseWindow
+    } = useWindows<Window>({ isDuplicateWindow })
 
     // Use the touch navigation hook
     const {
@@ -487,7 +489,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         event.stopPropagation()
     }, [roadBuildingState.active])
 
-    const onMouseMove = useCallback((event: React.MouseEvent) => {
+    function onMouseMove(event: React.MouseEvent<HTMLDivElement>): void {
         if (immediateStateRef.current.mouseDown) {
             const deltaX = (event.pageX - immediateStateRef.current.mouseDownAt.x)
             const deltaY = (event.pageY - immediateStateRef.current.mouseDownAt.y)
@@ -502,10 +504,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 y: immediateStateRef.current.translateAtMouseDown.y + deltaY
             }
         }
-    }, [])
+    }
 
     // eslint-disable-next-line
-    const onMouseUp = useCallback((_event: React.MouseEvent) => {
+    function onMouseUp(_event: React.MouseEvent): void {
         immediateStateRef.current.mouseDown = false
         immediateStateRef.current.mouseMoving = false
 
@@ -514,17 +516,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         } else {
             setCursor('NOTHING')
         }
-    }, [roadBuildingState.active])
+    }
 
     // eslint-disable-next-line
-    const onMouseLeave = useCallback((_event: React.MouseEvent) => {
+    function onMouseLeave(_event: React.MouseEvent): void {
         if (!roadBuildingState.active) {
             setCursor('NOTHING')
         }
 
         immediateStateRef.current.mouseDown = false
         immediateStateRef.current.mouseMoving = false
-    }, [roadBuildingState.active, setCursor])
+    }
 
     const onPointClicked = useCallback(async (point: Point) => {
         if (PlayLogConfig.selection) {
@@ -799,16 +801,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }, [startRoadBuilding])
 
-    const onWheel = useCallback((event: React.WheelEvent) => {
+    function onWheel(event: React.WheelEvent): void {
         zoom(immediateStateRef.current.scale - event.deltaY / 20.0)
 
         event.preventDefault()
-    }, [zoom])
+    }
 
-    const onCommand = useCallback((match: CommandMatch<PointInformationWithoutPossibleRoadConnections>) => {
+    function onCommand(match: CommandMatch<PointInformationWithoutPossibleRoadConnections>): void {
         console.log(`Play (commands): Executing command ${match.commandName} with type ${match.type} and point information ${JSON.stringify(selectedPointInformationRef.current)}`)
         executeCommand(match, selectedPointInformationRef.current)
-    }, [])
+    }
 
 
     // Memos
@@ -987,10 +989,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     const { available, matches } = useMemo(() => {
         const available = new Set(commands.entries()
-        // eslint-disable-next-line
+            // eslint-disable-next-line
             .filter(([_commandName, command]) => command.filter === undefined || command.filter(selectedPointInformation))
 
-        // eslint-disable-next-line
+            // eslint-disable-next-line
             .map(([commandName, _command]) => commandName))
 
         return {

@@ -3,10 +3,10 @@ import './play.css'
 import { ConstructionInfo } from '../../windows/construction/construction_info'
 import FriendlyFlagInfo from '../../windows/flag/friendly_flag_info'
 import GameMenu from '../../components/game-menu/game-menu'
-import GameMessagesViewer from './game_messages_viewer'
+import GameMessagesViewer from '../../components/game-messages/game-messages-viewer'
 import { CursorState, GameCanvas } from '../../render/game-render'
 import Guide from '../../windows/help/guide'
-import MenuButton from './menu_button'
+import MenuButton from '../../components/menu-button'
 import { GameListener, api } from '../../api/ws-api'
 import MusicPlayer from '../../sound/music_player'
 import Statistics from '../../windows/statistics/statistics'
@@ -24,8 +24,6 @@ import { RoadInfo } from '../../windows/road/road-info'
 import { Debug } from '../../windows/debug/debug'
 import { Follow } from '../../windows/monitor/follow'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from '../../render/constants'
-import { ButtonRow } from '../../components/dialog'
-import { Button } from '@fluentui/react-components'
 import { NoActionWindow } from '../../windows/no_action/no_action_window'
 import { ExpandChatBox } from '../../components/chat/chat'
 import { canBeUpgraded, getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint } from '../../api/utils'
@@ -33,9 +31,18 @@ import { calcTranslation } from '../../render/webgl-utils'
 import Tools from '../../windows/tools/tools'
 import { MapView } from '../../windows/map/map'
 import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
-import { useGame, usePlayer } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { useGame, usePlayer, usePointInformation } from '../../utils/hooks/hooks'
+import { CommandMatch, executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing-commands'
 import { FlagIcon, HouseIcon, UiIcon } from '../../components/icons/icon'
+import { useWindows } from './use-windows'
+import { PlayLogConfig } from './config'
+import { useTouchNavigation } from './use-touch-navigation'
+import { ImmediateState } from './types'
+import { useSoundEffects } from './use-sound-effects'
+import { useRoadBuilding } from './use-build-road'
+import { PauseSign } from '../../components/paused/pause-sign'
+import { Expired } from '../../components/expired/game-expired-sign'
+import { useTypingInput } from '../../utils/hooks/input'
 
 // Types
 type HouseWindow = {
@@ -138,38 +145,23 @@ const MAX_SCALE = 150
 const MIN_SCALE = 10
 const ARROW_KEY_MOVE_DISTANCE = 20
 
+
+
 // Configuration
 export const playConfigurationDebug = {
     events: false,
-    effects: false
-}
-
-export const PlayLogConfig = {
-    lifecycle: true,        // mounting, effects, start/stop listeners
-    connection: true,       // connecting, following game state
-    commands: true,         // command setup, typing commands
-    camera: true,           // centering, view control
-    roads: true,            // road building, placement logic
-    flags: true,            // flag placement & interaction
-    houses: true,           // house interaction
-    selection: true,        // point / object selection
-    input: true,            // mouse, touch, click, double-click
-    touch: false,           // verbose touch-move diagnostics
-    sound: true,            // sound effects lifecycle
-    windows: true,          // opening UI windows
-    data: false,            // raw data dumps (JSON.stringify)
-    errors: true,           // error situations
-    ...(JSON.parse(localStorage.getItem('config.play.log') ?? '{}'))  // override log settings from local storage if it exists
+    effects: false,
+    windows: false
 }
 
 // State
-function makeDefaultImmediateState() {
+function makeDefaultImmediateState(): ImmediateState {
     return {
         mouseDown: false,
         mouseDownAt: { x: 0, y: 0 },
         mouseMoving: false,
         touchMoveOngoing: false,
-        touchIdentifier: 0,
+        primaryTouchIdentifier: 0,
         translateAtMouseDown: { x: 0, y: 0 },
         screenSize: { width: 0, height: 0 },
         translate: { x: 0, y: 0 },
@@ -178,44 +170,6 @@ function makeDefaultImmediateState() {
 }
 
 // React components
-const Expired = () => {
-    return (
-        <div className='expired'>
-            <h1>The game has expired</h1>
-            <p>The game has expired and is frozen in time. You can stay and view the current game or go back to the lobby to start a new game.</p>
-            <ButtonRow>
-                <Button>Stay in game</Button>
-                <Button onClick={() => window.location.href = ''}>Go to lobby</Button>
-            </ButtonRow>
-
-        </div>
-    )
-}
-
-const PauseSign = () => {
-    return (
-        <div style={{
-            position: 'absolute',
-            left: '0',
-            right: '0',
-            top: '50%',
-            fontSize: '5rem',
-            color: 'white',
-            height: 'auto',
-            lineHeight: '8rem',
-            display: 'flex',
-            justifyContent: 'center',
-            zIndex: 2000
-        }}>
-            <div style={{
-                backgroundColor: 'black', borderRadius: '5px'
-            }}>
-                The game is paused
-            </div>
-        </div>
-    )
-}
-
 const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     // References
@@ -227,7 +181,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [showAvailableConstruction, setShowAvailableConstruction] = useState<boolean>(false)
     const [selected, setSelected] = useState<Point>({ x: 0, y: 0 })
     const [showMenu, setShowMenu] = useState<boolean>(false)
-    const [windows, setWindows] = useState<Window[]>([])
     const [showTitles, setShowTitles] = useState<boolean>(true)
     const [cursor, setCursor] = useState<CursorState>('NOTHING')
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -239,22 +192,65 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [animateMapScrolling, setAnimateMapScrolling] = useState<boolean>(true)
     const [animateZoom, setAnimateZoom] = useState<boolean>(true)
     const [gameState, setGameState] = useState<GameState>('STARTED')
-    const [newRoad, setNewRoad] = useState<Point[]>()
-    const [possibleRoadConnections, setPossibleRoadConnections] = useState<Point[]>()
     const [fogOfWar, setFogOfWar] = useState<boolean>(true)
 
     // Monitoring
     const gameInformation = useGame()
     const player = usePlayer(selfPlayerId)
+    const selectedPointInformation = usePointInformation(selected)
 
     // State (that doesn't trigger re-renders)
     const ongoingTouches = useNonTriggeringState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
-    const nextWindowIdContainer = useNonTriggeringState<{ nextWindowId: number }>({ nextWindowId: 0 })
+
+    // References
+    const selectedPointInformationRef = useRef(selectedPointInformation)
+
+    // Use the windowing system hook
+    const {
+        windows,
+        openWindow,
+        openSingletonWindow,
+        closeWindow,
+        closeActiveWindow,
+        raiseWindow
+    } = useWindows<Window>({
+        isDuplicateWindow: (existing, window) => (
+            (existing.type === 'HOUSE' && window.type === 'HOUSE' && existing.house.id === window.house.id) ||
+            (existing.type === 'FLAG' && window.type === 'FLAG' && existing.flag.id === window.flag.id) ||
+            (existing.type === 'ROAD_INFO' && window.type === 'ROAD_INFO' && existing.roadId === window.roadId) ||
+            (existing.type === 'MAP' && window.type === 'MAP') ||
+            (existing.type === 'CONSTRUCTION_WINDOW' &&
+                window.type === 'CONSTRUCTION_WINDOW' &&
+                existing.pointInformation.x === window.pointInformation.x &&
+                existing.pointInformation.y === window.pointInformation.y)
+        )
+    })
+
+    // Use the touch navigation hook
+    const {
+        onTouchStart,
+        onTouchMove,
+        onTouchEnd,
+        onTouchCancel
+    } = useTouchNavigation({
+        immediateStateRef,
+        ongoingTouches
+    })
+
+    // Use sound effects
+    useSoundEffects({ immediateStateRef })
+
+    // Use road building
+    const { roadBuildingState, startRoadBuilding, updateRoadBuilding, clearRoadBuilding } = useRoadBuilding()
+
+    // Use typing input
+    const { inputValue, keyTyped } = useTypingInput()
 
     // Constants
     const gameMonitorCallbacks = useMemo<GameListener>(() => ({
         onMonitoringStarted: () => {
             setMonitoringReady(true)
+
             if (PlayLogConfig.lifecycle) {
                 console.log('Play (lifecycle): Monitoring started')
             }
@@ -263,24 +259,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }), [])
 
     // Effects
+    // Effect: keep the selected point information ref in sync
     useEffect(() => {
-        if (PlayLogConfig.lifecycle) {
-            console.log(`Play (lifecycle): show menu. Show menu: ${showMenu}`)
-        }
+        selectedPointInformationRef.current = selectedPointInformation
+    }, [selectedPointInformation])
 
-        if (!showMenu) {
-            selfContainerRef?.current?.focus()
-        }
-    }, [PlayLogConfig.lifecycle, showMenu])
-
-    useEffect(() => {
-        if (PlayLogConfig.lifecycle) {
-            console.log(`Play (lifecycle): new road. New road: ${JSON.stringify(newRoad)}`)
-        }
-
-        setCursor(newRoad === undefined ? 'NOTHING' : 'BUILDING_ROAD')
-    }, [PlayLogConfig.lifecycle, newRoad])
-
+    // Effect: follow the game and listen to the game state
     useEffect(() => {
         let cancelled = false
 
@@ -317,6 +301,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }, [PlayLogConfig.connection, gameId, selfPlayerId, gameMonitorCallbacks])
 
+    // Effect: set up listeners for window resizing, and for preventing right click menu
     useEffect(() => {
         if (PlayLogConfig.lifecycle) {
             console.log('Play (lifecycle): start event and window resize listeners')
@@ -355,8 +340,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             console.log('Play (commands): set commands, center on headquarters')
         }
 
-
-
         api.waitForGameDataAvailable()
             .then(() => {
                 if (cancelled) {
@@ -388,23 +371,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         immediateStateRef.current = makeDefaultImmediateState()
     }, [gameId])
 
-    // Effect: sound effects lifecycle
-    useEffect(() => {
-        if (PlayLogConfig.sound) {
-            console.log('Play (sound): start sound effects')
-        }
-
-        sfx.startEffects(immediateStateRef.current)
-
-        return () => {
-            if (PlayLogConfig.sound) {
-                console.log('Play (sound): Stop sound effects')
-            }
-
-            sfx.stopEffects()
-        }
-    }, [])
-
     // Effect: center on headquarters when game loads
     useEffect(() => {
         if (PlayLogConfig.lifecycle) {
@@ -426,48 +392,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }, [selfPlayerId, gameId])
 
     // Functions
-    const nextWindowId = useCallback(() => {
-        nextWindowIdContainer.nextWindowId += 1
-        return nextWindowIdContainer.nextWindowId - 1
-    }, [nextWindowIdContainer])
-
-    const openSingletonWindow = useCallback((window: WindowType) => {
-        setWindows(prevWindows => prevWindows.find(w => w.type === window.type)
-            ? prevWindows
-            : [...prevWindows, { ...window, id: nextWindowId() }]
-        )
-    }, [nextWindowId])
-
-    const openWindow = useCallback((window: WindowType) => {
-        if (PlayLogConfig.windows) {
-            console.log(`Play (windows): Opening: ${JSON.stringify(window)}`)
-        }
-
-
-        setWindows(prevWindows => (
-            prevWindows.find(w => w.type === 'HOUSE' && window.type === 'HOUSE' && w.house.id === window.house.id) ||
-                prevWindows.find(w => w.type === 'FLAG' && window.type === 'FLAG' && w.flag.id === window.flag.id) ||
-                prevWindows.find(w => w.type === 'ROAD_INFO' && window.type === 'ROAD_INFO' && w.roadId === window.roadId) ||
-                (window.type === 'MAP' && prevWindows.find(w => w.type === 'MAP')) ||
-                (prevWindows.find(w => w.type === 'CONSTRUCTION_WINDOW' && window.type === 'CONSTRUCTION_WINDOW' &&
-                    (w.pointInformation.x === window.pointInformation.x && w.pointInformation.y === window.pointInformation.y)))
-                ? prevWindows
-                : [...prevWindows, { ...window, id: nextWindowId() }]))
-    }, [nextWindowId])
-
-    const closeWindow = useCallback((id: number) => {
-        setWindows(prevWindows => prevWindows.filter(w => w.id !== id))
-    }, [])
-
-    const closeActiveWindow = useCallback(() => setWindows(windows => windows.slice(0, -1)), [])
-
-    const raiseWindow = useCallback((id: number) => {
-        setWindows(prevWindows => {
-            const window = prevWindows.find(w => w.id === id)
-            return window !== undefined ? [...prevWindows.filter(w => w.id !== id), window] : prevWindows
-        })
-    }, [])
-
     const goToPoint = useCallback((point: Point) => {
         const scaleY = immediateStateRef.current.scale
 
@@ -556,12 +480,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             immediateStateRef.current.translateAtMouseDown = { ...immediateStateRef.current.translate }
 
             setCursor('DRAGGING')
-        } else if (event.button === 0 && newRoad !== undefined) {
+        } else if (event.button === 0 && roadBuildingState.active) {
             setCursor('BUILDING_ROAD_PRESSED')
         }
 
         event.stopPropagation()
-    }, [newRoad])
+    }, [roadBuildingState.active])
 
     const onMouseMove = useCallback((event: React.MouseEvent) => {
         if (immediateStateRef.current.mouseDown) {
@@ -585,22 +509,22 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         immediateStateRef.current.mouseDown = false
         immediateStateRef.current.mouseMoving = false
 
-        if (newRoad !== undefined) {
+        if (roadBuildingState.active) {
             setCursor('BUILDING_ROAD')
         } else {
             setCursor('NOTHING')
         }
-    }, [newRoad])
+    }, [roadBuildingState.active])
 
     // eslint-disable-next-line
     const onMouseLeave = useCallback((_event: React.MouseEvent) => {
-        if (newRoad === undefined) {
+        if (!roadBuildingState.active) {
             setCursor('NOTHING')
         }
 
         immediateStateRef.current.mouseDown = false
         immediateStateRef.current.mouseMoving = false
-    }, [newRoad, setCursor])
+    }, [roadBuildingState.active, setCursor])
 
     const onPointClicked = useCallback(async (point: Point) => {
         if (PlayLogConfig.selection) {
@@ -613,21 +537,21 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         // A road is being built
-        if (newRoad && possibleRoadConnections) {
-            const recent = newRoad[newRoad.length - 1]
-            const possibleNewRoad = [...newRoad]
+        if (roadBuildingState.active && roadBuildingState.possibleConnections) {
+            const recent = roadBuildingState.road[roadBuildingState.road.length - 1]
+            const possibleNewRoad = [...roadBuildingState.road]
 
             // Handle the case where one of the directly adjacent possible new road connections is selected
-            if (possibleRoadConnections?.find(e => e.x === point.x && e.y === point.y)) {
+            if (roadBuildingState.possibleConnections?.find(e => e.x === point.x && e.y === point.y)) {
                 possibleNewRoad.push(point)
 
                 // Handle the case where a point further away was clicked
             } else {
 
                 // Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road
-                const possibleNewRoadSegment = (await api.findPossibleNewRoad(recent, point, newRoad)).possibleRoad
+                const possibleNewRoadSegment = (await api.findPossibleNewRoad(recent, point, roadBuildingState.road)).possibleRoad
 
-                if (possibleNewRoadSegment && newRoad) {
+                if (possibleNewRoadSegment && roadBuildingState.active) {
                     possibleNewRoad.push(...possibleNewRoadSegment.slice(1))
                 } else {
                     if (PlayLogConfig.roads) {
@@ -650,12 +574,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     console.info('Play (roads): Placing road directly to flag')
                 }
 
-                // Do this first to make the UI feel quicker
-                setNewRoad(undefined)
-                setSelected(point)
-
-                // Create the road, including making an optimistic change first on the client side
+                // Create the road, clear ongoing road building, and set the point as selected
                 api.placeRoad(possibleNewRoad)
+                clearRoadBuilding()
+                setSelected(point)
+                setCursor('NOTHING')
 
                 // Handle the case when a piece of road is clicked but there is no flag on it. Create the road
             } else if (isRoadAtPoint(point, api.roads)) {
@@ -665,10 +588,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 if (api.isAvailable(point, 'FLAG')) {
 
-                    // Start with changing the UI state to make the user experience feel quicker
-                    setNewRoad(undefined)
-
+                    // Place road with flag and clear ongoing road building
                     api.placeRoadWithFlag(point, possibleNewRoad)
+                    clearRoadBuilding()
+                    setCursor('NOTHING')
                 }
 
                 // Add the new possible road points to the ongoing road and don't create the road
@@ -685,8 +608,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 }
 
                 if (pointInformation !== undefined) {
-                    setNewRoad(possibleNewRoad)
-                    setPossibleRoadConnections(pointInformation.possibleRoadConnections)
+                    updateRoadBuilding(possibleNewRoad, pointInformation.possibleRoadConnections)
                 }
             }
 
@@ -698,7 +620,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             setSelected(point)
         }
-    }, [newRoad, possibleRoadConnections, setNewRoad, setPossibleRoadConnections, setSelected])
+    }, [roadBuildingState.road,
+    roadBuildingState.active,
+    roadBuildingState.possibleConnections,
+        updateRoadBuilding,
+        clearRoadBuilding])
 
     const onPointDoubleClicked = useCallback(async (point: Point) => {
         if (PlayLogConfig.input) {
@@ -706,7 +632,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
 
         // First, handle double clicks differently if a new road is being created
-        if (newRoad) {
+        if (roadBuildingState.active) {
             if (PlayLogConfig.roads) {
                 console.log('Play (roads): New road exists')
             }
@@ -717,20 +643,19 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 }
 
                 // Keep a reference to the new road so it doesn't get lost when the state is changed
-                const newRoadPoints = [...newRoad]
-                const lastPoint = newRoad[newRoad.length - 1]
+                const newRoadPoints = [...roadBuildingState.road]
+                const lastPoint = roadBuildingState.road[roadBuildingState.road.length - 1]
 
                 // Only add this point to the road points if the distance is acceptable - otherwise let the backend fill in
                 if (Math.abs(lastPoint.x - point.x) <= 2 && Math.abs(lastPoint.y - point.y) < 2) {
                     newRoadPoints.push(point)
                 }
 
-                // Update the state before calling the backend to make the user experience feel quicker
-                setNewRoad(undefined)
-                setSelected(point)
-
-                // Call the backend to make the changes take effect
+                // Place road and flag, then clear road building, set the point as selected
                 api.placeRoadWithFlag(point, newRoadPoints)
+                clearRoadBuilding()
+                setSelected(point)
+                setCursor('NOTHING')
 
                 if (PlayLogConfig.flags) {
                     console.info('Play (flags): Created flag and road')
@@ -760,9 +685,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 console.info(`Play (houses): Clicked house: ${JSON.stringify(house)}`)
             }
 
-
             openWindow({ type: 'HOUSE', house })
             setShowMenu(false)
+            selfContainerRef?.current?.focus()
 
             return
         }
@@ -811,7 +736,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         } else {
             openWindow({ type: 'NO_ACTION', point })
         }
-    }, [newRoad, selfPlayerId, setNewRoad, setSelected, setShowMenu, openWindow])
+    }, [roadBuildingState.active,
+    roadBuildingState.possibleConnections,
+    roadBuildingState.road,
+        clearRoadBuilding,
+        selfPlayerId,
+        setSelected,
+        setShowMenu,
+        openWindow])
 
     const onKeyDown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === 'Escape') {
@@ -821,9 +753,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 closeActiveWindow()
 
                 // Stop building a new road
-            } else if (newRoad || possibleRoadConnections) {
-                setNewRoad(undefined)
-                setPossibleRoadConnections(undefined)
+            } else if (roadBuildingState.active) {
+                clearRoadBuilding()
                 setCursor('NOTHING')
 
                 api.removeLocalRoad('LOCAL')
@@ -847,8 +778,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             setShowMenu(true)
         }
 
+        keyTyped(event)
+
         event.preventDefault()
-    }, [windows, newRoad, possibleRoadConnections, moveGame, zoom, setNewRoad, setPossibleRoadConnections, setShowMenu, closeActiveWindow])
+    }, [windows, roadBuildingState.active, clearRoadBuilding, moveGame, zoom, closeActiveWindow])
 
     const startNewRoad = useCallback(async (point: Point) => {
 
@@ -861,81 +794,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         const pointInformation = await api.getInformationOnPoint(point)
 
         if (pointInformation !== undefined) {
-            setNewRoad([point])
-            setPossibleRoadConnections(pointInformation.possibleRoadConnections)
+            startRoadBuilding([point], pointInformation.possibleRoadConnections)
+            setCursor('BUILDING_ROAD')
         }
-    }, [])
-
-    const copyTouch = useCallback((touch: React.Touch) => {
-        return { identifier: touch.identifier, pageX: touch.pageX, pageY: touch.pageY }
-    }, [])
-
-    const onTouchStart = useCallback((event: React.TouchEvent) => {
-        event.preventDefault()
-
-        if (PlayLogConfig.touch) {
-            console.log('Play (touch): touchstart')
-        }
-
-        const touches = event.changedTouches
-
-        for (let i = 0; i < touches.length; i++) {
-            ongoingTouches.set(touches[i].identifier, copyTouch(touches[i]))
-        }
-
-        // Only move map with one movement
-        if (!immediateStateRef.current.touchMoveOngoing) {
-            const touch = touches[0]
-
-            immediateStateRef.current.touchIdentifier = touch.identifier
-            immediateStateRef.current.mouseDownAt = { x: touch.pageX, y: touch.pageY }
-            immediateStateRef.current.mouseMoving = false
-            immediateStateRef.current.touchMoveOngoing = true
-            immediateStateRef.current.translateAtMouseDown = { ...immediateStateRef.current.translate }
-        }
-    }, [ongoingTouches, copyTouch])
-
-    const onTouchMove = useCallback((event: React.TouchEvent) => {
-        event.preventDefault()
-
-        const touches = event.changedTouches
-
-        for (let i = 0; i < touches.length; i++) {
-            const touch = ongoingTouches.get(touches[i].identifier)
-
-            if (!touch || !touch.identifier) {
-                continue
-            }
-
-            if (immediateStateRef.current.touchMoveOngoing && touch.identifier === immediateStateRef.current.touchIdentifier) {
-                const deltaX = (touch.pageX - immediateStateRef.current.mouseDownAt.x)
-                const deltaY = (touch.pageY - immediateStateRef.current.mouseDownAt.y)
-
-                // Detect move to separate move from click
-                if (deltaX ** 2 + deltaY ** 2 > 25) {
-                    immediateStateRef.current.mouseMoving = true
-                }
-
-                immediateStateRef.current.translate = {
-                    x: immediateStateRef.current.translateAtMouseDown.x + deltaX,
-                    y: immediateStateRef.current.translateAtMouseDown.y + deltaY
-                }
-            }
-
-            // Store ongoing touches just because ...
-            if (touch) {
-                if (PlayLogConfig.touch) {
-                    console.log('Play (touch): continuing touch ' + touch)
-                    console.log('ctx.moveTo(' + touch.pageX + ', ' + touch.pageY + ')')
-                    console.log('ctx.lineTo(' + touches[i].pageX + ', ' + touches[i].pageY + ')')
-                }
-
-                ongoingTouches.set(touch.identifier, touches[i])
-            } else {
-                console.error("can't figure out which touch to continue")
-            }
-        }
-    }, [ongoingTouches])
+    }, [startRoadBuilding])
 
     const onWheel = useCallback((event: React.WheelEvent) => {
         zoom(immediateStateRef.current.scale - event.deltaY / 20.0)
@@ -943,40 +805,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         event.preventDefault()
     }, [zoom])
 
-    const onTouchCancel = useCallback((event: React.TouchEvent) => {
-        event.preventDefault()
+    const onCommand = useCallback((match: CommandMatch<PointInformationWithoutPossibleRoadConnections>) => {
+        console.log(`Play (commands): Executing command ${match.commandName} with type ${match.type} and point information ${JSON.stringify(selectedPointInformationRef.current)}`)
+        executeCommand(match, selectedPointInformationRef.current)
+    }, [])
 
-        if (PlayLogConfig.touch) {
-            console.log('Play (touch): touchcancel')
-        }
-
-
-        // Stop moving
-        immediateStateRef.current.touchMoveOngoing = false
-        const touches = event.changedTouches
-
-        for (let i = 0; i < touches.length; i++) {
-            ongoingTouches.delete(touches[i].identifier)
-        }
-    }, [ongoingTouches])
-
-    const onTouchEnd = useCallback((event: React.TouchEvent) => {
-        event.preventDefault()
-
-        // Stop moving
-        immediateStateRef.current.touchMoveOngoing = false
-        const touches = event.changedTouches
-
-        for (let i = 0; i < touches.length; i++) {
-            const touch = ongoingTouches.get(touches[i].identifier)
-
-            if (touch) {
-                ongoingTouches.delete(touches[i].identifier)
-            } else {
-                console.error("can't figure out which touch to end")
-            }
-        }
-    }, [ongoingTouches])
 
     // Memos
     const commands = useMemo(() => {
@@ -1025,12 +858,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 // If a house is selected, start the road from the flag
                 if (pointInformation.is === 'BUILDING' && pointDownRightInformation !== undefined && pointDownRightInformation.possibleRoadConnections.length > 0) {
-                    setNewRoad([pointDownRight])
-                    setPossibleRoadConnections(pointDownRightInformation.possibleRoadConnections)
+                    startRoadBuilding([pointDownRight], pointDownRightInformation.possibleRoadConnections)
                 } else if (pointInformation.is === 'FLAG' && pointInformation.possibleRoadConnections.length > 0) {
-                    setNewRoad([point])
-                    setPossibleRoadConnections(pointInformation.possibleRoadConnections)
+                    startRoadBuilding([point], pointInformation.possibleRoadConnections)
                 }
+
+                setCursor('BUILDING_ROAD')
             },
             filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING' || pointInformation.is === 'FLAG',
             icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
@@ -1152,6 +985,20 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         return commands
     }, [selfPlayerId, gameId, openSingletonWindow, openWindow, scrollToPoint, goToPoint])
 
+    const { available, matches } = useMemo(() => {
+        const available = new Set(commands.entries()
+        // eslint-disable-next-line
+            .filter(([_commandName, command]) => command.filter === undefined || command.filter(selectedPointInformation))
+
+        // eslint-disable-next-line
+            .map(([commandName, _command]) => commandName))
+
+        return {
+            matches: findMatchingCommands(commands, inputValue, selectedPointInformation),
+            available
+        }
+    }, [selectedPointInformation, inputValue, commands])
+
     // Rendering
     return (
         <div
@@ -1174,8 +1021,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 selectedPoint={selected}
                 onDoubleClick={onPointDoubleClicked}
                 showHouseTitles={showTitles}
-                newRoad={newRoad}
-                possibleRoadConnections={possibleRoadConnections}
+                newRoad={roadBuildingState.road}
+                possibleRoadConnections={roadBuildingState.possibleConnections}
                 showAvailableConstruction={showAvailableConstruction}
                 cursor={cursor}
                 heightAdjust={heightAdjust}
@@ -1202,7 +1049,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 isMusicPlayerVisible={showMusicPlayer}
                 isTypingControllerVisible={showTypingController}
                 defaultZoom={DEFAULT_SCALE}
-                onClose={() => setShowMenu(false)}
+                onClose={() => {
+                    setShowMenu(false)
+                    selfContainerRef?.current?.focus()
+                }}
                 onSetMusicPlayerVisible={setShowMusicPlayer}
                 onSetTypingControllerVisible={setShowTypingController}
                 onSetAvailableConstructionVisible={setShowAvailableConstruction}
@@ -1366,28 +1216,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 }
             })}
 
-            {showTypingController &&
-                <TypeControl commands={commands} selectedPoint={selected} />
-            }
+            {showTypingController && <TypeControl available={available} matches={matches} onCommand={onCommand} input={inputValue} commands={commands} />}
 
-            <GameMessagesViewer
-                nation={player?.nation ?? 'ROMANS'}
-                onGoToPoint={scrollToPoint}
-            />
+            <GameMessagesViewer nation={player?.nation ?? 'ROMANS'} onGoToPoint={scrollToPoint} />
 
             <ExpandChatBox playerId={selfPlayerId} roomId={`game-${gameId}`} />
 
-            {showMusicPlayer &&
-                <MusicPlayer volume={musicVolume} />
-            }
+            {showMusicPlayer && <MusicPlayer volume={musicVolume} />}
 
-            {gameState === 'PAUSED' &&
-                <PauseSign />
-            }
+            {gameState === 'PAUSED' && <PauseSign />}
 
-            {gameState === 'EXPIRED' &&
-                <Expired />
-            }
+            {gameState === 'EXPIRED' && <Expired />}
         </div>
     )
 }

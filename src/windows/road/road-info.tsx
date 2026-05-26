@@ -5,7 +5,7 @@ import { api } from '../../api/ws-api'
 import './road-info.css'
 import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { useRoad } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { UiIcon } from '../../components/icons/icon'
 
 // Types

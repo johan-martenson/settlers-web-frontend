@@ -4,7 +4,9 @@ import { Dismiss16Filled } from '@fluentui/react-icons'
 import './dialog.css'
 import { Point } from '../api/types'
 import { useTypingInput } from '../utils/hooks/input'
-import { DialogTyping, executeCommand, findMatchingCommands, GenericCommand } from '../utils/typing_command_utils'
+import { executeCommand, findMatchingCommands, GenericCommand } from '../utils/typing-commands'
+import { DialogTyping } from './typing/typing'
+
 
 // Types
 type WindowProps = {

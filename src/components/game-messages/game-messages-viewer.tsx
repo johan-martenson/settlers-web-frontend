@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Button } from '@fluentui/react-components'
-import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
-import './game_messages_viewer.css'
+import ExpandCollapseToggle from '../expand_collapse_toggle/expand_collapse_toggle'
+import './game-messages-viewer.css'
 import { api } from '../../api/ws-api'
 import { Point, GameMessage, Nation } from '../../api/types'
-import { ItemContainer } from '../../components/item_container'
+import { ItemContainer } from '../item_container'
 import { useGameMessages } from '../../utils/hooks/hooks'
-import { HouseIcon, UiIcon, WorkerIcon } from '../../components/icons/icon'
-import { ShipIcon } from '../../components/icons/ship'
+import { HouseIcon, UiIcon, WorkerIcon } from '../icons/icon'
+import { ShipIcon } from '../icons/ship'
 
 // Types
 type GameMessagesViewerProps = {

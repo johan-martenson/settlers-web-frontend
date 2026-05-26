@@ -7,7 +7,7 @@ import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildMine, c
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
 import { ItemContainer } from '../../components/item_container'
 import { usePointInformation } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { FlagIcon, HouseIcon, UiIcon } from '../../components/icons/icon'
 import { buildingPretty } from '../../utils/pretty_strings'
 

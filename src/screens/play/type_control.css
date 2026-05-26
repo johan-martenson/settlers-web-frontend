@@ -3,17 +3,17 @@
 }
 
 .match {
-  display: inline-block;
-  padding: 0px 6px;
-  margin: 0px 1px;
+    display: inline-block;
+    padding: 0px 6px;
+    margin: 0px 1px;
 
-  border-radius: 999px;
+    border-radius: 999px;
 
-  background: rgba(100, 150, 255, 0.25);
+    background: rgba(100, 150, 255, 0.25);
 
-  font-weight: 600;
+    font-weight: 600;
 
-  line-height: 1.4;
+    line-height: 1.4;
 }
 
 .MatchingPart {
@@ -81,4 +81,50 @@
     align-items: flex-start;
     gap: 0.25em;
     margin-top: 0.5em;
+}
+
+.type-control-command {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.75rem;
+
+    gap: 1rem;
+
+    cursor: pointer;
+    box-sizing: border-box;
+    border-radius: 0.25em;
+}
+
+.type-control-command:hover {
+    background-color: lightblue;
+    cursor: pointer;
+}
+
+.type-control-command-label {
+    flex: 1;
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.type-control-command-label.not-matching {
+    color: grey;
+}
+
+.type-control-command-icon {
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 1.5rem;
+    min-width: 1.5rem;
 }

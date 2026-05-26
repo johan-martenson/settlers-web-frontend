@@ -9,7 +9,7 @@ import { canBeUpgraded, isEvacuated } from '../../api/utils'
 import { buildingPretty, soldierPretty } from '../../utils/pretty_strings'
 import { ItemContainer } from '../../components/item_container'
 import { Dismiss16Filled } from '@fluentui/react-icons'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 
 // Types
 type MilitaryBuildingProps = {

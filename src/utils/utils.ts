@@ -2,7 +2,7 @@ import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Dir
 import { api } from '../api/ws-api'
 import { ScreenPoint, View } from '../render/game-render'
 import { STANDARD_HEIGHT } from '../render/constants'
-import { PointMap, PointSet } from './util_types'
+import { PointMap, PointSet } from './util_types_ng'
 import { playerToColor } from './pretty_strings'
 
 // Types

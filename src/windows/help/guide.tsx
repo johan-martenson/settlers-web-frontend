@@ -3,7 +3,7 @@ import { HELP_PAGES, PageType } from './help_pages'
 import './guide.css'
 import { Button } from '@fluentui/react-components'
 import { WindowWithTyping } from '../../components/dialog'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 
 // Types
 type GuideProps = {

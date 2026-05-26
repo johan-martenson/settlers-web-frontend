@@ -7,7 +7,7 @@ import { api } from '../../api/ws-api'
 import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { MATERIAL_LABELS, soldierPretty } from '../../utils/pretty_strings'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 

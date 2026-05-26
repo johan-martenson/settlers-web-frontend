@@ -4,7 +4,7 @@ import { ButtonRow, WindowWithTyping } from "../../components/dialog"
 import { Point } from "../../api/types"
 import { useState } from "react"
 import './no_action_window.css'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { UiIcon } from '../../components/icons/icon'
 
 // Types

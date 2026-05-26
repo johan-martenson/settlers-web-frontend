@@ -7,7 +7,7 @@ import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
 import { clamp } from '../house/headquarter'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { buildingPretty } from '../../utils/pretty_strings'
 import { HouseIcon, UiIcon } from '../../components/icons/icon'
 

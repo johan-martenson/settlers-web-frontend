@@ -7,7 +7,8 @@ import { ChatBox } from '../../components/chat/chat'
 import { useGames } from '../../utils/hooks/hooks'
 import { api } from '../../api/ws-api'
 import { useTypingInput } from '../../utils/hooks/input'
-import { DialogTyping, executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing_command_utils'
+import { executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing-commands'
+import { DialogTyping } from '../../components/typing/typing'
 
 // Types
 type LobbyProps = {

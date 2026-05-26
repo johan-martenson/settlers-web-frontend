@@ -12,7 +12,7 @@
 //
 // so they can be tested.
 
-import { CommandMatch, executeCommand, findMatchingCommands, GenericCommand, isFuzzyMatch, parseEnumCommand, parseNumberCommand, parseStringCommand } from "../utils/typing_command_utils"
+import { CommandMatch, executeCommand, findMatchingCommands, GenericCommand, isFuzzyMatch, parseEnumCommand, parseNumberCommand, parseStringCommand } from "../utils/typing-commands"
 
 
 describe('isFuzzyMatch', () => {

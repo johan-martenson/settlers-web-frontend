@@ -1,0 +1,18 @@
+.pause-sign {
+    position: 'absolute';
+    left: '0';
+    right: '0';
+    top: '50%';
+    font-size: '5rem';
+    color: 'white';
+    height: 'auto';
+    line-height: '8rem';
+    display: 'flex';
+    justify-content: 'center';
+    z-index: 2000
+}
+
+.pause-sign-text {
+    background-color: 'black';
+    border-radius: '5px';
+}

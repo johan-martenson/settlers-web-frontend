@@ -5,7 +5,7 @@ import { Material, Nation, TransportCategory, TRANSPORT_CATEGORIES } from '../..
 import { api } from '../../api/ws-api'
 import { ItemContainer } from '../../components/item_container'
 import { useTransportPriority } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { transportCategoryPretty } from '../../utils/pretty_strings'
 import { InventoryIcon, UiIcon } from '../../components/icons/icon'
 

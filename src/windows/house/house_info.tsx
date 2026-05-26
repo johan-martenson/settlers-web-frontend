@@ -10,7 +10,7 @@ import { houseIsReady, isMilitaryBuilding } from '../../api/utils'
 import { ItemContainer } from '../../components/item_container'
 import { useHouse } from '../../utils/hooks/hooks'
 import { Dismiss16Filled } from '@fluentui/react-icons'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../utils/pretty_strings'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 

@@ -5,7 +5,7 @@ import { api } from '../../api/ws-api'
 import { Button, Field } from '@fluentui/react-components'
 import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { useFlag } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { FlagIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 import { materialPretty } from '../../utils/pretty_strings'
 

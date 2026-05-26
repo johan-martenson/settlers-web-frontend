@@ -44,19 +44,6 @@ function keyToPoint(key: number): Point {
     }
 }
 
-function stringToPoint(str: string): Point {
-    const [xStr, yStr] = str.split(',')
-
-    const x = Number.parseInt(xStr, 10)
-    const y = Number.parseInt(yStr, 10)
-
-    if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        throw new Error(`Invalid point string: ${str}`)
-    }
-
-    return { x, y }
-}
-
 // Classes
 class PointSet implements Iterable<Point> {
     private readonly set = new Set<number>()
@@ -196,6 +183,32 @@ class PointMap<T> implements Iterable<[Point, T]> {
         for (const [key, value] of this.map.entries()) {
             callback(value, keyToPoint(key), this)
         }
+    }
+
+    getOrInsert(point: Point, defaultValue: T): T {
+        const existing = this.get(point)
+
+        if (existing !== undefined) {
+            return existing
+        }
+
+        this.set(point, defaultValue)
+
+        return defaultValue
+    }
+
+    getOrInsertComputed(point: Point, compute: (key: Point) => T): T {
+        const existing = this.get(point)
+
+        if (existing !== undefined) {
+            return existing
+        }
+
+        const value = compute(point)
+
+        this.set(point, value)
+
+        return value
     }
 }
 

@@ -11,8 +11,9 @@ import { Center } from '../../components/center'
 import { useMaps } from '../../utils/hooks/hooks'
 import { addComputerPlayer } from '../../api/utils'
 import { useTypingInput } from '../../utils/hooks/input'
-import { DialogTyping, executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing_command_utils'
+import { executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing-commands'
 import { UiIcon } from '../../components/icons/icon'
+import { DialogTyping } from '../../components/typing/typing'
 
 
 // Types

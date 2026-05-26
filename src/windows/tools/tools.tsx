@@ -6,7 +6,7 @@ import { api } from '../../api/ws-api'
 import './tools.css'
 import { useToolPriorities } from '../../utils/hooks/hooks'
 import { clamp } from '../house/headquarter'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { UiIcon, UiIconType } from '../../components/icons/icon'
 import { materialPretty } from '../../utils/pretty_strings'
 

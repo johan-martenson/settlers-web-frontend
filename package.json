@@ -3,26 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@fluentui/react-components": "^9.69.0",
-    "@testing-library/jest-dom": "^6.6.3",
+    "@fluentui/react-components": "^9.74.0",
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@types/d3": "^7.4.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.2",
     "@types/react": "18.3.18",
     "@types/react-dom": "18.3.5",
-    "d3": "^7.9.0",
     "eslint-plugin-react-hooks": "^7.0.0",
     "fuite": "^5.0.5",
-    "gl-matrix": "^3.4.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-scripts": "5.0.1",
     "recharts": "3.8.1",
     "styled-components": "^6.1.16",
     "typescript": "6.0.3",
-    "web-vitals": "^5.0.1"
+    "web-vitals": "8.10.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -51,8 +48,8 @@
   "proxy": "http://localhost:8080",
   "devDependencies": {
     "@babel/plugin-transform-private-property-in-object": "7.28.6",
-    "@typescript-eslint/eslint-plugin": "^8.32.0",
-    "@typescript-eslint/parser": "^8.29.1",
+    "@typescript-eslint/eslint-plugin": "^8.60.0",
+    "@typescript-eslint/parser": "^8.60.0",
     "globals": "^17.0.0"
   }
 }

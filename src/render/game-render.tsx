@@ -5,7 +5,7 @@ import './game-render.css'
 import { api, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../utils/stats/stats'
 import { gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumAndNormalizeVectors, surroundingPoints, Vector } from '../utils/utils'
-import { PointMap, PointSet } from '../utils/util_types'
+import { PointMap, PointSet } from '../utils/util_types_ng'
 import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, houses, loadImageAsync, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import { NewRoad } from '../screens/play/play'
 import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, UNIT_SQUARE, VEGETATION_TO_TEXTURE_MAPPING } from './constants'
@@ -2044,12 +2044,12 @@ function GameCanvas({
             renderState.showHouseTitles = showHouseTitles
             renderState.fogOfWar = fogOfWar
 
-            if (newRoad !== undefined) {
+            if (newRoad !== undefined && newRoad.length > 0) {
                 renderState.newRoad = { newRoad: newRoad, possibleConnections: possibleRoadConnections ?? [] }
             } else {
                 renderState.newRoad = undefined
             }
-        }, [showAvailableConstruction, selectedPoint, newRoad, possibleRoadConnections, showHouseTitles, fogOfWar])
+        }, [showAvailableConstruction, selectedPoint, newRoad?.length, possibleRoadConnections?.length, showHouseTitles, fogOfWar])
 
     // Effect: 
     useEffect(
@@ -2918,11 +2918,10 @@ function prepareToRenderFromTiles(allTiles: PointMap<TerrainAtPoint>, allNormals
     const transitionTextureMappings: number[] = []
 
     // For all tiles, add the corresponding terrain tile to the buffers (coordinates, normals, texture mapping)
-    allTiles.entries().forEach(([point, { height, below, downRight }]) => {
+    allTiles.forEach(({ height, below, downRight }, point) => {
         const pointRight = getPointRight(point)
         const pointDownLeft = getPointDownLeft(point)
         const pointDownRight = getPointDownRight(point)
-
 
         addTerrainRenderInformationForTileBelow(
             point,

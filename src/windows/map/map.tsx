@@ -5,7 +5,7 @@ import { api } from '../../api/ws-api'
 import { Button } from '@fluentui/react-components'
 import { MapId } from '../../api/types'
 import { useMapWithTerrain } from '../../utils/hooks/hooks'
-import { GenericCommand } from '../../utils/typing_command_utils'
+import { GenericCommand } from '../../utils/typing-commands'
 import { UiIcon } from '../../components/icons/icon'
 
 type MapViewProps = {

@@ -14,5 +14,7 @@ export const PlayLogConfig = {
     windows: true,          // opening UI windows
     data: false,            // raw data dumps (JSON.stringify)
     errors: true,           // error situations
+    gameState: true,       // game state changes, monitoring lifecycle
+    preventContextMenu: true,  // prevent context menu from appearing
     ...(JSON.parse(localStorage.getItem('config.play.log') ?? '{}'))  // override log settings from local storage if it exists
 }

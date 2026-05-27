@@ -370,6 +370,131 @@ function GameCanvas({
     const doubleClickDetection = useNonTriggeringState<DoubleClickDetection>({})
 
     // Functions
+    const drawImage = useCallback((
+        toDraw: ToDraw,
+        width: number,
+        height: number
+    ) => {
+        if (renderState.drawImageProgramInstance === undefined ||
+            toDraw.gamePoint === undefined ||
+            toDraw.source?.image === undefined) {
+            return
+        }
+
+        const textureSlot = textures.activateTextureForRendering(
+            renderState.gl!,
+            toDraw.source.image
+        )
+
+        if (textureSlot === undefined) {
+            console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
+
+            return
+        }
+
+        draw<DrawImageUniforms>(
+            renderState.drawImageProgramInstance,
+            {
+                u_texture: textureSlot,
+                u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
+                u_screen_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
+                u_image_offset: [toDraw.source.offsetX, toDraw.source.offsetY],
+                u_scale: viewRef.current.scale,
+                u_source_coordinate: [toDraw.source.sourceX, toDraw.source.sourceY],
+                u_source_dimensions: [toDraw.source.width, toDraw.source.height],
+                u_screen_dimensions: [width, height],
+                u_height_adjust: heightAdjust,
+                u_height: toDraw.height ?? api.getHeight(toDraw.gamePoint)
+            },
+            'NO_CLEAR_BEFORE_DRAW'
+        )
+    }, [renderState, viewRef, heightAdjust])
+
+    const drawShadow = useCallback((
+        toDraw: ToDraw,
+        width: number,
+        height: number
+    ) => {
+        if (renderState.drawShadowProgramInstance === undefined ||
+            toDraw.gamePoint === undefined ||
+            toDraw.source?.image === undefined) {
+            return
+        }
+
+        const textureSlot = textures.activateTextureForRendering(
+            renderState.gl!,
+            toDraw.source.image
+        )
+
+        if (textureSlot === undefined) {
+            console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
+
+            return
+        }
+
+        draw<DrawShadowUniforms>(
+            renderState.drawShadowProgramInstance,
+            {
+                u_texture: textureSlot,
+                u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
+                u_screen_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
+                u_image_offset: [toDraw.source.offsetX, toDraw.source.offsetY],
+                u_scale: viewRef.current.scale,
+                u_source_coordinate: [toDraw.source.sourceX, toDraw.source.sourceY],
+                u_source_dimensions: [toDraw.source.width, toDraw.source.height],
+                u_screen_dimensions: [width, height],
+                u_height_adjust: heightAdjust,
+                u_height: toDraw.height ?? api.getHeight(toDraw.gamePoint)
+            },
+            'NO_CLEAR_BEFORE_DRAW'
+        )
+    }, [renderState, viewRef, heightAdjust])
+
+    const pushNormalImage = useCallback((drawInfo: DrawingInformation | undefined, gamePoint: Point, height?: number) => {
+        if (!drawInfo) {
+            return
+        }
+
+        renderState.toDrawNormal.push({
+            source: drawInfo,
+            gamePoint,
+            height
+        })
+    }, [renderState])
+
+    const pushNormalImageWithShadow = useCallback((
+        drawInfo: DrawingInformation[] | undefined,
+        gamePoint: Point,
+        height?: number
+    ) => {
+        if (!drawInfo) {
+            return
+        }
+
+        renderState.toDrawNormal.push({
+            source: drawInfo[0],
+            gamePoint,
+            height
+        })
+
+        renderState.shadowsToDraw.push({
+            source: drawInfo[1],
+            gamePoint,
+            height
+        })
+    }, [renderState])
+
+    const pushHoverImage = useCallback((drawInfo: DrawingInformation | undefined, gamePoint: Point) => {
+        if (!drawInfo) {
+            return
+        }
+
+        renderState.toDrawHover.push({
+            source: drawInfo,
+            gamePoint
+        })
+    }, [renderState])
+
     /**
      * Rendering uses two different coordinate/size systems:
      *
@@ -574,34 +699,7 @@ function GameCanvas({
 
         // Draw decorations objects
         for (const toDraw of renderState.decorationsToDraw) {
-            if (toDraw?.source?.image !== undefined && renderState.drawImageProgramInstance !== undefined) {
-                const textureSlot = textures.activateTextureForRendering(renderState.drawImageProgramInstance.gl, toDraw.source.image)
-
-                if (textureSlot === undefined) {
-                    console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
-
-                    continue
-                }
-
-                // Set the constants
-                draw<DrawImageUniforms>(renderState.drawImageProgramInstance,
-                    {
-                        u_texture: textureSlot,
-                        u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
-                        u_screen_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
-                        u_image_offset: [toDraw.source.offsetX, toDraw.source.offsetY],
-                        u_scale: viewRef.current.scale,
-                        u_source_coordinate: [toDraw.source.sourceX, toDraw.source.sourceY],
-                        u_source_dimensions: [toDraw.source.width, toDraw.source.height],
-                        u_screen_dimensions: [width, height],
-                        u_height_adjust: heightAdjust,
-                        u_height: api.getHeight(toDraw.gamePoint)
-                    },
-                    'NO_CLEAR_BEFORE_DRAW'
-                )
-            } else {
-                console.error(`Render (textures): The texture for ${toDraw?.source?.image} is undefined`)
-            }
+            drawImage(toDraw, width, height)
         }
 
         duration.after('drawing decorations')
@@ -641,10 +739,7 @@ function GameCanvas({
 
                 const borderPointInfo = borderImageAtlasHandler.getDrawingInformation(borderForPlayer.nation, borderForPlayer.color, 'SUMMER')
 
-                renderState.toDrawNormal.push({
-                    source: borderPointInfo,
-                    gamePoint: borderPoint,
-                })
+                pushNormalImage(borderPointInfo, borderPoint)
             })
         })
 
@@ -660,63 +755,23 @@ function GameCanvas({
             if (house.state === 'PLANNED') {
                 const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(house.nation)
 
-                renderState.toDrawNormal.push({
-                    source: plannedDrawInformation,
-                    gamePoint: house,
-                })
+                pushNormalImage(plannedDrawInformation, house)
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
-
                 const fireDrawInformation = fireAnimations.getAnimationFrame(size, renderState.animationIndex)
 
-                if (fireDrawInformation) {
-                    renderState.toDrawNormal.push({
-                        source: fireDrawInformation[0],
-                        gamePoint: house,
-                    })
-
-                    renderState.shadowsToDraw.push({
-                        source: fireDrawInformation[1],
-                        gamePoint: house,
-                    })
-                }
+                pushNormalImageWithShadow(fireDrawInformation, house)
             } else if (house.state === 'DESTROYED') {
                 const size = getHouseSize(house)
-
                 const fireDrawInformation = fireImageAtlasHandler.getBurntDownDrawingInformation(size)
 
-                renderState.toDrawNormal.push({
-                    source: fireDrawInformation,
-                    gamePoint: house,
-                })
+                pushNormalImage(fireDrawInformation, house)
             } else if (house.state === 'UNFINISHED' && house.constructionProgress !== undefined) {
                 const houseUnderConstruction = houses.getDrawingInformationForHouseUnderConstruction(house.nation, house.type)
-
-                if (houseUnderConstruction) {
-                    renderState.toDrawNormal.push({
-                        source: houseUnderConstruction[0],
-                        gamePoint: house,
-                    })
-
-                    renderState.shadowsToDraw.push({
-                        source: houseUnderConstruction[1],
-                        gamePoint: house,
-                    })
-                }
-
                 const houseDrawInformation = houses.getPartialHouseReady(house.nation, house.type, house.constructionProgress)
 
-                if (houseDrawInformation) {
-                    renderState.toDrawNormal.push({
-                        source: houseDrawInformation[0],
-                        gamePoint: house,
-                    })
-
-                    renderState.shadowsToDraw.push({
-                        source: houseDrawInformation[1],
-                        gamePoint: house,
-                    })
-                }
+                pushNormalImageWithShadow(houseUnderConstruction, house)
+                pushNormalImageWithShadow(houseDrawInformation, house)
             } else {
 
                 if ((house.type === 'Mill' && house.isWorking) ||
@@ -726,51 +781,23 @@ function GameCanvas({
                     (house.type === 'Harbor' && (house.nation === 'ROMANS' || house.nation === 'JAPANESE') && house.isWorking)) {
                     const houseDrawInformation = houses.getDrawingInformationForWorkingHouse(house.nation, house.type, renderState.animationIndex)
 
-                    if (houseDrawInformation) {
-                        renderState.toDrawNormal.push({
-                            source: houseDrawInformation[0],
-                            gamePoint: house,
-                        })
-
-                        renderState.shadowsToDraw.push({
-                            source: houseDrawInformation[1],
-                            gamePoint: house,
-                        })
-                    }
+                    pushNormalImageWithShadow(houseDrawInformation, house)
                 } else {
                     const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
 
-                    if (houseDrawInformation) {
-                        renderState.toDrawNormal.push({
-                            source: houseDrawInformation[0],
-                            gamePoint: house,
-                        })
-
-                        renderState.shadowsToDraw.push({
-                            source: houseDrawInformation[1],
-                            gamePoint: house,
-                        })
-                    }
+                    pushNormalImageWithShadow(houseDrawInformation, house)
                 }
 
                 if (house.door === 'OPEN') {
                     const door = houses.getDrawingInformationForOpenDoor(house.nation, house.type)
 
-                    renderState.toDrawNormal.push({
-                        source: door,
-                        gamePoint: house,
-                    })
+                    pushNormalImage(door, house)
                 }
 
                 if (house.isWorking) {
                     const smokeDrawInformation = fireAnimations.getSmokeFrameForHouse(house.nation, house.type, renderState.animationIndex)
 
-                    if (smokeDrawInformation) {
-                        renderState.toDrawNormal.push({
-                            source: smokeDrawInformation,
-                            gamePoint: house,
-                        })
-                    }
+                    pushNormalImage(smokeDrawInformation, house)
                 }
 
             }
@@ -791,31 +818,11 @@ function GameCanvas({
             if (tree.size === 'FULL_GROWN') {
                 treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, renderState.animationIndex, treeIndex)
 
-                if (treeDrawInfo) {
-                    renderState.toDrawNormal.push({
-                        source: treeDrawInfo[0],
-                        gamePoint: tree,
-                    })
-
-                    renderState.shadowsToDraw.push({
-                        source: treeDrawInfo[1],
-                        gamePoint: tree,
-                    })
-                }
+                pushNormalImageWithShadow(treeDrawInfo, tree)
             } else {
                 treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree.type, tree.size)
 
-                if (treeDrawInfo) {
-                    renderState.toDrawNormal.push({
-                        source: treeDrawInfo[0],
-                        gamePoint: tree,
-                    })
-
-                    renderState.shadowsToDraw.push({
-                        source: treeDrawInfo[1],
-                        gamePoint: tree,
-                    })
-                }
+                pushNormalImageWithShadow(treeDrawInfo, tree)
             }
 
             treeIndex = treeIndex + 1
@@ -828,17 +835,7 @@ function GameCanvas({
 
             const treeDrawInfo = treeAnimations.getFallingTree(tree.type, tree.animation)
 
-            if (treeDrawInfo) {
-                renderState.toDrawNormal.push({
-                    source: treeDrawInfo[0],
-                    gamePoint: tree,
-                })
-
-                renderState.shadowsToDraw.push({
-                    source: treeDrawInfo[1],
-                    gamePoint: tree,
-                })
-            }
+            pushNormalImageWithShadow(treeDrawInfo, tree)
         })
 
         duration.after('collect trees')
@@ -851,19 +848,9 @@ function GameCanvas({
             }
 
             // TODO: get type from the backend
-            const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor('TYPE_1', crop.state)
+            const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor(crop.type, crop.state)
 
-            if (cropDrawInfo) {
-                renderState.toDrawNormal.push({
-                    source: cropDrawInfo[0],
-                    gamePoint: crop,
-                })
-
-                renderState.shadowsToDraw.push({
-                    source: cropDrawInfo[1],
-                    gamePoint: crop,
-                })
-            }
+            pushNormalImageWithShadow(cropDrawInfo, crop)
         }
 
         duration.after('collect crops')
@@ -883,17 +870,7 @@ function GameCanvas({
                 signDrawInfo = signImageAtlasHandler.getDrawingInformation('NOTHING', 'LARGE')
             }
 
-            if (signDrawInfo) {
-                renderState.toDrawNormal.push({
-                    source: signDrawInfo[0],
-                    gamePoint: sign,
-                })
-
-                renderState.shadowsToDraw.push({
-                    source: signDrawInfo[1],
-                    gamePoint: sign,
-                })
-            }
+            pushNormalImageWithShadow(signDrawInfo, sign)
         }
 
         duration.after('collect signs')
@@ -907,17 +884,7 @@ function GameCanvas({
 
             const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor(stone.type, stone.amount)
 
-            if (stoneDrawInfo) {
-                renderState.toDrawNormal.push({
-                    source: stoneDrawInfo[0],
-                    gamePoint: stone
-                })
-
-                renderState.shadowsToDraw.push({
-                    source: stoneDrawInfo[1],
-                    gamePoint: stone
-                })
-            }
+            pushNormalImageWithShadow(stoneDrawInfo, stone)
         }
 
         duration.after('collect stones')
@@ -942,26 +909,11 @@ function GameCanvas({
                 }
 
                 const interpolatedHeight = interpolateHeight(animal.previous, animal.next, animal.percentageTraveled / 100)
-
                 const direction = getDirectionForWalkingWorker(animal.next, animal.previous)
 
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex)
 
-                if (animationImage) {
-                    renderState.toDrawNormal.push({
-                        source: animationImage[0],
-                        gamePoint: interpolatedGamePoint,
-                        height: interpolatedHeight
-                    })
-
-                    if (animationImage.length > 1) {
-                        renderState.shadowsToDraw.push({
-                            source: animationImage[1],
-                            gamePoint: interpolatedGamePoint,
-                            height: interpolatedHeight
-                        })
-                    }
-                }
+                pushNormalImageWithShadow(animationImage, interpolatedGamePoint, interpolatedHeight)
 
                 // Animal is standing at a fixed point
             } else {
@@ -971,39 +923,14 @@ function GameCanvas({
 
                 if (animal.previous) {
                     const direction = getDirectionForWalkingWorker(animal, animal.previous)
-
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex)
 
-                    if (animationImage) {
-                        renderState.toDrawNormal.push({
-                            source: animationImage[0],
-                            gamePoint: animal
-                        })
-
-                        if (animationImage.length > 1) {
-                            renderState.shadowsToDraw.push({
-                                source: animationImage[1],
-                                gamePoint: animal
-                            })
-                        }
-                    }
+                    pushNormalImageWithShadow(animationImage, animal)
                 } else {
                     const direction = 'EAST'
                     const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex)
 
-                    if (animationImage) {
-                        renderState.toDrawNormal.push({
-                            source: animationImage[0],
-                            gamePoint: animal
-                        })
-
-                        if (animationImage.length > 1) {
-                            renderState.shadowsToDraw.push({
-                                source: animationImage[1],
-                                gamePoint: animal
-                            })
-                        }
-                    }
+                    pushNormalImageWithShadow(animationImage, animal)
                 }
             }
         }
@@ -1041,19 +968,7 @@ function GameCanvas({
                     shipImage = shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship.constructionState)
                 }
 
-                if (shipImage) {
-                    renderState.toDrawNormal.push({
-                        source: shipImage[0],
-                        gamePoint: interpolatedGamePoint,
-                        height: interpolatedHeight
-                    })
-
-                    renderState.shadowsToDraw.push({
-                        source: shipImage[1],
-                        gamePoint: interpolatedGamePoint,
-                        height: interpolatedHeight
-                    })
-                }
+                pushNormalImageWithShadow(shipImage, interpolatedGamePoint, interpolatedHeight)
 
                 // Ship is at a fixed point
             } else {
@@ -1075,17 +990,7 @@ function GameCanvas({
                     shipImage = shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship.constructionState)
                 }
 
-                if (shipImage) {
-                    renderState.toDrawNormal.push({
-                        source: shipImage[0],
-                        gamePoint: ship
-                    })
-
-                    renderState.shadowsToDraw.push({
-                        source: shipImage[1],
-                        gamePoint: ship
-                    })
-                }
+                pushNormalImageWithShadow(shipImage, ship)
             }
         }
 
@@ -1114,11 +1019,7 @@ function GameCanvas({
                     const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, renderState.animationIndex)
 
                     if (donkeyImage) {
-                        renderState.toDrawNormal.push({
-                            source: donkeyImage[0],
-                            gamePoint: interpolatedGamePoint,
-                            height: interpolatedHeight
-                        })
+                        pushNormalImageWithShadow(donkeyImage, interpolatedGamePoint, interpolatedHeight)
 
                         if (donkeyImage.length > 1) {
                             renderState.shadowsToDraw.push({
@@ -1132,11 +1033,7 @@ function GameCanvas({
                     if (worker.cargo) {
                         const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
 
-                        renderState.toDrawNormal.push({
-                            source: cargoImage,
-                            gamePoint: interpolatedGamePoint,
-                            height: interpolatedHeight
-                        })
+                        pushNormalImage(cargoImage, interpolatedGamePoint, interpolatedHeight)
                     }
                 } else if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
                     let image
@@ -1155,35 +1052,11 @@ function GameCanvas({
                         }
                     }
 
-                    if (image) {
-                        renderState.toDrawNormal.push({
-                            source: image[0],
-                            gamePoint: interpolatedGamePoint,
-                            height: interpolatedHeight
-                        })
-
-                        renderState.shadowsToDraw.push({
-                            source: image[1],
-                            gamePoint: interpolatedGamePoint,
-                            height: interpolatedHeight
-                        })
-                    }
+                    pushNormalImageWithShadow(image, interpolatedGamePoint, interpolatedHeight)
                 } else {
                     const animationImage = workers[worker.type]?.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
 
-                    if (animationImage) {
-                        renderState.toDrawNormal.push({
-                            source: animationImage[0],
-                            gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y },
-                            height: interpolatedHeight
-                        })
-
-                        renderState.shadowsToDraw.push({
-                            source: animationImage[1],
-                            gamePoint: { x: interpolatedGamePoint.x, y: interpolatedGamePoint.y },
-                            height: interpolatedHeight
-                        })
-                    }
+                    pushNormalImageWithShadow(animationImage, interpolatedGamePoint, interpolatedHeight)
                 }
 
                 if (worker.cargo) {
@@ -1196,21 +1069,11 @@ function GameCanvas({
                             cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         }
 
-                        renderState.toDrawNormal.push({
-                            source: cargoDrawInfo,
-                            gamePoint: interpolatedGamePoint,
-                            height: interpolatedHeight
-                        })
+                        pushNormalImage(cargoDrawInfo, interpolatedGamePoint, interpolatedHeight)
                     } else {
                         const cargo = workers[worker.type]?.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
 
-                        if (cargo) {
-                            renderState.toDrawNormal.push({
-                                source: cargo,
-                                gamePoint: interpolatedGamePoint,
-                                height: interpolatedHeight
-                            })
-                        }
+                        pushNormalImage(cargo, interpolatedGamePoint, interpolatedHeight)
                     }
 
                 }
@@ -1222,26 +1085,12 @@ function GameCanvas({
                 if (worker.type === 'Donkey') {
                     const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, 0)
 
-                    if (donkeyImage) {
-                        renderState.toDrawNormal.push({
-                            source: donkeyImage[0],
-                            gamePoint: worker
-                        })
-
-                        renderState.shadowsToDraw.push({
-                            source: donkeyImage[1],
-                            gamePoint: worker
-                        })
-                    }
-
+                    pushNormalImageWithShadow(donkeyImage, worker)
 
                     if (worker.cargo) {
                         const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
 
-                        renderState.toDrawNormal.push({
-                            source: cargoImage,
-                            gamePoint: worker
-                        })
+                        pushNormalImage(cargoImage, worker)
                     }
                 } else if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
                     let didDrawAnimation = false
@@ -1253,10 +1102,7 @@ function GameCanvas({
                             if (animationImage) {
                                 didDrawAnimation = true
 
-                                renderState.toDrawNormal.push({
-                                    source: animationImage,
-                                    gamePoint: { x: worker.x, y: worker.y }
-                                })
+                                pushNormalImage(animationImage, worker)
                             }
                         } else if (worker.bodyType === 'THIN') {
                             const animationImage = thinCarrierNoCargo.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
@@ -1264,10 +1110,7 @@ function GameCanvas({
                             if (animationImage) {
                                 didDrawAnimation = true
 
-                                renderState.toDrawNormal.push({
-                                    source: animationImage,
-                                    gamePoint: { x: worker.x, y: worker.y }
-                                })
+                                pushNormalImage(animationImage, worker)
                             }
                         } else {
                             console.error(`Render (workers): COURIER OR STOREHOUSE WORKER DOING ACTION AND IT'S NEITHER FAT NOR THIN`)
@@ -1295,17 +1138,7 @@ function GameCanvas({
                             }
                         }
 
-                        if (image) {
-                            renderState.toDrawNormal.push({
-                                source: image[0],
-                                gamePoint: worker
-                            })
-
-                            renderState.shadowsToDraw.push({
-                                source: image[1],
-                                gamePoint: worker
-                            })
-                        }
+                        pushNormalImageWithShadow(image, worker)
                     }
                 } else {
                     let didDrawAnimation = false
@@ -1316,27 +1149,14 @@ function GameCanvas({
                         if (animationImage) {
                             didDrawAnimation = true
 
-                            renderState.toDrawNormal.push({
-                                source: animationImage,
-                                gamePoint: { x: worker.x, y: worker.y }
-                            })
+                            pushNormalImage(animationImage, worker)
                         }
                     }
 
                     if (!didDrawAnimation) {
                         const animationImage = workers[worker.type]?.getAnimationFrame(worker.nation, worker.direction, worker.color, 0, worker.percentageTraveled / 10)
 
-                        if (animationImage) {
-                            renderState.toDrawNormal.push({
-                                source: animationImage[0],
-                                gamePoint: { x: worker.x, y: worker.y }
-                            })
-
-                            renderState.shadowsToDraw.push({
-                                source: animationImage[1],
-                                gamePoint: { x: worker.x, y: worker.y }
-                            })
-                        }
+                        pushNormalImageWithShadow(animationImage, worker)
                     }
                 }
 
@@ -1350,17 +1170,11 @@ function GameCanvas({
                             cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
                         }
 
-                        renderState.toDrawNormal.push({
-                            source: cargoDrawInfo,
-                            gamePoint: worker
-                        })
+                        pushNormalImage(cargoDrawInfo, worker)
                     } else {
                         const cargo = workers[worker.type]?.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
 
-                        renderState.toDrawNormal.push({
-                            source: cargo,
-                            gamePoint: worker
-                        })
+                        pushNormalImage(cargo, worker)
                     }
                 }
             }
@@ -1378,17 +1192,7 @@ function GameCanvas({
 
             const flagDrawInfo = flagAnimations.getAnimationFrame(flag.nation, flag.color, flag.type, renderState.animationIndex, flagCount)
 
-            if (flagDrawInfo) {
-                renderState.toDrawNormal.push({
-                    source: flagDrawInfo[0],
-                    gamePoint: flag
-                })
-
-                renderState.shadowsToDraw.push({
-                    source: flagDrawInfo[1],
-                    gamePoint: flag
-                })
-            }
+            pushNormalImageWithShadow(flagDrawInfo, flag)
 
             if (flag.stackedCargo) {
                 for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
@@ -1396,11 +1200,7 @@ function GameCanvas({
 
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
-                    renderState.toDrawNormal.push({
-                        source: cargoDrawInfo,
-                        gamePoint: { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 },
-                        height: api.getHeight(flag)
-                    })
+                    pushNormalImage(cargoDrawInfo, { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 }, api.getHeight(flag))
                 }
 
                 if (flag.stackedCargo.length > 3) {
@@ -1409,11 +1209,7 @@ function GameCanvas({
 
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
-                        renderState.toDrawNormal.push({
-                            source: cargoDrawInfo,
-                            gamePoint: { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 },
-                            height: api.getHeight(flag)
-                        })
+                        pushNormalImage(cargoDrawInfo, { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 }, api.getHeight(flag))
                     }
                 }
 
@@ -1423,11 +1219,7 @@ function GameCanvas({
 
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
-                        renderState.toDrawNormal.push({
-                            source: cargoDrawInfo,
-                            gamePoint: { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 },
-                            height: api.getHeight(flag)
-                        })
+                        pushNormalImage(cargoDrawInfo, { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 }, api.getHeight(flag))
                     }
                 }
             }
@@ -1452,38 +1244,23 @@ function GameCanvas({
                 if (available.includes('LARGE')) {
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
 
-                    renderState.toDrawNormal.push({
-                        source: largeHouseAvailableInfo,
-                        gamePoint
-                    })
+                    pushNormalImage(largeHouseAvailableInfo, gamePoint)
                 } else if (available.includes('MEDIUM')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
 
-                    renderState.toDrawNormal.push({
-                        source: mediumHouseAvailableInfo,
-                        gamePoint
-                    })
+                    pushNormalImage(mediumHouseAvailableInfo, gamePoint)
                 } else if (available.includes('SMALL')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
 
-                    renderState.toDrawNormal.push({
-                        source: mediumHouseAvailableInfo,
-                        gamePoint
-                    })
+                    pushNormalImage(mediumHouseAvailableInfo, gamePoint)
                 } else if (available.includes('MINE')) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
 
-                    renderState.toDrawNormal.push({
-                        source: mineAvailableInfo,
-                        gamePoint
-                    })
+                    pushNormalImage(mineAvailableInfo, gamePoint)
                 } else if (available.includes('FLAG')) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
 
-                    renderState.toDrawNormal.push({
-                        source: flagAvailableInfo,
-                        gamePoint
-                    })
+                    pushNormalImage(flagAvailableInfo, gamePoint)
                 }
             }
         }
@@ -1494,34 +1271,7 @@ function GameCanvas({
         // Draw the Shadow layer and the Normal layer
         if (renderState.drawShadowProgramInstance) {
             for (const shadow of renderState.shadowsToDraw) {
-                if (shadow.gamePoint === undefined || shadow.source?.image === undefined) {
-                    continue
-                }
-
-                const textureSlot = textures.activateTextureForRendering(renderState.gl, shadow.source.image)
-
-                if (textureSlot === undefined) {
-                    console.error(`Render (textures): Texture slot is undefined for ${shadow.source.image}`)
-
-                    continue
-                }
-
-                // Set the constants
-                draw<DrawShadowUniforms>(renderState.drawShadowProgramInstance,
-                    {
-                        u_texture: textureSlot,
-                        u_game_point: [shadow.gamePoint.x, shadow.gamePoint.y],
-                        u_screen_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
-                        u_image_offset: [shadow.source.offsetX, shadow.source.offsetY],
-                        u_scale: viewRef.current.scale,
-                        u_source_coordinate: [shadow.source.sourceX, shadow.source.sourceY],
-                        u_source_dimensions: [shadow.source.width, shadow.source.height],
-                        u_screen_dimensions: [width, height],
-                        u_height_adjust: heightAdjust,
-                        u_height: shadow.height ?? api.getHeight(shadow.gamePoint)
-                    },
-                    'NO_CLEAR_BEFORE_DRAW'
-                )
+                drawShadow(shadow, width, height)
             }
         }
 
@@ -1534,34 +1284,7 @@ function GameCanvas({
         // Draw normal objects
         if (renderState.drawImageProgramInstance !== undefined) {
             for (const toDraw of renderState.toDrawNormal) {
-                if (toDraw.gamePoint === undefined || toDraw.source?.image === undefined) {
-                    continue
-                }
-
-                const textureSlot = textures.activateTextureForRendering(renderState.gl, toDraw.source.image)
-
-                if (textureSlot === undefined) {
-                    console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
-
-                    continue
-                }
-
-                // Set the constants
-                draw<DrawImageUniforms>(renderState.drawImageProgramInstance,
-                    {
-                        u_texture: textureSlot,
-                        u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
-                        u_screen_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
-                        u_image_offset: [toDraw.source.offsetX, toDraw.source.offsetY],
-                        u_scale: viewRef.current.scale,
-                        u_source_coordinate: [toDraw.source.sourceX, toDraw.source.sourceY],
-                        u_source_dimensions: [toDraw.source.width, toDraw.source.height],
-                        u_screen_dimensions: [width, height],
-                        u_height_adjust: heightAdjust,
-                        u_height: toDraw.height ?? api.getHeight(toDraw.gamePoint)
-                    },
-                    'NO_CLEAR_BEFORE_DRAW'
-                )
+                drawImage(toDraw, width, height)
             }
         }
 
@@ -1575,10 +1298,7 @@ function GameCanvas({
                 // Draw the starting point
                 const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForStartPoint()
 
-                renderState.toDrawHover.push({
-                    source: startPointInfo,
-                    gamePoint: center
-                })
+                pushHoverImage(startPointInfo, center)
 
                 const centerHeight = api.getHeight(center)
 
@@ -1608,10 +1328,7 @@ function GameCanvas({
                                 startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
                             }
 
-                            renderState.toDrawHover.push({
-                                source: startPointInfo,
-                                gamePoint: point
-                            })
+                            pushHoverImage(startPointInfo, point)
                         }
                     }
                 )
@@ -1626,10 +1343,7 @@ function GameCanvas({
             if (renderState.selectedPoint) {
                 const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
 
-                renderState.toDrawHover.push({
-                    source: selectedPointDrawInfo,
-                    gamePoint: renderState.selectedPoint
-                })
+                pushHoverImage(selectedPointDrawInfo, renderState.selectedPoint)
             }
         }
 
@@ -1646,46 +1360,28 @@ function GameCanvas({
 
                         const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
 
-                        renderState.toDrawHover.push({
-                            source: largeHouseAvailableInfo,
-                            gamePoint: renderState.hoverPoint
-                        })
+                        pushHoverImage(largeHouseAvailableInfo, renderState.hoverPoint)
                     } else if (availableConstructionAtHoverPoint.includes('MEDIUM')) {
                         const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
 
-                        renderState.toDrawHover.push({
-                            source: mediumHouseAvailableInfo,
-                            gamePoint: renderState.hoverPoint
-                        })
+                        pushHoverImage(mediumHouseAvailableInfo, renderState.hoverPoint)
                     } else if (availableConstructionAtHoverPoint.includes('SMALL')) {
                         const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
 
-                        renderState.toDrawHover.push({
-                            source: smallHouseAvailableInfo,
-                            gamePoint: renderState.hoverPoint
-                        })
+                        pushHoverImage(smallHouseAvailableInfo, renderState.hoverPoint)
                     } else if (availableConstructionAtHoverPoint.includes('MINE')) {
                         const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
 
-                        renderState.toDrawHover.push({
-                            source: mineAvailableInfo,
-                            gamePoint: renderState.hoverPoint
-                        })
+                        pushHoverImage(mineAvailableInfo, renderState.hoverPoint)
                     } else if (availableConstructionAtHoverPoint.includes('FLAG')) {
                         const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
 
-                        renderState.toDrawHover.push({
-                            source: flagAvailableInfo,
-                            gamePoint: renderState.hoverPoint
-                        })
+                        pushHoverImage(flagAvailableInfo, renderState.hoverPoint)
                     }
                 } else {
                     const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
 
-                    renderState.toDrawHover.push({
-                        source: hoverPointDrawInfo,
-                        gamePoint: renderState.hoverPoint
-                    })
+                    pushHoverImage(hoverPointDrawInfo, renderState.hoverPoint)
                 }
             }
         }
@@ -1693,34 +1389,7 @@ function GameCanvas({
         // Draw the overlay layer. Assume for now that they don't need sorting
         if (renderState.drawImageProgramInstance !== undefined) {
             for (const toDraw of renderState.toDrawHover) {
-                if (toDraw.gamePoint === undefined || toDraw.source?.image === undefined) {
-                    continue
-                }
-
-                const textureSlot = textures.activateTextureForRendering(renderState.gl, toDraw.source.image)
-
-                if (textureSlot === undefined) {
-                    console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
-
-                    continue
-                }
-
-                // Set the constants and draw
-                draw<DrawImageUniforms>(renderState.drawImageProgramInstance,
-                    {
-                        u_texture: textureSlot,
-                        u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
-                        u_screen_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
-                        u_image_offset: [toDraw.source.offsetX, toDraw.source.offsetY],
-                        u_scale: viewRef.current.scale,
-                        u_source_coordinate: [toDraw.source.sourceX, toDraw.source.sourceY],
-                        u_source_dimensions: [toDraw.source.width, toDraw.source.height],
-                        u_screen_dimensions: [width, height],
-                        u_height_adjust: heightAdjust,
-                        u_height: toDraw.height ?? api.getHeight(toDraw.gamePoint)
-                    },
-                    'NO_CLEAR_BEFORE_DRAW'
-                )
+                drawImage(toDraw, width, height)
             }
         }
 

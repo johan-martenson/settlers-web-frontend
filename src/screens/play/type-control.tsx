@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import './type_control.css'
+import './type-control.css'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import { PointInformationWithoutPossibleRoadConnections } from '../../api/types'
 

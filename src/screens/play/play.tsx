@@ -7,12 +7,12 @@ import GameMessagesViewer from '../../components/game-messages/game-messages-vie
 import { CursorState, GameCanvas } from '../../render/game-render'
 import Guide from '../../windows/help/guide'
 import MenuButton from '../../components/menu-button'
-import { GameListener, api } from '../../api/ws-api'
+import { api } from '../../api/ws-api'
 import MusicPlayer from '../../sound/music_player'
 import Statistics from '../../windows/statistics/statistics'
 import { printVariables } from '../../utils/stats/stats'
 import { SetTransportPriority } from '../../windows/transport_priority/transport_priority'
-import { TypeControl } from './type_control'
+import { TypeControl } from './type-control'
 import { isRoadAtPoint } from '../../utils/utils'
 import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, HouseId, GameState, RoadId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
 import { CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled } from '@fluentui/react-icons'
@@ -43,6 +43,9 @@ import { useRoadBuilding } from './use-build-road'
 import { PauseSign } from '../../components/paused/pause-sign'
 import { Expired } from '../../components/expired/game-expired-sign'
 import { useTypingInput } from '../../utils/hooks/input'
+import { useGameState } from './use-game-state'
+import { usePreventContextMenu } from './use-prevent-context-menu'
+import { useContainerSizeSync } from './use-container-size-sync'
 
 // Types
 type HouseWindow = {
@@ -177,7 +180,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const immediateStateRef = useRef(makeDefaultImmediateState())
 
     // State (that triggers re-renders)
-    const [monitoringReady, setMonitoringReady] = useState<boolean>(false)
     const [showAvailableConstruction, setShowAvailableConstruction] = useState<boolean>(false)
     const [selected, setSelected] = useState<Point>({ x: 0, y: 0 })
     const [showMenu, setShowMenu] = useState<boolean>(false)
@@ -191,13 +193,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [heightAdjust, setHeightAdjust] = useState<number>(DEFAULT_HEIGHT_ADJUSTMENT)
     const [animateMapScrolling, setAnimateMapScrolling] = useState<boolean>(true)
     const [animateZoom, setAnimateZoom] = useState<boolean>(true)
-    const [gameState, setGameState] = useState<GameState>('STARTED')
     const [fogOfWar, setFogOfWar] = useState<boolean>(true)
 
     // Monitoring
     const gameInformation = useGame()
     const player = usePlayer(selfPlayerId)
     const selectedPointInformation = usePointInformation(selected)
+    const { gameState } = useGameState(gameId, selfPlayerId)
 
     // State (that doesn't trigger re-renders)
     const ongoingTouches = useNonTriggeringState<Map<number, StoredTouch>>(new Map<number, StoredTouch>())
@@ -248,125 +250,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     // Use typing input
     const { inputValue, keyTyped } = useTypingInput()
 
-    // Constants
-    const gameMonitorCallbacks = useMemo<GameListener>(() => ({
-        onMonitoringStarted: () => {
-            setMonitoringReady(true)
+    // Prevent context menu from appearing on right click
+    usePreventContextMenu()
 
-            if (PlayLogConfig.lifecycle) {
-                console.log('Play (lifecycle): Monitoring started')
-            }
-        },
-        onGameStateChanged: (gameState: GameState) => setGameState(gameState)
-    }), [])
+    // Track the container dimensions and update the immediate state accordingly
+    useContainerSizeSync({ gameId, selfContainerRef, immediateStateRef })
 
     // Effects
     // Effect: keep the selected point information ref in sync
     useEffect(() => {
         selectedPointInformationRef.current = selectedPointInformation
     }, [selectedPointInformation])
-
-    // Effect: follow the game and listen to the game state
-    useEffect(() => {
-        let cancelled = false
-
-        if (PlayLogConfig.lifecycle) {
-            console.log(`Play (lifecycle): gameId or playerId changed. GameId: ${gameId}, PlayerId: ${selfPlayerId}`)
-        }
-
-        async function connectAndFollow(gameId: GameId, selfPlayerId: PlayerId): Promise<void> {
-            await api.connectAndWaitForConnection()
-
-            if (cancelled) {
-                return
-            }
-
-            api.addGameStateListener(gameMonitorCallbacks)
-            await api.followGame(gameId, selfPlayerId)
-        }
-
-        if (PlayLogConfig.connection) {
-            console.log(`Play (connection): Start listening to game with gameId ${gameId} and playerId ${selfPlayerId}`)
-        }
-
-        connectAndFollow(gameId, selfPlayerId)
-
-        return () => {
-            cancelled = true
-
-            if (PlayLogConfig.connection) {
-                console.log('Play (connection): Stop listening to game')
-            }
-
-            api.removeGameStateListener(gameMonitorCallbacks)
-            api.stopFollowingGame()
-        }
-    }, [PlayLogConfig.connection, gameId, selfPlayerId, gameMonitorCallbacks])
-
-    // Effect: set up listeners for window resizing, and for preventing right click menu
-    useEffect(() => {
-        if (PlayLogConfig.lifecycle) {
-            console.log('Play (lifecycle): start event and window resize listeners')
-        }
-
-        function nopEventListener(event: MouseEvent): void {
-            event.preventDefault()
-        }
-
-        function windowResizeListener(): void {
-            if (selfContainerRef.current) {
-                immediateStateRef.current.screenSize = {
-                    width: selfContainerRef.current.clientWidth,
-                    height: selfContainerRef.current.clientHeight
-                }
-            }
-        }
-
-        document.addEventListener('contextmenu', nopEventListener, false)
-        window.addEventListener('resize', windowResizeListener)
-
-        return () => {
-            if (PlayLogConfig.lifecycle) {
-                console.log('Play (lifecycle): Removing event and window resize listeners')
-            }
-
-            document.removeEventListener('contextmenu', nopEventListener, false)
-            window.removeEventListener('resize', windowResizeListener)
-        }
-    }, [])
-
-    useEffect(() => {
-        let cancelled = false
-
-        if (PlayLogConfig.commands) {
-            console.log('Play (commands): set commands, center on headquarters')
-        }
-
-        api.waitForGameDataAvailable()
-            .then(() => {
-                if (cancelled) {
-                    return
-                }
-
-                if (selfContainerRef.current) {
-                    immediateStateRef.current.screenSize = {
-                        width: selfContainerRef.current.clientWidth,
-                        height: selfContainerRef.current.clientHeight
-                    }
-                }
-            })
-            .catch(error => {
-                if (cancelled) {
-                    return
-                }
-
-                console.error('Failed to get initial game data', error)
-            })
-
-        return () => {
-            cancelled = true
-        }
-    }, [monitoringReady, selfPlayerId, gameId, PlayLogConfig.roads, PlayLogConfig.commands])
 
     // Effect: reset if gameId changes
     useEffect(() => {
@@ -416,13 +310,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }, [goToPoint, setSelected])
 
-    const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
-        animator.animateSeveral('TRANSLATE', newTranslate => {
-            immediateStateRef.current.translate = { x: newTranslate[0], y: newTranslate[1] }
-        },
+    function setNewTranslatedAnimated(newTranslate: { x: number, y: number }): void {
+        animator.animateSeveral(
+            'TRANSLATE',
+            newTranslate => {
+                immediateStateRef.current.translate = { x: newTranslate[0], y: newTranslate[1] }
+            },
             [immediateStateRef.current.translate.x, immediateStateRef.current.translate.y],
-            [newTranslate.x, newTranslate.y])
-    }, [])
+            [newTranslate.x, newTranslate.y]
+        )
+    }
 
     const scrollToPoint = useCallback((point: Point) => {
         console.log(`Scrolling to point: ${JSON.stringify(point)}, animate: ${animateMapScrolling}`)
@@ -1234,3 +1131,4 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 }
 
 export default Play
+

@@ -18,7 +18,7 @@ import { GlUtilsLogConfig } from '../../render/webgl-utils'
 import { GameMenuLogConfig } from '../../components/game-menu/game-menu'
 import { HooksConfig } from '../../utils/hooks/config'
 import { SoundEffectsLogConfig } from '../../sound/sound_effects'
-import { TypeControlLogConfig } from '../../screens/play/type_control'
+import { TypeControlLogConfig } from '../../screens/play/type-control'
 import { RenderLogConfig } from '../../render/game-render'
 import { PlayLogConfig } from '../../screens/play/config'
 

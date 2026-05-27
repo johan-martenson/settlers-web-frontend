@@ -307,7 +307,6 @@ const fogOfWarProgramDescriptor: ProgramDescriptor = {
 
 type FogOfWarAttributes = 'a_coordinates' | 'a_intensity'
 
-
 type FogOfWarUniforms = {
     u_scale: number[]
     u_offset: number[]
@@ -315,7 +314,56 @@ type FogOfWarUniforms = {
     u_screen_width: number
 }
 
+type InterpolatedPosition = {
+    gamePoint: Point
+    height: number
+}
+
+type RenderPosition = {
+    gamePoint: Point
+    height?: number
+}
+
+type Walker = Point & {
+    betweenPoints: boolean
+    percentageTraveled: number
+    previous?: Point
+    next?: Point
+}
+
+
 // Functions
+function interpolateGamePosition(
+    previous: Point,
+    next: Point,
+    percentageTraveled: number
+): InterpolatedPosition {
+    const factor = percentageTraveled / 100
+
+    return {
+        gamePoint: {
+            x: previous.x + (next.x - previous.x) * factor,
+            y: previous.y + (next.y - previous.y) * factor
+        },
+        height: interpolateHeight(previous, next, factor)
+    }
+}
+
+function getRenderPosition(walker: Walker): RenderPosition {
+    if (walker.betweenPoints && walker.previous !== undefined && walker.next) {
+        const interpolated = interpolateGamePosition(walker.previous, walker.next, walker.percentageTraveled)
+
+        return {
+            gamePoint: interpolated.gamePoint,
+            height: interpolated.height
+        }
+    }
+
+    return {
+        gamePoint: walker
+    }
+}
+
 function makeInitRenderState(): RenderState {
     return {
         previous: performance.now(),
@@ -903,17 +951,12 @@ function GameCanvas({
                     continue
                 }
 
-                const interpolatedGamePoint = {
-                    x: animal.previous.x + (animal.next.x - animal.previous.x) * (animal.percentageTraveled / 100),
-                    y: animal.previous.y + (animal.next.y - animal.previous.y) * (animal.percentageTraveled / 100)
-                }
-
-                const interpolatedHeight = interpolateHeight(animal.previous, animal.next, animal.percentageTraveled / 100)
+                const interpolated = interpolateGamePosition(animal.previous, animal.next, animal.percentageTraveled)
                 const direction = getDirectionForWalkingWorker(animal.next, animal.previous)
 
                 const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex)
 
-                pushNormalImageWithShadow(animationImage, interpolatedGamePoint, interpolatedHeight)
+                pushNormalImageWithShadow(animationImage, interpolated.gamePoint, interpolated.height)
 
                 // Animal is standing at a fixed point
             } else {
@@ -951,13 +994,7 @@ function GameCanvas({
                     continue
                 }
 
-                const interpolatedGamePoint = {
-                    x: ship.previous.x + (ship.next.x - ship.previous.x) * (ship.percentageTraveled / 100),
-                    y: ship.previous.y + (ship.next.y - ship.previous.y) * (ship.percentageTraveled / 100)
-                }
-
-                const interpolatedHeight = interpolateHeight(ship.previous, ship.next, ship.percentageTraveled / 100)
-
+                const interpolated = interpolateGamePosition(ship.previous, ship.next, ship.percentageTraveled)
                 const direction = getDirectionForWalkingWorker(ship.next, ship.previous)
 
                 let shipImage
@@ -968,7 +1005,7 @@ function GameCanvas({
                     shipImage = shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship.constructionState)
                 }
 
-                pushNormalImageWithShadow(shipImage, interpolatedGamePoint, interpolatedHeight)
+                pushNormalImageWithShadow(shipImage, interpolated.gamePoint, interpolated.height)
 
                 // Ship is at a fixed point
             } else {
@@ -994,188 +1031,136 @@ function GameCanvas({
             }
         }
 
-
         // Collect workers
         for (const worker of api.workers.values()) {
 
-            // Worker is moving and not at a fixed point
-            if (worker.betweenPoints && worker.previous !== undefined && worker.next) {
-                if (worker.previous.x < minXInGame - 1 || worker.previous.x > maxXInGame || worker.previous.y < minYInGame - 1 || worker.previous.y > maxYInGame + 1) {
+            // Avoid drawing workers outside of the screen
+            if (worker.betweenPoints) {
+                const previous = worker.previous
+                const next = worker.next
+
+                if (!previous || !next) {
                     continue
                 }
 
-                if (worker.next.x < minXInGame || worker.next.x > maxXInGame || worker.next.y < minYInGame || worker.next.y > maxYInGame) {
+                if (previous.x < minXInGame - 1 || previous.x > maxXInGame || previous.y < minYInGame - 1 || previous.y > maxYInGame + 1) {
                     continue
                 }
 
-                const interpolatedGamePoint = {
-                    x: worker.previous.x + (worker.next.x - worker.previous.x) * (worker.percentageTraveled / 100),
-                    y: worker.previous.y + (worker.next.y - worker.previous.y) * (worker.percentageTraveled / 100)
-                }
-
-                const interpolatedHeight = interpolateHeight(worker.previous, worker.next, worker.percentageTraveled / 100)
-
-                if (worker.type === 'Donkey') {
-                    const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, renderState.animationIndex)
-
-                    if (donkeyImage) {
-                        pushNormalImageWithShadow(donkeyImage, interpolatedGamePoint, interpolatedHeight)
-
-                        if (donkeyImage.length > 1) {
-                            renderState.shadowsToDraw.push({
-                                source: donkeyImage[1],
-                                gamePoint: interpolatedGamePoint,
-                                height: interpolatedHeight
-                            })
-                        }
-                    }
-
-                    if (worker.cargo) {
-                        const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
-
-                        pushNormalImage(cargoImage, interpolatedGamePoint, interpolatedHeight)
-                    }
-                } else if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
-                    let image
-
-                    if (worker.cargo) {
-                        if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
-                        } else {
-                            image = thinCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
-                        }
-                    } else {
-                        if (worker?.bodyType === 'FAT') {
-                            image = fatCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
-                        } else {
-                            image = thinCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
-                        }
-                    }
-
-                    pushNormalImageWithShadow(image, interpolatedGamePoint, interpolatedHeight)
-                } else {
-                    const animationImage = workers[worker.type]?.getAnimationFrame(worker.nation, worker.direction, worker.color, renderState.animationIndex, worker.percentageTraveled)
-
-                    pushNormalImageWithShadow(animationImage, interpolatedGamePoint, interpolatedHeight)
-                }
-
-                if (worker.cargo) {
-                    if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
-                        let cargoDrawInfo
-
-                        if (worker?.bodyType === 'FAT') {
-                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
-                        } else {
-                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
-                        }
-
-                        pushNormalImage(cargoDrawInfo, interpolatedGamePoint, interpolatedHeight)
-                    } else {
-                        const cargo = workers[worker.type]?.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
-
-                        pushNormalImage(cargo, interpolatedGamePoint, interpolatedHeight)
-                    }
-
+                if (next.x < minXInGame || next.x > maxXInGame || next.y < minYInGame || next.y > maxYInGame) {
+                    continue
                 }
             } else {
                 if (worker.x < minXInGame - 1 || worker.x > maxXInGame || worker.y < minYInGame - 1 || worker.y > maxYInGame + 1) {
                     continue
                 }
+            }
 
-                if (worker.type === 'Donkey') {
-                    const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, 0)
+            const renderPosition = getRenderPosition(worker)
 
-                    pushNormalImageWithShadow(donkeyImage, worker)
+            // Draw donkeys
+            if (worker.type === 'Donkey') {
+                const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, worker.betweenPoints ? renderState.animationIndex : 0)
 
-                    if (worker.cargo) {
-                        const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
+                pushNormalImageWithShadow(donkeyImage, renderPosition.gamePoint, renderPosition.height)
 
-                        pushNormalImage(cargoImage, worker)
-                    }
-                } else if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
-                    let didDrawAnimation = false
+                if (worker.cargo) {
+                    const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
 
-                    if (worker.action && worker.actionAnimationIndex !== undefined) {
-                        if (worker.bodyType === 'FAT') {
-                            const animationImage = fatCarrierNoCargo.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
+                    pushNormalImage(cargoImage, renderPosition.gamePoint, renderPosition.height)
+                }
 
-                            if (animationImage) {
-                                didDrawAnimation = true
+            // Draw couriers and storehouse workers
+            } else if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
+                let didDrawAnimation = false
 
-                                pushNormalImage(animationImage, worker)
-                            }
-                        } else if (worker.bodyType === 'THIN') {
-                            const animationImage = thinCarrierNoCargo.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
-
-                            if (animationImage) {
-                                didDrawAnimation = true
-
-                                pushNormalImage(animationImage, worker)
-                            }
-                        } else {
-                            console.error(`Render (workers): COURIER OR STOREHOUSE WORKER DOING ACTION AND IT'S NEITHER FAT NOR THIN`)
-
-                            if (RenderLogConfig.debug) {
-                                console.log(worker)
-                            }
-                        }
-                    }
-
-                    if (!didDrawAnimation) {
-                        let image
-
-                        if (worker.cargo) {
-                            if (worker?.bodyType === 'FAT') {
-                                image = fatCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, 0, worker.percentageTraveled)
-                            } else {
-                                image = thinCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, 0, worker.percentageTraveled)
-                            }
-                        } else {
-                            if (worker?.bodyType === 'FAT') {
-                                image = fatCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, 0, worker.percentageTraveled)
-                            } else {
-                                image = thinCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, 0, worker.percentageTraveled)
-                            }
-                        }
-
-                        pushNormalImageWithShadow(image, worker)
-                    }
-                } else {
-                    let didDrawAnimation = false
-
-                    if (worker.action && worker.actionAnimationIndex !== undefined) {
-                        const animationImage = workers[worker.type]?.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
+                // Draw animation
+                if (!worker.betweenPoints && worker.action && worker.actionAnimationIndex !== undefined) {
+                    if (worker.bodyType === 'FAT') {
+                        const animationImage = fatCarrierNoCargo.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
 
                         if (animationImage) {
                             didDrawAnimation = true
 
-                            pushNormalImage(animationImage, worker)
+                            pushNormalImage(animationImage, renderPosition.gamePoint, renderPosition.height)
                         }
-                    }
+                    } else if (worker.bodyType === 'THIN') {
+                        const animationImage = thinCarrierNoCargo.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
 
-                    if (!didDrawAnimation) {
-                        const animationImage = workers[worker.type]?.getAnimationFrame(worker.nation, worker.direction, worker.color, 0, worker.percentageTraveled / 10)
+                        if (animationImage) {
+                            didDrawAnimation = true
 
-                        pushNormalImageWithShadow(animationImage, worker)
+                            pushNormalImage(animationImage, renderPosition.gamePoint, renderPosition.height)
+                        }
+                    } else {
+                        console.error(`Render (workers): COURIER OR STOREHOUSE WORKER DOING ACTION AND IT'S NEITHER FAT NOR THIN`, worker)
                     }
                 }
 
-                if (worker.cargo) {
-                    if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
-                        let cargoDrawInfo
+                // Draw in case no animation was drawn
+                if (!didDrawAnimation) {
+                    let image
 
-                        if (worker?.bodyType === 'FAT') {
-                            cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                    if (worker.cargo) {
+                        if (worker.bodyType === 'FAT') {
+                            image = fatCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
                         } else {
-                            cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                            image = thinCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
                         }
-
-                        pushNormalImage(cargoDrawInfo, worker)
                     } else {
-                        const cargo = workers[worker.type]?.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
-
-                        pushNormalImage(cargo, worker)
+                        if (worker.bodyType === 'FAT') {
+                            image = fatCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
+                        } else {
+                            image = thinCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
+                        }
                     }
+
+                    pushNormalImageWithShadow(image, renderPosition.gamePoint, renderPosition.height)
+                }
+
+            // Draw other workers
+            } else {
+                let didDrawAnimation = false
+
+                if (!worker.betweenPoints && worker.action && worker.actionAnimationIndex !== undefined) {
+                    const animationImage = workers[worker.type]?.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
+
+                    if (animationImage) {
+                        didDrawAnimation = true
+
+                        pushNormalImage(animationImage, renderPosition.gamePoint, renderPosition.height)
+                    }
+                }
+
+                if (!didDrawAnimation) {
+                    const animationImage = workers[worker.type]?.getAnimationFrame(
+                        worker.nation,
+                        worker.direction,
+                        worker.color,
+                        worker.betweenPoints ? renderState.animationIndex : 0,
+                        worker.betweenPoints ? worker.percentageTraveled : worker.percentageTraveled / 10
+                    )
+
+                    pushNormalImageWithShadow(animationImage, renderPosition.gamePoint, renderPosition.height)
+                }
+            }
+
+            // Draw the cargo if the worker is carrying something
+            if (worker.cargo) {
+                if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
+                    let cargoDrawInfo
+
+                    if (worker.bodyType === 'FAT') {
+                        cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                    } else {
+                        cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+                    }
+
+                    pushNormalImage(cargoDrawInfo, renderPosition.gamePoint, renderPosition.height)
+                } else {
+                    const cargo = workers[worker.type]?.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
+
+                    pushNormalImage(cargo, renderPosition.gamePoint, renderPosition.height)
                 }
             }
         }
@@ -1197,7 +1182,6 @@ function GameCanvas({
             if (flag.stackedCargo) {
                 for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
                     const cargo = flag.stackedCargo[i]
-
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
                     pushNormalImage(cargoDrawInfo, { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 }, api.getHeight(flag))
@@ -1206,7 +1190,6 @@ function GameCanvas({
                 if (flag.stackedCargo.length > 3) {
                     for (let i = 3; i < Math.min(flag.stackedCargo.length, 6); i++) {
                         const cargo = flag.stackedCargo[i]
-
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
                         pushNormalImage(cargoDrawInfo, { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 }, api.getHeight(flag))
@@ -1216,7 +1199,6 @@ function GameCanvas({
                 if (flag.stackedCargo.length > 6) {
                     for (let i = 6; i < flag.stackedCargo.length; i++) {
                         const cargo = flag.stackedCargo[i]
-
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
 
                         pushNormalImage(cargoDrawInfo, { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 }, api.getHeight(flag))

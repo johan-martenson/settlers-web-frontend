@@ -427,7 +427,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     const onPointClicked = useCallback(async (point: Point) => {
         if (PlayLogConfig.selection) {
-            console.info(`Play (selection): Clicked point: ${point.x}, ${point.y}`)
+            console.info(`Play (selection): Clicked point: ${point.x}, ${point.y}`, roadBuildingState)
         }
 
         // Filter clicks that are really the end of moving the mouse
@@ -443,6 +443,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             // Handle the case where one of the directly adjacent possible new road connections is selected
             if (roadBuildingState.possibleConnections?.find(e => e.x === point.x && e.y === point.y)) {
                 possibleNewRoad.push(point)
+                api.placeLocalRoad(possibleNewRoad)
 
                 // Handle the case where a point further away was clicked
             } else {
@@ -452,6 +453,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 if (possibleNewRoadSegment && roadBuildingState.active) {
                     possibleNewRoad.push(...possibleNewRoadSegment.slice(1))
+                    api.placeLocalRoad(possibleNewRoad)
                 } else {
                     if (PlayLogConfig.roads) {
                         console.log('Play (roads): Not possible to include in road. Ignoring.')
@@ -476,6 +478,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 // Create the road, clear ongoing road building, and set the point as selected
                 api.placeRoad(possibleNewRoad)
                 clearRoadBuilding()
+                api.removeLocalRoad('LOCAL')
                 setSelected(point)
                 setCursor('NOTHING')
 
@@ -632,6 +635,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             }
 
             openWindow({ type: 'CONSTRUCTION_WINDOW', pointInformation: pointInformation })
+            selfContainerRef?.current?.focus()
         } else {
             openWindow({ type: 'NO_ACTION', point })
         }
@@ -654,6 +658,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 // Stop building a new road
             } else if (roadBuildingState.active) {
                 clearRoadBuilding()
+                api.removeLocalRoad('LOCAL')
                 setCursor('NOTHING')
 
                 api.removeLocalRoad('LOCAL')

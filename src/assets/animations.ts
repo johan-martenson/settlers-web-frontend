@@ -1,4 +1,4 @@
-import { Nation, PlayerColor, FlagType, Direction, Material, WorkerAction, WorkerType, TreeType, FireSize, WildAnimalType, AnyBuilding } from '../api/types'
+import { Nation, PlayerColor, FlagType, Direction, Material, WorkerAction, WorkerType, TreeType, FireSize, WildAnimalType, AnyBuilding, HouseInformation, FallingTreeInformation, WorkerInformation, FlagInformation, WildAnimalInformation } from '../api/types'
 import { WorkerImageAtlasHandler, AnimalImageAtlasHandler, fireImageAtlasHandler, treeImageAtlasHandler, flagImageAtlasHandler } from './image_atlas_handlers'
 import { Dimension, DrawingInformation } from './types'
 
@@ -26,8 +26,8 @@ class TreeAnimation {
         return treeImageAtlasHandler.getDrawingInformationForGrownTree(treeType, Math.floor((animationIndex / this.speedAdjust) + offset))
     }
 
-    getFallingTree(treeType: TreeType, step: number): DrawingInformation[] | undefined {
-        return treeImageAtlasHandler.getDrawingInformationForFallingTree(treeType, step)
+    getFallingTree(fallingTree: FallingTreeInformation): DrawingInformation[] | undefined {
+        return treeImageAtlasHandler.getDrawingInformationForFallingTree(fallingTree.type, fallingTree.animation)
     }
 }
 
@@ -54,8 +54,8 @@ class FireAnimation {
         return fireImageAtlasHandler.getFireDrawingInformation(size, Math.floor(animationIndex / this.speedAdjust))
     }
 
-    getSmokeFrameForHouse(nation: Nation, houseType: AnyBuilding, animationIndex: number): DrawingInformation | undefined {
-        return fireImageAtlasHandler.getSmokeDrawingInformation(nation, houseType, Math.floor(animationIndex / this.speedAdjust))
+    getSmokeFrameForHouse(house: HouseInformation, animationIndex: number): DrawingInformation | undefined {
+        return fireImageAtlasHandler.getSmokeDrawingInformation(house, Math.floor(animationIndex / this.speedAdjust))
     }
 }
 
@@ -89,6 +89,13 @@ class AnimalAnimation {
     }
 }
 
+type PartialFlag = {
+    nation: Nation
+    type: FlagType
+    color: PlayerColor
+}
+
+
 class FlagAnimation {
     private speedAdjust: number
 
@@ -108,20 +115,27 @@ class FlagAnimation {
         return flagImageAtlasHandler.getSourceImage()
     }
 
-    getAnimationFrame(nation: Nation, color: PlayerColor, flagType: FlagType, animationIndex: number, offset: number): DrawingInformation[] | undefined {
-        return flagImageAtlasHandler.getDrawingInformationFor(nation, color, flagType, Math.floor((animationIndex / this.speedAdjust) + offset))
+    getAnimationFrame(flag: PartialFlag, animationIndex: number, offset: number): DrawingInformation[] | undefined {
+        return flagImageAtlasHandler.getDrawingInformationFor(flag, Math.floor((animationIndex / this.speedAdjust) + offset))
     }
 
-    getSizeWithShadow(nation: Nation, flagType: FlagType): Dimension | undefined {
-        return flagImageAtlasHandler.getSizeWithShadow(nation, flagType)
+    getSizeWithShadow(flag: PartialFlag): Dimension | undefined {
+        return flagImageAtlasHandler.getSizeWithShadow(flag)
     }
 
-    getSize(nation: Nation, flagType: FlagType): Dimension | undefined {
-        return flagImageAtlasHandler.getSize(nation, flagType)
+    getSize(flag: PartialFlag): Dimension | undefined {
+        return flagImageAtlasHandler.getSize(flag)
     }
 }
 
-class WorkerAnimation {
+type PartialWorker = {
+    nation: Nation
+    direction: Direction
+    color: PlayerColor
+}
+
+
+export class WorkerAnimation {
     private imageAtlasHandler: WorkerImageAtlasHandler
     private speedAdjust: number
 
@@ -143,16 +157,35 @@ class WorkerAnimation {
         return this.imageAtlasHandler.getSourceImage()
     }
 
-    getAnimationFrame(nation: Nation, direction: Direction, color: PlayerColor, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForWorker(nation, direction, color, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
+    getAnimationFrame(worker: PartialWorker, animationIndex: number, percentageTraveled: number): DrawingInformation[] | undefined {
+        return this.imageAtlasHandler.getDrawingInformationForWorker(worker.nation, worker.direction, worker.color, Math.floor(animationIndex / this.speedAdjust), percentageTraveled)
     }
 
-    getActionAnimation(nation: Nation, direction: Direction, action: WorkerAction, color: PlayerColor, animationIndex: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForAction(nation, direction, action, color, Math.floor(animationIndex / this.speedAdjust))
+    getActionAnimation(worker: WorkerInformation): DrawingInformation | undefined {
+        if (worker.action === undefined || worker.actionAnimationIndex === undefined) {
+            console.warn('Worker does not have action or action animation index', worker)
+
+            return undefined
+        }
+
+        return this.imageAtlasHandler.getDrawingInformationForAction(
+            {
+                ...worker,
+                action: worker.action,
+                actionAnimationIndex: worker.actionAnimationIndex
+            },
+            Math.floor(worker.actionAnimationIndex / this.speedAdjust)
+        )
     }
 
-    getDrawingInformationForCargo(nation: Nation, direction: Direction, material: Material, animationIndex: number, offset: number): DrawingInformation | undefined {
-        return this.imageAtlasHandler.getDrawingInformationForCargo(nation, direction, material, Math.floor(animationIndex / this.speedAdjust), Math.floor(offset))
+    getDrawingInformationForCargo(worker: WorkerInformation, animationIndex: number, offset: number): DrawingInformation | undefined {
+        if (worker.cargo === undefined) {
+            console.warn('Worker does not have cargo', worker)
+
+            return undefined
+        }
+
+        return this.imageAtlasHandler.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, Math.floor(animationIndex / this.speedAdjust), Math.floor(offset))
     }
 
     getImageAtlasHandler(): WorkerImageAtlasHandler {

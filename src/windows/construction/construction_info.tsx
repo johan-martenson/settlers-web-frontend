@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { LARGE_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, Nation, Point, PointInformation, PointInformationWithoutPossibleRoadConnections, SMALL_HOUSE_VALUES, SmallBuilding } from '../../api/types'
 import './construction_info.css'
 import { ButtonRow, WindowWithTyping } from '../../components/dialog'
@@ -135,6 +135,10 @@ const ConstructionInfo = ({
 
             <div className='construction-info'>
                 <TabList
+                    style={{
+                        width: 'auto',
+                        maxWidth: '100%'
+                    }}
                     selectedValue={selected}
                     onTabSelect={
                         (_event: SelectTabEvent, data: SelectTabData) => {
@@ -189,6 +193,10 @@ const ConstructionInfo = ({
 
                 {selected === 'Buildings' &&
                     <TabList
+                        style={{
+                            width: 'auto',
+                            maxWidth: '100%'
+                        }}
                         selectedValue={buildingSizeSelected}
                         onTabSelect={
                             (_event: SelectTabEvent, data: SelectTabData) => {
@@ -214,13 +222,13 @@ const ConstructionInfo = ({
                 }
 
                 {selected === 'Buildings' && buildingSizeSelected === 'small' &&
-                    <ItemContainer rows>
+                    <div className='houses-container'>
                         {(canBuildMine(point) ? MINES : SMALL_BUILDINGS_EXCEPT_MINES).map((house) => {
                             const prettyHouse = buildingPretty(house)
 
                             return (<div
                                 key={house}
-                                className='ConstructionItem'
+                                className='construction-item'
                                 onClick={() => {
                                     console.info('Construction window: creating house')
 
@@ -236,17 +244,17 @@ const ConstructionInfo = ({
                                 </div>
                             </div>)
                         })}
-                    </ItemContainer>
+                    </div>
                 }
 
                 {selected === 'Buildings' && canBuildMediumHouse(point) && buildingSizeSelected === 'medium' &&
-                    <ItemContainer rows>
+                    <div className='houses-container'>
                         {MEDIUM_HOUSE_VALUES.map(house => {
                             const prettyHouse = buildingPretty(house)
 
                             return (<div
                                 key={house}
-                                className='ConstructionItem'
+                                className='construction-item'
                                 onClick={() => {
                                     console.info('Construction window: creating house')
 
@@ -263,17 +271,17 @@ const ConstructionInfo = ({
                             </div>)
 
                         })}
-                    </ItemContainer>
+                    </div>
                 }
 
                 {selected === 'Buildings' && canBuildLargeHouse(point) && buildingSizeSelected === 'large' &&
-                    <ItemContainer rows>
+                    <div className='houses-container'>
                         {LARGE_HOUSE_VALUES.filter(house => house !== 'Headquarter').map(house => {
                             const prettyHouse = buildingPretty(house)
 
                             return (<div
                                 key={house}
-                                className='ConstructionItem'
+                                className='construction-item'
                                 onClick={() => {
                                     console.info('Construction window: creating house')
 
@@ -289,7 +297,7 @@ const ConstructionInfo = ({
                                 </div>
                             </div>)
                         })}
-                    </ItemContainer>
+                    </div>
                 }
 
                 {selected === 'Monitor' &&

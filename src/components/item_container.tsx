@@ -20,6 +20,7 @@ const ItemContainer = ({ children, height, padding, inline, width, rows = false,
     // References
     const containerRef = useRef<HTMLDivElement>(null)    
 
+    // Effects
     // Effect: Scroll to latest message
     useEffect(() => {
         if (!autoScroll) {

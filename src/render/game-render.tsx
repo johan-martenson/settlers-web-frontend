@@ -1,23 +1,23 @@
 import React, { useCallback, useEffect, useRef } from 'react'
-import { Direction, Point, RoadInformation, VEGETATION_INTEGERS, TerrainAtPoint, FlagInformation } from '../api/types'
+import { Point } from '../api/types'
 import { Duration } from '../utils/stats/duration'
 import './game-render.css'
 import { api, TileBelow, TileDownRight } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../utils/stats/stats'
-import { gamePointToScreenPointWithHeightAdjustment, getDirectionForWalkingWorker, getHouseSize, getNormalForTriangle, getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumAndNormalizeVectors, surroundingPoints, Vector } from '../utils/utils'
-import { PointMap, PointSet } from '../utils/util_types_ng'
+import { gamePointToScreenPointWithHeightAdjustment, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumAndNormalizeVectors, Vector } from '../utils/utils'
+import { PointMap } from '../utils/util_types_ng'
 import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, houses, loadImageAsync, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import { NewRoad } from '../screens/play/play'
-import { DEFAULT_SCALE, MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, OVERLAPS, STANDARD_HEIGHT, TRANSITION_TEXTURE_MAPPINGS, UNIT_SQUARE, VEGETATION_TO_TEXTURE_MAPPING } from './constants'
+import { DEFAULT_SCALE, STANDARD_HEIGHT, UNIT_SQUARE } from './constants'
 import { textures } from '../render/textures'
-import { ProgramDescriptor, ProgramInstance, destroyProgram, draw, initProgram, setBuffer } from './webgl-utils'
+import { ProgramInstance, destroyProgram, draw, initProgram, setBuffer } from './webgl-utils'
 import { useNonTriggeringState } from '../utils/hooks/non_triggering'
-import { animals, donkeyAnimation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, flagAnimations, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, workers } from '../assets/animations'
+import { animals, donkeyAnimation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, flagAnimations, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, WorkerAnimation, workers } from '../assets/animations'
 import { Dimension, DrawingInformation } from '../assets/types'
-import { textureAndLightingFragmentShader, textureAndLightingVertexShader } from './shaders/terrain-and-roads'
-import { shadowFragmentShader, texturedImageVertexShaderPixelPerfect, textureFragmentShader } from './shaders/image-and-shadow'
-import { fogOfWarFragmentShader, fogOfWarVertexShader } from './shaders/fog-of-war'
 import { buildingPretty } from '../utils/pretty_strings'
+import { MapRenderInformation, TrianglesAtPoint } from './types'
+import { setDrawImageRenderingBuffers, setDrawShadowRenderingBuffers, setFogOfWarRenderingBuffers, setMapRenderingBuffers, setRoadRenderingBuffers } from './manage-buffers'
+import { drawGroundProgramDescriptor, DrawGroundUniforms, DrawImageAttributes, drawImageProgramDescriptor, DrawImageUniforms, DrawShadowAttributes, drawShadowProgramDescriptor, DrawShadowUniforms, fogOfWarProgramDescriptor, FogOfWarUniforms } from './webgl-program-definitions'
 
 
 // Types
@@ -28,32 +28,16 @@ export type ScreenPoint = {
 
 export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD' | 'BUILDING_ROAD_PRESSED'
 
-type MapRenderInformation = {
-    coordinates: number[]
-    normals: number[]
-    textureMapping: number[]
-}
-
 type ToDraw = {
     source: DrawingInformation | undefined
     gamePoint: Point
     height?: number
 }
 
-type TrianglesAtPoint = {
-    belowVisible: boolean
-    downRightVisible: boolean
-}
-
 export type View = {
     screenSize: Dimension
     scale: number
     translate: Point
-}
-
-type ShadedPoint = {
-    point: Point
-    intensity: number
 }
 
 type GameCanvasProps = {
@@ -75,19 +59,12 @@ type GameCanvasProps = {
     onKeyDown?: ((event: React.KeyboardEvent) => void)
 }
 
-type RenderInformation = {
-    coordinates: number[]
-    normals: number[]
-    textureMapping: number[]
-}
-
 type RenderState = {
     previousTimestamp?: number
     previous: number
     overshoot: number
 
     animationIndex: number
-    mapRenderInformation?: MapRenderInformation
     gl?: WebGL2RenderingContext
 
     newRoad?: NewRoad
@@ -111,7 +88,6 @@ type RenderState = {
     fogOfWarProgramInstance?: ProgramInstance
 
     visiblePoints: PointMap<TrianglesAtPoint>
-    once: boolean
 
     // Render loop control
     renderLoopHandle: ReturnType<typeof requestAnimationFrame> | undefined
@@ -121,13 +97,9 @@ type RenderState = {
     // Render loop caching
     toDrawNormal: ToDraw[]
     shadowsToDraw: ToDraw[]
-    decorationsToDraw: ToDraw[]
     toDrawHover: ToDraw[]
 }
 
-type DoubleClickDetection = {
-    timer?: ReturnType<typeof setTimeout> | undefined
-}
 
 // Configuration
 export const RenderLogConfig = {
@@ -146,9 +118,6 @@ export const RenderLogConfig = {
 }
 
 // Constants
-const MAX_NUMBER_TRIANGLES = 500 * 500 * 2 // monitor.allTiles.keys.length * 2
-const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
-const OVERLAP_FACTOR = (16.0 / 47.0)
 const ANIMATION_PERIOD = 100
 const MOUSE_STYLES = new Map<CursorState, string>()
 
@@ -158,161 +127,6 @@ MOUSE_STYLES.set('BUILDING_ROAD', 'url(assets/cursors/cursor-build-road.png), au
 MOUSE_STYLES.set('BUILDING_ROAD_PRESSED', 'url(assets/cursors/cursor-build-road-pressed.png), auto')
 
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = 'assets/nature/terrain/greenland/greenland-texture.png'
-
-// Web gl program definitions
-const drawGroundProgramDescriptor: ProgramDescriptor = {
-    vertexShaderSource: textureAndLightingVertexShader,
-    fragmentShaderSource: textureAndLightingFragmentShader,
-    uniforms: {
-        'u_light_vector': { type: 'FLOAT' },
-        'u_scale': { type: 'FLOAT' },
-        'u_offset': { type: 'FLOAT' },
-        'u_screen_width': { type: 'FLOAT' },
-        'u_screen_height': { type: 'FLOAT' },
-        'u_height_adjust': { type: 'FLOAT' },
-        'u_sampler': { type: 'INT' }
-    },
-    attributes: {
-        'a_coords': {
-            maxElements: MAX_NUMBER_TRIANGLES * 3 * 3,
-            elementsPerVertex: 3
-        },
-        'a_normal': {
-            maxElements: MAX_NUMBER_TRIANGLES * 3 * 3,
-            elementsPerVertex: 3
-        },
-        'a_texture_mapping': {
-            maxElements: MAX_NUMBER_TRIANGLES * 3 * 2,
-            elementsPerVertex: 2
-        }
-    }
-}
-
-type DrawGroundUniforms = {
-    u_light_vector: number[]
-    u_scale: number[]
-    u_offset: number[]
-    u_screen_width: number
-    u_screen_height: number
-    u_height_adjust: number
-    u_sampler: number
-}
-
-type DrawGroundAttributes = 'a_coords' | 'a_normal' | 'a_texture_mapping'
-
-const drawImageProgramDescriptor: ProgramDescriptor = {
-    vertexShaderSource: texturedImageVertexShaderPixelPerfect,
-    fragmentShaderSource: textureFragmentShader,
-    uniforms: {
-        'u_texture': { type: 'INT' },
-        'u_game_point': { type: 'FLOAT' },
-        'u_screen_offset': { type: 'FLOAT' },
-        'u_image_offset': { type: 'FLOAT' },
-        'u_scale': { type: 'FLOAT' },
-        'u_source_coordinate': { type: 'FLOAT' },
-        'u_source_dimensions': { type: 'FLOAT' },
-        'u_screen_dimensions': { type: 'FLOAT' },
-        'u_height_adjust': { type: 'FLOAT' },
-        'u_height': { type: 'FLOAT' },
-    },
-    attributes: {
-        'a_position': {
-            elementsPerVertex: 2,
-            maxElements: 12
-        },
-        'a_texcoord': {
-            elementsPerVertex: 2,
-            maxElements: 12
-        }
-    }
-}
-
-type DrawImageUniforms = {
-    u_texture: number
-    u_game_point: number[]
-    u_screen_offset: number[]
-    u_image_offset: number[]
-    u_scale: number
-    u_source_coordinate: number[]
-    u_source_dimensions: number[]
-    u_screen_dimensions: number[]
-    u_height_adjust: number
-    u_height: number
-}
-
-type DrawImageAttributes = 'a_position' | 'a_texcoord'
-
-const drawShadowProgramDescriptor: ProgramDescriptor = {
-    vertexShaderSource: texturedImageVertexShaderPixelPerfect,
-    fragmentShaderSource: shadowFragmentShader,
-    uniforms: {
-        'u_texture': { type: 'INT' },
-        'u_game_point': { type: 'FLOAT' },
-        'u_screen_offset': { type: 'FLOAT' },
-        'u_image_offset': { type: 'FLOAT' },
-        'u_scale': { type: 'FLOAT' },
-        'u_source_coordinate': { type: 'FLOAT' },
-        'u_source_dimensions': { type: 'FLOAT' },
-        'u_screen_dimensions': { type: 'FLOAT' },
-        'u_height_adjust': { type: 'FLOAT' },
-        'u_height': { type: 'FLOAT' },
-    },
-    attributes: {
-        'a_position': {
-            elementsPerVertex: 2,
-            maxElements: 12
-        },
-        'a_texcoord': {
-            elementsPerVertex: 2,
-            maxElements: 12
-        }
-    }
-}
-
-type DrawShadowUniforms = {
-    u_texture: number
-    u_game_point: number[]
-    u_screen_offset: number[]
-    u_image_offset: number[]
-    u_scale: number
-    u_source_coordinate: number[]
-    u_source_dimensions: number[]
-    u_screen_dimensions: number[]
-    u_height_adjust: number
-    u_height: number
-}
-
-type DrawShadowAttributes = 'a_position' | 'a_texcoord'
-
-const fogOfWarProgramDescriptor: ProgramDescriptor = {
-    vertexShaderSource: fogOfWarVertexShader,
-    fragmentShaderSource: fogOfWarFragmentShader,
-    uniforms: {
-        'u_scale': { type: 'FLOAT' },
-        'u_offset': { type: 'FLOAT' },
-        'u_screen_height': { type: 'FLOAT' },
-        'u_screen_width': { type: 'FLOAT' }
-    },
-    attributes: {
-        'a_coordinates': {
-            elementsPerVertex: 2,
-            maxElements: 500
-        },
-        'a_intensity': {
-            elementsPerVertex: 1,
-            maxElements: 500
-        }
-    }
-}
-
-type FogOfWarAttributes = 'a_coordinates' | 'a_intensity'
-
-type FogOfWarUniforms = {
-    u_scale: number[]
-    u_offset: number[]
-    u_screen_height: number
-    u_screen_width: number
-}
 
 type InterpolatedPosition = {
     gamePoint: Point
@@ -333,11 +147,7 @@ type Walker = Point & {
 
 
 // Functions
-function interpolateGamePosition(
-    previous: Point,
-    next: Point,
-    percentageTraveled: number
-): InterpolatedPosition {
+function interpolateGamePosition(previous: Point, next: Point, percentageTraveled: number): InterpolatedPosition {
     const factor = percentageTraveled / 100
 
     return {
@@ -372,13 +182,11 @@ function makeInitRenderState(): RenderState {
         animationIndex: 0,
         normals: new PointMap<Vector>(),
         visiblePoints: new PointMap<TrianglesAtPoint>(),
-        once: true,
         showHouseTitles: false,
         showAvailableConstruction: false,
         renderLoopHandle: undefined,
         toDrawNormal: [],
         shadowsToDraw: [],
-        decorationsToDraw: [],
         toDrawHover: [],
         contextLost: false,
         fogOfWar: true
@@ -409,13 +217,14 @@ function GameCanvas({
     // References
     const normalCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null)
+    const onPointClickedRef = useRef(onPointClicked)
+    const onDoubleClickRef = useRef(onDoubleClick)
 
     // Constants
     const lightVector = [1, 1, -1]
 
     // State that doesn't trigger re-renders
     const renderState = useNonTriggeringState<RenderState>(makeInitRenderState())
-    const doubleClickDetection = useNonTriggeringState<DoubleClickDetection>({})
 
     // Functions
     const drawImage = useCallback((
@@ -429,10 +238,7 @@ function GameCanvas({
             return
         }
 
-        const textureSlot = textures.activateTextureForRendering(
-            renderState.gl!,
-            toDraw.source.image
-        )
+        const textureSlot = textures.activateTextureForRendering(renderState.gl!, toDraw.source.image)
 
         if (textureSlot === undefined) {
             console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
@@ -458,11 +264,7 @@ function GameCanvas({
         )
     }, [renderState, viewRef, heightAdjust])
 
-    const drawShadow = useCallback((
-        toDraw: ToDraw,
-        width: number,
-        height: number
-    ) => {
+    const drawShadow = useCallback((toDraw: ToDraw, width: number, height: number) => {
         if (renderState.drawShadowProgramInstance === undefined ||
             toDraw.gamePoint === undefined ||
             toDraw.source?.image === undefined) {
@@ -602,21 +404,6 @@ function GameCanvas({
         renderState.overshoot = timeSinceLastDraw % ANIMATION_PERIOD
         renderState.previous = now
 
-        // Check if there are changes to the newRoads props array. In that case the buffers for drawing roads need to be updated.
-        const newRoadsUpdatedLength = renderState.newRoad?.newRoad.length ?? 0
-
-        if (renderState.newRoadCurrentLength !== newRoadsUpdatedLength) {
-            renderState.newRoadCurrentLength = newRoadsUpdatedLength
-
-            if (renderState.newRoad !== undefined) {
-                // TODO: this should be moved out of the render loop
-
-                api.placeLocalRoad(renderState.newRoad.newRoad)
-            }
-
-            updateRoadDrawingBuffers()
-        }
-
         // Ensure that the reference to the canvases are set
         if (!overlayCanvasRef?.current || !normalCanvasRef?.current) {
             console.error('Render (render-loop): The canvas references are not set properly')
@@ -659,8 +446,7 @@ function GameCanvas({
             overlayCanvas.height = displayHeight
         }
 
-        overlayCtx.setTransform(1, 0, 0, 1, 0, 0)
-        overlayCtx.scale(dpr, dpr)
+        overlayCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
         // Make sure gl is available
         if (renderState.gl === undefined) {
@@ -690,7 +476,6 @@ function GameCanvas({
         // Clear the cached render lists
         renderState.toDrawNormal.length = 0
         renderState.shadowsToDraw.length = 0
-        renderState.decorationsToDraw.length = 0
         renderState.toDrawHover.length = 0
 
         /**
@@ -709,7 +494,7 @@ function GameCanvas({
         if (imageAtlasTerrainAndRoads) {
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
-            if (textureSlot !== undefined && renderState.drawGroundProgramInstance && renderState.mapRenderInformation) {
+            if (textureSlot !== undefined && renderState.drawGroundProgramInstance) {
                 draw<DrawGroundUniforms>(renderState.drawGroundProgramInstance,
                     {
                         u_light_vector: lightVector,
@@ -731,24 +516,22 @@ function GameCanvas({
         // Draw decorations on the ground
         api.decorations.forEach(decoration => {
             const image = decorationsImageAtlasHandler.getDrawingInformationFor(decoration.decoration)
-
-            if (image) {
-                renderState.decorationsToDraw.push({
-                    source: image[0],
-                    gamePoint: decoration,
-                })
-
-                renderState.shadowsToDraw.push({
-                    source: image[1],
-                    gamePoint: decoration,
-                })
-            }
+            pushNormalImageWithShadow(image, decoration)
         })
 
+        // Draw decoration shadows
+        for (const toDraw of renderState.shadowsToDraw) {
+            drawShadow(toDraw, width, height)
+        }
+
         // Draw decorations objects
-        for (const toDraw of renderState.decorationsToDraw) {
+        for (const toDraw of renderState.toDrawNormal) {
             drawImage(toDraw, width, height)
         }
+
+        // Clear the cached render lists
+        renderState.shadowsToDraw.length = 0
+        renderState.toDrawNormal.length = 0
 
         duration.after('drawing decorations')
 
@@ -757,7 +540,7 @@ function GameCanvas({
         if (imageAtlasTerrainAndRoads) {
             const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
 
-            if (textureSlot !== undefined && renderState.drawRoadsProgramInstance && renderState.mapRenderInformation) {
+            if (textureSlot !== undefined && renderState.drawRoadsProgramInstance) {
                 draw<DrawGroundUniforms>(renderState.drawRoadsProgramInstance,
                     {
                         u_light_vector: lightVector,
@@ -786,7 +569,6 @@ function GameCanvas({
                 }
 
                 const borderPointInfo = borderImageAtlasHandler.getDrawingInformation(borderForPlayer.nation, borderForPlayer.color, 'SUMMER')
-
                 pushNormalImage(borderPointInfo, borderPoint)
             })
         })
@@ -801,8 +583,7 @@ function GameCanvas({
             }
 
             if (house.state === 'PLANNED') {
-                const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(house.nation)
-
+                const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(house)
                 pushNormalImage(plannedDrawInformation, house)
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
@@ -815,36 +596,31 @@ function GameCanvas({
 
                 pushNormalImage(fireDrawInformation, house)
             } else if (house.state === 'UNFINISHED' && house.constructionProgress !== undefined) {
-                const houseUnderConstruction = houses.getDrawingInformationForHouseUnderConstruction(house.nation, house.type)
-                const houseDrawInformation = houses.getPartialHouseReady(house.nation, house.type, house.constructionProgress)
+                const houseUnderConstruction = houses.getDrawingInformationForHouseUnderConstruction(house)
+                const houseDrawInformation = houses.getPartialHouseReady(house)
 
                 pushNormalImageWithShadow(houseUnderConstruction, house)
                 pushNormalImageWithShadow(houseDrawInformation, house)
             } else {
-
                 if ((house.type === 'Mill' && house.isWorking) ||
                     (house.type === 'Mint' && house.isWorking && house.nation === 'ROMANS') ||
                     (house.type === 'IronSmelter' && house.nation === 'ROMANS' && house.isWorking) ||
                     (house.type === 'Armory' && house.nation === 'ROMANS' && house.isWorking) ||
                     (house.type === 'Harbor' && (house.nation === 'ROMANS' || house.nation === 'JAPANESE') && house.isWorking)) {
-                    const houseDrawInformation = houses.getDrawingInformationForWorkingHouse(house.nation, house.type, renderState.animationIndex)
-
+                    const houseDrawInformation = houses.getDrawingInformationForWorkingHouse(house, renderState.animationIndex)
                     pushNormalImageWithShadow(houseDrawInformation, house)
                 } else {
-                    const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
-
+                    const houseDrawInformation = houses.getDrawingInformationForHouseReady(house)
                     pushNormalImageWithShadow(houseDrawInformation, house)
                 }
 
                 if (house.door === 'OPEN') {
-                    const door = houses.getDrawingInformationForOpenDoor(house.nation, house.type)
-
+                    const door = houses.getDrawingInformationForOpenDoor(house)
                     pushNormalImage(door, house)
                 }
 
                 if (house.isWorking) {
-                    const smokeDrawInformation = fireAnimations.getSmokeFrameForHouse(house.nation, house.type, renderState.animationIndex)
-
+                    const smokeDrawInformation = fireAnimations.getSmokeFrameForHouse(house, renderState.animationIndex)
                     pushNormalImage(smokeDrawInformation, house)
                 }
 
@@ -865,11 +641,9 @@ function GameCanvas({
 
             if (tree.size === 'FULL_GROWN') {
                 treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, renderState.animationIndex, treeIndex)
-
                 pushNormalImageWithShadow(treeDrawInfo, tree)
             } else {
-                treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree.type, tree.size)
-
+                treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree)
                 pushNormalImageWithShadow(treeDrawInfo, tree)
             }
 
@@ -881,8 +655,7 @@ function GameCanvas({
                 return
             }
 
-            const treeDrawInfo = treeAnimations.getFallingTree(tree.type, tree.animation)
-
+            const treeDrawInfo = treeAnimations.getFallingTree(tree)
             pushNormalImageWithShadow(treeDrawInfo, tree)
         })
 
@@ -895,9 +668,7 @@ function GameCanvas({
                 continue
             }
 
-            // TODO: get type from the backend
-            const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor(crop.type, crop.state)
-
+            const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor(crop)
             pushNormalImageWithShadow(cropDrawInfo, crop)
         }
 
@@ -910,14 +681,7 @@ function GameCanvas({
                 continue
             }
 
-            let signDrawInfo
-
-            if (sign.type !== undefined && sign.amount !== undefined) {
-                signDrawInfo = signImageAtlasHandler.getDrawingInformation(sign.type, sign.amount)
-            } else {
-                signDrawInfo = signImageAtlasHandler.getDrawingInformation('NOTHING', 'LARGE')
-            }
-
+            const signDrawInfo = signImageAtlasHandler.getDrawingInformation(sign)
             pushNormalImageWithShadow(signDrawInfo, sign)
         }
 
@@ -930,18 +694,16 @@ function GameCanvas({
                 continue
             }
 
-            const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor(stone.type, stone.amount)
-
+            const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor(stone)
             pushNormalImageWithShadow(stoneDrawInfo, stone)
         }
 
         duration.after('collect stones')
 
-
         // Collect wild animals
         for (const animal of api.wildAnimals.values()) {
 
-            // Animal is walking between fixed points
+            // Filter animals outside the screen
             if (animal.previous && animal.next) {
                 if (animal.previous.x < minXInGame || animal.previous.x > maxXInGame || animal.previous.y < minYInGame || animal.previous.y > maxYInGame) {
                     continue
@@ -950,32 +712,16 @@ function GameCanvas({
                 if (animal.next.x < minXInGame || animal.next.x > maxXInGame || animal.next.y < minYInGame || animal.next.y > maxYInGame) {
                     continue
                 }
-
-                const interpolated = interpolateGamePosition(animal.previous, animal.next, animal.percentageTraveled)
-                const direction = getDirectionForWalkingWorker(animal.next, animal.previous)
-
-                const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex)
-
-                pushNormalImageWithShadow(animationImage, interpolated.gamePoint, interpolated.height)
-
-                // Animal is standing at a fixed point
             } else {
                 if (animal.x < minXInGame || animal.x > maxXInGame || animal.y < minYInGame || animal.y > maxYInGame) {
                     continue
                 }
-
-                if (animal.previous) {
-                    const direction = getDirectionForWalkingWorker(animal, animal.previous)
-                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex)
-
-                    pushNormalImageWithShadow(animationImage, animal)
-                } else {
-                    const direction = 'EAST'
-                    const animationImage = animals.get(animal.type)?.getAnimationFrame(direction, renderState.animationIndex)
-
-                    pushNormalImageWithShadow(animationImage, animal)
-                }
             }
+
+            const renderPosition = getRenderPosition(animal)
+            const animationImage = animals.get(animal.type)?.getAnimationFrame(animal.direction, renderState.animationIndex)
+            pushNormalImageWithShadow(animationImage, renderPosition.gamePoint, renderPosition.height)
+
         }
 
         duration.after('collect wild animals')
@@ -993,43 +739,20 @@ function GameCanvas({
                 if (ship.next.x < minXInGame || ship.next.x > maxXInGame || ship.next.y < minYInGame || ship.next.y > maxYInGame) {
                     continue
                 }
-
-                const interpolated = interpolateGamePosition(ship.previous, ship.next, ship.percentageTraveled)
-                const direction = getDirectionForWalkingWorker(ship.next, ship.previous)
-
-                let shipImage
-
-                if (ship.constructionState === 'READY') {
-                    shipImage = shipImageAtlas.getDrawingInformationForShip(direction)
-                } else {
-                    shipImage = shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship.constructionState)
-                }
-
-                pushNormalImageWithShadow(shipImage, interpolated.gamePoint, interpolated.height)
-
-                // Ship is at a fixed point
             } else {
                 if (ship.x < minXInGame || ship.x > maxXInGame || ship.y < minYInGame || ship.y > maxYInGame) {
                     continue
                 }
-
-                let direction: Direction = 'WEST'
-
-                if (ship.previous) {
-                    direction = getDirectionForWalkingWorker(ship, ship.previous)
-                }
-
-                let shipImage
-
-                if (ship.constructionState === 'READY') {
-                    shipImage = shipImageAtlas.getDrawingInformationForShip(direction)
-                } else {
-                    shipImage = shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship.constructionState)
-                }
-
-                pushNormalImageWithShadow(shipImage, ship)
             }
+
+            const renderPosition = getRenderPosition(ship)
+            const shipImage = ship.constructionState === 'READY'
+                ? shipImageAtlas.getDrawingInformationForShip(ship)
+                : shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship)
+
+            pushNormalImageWithShadow(shipImage, renderPosition.gamePoint, renderPosition.height)
         }
+
 
         // Collect workers
         for (const worker of api.workers.values()) {
@@ -1061,69 +784,36 @@ function GameCanvas({
             // Draw donkeys
             if (worker.type === 'Donkey') {
                 const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, worker.betweenPoints ? renderState.animationIndex : 0)
-
                 pushNormalImageWithShadow(donkeyImage, renderPosition.gamePoint, renderPosition.height)
 
                 if (worker.cargo) {
                     const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
-
                     pushNormalImage(cargoImage, renderPosition.gamePoint, renderPosition.height)
                 }
 
-            // Draw couriers and storehouse workers
-            } else if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
+                // Draw other workers
+            } else {
+
+                // Find the correct animation provider for the worker
+                let animationProvider: WorkerAnimation | undefined
+
+                if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
+                    animationProvider = worker.bodyType === 'FAT' ? fatCarrierNoCargo : thinCarrierNoCargo
+                } else {
+                    animationProvider = workers[worker.type]
+                }
+
+                if (!animationProvider) {
+                    console.error(`Render (workers): No animation provider found for worker type ${worker.type}`)
+
+                    continue
+                }
+
                 let didDrawAnimation = false
 
                 // Draw animation
-                if (!worker.betweenPoints && worker.action && worker.actionAnimationIndex !== undefined) {
-                    if (worker.bodyType === 'FAT') {
-                        const animationImage = fatCarrierNoCargo.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
-
-                        if (animationImage) {
-                            didDrawAnimation = true
-
-                            pushNormalImage(animationImage, renderPosition.gamePoint, renderPosition.height)
-                        }
-                    } else if (worker.bodyType === 'THIN') {
-                        const animationImage = thinCarrierNoCargo.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
-
-                        if (animationImage) {
-                            didDrawAnimation = true
-
-                            pushNormalImage(animationImage, renderPosition.gamePoint, renderPosition.height)
-                        }
-                    } else {
-                        console.error(`Render (workers): COURIER OR STOREHOUSE WORKER DOING ACTION AND IT'S NEITHER FAT NOR THIN`, worker)
-                    }
-                }
-
-                // Draw in case no animation was drawn
-                if (!didDrawAnimation) {
-                    let image
-
-                    if (worker.cargo) {
-                        if (worker.bodyType === 'FAT') {
-                            image = fatCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
-                        } else {
-                            image = thinCarrierWithCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
-                        }
-                    } else {
-                        if (worker.bodyType === 'FAT') {
-                            image = fatCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
-                        } else {
-                            image = thinCarrierNoCargo.getAnimationFrame(worker.nation, worker.direction, worker.color, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
-                        }
-                    }
-
-                    pushNormalImageWithShadow(image, renderPosition.gamePoint, renderPosition.height)
-                }
-
-            // Draw other workers
-            } else {
-                let didDrawAnimation = false
-
-                if (!worker.betweenPoints && worker.action && worker.actionAnimationIndex !== undefined) {
-                    const animationImage = workers[worker.type]?.getActionAnimation(worker.nation, worker.direction, worker.action, worker.color, worker.actionAnimationIndex)
+                if (worker.action && worker.actionAnimationIndex !== undefined) {
+                    const animationImage = animationProvider.getActionAnimation(worker)
 
                     if (animationImage) {
                         didDrawAnimation = true
@@ -1132,36 +822,31 @@ function GameCanvas({
                     }
                 }
 
+                // Draw in case no animation was drawn
                 if (!didDrawAnimation) {
-                    const animationImage = workers[worker.type]?.getAnimationFrame(
-                        worker.nation,
-                        worker.direction,
-                        worker.color,
-                        worker.betweenPoints ? renderState.animationIndex : 0,
-                        worker.betweenPoints ? worker.percentageTraveled : worker.percentageTraveled / 10
-                    )
-
-                    pushNormalImageWithShadow(animationImage, renderPosition.gamePoint, renderPosition.height)
+                    if (worker.cargo) {
+                        const image = animationProvider.getAnimationFrame(worker, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
+                        pushNormalImageWithShadow(image, renderPosition.gamePoint, renderPosition.height)
+                    } else {
+                        const image = animationProvider.getAnimationFrame(worker, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
+                        pushNormalImageWithShadow(image, renderPosition.gamePoint, renderPosition.height)
+                    }
                 }
             }
 
             // Draw the cargo if the worker is carrying something
             if (worker.cargo) {
+                let animationProvider: WorkerAnimation | undefined
+
+                // Find the correct animation provider for the worker
                 if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
-                    let cargoDrawInfo
-
-                    if (worker.bodyType === 'FAT') {
-                        cargoDrawInfo = fatCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
-                    } else {
-                        cargoDrawInfo = thinCarrierWithCargo.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
-                    }
-
-                    pushNormalImage(cargoDrawInfo, renderPosition.gamePoint, renderPosition.height)
+                    animationProvider = worker.bodyType === 'FAT' ? fatCarrierWithCargo : thinCarrierWithCargo
                 } else {
-                    const cargo = workers[worker.type]?.getDrawingInformationForCargo(worker.nation, worker.direction, worker.cargo, renderState.animationIndex, worker.percentageTraveled / 10)
-
-                    pushNormalImage(cargo, renderPosition.gamePoint, renderPosition.height)
+                    animationProvider = workers[worker.type]
                 }
+
+                const cargoImage = animationProvider?.getDrawingInformationForCargo(worker, renderState.animationIndex, worker.percentageTraveled / 10)
+                pushNormalImage(cargoImage, renderPosition.gamePoint, renderPosition.height)
             }
         }
 
@@ -1175,23 +860,20 @@ function GameCanvas({
                 continue
             }
 
-            const flagDrawInfo = flagAnimations.getAnimationFrame(flag.nation, flag.color, flag.type, renderState.animationIndex, flagCount)
-
+            const flagDrawInfo = flagAnimations.getAnimationFrame(flag, renderState.animationIndex, flagCount)
             pushNormalImageWithShadow(flagDrawInfo, flag)
 
             if (flag.stackedCargo) {
                 for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
                     const cargo = flag.stackedCargo[i]
-                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
-
+                    const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
                     pushNormalImage(cargoDrawInfo, { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 }, api.getHeight(flag))
                 }
 
                 if (flag.stackedCargo.length > 3) {
                     for (let i = 3; i < Math.min(flag.stackedCargo.length, 6); i++) {
                         const cargo = flag.stackedCargo[i]
-                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
-
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
                         pushNormalImage(cargoDrawInfo, { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 }, api.getHeight(flag))
                     }
                 }
@@ -1199,8 +881,7 @@ function GameCanvas({
                 if (flag.stackedCargo.length > 6) {
                     for (let i = 6; i < flag.stackedCargo.length; i++) {
                         const cargo = flag.stackedCargo[i]
-                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag.nation, cargo)
-
+                        const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
                         pushNormalImage(cargoDrawInfo, { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 }, api.getHeight(flag))
                     }
                 }
@@ -1225,23 +906,18 @@ function GameCanvas({
 
                 if (available.includes('LARGE')) {
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
-
                     pushNormalImage(largeHouseAvailableInfo, gamePoint)
                 } else if (available.includes('MEDIUM')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
-
                     pushNormalImage(mediumHouseAvailableInfo, gamePoint)
                 } else if (available.includes('SMALL')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
-
                     pushNormalImage(mediumHouseAvailableInfo, gamePoint)
                 } else if (available.includes('MINE')) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
-
                     pushNormalImage(mineAvailableInfo, gamePoint)
                 } else if (available.includes('FLAG')) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
-
                     pushNormalImage(flagAvailableInfo, gamePoint)
                 }
             }
@@ -1276,14 +952,11 @@ function GameCanvas({
         if (renderState.newRoad?.possibleConnections) {
             if (renderState?.newRoad !== undefined) {
                 const center = renderState.newRoad.newRoad[renderState.newRoad.newRoad.length - 1]
-
-                // Draw the starting point
                 const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForStartPoint()
 
                 pushHoverImage(startPointInfo, center)
 
                 const centerHeight = api.getHeight(center)
-
                 const differenceToLevel = (a: number, b: number) => {
                     const diff = Math.abs(a - b)
 
@@ -1324,7 +997,6 @@ function GameCanvas({
         if (!hideSelectedPoint) {
             if (renderState.selectedPoint) {
                 const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
-
                 pushHoverImage(selectedPointDrawInfo, renderState.selectedPoint)
             }
         }
@@ -1339,30 +1011,23 @@ function GameCanvas({
 
                 if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
                     if (availableConstructionAtHoverPoint.includes('LARGE')) {
-
                         const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
-
                         pushHoverImage(largeHouseAvailableInfo, renderState.hoverPoint)
                     } else if (availableConstructionAtHoverPoint.includes('MEDIUM')) {
                         const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
-
                         pushHoverImage(mediumHouseAvailableInfo, renderState.hoverPoint)
                     } else if (availableConstructionAtHoverPoint.includes('SMALL')) {
                         const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
-
                         pushHoverImage(smallHouseAvailableInfo, renderState.hoverPoint)
                     } else if (availableConstructionAtHoverPoint.includes('MINE')) {
                         const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
-
                         pushHoverImage(mineAvailableInfo, renderState.hoverPoint)
                     } else if (availableConstructionAtHoverPoint.includes('FLAG')) {
                         const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
-
                         pushHoverImage(flagAvailableInfo, renderState.hoverPoint)
                     }
                 } else {
                     const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
-
                     pushHoverImage(hoverPointDrawInfo, renderState.hoverPoint)
                 }
             }
@@ -1394,8 +1059,7 @@ function GameCanvas({
                 }
 
                 const screenPoint = gamePointToScreenPointWithHeightAdjustmentInternal(house)
-
-                const houseDrawInformation = houses.getDrawingInformationForHouseReady(house.nation, house.type)
+                const houseDrawInformation = houses.getDrawingInformationForHouseReady(house)
 
                 let heightOffset = 0
 
@@ -1406,20 +1070,16 @@ function GameCanvas({
                 let houseTitle = buildingPretty(house.type)
 
                 if (house.state === 'UNFINISHED') {
-                    houseTitle = '(' + houseTitle + ')'
+                    houseTitle = `(${houseTitle})`
                 } else if (house.state === 'UNOCCUPIED') {
-                    houseTitle = houseTitle + ' (unoccupied)'
+                    houseTitle = `${houseTitle} (unoccupied)`
                 } else if (house.productivity !== undefined && house.state === 'OCCUPIED') {
-                    houseTitle = houseTitle + ' (' + house.productivity + '%)'
+                    houseTitle = `${houseTitle} (${house.productivity}%)`
                 }
 
                 const widthOffset = overlayCtx.measureText(houseTitle).width / 2
-
-                screenPoint.x -= widthOffset
-                screenPoint.y -= heightOffset
-
-                overlayCtx.strokeText(houseTitle, screenPoint.x, screenPoint.y - 5)
-                overlayCtx.fillText(houseTitle, screenPoint.x, screenPoint.y - 5)
+                overlayCtx.strokeText(houseTitle, screenPoint.x - widthOffset, screenPoint.y - heightOffset - 5)
+                overlayCtx.fillText(houseTitle, screenPoint.x - widthOffset, screenPoint.y - heightOffset - 5)
             }
         }
 
@@ -1467,28 +1127,7 @@ function GameCanvas({
         renderState.previousTimestamp = timestamp
     }, [renderState])
 
-    const updateRoadDrawingBuffers = useCallback(() => {
-        if (RenderLogConfig.roads) {
-            console.log('Render (roads): Should update road drawing buffers')
-        }
-        if (renderState.drawRoadsProgramInstance) {
-            const roadRenderInformation = prepareToRenderRoads(api.roads.values(), api.flags.values(), renderState.normals)
-
-            setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_coords', roadRenderInformation?.coordinates)
-            setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_normal', roadRenderInformation.normals)
-            setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_texture_mapping', roadRenderInformation.textureMapping)
-        } else {
-            console.error(`Render (roads): Failed to update road drawing buffers`)
-        }
-    }, [renderState])
-
     const initWebgl = useCallback(() => {
-        if (renderState.mapRenderInformation === undefined) {
-            console.error('Render (gl): Cannot initialize WebGL because the map render information is not available yet')
-
-            return
-        }
-
         if (!normalCanvasRef?.current) {
             console.error('Render (gl): No canvasRef.current')
 
@@ -1515,23 +1154,9 @@ function GameCanvas({
         renderState.fogOfWarProgramInstance = initProgram(fogOfWarProgramDescriptor, gl)
 
         // Setup the program to render the ground
-        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
-        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
-        setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
-
-        setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_coords', [])
-        setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_normal', [])
-        setBuffer<DrawGroundAttributes>(renderState.drawRoadsProgramInstance, 'a_texture_mapping', [])
+        setMapRenderingBuffers(renderState.drawGroundProgramInstance, api.allTiles, renderState.normals)
 
         // Set up the programs to render images and shadows - these will be updated with the correct coordinates in the render loop before drawing
-        const positions = UNIT_SQUARE
-        const texCoords = UNIT_SQUARE
-
-        setBuffer<DrawImageAttributes>(renderState.drawImageProgramInstance, 'a_position', positions)
-        setBuffer<DrawImageAttributes>(renderState.drawImageProgramInstance, 'a_texcoord', texCoords)
-
-        setBuffer<DrawShadowAttributes>(renderState.drawShadowProgramInstance, 'a_position', positions)
-        setBuffer<DrawShadowAttributes>(renderState.drawShadowProgramInstance, 'a_texcoord', texCoords)
 
         // Clear texture cache
         textures.clearTexturesForContext(gl)
@@ -1566,11 +1191,24 @@ function GameCanvas({
 
         textures.registerTexture(gl, imageAtlasTerrainAndRoads)
 
-        // Prepare buffers for road drawing
-        updateRoadDrawingBuffers()
+        // Set up buffers
+        setRoadRenderingBuffers(
+            renderState.drawRoadsProgramInstance,
+            Array.from(api.roads.values()),
+            Array.from(api.flags.values()),
+            renderState.normals
+        )
 
-        // Set up fog of war rendering
-        updateFogOfWarRendering(renderState.visiblePoints, renderState.fogOfWarProgramInstance!)
+        setFogOfWarRenderingBuffers(
+            renderState.visiblePoints,
+            renderState.fogOfWarProgramInstance,
+            api.discoveredPoints,
+            api.discoveredBelowTiles,
+            api.discoveredDownRightTiles
+        )
+
+        setDrawImageRenderingBuffers(renderState.drawImageProgramInstance)
+        setDrawShadowRenderingBuffers(renderState.drawShadowProgramInstance)
     }, [])
 
     const cleanupWebgl = useCallback(() => {
@@ -1620,6 +1258,12 @@ function GameCanvas({
     }, [renderState])
 
     // Effects
+    // Effect: keep callback references in sync
+    useEffect(() => {
+        onPointClickedRef.current = onPointClicked
+        onDoubleClickRef.current = onDoubleClick
+    }, [onPointClicked, onDoubleClick])
+
     // Effect: listen for webgl context loss
     useEffect(() => {
         const canvas = normalCanvasRef.current
@@ -1650,16 +1294,6 @@ function GameCanvas({
             canvas.removeEventListener('webglcontextrestored', onContextRestored)
         }
     }, [renderState])
-
-    // Effect: clean up doubleclick detection timer when the component is unmounted
-    useEffect(() => {
-        return () => {
-            if (doubleClickDetection.timer !== undefined) {
-                clearTimeout(doubleClickDetection.timer)
-                doubleClickDetection.timer = undefined
-            }
-        }
-    }, [doubleClickDetection])
 
     // Effect: pause rendering when the tab is not active to save resources
     useEffect(() => {
@@ -1713,7 +1347,19 @@ function GameCanvas({
                 }
 
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
-                updateRoadDrawingBuffers()
+
+                if (!renderState.drawRoadsProgramInstance) {
+                    console.error('Render (roads): The road drawing program instance is undefined')
+
+                    return
+                }
+
+                setRoadRenderingBuffers(
+                    renderState.drawRoadsProgramInstance,
+                    Array.from(api.roads.values()),
+                    Array.from(api.flags.values()),
+                    renderState.normals
+                )
             }
 
             // Callback when roads are updated
@@ -1721,7 +1367,19 @@ function GameCanvas({
                 if (RenderLogConfig.roads) {
                     console.log('Render (roads): Received updated road callback')
                 }
-                updateRoadDrawingBuffers()
+
+                if (!renderState.drawRoadsProgramInstance) {
+                    console.error('Render (roads): The road drawing program instance is undefined')
+
+                    return
+                }
+
+                setRoadRenderingBuffers(
+                    renderState.drawRoadsProgramInstance,
+                    Array.from(api.roads.values()),
+                    Array.from(api.flags.values()),
+                    renderState.normals
+                )
             }
 
             // Callback when discovered points are updated
@@ -1732,19 +1390,22 @@ function GameCanvas({
                 if (RenderLogConfig.fogOfWar) {
                     console.log('Render (fog-of-war): New discovered points - calculated normals')
                 }
-                // Update the map rendering buffers
-                renderState.mapRenderInformation = prepareToRenderFromTiles(api.allTiles, renderState.normals)
 
-                if (renderState.drawGroundProgramInstance) {
-                    setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_coords', renderState.mapRenderInformation.coordinates)
-                    setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_normal', renderState.mapRenderInformation.normals)
-                    setBuffer<DrawGroundAttributes>(renderState.drawGroundProgramInstance, 'a_texture_mapping', renderState.mapRenderInformation.textureMapping)
-                } else {
+                // Update the map rendering and fog of war buffers
+                if (!renderState.drawGroundProgramInstance) {
                     console.error('Render (gl): The terrain drawing program instance is undefined')
+
+                    return
                 }
 
-                // Update fog of war rendering
-                updateFogOfWarRendering(renderState.visiblePoints, renderState.fogOfWarProgramInstance!)
+                if (!renderState.fogOfWarProgramInstance) {
+                    console.error('Render (fog-of-war): The fog of war program instance is undefined')
+
+                    return
+                }
+
+                setMapRenderingBuffers(renderState.drawGroundProgramInstance, api.allTiles, renderState.normals)
+                setFogOfWarRenderingBuffers(renderState.visiblePoints, renderState.fogOfWarProgramInstance, api.discoveredPoints, api.discoveredBelowTiles, api.discoveredDownRightTiles)
             }
 
             const gameStateListener = {
@@ -1795,16 +1456,20 @@ function GameCanvas({
 
                 // Load assets
                 await loadAssets()
-                console.log('Render (assets): Download image atlases done. Connection to websocket backend established')
+
+                if (RenderLogConfig.assets) {
+                    console.log('Render (assets): Download image atlases done. Connection to websocket backend established')
+                }
 
                 // Wait for game data to be available
                 await Promise.all([api.waitForConnection(), api.waitForGameDataAvailable()])
-                console.log('Render (lifecycle): Game data is available')
+
+                if (RenderLogConfig.lifecycle) {
+                    console.log('Render (lifecycle): Game data is available')
+                }
 
                 // Put together the render information from the discovered tiles
                 calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
-
-                renderState.mapRenderInformation = prepareToRenderFromTiles(api.allTiles, renderState.normals)
 
                 // Start tracking visible triangles
                 if (renderState.visiblePoints.size === 0) {
@@ -1818,7 +1483,10 @@ function GameCanvas({
                 api.addRoadsListener(roadsUpdated)
                 api.addGameStateListener(gameStateListener)
                 api.addDiscoveredPointsListener(discoveredPointsUpdated)
-                console.log('Render (lifecycle): Started listeners')
+
+                if (RenderLogConfig.lifecycle) {
+                    console.log('Render (lifecycle): Started listeners')
+                }
             }
 
             let cancelled = false
@@ -1841,7 +1509,6 @@ function GameCanvas({
             }
         }, [
         renderState,
-        updateRoadDrawingBuffers,
         initWebgl,
         startRenderLoop,
         stopRenderLoop,
@@ -1869,71 +1536,41 @@ function GameCanvas({
         return screenPointToGamePointWithHeightAdjustment(point, viewRef.current, heightAdjust)
     }, [viewRef, heightAdjust])
 
-    const onClick = useCallback(async (event: React.MouseEvent) => {
-        if (overlayCanvasRef?.current) {
-            const rect = event.currentTarget.getBoundingClientRect()
+    const onClickInternal = useCallback((event: React.MouseEvent) => {
+        const rect = event.currentTarget.getBoundingClientRect()
 
-            const x = event.clientX - rect.left
-            const y = event.clientY - rect.top
+        const gamePoint =
+            screenPointToGamePointWithHeightAdjustmentInternal({
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            })
 
-            const gamePoint = screenPointToGamePointWithHeightAdjustmentInternal({ x, y })
-
-            if (onPointClicked) {
-                onPointClicked(gamePoint)
-            }
-        }
-    }, [overlayCanvasRef, onPointClicked, screenPointToGamePointWithHeightAdjustmentInternal])
-
-    const onDoubleClickInternal = useCallback((event: React.MouseEvent) => {
-        if (!event || !event.currentTarget || !(event.currentTarget instanceof Element)) {
-            console.error('Render (input): Received invalid double click event')
-
-            return
-        }
-
-        if (overlayCanvasRef?.current) {
-            const rect = event.currentTarget.getBoundingClientRect()
-
-            const x = event.clientX - rect.left
-            const y = event.clientY - rect.top
-
-            const gamePoint = screenPointToGamePointWithHeightAdjustmentInternal({ x, y })
-
-            onDoubleClick && onDoubleClick(gamePoint)
-        }
-    }, [overlayCanvasRef, screenPointToGamePointWithHeightAdjustmentInternal, onDoubleClick])
-
-    const onClickOrDoubleClick = useCallback((event: React.MouseEvent) => {
-
-        // Save currentTarget. This field becomes null directly after
-        const currentTarget = event.currentTarget
-
-        // Distinguish between single and doubleclick
-        if (event.detail === 1) {
-            doubleClickDetection.timer = setTimeout(() => {
-                event.currentTarget = currentTarget
-
-                onClick(event)
-            }, 200)
-        } else {
-            if (doubleClickDetection.timer) {
-                clearTimeout(doubleClickDetection.timer)
-            }
-
-            event.currentTarget = currentTarget
-
-            onDoubleClickInternal(event)
-        }
+        onPointClickedRef.current?.(gamePoint)
 
         event.stopPropagation()
-    }, [doubleClickDetection, onClick, onDoubleClickInternal])
+    }, [screenPointToGamePointWithHeightAdjustmentInternal])
+
+    const onDoubleClickInternal = useCallback((event: React.MouseEvent) => {
+        const rect = event.currentTarget.getBoundingClientRect()
+
+        const gamePoint =
+            screenPointToGamePointWithHeightAdjustmentInternal({
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            })
+
+        onDoubleClickRef.current?.(gamePoint)
+
+        event.stopPropagation()
+    }, [screenPointToGamePointWithHeightAdjustmentInternal])
 
     return (
         <>
             <canvas
                 className='game-canvas'
                 onKeyDown={onKeyDown}
-                onClick={onClickOrDoubleClick}
+                onClick={onClickInternal}
+                onDoubleClick={onDoubleClickInternal}
                 style={{ cursor: MOUSE_STYLES.get(cursor ?? 'NOTHING') }}
                 tabIndex={-1}
 
@@ -1973,252 +1610,11 @@ function GameCanvas({
     )
 }
 
-function isOnEdgeOfDiscovery(point: Point, discovered: PointSet): boolean {
-    const surrounding = surroundingPoints(point)
-
-    // TODO: filter points outside of the map
-    const foundInside = surrounding.filter(neighbor => neighbor.x > 0 && discovered.has(neighbor)).length > 0
-    const foundOutside = surrounding.filter(neighbor => neighbor.x > 0 && !discovered.has(neighbor)).length > 0
-
-    return foundInside && foundOutside
-}
-
-function getTrianglesAffectedByFogOfWar(discovered: PointSet, tilesBelow: Set<TileBelow>, tilesDownRight: Set<TileDownRight>): ShadedPoint[][] {
-    const triangles: ShadedPoint[][] = []
-
-    tilesBelow.forEach(tileBelow => {
-        const up = tileBelow.pointAbove
-        const right = getPointDownRight(tileBelow.pointAbove)
-        const left = getPointDownLeft(tileBelow.pointAbove)
-
-        const isUpOnEdge = isOnEdgeOfDiscovery(up, discovered)
-        const isRightOnEdge = isOnEdgeOfDiscovery(right, discovered)
-        const isLeftOnEdge = isOnEdgeOfDiscovery(left, discovered)
-
-        if (isUpOnEdge || isRightOnEdge || isLeftOnEdge) {
-            triangles.push([
-                { point: up, intensity: isUpOnEdge ? 0 : 1 },
-                { point: right, intensity: isRightOnEdge ? 0 : 1 },
-                { point: left, intensity: isLeftOnEdge ? 0 : 1 }
-            ])
-        }
-    })
-
-    tilesDownRight.forEach(tileDownRight => {
-        const left = tileDownRight.pointLeft
-        const right = getPointRight(tileDownRight.pointLeft)
-        const down = getPointDownRight(tileDownRight.pointLeft)
-
-        const isLeftOnEdge = isOnEdgeOfDiscovery(left, discovered)
-        const isRightOnEdge = isOnEdgeOfDiscovery(right, discovered)
-        const isDownOnEdge = isOnEdgeOfDiscovery(down, discovered)
-
-        if (isLeftOnEdge || isRightOnEdge || isDownOnEdge) {
-            triangles.push([
-                { point: left, intensity: isLeftOnEdge ? 0 : 1 },
-                { point: right, intensity: isRightOnEdge ? 0 : 1 },
-                { point: down, intensity: isDownOnEdge ? 0 : 1 }
-            ])
-        }
-    })
-
-    return triangles
-}
-
 function interpolateHeight(previous: Point, next: Point, progress: number): number {
     const previousHeight = api.getHeight(previous)
     const nextHeight = api.getHeight(next)
 
     return previousHeight + (nextHeight - previousHeight) * progress
-}
-
-function prepareToRenderRoads(roads: Iterable<RoadInformation>, flags: Iterable<FlagInformation>, allNormals: PointMap<Vector>): RenderInformation {
-    if (RenderLogConfig.roads) {
-        console.log('Render (roads): Prepare to render roads')
-    }
-    const coordinates: number[] = []
-    const normals: number[] = []
-    const textureMapping: number[] = []
-
-    const mainRoadFlagPoints = new PointSet()
-    const normalRoadFlagPoints = new PointSet()
-
-    // Iterate through each segment of the road
-    for (const road of roads) {
-        let previous: Point | undefined = undefined
-
-        if (road.type === 'MAIN') {
-            mainRoadFlagPoints.add(road.points[0])
-            mainRoadFlagPoints.add(road.points[road.points.length - 1])
-        } else {
-            normalRoadFlagPoints.add(road.points[0])
-            normalRoadFlagPoints.add(road.points[road.points.length - 1])
-        }
-
-        for (const point of road.points) {
-            if (previous === undefined) {
-                previous = point
-
-                continue
-            }
-
-            let left
-            let right
-
-            if (previous.x < point.x) {
-                left = previous
-                right = point
-            } else {
-                left = point
-                right = previous
-            }
-
-            const normalLeft = allNormals?.get(left)
-            const normalRight = allNormals?.get(right)
-
-            if (normalLeft === undefined || normalRight === undefined) {
-                console.error('Render (normals): Missing normals')
-
-                if (RenderLogConfig.normals) {
-                    console.log(normalLeft, normalRight)
-                }
-
-                continue
-            }
-
-            // Handle horizontal roads
-            if (left.y === right.y) {
-                const heightLeft = api.getHeight(left)
-                const heightRight = api.getHeight(right)
-
-                Array.prototype.push.apply(
-                    coordinates,
-                    [
-                        left.x, left.y - 0.15, heightLeft,
-                        left.x, left.y + 0.15, heightLeft,
-                        right.x, right.y - 0.15, heightRight,
-                        left.x, left.y + 0.15, heightLeft,
-                        right.x, right.y - 0.15, heightRight,
-                        right.x, right.y + 0.15, heightRight
-                    ])
-
-                Array.prototype.push.apply(normals,
-                    [
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalRight.x, normalRight.y, normalRight.z,
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalRight.x, normalRight.y, normalRight.z,
-                        normalRight.x, normalRight.y, normalRight.z
-                    ])
-
-                Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
-
-                // Handle road up-right
-            } else if (left.y < right.y) {
-                const heightLeft = api.getHeight(left)
-                const heightRight = api.getHeight(right)
-
-                Array.prototype.push.apply(
-                    coordinates,
-                    [
-                        left.x + 0.1, left.y - 0.1, heightLeft,
-                        left.x - 0.1, left.y + 0.1, heightLeft,
-                        right.x + 0.1, right.y - 0.1, heightRight,
-                        left.x - 0.1, left.y + 0.1, heightLeft,
-                        right.x + 0.1, right.y - 0.1, heightRight,
-                        right.x - 0.1, right.y + 0.1, heightRight
-                    ])
-
-                Array.prototype.push.apply(normals,
-                    [
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalRight.x, normalRight.y, normalRight.z,
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalRight.x, normalRight.y, normalRight.z,
-                        normalRight.x, normalRight.y, normalRight.z
-                    ])
-
-                Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
-
-                // Handle road down-right
-            } else if (left.y > right.y) {
-                const heightLeft = api.getHeight(left)
-                const heightRight = api.getHeight(right)
-
-                Array.prototype.push.apply(
-                    coordinates,
-                    [
-                        left.x - 0.1, left.y - 0.1, heightLeft,
-                        left.x + 0.1, left.y + 0.1, heightLeft,
-                        right.x - 0.1, right.y - 0.1, heightRight,
-                        left.x + 0.1, left.y + 0.1, heightLeft,
-                        right.x - 0.1, right.y - 0.1, heightRight,
-                        right.x + 0.1, right.y + 0.1, heightRight
-                    ])
-
-                Array.prototype.push.apply(normals,
-                    [
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalRight.x, normalRight.y, normalRight.z,
-                        normalLeft.x, normalLeft.y, normalLeft.z,
-                        normalRight.x, normalRight.y, normalRight.z,
-                        normalRight.x, normalRight.y, normalRight.z
-                    ])
-
-                Array.prototype.push.apply(textureMapping, road.type === 'NORMAL' ? NORMAL_ROAD_TEXTURE_MAPPING : MAIN_ROAD_TEXTURE_MAPPING)
-            }
-
-            previous = point
-        }
-    }
-
-    // Add a circle of 'road' for each flag
-    for (const flag of flags) {
-        const isNormal = normalRoadFlagPoints.has(flag)
-        const isMain = mainRoadFlagPoints.has(flag)
-
-        if (!isNormal && !isMain) {
-            continue
-        }
-
-        const height = api.allTiles.get(flag)?.height ?? 0
-        const normal = allNormals.get(flag) ?? { x: 0, y: 0, z: 1 }
-
-        // TODO: read out height and normals surrounding and then interpolate
-
-        Array.prototype.push.apply(
-            coordinates,
-            [
-                flag.x - 0.15, flag.y - 0.15, height,
-                flag.x - 0.15, flag.y + 0.15, height,
-                flag.x + 0.15, flag.y - 0.15, height,
-                flag.x - 0.15, flag.y + 0.15, height,
-                flag.x + 0.15, flag.y - 0.15, height,
-                flag.x + 0.15, flag.y + 0.15, height
-            ]
-        )
-
-        Array.prototype.push.apply(normals,
-            [
-                normal.x, normal.y, normal.z,
-                normal.x, normal.y, normal.z,
-                normal.x, normal.y, normal.z,
-                normal.x, normal.y, normal.z,
-                normal.x, normal.y, normal.z,
-                normal.x, normal.y, normal.z
-            ])
-
-        Array.prototype.push.apply(textureMapping, isMain ? MAIN_ROAD_WITH_FLAG : NORMAL_ROAD_WITH_FLAG)
-    }
-
-    return {
-        coordinates,
-        normals,
-        textureMapping
-    }
 }
 
 function calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDownRight: Iterable<TileDownRight>, allNormals: PointMap<Vector>): void {
@@ -2281,426 +1677,6 @@ function calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDown
             allNormals.set(point, { x: 0, y: 0, z: 1 })
         }
     }
-}
-
-function addTerrainRenderInformationForTileDownRight(
-    point: Point,
-    height: number,
-    tileDownRight: TileDownRight,
-    allTiles: PointMap<TerrainAtPoint>,
-    allNormals: PointMap<Vector>,
-    coordinates: number[],
-    normals: number[],
-    textureMappings: number[],
-    transitionCoordinates: number[],
-    transitionNormals: number[],
-    transitionTextureMappings: number[]
-): void {
-    const pointUpRight = getPointUpRight(point)
-    const pointRight = getPointRight(point)
-    const pointDownRight = getPointDownRight(point)
-    const pointDownLeft = getPointDownLeft(point)
-    const pointRightDownRight = getPointDownRight(getPointRight(point))
-
-    const terrainDownRight = tileDownRight.vegetation
-    const terrainBelow = allTiles.get(point)
-    const terrainUpRight = allTiles.get(pointUpRight)
-    const terrainRight = allTiles.get(pointRight)
-
-    if (VEGETATION_INTEGERS.indexOf(terrainDownRight) === -1) {
-        console.log(`Render (terrain): UNKNOWN TERRAIN: ${terrainDownRight}`)
-    }
-
-
-    // Add the terrain tile to the buffers
-    Array.prototype.push.apply(coordinates, [
-        point.x, point.y, height,
-        pointDownRight.x, pointDownRight.y, tileDownRight.heightDown,
-        pointRight.x, pointRight.y, tileDownRight.heightRight
-    ])
-
-    const normalLeft = allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR
-    const normalDownRight = allNormals.get(pointDownRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-    const normalRight = allNormals.get(pointRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-
-    Array.prototype.push.apply(normals, [
-        normalLeft.x, normalLeft.y, normalLeft.z,
-        normalDownRight.x, normalDownRight.y, normalDownRight.z,
-        normalRight.x, normalRight.y, normalRight.z
-    ])
-
-    Array.prototype.push.apply(textureMappings, VEGETATION_TO_TEXTURE_MAPPING.get(terrainDownRight)?.downRight ?? [0, 1, 0.5, 0, 1, 1])
-
-    const overlap = OVERLAPS.get(terrainDownRight)
-    const transitionTextureMapping = TRANSITION_TEXTURE_MAPPINGS.get(terrainDownRight)
-
-
-    // Add the transition triangles on all three sides
-
-    // Triangle below on the left
-    if (overlap && terrainBelow && overlap.has(terrainBelow.below) && transitionTextureMapping) {
-        const baseHeight = (tileDownRight.heightLeft + tileDownRight.heightDown) / 2
-        const base = { x: (point.x + pointDownRight.x) / 2, y: (point.y + pointDownRight.y) / 2 }
-
-        Array.prototype.push.apply(transitionCoordinates, [
-            pointDownRight.x, pointDownRight.y, tileDownRight.heightDown,
-            point.x, point.y, tileDownRight.heightLeft,
-            base.x + (pointDownLeft.x - base.x) * OVERLAP_FACTOR, base.y + (pointDownLeft.y - base.y) * OVERLAP_FACTOR, baseHeight + (allTiles.get(pointDownLeft)?.height ?? 0 - baseHeight) * OVERLAP_FACTOR
-        ])
-
-        const normalPoint = allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalDownRight = allNormals.get(pointDownRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalDownLeft = allNormals.get(pointDownLeft) ?? NORMAL_STRAIGHT_UP_VECTOR
-
-        // Interpolate the normal for the transition triangle as the average of the normals of the three points
-        const interpolatedNormal = sumAndNormalizeVectors([normalPoint, normalDownRight, normalDownLeft])
-
-        Array.prototype.push.apply(transitionNormals, [
-            normalDownRight.x, normalDownRight.y, normalDownRight.z,
-            normalPoint.x, normalPoint.y, normalPoint.z,
-            interpolatedNormal.x, interpolatedNormal.y, interpolatedNormal.z
-        ])
-
-        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-    }
-
-    // Triangle above
-    if (overlap && terrainUpRight && overlap.has(terrainUpRight.below) && transitionTextureMapping) {
-        const baseHeight = (tileDownRight.heightLeft + tileDownRight.heightRight) / 2
-        const heightUp = allTiles.get(pointUpRight)?.height ?? 0
-
-        Array.prototype.push.apply(transitionCoordinates, [
-            point.x, point.y, tileDownRight.heightLeft,
-            pointRight.x, pointRight.y, tileDownRight.heightRight,
-            point.x + 1, point.y + OVERLAP_FACTOR, baseHeight + (heightUp - baseHeight) * OVERLAP_FACTOR
-        ])
-
-        const normalPoint = allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalRight = allNormals.get(pointRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalUpRight = allNormals.get(pointUpRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-
-        // Interpolate the normal for the transition triangle as the average of the normals of the three points
-        const interpolatedNormal = sumAndNormalizeVectors([normalPoint, normalRight, normalUpRight])
-
-        Array.prototype.push.apply(transitionNormals, [
-            normalPoint.x, normalPoint.y, normalPoint.z,
-            normalRight.x, normalRight.y, normalRight.z,
-            interpolatedNormal.x, interpolatedNormal.y, interpolatedNormal.z
-        ])
-
-        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-    }
-
-    // Triangle below on the right
-    if (overlap && terrainRight && overlap.has(terrainRight.below) && transitionTextureMapping) {
-        const baseHeight = (tileDownRight.heightRight + tileDownRight.heightDown) / 2
-        const base = { x: (pointRight.x + pointDownRight.x) / 2, y: (pointRight.y + pointDownRight.y) / 2 }
-        const heightRightDownRight = allTiles.get(pointRightDownRight)?.height ?? 0
-
-        Array.prototype.push.apply(transitionCoordinates, [
-            pointRight.x, pointRight.y, tileDownRight.heightRight,
-            pointDownRight.x, pointDownRight.y, tileDownRight.heightDown,
-            base.x + (pointRightDownRight.x - base.x) * 0.4, base.y + (pointRightDownRight.y - base.y) * 0.4, baseHeight + (heightRightDownRight - baseHeight) * 0.4
-        ])
-
-        const normalRight = allNormals.get(pointRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalDownRight = allNormals.get(pointDownRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalRightDownRight = allNormals.get(pointRightDownRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-
-        // Interpolate the normal for the transition triangle as the average of the normals of the three points
-        const interpolatedNormal = sumAndNormalizeVectors([normalRight, normalDownRight, normalRightDownRight])
-
-        Array.prototype.push.apply(transitionNormals, [
-            normalRight.x, normalRight.y, normalRight.z,
-            normalDownRight.x, normalDownRight.y, normalDownRight.z,
-            interpolatedNormal.x, interpolatedNormal.y, interpolatedNormal.z
-        ])
-
-        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-    }
-}
-
-function addTerrainRenderInformationForTileBelow(
-    point: Point,
-    height: number,
-    tileBelow: TileBelow,
-    allTiles: PointMap<TerrainAtPoint>,
-    allNormals: PointMap<Vector>,
-    coordinates: number[],
-    normals: number[],
-    textureMappings: number[],
-    transitionCoordinates: number[],
-    transitionNormals: number[],
-    transitionTextureMappings: number[]
-): void {
-    const pointRight = getPointRight(point)
-    const pointLeft = getPointLeft(point)
-    const pointDownLeft = getPointDownLeft(point)
-    const pointDownRight = getPointDownRight(point)
-    const pointDown = getPointDown(point)
-
-    const terrainBelow = tileBelow.vegetation
-
-    if (VEGETATION_INTEGERS.indexOf(terrainBelow) === -1) {
-        console.error(`Render (terrain): UNKNOWN TERRAIN: ${terrainBelow}`)
-    }
-
-    // Add each terrain tile to the buffers (coordinates, normals, texture mapping)
-    Array.prototype.push.apply(coordinates, [
-        point.x, point.y, height,
-        pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
-        pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight
-    ])
-
-    const normal0 = allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR
-    const normalDownLeft = allNormals.get(pointDownLeft) ?? NORMAL_STRAIGHT_UP_VECTOR
-    const normalDownRight = allNormals.get(pointDownRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-
-    Array.prototype.push.apply(normals, [
-        normal0.x, normal0.y, normal0.z,
-        normalDownLeft.x, normalDownLeft.y, normalDownLeft.z,
-        normalDownRight.x, normalDownRight.y, normalDownRight.z
-    ])
-
-    Array.prototype.push.apply(textureMappings,
-        VEGETATION_TO_TEXTURE_MAPPING.get(terrainBelow)?.below ?? [0, 0, 0.5, 1, 1, 0] // TODO: is this default the wrong order?
-    )
-
-    // Add transition triangles
-    const terrainAtDownLeft = allTiles.get(pointDownLeft)
-    const terrainAtDown = allTiles.get(pointDown)
-    const terrain = allTiles.get(point)
-    const terrainLeft = allTiles.get(pointLeft)
-
-    const overlap = OVERLAPS.get(terrainBelow)
-    const transitionTextureMapping = TRANSITION_TEXTURE_MAPPINGS.get(terrainBelow)
-
-    // Transition below
-    if (overlap && terrainAtDownLeft && overlap.has(terrainAtDownLeft.downRight) && transitionTextureMapping && terrainAtDown) {
-        const baseHeight = (tileBelow.heightDownLeft + tileBelow.heightDownRight) / 2
-        const downHeight = terrainAtDown.height
-
-        Array.prototype.push.apply(transitionCoordinates, [
-            pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
-            pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
-            pointDown.x, pointDownLeft.y - 0.4, baseHeight + (downHeight - baseHeight) * 0.4
-        ])
-
-        const normalDownLeft = allNormals.get(pointDownLeft) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalDownRight = allNormals.get(pointDownRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalDown = allNormals.get(pointDown) ?? NORMAL_STRAIGHT_UP_VECTOR
-
-        // Interpolate the normal for the transition triangle as the average of the normals of the three points
-        const interpolatedNormal = sumAndNormalizeVectors([normalDownLeft, normalDownRight, normalDown])
-
-        Array.prototype.push.apply(transitionNormals, [
-            normalDownLeft.x, normalDownLeft.y, normalDownLeft.z,
-            normalDownRight.x, normalDownRight.y, normalDownRight.z,
-            interpolatedNormal.x, interpolatedNormal.y, interpolatedNormal.z,
-        ])
-
-        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-    }
-
-    // Transition up-right
-    if (overlap && terrain && overlap.has(terrain.downRight) && transitionTextureMapping) {
-        const baseHeight = (height + tileBelow.heightDownRight) / 2
-        const base = { x: (point.x + pointDownRight.x) / 2, y: (point.y + pointDownRight.y) / 2 }
-        const heightRight = allTiles.get(pointRight)?.height ?? 0
-
-        Array.prototype.push.apply(transitionCoordinates, [
-            point.x, point.y, height,
-            pointDownRight.x, pointDownRight.y, tileBelow.heightDownRight,
-            base.x + (pointRight.x - base.x) * OVERLAP_FACTOR, base.y + (pointRight.y - base.y) * OVERLAP_FACTOR, baseHeight + (heightRight - baseHeight) * OVERLAP_FACTOR
-        ])
-
-        const normal0 = allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalDownRight = allNormals.get(pointDownRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalRight = allNormals.get(pointRight) ?? NORMAL_STRAIGHT_UP_VECTOR
-
-        // Interpolate the normal for the transition triangle as the average of the normals of the three points
-        const interpolatedNormal = sumAndNormalizeVectors([normal0, normalDownRight, normalRight])
-
-        Array.prototype.push.apply(transitionNormals, [
-            normal0.x, normal0.y, normal0.z,
-            normalDownRight.x, normalDownRight.y, normalDownRight.z,
-            interpolatedNormal.x, interpolatedNormal.y, interpolatedNormal.z,
-        ])
-
-        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-    }
-
-    // Transition up-left
-    if (overlap && terrainLeft && overlap.has(terrainLeft?.downRight) && transitionTextureMapping) {
-        const baseHeight = (tileBelow.heightDownLeft + height) / 2
-        const base = { x: (point.x + pointDownLeft.x) / 2, y: (point.y + pointDownLeft.y) / 2 }
-        const heightLeft = terrainLeft.height
-
-        Array.prototype.push.apply(transitionCoordinates, [
-            point.x, point.y, height,
-            pointDownLeft.x, pointDownLeft.y, tileBelow.heightDownLeft,
-            base.x + (pointLeft.x - base.x) * OVERLAP_FACTOR, base.y + (pointLeft.y - base.y) * OVERLAP_FACTOR, baseHeight + (heightLeft - baseHeight) * OVERLAP_FACTOR
-        ])
-
-        const normal0 = allNormals.get(point) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalDownLeft = allNormals.get(pointDownLeft) ?? NORMAL_STRAIGHT_UP_VECTOR
-        const normalLeft = allNormals.get(pointLeft) ?? NORMAL_STRAIGHT_UP_VECTOR
-
-        // Interpolate the normal for the transition triangle as the average of the normals of the three points
-        const interpolatedNormal = sumAndNormalizeVectors([normal0, normalDownLeft, normalLeft])
-
-        Array.prototype.push.apply(transitionNormals, [
-            normal0.x, normal0.y, normal0.z,
-            normalDownLeft.x, normalDownLeft.y, normalDownLeft.z,
-            interpolatedNormal.x, interpolatedNormal.y, interpolatedNormal.z,
-        ])
-
-        Array.prototype.push.apply(transitionTextureMappings, transitionTextureMapping)
-    }
-}
-
-function prepareToRenderFromTiles(allTiles: PointMap<TerrainAtPoint>, allNormals: PointMap<Vector>): MapRenderInformation {
-    const coordinates: number[] = []
-    const normals: number[] = []
-    const textureMappings: number[] = []
-
-    const transitionCoordinates: number[] = []
-    const transitionNormals: number[] = []
-    const transitionTextureMappings: number[] = []
-
-    // For all tiles, add the corresponding terrain tile to the buffers (coordinates, normals, texture mapping)
-    allTiles.forEach(({ height, below, downRight }, point) => {
-        const pointRight = getPointRight(point)
-        const pointDownLeft = getPointDownLeft(point)
-        const pointDownRight = getPointDownRight(point)
-
-        addTerrainRenderInformationForTileBelow(
-            point,
-            height,
-            {
-                pointAbove: point,
-                heightAbove: height,
-                heightDownLeft: allTiles.get(pointDownLeft)?.height ?? 0,
-                heightDownRight: allTiles.get(pointDownRight)?.height ?? 0,
-                vegetation: below
-            },
-            allTiles,
-            allNormals,
-            coordinates,
-            normals,
-            textureMappings,
-            transitionCoordinates,
-            transitionNormals,
-            transitionTextureMappings
-        )
-
-        addTerrainRenderInformationForTileDownRight(
-            point,
-            height,
-            {
-                pointLeft: point,
-                heightLeft: height,
-                heightDown: allTiles.get(pointDownRight)?.height ?? 0,
-                heightRight: allTiles.get(pointRight)?.height ?? 0,
-                vegetation: downRight
-            },
-            allTiles,
-            allNormals,
-            coordinates,
-            normals,
-            textureMappings,
-            transitionCoordinates,
-            transitionNormals,
-            transitionTextureMappings
-        )
-    })
-
-    return {
-        coordinates: coordinates.concat(transitionCoordinates),
-        normals: normals.concat(transitionNormals),
-        textureMapping: textureMappings.concat(transitionTextureMappings)
-    }
-}
-
-function updateFogOfWarRendering(allPointsVisibilityTracking: PointMap<TrianglesAtPoint>, fogOfWarProgramInstance: ProgramInstance): void {
-    const triangles = getTrianglesAffectedByFogOfWar(api.discoveredPoints, api.discoveredBelowTiles, api.discoveredDownRightTiles)
-
-    const fogOfWarCoordinates: number[] = []
-    const fogOfWarIntensities: number[] = []
-
-    triangles.forEach(triangle => {
-        fogOfWarCoordinates.push(triangle[0].point.x)
-        fogOfWarCoordinates.push(triangle[0].point.y)
-
-        fogOfWarCoordinates.push(triangle[1].point.x)
-        fogOfWarCoordinates.push(triangle[1].point.y)
-
-        fogOfWarCoordinates.push(triangle[2].point.x)
-        fogOfWarCoordinates.push(triangle[2].point.y)
-
-        fogOfWarIntensities.push(triangle[0].intensity)
-        fogOfWarIntensities.push(triangle[1].intensity)
-        fogOfWarIntensities.push(triangle[2].intensity)
-    })
-
-    // Add triangles to draw black
-    api.discoveredBelowTiles.forEach(discoveredBelow => {
-        const below = allPointsVisibilityTracking.get(discoveredBelow.pointAbove)
-
-        if (below) {
-            below.belowVisible = true
-        }
-    })
-
-    api.discoveredDownRightTiles.forEach(discoveredDownRight => {
-        const downRight = allPointsVisibilityTracking.get(discoveredDownRight.pointLeft)
-
-        if (downRight) {
-            downRight.downRightVisible = true
-        }
-    })
-
-    allPointsVisibilityTracking.forEach((trianglesAtPoint, point) => {
-        const downLeft = getPointDownLeft(point)
-        const downRight = getPointDownRight(point)
-        const right = getPointRight(point)
-
-        if (!trianglesAtPoint.belowVisible) {
-            fogOfWarCoordinates.push(point.x)
-            fogOfWarCoordinates.push(point.y)
-
-            fogOfWarCoordinates.push(downLeft.x)
-            fogOfWarCoordinates.push(downLeft.y)
-
-            fogOfWarCoordinates.push(downRight.x)
-            fogOfWarCoordinates.push(downRight.y)
-
-            fogOfWarIntensities.push(0)
-            fogOfWarIntensities.push(0)
-            fogOfWarIntensities.push(0)
-        }
-
-        if (!trianglesAtPoint.downRightVisible) {
-            fogOfWarCoordinates.push(point.x)
-            fogOfWarCoordinates.push(point.y)
-
-            fogOfWarCoordinates.push(right.x)
-            fogOfWarCoordinates.push(right.y)
-
-            fogOfWarCoordinates.push(downRight.x)
-            fogOfWarCoordinates.push(downRight.y)
-
-            fogOfWarIntensities.push(0)
-            fogOfWarIntensities.push(0)
-            fogOfWarIntensities.push(0)
-        }
-    })
-
-    const fogOfWarRenderInformation = { coordinates: fogOfWarCoordinates, intensities: fogOfWarIntensities }
-
-
-    setBuffer<FogOfWarAttributes>(fogOfWarProgramInstance, 'a_coordinates', fogOfWarRenderInformation.coordinates)
-    setBuffer<FogOfWarAttributes>(fogOfWarProgramInstance, 'a_intensity', fogOfWarRenderInformation.intensities)
 }
 
 export { GameCanvas }

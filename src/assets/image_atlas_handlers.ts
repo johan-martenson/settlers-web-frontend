@@ -1,4 +1,4 @@
-import { AnyBuilding, CropGrowth, CropType, DecorationType, Direction, FireSize, FlagType, Material, Nation, PlayerColor, ShipConstructionProgress, SignType, Size, SmokeType, StoneAmount, StoneType, TreeSize, TreeType, WorkerAction } from '../api/types'
+import { AnyBuilding, CropGrowth, CropInformation, CropType, DecorationType, Direction, FireSize, FlagInformation, FlagType, HouseInformation, Material, Nation, PlayerColor, ShipConstructionProgress, ShipInformation, SignInformation, SignType, Size, SmokeType, StoneAmount, StoneInformation, StoneType, TreeInformation, TreeSize, TreeType, WorkerAction } from '../api/types'
 import { AnimalImageAtlas, AnimationType, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
 import { AssetsLogConfig } from './config'
 import { UiIconType } from '../components/icons/icon'
@@ -340,6 +340,17 @@ class MaterialImageAtlasHandler {
     }
 }
 
+type PartialFlag = {
+    nation: Nation
+    type: FlagType
+}
+
+type PartialFlagWithColor = {
+    nation: Nation
+    type: FlagType
+    color: PlayerColor
+}
+
 class FlagImageAtlasHandler extends BaseImageAtlasHandler<Record<Nation, Record<FlagType, Record<PlayerColor | 'shadows', ImageSeries>>>> {
     private pathPrefix: string
 
@@ -353,9 +364,9 @@ class FlagImageAtlasHandler extends BaseImageAtlasHandler<Record<Nation, Record<
         await super.load(this.pathPrefix + 'image-atlas-flags.json', this.pathPrefix + 'image-atlas-flags.png')
     }
 
-    getDrawingInformationFor(nation: Nation, color: PlayerColor, flagType: FlagType, animationCounter: number): DrawingInformation[] | undefined {
-        const images = this.atlas[nation][flagType][color]
-        const shadowImages = this.atlas[nation][flagType]['shadows']
+    getDrawingInformationFor(flag: PartialFlagWithColor, animationCounter: number): DrawingInformation[] | undefined {
+        const images = this.atlas[flag.nation][flag.type][flag.color]
+        const shadowImages = this.atlas[flag.nation][flag.type]['shadows']
 
         return [
             {
@@ -369,8 +380,13 @@ class FlagImageAtlasHandler extends BaseImageAtlasHandler<Record<Nation, Record<
         ]
     }
 
-    getSize(nation: Nation, flagType: FlagType): Dimension | undefined {
-        const drawingInfo = this.getDrawingInformationFor(nation, 'BLUE', flagType, 0)
+    getSize(flag: PartialFlag): Dimension | undefined {
+        const drawingInfo = this.getDrawingInformationFor(
+            {
+                ...flag,
+                color: 'BLUE',
+            }
+            , 0)
 
         if (drawingInfo) {
             return {
@@ -382,8 +398,14 @@ class FlagImageAtlasHandler extends BaseImageAtlasHandler<Record<Nation, Record<
         return undefined
     }
 
-    getSizeWithShadow(nation: Nation, flagType: FlagType): Dimension | undefined {
-        const draw = this.getDrawingInformationFor(nation, 'BLUE', flagType, 0)
+    getSizeWithShadow(flag: PartialFlag): Dimension | undefined {
+        const draw = this.getDrawingInformationFor(
+            {
+                ...flag,
+                color: 'BLUE'
+            },
+            0
+        )
 
         if (draw) {
             return {
@@ -409,9 +431,9 @@ class ShipImageAtlasHandler extends BaseImageAtlasHandler<ShipImageAtlas> {
         await super.load(this.pathPrefix + 'image-atlas-ship.json', this.pathPrefix + 'image-atlas-ship.png')
     }
 
-    getDrawingInformationForShip(direction: Direction): DrawingInformation[] | undefined {
-        const imageInfo = this.atlas.ready[direction].image
-        const shadowImageInfo = this.atlas.ready[direction].shadowImage
+    getDrawingInformationForShip(ship: ShipInformation): DrawingInformation[] | undefined {
+        const imageInfo = this.atlas.ready[ship.direction ?? 'EAST'].image
+        const shadowImageInfo = this.atlas.ready[ship.direction ?? 'EAST'].shadowImage
 
         return [
             {
@@ -425,9 +447,9 @@ class ShipImageAtlasHandler extends BaseImageAtlasHandler<ShipImageAtlas> {
         ]
     }
 
-    getDrawingInformationForShipUnderConstruction(constructionProgress: ShipConstructionProgress): DrawingInformation[] | undefined {
-        const image = this.atlas.underConstruction[constructionProgress].image
-        const shadowImage = this.atlas.underConstruction[constructionProgress].shadowImage
+    getDrawingInformationForShipUnderConstruction(ship: ShipInformation): DrawingInformation[] | undefined {
+        const image = this.atlas.underConstruction[ship.constructionState].image
+        const shadowImage = this.atlas.underConstruction[ship.constructionState].shadowImage
 
         return [
             {
@@ -447,6 +469,15 @@ class ShipImageAtlasHandler extends BaseImageAtlasHandler<ShipImageAtlas> {
             height: this.atlas.ready[direction].image.height ?? 0
         }
     }
+}
+
+
+type PartialWorkerWithAction = {
+    nation: Nation
+    direction: Direction
+    color: PlayerColor
+    action: WorkerAction
+    actionAnimationIndex: number
 }
 
 class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
@@ -496,28 +527,25 @@ class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
     }
 
     getDrawingInformationForAction(
-        nation: Nation,
-        direction: Direction,
-        action: WorkerAction,
-        color: PlayerColor,
+        worker: PartialWorkerWithAction,
         animationIndex: number
     ): DrawingInformation | undefined {
         const common = this.atlas.common.actionsByPlayer
         const nationSpecific = this.atlas.nationSpecific?.actionsByPlayer
 
-        const animationType = actionAnimationType.get(action)
+        const animationType = actionAnimationType.get(worker.action)
 
         // Try to find action images common across nations
-        const actionImages = common?.[action]?.[direction]?.[color]
-            ?? common?.[action]?.['any']?.[color]
-            ?? nationSpecific?.[nation]?.[action]?.[direction]?.[color]
-            ?? nationSpecific?.[nation]?.[action]?.['any']?.[color]
+        const actionImages = common?.[worker.action]?.[worker.direction]?.[worker.color]
+            ?? common?.[worker.action]?.['any']?.[worker.color]
+            ?? nationSpecific?.[worker.nation]?.[worker.action]?.[worker.direction]?.[worker.color]
+            ?? nationSpecific?.[worker.nation]?.[worker.action]?.['any']?.[worker.color]
 
         // Report if there still is no action image found
         if (!actionImages) {
-            if (!reported.has(action)) {
-                console.error(`FOUND NO ACTION: name: ${this.name}, nation: ${nation}, direction: ${direction}, action: ${action}, color: ${color}`)
-                reported.add(action)
+            if (!reported.has(worker.action)) {
+                console.error(`FOUND NO ACTION: name: ${this.name}, nation: ${worker.nation}, direction: ${worker.direction}, action: ${worker.action}, color: ${worker.color}`)
+                reported.add(worker.action)
             }
 
             return undefined
@@ -547,7 +575,7 @@ class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
             return undefined
         }
 
-        const { x, y } = OFFSET_ADJUSTMENTS_FOR_ACTIONS[action] ?? { x: 0, y: 0 }
+        const { x, y } = OFFSET_ADJUSTMENTS_FOR_ACTIONS[worker.action] ?? { x: 0, y: 0 }
 
         return {
             ...image,
@@ -590,6 +618,12 @@ class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
     }
 }
 
+type PartialHouse = {
+    nation: Nation
+    type: AnyBuilding
+    constructionProgress?: number
+}
+
 class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
     private pathPrefix: string
 
@@ -603,8 +637,8 @@ class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
         await super.load(this.pathPrefix + 'image-atlas-buildings.json', this.pathPrefix + 'image-atlas-buildings.png')
     }
 
-    getDrawingInformationForHouseJustStarted(nation: Nation): DrawingInformation | undefined {
-        const houseInformation = this.atlas.constructionJustStarted[nation].image
+    getDrawingInformationForHouseJustStarted(house: HouseInformation): DrawingInformation | undefined {
+        const houseInformation = this.atlas.constructionJustStarted[house.nation].image
 
         return {
             ...imageInfoFromSingleImage(houseInformation),
@@ -621,34 +655,35 @@ class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
         }
     }
 
-    getPartialHouseReady(nation: Nation, houseType: AnyBuilding, percentageReady: number): DrawingInformation[] | undefined {
-        const houseImage = this.atlas.buildings[nation][houseType].ready
-        const houseShadowImage = this.atlas.buildings[nation][houseType].readyShadow
+    getPartialHouseReady(house: HouseInformation): DrawingInformation[] | undefined {
+        const houseImage = this.atlas.buildings[house.nation][house.type].ready
+        const houseShadowImage = this.atlas.buildings[house.nation][house.type].readyShadow
+        const constructionProgress = house.constructionProgress ?? 0
 
         return [
             {
                 sourceX: houseImage.x,
-                sourceY: houseImage.y + houseImage.height * ((100 - percentageReady) / 100),
+                sourceY: houseImage.y + houseImage.height * ((100 - constructionProgress) / 100),
                 width: houseImage.width,
-                height: houseImage.height * (percentageReady / 100),
+                height: houseImage.height * (constructionProgress / 100),
                 offsetX: houseImage.offsetX,
-                offsetY: houseImage.offsetY - houseImage.height * ((100 - percentageReady) / 100),
+                offsetY: houseImage.offsetY - houseImage.height * ((100 - constructionProgress) / 100),
                 image: this.sourceImage
             },
             {
                 sourceX: houseShadowImage.x,
-                sourceY: houseShadowImage.y + houseImage.height * ((100 - percentageReady) / 100),
+                sourceY: houseShadowImage.y + houseImage.height * ((100 - constructionProgress) / 100),
                 width: houseShadowImage.width,
-                height: houseShadowImage.height * (percentageReady / 100),
+                height: houseShadowImage.height * (constructionProgress / 100),
                 offsetX: houseShadowImage.offsetX,
-                offsetY: houseShadowImage.offsetY - houseImage.height * ((100 - percentageReady) / 100),
+                offsetY: houseShadowImage.offsetY - houseImage.height * ((100 - constructionProgress) / 100),
                 image: this.sourceImage
             }
         ]
     }
 
-    getDrawingInformationForOpenDoor(nation: Nation, houseType: AnyBuilding): DrawingInformation | undefined {
-        const doorImage = this.atlas.buildings[nation][houseType].openDoor
+    getDrawingInformationForOpenDoor(house: HouseInformation): DrawingInformation | undefined {
+        const doorImage = this.atlas.buildings[house.nation][house.type].openDoor
 
         if (doorImage) {
             return {
@@ -660,20 +695,26 @@ class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
         return undefined
     }
 
-    getDrawingInformationForWorkingHouse(nation: Nation, houseType: AnyBuilding, animationIndex: number): DrawingInformation[] | undefined {
-        if (this.atlas.buildings[nation][houseType] === undefined) {
-            console.log([nation, houseType, this.atlas.buildings[nation]])
+    getDrawingInformationForWorkingHouse(house: HouseInformation, animationIndex: number): DrawingInformation[] | undefined {
+        if (this.atlas.buildings[house.nation][house.type] === undefined) {
+            console.log([house.nation, house.type, this.atlas.buildings[house.nation]])
         }
 
-        if (this.atlas.buildings[nation][houseType].workingAnimation === undefined || this.atlas.buildings[nation][houseType].readyShadow === undefined) {
-            console.error(['Missing animation for', nation, houseType])
+        if (this.atlas.buildings[house.nation][house.type].workingAnimation === undefined || this.atlas.buildings[house.nation][house.type].readyShadow === undefined) {
+            console.error(['Missing animation for', house.nation, house.type])
 
             return undefined
         }
 
 
-        const houseAnimation = this.atlas.buildings[nation][houseType].workingAnimation
-        const houseAnimationShadow = this.atlas.buildings[nation][houseType].workingAnimationShadow
+        const houseAnimation = this.atlas.buildings[house.nation][house.type].workingAnimation
+        const houseAnimationShadow = this.atlas.buildings[house.nation][house.type].workingAnimationShadow
+
+        if (houseAnimation === undefined) {
+            console.error('Image atlas handlers: Missing animation for', [house.nation, house.type])
+
+            return undefined
+        }
 
         return [
             {
@@ -683,23 +724,23 @@ class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
             {
                 ...(houseAnimationShadow
                     ? imageInfoFromHorizontalImageSeries(houseAnimationShadow, animationIndex)
-                    : imageInfoFromSingleImage(this.atlas.buildings[nation][houseType].readyShadow))
+                    : imageInfoFromSingleImage(this.atlas.buildings[house.nation][house.type].readyShadow))
                 ,
                 image: this.sourceImage
             }
         ]
     }
 
-    getDrawingInformationForHouseReady(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {
-        if (this.atlas.buildings[nation][houseType] === undefined) {
-            console.log([nation, houseType, this.atlas.buildings[nation]])
+    getDrawingInformationForHouseReady(house: PartialHouse): DrawingInformation[] | undefined {
+        if (this.atlas.buildings[house.nation][house.type] === undefined) {
+            console.error('Image atlas handlers: Missing ready image for', [house.nation, house.type])
         }
 
-        const houseImage = this.atlas.buildings[nation][houseType].ready
-        const houseShadowImage = this.atlas.buildings[nation][houseType].readyShadow
+        const houseImage = this.atlas.buildings[house.nation][house.type].ready
+        const houseShadowImage = this.atlas.buildings[house.nation][house.type].readyShadow
 
         if (houseShadowImage === undefined) {
-            console.log([nation, houseType])
+            console.error([house.nation, house.type])
         }
 
         return [
@@ -714,9 +755,9 @@ class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
         ]
     }
 
-    getDrawingInformationForHouseUnderConstruction(nation: Nation, houseType: AnyBuilding): DrawingInformation[] | undefined {
-        const houseImage = this.atlas.buildings[nation][houseType].underConstruction
-        const houseShadowImage = this.atlas.buildings[nation][houseType].underConstructionShadow
+    getDrawingInformationForHouseUnderConstruction(house: HouseInformation): DrawingInformation[] | undefined {
+        const houseImage = this.atlas.buildings[house.nation][house.type].underConstruction
+        const houseShadowImage = this.atlas.buildings[house.nation][house.type].underConstructionShadow
 
         return [
             {
@@ -772,8 +813,11 @@ class SignImageAtlasHandler extends BaseImageAtlasHandler<SignImageAtlas> {
         await super.load(this.pathPrefix + 'image-atlas-signs.json', this.pathPrefix + 'image-atlas-signs.png')
     }
 
-    getDrawingInformation(signType: SignType, size: Size): DrawingInformation[] | undefined {
-        const image = this.atlas.images[signType][size]
+    getDrawingInformation(sign: SignInformation): DrawingInformation[] | undefined {
+        const type = sign.type ?? 'NOTHING'
+        const amount = sign.amount ?? 'LARGE'
+
+        const image = this.atlas.images[type][amount]
         const shadowImage = this.atlas.shadowImage
 
         return [
@@ -836,8 +880,8 @@ class FireImageAtlasHandler extends BaseImageAtlasHandler<FireImageAtlas> {
         }
     }
 
-    getSmokeDrawingInformation(nation: Nation, houseType: AnyBuilding, animationIndex: number): DrawingInformation | undefined {
-        const smokeType = BUILDING_SMOKE[nation]?.[houseType]
+    getSmokeDrawingInformation(house: PartialHouse, animationIndex: number): DrawingInformation | undefined {
+        const smokeType = BUILDING_SMOKE[house.nation]?.[house.type]
 
         if (smokeType === undefined) {
             return undefined
@@ -872,7 +916,7 @@ class CargoImageAtlasHandler extends BaseImageAtlasHandler<CargoImageAtlas> {
         await super.load(this.pathPrefix + 'image-atlas-cargos.json', this.pathPrefix + 'image-atlas-cargos.png')
     }
 
-    getDrawingInformation(nation: Nation, material: Material): DrawingInformation | undefined {
+    getDrawingInformation(flag: FlagInformation, material: Material): DrawingInformation | undefined {
         const genericInfo = this.atlas.generic[material]
 
         if (genericInfo !== undefined) {
@@ -882,7 +926,7 @@ class CargoImageAtlasHandler extends BaseImageAtlasHandler<CargoImageAtlas> {
             }
         }
 
-        const nationSpecificInfo = this.atlas.nationSpecific[nation]
+        const nationSpecificInfo = this.atlas.nationSpecific[flag.nation]
 
         if (nationSpecificInfo !== undefined && nationSpecificInfo[material] !== undefined) {
             const drawInfo = nationSpecificInfo[material]
@@ -994,12 +1038,12 @@ class TreeImageAtlasHandler extends BaseImageAtlasHandler<TreeImageAtlas> {
         ]
     }
 
-    getImageForGrowingTree(treeType: TreeType, treeSize: TreeSize): DrawingInformation[] | undefined {
-        const imagePerTreeType = this.atlas.growingTrees[treeType]
-        const shadowImagePerTreeType = this.atlas.growingTreeShadows[treeType]
+    getImageForGrowingTree(tree: TreeInformation): DrawingInformation[] | undefined {
+        const imagePerTreeType = this.atlas.growingTrees[tree.type]
+        const shadowImagePerTreeType = this.atlas.growingTreeShadows[tree.type]
 
-        const imageInfo = imagePerTreeType[treeSize]
-        const shadowImageInfo = shadowImagePerTreeType[treeSize]
+        const imageInfo = imagePerTreeType[tree.size]
+        const shadowImageInfo = shadowImagePerTreeType[tree.size]
 
         return [
             {
@@ -1028,13 +1072,9 @@ class StoneImageAtlasHandler extends BaseImageAtlasHandler<StoneImageAtlasInfo> 
         await super.load(this.pathPrefix + 'image-atlas-stones.json', this.pathPrefix + 'image-atlas-stones.png')
     }
 
-    getDrawingInformationFor(stoneType: StoneType, amount: StoneAmount): DrawingInformation[] | undefined {
-        if (this.atlas[stoneType] === undefined || this.atlas[stoneType][amount] === undefined || this.atlas[stoneType][amount].image === undefined) {
-            console.log([this.atlas, stoneType, amount])
-        }
-
-        const image = this.atlas[stoneType][amount].image
-        const shadowImage = this.atlas[stoneType][amount].shadowImage
+    getDrawingInformationFor(stone: StoneInformation): DrawingInformation[] | undefined {
+        const image = this.atlas[stone.type][stone.amount].image
+        const shadowImage = this.atlas[stone.type][stone.amount].shadowImage
 
         return [
             {
@@ -1109,9 +1149,9 @@ class CropImageAtlasHandler extends BaseImageAtlasHandler<CropImageAtlasInfo> {
         await super.load(this.pathPrefix + 'image-atlas-crops.json', this.pathPrefix + 'image-atlas-crops.png')
     }
 
-    getDrawingInformationFor(cropType: CropType, growth: CropGrowth): DrawingInformation[] | undefined {
-        const imageInfo = this.atlas[cropType][growth].image
-        const shadowImageInfo = this.atlas[cropType][growth].shadowImage
+    getDrawingInformationFor(crop: CropInformation): DrawingInformation[] | undefined {
+        const imageInfo = this.atlas[crop.type][crop.state].image
+        const shadowImageInfo = this.atlas[crop.type][crop.state].shadowImage
 
         return [
             {

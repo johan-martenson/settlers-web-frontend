@@ -353,9 +353,11 @@ const WorkerIcon = ({
 
             const handler = workers[worker]
             const drawArray = handler?.getAnimationFrame(
-                nation,
-                direction,
-                color,
+                {
+                    nation,
+                    direction,
+                    color
+                },
                 0,
                 frameIndex
             )
@@ -390,6 +392,7 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
         loader: async () => {
             await houses.load()
             const image = houses.getSourceImage()
+
             if (!image) {
                 throw new Error('No image')
             }
@@ -404,7 +407,12 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
                 return
             }
 
-            const drawArray = houses.getDrawingInformationForHouseReady(nation, houseType)
+            const drawArray = houses.getDrawingInformationForHouseReady(
+                {
+                    nation,
+                    type: houseType
+                }
+            )
 
             if (!drawArray) {
                 return
@@ -423,7 +431,10 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
         }
     })
 
-    return <canvas ref={canvasRef} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} />
+    return <canvas ref={canvasRef} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{
+        width: '1px',
+        height: '1px'
+    }} />
 }
 
 const InventoryIcon = ({ nation, material, scale = 1, inline = false, missing = false, onMouseEnter, onMouseLeave }: InventoryIconProps) => {
@@ -532,30 +543,25 @@ const FlagIcon = ({
             return { image }
         },
         getFrame: (bitmap, frameIndex) => {
-
             const canvas = canvasRef.current
             if (!canvas) return
 
             const drawArray = flagAnimations.getAnimationFrame(
-                nation,
-                color,
-                type,
+                {
+                    nation,
+                    color,
+                    type
+                },
                 frameIndex,
                 0
             )
 
-            if (!drawArray) return
+            if (!drawArray) {
+                return
+            }
 
-            const [drawInfo, shadowInfo] = drawArray
-
-            drawImageAndShadow(
-                bitmap,
-                drawInfo,
-                shadowInfo,
-                drawShadow,
-                canvas,
-                scale
-            )
+            const [draw, shadow] = drawArray
+            drawImageAndShadow(bitmap, draw, shadow, drawShadow, canvas, scale)
         }
     })
 

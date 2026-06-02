@@ -8,7 +8,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start; /* was space-between */
-    margin: auto;
+    margin: 0;
     gap: 1em;
     user-select: none;
 
@@ -16,8 +16,6 @@
         text-align: left;
     }
 
-    /*box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.60);*/
-    /*box-shadow: rgba(0, 0, 0, 0.50) 1.95px 1.95px 2.6px;*/
     box-shadow: rgba(0, 0, 0, 0.50) 0px 3px 8px;
 }
 
@@ -26,9 +24,11 @@
     flex-direction: column;
     gap: 1em;
     min-height: 10em;
-    height: 100%;
+    height: auto;
+    min-width: 0;     /* important */
+    width: 100%;      /* helpful */
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-self: stretch;
 }
 
@@ -56,9 +56,9 @@
         position: absolute;
         width: 33em;
         height: auto;
-        min-height: 20em;
-        margin: auto;
+        margin: 0;
         padding: 2em;
+        box-sizing: border-box;
     }
 }
 

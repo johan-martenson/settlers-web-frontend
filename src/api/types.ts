@@ -170,6 +170,7 @@ export type WildAnimalInformation = Point & {
     id: WildAnimalId
     type: WildAnimalType
     betweenPoints: boolean
+    direction: Direction
     previous?: Point
     next?: Point
     percentageTraveled: number
@@ -507,8 +508,6 @@ export type DecorationType =
     | 'LITTLE_GRASS'
     | 'SNOWMAN'
 
-export type SimpleDirection = 'UP_LEFT' | 'UP_RIGHT' | 'RIGHT' | 'DOWN_RIGHT' | 'DOWN_LEFT' | 'LEFT'
-
 export type WorkerInformation = Point & {
     id: WorkerId
     type: WorkerType
@@ -532,7 +531,7 @@ export type ServerWorkerInformation = Point & {
     color: PlayerColor
     nation: Nation
     betweenPoints: boolean
-    direction: SimpleDirection
+    direction: Direction
     previous?: Point
     next?: Point
     percentageTraveled: number
@@ -545,6 +544,7 @@ export type ServerWorkerInformation = Point & {
 export type ShipInformation = Point & {
     id: ShipId
     betweenPoints: boolean
+    direction?: Direction
     previous?: Point
     next?: Point
     percentageTraveled: number

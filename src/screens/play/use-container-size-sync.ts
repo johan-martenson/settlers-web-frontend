@@ -80,6 +80,10 @@ function useContainerSizeSync({ gameId, selfContainerRef, immediateStateRef }: U
             }
         }
 
+        if (PlayLogConfig.lifecycle) {
+            console.log('Play (lifecycle): Starting container size sync effect')
+        }
+
         initializeScreenSize()
 
         window.addEventListener('resize', updateScreenSize)

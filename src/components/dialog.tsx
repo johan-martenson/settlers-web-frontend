@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@fluentui/react-components'
 import { Dismiss16Filled } from '@fluentui/react-icons'
 import './dialog.css'
@@ -86,11 +86,21 @@ function WindowWithTyping<T extends object | string>({
     })
 
     // References
-    const draggingRef = useRef<Drag>()
+    const draggingRef = useRef<Drag>(null)
     const windowRef = useRef<HTMLDivElement>(null)
 
     // Hooks
     const { inputValue, keyTyped } = useTypingInput()
+
+    // Functions
+    const runMatch = useCallback((match: typeof matches[number]) => {
+        if (param === undefined) {
+            console.error('Cannot run command without parameter/context')
+            return
+        }
+
+        executeCommand(match, param)
+    }, [param])
 
     // Effects
     // Effect: listen to mouse movements and handle window dragging
@@ -109,7 +119,7 @@ function WindowWithTyping<T extends object | string>({
         }
 
         const onMouseUp = () => {
-            draggingRef.current = undefined
+            draggingRef.current = null
         }
 
         window.addEventListener('mousemove', onMouseMove)
@@ -122,7 +132,7 @@ function WindowWithTyping<T extends object | string>({
     }, [])
 
     // Effect: give the window focus on initial load to make typing navigation work
-    useEffect(() => {
+    useLayoutEffect(() => {
         windowRef.current?.focus()
     }, [])
 
@@ -130,14 +140,7 @@ function WindowWithTyping<T extends object | string>({
     const matches = findMatchingCommands(commands, inputValue, param)
     const topMatch = matches.length > 0 ? matches[0] : undefined
 
-    const runMatch = useCallback((match: typeof matches[number]) => {
-        if (param === undefined) {
-            console.error('Cannot run command without parameter/context')
-            return
-        }
 
-        executeCommand(match, param)
-    }, [param])
 
     return (
         <div
@@ -201,7 +204,9 @@ function WindowWithTyping<T extends object | string>({
             <div className='window-content'>
                 {heading && <h1>{heading}</h1>}
 
-                {children}
+                <div className='window-content-inner'>
+                    {children}
+                </div>
             </div>
 
             <div className='hover-info-label'>

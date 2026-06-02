@@ -1,6 +1,6 @@
 import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, pointStringToPoint, terrainInformationToTerrainAtPointList } from '../utils/utils'
 
-import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, SimpleDirection, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory, Tool, AttackType, SoldierType, PointInformation, AnyBuilding, CheatCode, MapId, MapWithTerrain, PointInformationWithoutPossibleRoadConnections, ToolPriorities, TerrainInformation } from './types'
+import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory, Tool, AttackType, SoldierType, PointInformation, AnyBuilding, CheatCode, MapId, MapWithTerrain, PointInformationWithoutPossibleRoadConnections, ToolPriorities, TerrainInformation, Direction } from './types'
 import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setCheating, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority, getMap, cheat, listenToPlayer, stopListeningToPlayer, stopSendingOutMaterial, sendOutMaterial, allowDelivery, blockDelivery, getMapsWithTerrain, getMapWithTerrain, stopListeningToGamesList } from './ws/commands'
 import { simpleDirectionToCompassDirection } from './utils'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, waitForConnection, addMessageListener } from './ws/core'
@@ -24,7 +24,7 @@ type WalkerTargetChange = {
     y: number
     path: Point[]
     percentageTraveled: number
-    direction: SimpleDirection
+    direction: Direction
     cargo?: Material
     type: WorkerType
     bodyType?: BodyType
@@ -159,11 +159,11 @@ export type TileDownRight = {
     vegetation: VegetationIntegers
 }
 
-let workerWalkingTimer: undefined | NodeJS.Timeout
-let workerAnimationsTimer: undefined | NodeJS.Timeout
-let cropGrowerTimer: undefined | NodeJS.Timeout
-let treeGrowerTimer: undefined | NodeJS.Timeout
-let gameTimer: undefined | NodeJS.Timeout
+let workerWalkingTimer: ReturnType<typeof setTimeout> | undefined
+let workerAnimationsTimer: ReturnType<typeof setTimeout> | undefined
+let cropGrowerTimer: ReturnType<typeof setTimeout> | undefined
+let treeGrowerTimer: ReturnType<typeof setTimeout> | undefined
+let gameTimer: ReturnType<typeof setTimeout> | undefined
 
 // Listener types
 export type GameListListener = (gameInformations: GameInformation[]) => void
@@ -2964,7 +2964,8 @@ function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void
                 path: wildAnimalInformation.path,
                 betweenPoints: false,
                 percentageTraveled: 0,
-                type: wildAnimalInformation.type
+                type: wildAnimalInformation.type,
+                direction: wildAnimalInformation.direction
             }
 
             api.wildAnimals.set(wildAnimal.id, wildAnimal)
@@ -2989,8 +2990,6 @@ function syncNewOrUpdatedWildAnimals(wildAnimals: WildAnimalInformation[]): void
 
 function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
     targetChanges.forEach(walkerTargetChange => {
-        const direction = simpleDirectionToCompassDirection(walkerTargetChange.direction)
-
         let worker = api.workers.get(walkerTargetChange.id) ?? {
             id: walkerTargetChange.id,
             type: walkerTargetChange.type,
@@ -3002,7 +3001,7 @@ function syncWorkersWithNewTargets(targetChanges: WalkerTargetChange[]): void {
             ...worker,
             x: walkerTargetChange.x,
             y: walkerTargetChange.y,
-            direction,
+            direction: walkerTargetChange.direction,
             plannedPath: walkerTargetChange.path?.length ? walkerTargetChange.path : undefined,
             previous: { x: walkerTargetChange.x, y: walkerTargetChange.y },
             next: walkerTargetChange.path?.[0],
@@ -3091,6 +3090,14 @@ function serverSentTreeToLocal(serverTree: TreeInformation): TreeInformationLoca
  */
 function placeLocalRoad(points: Point[]): void {
     api.roads.set('LOCAL', { id: 'LOCAL', points, type: 'NORMAL', playerId: api.playerId ?? 'LOCAL_PLAYER' })
+
+    roadsListeners.forEach(roadListener => {
+        try {
+            roadListener()
+        } catch (e) {
+            console.error(e)
+        }
+    })
 }
 
 /**
@@ -3106,6 +3113,14 @@ function removeLocalRoad(roadId: RoadId): void {
 
         api.roads.delete(roadId)
     }
+
+    roadsListeners.forEach(roadListener => {
+        try {
+            roadListener()
+        } catch (e) {
+            console.error(e)
+        }
+    })
 }
 
 /**
@@ -3126,7 +3141,7 @@ function isGameDataAvailable(): boolean {
 function serverWorkerToLocalWorker(serverWorker: ServerWorkerInformation): WorkerInformation {
     return {
         ...serverWorker,
-        direction: simpleDirectionToCompassDirection(serverWorker.direction)
+        direction: serverWorker.direction
     }
 }
 

@@ -1,4 +1,5 @@
 import { BUILDABLE_MOUNTAIN, BUILDABLE_WATER, DESERT_1, DESERT_2, FLOWER_MEADOW, LAVA_1, LAVA_2, LAVA_3, LAVA_4, MAGENTA, MEADOW_1, MEADOW_2, MEADOW_3, MOUNTAIN_1, MOUNTAIN_2, MOUNTAIN_3, MOUNTAIN_4, MOUNTAIN_MEADOW, SAVANNAH, SNOW, STEPPE, SWAMP, VegetationIntegers, WATER_1, WATER_2 } from "../api/types"
+import { Vector } from "../utils/utils"
 
 // Types
 type BelowAndDownRight = {
@@ -28,6 +29,9 @@ const uv = (
 export const DEFAULT_SCALE = 35.0
 export const DEFAULT_HEIGHT_ADJUSTMENT = 10.0
 export const STANDARD_HEIGHT = 10.0
+
+export const NORMAL_STRAIGHT_UP_VECTOR: Vector = { x: 0, y: 0, z: 1 }
+export const OVERLAP_FACTOR = (16.0 / 47.0)
 
 // Geometric constants
 export const UNIT_SQUARE = [

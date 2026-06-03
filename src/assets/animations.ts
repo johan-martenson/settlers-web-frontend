@@ -198,11 +198,11 @@ export class WorkerAnimation {
 }
 
 // Animation instances
-const flagAnimations = new FlagAnimation(2)
+const FLAG_ANIMATIONS = new FlagAnimation(2)
 
 const helperAnimation = new WorkerAnimation('assets/', 'helper', 10)
 
-const workers: Partial<Record<WorkerType, WorkerAnimation>> = {
+const WORKER_ANIMATIONS: Partial<Record<WorkerType, WorkerAnimation>> = {
     Armorer: new WorkerAnimation('assets/', 'armorer', 10),
     Baker: new WorkerAnimation('assets/', 'baker', 10),
     Brewer: new WorkerAnimation('assets/', 'brewer', 10),
@@ -241,32 +241,32 @@ const fatCarrierWithCargo = new WorkerAnimation('assets/', 'fat-carrier-with-car
 const thinCarrierNoCargo = new WorkerAnimation('assets/', 'thin-carrier-no-cargo', 10)
 const fatCarrierNoCargo = new WorkerAnimation('assets/', 'fat-carrier-no-cargo', 10)
 
-const treeAnimations = new TreeAnimation(2)
+const TREE_ANIMATIONS = new TreeAnimation(2)
 
-const animals = new Map<WildAnimalType, AnimalAnimation>()
+const ANIMAL_ANIMATIONS = new Map<WildAnimalType, AnimalAnimation>()
 
-animals.set('DEER', new AnimalAnimation('assets/nature/animals/', 'deer', 10))
-animals.set('DEER_2', new AnimalAnimation('assets/nature/animals/', 'deer2', 10))
-animals.set('DUCK', new AnimalAnimation('assets/nature/animals/', 'duck', 10))
-animals.set('DUCK_2', new AnimalAnimation('assets/nature/animals/', 'duck', 10))
-animals.set('FOX', new AnimalAnimation('assets/nature/animals/', 'fox', 10))
-animals.set('RABBIT', new AnimalAnimation('assets/nature/animals/', 'rabbit', 10))
-animals.set('SHEEP', new AnimalAnimation('assets/nature/animals/', 'sheep', 10))
-animals.set('STAG', new AnimalAnimation('assets/nature/animals/', 'stag', 10))
+ANIMAL_ANIMATIONS.set('DEER', new AnimalAnimation('assets/nature/animals/', 'deer', 10))
+ANIMAL_ANIMATIONS.set('DEER_2', new AnimalAnimation('assets/nature/animals/', 'deer2', 10))
+ANIMAL_ANIMATIONS.set('DUCK', new AnimalAnimation('assets/nature/animals/', 'duck', 10))
+ANIMAL_ANIMATIONS.set('DUCK_2', new AnimalAnimation('assets/nature/animals/', 'duck', 10))
+ANIMAL_ANIMATIONS.set('FOX', new AnimalAnimation('assets/nature/animals/', 'fox', 10))
+ANIMAL_ANIMATIONS.set('RABBIT', new AnimalAnimation('assets/nature/animals/', 'rabbit', 10))
+ANIMAL_ANIMATIONS.set('SHEEP', new AnimalAnimation('assets/nature/animals/', 'sheep', 10))
+ANIMAL_ANIMATIONS.set('STAG', new AnimalAnimation('assets/nature/animals/', 'stag', 10))
 
 const donkeyAnimation = new AnimalAnimation('assets/nature/animals/', 'donkey', 10)
 
 const fireAnimations = new FireAnimation(2)
 
 export {
-    flagAnimations,
-    workers,
+    FLAG_ANIMATIONS,
+    WORKER_ANIMATIONS,
     thinCarrierWithCargo,
     fatCarrierWithCargo,
     thinCarrierNoCargo,
     fatCarrierNoCargo,
-    treeAnimations,
-    animals,
+    TREE_ANIMATIONS,
+    ANIMAL_ANIMATIONS,
     donkeyAnimation,
     fireAnimations
 }

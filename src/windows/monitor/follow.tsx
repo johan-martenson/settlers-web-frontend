@@ -57,7 +57,6 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
     const moving = useNonTriggeringState<Moving>({ moving: false, mouseAt: { x: 0, y: 0 } })
 
     // Functions
-
     const findEntityPosition = useCallback((entity: {
         betweenPoints?: boolean
         previous?: Point

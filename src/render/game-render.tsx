@@ -1,23 +1,24 @@
 import React, { useCallback, useEffect, useRef } from 'react'
-import { Point } from '../api/types'
+import { AvailableConstruction, CropInformation, Decoration, FallingTreeInformation, FlagInformation, HouseInformation, PlayerId, Point, ShipInformation, SignInformation, StoneInformation, TerrainAtPoint, TreeInformation, WildAnimalInformation, WorkerInformation } from '../api/types'
 import { Duration } from '../utils/stats/duration'
 import './game-render.css'
-import { api, TileBelow, TileDownRight } from '../api/ws-api'
+import { api, MonitoredBorderForPlayer } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../utils/stats/stats'
-import { gamePointToScreenPointWithHeightAdjustment, getHouseSize, getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment, sumAndNormalizeVectors, Vector } from '../utils/utils'
-import { PointMap } from '../utils/util_types_ng'
-import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, houses, loadImageAsync, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
-import { NewRoad } from '../screens/play/play'
-import { DEFAULT_SCALE, STANDARD_HEIGHT, UNIT_SQUARE } from './constants'
+import { gamePointToScreenPointWithHeightAdjustment, getHouseSize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../utils/utils'
+import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, HOUSE_HANDLER, loadImageAsync, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
+import { DEFAULT_SCALE, STANDARD_HEIGHT } from './constants'
 import { textures } from '../render/textures'
-import { ProgramInstance, destroyProgram, draw, initProgram, setBuffer } from './webgl-utils'
-import { useNonTriggeringState } from '../utils/hooks/non_triggering'
-import { animals, donkeyAnimation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, flagAnimations, thinCarrierNoCargo, thinCarrierWithCargo, treeAnimations, WorkerAnimation, workers } from '../assets/animations'
-import { Dimension, DrawingInformation } from '../assets/types'
+import { destroyProgram, draw, initProgram } from './webgl-utils'
+import { ANIMAL_ANIMATIONS, donkeyAnimation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, FLAG_ANIMATIONS, thinCarrierNoCargo, thinCarrierWithCargo, TREE_ANIMATIONS, WORKER_ANIMATIONS, WorkerAnimation } from '../assets/animations'
 import { buildingPretty } from '../utils/pretty_strings'
-import { MapRenderInformation, TrianglesAtPoint } from './types'
+import { RenderState, ToDraw, View, WebGlState } from './types'
 import { setDrawImageRenderingBuffers, setDrawShadowRenderingBuffers, setFogOfWarRenderingBuffers, setMapRenderingBuffers, setRoadRenderingBuffers } from './manage-buffers'
-import { drawGroundProgramDescriptor, DrawGroundUniforms, DrawImageAttributes, drawImageProgramDescriptor, DrawImageUniforms, DrawShadowAttributes, drawShadowProgramDescriptor, DrawShadowUniforms, fogOfWarProgramDescriptor, FogOfWarUniforms } from './webgl-program-definitions'
+import { drawGroundProgramDescriptor, DrawGroundUniforms, drawImageProgramDescriptor, DrawImageUniforms, drawShadowProgramDescriptor, DrawShadowUniforms, fogOfWarProgramDescriptor, FogOfWarUniforms } from './webgl-program-definitions'
+import { calculateNormalsForEachPoint, interpolateHeight } from './geometry'
+import { useRenderStateSync } from './use-render-state'
+import { useWebGlContext } from './use-webgl-context'
+import { useRenderLoop } from './use-render-loop'
+import { PointMap } from '../utils/util_types_ng'
 
 
 // Types
@@ -28,18 +29,6 @@ export type ScreenPoint = {
 
 export type CursorState = 'DRAGGING' | 'NOTHING' | 'BUILDING_ROAD' | 'BUILDING_ROAD_PRESSED'
 
-type ToDraw = {
-    source: DrawingInformation | undefined
-    gamePoint: Point
-    height?: number
-}
-
-export type View = {
-    screenSize: Dimension
-    scale: number
-    translate: Point
-}
-
 type GameCanvasProps = {
     cursor?: CursorState
     selectedPoint?: Point
@@ -48,85 +37,18 @@ type GameCanvasProps = {
     showAvailableConstruction: boolean
     showHouseTitles: boolean
     showFpsCounter?: boolean
-    viewRef: React.MutableRefObject<View>,
+    viewRef: React.RefObject<View>,
     hideHoverPoint?: boolean
     hideSelectedPoint?: boolean
     heightAdjust: number
     fogOfWar?: boolean
 
     onPointClicked?: ((point: Point) => void)
-    onDoubleClick?: ((point: Point) => void)
+    onPointDoubleClick?: ((point: Point) => void)
     onKeyDown?: ((event: React.KeyboardEvent) => void)
 }
 
-type RenderState = {
-    previousTimestamp?: number
-    previous: number
-    overshoot: number
-
-    animationIndex: number
-    gl?: WebGL2RenderingContext
-
-    newRoad?: NewRoad
-
-    selectedPoint?: Point
-    hoverPoint?: Point
-    newRoadCurrentLength: number
-
-    showHouseTitles: boolean
-    showAvailableConstruction: boolean
-    fogOfWar: boolean
-
-    // Map of the normal for each point on the map
-    normals: PointMap<Vector>
-
-    // Drawing program instances
-    drawGroundProgramInstance?: ProgramInstance
-    drawRoadsProgramInstance?: ProgramInstance
-    drawImageProgramInstance?: ProgramInstance
-    drawShadowProgramInstance?: ProgramInstance
-    fogOfWarProgramInstance?: ProgramInstance
-
-    visiblePoints: PointMap<TrianglesAtPoint>
-
-    // Render loop control
-    renderLoopHandle: ReturnType<typeof requestAnimationFrame> | undefined
-    renderLoopIsRunning?: boolean
-    contextLost: boolean
-
-    // Render loop caching
-    toDrawNormal: ToDraw[]
-    shadowsToDraw: ToDraw[]
-    toDrawHover: ToDraw[]
-}
-
-
-// Configuration
-export const RenderLogConfig = {
-    lifecycle: false,      // startup, listeners, setup phases
-    renderLoop: false,    // per-frame rendering / high-frequency paths
-    gl: false,             // WebGL context, programs, critical failures
-    assets: false,         // textures, atlases, asset loading
-    textures: false,       // texture slots, bindings, lookups
-    terrain: false,        // terrain types, tiles, mesh generation
-    normals: false,       // normal vectors, geometry diagnostics
-    roads: false,          // road buffers, callbacks, updates
-    fogOfWar: false,       // discovery & visibility
-    input: false,          // mouse / keyboard / interaction
-    workers: false,        // worker rendering & state
-    debug: false          // raw object dumps
-}
-
-// Constants
-const ANIMATION_PERIOD = 100
-const MOUSE_STYLES = new Map<CursorState, string>()
-
-MOUSE_STYLES.set('NOTHING', 'default')
-MOUSE_STYLES.set('DRAGGING', 'url(assets/cursors/cursor-move.png), auto')
-MOUSE_STYLES.set('BUILDING_ROAD', 'url(assets/cursors/cursor-build-road.png), auto')
-MOUSE_STYLES.set('BUILDING_ROAD_PRESSED', 'url(assets/cursors/cursor-build-road-pressed.png), auto')
-
-const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = 'assets/nature/terrain/greenland/greenland-texture.png'
+type RenderType = 'TERRAIN' | 'DECORATION_SHADOW' | 'DECORATION' | 'ROAD' | 'OBJECT_SHADOW' | 'OBJECT' | 'HOVER' | 'AVAILABLE_CONSTRUCTION' | 'POSSIBLE_ROAD_CONNECTIONS' | 'SELECTED_POINT'
 
 type InterpolatedPosition = {
     gamePoint: Point
@@ -144,6 +66,33 @@ type Walker = Point & {
     previous?: Point
     next?: Point
 }
+
+// Configuration
+export const RenderLogConfig = {
+    lifecycle: false,      // startup, listeners, setup phases
+    renderLoop: false,     // per-frame rendering / high-frequency paths
+    gl: false,             // WebGL context, programs, critical failures
+    assets: false,         // textures, atlases, asset loading
+    textures: false,       // texture slots, bindings, lookups
+    terrain: false,        // terrain types, tiles, mesh generation
+    normals: false,        // normal vectors, geometry diagnostics
+    roads: false,          // road buffers, callbacks, updates
+    fogOfWar: false,       // discovery & visibility
+    input: false,          // mouse / keyboard / interaction
+    workers: false,        // worker rendering & state
+    debug: false           // raw object dumps
+}
+
+// Constants
+const ANIMATION_PERIOD = 100
+const MOUSE_STYLES = new Map<CursorState, string>([
+        ['NOTHING', 'default'],
+        ['DRAGGING', 'url(assets/cursors/cursor-move.png), auto'],
+        ['BUILDING_ROAD', 'url(assets/cursors/cursor-build-road.png), auto'],
+        ['BUILDING_ROAD_PRESSED', 'url(assets/cursors/cursor-build-road-pressed.png), auto']
+])
+
+const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = 'assets/nature/terrain/greenland/greenland-texture.png'
 
 
 // Functions
@@ -174,25 +123,6 @@ function getRenderPosition(walker: Walker): RenderPosition {
     }
 }
 
-function makeInitRenderState(): RenderState {
-    return {
-        previous: performance.now(),
-        overshoot: 0,
-        newRoadCurrentLength: 0,
-        animationIndex: 0,
-        normals: new PointMap<Vector>(),
-        visiblePoints: new PointMap<TrianglesAtPoint>(),
-        showHouseTitles: false,
-        showAvailableConstruction: false,
-        renderLoopHandle: undefined,
-        toDrawNormal: [],
-        shadowsToDraw: [],
-        toDrawHover: [],
-        contextLost: false,
-        fogOfWar: true
-    }
-}
-
 // State
 let imageAtlasTerrainAndRoads: HTMLImageElement | undefined = undefined
 
@@ -212,33 +142,45 @@ function GameCanvas({
     fogOfWar = true,
     onPointClicked,
     onKeyDown,
-    onDoubleClick }: GameCanvasProps) {
+    onPointDoubleClick }: GameCanvasProps) {
 
     // References
     const normalCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null)
     const onPointClickedRef = useRef(onPointClicked)
-    const onDoubleClickRef = useRef(onDoubleClick)
+    const onPointDoubleClickRef = useRef(onPointDoubleClick)
 
     // Constants
     const lightVector = [1, 1, -1]
 
-    // State that doesn't trigger re-renders
-    const renderState = useNonTriggeringState<RenderState>(makeInitRenderState())
+    // Use the render state
+    const {
+        renderState,
+        pushNormalImage,
+        pushNormalImageWithShadow,
+        pushHoverImage,
+        clearRenderQueues
+    } = useRenderStateSync({
+        showAvailableConstruction,
+        selectedPoint,
+        newRoad,
+        possibleRoadConnections,
+        showHouseTitles,
+        fogOfWar,
+        showFpsCounter: showFpsCounter ?? false,
+        hideHoverPoint: hideHoverPoint ?? false,
+        hideSelectedPoint: hideSelectedPoint ?? false,
+    })
 
     // Functions
-    const drawImage = useCallback((
-        toDraw: ToDraw,
-        width: number,
-        height: number
-    ) => {
-        if (renderState.drawImageProgramInstance === undefined ||
+    const drawImage = useCallback((toDraw: ToDraw, width: number, height: number) => {
+        if (renderState.current.drawImageProgramInstance === undefined ||
             toDraw.gamePoint === undefined ||
             toDraw.source?.image === undefined) {
             return
         }
 
-        const textureSlot = textures.activateTextureForRendering(renderState.gl!, toDraw.source.image)
+        const textureSlot = textures.activateTextureForRendering(renderState.current.gl!, toDraw.source.image)
 
         if (textureSlot === undefined) {
             console.error(`Render (textures): Texture slot is undefined for ${toDraw.source.image}`)
@@ -247,7 +189,7 @@ function GameCanvas({
         }
 
         draw<DrawImageUniforms>(
-            renderState.drawImageProgramInstance,
+            renderState.current.drawImageProgramInstance,
             {
                 u_texture: textureSlot,
                 u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
@@ -265,14 +207,14 @@ function GameCanvas({
     }, [renderState, viewRef, heightAdjust])
 
     const drawShadow = useCallback((toDraw: ToDraw, width: number, height: number) => {
-        if (renderState.drawShadowProgramInstance === undefined ||
+        if (renderState.current.drawShadowProgramInstance === undefined ||
             toDraw.gamePoint === undefined ||
             toDraw.source?.image === undefined) {
             return
         }
 
         const textureSlot = textures.activateTextureForRendering(
-            renderState.gl!,
+            renderState.current.gl!,
             toDraw.source.image
         )
 
@@ -283,7 +225,7 @@ function GameCanvas({
         }
 
         draw<DrawShadowUniforms>(
-            renderState.drawShadowProgramInstance,
+            renderState.current.drawShadowProgramInstance,
             {
                 u_texture: textureSlot,
                 u_game_point: [toDraw.gamePoint.x, toDraw.gamePoint.y],
@@ -299,51 +241,6 @@ function GameCanvas({
             'NO_CLEAR_BEFORE_DRAW'
         )
     }, [renderState, viewRef, heightAdjust])
-
-    const pushNormalImage = useCallback((drawInfo: DrawingInformation | undefined, gamePoint: Point, height?: number) => {
-        if (!drawInfo) {
-            return
-        }
-
-        renderState.toDrawNormal.push({
-            source: drawInfo,
-            gamePoint,
-            height
-        })
-    }, [renderState])
-
-    const pushNormalImageWithShadow = useCallback((
-        drawInfo: DrawingInformation[] | undefined,
-        gamePoint: Point,
-        height?: number
-    ) => {
-        if (!drawInfo) {
-            return
-        }
-
-        renderState.toDrawNormal.push({
-            source: drawInfo[0],
-            gamePoint,
-            height
-        })
-
-        renderState.shadowsToDraw.push({
-            source: drawInfo[1],
-            gamePoint,
-            height
-        })
-    }, [renderState])
-
-    const pushHoverImage = useCallback((drawInfo: DrawingInformation | undefined, gamePoint: Point) => {
-        if (!drawInfo) {
-            return
-        }
-
-        renderState.toDrawHover.push({
-            source: drawInfo,
-            gamePoint
-        })
-    }, [renderState])
 
     /**
      * Rendering uses two different coordinate/size systems:
@@ -382,8 +279,45 @@ function GameCanvas({
      *    - shifted overlays/text
      *    - incorrect culling
      *    - scaling/rendering artifacts on high-DPI displays
+     * 
+     * Render stages:
+     * 1. Prepare webgl context and sizing
+     * 2. Collect render information for visible objects
+     * 3. Render each part:
+     *    - terrain
+     *    - decorations
+     *       - shadows
+     *       - images
+     *    - roads
+     *    - other game objects
+     *       - shadows
+     *       - images (sorted)
+     *    - available construction overlay
+     *    - possible road connections overlay
+     *    - selected point overlay
+     *    - Hover point overlay
+     *    - House titles
+     * 
      */
-    const renderGame = useCallback(() => {
+    const renderGame = useCallback((
+        renderState: RenderState,
+        navigationState: View,
+        houses: Iterable<HouseInformation>,
+        flags: Iterable<FlagInformation>,
+        trees: Iterable<TreeInformation>,
+        crops: Iterable<CropInformation>,
+        stones: Iterable<StoneInformation>,
+        signs: Iterable<SignInformation>,
+        workers: Iterable<WorkerInformation>,
+        decorations: Iterable<Decoration>,
+        fallingTrees: Iterable<FallingTreeInformation>,
+        animals: Iterable<WildAnimalInformation>,
+        ships: Iterable<ShipInformation>,
+        availableConstruction: PointMap<AvailableConstruction[]>,
+        borders: Iterable<MonitoredBorderForPlayer>,
+        selfPlayerId: PlayerId,
+        terrain: PointMap<TerrainAtPoint>
+    ) => {
         const duration = new Duration('GameRender::renderGame')
 
         // Avoid trying to draw if the webgl context is lost
@@ -474,9 +408,7 @@ function GameCanvas({
         duration.after('init')
 
         // Clear the cached render lists
-        renderState.toDrawNormal.length = 0
-        renderState.shadowsToDraw.length = 0
-        renderState.toDrawHover.length = 0
+        clearRenderQueues()
 
         /**
          * Draw according to the following layers:
@@ -498,8 +430,8 @@ function GameCanvas({
                 draw<DrawGroundUniforms>(renderState.drawGroundProgramInstance,
                     {
                         u_light_vector: lightVector,
-                        u_scale: [viewRef.current.scale, viewRef.current.scale],
-                        u_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
+                        u_scale: [navigationState.scale, navigationState.scale],
+                        u_offset: [navigationState.translate.x, navigationState.translate.y],
                         u_screen_width: width,
                         u_screen_height: height,
                         u_height_adjust: heightAdjust,
@@ -514,10 +446,10 @@ function GameCanvas({
 
 
         // Draw decorations on the ground
-        api.decorations.forEach(decoration => {
+        for (const decoration of decorations) {
             const image = decorationsImageAtlasHandler.getDrawingInformationFor(decoration.decoration)
             pushNormalImageWithShadow(image, decoration)
-        })
+        }
 
         // Draw decoration shadows
         for (const toDraw of renderState.shadowsToDraw) {
@@ -530,8 +462,7 @@ function GameCanvas({
         }
 
         // Clear the cached render lists
-        renderState.shadowsToDraw.length = 0
-        renderState.toDrawNormal.length = 0
+        clearRenderQueues()
 
         duration.after('drawing decorations')
 
@@ -544,8 +475,8 @@ function GameCanvas({
                 draw<DrawGroundUniforms>(renderState.drawRoadsProgramInstance,
                     {
                         u_light_vector: lightVector,
-                        u_scale: [viewRef.current.scale, viewRef.current.scale],
-                        u_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
+                        u_scale: [navigationState.scale, navigationState.scale],
+                        u_offset: [navigationState.translate.x, navigationState.translate.y],
                         u_screen_width: width,
                         u_screen_height: height,
                         u_height_adjust: heightAdjust,
@@ -562,7 +493,7 @@ function GameCanvas({
         // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
         // Collect borders to draw
-        api.border.forEach((borderForPlayer) => {
+        for (const borderForPlayer of borders) {
             borderForPlayer.points.forEach(borderPoint => {
                 if (borderPoint.x < minXInGame - 1 || borderPoint.x > maxXInGame || borderPoint.y < minYInGame - 1 || borderPoint.y > maxYInGame + 1) {
                     return
@@ -571,19 +502,19 @@ function GameCanvas({
                 const borderPointInfo = borderImageAtlasHandler.getDrawingInformation(borderForPlayer.nation, borderForPlayer.color, 'SUMMER')
                 pushNormalImage(borderPointInfo, borderPoint)
             })
-        })
+        }
 
         duration.after('collect borders')
 
 
         // Collect the houses
-        for (const house of api.houses.values()) {
+        for (const house of houses) {
             if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
                 continue
             }
 
             if (house.state === 'PLANNED') {
-                const plannedDrawInformation = houses.getDrawingInformationForHouseJustStarted(house)
+                const plannedDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseJustStarted(house)
                 pushNormalImage(plannedDrawInformation, house)
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
@@ -596,8 +527,8 @@ function GameCanvas({
 
                 pushNormalImage(fireDrawInformation, house)
             } else if (house.state === 'UNFINISHED' && house.constructionProgress !== undefined) {
-                const houseUnderConstruction = houses.getDrawingInformationForHouseUnderConstruction(house)
-                const houseDrawInformation = houses.getPartialHouseReady(house)
+                const houseUnderConstruction = HOUSE_HANDLER.getDrawingInformationForHouseUnderConstruction(house)
+                const houseDrawInformation = HOUSE_HANDLER.getPartialHouseReady(house)
 
                 pushNormalImageWithShadow(houseUnderConstruction, house)
                 pushNormalImageWithShadow(houseDrawInformation, house)
@@ -607,15 +538,15 @@ function GameCanvas({
                     (house.type === 'IronSmelter' && house.nation === 'ROMANS' && house.isWorking) ||
                     (house.type === 'Armory' && house.nation === 'ROMANS' && house.isWorking) ||
                     (house.type === 'Harbor' && (house.nation === 'ROMANS' || house.nation === 'JAPANESE') && house.isWorking)) {
-                    const houseDrawInformation = houses.getDrawingInformationForWorkingHouse(house, renderState.animationIndex)
+                    const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForWorkingHouse(house, renderState.animationIndex)
                     pushNormalImageWithShadow(houseDrawInformation, house)
                 } else {
-                    const houseDrawInformation = houses.getDrawingInformationForHouseReady(house)
+                    const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseReady(house)
                     pushNormalImageWithShadow(houseDrawInformation, house)
                 }
 
                 if (house.door === 'OPEN') {
-                    const door = houses.getDrawingInformationForOpenDoor(house)
+                    const door = HOUSE_HANDLER.getDrawingInformationForOpenDoor(house)
                     pushNormalImage(door, house)
                 }
 
@@ -632,7 +563,7 @@ function GameCanvas({
 
         // Collect the trees
         let treeIndex = 0
-        for (const tree of api.trees.values()) {
+        for (const tree of trees) {
             if (tree.x + 2 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
                 continue
             }
@@ -640,7 +571,7 @@ function GameCanvas({
             let treeDrawInfo
 
             if (tree.size === 'FULL_GROWN') {
-                treeDrawInfo = treeAnimations.getAnimationFrame(tree.type, renderState.animationIndex, treeIndex)
+                treeDrawInfo = TREE_ANIMATIONS.getAnimationFrame(tree.type, renderState.animationIndex, treeIndex)
                 pushNormalImageWithShadow(treeDrawInfo, tree)
             } else {
                 treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree)
@@ -650,20 +581,20 @@ function GameCanvas({
             treeIndex = treeIndex + 1
         }
 
-        api.fallingTrees.forEach(tree => {
+        for (const tree of fallingTrees) {
             if (tree.x + 2 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
                 return
             }
 
-            const treeDrawInfo = treeAnimations.getFallingTree(tree)
+            const treeDrawInfo = TREE_ANIMATIONS.getFallingTree(tree)
             pushNormalImageWithShadow(treeDrawInfo, tree)
-        })
+        }
 
         duration.after('collect trees')
 
 
         // Collect the crops
-        for (const crop of api.crops.values()) {
+        for (const crop of crops) {
             if (crop.x < minXInGame || crop.x > maxXInGame || crop.y < minYInGame || crop.y > maxYInGame) {
                 continue
             }
@@ -676,7 +607,7 @@ function GameCanvas({
 
 
         // Collect the signs
-        for (const sign of api.signs.values()) {
+        for (const sign of signs) {
             if (sign.x < minXInGame || sign.x > maxXInGame || sign.y < minYInGame || sign.y > maxYInGame) {
                 continue
             }
@@ -689,7 +620,7 @@ function GameCanvas({
 
 
         // Collect the stones
-        for (const stone of api.stones.values()) {
+        for (const stone of stones) {
             if (stone.x + 1 < minXInGame || stone.x - 1 > maxXInGame || stone.y + 1 < minYInGame || stone.y - 1 > maxYInGame) {
                 continue
             }
@@ -701,7 +632,7 @@ function GameCanvas({
         duration.after('collect stones')
 
         // Collect wild animals
-        for (const animal of api.wildAnimals.values()) {
+        for (const animal of animals) {
 
             // Filter animals outside the screen
             if (animal.previous && animal.next) {
@@ -719,7 +650,7 @@ function GameCanvas({
             }
 
             const renderPosition = getRenderPosition(animal)
-            const animationImage = animals.get(animal.type)?.getAnimationFrame(animal.direction, renderState.animationIndex)
+            const animationImage = ANIMAL_ANIMATIONS.get(animal.type)?.getAnimationFrame(animal.direction, renderState.animationIndex)
             pushNormalImageWithShadow(animationImage, renderPosition.gamePoint, renderPosition.height)
 
         }
@@ -728,7 +659,7 @@ function GameCanvas({
 
 
         // Collect ships
-        for (const ship of api.ships.values()) {
+        for (const ship of ships) {
 
             // ship is moving and not at a fixed point
             if (ship.previous && ship.next) {
@@ -755,7 +686,7 @@ function GameCanvas({
 
 
         // Collect workers
-        for (const worker of api.workers.values()) {
+        for (const worker of workers) {
 
             // Avoid drawing workers outside of the screen
             if (worker.betweenPoints) {
@@ -800,7 +731,7 @@ function GameCanvas({
                 if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
                     animationProvider = worker.bodyType === 'FAT' ? fatCarrierNoCargo : thinCarrierNoCargo
                 } else {
-                    animationProvider = workers[worker.type]
+                    animationProvider = WORKER_ANIMATIONS[worker.type]
                 }
 
                 if (!animationProvider) {
@@ -842,7 +773,7 @@ function GameCanvas({
                 if (worker.type === 'Courier' || worker.type === 'StorehouseWorker') {
                     animationProvider = worker.bodyType === 'FAT' ? fatCarrierWithCargo : thinCarrierWithCargo
                 } else {
-                    animationProvider = workers[worker.type]
+                    animationProvider = WORKER_ANIMATIONS[worker.type]
                 }
 
                 const cargoImage = animationProvider?.getDrawingInformationForCargo(worker, renderState.animationIndex, worker.percentageTraveled / 10)
@@ -855,26 +786,26 @@ function GameCanvas({
 
         // Collect flags
         let flagCount = 0
-        for (const flag of api.flags.values()) {
+        for (const flag of flags) {
             if (flag.x < minXInGame || flag.x > maxXInGame || flag.y < minYInGame || flag.y > maxYInGame) {
                 continue
             }
 
-            const flagDrawInfo = flagAnimations.getAnimationFrame(flag, renderState.animationIndex, flagCount)
+            const flagDrawInfo = FLAG_ANIMATIONS.getAnimationFrame(flag, renderState.animationIndex, flagCount)
             pushNormalImageWithShadow(flagDrawInfo, flag)
 
             if (flag.stackedCargo) {
                 for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
                     const cargo = flag.stackedCargo[i]
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
-                    pushNormalImage(cargoDrawInfo, { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 }, api.getHeight(flag))
+                    pushNormalImage(cargoDrawInfo, { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 }, terrain.get(flag)?.height)
                 }
 
                 if (flag.stackedCargo.length > 3) {
                     for (let i = 3; i < Math.min(flag.stackedCargo.length, 6); i++) {
                         const cargo = flag.stackedCargo[i]
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
-                        pushNormalImage(cargoDrawInfo, { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 }, api.getHeight(flag))
+                        pushNormalImage(cargoDrawInfo, { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 }, terrain.get(flag)?.height)
                     }
                 }
 
@@ -882,7 +813,7 @@ function GameCanvas({
                     for (let i = 6; i < flag.stackedCargo.length; i++) {
                         const cargo = flag.stackedCargo[i]
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
-                        pushNormalImage(cargoDrawInfo, { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 }, api.getHeight(flag))
+                        pushNormalImage(cargoDrawInfo, { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 }, terrain.get(flag)?.height)
                     }
                 }
             }
@@ -895,7 +826,7 @@ function GameCanvas({
 
         // Collect available construction
         if (renderState.showAvailableConstruction) {
-            for (const [gamePoint, available] of api.availableConstruction.entries()) {
+            for (const [gamePoint, available] of availableConstruction) {
                 if (available.length === 0) {
                     continue
                 }
@@ -956,7 +887,7 @@ function GameCanvas({
 
                 pushHoverImage(startPointInfo, center)
 
-                const centerHeight = api.getHeight(center)
+                const centerHeight = terrain.get(center)?.height ?? 0
                 const differenceToLevel = (a: number, b: number) => {
                     const diff = Math.abs(a - b)
 
@@ -972,7 +903,7 @@ function GameCanvas({
                 renderState.newRoad.possibleConnections.forEach(
                     (point) => {
                         if (renderState.newRoad?.newRoad.find(newRoadPoint => newRoadPoint.x === point.x && newRoadPoint.y === point.y) === undefined) {
-                            const height = api.getHeight(point)
+                            const height = terrain.get(point)?.height ?? 0
                             let startPointInfo
 
                             if (height > centerHeight) {
@@ -994,7 +925,7 @@ function GameCanvas({
 
 
         // Draw the selected point
-        if (!hideSelectedPoint) {
+        if (!renderState.hideSelectedPoint) {
             if (renderState.selectedPoint) {
                 const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
                 pushHoverImage(selectedPointDrawInfo, renderState.selectedPoint)
@@ -1005,9 +936,9 @@ function GameCanvas({
 
 
         // Draw the hover point
-        if (!hideHoverPoint) {
+        if (!renderState.hideHoverPoint) {
             if (renderState.hoverPoint && renderState.hoverPoint.y >= 0 && renderState.hoverPoint.x >= 0) {
-                const availableConstructionAtHoverPoint = api.availableConstruction.get(renderState.hoverPoint)
+                const availableConstructionAtHoverPoint = availableConstruction.get(renderState.hoverPoint)
 
                 if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
                     if (availableConstructionAtHoverPoint.includes('LARGE')) {
@@ -1049,8 +980,8 @@ function GameCanvas({
             overlayCtx.strokeStyle = 'black'
             overlayCtx.fillStyle = 'yellow'
 
-            for (const house of api.houses.values()) {
-                if (api.playerId === undefined || house.playerId !== api.playerId) {
+            for (const house of houses) {
+                if (house.playerId !== selfPlayerId) {
                     continue
                 }
 
@@ -1059,12 +990,12 @@ function GameCanvas({
                 }
 
                 const screenPoint = gamePointToScreenPointWithHeightAdjustmentInternal(house)
-                const houseDrawInformation = houses.getDrawingInformationForHouseReady(house)
+                const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseReady(house)
 
                 let heightOffset = 0
 
                 if (houseDrawInformation) {
-                    heightOffset = houseDrawInformation[0].offsetY * viewRef.current.scale / DEFAULT_SCALE
+                    heightOffset = houseDrawInformation[0].offsetY * navigationState.scale / DEFAULT_SCALE
                 }
 
                 let houseTitle = buildingPretty(house.type)
@@ -1090,8 +1021,8 @@ function GameCanvas({
         if (renderState.fogOfWar && renderState.fogOfWarProgramInstance) {
             draw<FogOfWarUniforms>(renderState.fogOfWarProgramInstance,
                 {
-                    u_scale: [viewRef.current.scale, viewRef.current.scale],
-                    u_offset: [viewRef.current.translate.x, viewRef.current.translate.y],
+                    u_scale: [navigationState.scale, navigationState.scale],
+                    u_offset: [navigationState.translate.x, navigationState.translate.y],
                     u_screen_width: width,
                     u_screen_height: height
                 },
@@ -1110,7 +1041,7 @@ function GameCanvas({
         // Draw the FPS counter
         const timestamp = Date.now()
 
-        if (showFpsCounter && renderState.previousTimestamp) {
+        if (renderState.showFpsCounter && renderState.previousTimestamp) {
             const fps = getLatestValueForVariable('GameRender::renderGame.total')
 
             overlayCtx.fillStyle = 'white'
@@ -1125,9 +1056,9 @@ function GameCanvas({
         }
 
         renderState.previousTimestamp = timestamp
-    }, [renderState])
+    }, [drawImage, drawShadow, clearRenderQueues])
 
-    const initWebgl = useCallback(() => {
+    const initWebgl = useCallback((renderState: WebGlState) => {
         if (!normalCanvasRef?.current) {
             console.error('Render (gl): No canvasRef.current')
 
@@ -1153,26 +1084,23 @@ function GameCanvas({
         renderState.drawShadowProgramInstance = initProgram(drawShadowProgramDescriptor, gl)
         renderState.fogOfWarProgramInstance = initProgram(fogOfWarProgramDescriptor, gl)
 
-        // Setup the program to render the ground
-        setMapRenderingBuffers(renderState.drawGroundProgramInstance, api.allTiles, renderState.normals)
-
         // Set up the programs to render images and shadows - these will be updated with the correct coordinates in the render loop before drawing
 
         // Clear texture cache
         textures.clearTexturesForContext(gl)
 
         // Load textures
-        for (const animation of Object.values(workers)) {
+        for (const animation of Object.values(WORKER_ANIMATIONS)) {
             textures.registerTexture(gl, animation.getImage())
         }
 
-        for (const animation of animals.values()) {
+        for (const animation of ANIMAL_ANIMATIONS.values()) {
             textures.registerTexture(gl, animation.getImage())
         }
 
-        textures.registerTexture(gl, treeAnimations.getImage())
-        textures.registerTexture(gl, flagAnimations.getImage())
-        textures.registerTexture(gl, houses.getSourceImage())
+        textures.registerTexture(gl, TREE_ANIMATIONS.getImage())
+        textures.registerTexture(gl, FLAG_ANIMATIONS.getImage())
+        textures.registerTexture(gl, HOUSE_HANDLER.getSourceImage())
         textures.registerTexture(gl, fireAnimations.getImage())
         textures.registerTexture(gl, signImageAtlasHandler.getSourceImage())
         textures.registerTexture(gl, uiElementsImageAtlasHandler.getImage())
@@ -1190,28 +1118,9 @@ function GameCanvas({
         textures.registerTexture(gl, shipImageAtlas.getSourceImage())
 
         textures.registerTexture(gl, imageAtlasTerrainAndRoads)
-
-        // Set up buffers
-        setRoadRenderingBuffers(
-            renderState.drawRoadsProgramInstance,
-            Array.from(api.roads.values()),
-            Array.from(api.flags.values()),
-            renderState.normals
-        )
-
-        setFogOfWarRenderingBuffers(
-            renderState.visiblePoints,
-            renderState.fogOfWarProgramInstance,
-            api.discoveredPoints,
-            api.discoveredBelowTiles,
-            api.discoveredDownRightTiles
-        )
-
-        setDrawImageRenderingBuffers(renderState.drawImageProgramInstance)
-        setDrawShadowRenderingBuffers(renderState.drawShadowProgramInstance)
     }, [])
 
-    const cleanupWebgl = useCallback(() => {
+    const cleanupWebgl = useCallback((renderState: WebGlState) => {
         destroyProgram(renderState.drawGroundProgramInstance)
         destroyProgram(renderState.drawRoadsProgramInstance)
         destroyProgram(renderState.drawImageProgramInstance)
@@ -1225,116 +1134,29 @@ function GameCanvas({
         renderState.fogOfWarProgramInstance = undefined
 
         renderState.gl = undefined
-    }, [renderState])
+    }, [])
 
-    const startRenderLoop = useCallback(() => {
-        if (renderState.renderLoopIsRunning) {
-            return
-        }
+    // Use the render loop
+    const { startRenderLoop, stopRenderLoop } = useRenderLoop({ renderState, navigationState: viewRef, renderGame })
 
-        renderState.renderLoopIsRunning = true
-        renderState.previous = performance.now()
-        renderState.overshoot = 0
-
-        const loop = () => {
-            if (!renderState.renderLoopIsRunning) {
-                return
-            }
-
-            renderGame()
-            renderState.renderLoopHandle = requestAnimationFrame(loop)
-        }
-
-        renderState.renderLoopHandle = requestAnimationFrame(loop)
-    }, [renderState, renderGame])
-
-    const stopRenderLoop = useCallback(() => {
-        renderState.renderLoopIsRunning = false
-
-        if (renderState.renderLoopHandle !== undefined) {
-            cancelAnimationFrame(renderState.renderLoopHandle)
-            renderState.renderLoopHandle = undefined
-        }
-    }, [renderState])
+    // Use webgl context for rendering and clean up on unmount
+    useWebGlContext({ canvasRef: normalCanvasRef, renderState, initWebgl, cleanupWebgl, startRenderLoop, stopRenderLoop })
 
     // Effects
     // Effect: keep callback references in sync
     useEffect(() => {
         onPointClickedRef.current = onPointClicked
-        onDoubleClickRef.current = onDoubleClick
-    }, [onPointClicked, onDoubleClick])
-
-    // Effect: listen for webgl context loss
-    useEffect(() => {
-        const canvas = normalCanvasRef.current
-        if (!canvas) return
-
-        function onContextLost(event: Event) {
-            event.preventDefault()
-
-            console.warn('WebGL context lost')
-
-            renderState.contextLost = true
-            stopRenderLoop()
-        }
-
-        function onContextRestored() {
-            console.warn('WebGL context restored')
-
-            initWebgl()
-            renderState.contextLost = false
-            startRenderLoop()
-        }
-
-        canvas.addEventListener('webglcontextlost', onContextLost)
-        canvas.addEventListener('webglcontextrestored', onContextRestored)
-
-        return () => {
-            canvas.removeEventListener('webglcontextlost', onContextLost)
-            canvas.removeEventListener('webglcontextrestored', onContextRestored)
-        }
-    }, [renderState])
-
-    // Effect: pause rendering when the tab is not active to save resources
-    useEffect(() => {
-        function onVisibilityChange() {
-            if (document.hidden) {
-                stopRenderLoop()
-            } else {
-                startRenderLoop()
-            }
-        }
-
-        document.addEventListener('visibilitychange', onVisibilityChange)
-
-        return () => {
-            document.removeEventListener('visibilitychange', onVisibilityChange)
-        }
-    }, [])
+        onPointDoubleClickRef.current = onPointDoubleClick
+    }, [onPointClicked, onPointDoubleClick])
 
     // Run once on mount
     useEffect(
         () => {
             addVariableIfAbsent('fps')
 
-            api.allTiles.forEach(tile => renderState.visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
+            api.allTiles.forEach(tile => renderState.current.visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
         }, [renderState]
     )
-
-    // Variables get captured by the closure of 'renderGame()' so pass the props in to it through renderState
-    useEffect(
-        () => {
-            renderState.showAvailableConstruction = showAvailableConstruction
-            renderState.selectedPoint = selectedPoint
-            renderState.showHouseTitles = showHouseTitles
-            renderState.fogOfWar = fogOfWar
-
-            if (newRoad !== undefined && newRoad.length > 0) {
-                renderState.newRoad = { newRoad: newRoad, possibleConnections: possibleRoadConnections ?? [] }
-            } else {
-                renderState.newRoad = undefined
-            }
-        }, [showAvailableConstruction, selectedPoint, newRoad?.length, possibleRoadConnections?.length, showHouseTitles, fogOfWar])
 
     // Effect: 
     useEffect(
@@ -1346,19 +1168,19 @@ function GameCanvas({
                     console.log('Render (terrain): Received monitoring started callback. Calculating normals')
                 }
 
-                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
+                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.current.normals)
 
-                if (!renderState.drawRoadsProgramInstance) {
+                if (!renderState.current.drawRoadsProgramInstance) {
                     console.error('Render (roads): The road drawing program instance is undefined')
 
                     return
                 }
 
                 setRoadRenderingBuffers(
-                    renderState.drawRoadsProgramInstance,
+                    renderState.current.drawRoadsProgramInstance,
                     Array.from(api.roads.values()),
                     Array.from(api.flags.values()),
-                    renderState.normals
+                    renderState.current.normals
                 )
             }
 
@@ -1368,17 +1190,17 @@ function GameCanvas({
                     console.log('Render (roads): Received updated road callback')
                 }
 
-                if (!renderState.drawRoadsProgramInstance) {
+                if (!renderState.current.drawRoadsProgramInstance) {
                     console.error('Render (roads): The road drawing program instance is undefined')
 
                     return
                 }
 
                 setRoadRenderingBuffers(
-                    renderState.drawRoadsProgramInstance,
+                    renderState.current.drawRoadsProgramInstance,
                     Array.from(api.roads.values()),
                     Array.from(api.flags.values()),
-                    renderState.normals
+                    renderState.current.normals
                 )
             }
 
@@ -1386,26 +1208,26 @@ function GameCanvas({
             function discoveredPointsUpdated(): void {
 
                 // Update the calculated normals
-                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
+                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.current.normals)
                 if (RenderLogConfig.fogOfWar) {
                     console.log('Render (fog-of-war): New discovered points - calculated normals')
                 }
 
                 // Update the map rendering and fog of war buffers
-                if (!renderState.drawGroundProgramInstance) {
+                if (!renderState.current.drawGroundProgramInstance) {
                     console.error('Render (gl): The terrain drawing program instance is undefined')
 
                     return
                 }
 
-                if (!renderState.fogOfWarProgramInstance) {
+                if (!renderState.current.fogOfWarProgramInstance) {
                     console.error('Render (fog-of-war): The fog of war program instance is undefined')
 
                     return
                 }
 
-                setMapRenderingBuffers(renderState.drawGroundProgramInstance, api.allTiles, renderState.normals)
-                setFogOfWarRenderingBuffers(renderState.visiblePoints, renderState.fogOfWarProgramInstance, api.discoveredPoints, api.discoveredBelowTiles, api.discoveredDownRightTiles)
+                setMapRenderingBuffers(renderState.current.drawGroundProgramInstance, api.allTiles, renderState.current.normals)
+                setFogOfWarRenderingBuffers(renderState.current.visiblePoints, renderState.current.fogOfWarProgramInstance, api.discoveredPoints, api.discoveredBelowTiles, api.discoveredDownRightTiles)
             }
 
             const gameStateListener = {
@@ -1416,13 +1238,13 @@ function GameCanvas({
             async function loadAssets(): Promise<void> {
                 const fileLoading: Promise<void | HTMLImageElement>[] = []
 
-                Object.values(workers).forEach(worker => fileLoading.push(worker.load()))
-                Array.from(animals.values()).forEach(animal => fileLoading.push(animal.load()))
+                Object.values(WORKER_ANIMATIONS).forEach(worker => fileLoading.push(worker.load()))
+                Array.from(ANIMAL_ANIMATIONS.values()).forEach(animal => fileLoading.push(animal.load()))
 
                 const allThingsToWaitFor: Promise<void | HTMLImageElement>[] = fileLoading.concat([
-                    treeAnimations.load(),
-                    flagAnimations.load(),
-                    houses.load(),
+                    TREE_ANIMATIONS.load(),
+                    FLAG_ANIMATIONS.load(),
+                    HOUSE_HANDLER.load(),
                     fireAnimations.load(),
                     signImageAtlasHandler.load(),
                     uiElementsImageAtlasHandler.load(),
@@ -1469,15 +1291,50 @@ function GameCanvas({
                 }
 
                 // Put together the render information from the discovered tiles
-                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.normals)
+                calculateNormalsForEachPoint(api.discoveredBelowTiles, api.discoveredDownRightTiles, renderState.current.normals)
 
                 // Start tracking visible triangles
-                if (renderState.visiblePoints.size === 0) {
-                    api.allTiles.forEach(tile => renderState.visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
+                if (renderState.current.visiblePoints.size === 0) {
+                    api.allTiles.forEach(tile => renderState.current.visiblePoints.set(tile.point, { belowVisible: false, downRightVisible: false }))
                 }
 
                 // Set up WebGL context and programs
-                initWebgl()
+                initWebgl(renderState.current)
+
+                // Set buffers
+                if (!renderState.current.drawGroundProgramInstance ||
+                    !renderState.current.fogOfWarProgramInstance ||
+                    !renderState.current.drawRoadsProgramInstance ||
+                    !renderState.current.drawImageProgramInstance ||
+                    !renderState.current.drawShadowProgramInstance) {
+                    console.error('Render (gl): One or more WebGL program instances are undefined')
+
+                    return
+                }
+
+                setMapRenderingBuffers(renderState.current.drawGroundProgramInstance, api.allTiles, renderState.current.normals)
+
+                setRoadRenderingBuffers(
+                    renderState.current.drawRoadsProgramInstance,
+                    Array.from(api.roads.values()),
+                    Array.from(api.flags.values()),
+                    renderState.current.normals
+                )
+
+                setFogOfWarRenderingBuffers(
+                    renderState.current.visiblePoints,
+                    renderState.current.fogOfWarProgramInstance,
+                    api.discoveredPoints,
+                    api.discoveredBelowTiles,
+                    api.discoveredDownRightTiles
+                )
+
+                setDrawImageRenderingBuffers(renderState.current.drawImageProgramInstance)
+                setDrawShadowRenderingBuffers(renderState.current.drawShadowProgramInstance)
+
+                if (RenderLogConfig.lifecycle) {
+                    console.log('Render (lifecycle): Finished setting up WebGL')
+                }
 
                 // Start listeners
                 api.addRoadsListener(roadsUpdated)
@@ -1491,7 +1348,11 @@ function GameCanvas({
 
             let cancelled = false
 
-            loadAssetsAndSetupGl().then(() => { if (!cancelled) { startRenderLoop() } })
+            loadAssetsAndSetupGl().then(() => {
+                if (!cancelled) {
+                    startRenderLoop()
+                }
+            })
 
             return () => {
                 cancelled = true
@@ -1505,7 +1366,7 @@ function GameCanvas({
                 stopRenderLoop()
 
                 // Clean up webgl resources
-                cleanupWebgl()
+                cleanupWebgl(renderState.current)
             }
         }, [
         renderState,
@@ -1536,9 +1397,8 @@ function GameCanvas({
         return screenPointToGamePointWithHeightAdjustment(point, viewRef.current, heightAdjust)
     }, [viewRef, heightAdjust])
 
-    const onClickInternal = useCallback((event: React.MouseEvent) => {
+    const onClick = useCallback((event: React.MouseEvent) => {
         const rect = event.currentTarget.getBoundingClientRect()
-
         const gamePoint =
             screenPointToGamePointWithHeightAdjustmentInternal({
                 x: event.clientX - rect.left,
@@ -1550,16 +1410,15 @@ function GameCanvas({
         event.stopPropagation()
     }, [screenPointToGamePointWithHeightAdjustmentInternal])
 
-    const onDoubleClickInternal = useCallback((event: React.MouseEvent) => {
+    const onDoubleClick = useCallback((event: React.MouseEvent) => {
         const rect = event.currentTarget.getBoundingClientRect()
-
         const gamePoint =
             screenPointToGamePointWithHeightAdjustmentInternal({
                 x: event.clientX - rect.left,
                 y: event.clientY - rect.top
             })
 
-        onDoubleClickRef.current?.(gamePoint)
+        onPointDoubleClickRef.current?.(gamePoint)
 
         event.stopPropagation()
     }, [screenPointToGamePointWithHeightAdjustmentInternal])
@@ -1569,31 +1428,26 @@ function GameCanvas({
             <canvas
                 className='game-canvas'
                 onKeyDown={onKeyDown}
-                onClick={onClickInternal}
-                onDoubleClick={onDoubleClickInternal}
+                onClick={onClick}
+                onDoubleClick={onDoubleClick}
                 style={{ cursor: MOUSE_STYLES.get(cursor ?? 'NOTHING') }}
                 tabIndex={-1}
-
                 ref={overlayCanvasRef}
                 onMouseMove={
                     (event: React.MouseEvent) => {
-
-                        // Convert to game coordinates
                         if (overlayCanvasRef?.current) {
                             const rect = event.currentTarget.getBoundingClientRect()
-
-                            const x = event.clientX - rect.left
-                            const y = event.clientY - rect.top
+                            const screenPoint = { x: event.clientX - rect.left, y: event.clientY - rect.top }
 
                             try {
-                                const hoverPoint = screenPointToGamePointWithHeightAdjustmentInternal({ x, y })
+                                const hoverPoint = screenPointToGamePointWithHeightAdjustmentInternal(screenPoint)
 
                                 if (hoverPoint &&
                                     hoverPoint.y >= 0 &&
                                     hoverPoint.x >= 0 &&
-                                    (!renderState.hoverPoint ||
-                                        (hoverPoint.x !== renderState.hoverPoint.x || hoverPoint.y !== renderState.hoverPoint.y))) {
-                                    renderState.hoverPoint = hoverPoint
+                                    (!renderState.current.hoverPoint ||
+                                        (hoverPoint.x !== renderState.current.hoverPoint.x || hoverPoint.y !== renderState.current.hoverPoint.y))) {
+                                    renderState.current.hoverPoint = hoverPoint
                                 }
                             } catch (error) {
                                 console.error(error)
@@ -1608,75 +1462,6 @@ function GameCanvas({
             <canvas ref={normalCanvasRef} className='terrain-canvas' />
         </>
     )
-}
-
-function interpolateHeight(previous: Point, next: Point, progress: number): number {
-    const previousHeight = api.getHeight(previous)
-    const nextHeight = api.getHeight(next)
-
-    return previousHeight + (nextHeight - previousHeight) * progress
-}
-
-function calculateNormalsForEachPoint(tilesBelow: Iterable<TileBelow>, tilesDownRight: Iterable<TileDownRight>, allNormals: PointMap<Vector>): void {
-    const straightBelowNormals = new PointMap<Vector>()
-    const downRightNormals = new PointMap<Vector>()
-
-    for (const terrainAtPoint of tilesBelow) {
-        const point = terrainAtPoint.pointAbove
-        const height = terrainAtPoint.heightAbove
-
-        const point3d = { x: point.x, y: point.y, z: height }
-
-        const pointDownLeft = getPointDownLeft(point)
-        const pointDownRight = getPointDownRight(point)
-
-        const pointDownLeft3d = { x: pointDownLeft.x, y: pointDownLeft.y, z: terrainAtPoint.heightDownLeft }
-        const pointDownRight3d = { x: pointDownRight.x, y: pointDownRight.y, z: terrainAtPoint.heightDownRight }
-
-        straightBelowNormals.set(point, getNormalForTriangle(point3d, pointDownLeft3d, pointDownRight3d))
-    }
-
-    for (const terrainAtPoint of tilesDownRight) {
-        const point = terrainAtPoint.pointLeft
-        const height = terrainAtPoint.heightLeft
-
-        const point3d = { x: point.x, y: point.y, z: height }
-
-        const pointDownRight = getPointDownRight(point)
-        const pointRight = getPointRight(point)
-
-        const pointDownRight3d = { x: pointDownRight.x, y: pointDownRight.y, z: terrainAtPoint.heightDown }
-        const pointRight3d = { x: pointRight.x, y: pointRight.y, z: terrainAtPoint.heightRight }
-
-        downRightNormals.set(point, getNormalForTriangle(point3d, pointDownRight3d, pointRight3d))
-    }
-
-    // Calculate the normal for each point
-    for (const point of api.discoveredPoints) {
-        const normals = [
-            straightBelowNormals.get(getPointUpLeft(point)),
-            downRightNormals.get(getPointUpLeft(point)),
-            straightBelowNormals.get(getPointUpRight(point)),
-            downRightNormals.get(point),
-            straightBelowNormals.get(point),
-            downRightNormals.get(getPointLeft(point))
-        ]
-
-        // Calculate the combined normal as the average of the normal for the surrounding triangles
-        const vectors: Vector[] = []
-
-        for (const normal of normals) {
-            if (normal) {
-                vectors.push(normal)
-            }
-        }
-
-        if (vectors.length > 0) {
-            allNormals.set(point, sumAndNormalizeVectors(vectors))
-        } else {
-            allNormals.set(point, { x: 0, y: 0, z: 1 })
-        }
-    }
 }
 
 export { GameCanvas }

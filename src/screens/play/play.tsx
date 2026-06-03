@@ -923,7 +923,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             <GameCanvas
                 onPointClicked={onPointClicked}
                 selectedPoint={selected}
-                onDoubleClick={onPointDoubleClicked}
+                onPointDoubleClick={onPointDoubleClicked}
                 showHouseTitles={showTitles}
                 newRoad={roadBuildingState.road}
                 possibleRoadConnections={roadBuildingState.possibleConnections}

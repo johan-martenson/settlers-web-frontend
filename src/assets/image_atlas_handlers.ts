@@ -1287,19 +1287,19 @@ ANIMAL_FALLBACK_DIRECTION.set('WEST', 'EAST')
 ANIMAL_FALLBACK_DIRECTION.set('NORTH_WEST', 'SOUTH_EAST')
 ANIMAL_FALLBACK_DIRECTION.set('NORTH_EAST', 'SOUTH_WEST')
 
-const houses = new HouseImageAtlasHandler('assets/')
+const HOUSE_HANDLER = new HouseImageAtlasHandler('assets/')
 const materialImageAtlasHandler = new MaterialImageAtlasHandler('assets/')
 const shipImageAtlas = new ShipImageAtlasHandler('assets/')
 const cargoImageAtlasHandler = new CargoImageAtlasHandler('assets/')
 const roadBuildingImageAtlasHandler = new RoadBuildingImageAtlasHandler('assets/')
-const signImageAtlasHandler = new SignImageAtlasHandler('assets/')
-const cropsImageAtlasHandler = new CropImageAtlasHandler('assets/')
+const SIGN_HANDLER = new SignImageAtlasHandler('assets/')
+const CROPS_HANDLER = new CropImageAtlasHandler('assets/')
 const decorationsImageAtlasHandler = new DecorationsImageAtlasHandler('assets/')
 const borderImageAtlasHandler = new BorderImageAtlasHandler('assets/')
 const fireImageAtlasHandler = new FireImageAtlasHandler('assets/')
 const stoneImageAtlasHandler = new StoneImageAtlasHandler('assets/')
-const treeImageAtlasHandler = new TreeImageAtlasHandler('assets/nature/')
-const flagImageAtlasHandler = new FlagImageAtlasHandler('assets/')
+const TREE_HANDLER = new TreeImageAtlasHandler('assets/nature/')
+const FLAG_HANDLER = new FlagImageAtlasHandler('assets/')
 
 const actionAnimationType = new Map<WorkerAction, AnimationType>()
 
@@ -1326,7 +1326,7 @@ actionAnimationType.set('DRAW_WATER_1', 'REPEAT')
 actionAnimationType.set('FEED_THE_PIGS', 'SINGLE_THEN_STOP')
 
 export {
-    houses,
+    HOUSE_HANDLER,
     materialImageAtlasHandler,
     WorkerImageAtlasHandler,
     AnimalImageAtlasHandler,
@@ -1334,13 +1334,13 @@ export {
     shipImageAtlas,
     cargoImageAtlasHandler,
     roadBuildingImageAtlasHandler,
-    signImageAtlasHandler,
-    cropsImageAtlasHandler,
+    SIGN_HANDLER as signImageAtlasHandler,
+    CROPS_HANDLER as cropsImageAtlasHandler,
     decorationsImageAtlasHandler,
     borderImageAtlasHandler,
-    treeImageAtlasHandler,
+    TREE_HANDLER as treeImageAtlasHandler,
     fireImageAtlasHandler,
     stoneImageAtlasHandler,
-    flagImageAtlasHandler,
+    FLAG_HANDLER as flagImageAtlasHandler,
     loadImageAsync
 }

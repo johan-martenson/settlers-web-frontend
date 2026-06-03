@@ -32,6 +32,18 @@
     align-self: stretch;
 }
 
+.window-content-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    min-height: 10em;
+    height: auto;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
+    align-self: stretch;
+}
+
 .hover-info-label {
     height: 2em;
     background-color: rgba(0, 0, 0, 0.50);

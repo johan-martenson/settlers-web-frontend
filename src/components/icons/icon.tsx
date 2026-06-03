@@ -2,8 +2,8 @@ import React, { useRef, useState } from 'react'
 import { useAnimatedSprite } from './utils'
 import { AnyBuilding, Direction, FlagType, Material, Nation, PlayerColor, WorkerType } from '../../api/types'
 import { DrawingInformation } from '../../assets/types'
-import { flagAnimations, workers } from '../../assets/animations'
-import { flagImageAtlasHandler, houses, materialImageAtlasHandler, uiElementsImageAtlasHandler } from '../../assets/image_atlas_handlers'
+import { FLAG_ANIMATIONS, WORKER_ANIMATIONS } from '../../assets/animations'
+import { flagImageAtlasHandler, HOUSE_HANDLER, materialImageAtlasHandler, uiElementsImageAtlasHandler } from '../../assets/image_atlas_handlers'
 
 // Types
 export type UiIconType = 'DESTROY_BUILDING'
@@ -332,7 +332,7 @@ const WorkerIcon = ({
         fps: 10,
         deps: [worker, nation, direction, color, scale, drawShadow],
         loader: async () => {
-            const handler = workers[worker]
+            const handler = WORKER_ANIMATIONS[worker]
             if (!handler) {
                 throw new Error(`No handler for ${worker}`)
             }
@@ -351,7 +351,7 @@ const WorkerIcon = ({
                 return
             }
 
-            const handler = workers[worker]
+            const handler = WORKER_ANIMATIONS[worker]
             const drawArray = handler?.getAnimationFrame(
                 {
                     nation,
@@ -390,8 +390,8 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
         fps: 10,
         deps: [nation, houseType, scale, drawShadow],
         loader: async () => {
-            await houses.load()
-            const image = houses.getSourceImage()
+            await HOUSE_HANDLER.load()
+            const image = HOUSE_HANDLER.getSourceImage()
 
             if (!image) {
                 throw new Error('No image')
@@ -407,7 +407,7 @@ const HouseIcon = ({ nation, houseType, scale = 1, drawShadow = false, onMouseEn
                 return
             }
 
-            const drawArray = houses.getDrawingInformationForHouseReady(
+            const drawArray = HOUSE_HANDLER.getDrawingInformationForHouseReady(
                 {
                     nation,
                     type: houseType
@@ -533,7 +533,7 @@ const FlagIcon = ({
         fps: 10,
         deps: [type, nation, color, scale, drawShadow],
         loader: async () => {
-            await flagAnimations.load()
+            await FLAG_ANIMATIONS.load()
 
             const image = flagImageAtlasHandler.getSourceImage()
             if (!image) {
@@ -546,7 +546,7 @@ const FlagIcon = ({
             const canvas = canvasRef.current
             if (!canvas) return
 
-            const drawArray = flagAnimations.getAnimationFrame(
+            const drawArray = FLAG_ANIMATIONS.getAnimationFrame(
                 {
                     nation,
                     color,

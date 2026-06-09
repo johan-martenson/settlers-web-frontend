@@ -5,6 +5,9 @@ import { PointMap } from '../utils/util_types_ng'
 import { Vector } from '../utils/utils'
 import { ProgramInstance } from './webgl-utils'
 
+
+export type RenderType = 'TERRAIN' | 'DECORATION_SHADOW' | 'DECORATION' | 'ROAD' | 'OBJECT_SHADOW' | 'OBJECT' | 'HOVER' | 'AVAILABLE_CONSTRUCTION' | 'POSSIBLE_ROAD_CONNECTIONS' | 'SELECTED_POINT'
+
 export type View = {
     screenSize: Dimension
     scale: number
@@ -49,6 +52,11 @@ export type WebGlState = {
     contextLost: boolean
 }
 
+type ToDrawString = {
+    text: string
+    gamePoint: Point
+}
+
 export type RenderState = WebGlState & {
     previousTimestamp?: number
     previous: number
@@ -79,7 +87,13 @@ export type RenderState = WebGlState & {
     renderLoopIsRunning?: boolean
 
     // Render loop caching
-    toDrawNormal: ToDraw[]
-    shadowsToDraw: ToDraw[]
-    toDrawHover: ToDraw[]
+    decorationsRenderQueue: ToDraw[]
+    decorationsShadowRenderQueue: ToDraw[]
+    gameObjectsRenderQueue: ToDraw[]
+    gameObjectsShadowRenderQueue: ToDraw[]
+    availableConstructionRenderQueue: ToDraw[]
+    possibleRoadConnectionsRenderQueue: ToDraw[]
+    selectedPointRenderQueue: ToDraw[]
+    hoverPointRenderQueue: ToDraw[]
+    houseTitlesRenderQueue: ToDrawString[]
 }

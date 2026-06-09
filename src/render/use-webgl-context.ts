@@ -43,7 +43,11 @@ function useWebGlContext({
 
             event.preventDefault()
 
-            renderState.current.contextLost = true
+            if (renderState.current) {
+                renderState.current.contextLost = true
+            } else {
+                console.warn('useWebGlContext: renderState ref is not set when handling context loss')
+            }
 
             stopRenderLoop()
         }
@@ -53,9 +57,12 @@ function useWebGlContext({
                 console.log('WebGL context restored')
             }
 
-            initWebgl(renderState.current)
-
-            renderState.current.contextLost = false
+            if (renderState.current) {
+                initWebgl(renderState.current)
+                renderState.current.contextLost = false
+            } else {
+                console.warn('useWebGlContext: renderState ref is not set when handling context restoration')
+            }
 
             startRenderLoop()
         }
@@ -75,11 +82,13 @@ function useWebGlContext({
             canvas.removeEventListener('webglcontextlost', onContextLost)
             canvas.removeEventListener('webglcontextrestored', onContextRestored)
 
-            if (renderState.current.contextLost) {
-                stopRenderLoop()
-            }
+            stopRenderLoop()
 
-            cleanupWebgl(renderState.current)
+            if (renderState.current) {
+                cleanupWebgl(renderState.current)
+            } else {
+                console.warn('useWebGlContext: renderState ref is not set during cleanup')
+            }
         }
     }, [renderState, canvasRef, initWebgl, cleanupWebgl, startRenderLoop, stopRenderLoop])
 }

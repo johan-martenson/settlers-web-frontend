@@ -48,8 +48,6 @@ type GameCanvasProps = {
     onKeyDown?: ((event: React.KeyboardEvent) => void)
 }
 
-type RenderType = 'TERRAIN' | 'DECORATION_SHADOW' | 'DECORATION' | 'ROAD' | 'OBJECT_SHADOW' | 'OBJECT' | 'HOVER' | 'AVAILABLE_CONSTRUCTION' | 'POSSIBLE_ROAD_CONNECTIONS' | 'SELECTED_POINT'
-
 type InterpolatedPosition = {
     gamePoint: Point
     height: number
@@ -86,10 +84,10 @@ export const RenderLogConfig = {
 // Constants
 const ANIMATION_PERIOD = 100
 const MOUSE_STYLES = new Map<CursorState, string>([
-        ['NOTHING', 'default'],
-        ['DRAGGING', 'url(assets/cursors/cursor-move.png), auto'],
-        ['BUILDING_ROAD', 'url(assets/cursors/cursor-build-road.png), auto'],
-        ['BUILDING_ROAD_PRESSED', 'url(assets/cursors/cursor-build-road-pressed.png), auto']
+    ['NOTHING', 'default'],
+    ['DRAGGING', 'url(assets/cursors/cursor-move.png), auto'],
+    ['BUILDING_ROAD', 'url(assets/cursors/cursor-build-road.png), auto'],
+    ['BUILDING_ROAD_PRESSED', 'url(assets/cursors/cursor-build-road-pressed.png), auto']
 ])
 
 const TERRAIN_AND_ROADS_IMAGE_ATLAS_FILE = 'assets/nature/terrain/greenland/greenland-texture.png'
@@ -156,9 +154,8 @@ function GameCanvas({
     // Use the render state
     const {
         renderState,
-        pushNormalImage,
-        pushNormalImageWithShadow,
-        pushHoverImage,
+        pushImage,
+        pushImageWithShadow,
         clearRenderQueues
     } = useRenderStateSync({
         showAvailableConstruction,
@@ -407,90 +404,20 @@ function GameCanvas({
 
         duration.after('init')
 
-        // Clear the cached render lists
+        // Clear the render lists
         clearRenderQueues()
 
-        /**
-         * Draw according to the following layers:
-         *    1. Terrain layer
-         *    2. Decorations
-         *    3. Road layer
-         *    4. Normal layer: houses + names, flags, stones, trees, workers, animals, lanyards, etc.
-         *       3.1 Shadows (not implemented yet)
-         *       3.2 Objects
-         *    5. Hover layer: hover icon and selected icon
-         */
 
+        /// Collect render information for all visible objects
 
-        // Draw the terrain layer
-        if (imageAtlasTerrainAndRoads) {
-            const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
-
-            if (textureSlot !== undefined && renderState.drawGroundProgramInstance) {
-                draw<DrawGroundUniforms>(renderState.drawGroundProgramInstance,
-                    {
-                        u_light_vector: lightVector,
-                        u_scale: [navigationState.scale, navigationState.scale],
-                        u_offset: [navigationState.translate.x, navigationState.translate.y],
-                        u_screen_width: width,
-                        u_screen_height: height,
-                        u_height_adjust: heightAdjust,
-                        u_sampler: textureSlot
-                    },
-                    'CLEAR_BEFORE_DRAW'
-                )
-            }
-        }
-
-        duration.after('draw terrain')
-
-
-        // Draw decorations on the ground
+        // Collect decorations
         for (const decoration of decorations) {
             const image = decorationsImageAtlasHandler.getDrawingInformationFor(decoration.decoration)
-            pushNormalImageWithShadow(image, decoration)
+            pushImageWithShadow(image, decoration, 'DECORATION')
         }
 
-        // Draw decoration shadows
-        for (const toDraw of renderState.shadowsToDraw) {
-            drawShadow(toDraw, width, height)
-        }
+        duration.after('collect decorations')
 
-        // Draw decorations objects
-        for (const toDraw of renderState.toDrawNormal) {
-            drawImage(toDraw, width, height)
-        }
-
-        // Clear the cached render lists
-        clearRenderQueues()
-
-        duration.after('drawing decorations')
-
-
-        // Draw the road layer
-        if (imageAtlasTerrainAndRoads) {
-            const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
-
-            if (textureSlot !== undefined && renderState.drawRoadsProgramInstance) {
-                draw<DrawGroundUniforms>(renderState.drawRoadsProgramInstance,
-                    {
-                        u_light_vector: lightVector,
-                        u_scale: [navigationState.scale, navigationState.scale],
-                        u_offset: [navigationState.translate.x, navigationState.translate.y],
-                        u_screen_width: width,
-                        u_screen_height: height,
-                        u_height_adjust: heightAdjust,
-                        u_sampler: textureSlot
-                    },
-                    'NO_CLEAR_BEFORE_DRAW'
-                )
-            }
-        }
-
-        duration.after('draw roads')
-
-
-        // Handle the the Normal layer. First, collect information of what to draw for each type of object
 
         // Collect borders to draw
         for (const borderForPlayer of borders) {
@@ -500,7 +427,7 @@ function GameCanvas({
                 }
 
                 const borderPointInfo = borderImageAtlasHandler.getDrawingInformation(borderForPlayer.nation, borderForPlayer.color, 'SUMMER')
-                pushNormalImage(borderPointInfo, borderPoint)
+                pushImage(borderPointInfo, borderPoint, 'OBJECT')
             })
         }
 
@@ -515,23 +442,23 @@ function GameCanvas({
 
             if (house.state === 'PLANNED') {
                 const plannedDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseJustStarted(house)
-                pushNormalImage(plannedDrawInformation, house)
+                pushImage(plannedDrawInformation, house, 'OBJECT')
             } else if (house.state === 'BURNING') {
                 const size = getHouseSize(house)
                 const fireDrawInformation = fireAnimations.getAnimationFrame(size, renderState.animationIndex)
 
-                pushNormalImageWithShadow(fireDrawInformation, house)
+                pushImageWithShadow(fireDrawInformation, house, 'OBJECT')
             } else if (house.state === 'DESTROYED') {
                 const size = getHouseSize(house)
                 const fireDrawInformation = fireImageAtlasHandler.getBurntDownDrawingInformation(size)
 
-                pushNormalImage(fireDrawInformation, house)
+                pushImage(fireDrawInformation, house, 'OBJECT')
             } else if (house.state === 'UNFINISHED' && house.constructionProgress !== undefined) {
                 const houseUnderConstruction = HOUSE_HANDLER.getDrawingInformationForHouseUnderConstruction(house)
                 const houseDrawInformation = HOUSE_HANDLER.getPartialHouseReady(house)
 
-                pushNormalImageWithShadow(houseUnderConstruction, house)
-                pushNormalImageWithShadow(houseDrawInformation, house)
+                pushImageWithShadow(houseUnderConstruction, house, 'OBJECT')
+                pushImageWithShadow(houseDrawInformation, house, 'OBJECT')
             } else {
                 if ((house.type === 'Mill' && house.isWorking) ||
                     (house.type === 'Mint' && house.isWorking && house.nation === 'ROMANS') ||
@@ -539,20 +466,20 @@ function GameCanvas({
                     (house.type === 'Armory' && house.nation === 'ROMANS' && house.isWorking) ||
                     (house.type === 'Harbor' && (house.nation === 'ROMANS' || house.nation === 'JAPANESE') && house.isWorking)) {
                     const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForWorkingHouse(house, renderState.animationIndex)
-                    pushNormalImageWithShadow(houseDrawInformation, house)
+                    pushImageWithShadow(houseDrawInformation, house, 'OBJECT')
                 } else {
                     const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseReady(house)
-                    pushNormalImageWithShadow(houseDrawInformation, house)
+                    pushImageWithShadow(houseDrawInformation, house, 'OBJECT')
                 }
 
                 if (house.door === 'OPEN') {
                     const door = HOUSE_HANDLER.getDrawingInformationForOpenDoor(house)
-                    pushNormalImage(door, house)
+                    pushImage(door, house, 'OBJECT')
                 }
 
                 if (house.isWorking) {
                     const smokeDrawInformation = fireAnimations.getSmokeFrameForHouse(house, renderState.animationIndex)
-                    pushNormalImage(smokeDrawInformation, house)
+                    pushImage(smokeDrawInformation, house, 'OBJECT')
                 }
 
             }
@@ -568,26 +495,24 @@ function GameCanvas({
                 continue
             }
 
-            let treeDrawInfo
-
             if (tree.size === 'FULL_GROWN') {
-                treeDrawInfo = TREE_ANIMATIONS.getAnimationFrame(tree.type, renderState.animationIndex, treeIndex)
-                pushNormalImageWithShadow(treeDrawInfo, tree)
+                const treeDrawInfo = TREE_ANIMATIONS.getAnimationFrame(tree.type, renderState.animationIndex, treeIndex)
+                pushImageWithShadow(treeDrawInfo, tree, 'OBJECT')
             } else {
-                treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree)
-                pushNormalImageWithShadow(treeDrawInfo, tree)
+                const treeDrawInfo = treeImageAtlasHandler.getImageForGrowingTree(tree)
+                pushImageWithShadow(treeDrawInfo, tree, 'OBJECT')
             }
 
-            treeIndex = treeIndex + 1
+            treeIndex++
         }
 
         for (const tree of fallingTrees) {
             if (tree.x + 2 < minXInGame || tree.x - 1 > maxXInGame || tree.y + 2 < minYInGame || tree.y - 2 > maxYInGame) {
-                return
+                continue
             }
 
             const treeDrawInfo = TREE_ANIMATIONS.getFallingTree(tree)
-            pushNormalImageWithShadow(treeDrawInfo, tree)
+            pushImageWithShadow(treeDrawInfo, tree, 'OBJECT')
         }
 
         duration.after('collect trees')
@@ -600,7 +525,7 @@ function GameCanvas({
             }
 
             const cropDrawInfo = cropsImageAtlasHandler.getDrawingInformationFor(crop)
-            pushNormalImageWithShadow(cropDrawInfo, crop)
+            pushImageWithShadow(cropDrawInfo, crop, 'OBJECT')
         }
 
         duration.after('collect crops')
@@ -613,7 +538,7 @@ function GameCanvas({
             }
 
             const signDrawInfo = signImageAtlasHandler.getDrawingInformation(sign)
-            pushNormalImageWithShadow(signDrawInfo, sign)
+            pushImageWithShadow(signDrawInfo, sign, 'OBJECT')
         }
 
         duration.after('collect signs')
@@ -626,15 +551,14 @@ function GameCanvas({
             }
 
             const stoneDrawInfo = stoneImageAtlasHandler.getDrawingInformationFor(stone)
-            pushNormalImageWithShadow(stoneDrawInfo, stone)
+            pushImageWithShadow(stoneDrawInfo, stone, 'OBJECT')
         }
 
         duration.after('collect stones')
 
+
         // Collect wild animals
         for (const animal of animals) {
-
-            // Filter animals outside the screen
             if (animal.previous && animal.next) {
                 if (animal.previous.x < minXInGame || animal.previous.x > maxXInGame || animal.previous.y < minYInGame || animal.previous.y > maxYInGame) {
                     continue
@@ -651,8 +575,8 @@ function GameCanvas({
 
             const renderPosition = getRenderPosition(animal)
             const animationImage = ANIMAL_ANIMATIONS.get(animal.type)?.getAnimationFrame(animal.direction, renderState.animationIndex)
-            pushNormalImageWithShadow(animationImage, renderPosition.gamePoint, renderPosition.height)
 
+            pushImageWithShadow(animationImage, renderPosition.gamePoint, 'OBJECT', renderPosition.height)
         }
 
         duration.after('collect wild animals')
@@ -681,8 +605,10 @@ function GameCanvas({
                 ? shipImageAtlas.getDrawingInformationForShip(ship)
                 : shipImageAtlas.getDrawingInformationForShipUnderConstruction(ship)
 
-            pushNormalImageWithShadow(shipImage, renderPosition.gamePoint, renderPosition.height)
+            pushImageWithShadow(shipImage, renderPosition.gamePoint, 'OBJECT', renderPosition.height)
         }
+
+        duration.after('collect ships')
 
 
         // Collect workers
@@ -715,11 +641,11 @@ function GameCanvas({
             // Draw donkeys
             if (worker.type === 'Donkey') {
                 const donkeyImage = donkeyAnimation.getAnimationFrame(worker.direction, worker.betweenPoints ? renderState.animationIndex : 0)
-                pushNormalImageWithShadow(donkeyImage, renderPosition.gamePoint, renderPosition.height)
+                pushImageWithShadow(donkeyImage, renderPosition.gamePoint, 'OBJECT', renderPosition.height)
 
                 if (worker.cargo) {
                     const cargoImage = donkeyAnimation.getImageAtlasHandler().getDrawingInformationForCargo(worker.cargo, worker.nation)
-                    pushNormalImage(cargoImage, renderPosition.gamePoint, renderPosition.height)
+                    pushImage(cargoImage, renderPosition.gamePoint, 'OBJECT', renderPosition.height)
                 }
 
                 // Draw other workers
@@ -749,7 +675,7 @@ function GameCanvas({
                     if (animationImage) {
                         didDrawAnimation = true
 
-                        pushNormalImage(animationImage, renderPosition.gamePoint, renderPosition.height)
+                        pushImage(animationImage, renderPosition.gamePoint, 'OBJECT', renderPosition.height)
                     }
                 }
 
@@ -757,10 +683,10 @@ function GameCanvas({
                 if (!didDrawAnimation) {
                     if (worker.cargo) {
                         const image = animationProvider.getAnimationFrame(worker, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
-                        pushNormalImageWithShadow(image, renderPosition.gamePoint, renderPosition.height)
+                        pushImageWithShadow(image, renderPosition.gamePoint, 'OBJECT', renderPosition.height)
                     } else {
                         const image = animationProvider.getAnimationFrame(worker, worker.betweenPoints ? renderState.animationIndex : 0, worker.percentageTraveled)
-                        pushNormalImageWithShadow(image, renderPosition.gamePoint, renderPosition.height)
+                        pushImageWithShadow(image, renderPosition.gamePoint, 'OBJECT', renderPosition.height)
                     }
                 }
             }
@@ -777,7 +703,7 @@ function GameCanvas({
                 }
 
                 const cargoImage = animationProvider?.getDrawingInformationForCargo(worker, renderState.animationIndex, worker.percentageTraveled / 10)
-                pushNormalImage(cargoImage, renderPosition.gamePoint, renderPosition.height)
+                pushImage(cargoImage, renderPosition.gamePoint, 'OBJECT', renderPosition.height)
             }
         }
 
@@ -792,20 +718,20 @@ function GameCanvas({
             }
 
             const flagDrawInfo = FLAG_ANIMATIONS.getAnimationFrame(flag, renderState.animationIndex, flagCount)
-            pushNormalImageWithShadow(flagDrawInfo, flag)
+            pushImageWithShadow(flagDrawInfo, flag, 'OBJECT')
 
             if (flag.stackedCargo) {
                 for (let i = 0; i < Math.min(flag.stackedCargo.length, 3); i++) {
                     const cargo = flag.stackedCargo[i]
                     const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
-                    pushNormalImage(cargoDrawInfo, { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 }, terrain.get(flag)?.height)
+                    pushImage(cargoDrawInfo, { x: flag.x - 0.3, y: flag.y - 0.1 * i + 0.3 }, 'OBJECT', terrain.get(flag)?.height)
                 }
 
                 if (flag.stackedCargo.length > 3) {
                     for (let i = 3; i < Math.min(flag.stackedCargo.length, 6); i++) {
                         const cargo = flag.stackedCargo[i]
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
-                        pushNormalImage(cargoDrawInfo, { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 }, terrain.get(flag)?.height)
+                        pushImage(cargoDrawInfo, { x: flag.x + 0.08, y: flag.y - 0.1 * i + 0.2 }, 'OBJECT', terrain.get(flag)?.height)
                     }
                 }
 
@@ -813,7 +739,7 @@ function GameCanvas({
                     for (let i = 6; i < flag.stackedCargo.length; i++) {
                         const cargo = flag.stackedCargo[i]
                         const cargoDrawInfo = cargoImageAtlasHandler.getDrawingInformation(flag, cargo)
-                        pushNormalImage(cargoDrawInfo, { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 }, terrain.get(flag)?.height)
+                        pushImage(cargoDrawInfo, { x: flag.x + 17 / 50, y: flag.y - 0.1 * (i - 4) + 0.2 }, 'OBJECT', terrain.get(flag)?.height)
                     }
                 }
             }
@@ -837,55 +763,33 @@ function GameCanvas({
 
                 if (available.includes('LARGE')) {
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
-                    pushNormalImage(largeHouseAvailableInfo, gamePoint)
+                    pushImage(largeHouseAvailableInfo, gamePoint, 'OBJECT')
                 } else if (available.includes('MEDIUM')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
-                    pushNormalImage(mediumHouseAvailableInfo, gamePoint)
+                    pushImage(mediumHouseAvailableInfo, gamePoint, 'OBJECT')
                 } else if (available.includes('SMALL')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
-                    pushNormalImage(mediumHouseAvailableInfo, gamePoint)
+                    pushImage(mediumHouseAvailableInfo, gamePoint, 'OBJECT')
                 } else if (available.includes('MINE')) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
-                    pushNormalImage(mineAvailableInfo, gamePoint)
+                    pushImage(mineAvailableInfo, gamePoint, 'OBJECT')
                 } else if (available.includes('FLAG')) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
-                    pushNormalImage(flagAvailableInfo, gamePoint)
+                    pushImage(flagAvailableInfo, gamePoint, 'OBJECT')
                 }
             }
         }
 
-        duration.after('Collect available construction')
+        duration.after('collect available construction')
 
 
-        // Draw the Shadow layer and the Normal layer
-        if (renderState.drawShadowProgramInstance) {
-            for (const shadow of renderState.shadowsToDraw) {
-                drawShadow(shadow, width, height)
-            }
-        }
-
-        // Sort the toDrawList so it first draws things further away
-        renderState.toDrawNormal.sort((draw1, draw2) => {
-            return draw2.gamePoint.y - draw1.gamePoint.y
-        })
-
-
-        // Draw normal objects
-        if (renderState.drawImageProgramInstance !== undefined) {
-            for (const toDraw of renderState.toDrawNormal) {
-                drawImage(toDraw, width, height)
-            }
-        }
-
-        // Handle the hover layer
-
-        // Draw possible road connections
+        // Collect possible road connections
         if (renderState.newRoad?.possibleConnections) {
             if (renderState?.newRoad !== undefined) {
                 const center = renderState.newRoad.newRoad[renderState.newRoad.newRoad.length - 1]
                 const startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForStartPoint()
 
-                pushHoverImage(startPointInfo, center)
+                pushImage(startPointInfo, center, 'POSSIBLE_ROAD_CONNECTIONS')
 
                 const centerHeight = terrain.get(center)?.height ?? 0
                 const differenceToLevel = (a: number, b: number) => {
@@ -914,7 +818,7 @@ function GameCanvas({
                                 startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
                             }
 
-                            pushHoverImage(startPointInfo, point)
+                            pushImage(startPointInfo, point, 'POSSIBLE_ROAD_CONNECTIONS')
                         }
                     }
                 )
@@ -924,18 +828,18 @@ function GameCanvas({
         duration.after('collect possible road connections')
 
 
-        // Draw the selected point
+        // Collect the selected point
         if (!renderState.hideSelectedPoint) {
             if (renderState.selectedPoint) {
                 const selectedPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForSelectedPoint()
-                pushHoverImage(selectedPointDrawInfo, renderState.selectedPoint)
+                pushImage(selectedPointDrawInfo, renderState.selectedPoint, 'SELECTED_POINT')
             }
         }
 
         duration.after('collect selected point')
 
 
-        // Draw the hover point
+        // Collect the hover point
         if (!renderState.hideHoverPoint) {
             if (renderState.hoverPoint && renderState.hoverPoint.y >= 0 && renderState.hoverPoint.x >= 0) {
                 const availableConstructionAtHoverPoint = availableConstruction.get(renderState.hoverPoint)
@@ -943,81 +847,161 @@ function GameCanvas({
                 if (availableConstructionAtHoverPoint !== undefined && availableConstructionAtHoverPoint.length > 0) {
                     if (availableConstructionAtHoverPoint.includes('LARGE')) {
                         const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverLargeHouseAvailable()
-                        pushHoverImage(largeHouseAvailableInfo, renderState.hoverPoint)
+                        pushImage(largeHouseAvailableInfo, renderState.hoverPoint, 'HOVER')
                     } else if (availableConstructionAtHoverPoint.includes('MEDIUM')) {
                         const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMediumHouseAvailable()
-                        pushHoverImage(mediumHouseAvailableInfo, renderState.hoverPoint)
+                        pushImage(mediumHouseAvailableInfo, renderState.hoverPoint, 'HOVER')
                     } else if (availableConstructionAtHoverPoint.includes('SMALL')) {
                         const smallHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverSmallHouseAvailable()
-                        pushHoverImage(smallHouseAvailableInfo, renderState.hoverPoint)
+                        pushImage(smallHouseAvailableInfo, renderState.hoverPoint, 'HOVER')
                     } else if (availableConstructionAtHoverPoint.includes('MINE')) {
                         const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverMineAvailable()
-                        pushHoverImage(mineAvailableInfo, renderState.hoverPoint)
+                        pushImage(mineAvailableInfo, renderState.hoverPoint, 'HOVER')
                     } else if (availableConstructionAtHoverPoint.includes('FLAG')) {
                         const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverFlagAvailable()
-                        pushHoverImage(flagAvailableInfo, renderState.hoverPoint)
+                        pushImage(flagAvailableInfo, renderState.hoverPoint, 'HOVER')
                     }
                 } else {
                     const hoverPointDrawInfo = uiElementsImageAtlasHandler.getDrawingInformationForHoverPoint()
-                    pushHoverImage(hoverPointDrawInfo, renderState.hoverPoint)
+                    pushImage(hoverPointDrawInfo, renderState.hoverPoint, 'HOVER')
                 }
             }
         }
 
-        // Draw the overlay layer. Assume for now that they don't need sorting
+        duration.after('collect hover point')
+
+
+        // Collect house titles
+        for (const house of houses) {
+            if (house.playerId !== selfPlayerId) {
+                continue
+            }
+
+            if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
+                continue
+            }
+
+            const screenPoint = gamePointToScreenPointWithHeightAdjustmentInternal(house)
+            const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseReady(house)
+
+            let heightOffset = 0
+
+            if (houseDrawInformation) {
+                heightOffset = houseDrawInformation[0].offsetY * navigationState.scale / DEFAULT_SCALE
+            }
+
+            let houseTitle = buildingPretty(house.type)
+
+            if (house.state === 'UNFINISHED') {
+                houseTitle = `(${houseTitle})`
+            } else if (house.state === 'UNOCCUPIED') {
+                houseTitle = `${houseTitle} (unoccupied)`
+            } else if (house.productivity !== undefined && house.state === 'OCCUPIED') {
+                houseTitle = `${houseTitle} (${house.productivity}%)`
+            }
+
+            renderState.houseTitlesRenderQueue.push({
+                text: houseTitle,
+                gamePoint: screenPoint
+            })
+        }
+
+        duration.after('collect house titles')
+
+
+        /// Render from collected queues
+
+        // Draw the terrain layer
+        if (imageAtlasTerrainAndRoads) {
+            const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
+
+            if (textureSlot !== undefined && renderState.drawGroundProgramInstance) {
+                draw<DrawGroundUniforms>(renderState.drawGroundProgramInstance,
+                    {
+                        u_light_vector: lightVector,
+                        u_scale: [navigationState.scale, navigationState.scale],
+                        u_offset: [navigationState.translate.x, navigationState.translate.y],
+                        u_screen_width: width,
+                        u_screen_height: height,
+                        u_height_adjust: heightAdjust,
+                        u_sampler: textureSlot
+                    },
+                    'CLEAR_BEFORE_DRAW'
+                )
+            }
+        }
+
+        duration.after('draw terrain')
+
+
+        // Draw decoration shadows
+        for (const toDraw of renderState.decorationsShadowRenderQueue) {
+            drawShadow(toDraw, width, height)
+        }
+
+        // Draw decoration objects
+        for (const toDraw of renderState.decorationsRenderQueue) {
+            drawImage(toDraw, width, height)
+        }
+
+        duration.after('draw decorations')
+
+
+        // Draw the road layer
+        if (imageAtlasTerrainAndRoads) {
+            const textureSlot = textures.activateTextureForRendering(renderState.gl, imageAtlasTerrainAndRoads)
+
+            if (textureSlot !== undefined && renderState.drawRoadsProgramInstance) {
+                draw<DrawGroundUniforms>(renderState.drawRoadsProgramInstance,
+                    {
+                        u_light_vector: lightVector,
+                        u_scale: [navigationState.scale, navigationState.scale],
+                        u_offset: [navigationState.translate.x, navigationState.translate.y],
+                        u_screen_width: width,
+                        u_screen_height: height,
+                        u_height_adjust: heightAdjust,
+                        u_sampler: textureSlot
+                    },
+                    'NO_CLEAR_BEFORE_DRAW'
+                )
+            }
+        }
+
+        duration.after('draw roads')
+
+
+        // Draw shadows for game objects without sorting
+        if (renderState.drawShadowProgramInstance) {
+            for (const shadow of renderState.gameObjectsShadowRenderQueue) {
+                drawShadow(shadow, width, height)
+            }
+        }
+
+        // Draw game objects with sorting based on y coordinate
+        renderState.gameObjectsRenderQueue.sort((draw1, draw2) => {
+            return draw2.gamePoint.y - draw1.gamePoint.y
+        })
+
         if (renderState.drawImageProgramInstance !== undefined) {
-            for (const toDraw of renderState.toDrawHover) {
+            for (const toDraw of renderState.gameObjectsRenderQueue) {
                 drawImage(toDraw, width, height)
             }
         }
 
-        duration.after('draw normal layer')
+        duration.after('draw game objects')
 
 
-        // Draw house titles
-        if (renderState.showHouseTitles) {
-            overlayCtx.font = 'bold 12px sans-serif'
-            overlayCtx.strokeStyle = 'black'
-            overlayCtx.fillStyle = 'yellow'
-
-            for (const house of houses) {
-                if (house.playerId !== selfPlayerId) {
-                    continue
-                }
-
-                if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
-                    continue
-                }
-
-                const screenPoint = gamePointToScreenPointWithHeightAdjustmentInternal(house)
-                const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseReady(house)
-
-                let heightOffset = 0
-
-                if (houseDrawInformation) {
-                    heightOffset = houseDrawInformation[0].offsetY * navigationState.scale / DEFAULT_SCALE
-                }
-
-                let houseTitle = buildingPretty(house.type)
-
-                if (house.state === 'UNFINISHED') {
-                    houseTitle = `(${houseTitle})`
-                } else if (house.state === 'UNOCCUPIED') {
-                    houseTitle = `${houseTitle} (unoccupied)`
-                } else if (house.productivity !== undefined && house.state === 'OCCUPIED') {
-                    houseTitle = `${houseTitle} (${house.productivity}%)`
-                }
-
-                const widthOffset = overlayCtx.measureText(houseTitle).width / 2
-                overlayCtx.strokeText(houseTitle, screenPoint.x - widthOffset, screenPoint.y - heightOffset - 5)
-                overlayCtx.fillText(houseTitle, screenPoint.x - widthOffset, screenPoint.y - heightOffset - 5)
+        // Draw the possible road connections layer. Assume for now that it doesn't need sorting
+        if (renderState.drawImageProgramInstance !== undefined) {
+            for (const toDraw of renderState.possibleRoadConnectionsRenderQueue) {
+                drawImage(toDraw, width, height)
             }
         }
 
-        duration.after('draw house titles')
+        duration.after('draw possible road connections layer')
 
 
-        // Fill in the buffers to draw fog of war
+        // Draw fog of war
         if (renderState.fogOfWar && renderState.fogOfWarProgramInstance) {
             draw<FogOfWarUniforms>(renderState.fogOfWarProgramInstance,
                 {
@@ -1029,6 +1013,44 @@ function GameCanvas({
                 'NO_CLEAR_BEFORE_DRAW'
             )
         }
+
+        duration.after('draw fog of war')
+
+
+        // Draw the selected point layer. Assume for now that it doesn't need sorting
+        if (renderState.drawImageProgramInstance !== undefined) {
+            for (const toDraw of renderState.selectedPointRenderQueue) {
+                drawImage(toDraw, width, height)
+            }
+        }
+
+        duration.after('draw selected point layer')
+
+
+        // Draw the hover point layer. Assume for now that it doesn't need sorting
+        if (renderState.drawImageProgramInstance !== undefined) {
+            for (const toDraw of renderState.hoverPointRenderQueue) {
+                drawImage(toDraw, width, height)
+            }
+        }
+
+        duration.after('draw hover point layer')
+
+
+        // Draw house titles on the overlay canvas
+        if (renderState.showHouseTitles) {
+            overlayCtx.font = 'bold 12px sans-serif'
+            overlayCtx.strokeStyle = 'black'
+            overlayCtx.fillStyle = 'yellow'
+
+            for (const houseTitle of renderState.houseTitlesRenderQueue) {
+                const widthOffset = overlayCtx.measureText(houseTitle.text).width / 2
+                overlayCtx.strokeText(houseTitle.text, houseTitle.gamePoint.x - widthOffset, houseTitle.gamePoint.y - 5)
+                overlayCtx.fillText(houseTitle.text, houseTitle.gamePoint.x - widthOffset, houseTitle.gamePoint.y - 5)
+            }
+        }
+
+        duration.after('draw house titles')
 
         duration.reportStats()
 
@@ -1364,16 +1386,12 @@ function GameCanvas({
 
                 // Stop rendering loop
                 stopRenderLoop()
-
-                // Clean up webgl resources
-                cleanupWebgl(renderState.current)
             }
         }, [
         renderState,
         initWebgl,
         startRenderLoop,
-        stopRenderLoop,
-        cleanupWebgl
+        stopRenderLoop
     ])
 
     const gamePointToScreenPointWithHeightAdjustmentInternal = useCallback((gamePoint: Point) => {

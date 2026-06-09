@@ -13,8 +13,8 @@ import { InventoryIcon, UiIcon } from '../../components/icons/icon'
 type SetTransportPriorityProps = {
     nation: Nation
 
-    onRaise: (() => void)
-    onClose: (() => void)
+    onRaise: () => void
+    onClose: () => void
 }
 
 // Constants
@@ -59,8 +59,6 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
     const increasePriority = useCallback((category: TransportCategory) => {
         const currentPriority = priority.findIndex(e => e === category)
 
-        console.log(`Current priority for ${category}: ${currentPriority}`)
-
         if (currentPriority > 0) {
             api.setTransportPriorityForMaterial(category, currentPriority - 1)
         }
@@ -68,8 +66,6 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
 
     const decreasePriority = useCallback((category: TransportCategory) => {
         const currentPriority = priority.findIndex(e => e === category)
-
-        console.log(`Current priority for ${category}: ${currentPriority}`)
 
         if (currentPriority < TRANSPORT_CATEGORIES.size - 1) {
             api.setTransportPriorityForMaterial(category, currentPriority + 1)
@@ -134,7 +130,6 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
                                 onMouseEnter={() => setHoverInfo(`Set priority for ${categoryDisplayName.toLowerCase()}`)}
                                 onMouseLeave={() => setHoverInfo(undefined)}
                                 onClick={() => setSelected(category)}
-
                                 tabIndex={0}
                             >{CATEGORY_MATERIALS_MAP.get(category)?.map(material =>
                                 <InventoryIcon material={material} nation={nation} inline key={material} scale={selected === category ? 2 : 1} />

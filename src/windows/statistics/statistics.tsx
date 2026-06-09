@@ -2,17 +2,17 @@ import React, { useMemo, useState } from 'react'
 import { WindowWithTyping } from '../../components/dialog'
 import './statistics.css'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { Nation, AnyBuilding, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, PlayerInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, GENERAL_STATISTICS_TYPES, StatisticsView, STATISTICS_VIEWS } from '../../api/types'
+import { Nation, AnyBuilding, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, GENERAL_STATISTICS_TYPES, StatisticsView, STATISTICS_VIEWS, StatisticsPerPlayer } from '../../api/types'
 import { api } from '../../api/ws-api'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Label } from 'recharts'
 import { StatisticsReply } from '../../api/ws/commands'
-import { LivePlayerButton } from '../../components/player_icon/player_icon'
 import { ItemContainer } from '../../components/item_container'
 import { MouseHandlerDataParam } from 'recharts/types/synchronisation/types'
 import { useStatistics, useTime } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
 import { buildingPretty, generalStatisticsTypePretty, materialPretty, merchandisePretty, playerToColor, statisticsViewPretty } from '../../utils/pretty_strings'
 import { HouseIcon, InventoryIcon, UiIcon, UiIconType } from '../../components/icons/icon'
+import { PlayerSelector } from './select-players'
 
 // Types
 type StatisticsProps = {
@@ -48,7 +48,10 @@ type GeneralStatisticsGraphProps = {
     time: number
     setHover: (info: string | undefined) => void
 }
-
+type Series = {
+    name: string
+    values: [number, number][]
+}
 
 // Constants
 const GENERAL_STATISTICS_LABELS: GeneralStatisticsType[] = ['land', 'production', 'workers', 'houses', 'goods', 'coins', 'military', 'killedEnemies']
@@ -158,30 +161,88 @@ const sampleStatisticsData: StatisticsReply = {
 }
 
 // Functions
-const getSelectedPlayers = (statistics: StatisticsReply, selectedPlayers: PlayerId[]) =>
-    statistics.players.filter(player => selectedPlayers.includes(player.id))
+/**
+ * Prepares the statistics data for graphing. Sorts the timestamps, extends the data to current time.
+ * 
+ * Creates a line aligned with the x axis when no measurements exist.
+ * @param {Series[]} series - Series of measurements
+ * @param {number} currentTime - Current time
+ * @returns {ChartData[]} - Statistics data ready for graphing
+ */
+function buildChartData(series: Series[], currentTime: number): ChartData[] {
+    const allTimestamps = new Set<number>()
 
-const collectSortedTimestamps = (timestamps: number[]) =>
-    [...new Set(timestamps)].sort((a, b) => a - b)
-
-const fillSeriesWithCarryForward = (
-    timestamps: number[],
-    entries: [number, number][],
-): (number | undefined)[] => {
-    let lastValue: number | undefined = undefined
-
-    return timestamps.map(time => {
-        const found = entries.find(([t]) => t === time)
-        if (found) lastValue = found[1]
-        return lastValue
+    series.forEach(s => {
+        s.values.forEach(([time]) => allTimestamps.add(time))
     })
+
+    const sortedTimestamps = collectSortedTimestamps([...allTimestamps])
+    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
+
+    series.forEach(seriesEntry => {
+        const lookup = new Map(seriesEntry.values)
+        let lastValue: number | undefined
+
+        sortedTimestamps.forEach((time, index) => {
+            const value = lookup.get(time)
+
+            if (value !== undefined) {
+                lastValue = value
+            }
+
+            chartData[index][seriesEntry.name] = lastValue
+        })
+    })
+
+    extendToTime(chartData, currentTime)
+
+    if (chartData.length === 0) {
+        const zeroMeasurement = buildZeroMeasurement(series.map(s => s.name))
+
+        return [
+            {
+                time: 0,
+                ...zeroMeasurement
+            },
+            {
+                time: currentTime,
+                ...zeroMeasurement
+            }
+        ]
+    }
+
+    return chartData
 }
 
+/**
+ * Returns the statistics for the selected players.
+ * @param {StatisticsReply} statistics - The complete statistics reply containing data for all players.
+ * @param {PlayerId[]} selectedPlayers - An array of player IDs to include in the results.
+ * @returns {StatisticsPerPlayer[]} An array of statistics for the selected players. Each entry includes the player's id and their respective statistics.
+ */
+const getSelectedPlayers = (statistics: StatisticsReply, selectedPlayers: PlayerId[]): StatisticsPerPlayer[] =>
+    statistics.players.filter(player => selectedPlayers.includes(player.id))
+
+/**
+ * Collects and sorts unique timestamps from an array of numbers.
+ * @param {number[]} timestamps - An array of timestamps.
+ * @returns {number[]} A sorted array of unique timestamps.
+ */
+const collectSortedTimestamps = (timestamps: number[]): number[] =>
+    [...new Set(timestamps)].sort((a, b) => a - b)
+
+/**
+ * Extends the chart data to include a point at the target time.
+ * @param chartData - The array of chart data points.
+ * @param targetTime - The time to extend the data to.
+ */
 const extendToTime = (
     chartData: ChartData[],
     targetTime: number
 ) => {
-    if (chartData.length === 0) return
+    if (chartData.length === 0) {
+        return
+    }
 
     const last = chartData[chartData.length - 1]
 
@@ -190,29 +251,13 @@ const extendToTime = (
     }
 }
 
+/**
+ * Builds a measurement object with zero values for the specified keys.
+ * @param {string[]} keys - An array of keys for which to create zero values.
+ * @returns {Record<string, number>} An object with zero values for each key.
+ */
 const buildZeroMeasurement = (keys: string[]) =>
     Object.fromEntries(keys.map(k => [k, 0]))
-
-const renderPlayerLines = (
-    players: PlayerInformation[],
-    selectedPlayers: PlayerId[],
-    getColor: (player: PlayerInformation, index: number) => string
-) =>
-    players
-        .filter(player => selectedPlayers.includes(player.id))
-        .map((player, index) => (
-            <Line
-                key={player.id}
-                type='stepAfter'
-                dataKey={`Player ${player.id}`}
-                name={`Player ${player.id}`}
-                stroke={getColor(player, index)}
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-                connectNulls
-            />
-        ))
 
 const hoverHandlers = (setHover: (s?: string) => void, text?: string) => ({
     onMouseEnter: () => setHover(text),
@@ -247,6 +292,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<StatisticsView>>()
 
+        // Set statistics view
         STATISTICS_VIEWS.forEach(view => {
             cmds.set(`Show ${statisticsViewPretty(view)} statistics`, {
                 action: () => setState(view)
@@ -260,6 +306,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
             })
         })
 
+        // Merchandise statistics
         MERCHANDISE_VALUES.forEach(merchandise => {
             cmds.set(`Show ${merchandisePretty(merchandise)} statistics`, {
                 action: () => setSelectedMerchandise(prev => [...prev, merchandise]),
@@ -272,39 +319,89 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
             })
         })
 
+        cmds.set('Show all merchandise statistics', {
+            action: () => setSelectedMerchandise([...MERCHANDISE_VALUES]),
+            filter: view =>
+                view === 'MERCHANDISE'
+                && selectedMerchandise.length < MERCHANDISE_VALUES.length
+        })
+
+        cmds.set('Hide all merchandise statistics', {
+            action: () => setSelectedMerchandise([]),
+            filter: view =>
+                view === 'MERCHANDISE'
+                && selectedMerchandise.length > 0
+        })
+
+        // Toggle players to show statistics for
         api.players.forEach(player => {
             cmds.set(`Show statistics for ${player.name}`, {
                 action: () => setSelectedPlayers(prev => [...prev, player.id]),
-                filter: (view: StatisticsView) => view === 'GENERAL' && !selectedPlayers.includes(player.id)
+                filter: (view: StatisticsView) => (view === 'GENERAL' || (view === 'BUILDINGS' && buildingsView === 'HISTORICAL')) && !selectedPlayers.includes(player.id)
             })
 
             cmds.set(`Hide statistics for ${player.name}`, {
                 action: () => setSelectedPlayers(prev => prev.filter(playerId => playerId !== player.id)),
-                filter: (view: StatisticsView) => view === 'GENERAL' && selectedPlayers.includes(player.id)
+                filter: (view: StatisticsView) => (view === 'GENERAL' || (view === 'BUILDINGS' && buildingsView === 'HISTORICAL')) && selectedPlayers.includes(player.id)
             })
         })
 
-        cmds.set('Set player name', {
-            type: 'STRING',
-            action: (name: string, plupp: string) => console.log(name, plupp)
+        cmds.set('Show all players', {
+            action: () =>
+                setSelectedPlayers(
+                    Array.from(api.players.keys())
+                ),
+            filter: () =>
+                selectedPlayers.length < api.players.size
         })
 
-        cmds.set('Set player age', {
-            type: 'NUMBER',
-            action: (context: string, age: number) => console.log(age)
+        cmds.set('Hide all players', {
+            action: () => setSelectedPlayers([]),
+            filter: () =>
+                selectedPlayers.length > 0
         })
 
-        cmds.set('Set color', {
-            type: 'ENUM',
-            values: ['red', 'green', 'blue'],
-            action: (context: string, color: string) => console.log(color)
+        // Building statistics
+        cmds.set('Show current buildings', {
+            action: () => {
+                setState('BUILDINGS')
+                setBuildingsView('CURRENT')
+            },
+            filter: view => view !== 'BUILDINGS' || buildingsView !== 'CURRENT'
         })
 
-        cmds.set('Close window',
-            {
-                action: () => onClose()
-            }
-        )
+        cmds.set('Show historical buildings', {
+            action: () => {
+                setState('BUILDINGS')
+                setBuildingsView('HISTORICAL')
+            },
+            filter: view => view !== 'BUILDINGS' || buildingsView !== 'HISTORICAL'
+        })
+
+            ;[
+                ...SMALL_HOUSE_VALUES,
+                ...MEDIUM_HOUSE_VALUES,
+                ...LARGE_HOUSE_VALUES
+            ].forEach(building => {
+                cmds.set(
+                    `Show ${buildingPretty(building)} statistics`,
+                    {
+                        action: () => {
+                            setState('BUILDINGS')
+                            setBuildingsView('HISTORICAL')
+                            setSelectedBuilding(building)
+                        },
+                        filter: () =>
+                            state !== 'BUILDINGS'
+                            || buildingsView !== 'HISTORICAL'
+                            || selectedBuilding !== building
+                    }
+                )
+            })
+
+        cmds.set('Close window', {
+            action: () => onClose()
+        })
 
         return cmds
     }, [onClose, generalStatistics, selectedMerchandise, selectedPlayers])
@@ -372,26 +469,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                         />
                         <div>
                             Players:
-                            <div>
-                                {Array.from(api.players.values()).map(player => {
-                                    const selected = selectedPlayers.includes(player.id)
-
-                                    return (
-                                        <LivePlayerButton
-                                            key={player.id}
-                                            playerId={player.id}
-                                            selected={selected}
-                                            onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
-                                                ? prev.filter(p => p !== player.id)
-                                                : [...prev, player.id]
-                                            )}
-                                            {...hoverHandlers(setHoverInfo, selected
-                                                ? `Hide statistics for ${player.name}`
-                                                : `Show statistics for ${player.name}`)}
-                                        />
-                                    )
-                                })}
-                            </div>
+                            <PlayerSelector selectedPlayers={selectedPlayers} setSelectedPlayers={setSelectedPlayers} setHoverInfo={setHoverInfo} />
                         </div>
                         <div>
                             Available statistics:
@@ -597,27 +675,7 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
                                     selectedPlayers={selectedPlayers}
                                 />
                                 Players:
-                                <div>
-                                    {Array.from(api.players.values()).map(player => {
-                                        const selected = selectedPlayers.includes(player.id)
-
-                                        return (
-                                            <LivePlayerButton
-                                                key={player.id}
-                                                playerId={player.id}
-                                                selected={selected}
-                                                onClick={() => setSelectedPlayers(prev => prev.includes(player.id)
-                                                    ? prev.filter(p => p !== player.id)
-                                                    : [...prev, player.id]
-                                                )}
-                                                onMouseEnter={() => setHoverInfo(selected
-                                                    ? `Hide statistics for ${player.name}`
-                                                    : `Show statistics for ${player.name}`)}
-                                                onMouseLeave={() => setHoverInfo(undefined)}
-                                            />
-                                        )
-                                    })}
-                                </div>
+                                <PlayerSelector selectedPlayers={selectedPlayers} setSelectedPlayers={setSelectedPlayers} setHoverInfo={setHoverInfo} />
 
                                 {(() => {
                                     const housesContainer = (houseTypes: readonly AnyBuilding[]) => (
@@ -672,51 +730,20 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
 }
 
 const MerchandiseGraph = ({ statistics, selectedMerchandise, time }: MerchandiseGraphProps) => {
-
-    // Collect all unique timestamps
-    const allTimestamps = new Set<number>()
     const latest = Math.max(time, statistics.currentTime)
 
-    selectedMerchandise.forEach(category => {
-        if (category in statistics.merchandise && statistics.merchandise[category]) {
-            statistics.merchandise[category].forEach(([time]) => allTimestamps.add(time))
-        }
-    })
-
-    // Sort timestamps
-    const sortedTimestamps = collectSortedTimestamps(Array.from(allTimestamps))
-
-    // Initialize chart data with all timestamps
-    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
-
-    // Fill in merchandise data
-    selectedMerchandise.forEach(category => {
-        const values = fillSeriesWithCarryForward(
-            sortedTimestamps,
-            statistics.merchandise[category] ?? []
+    // Memos
+    const chartData = useMemo(() => {
+        return buildChartData(
+            selectedMerchandise.map(merchandise => ({
+                name: merchandise,
+                values: statistics.merchandise[merchandise] ?? []
+            })),
+            latest
         )
+    }, [statistics, selectedMerchandise, latest])
 
-        values.forEach((value, index) => {
-            chartData[index][category] = value
-        })
-    })
-
-    // Sort data by time to ensure correct visualization
-    chartData.sort((a, b) => a.time - b.time)
-
-    extendToTime(chartData, latest)
-
-    if (chartData.length === 0) {
-        const zeroMeasurement = buildZeroMeasurement(selectedMerchandise)
-
-        selectedMerchandise.forEach(category => {
-            zeroMeasurement[category] = 0
-        })
-
-        chartData.unshift({ time: 0, ...zeroMeasurement })
-        chartData.push({ time: latest, ...zeroMeasurement })
-    }
-
+    // Rendering
     return (
         <ResponsiveContainer width='100%' height={400}>
             <LineChart
@@ -759,33 +786,13 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, selectedPlayers, se
     const selectedPlayerStatistics = getSelectedPlayers(statistics, selectedPlayers)
 
     // Collect all unique timestamps and sort them
-    const sortedTimestamps = collectSortedTimestamps(selectedPlayerStatistics.flatMap(
-        player => player.buildingStatistics[buildingType]?.map(([time]) => time) ?? []
-    ))
-
-    // Initialize chart data with all timestamps
-    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
-
-    // Fill in player data
-    selectedPlayerStatistics.forEach(player => {
-        sortedTimestamps.forEach((time, index) => {
-            const entry = chartData[index]
-            const data = player.buildingStatistics[buildingType]?.find(([t]) => t === time)
-
-            entry[`Player ${player.id}`] = data?.[1]
-        })
-    })
-
-    // Add an initial empty value if the chart data array is empty
-    if (chartData.length === 0) {
-        chartData.push({
-            time: 0,
-            ...Object.fromEntries(selectedPlayerStatistics.map(player => [`Player ${player.id}`, 0])),
-        })
-    }
-
-    // Put in a measurement for the current time if it's missing
-    extendToTime(chartData, statistics.currentTime)
+    const chartData = useMemo(() => buildChartData(
+        selectedPlayerStatistics.map(player => ({
+            name: `Player ${player.id}`,
+            values: player.buildingStatistics[buildingType] ?? []
+        })),
+        statistics.currentTime
+    ), [statistics, buildingType, selectedPlayers])
 
     return (
         <ResponsiveContainer width='100%' height={400}>
@@ -842,43 +849,18 @@ const BuildingStatisticsGraph = ({ statistics, buildingType, selectedPlayers, se
 }
 
 const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers: selectedPlayerIds, time, setHover }: GeneralStatisticsGraphProps) => {
-
-    // Collect all unique timestamps where selected players have data for the current stat type
-    const allTimestamps = new Set<number>()
-
     const selectedPlayerStatistics = getSelectedPlayers(statistics, selectedPlayerIds)
 
-    selectedPlayerStatistics.forEach(player => {
-        player.general[statType]?.forEach(([time]) => allTimestamps.add(time))
-    })
-
-    // Sort timestamps chronologically and initialize chart data with time-only entries
-    const sortedTimestamps = collectSortedTimestamps([...allTimestamps])
-    const chartData: ChartData[] = sortedTimestamps.map(time => ({ time }))
-
-    // For each selected player, fill the chartData with the most recent known value at each timestamp
-    selectedPlayerStatistics.forEach(player => {
-        let lastValue: number | undefined = undefined
-        sortedTimestamps.forEach((time, index) => {
-            const entry = chartData[index]
-            const found = player.general[statType]?.find(([t]) => t === time)
-            if (found) lastValue = found[1]
-            entry[`Player ${player.id}`] = lastValue
-        })
-    })
-
-    // Extend chart data to current time if it’s not already included
-    extendToTime(chartData, statistics.currentTime)
-
-    // Handle case where there’s no data: add zero-filled placeholders from time 0 to max time
-    if (chartData.length === 0) {
-        const zeroMeasurement = buildZeroMeasurement(selectedPlayerStatistics.map(player => `Player ${player.id}`))
-        selectedPlayerStatistics.forEach(player => {
-            zeroMeasurement[`Player ${player.id}`] = 0
-        })
-        chartData.push({ time: 0, ...zeroMeasurement })
-        chartData.push({ time: Math.max(time, statistics.currentTime), ...zeroMeasurement })
-    }
+    // Collect all unique timestamps where selected players have data for the current stat type
+    const chartData = useMemo(() => {
+        return buildChartData(
+            selectedPlayerStatistics.map(player => ({
+                name: `Player ${player.id}`,
+                values: player.general[statType] ?? []
+            })),
+            statistics.currentTime
+        )
+    }, [statistics, statType, selectedPlayerIds])
 
     return (
         <ResponsiveContainer width='100%' height={400}>
@@ -917,7 +899,7 @@ const GeneralStatisticsGraph = ({ statistics, statType, selectedPlayers: selecte
                         return (
                             <Line
                                 key={player.id}
-                                type='linear'
+                                type='stepAfter'
                                 dataKey={`Player ${player.id}`}
                                 name={`Player ${player.id}`}
                                 stroke={color}

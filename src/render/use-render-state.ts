@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { PointMap } from '../utils/util_types_ng'
 import { Vector } from '../utils/utils'
-import { RenderState, TrianglesAtPoint } from './types'
+import { RenderState, RenderType, TrianglesAtPoint } from './types'
 import { Point } from '../api/types'
 import { DrawingInformation } from '../assets/types'
 
@@ -33,9 +33,16 @@ function makeInitRenderState(): RenderState {
         hideSelectedPoint: false,
         hideHoverPoint: false,
         renderLoopHandle: undefined,
-        toDrawNormal: [],
-        shadowsToDraw: [],
-        toDrawHover: [],
+        decorationsRenderQueue: [],
+        decorationsShadowRenderQueue: [],
+        gameObjectsRenderQueue: [],
+        gameObjectsShadowRenderQueue: [],
+        availableConstructionRenderQueue: [],
+        possibleRoadConnectionsRenderQueue: [],
+        selectedPointRenderQueue: [],
+        hoverPointRenderQueue: [],
+        houseTitlesRenderQueue: [],
+
         contextLost: false,
         fogOfWar: true
     }
@@ -58,54 +65,89 @@ function useRenderStateSync({
     const renderState = useRef<RenderState>(makeInitRenderState())
 
     // Functions
-    const pushNormalImage = useCallback((drawInfo: DrawingInformation | undefined, gamePoint: Point, height?: number) => {
+    const pushImage = useCallback((
+        drawInfo: DrawingInformation | undefined,
+        gamePoint: Point,
+        renderQueue: RenderType,
+        height?: number
+    ) => {
         if (!drawInfo) {
             return
         }
 
-        renderState.current.toDrawNormal.push({
+        const toPush = {
             source: drawInfo,
             gamePoint,
             height
-        })
+        }
+
+        if (renderQueue === 'DECORATION') {
+            renderState.current.decorationsRenderQueue.push(toPush)
+        } else if (renderQueue === 'OBJECT') {
+            renderState.current.gameObjectsRenderQueue.push(toPush)
+        } else if (renderQueue === 'AVAILABLE_CONSTRUCTION') {
+            renderState.current.availableConstructionRenderQueue.push(toPush)
+        } else if (renderQueue === 'POSSIBLE_ROAD_CONNECTIONS') {
+            renderState.current.possibleRoadConnectionsRenderQueue.push(toPush)
+        } else if (renderQueue === 'SELECTED_POINT') {
+            renderState.current.selectedPointRenderQueue.push(toPush)
+        } else if (renderQueue === 'HOVER') {
+            renderState.current.hoverPointRenderQueue.push(toPush)
+        }
     }, [renderState])
 
-    const pushNormalImageWithShadow = useCallback((drawInfo: DrawingInformation[] | undefined, gamePoint: Point, height?: number) => {
+    const pushImageWithShadow = useCallback((
+        drawInfo: DrawingInformation[] | undefined,
+         gamePoint: Point,
+         renderQueue: RenderType,
+          height?: number) => {
         if (!drawInfo) {
             return
         }
 
-        renderState.current.toDrawNormal.push({
+        const image = {
             source: drawInfo[0],
             gamePoint,
             height
-        })
+        }
 
-        renderState.current.shadowsToDraw.push({
+        const shadow = {
             source: drawInfo[1],
             gamePoint,
             height
-        })
-    }, [renderState])
-
-    const pushHoverImage = useCallback((drawInfo: DrawingInformation | undefined, gamePoint: Point) => {
-        if (!drawInfo) {
-            return
         }
 
-        renderState.current.toDrawHover.push({
-            source: drawInfo,
-            gamePoint
-        })
+        if (renderQueue === 'DECORATION') {
+            renderState.current.decorationsRenderQueue.push(image)
+            renderState.current.decorationsShadowRenderQueue.push(shadow)
+        } else if (renderQueue === 'OBJECT') {
+            renderState.current.gameObjectsRenderQueue.push(image)
+            renderState.current.gameObjectsShadowRenderQueue.push(shadow)
+        } else if (renderQueue === 'AVAILABLE_CONSTRUCTION') {
+            console.error('Shadows for available construction are not supported')
+        } else if (renderQueue === 'POSSIBLE_ROAD_CONNECTIONS') {
+            console.error('Shadows for possible road connections are not supported')
+        } else if (renderQueue === 'SELECTED_POINT') {
+            console.error('Shadows for selected point are not supported')
+        } else if (renderQueue === 'HOVER') {
+            console.error('Shadows for hover point are not supported')
+        }
     }, [renderState])
 
     const clearRenderQueues = useCallback(() => {
-        renderState.current.toDrawNormal.length = 0
-        renderState.current.shadowsToDraw.length = 0
-        renderState.current.toDrawHover.length = 0
+        renderState.current.decorationsRenderQueue.length = 0
+        renderState.current.decorationsShadowRenderQueue.length = 0
+        renderState.current.gameObjectsRenderQueue.length = 0
+        renderState.current.gameObjectsShadowRenderQueue.length = 0
+        renderState.current.availableConstructionRenderQueue.length = 0
+        renderState.current.possibleRoadConnectionsRenderQueue.length = 0
+        renderState.current.selectedPointRenderQueue.length = 0
+        renderState.current.hoverPointRenderQueue.length = 0
+        renderState.current.houseTitlesRenderQueue.length = 0
     }, [renderState])
 
-    // Variables get captured by the closure of 'renderGame()' so pass the props in to it through renderState
+    // Effects
+    // Effect: variables get captured by the closure of 'renderGame()' so pass the props in to it through renderState
     useEffect(
         () => {
             renderState.current.showAvailableConstruction = showAvailableConstruction
@@ -123,7 +165,7 @@ function useRenderStateSync({
             }
         }, [showAvailableConstruction, selectedPoint, newRoad?.length, possibleRoadConnections?.length, showHouseTitles, fogOfWar])
 
-    return { renderState, pushNormalImage, pushNormalImageWithShadow, pushHoverImage, clearRenderQueues }
+    return { renderState, pushImage, pushImageWithShadow, clearRenderQueues }
 }
 
 // Exports

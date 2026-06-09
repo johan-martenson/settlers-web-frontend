@@ -14,7 +14,7 @@ import { printVariables } from '../../utils/stats/stats'
 import { SetTransportPriority } from '../../windows/transport_priority/transport_priority'
 import { TypeControl } from './type-control'
 import { isRoadAtPoint } from '../../utils/utils'
-import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, HouseId, GameState, RoadId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
+import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, HouseId, RoadId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
 import { CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled } from '@fluentui/react-icons'
 import { HouseInfo } from '../../windows/house/house_info'
 import { sfx } from '../../sound/sound_effects'
@@ -1136,4 +1136,3 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 }
 
 export default Play
-

@@ -14,7 +14,7 @@ import { GenericCommand } from '../../utils/typing-commands'
 import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../utils/pretty_strings'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 
-// Types
+/// Types
 type HouseInfoProps = {
     house: HouseInformation
     selfPlayerId: PlayerId
@@ -52,6 +52,7 @@ type UnfinishedHouseInfo = {
     nation: Nation
     onRaise: () => void
     onClose: () => void
+    goToPoint: (point: Point) => void
 }
 
 type ProductionBuildingProps = {
@@ -70,7 +71,30 @@ type ResourceDisplayProps = {
     padding?: string
 }
 
-// React components
+
+/// Functions
+function addDebugCommands(
+    cmds: Map<string, GenericCommand<HouseInformation>>
+): void {
+    cmds.set('Debug', {
+        action: (house: HouseInformation) => {
+            console.log(house)
+        },
+        hidden: true
+    })
+
+    cmds.set('Copy house JSON', {
+        action: async (house: HouseInformation) => {
+            await navigator.clipboard.writeText(
+                JSON.stringify(house, null, 2)
+            )
+        },
+        hidden: true
+    })
+}
+
+
+/// React components
 export const ResourceDisplay = ({
     house,
     nation,
@@ -148,7 +172,7 @@ const HouseInfo = ({ selfPlayerId, nation, goToPoint, onClose, onRaise, ...props
     return (
         <div>
             {isOwnHouse && house.type === 'Headquarter' &&
-                <HeadquarterInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <HeadquarterInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} onGoToPoint={goToPoint} />
             }
 
             {isOwnHouse && house.state === 'PLANNED' &&
@@ -187,12 +211,12 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise, goToPoint }: Planne
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<HouseInformation>>()
 
-        cmds.set('go to house', {
-            action: (house: HouseInformation) => goToPoint(house),
+        cmds.set('Go to building', {
+            action: goToPoint,
             icon: <UiIcon type='GO_TO_POINT' scale={0.5} />
         })
 
-        cmds.set('tear down', {
+        cmds.set('Tear down', {
             action: (house: HouseInformation) => {
                 api.removeBuilding(house.id)
                 onClose()
@@ -200,14 +224,12 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise, goToPoint }: Planne
             icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
         })
 
-        cmds.set('close window', {
-            action: () => onClose(),
+        cmds.set('Close window', {
+            action: onClose,
             icon: <Dismiss16Filled />
         })
 
-        cmds.set('debug', {
-            action: (house: HouseInformation) => console.log(house)
-        })
+        addDebugCommands(cmds)
 
         return cmds
     }, [onClose, goToPoint])
@@ -266,19 +288,16 @@ const EnemyHouseInfo = ({ house, nation, onClose, onRaise, goToPoint }: EnemyHou
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<HouseInformation>>()
 
-        cmds.set('go to building', {
-            action: (house: HouseInformation) => goToPoint(house),
-            filter: (house: HouseInformation) => houseIsReady(house)
+        cmds.set('Go to building', {
+            action: goToPoint,
+            filter: houseIsReady
         })
 
-        cmds.set('close window', {
-            action: () => onClose()
+        cmds.set('Close window', {
+            action: onClose
         })
 
-        cmds.set('debug', {
-            action: (house: HouseInformation) => console.log(house),
-            hidden: true
-        })
+        addDebugCommands(cmds)
 
         return cmds
     }, [onClose, goToPoint])
@@ -317,21 +336,31 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<HouseInformation>>()
 
-        cmds.set('attack', {
-            action: (house: HouseInformation) => api.attackHouse(house.id, chosenAttackers, attackType),
-            filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && house.availableAttackers > 0
+        cmds.set('Attack', {
+            action: (house: HouseInformation) => {
+                api.attackHouse(house.id, chosenAttackers, attackType)
+
+                onClose()
+            },
+            filter: house => isMilitaryBuilding(house) && (house.availableAttackers ?? 0) > 0
         })
 
-        cmds.set('weaker attackers', {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            action: (_house: HouseInformation) => setAttackType('WEAK'),
-            filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && house.availableAttackers > 0 && attackType !== 'WEAK'
+        cmds.set('Weak attackers', {
+            action: () => setAttackType('WEAK'),
+            filter: house => isMilitaryBuilding(house) && (house.availableAttackers ?? 0) > 0 && attackType !== 'WEAK'
         })
 
-        cmds.set('stronger attackers', {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            action: (_house: HouseInformation) => setAttackType('STRONG'),
-            filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && house.availableAttackers > 0 && attackType !== 'STRONG'
+        cmds.set('Strong attackers', {
+            action: () => setAttackType('STRONG'),
+            filter: house => isMilitaryBuilding(house) && (house.availableAttackers ?? 0) > 0 && attackType !== 'STRONG'
+        })
+
+        cmds.set('Set attackers', {
+            type: 'NUMBER',
+            parameterName: 'count',
+            min: 1,
+            max: house.availableAttackers ?? 1,
+            action: (_house: HouseInformation, count: number) => setChosenAttackers(count)
         })
 
         cmds.set('more attackers', {
@@ -345,12 +374,19 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
             filter: (house: HouseInformation) => isMilitaryBuilding(house) && house.availableAttackers !== undefined && chosenAttackers > 1
         })
 
-        cmds.set('close window', {
-            action: () => onClose()
+        cmds.set('Close window', {
+            action: onClose
         })
 
+        addDebugCommands(cmds)
+
         return cmds
-    }, [chosenAttackers, attackType, onClose])
+    }, [
+        chosenAttackers,
+        attackType,
+        onClose,
+        house.availableAttackers
+    ])
 
     // Rendering
     const availableAttackers = house.availableAttackers ?? 0
@@ -424,7 +460,7 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
     )
 }
 
-const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHouseInfo) => {
+const UnfinishedHouseInfo = ({ house, nation, goToPoint, onClose, onRaise }: UnfinishedHouseInfo) => {
 
     // State
     const [hoverInfo, setHoverInfo] = useState<string>()
@@ -433,7 +469,12 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<HouseInformation>>()
 
-        cmds.set('tear down', {
+        cmds.set('Go to building', {
+            action: goToPoint,
+            icon: <UiIcon type='GO_TO_POINT' scale={0.5} />
+        })
+
+        cmds.set('Tear down', {
             action: (house: HouseInformation) => {
                 api.removeBuilding(house.id)
                 onClose()
@@ -441,19 +482,15 @@ const UnfinishedHouseInfo = ({ house, nation, onClose, onRaise }: UnfinishedHous
             icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
         })
 
-        cmds.set('debug', {
-            action: () => {
-                console.log(house)
-            }
-        })
-
-        cmds.set('close window', {
-            action: () => onClose(),
+        cmds.set('Close window', {
+            action: onClose,
             icon: <Dismiss16Filled />
         })
 
+        addDebugCommands(cmds)
+
         return cmds
-    }, [onClose])
+    }, [onClose, goToPoint])
 
     // Rendering
     return (
@@ -507,22 +544,24 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<HouseInformation>>()
 
-        cmds.set('go to building', {
-            action: (house: HouseInformation) => goToPoint(house),
+        cmds.set('Go to building', {
+            action: goToPoint,
             icon: <UiIcon type='GO_TO_POINT' scale={0.5} />
         })
 
-        cmds.set('pause production', {
-            action: (house: HouseInformation) => api.pauseProductionForHouse(house.id),
-            filter: (house: HouseInformation) => house.productionEnabled
+        cmds.set('Pause production', {
+            action: (house: HouseInformation) =>
+                api.pauseProductionForHouse(house.id),
+            filter: house => house.productionEnabled
         })
 
-        cmds.set('resume production', {
-            action: (house: HouseInformation) => api.resumeProductionForHouse(house.id),
-            filter: (house: HouseInformation) => !house.productionEnabled
+        cmds.set('Resume production', {
+            action: (house: HouseInformation) =>
+                api.resumeProductionForHouse(house.id),
+            filter: house => !house.productionEnabled
         })
 
-        cmds.set('tear down', {
+        cmds.set('Tear down', {
             action: (house: HouseInformation) => {
                 api.removeBuilding(house.id)
                 onClose()
@@ -530,17 +569,12 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
             icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
         })
 
-        cmds.set('debug', {
-            action: () => {
-                console.log(house)
-            },
-            hidden: true
-        })
-
-        cmds.set('close window', {
-            action: () => onClose(),
+        cmds.set('Close window', {
+            action: onClose,
             icon: <Dismiss16Filled />
         })
+
+        addDebugCommands(cmds)
 
         return cmds
     }, [onClose, goToPoint])

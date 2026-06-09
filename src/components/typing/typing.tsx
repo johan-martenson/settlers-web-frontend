@@ -123,11 +123,7 @@ function DialogTyping<T>({ inputValue, matches, available }: DialogTypingProps<T
         {(inputValue === undefined || inputValue.trim().length === 0) && available !== undefined &&
             [...available.keys()].map(name => {
                 if (matchesMap.has(name)) {
-                    return (
-                        <TypeMatch
-                            key={name}
-                            match={matchesMap.get(name) as CommandMatch<T>}
-                        />)
+                    return (<TypeMatch key={name} match={matchesMap.get(name) as CommandMatch<T>} />)
                 } else {
                     return (<div key={name}>
                         {name}

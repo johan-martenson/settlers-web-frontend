@@ -32,22 +32,46 @@ const Guide = ({ onClose, onRaise }: GuideProps) => {
 
     // Memos
     const commands = useMemo(() => {
-        const cmds = new Map<string, GenericCommand<string>>()
+    const cmds = new Map<string, GenericCommand<'guide'>>()
 
-        cmds.set('Next page', {
-            action: () => nextPage()
+    cmds.set('Next page', {
+        action: nextPage
+    })
+
+    cmds.set('Previous page', {
+        action: prevPage
+    })
+
+    cmds.set('First page', {
+        action: () => setPageNumber(0)
+    })
+
+    cmds.set('Last page', {
+        action: () => setPageNumber(HELP_PAGES.length - 1)
+    })
+
+    cmds.set('Go to page', {
+        type: 'NUMBER',
+        parameterName: 'page',
+        min: 1,
+        max: HELP_PAGES.length,
+        action: (_guide: 'guide', page: number) => {
+            setPageNumber(page - 1)
+        }
+    })
+
+    HELP_PAGES.forEach((page, index) => {
+        cmds.set(page.title, {
+            action: () => setPageNumber(index)
         })
+    })
 
-        cmds.set('Previous page', {
-            action: () => prevPage()
-        })
+    cmds.set('Close window', {
+        action: onClose
+    })
 
-        cmds.set('Close window', {
-            action: () => onClose()
-        })
-
-        return cmds
-    }, [onClose])
+    return cmds
+}, [nextPage, prevPage, onClose])
 
     // Rendering
     const currentPage: PageType = HELP_PAGES[pageNumber]

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { HouseInformation, Material, Nation, SOLDIER_TYPES, isHeadquarterInformation, rankToMaterial } from '../../api/types'
+import { HouseInformation, Material, Nation, Point, SOLDIER_TYPES, isHeadquarterInformation, isMaterial, rankToMaterial } from '../../api/types'
 import './house_info.css'
 import { useState } from 'react'
 import { api } from '../../api/ws-api'
@@ -17,6 +17,7 @@ type HeadquarterInfoProps = {
     house: HouseInformation
     nation: Nation
 
+    onGoToPoint: (point: Point) => void
     onRaise: () => void
     onClose: () => void
 }
@@ -93,7 +94,7 @@ export function clamp(value: number, min: number, max: number) {
 
 
 // React components
-const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoProps) => {
+const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: HeadquarterInfoProps) => {
 
     // State
     const [panel, setPanel] = useState<'INVENTORY' | 'RESERVED' | 'MILITARY_SETTINGS'>('INVENTORY')
@@ -118,37 +119,189 @@ const HeadquarterInfo = ({ house, nation, onClose, onRaise }: HeadquarterInfoPro
             action: () => setPanel('MILITARY_SETTINGS'),
         })
 
+        cmds.set('Block inventory', {
+            type: 'ENUM',
+            parameterName: 'material',
+            values: INVENTORY_MATERIALS,
+            action: (house: HouseInformation, material: string) => {
+                if (!isMaterial(material)) {
+                    console.error(`Headquarters window: material ${material} is not a material`)
+
+                    return
+                }
+                api.blockDelivery(house.id, material)
+            }
+        })
+
+        cmds.set('Unblock inventory', {
+            type: 'ENUM',
+            parameterName: 'material',
+            values: INVENTORY_MATERIALS,
+            action: (house: HouseInformation, material: string) => {
+                if (!isMaterial(material)) {
+                    console.error(`Headquarters window: material ${material} is not a material`)
+
+                    return
+                }
+                api.allowDelivery(house.id, material)
+            }
+        })
+
+        cmds.set('Send out', {
+            type: 'ENUM',
+            parameterName: 'material',
+            values: INVENTORY_MATERIALS,
+            action: (house: HouseInformation, material: string) => {
+                if (!isMaterial(material)) {
+                    console.error(`Headquarters window: material ${material} is not a material`)
+
+                    return
+                }
+                api.sendOutMaterial(house.id, material)
+            }
+        })
+
+        cmds.set('Stop sending out', {
+            type: 'ENUM',
+            parameterName: 'material',
+            values: INVENTORY_MATERIALS,
+            action: (house: HouseInformation, material: string) => {
+                if (!isMaterial(material)) {
+                    console.error(`Headquarters window: material ${material} is not a material`)
+
+                    return
+                }
+                api.stopSendingOutMaterial(house.id, material)
+            }
+        })
+
+        cmds.set('Set reserved private soldiers', {
+            type: 'NUMBER',
+            parameterName: 'amount',
+            min: 0,
+            max: MAX_RESERVED,
+            action: (_house: HouseInformation, amount: number) => {
+                api.setReservedSoldiers('PRIVATE_RANK', amount)
+            }
+        })
+
+        cmds.set('Set reserved private first class soldiers', {
+            type: 'NUMBER',
+            parameterName: 'amount',
+            min: 0,
+            max: MAX_RESERVED,
+            action: (_house: HouseInformation, amount: number) => {
+                api.setReservedSoldiers('PRIVATE_FIRST_CLASS_RANK', amount)
+            }
+        })
+
+        cmds.set('Set reserved sergeant soldiers', {
+            type: 'NUMBER',
+            parameterName: 'amount',
+            min: 0,
+            max: MAX_RESERVED,
+            action: (_house: HouseInformation, amount: number) => {
+                api.setReservedSoldiers('SERGEANT_RANK', amount)
+            }
+        })
+
+        cmds.set('Set reserved officer soldiers', {
+            type: 'NUMBER',
+            parameterName: 'amount',
+            min: 0,
+            max: MAX_RESERVED,
+            action: (_house: HouseInformation, amount: number) => {
+                api.setReservedSoldiers('OFFICER_RANK', amount)
+            }
+        })
+
+        cmds.set('Set reserved general soldiers', {
+            type: 'NUMBER',
+            parameterName: 'amount',
+            min: 0,
+            max: MAX_RESERVED,
+            action: (_house: HouseInformation, amount: number) => {
+                api.setReservedSoldiers('GENERAL_RANK', amount)
+            }
+        })
+
+        cmds.set('Set population strength', {
+            type: 'NUMBER',
+            parameterName: 'value',
+            min: 0,
+            max: 10,
+            action: (_house: HouseInformation, value: number) => {
+                api.setStrengthWhenPopulatingMilitaryBuildings(value)
+            }
+        })
+
+        cmds.set('Set defense strength', {
+            type: 'NUMBER',
+            parameterName: 'value',
+            min: 0,
+            max: 10,
+            action: (_house: HouseInformation, value: number) => {
+                api.setDefenseStrength(value)
+            }
+        })
+
+        cmds.set('Set surrounding defenders', {
+            type: 'NUMBER',
+            parameterName: 'value',
+            min: 0,
+            max: 10,
+            action: (_house: HouseInformation, value: number) => {
+                api.setDefenseFromSurroundingBuildings(value)
+            }
+        })
+
+        cmds.set('Set soldiers available for attack', {
+            type: 'NUMBER',
+            parameterName: 'value',
+            min: 0,
+            max: 10,
+            action: (_house: HouseInformation, value: number) => {
+                api.setSoldiersAvailableForAttack(value)
+            }
+        })
+
+        cmds.set('Set military far from border', {
+            type: 'NUMBER',
+            parameterName: 'value',
+            min: 0,
+            max: 10,
+            action: (_house: HouseInformation, value: number) => {
+                api.setMilitaryPopulationFarFromBorder(value)
+            }
+        })
+
+        cmds.set('Set military closer to border', {
+            type: 'NUMBER',
+            parameterName: 'value',
+            min: 0,
+            max: 10,
+            action: (_house: HouseInformation, value: number) => {
+                api.setMilitaryPopulationCloserToBorder(value)
+            }
+        })
+
+        cmds.set('Set military close to border', {
+            type: 'NUMBER',
+            parameterName: 'value',
+            min: 0,
+            max: 10,
+            action: (_house: HouseInformation, value: number) => {
+                api.setMilitaryPopulationCloseToBorder(value)
+            }
+        })
+
+        cmds.set('Go to headquarters', {
+            action: () => onGoToPoint(house),
+            icon: <UiIcon type='GO_TO_POINT' scale={0.5} />
+        })
+
         cmds.set('Close window', {
             action: onClose,
-        })
-
-        INVENTORY_MATERIALS.forEach(material => {
-            cmds.set(`Block ${material} from inventory`, {
-                action: (house: HouseInformation) => api.blockDelivery(house.id, material),
-            })
-
-            cmds.set(`Unblock ${material} from inventory`, {
-                action: (house: HouseInformation) => api.allowDelivery(house.id, material),
-            })
-
-            cmds.set(`Send out ${material}`, {
-                action: (house: HouseInformation) => api.sendOutMaterial(house.id, material),
-            })
-
-            cmds.set(`Stop sending out ${material}`, {
-                action: (house: HouseInformation) => api.stopSendingOutMaterial(house.id, material),
-            })
-        })
-
-        SOLDIER_TYPES.forEach(rank => {
-            cmds.set(`Set reserved ${rank} soldiers`, {
-                action: (house: HouseInformation) => {
-                    if (isHeadquarterInformation(house)) {
-                        const soldierDisplayName = soldierPretty(rank)
-                        setHover(`Manage reserved ${soldierDisplayName}s`)
-                    }
-                },
-            })
         })
 
         return cmds

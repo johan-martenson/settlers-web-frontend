@@ -29,12 +29,16 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
     // References
     const selfContainerRef = useRef<HTMLDivElement | null>(null)
-    const gameInformationRef = useRef<GameInformation>()
+    const gameInformationRef = useRef<GameInformation>(undefined)
 
     // State
     const [state, setState] = useState<'GET_NAME_FOR_GAME' | 'CREATE_GAME'>('GET_NAME_FOR_GAME')
     const [candidateTitle, setCandidateTitle] = useState<string>()
     const [gameInformation, setGameInformation] = useState<GameInformation>()
+    const [filterTitle, setSearchTitle] = useState<string>('')
+    const [filterAuthor, setSearchAuthor] = useState<string>('')
+    const [filterMinPlayers, setFilterMinPlayers] = useState<number>(1)
+    const [filterMaxPlayers, setFilterMaxPlayers] = useState<number>(8)
 
     // Monitoring hooks
     const maps = useMaps()
@@ -78,151 +82,151 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
     const commands = useMemo(() => {
         const commands = new Map<string, GenericCommand<GameInformation>>()
 
-        commands.set('Change game name ', {
-            type: 'STRING',
-            action: (gameInformation: GameInformation, name: string) => {
-                if (api.gameId !== undefined) {
-                    api.setTitle(name)
-                } else {
-                    console.error('Game id is not set')
+        commands.set('Enable cheating', {
+            action: () => api.setCheating(true),
+            filter: gameInformation => !gameInformation.cheatingEnabled
+        })
+
+        commands.set('Disable cheating', {
+            action: () => api.setCheating(false),
+            filter: gameInformation => gameInformation.cheatingEnabled
+        })
+
+        commands.set('Toggle cheating', {
+            action: gameInformation => api.setCheating(!gameInformation.cheatingEnabled)
+        })
+
+        commands.set('Allow players to join', {
+            action: () => api.setOthersCanJoin(true),
+            filter: gameInformation => !gameInformation.othersCanJoin
+        })
+
+        commands.set('Prevent players from joining', {
+            action: () => api.setOthersCanJoin(false),
+            filter: gameInformation => gameInformation.othersCanJoin
+        })
+
+        commands.set('Toggle player joining', {
+            action: gameInformation => api.setOthersCanJoin(!gameInformation.othersCanJoin)
+        })
+
+        commands.set('Set resources', {
+            type: 'ENUM',
+            values: ['LOW', 'MEDIUM', 'HIGH'],
+            parameterName: 'level',
+            action: (_gameInformation: GameInformation, level: string) => {
+                if (
+                    level === 'LOW'
+                    || level === 'MEDIUM'
+                    || level === 'HIGH'
+                ) {
+                    api.setInitialResources(level)
                 }
             }
         })
 
-        commands.set('Change my name ', {
-            type: 'STRING',
-            action: (gameInformation: GameInformation, name: string) => {
-                if (api.playerId !== undefined) {
-                    const selfPlayer = api.players.get(api.playerId)
-
-                    if (selfPlayer) {
-                        api.updatePlayer(api.playerId, name, selfPlayer.color, selfPlayer.nation)
-                    } else {
-                        console.error('Failed to look up self player')
-                    }
-                } else {
-                    console.error('Player id is not set')
+        commands.set('Add computer players', {
+            type: 'NUMBER',
+            min: 1,
+            max: gameInformation?.map?.maxPlayers ?? 8,
+            parameterName: 'count',
+            action: (gameInformation: GameInformation, count: number) => {
+                for (let i = 0; i < count; i++) {
+                    addComputerPlayer(gameInformation.players, gameInformation.map?.maxPlayers ?? 3)
                 }
             }
         })
 
-        commands.set('Start game', {
+        commands.set('Launch game', {
             action: onStartGameClicked,
             hidden: state !== 'CREATE_GAME',
             icon: <UiIcon type='PLAY' scale={0.5} />
         })
 
-        commands.set('Leave game', {
+        commands.set('Filter map title', {
+            type: 'STRING',
+            parameterName: 'title',
+            action: (_gameInformation: GameInformation, title: string) => setSearchTitle(title)
+        })
+
+        commands.set('Clear map title filter', {
+            action: () => setSearchTitle(''),
+            filter: () => filterTitle.length > 0
+        })
+
+        commands.set('Filter map author', {
+            type: 'STRING',
+            parameterName: 'author',
+            action: (_gameInformation: GameInformation, author: string) => setSearchAuthor(author)
+        })
+
+        commands.set('Clear map author filter', {
+            action: () => setSearchAuthor(''),
+            filter: () => filterAuthor.length > 0
+        })
+
+        commands.set('Set minimum players', {
+            type: 'NUMBER',
+            min: 1,
+            max: 8,
+            parameterName: 'count',
+            action: (_gameInformation: GameInformation, count: number) =>
+                setFilterMinPlayers(Math.min(count, filterMaxPlayers))
+        })
+
+        commands.set('Set maximum players', {
+            type: 'NUMBER',
+            min: 1,
+            max: 8,
+            parameterName: 'count',
+            action: (_gameInformation: GameInformation, count: number) =>
+                setFilterMaxPlayers(Math.max(count, filterMinPlayers))
+        })
+
+        for (let players = 1; players <= 8; players++) {
+            commands.set(`Show ${players} player maps`, {
+                action: () => {
+                    setFilterMinPlayers(players)
+                    setFilterMaxPlayers(players)
+                }
+            })
+        }
+
+        commands.set('Reset map filters', {
             action: () => {
-                api.removePlayer(selfPlayerId)
-                onGameCreateCanceled()
-            },
-            hidden: state !== 'CREATE_GAME'
-        })
-
-        commands.set('Discard game', {
-            action: () => {
-                if (api.gameId !== undefined) {
-                    api.deleteGame(api.gameId)
-                    api.stopFollowingGame()
-                } else {
-                    console.error('Game id is not set')
-                }
-
-                onGameCreateCanceled()
-            },
-            hidden: state !== 'CREATE_GAME',
-            icon: <UiIcon type='TRASHCAN' />
-        })
-
-        commands.set('Cheating on/off', {
-            action: (gameInformation: GameInformation) => {
-                api.setCheating(!gameInformation.cheatingEnabled)
-            },
-            hidden: state !== 'CREATE_GAME'
-        })
-
-        commands.set('Play as ', {
-            type: 'ENUM',
-            values: Array.from(NATIONS),
-            action: (gameInformation: GameInformation, nationAsString: string) => {
-                if (!isNation(nationAsString)) {
-                    console.error(`${nationAsString} is not a valid nation`)
-
-                    return
-                }
-
-                const selfPlayer = gameInformation.players.find(player => player.id === selfPlayerId)
-
-                if (selfPlayer) {
-                    api.updatePlayer(selfPlayerId, selfPlayer.name, selfPlayer.color, nationAsString)
-                }
+                setSearchTitle('')
+                setSearchAuthor('')
+                setFilterMinPlayers(1)
+                setFilterMaxPlayers(8)
             }
         })
 
-        commands.set('Set map ', {
-            type: 'ENUM',
-            values: maps.map(map => map.name),
-            action: (_gameInformation: GameInformation, mapName: string) => {
-                const map = maps.find(map => map.name === mapName)
-
-                if (map) {
-                    api.setMap(map.id)
-                } else {
-                    console.error(`${mapName} is not a valid map`)
-                }
-            }
+        commands.set('Debug', {
+            action: (gameInformation: GameInformation) => console.log(gameInformation),
+            hidden: true
         })
 
-        commands.set('Kick player ', {
-            type: 'ENUM',
-            values: gameInformation?.players.map(player => player.name) ?? [],
-            action: (gameInformation: GameInformation, playerName: string) => {
-                const player = gameInformation.players.find(player => player.name === playerName)
-
-                if (player) {
-                    api.removePlayer(player.id)
-                } else {
-                    console.error(`${playerName} is not a valid player`)
-                }
-            }
-        })
-
-        commands.set('Low resources', {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            action: (_gameInformation: GameInformation) => {
-                api.setInitialResources('LOW')
-            }
-        })
-
-        commands.set('Medium resources', {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            action: (_gameInformation: GameInformation) => {
-                api.setInitialResources('MEDIUM')
-            }
-        })
-
-        commands.set('High resources', {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            action: (_gameInformation: GameInformation) => {
-                api.setInitialResources('HIGH')
-            }
-        })
-
-        commands.set('Others can join', {
-            action: (gameInformation: GameInformation) => {
-                api.setOthersCanJoin(!gameInformation.othersCanJoin)
-            }
-        })
-
-        commands.set('Add computer player', {
-            action: (gameInformation: GameInformation) => {
-                addComputerPlayer(gameInformation.players, gameInformation.map?.maxPlayers ?? 3)
-            }
+        commands.set('Copy game JSON', {
+            action: async (gameInformation: GameInformation) =>
+                await navigator.clipboard.writeText(
+                    JSON.stringify(gameInformation, null, 2)
+                ),
+            hidden: true
         })
 
         return commands
-    }, [state, maps, gameInformation, selfPlayerId, onStartGameClicked, onGameCreateCanceled])
+    }, [
+        state,
+        maps,
+        gameInformation,
+        selfPlayerId,
+        onStartGameClicked,
+        onGameCreateCanceled,
+        filterTitle,
+        filterAuthor,
+        filterMinPlayers,
+        filterMaxPlayers
+    ])
 
     // Effects
     // Effect: Keep focusing the container to be able to catch keyboard events
@@ -399,8 +403,18 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
 
                     <div id='map-title'><h2>Select map</h2></div>
                     <div id='map'>
-                        <MapSelection onMapSelected={selectMap}
-                            minPlayers={gameInformation?.players.length ?? 0} />
+                        <MapSelection
+                            onMapSelected={selectMap}
+                            minPlayers={gameInformation?.players.length ?? 0}
+                            filterTitle={filterTitle}
+                            filterAuthor={filterAuthor}
+                            filterMinPlayers={filterMinPlayers}
+                            filterMaxPlayers={filterMaxPlayers}
+                            onSetFilterAuthor={(author) => setSearchAuthor(author)}
+                            onSetFilterTitle={(title) => setSearchTitle(title)}
+                            onSetFilterMinPlayers={(minPlayers) => setFilterMinPlayers(minPlayers)}
+                            onSetFilterMaxPlayers={(maxPlayers) => setFilterMaxPlayers(maxPlayers)}
+                        />
                     </div>
 
                     <div id='chat-title'><h2>Chat</h2></div>

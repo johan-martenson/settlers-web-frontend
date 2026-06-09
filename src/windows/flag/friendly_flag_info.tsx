@@ -30,42 +30,6 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
     // Monitoring hooks
     const flag = useFlag(props.flag.id)
 
-    // Memos
-    const commands = useMemo(() => {
-        const cmds = new Map<string, GenericCommand<FlagInformation>>()
-
-        cmds.set('Build road', {
-            action: (flag: FlagInformation) => {
-                onStartNewRoad({ x: flag.x, y: flag.y })
-                onClose()
-            }
-        })
-
-        cmds.set('Remove flag', {
-            action: (flag: FlagInformation) => {
-                api.removeFlag(flag.id)
-                onClose()
-            }
-        })
-        cmds.set('Call geologist', {
-            action: (flag: FlagInformation) => {
-                api.callGeologist({ x: flag.x, y: flag.y })
-            }
-        })
-
-        cmds.set('Close window', {
-            // eslint-disable-next-line
-            action: (_flag: FlagInformation) => onClose()
-        })
-
-        return cmds
-    }, [onStartNewRoad, onClose])
-
-    const flagListener = useMemo(() => ({
-        onUpdate: () => { },
-        onRemove: onClose
-    }), [onClose])
-
     // Functions
     const callScout = useCallback(() => {
         if (flag !== undefined) {
@@ -94,6 +58,54 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
 
         onClose()
     }, [flag?.x, flag?.y, onClose, onStartNewRoad])
+
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<FlagInformation>>()
+
+        cmds.set('Build road', {
+            action: startNewRoadAndClose,
+            icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
+        })
+
+        cmds.set('Remove flag', {
+            action: removeFlagAndClose,
+            icon: <UiIcon type='BROKEN_FLAG' scale={0.5} />
+        })
+
+        cmds.set('Call geologist', {
+            action: callGeologist,
+            icon: <UiIcon type='GEOLOGIST' scale={0.5} />
+        })
+
+        cmds.set('Call scout', {
+            action: callScout,
+            icon: <InventoryIcon material='SCOUT' nation={nation} />
+        })
+
+        cmds.set('Log flag', {
+            action: () => console.log(flag),
+            hidden: true
+        })
+
+        cmds.set('Close window', {
+            action: onClose
+        })
+
+        return cmds
+    }, [
+        startNewRoadAndClose,
+        removeFlagAndClose,
+        callGeologist,
+        callScout,
+        onClose,
+        nation
+    ])
+
+    const flagListener = useMemo(() => ({
+        onUpdate: () => { },
+        onRemove: onClose
+    }), [onClose])
 
     const hoverFlag = useCallback(() => {
         setHoverInfo('Flag')

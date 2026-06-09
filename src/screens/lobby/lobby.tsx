@@ -43,14 +43,16 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
         const commands = new Map<string, GenericCommand<object>>()
 
         commands.set('Create new game', {
-            action: () => onCreateNewGame()
+            action: onCreateNewGame
         })
 
         commands.set('Join game', {
             type: 'ENUM',
             values: games.map(game => game.name),
-            action: (context: unknown, gameName: string) => {
+            parameterName: 'game',
+            action: (_context: object, gameName: string) => {
                 const game = games.find(game => game.name === gameName)
+
                 if (game) {
                     onJoinExistingGame(game.id)
                 }
@@ -60,16 +62,73 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
         commands.set('Remove game', {
             type: 'ENUM',
             values: games.map(game => game.name),
-            action: (context: unknown, gameName: string) => {
+            parameterName: 'game',
+            action: (_context: object, gameName: string) => {
                 const game = games.find(game => game.name === gameName)
+
                 if (game) {
                     api.deleteGame(game.id)
                 }
             }
         })
 
+        commands.set('Join first game', {
+            action: () => {
+                const first = games[0]
+
+                if (first) {
+                    onJoinExistingGame(first.id)
+                }
+            },
+            filter: () => games.length > 0
+        })
+
+        commands.set('Join newest game', {
+            action: () => {
+                const newest = games.at(-1)
+
+                if (newest) {
+                    onJoinExistingGame(newest.id)
+                }
+            },
+            filter: () => games.length > 0
+        })
+
+        commands.set('Join only game', {
+            action: () => {
+                if (games.length === 1) {
+                    onJoinExistingGame(games[0].id)
+                }
+            },
+            filter: () => games.length === 1
+        })
+
+        commands.set('Debug games', {
+            action: () => console.log(games),
+            hidden: true
+        })
+
+        commands.set('Copy games JSON', {
+            action: async () =>
+                await navigator.clipboard.writeText(
+                    JSON.stringify(games, null, 2)
+                ),
+            hidden: true
+        })
+
+        commands.set('Remove all games', {
+            action: () => {
+                games.forEach(game => api.deleteGame(game.id))
+            },
+            hidden: true
+        })
+
         return commands
-    }, [games, onCreateNewGame, onJoinExistingGame])
+    }, [
+        games,
+        onCreateNewGame,
+        onJoinExistingGame
+    ])
 
     // Rendering
     const matches = findMatchingCommands(commands, inputValue, new Object())

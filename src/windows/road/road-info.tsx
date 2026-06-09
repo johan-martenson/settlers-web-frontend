@@ -119,68 +119,88 @@ const RoadInfo = ({
         const cmds = new Map<string, GenericCommand<RoadInformation>>()
 
         cmds.set('Manage road', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => {
-                setSelected('ROAD')
-            }
+            action: () => setSelected('ROAD'),
+            filter: () => selected !== 'ROAD'
         })
 
         cmds.set('Monitor', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => {
-                setSelected('MONITOR')
-            }
+            action: () => setSelected('MONITOR'),
+            filter: () => selected !== 'MONITOR'
         })
 
         cmds.set('Show house names', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => {
-                onShowHouseTitles()
-            }
+            action: onShowHouseTitles,
+            filter: () => !houseTitlesVisible
         })
 
         cmds.set('Hide house names', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => {
-                onHideHouseTitles()
-            }
+            action: onHideHouseTitles,
+            filter: () => houseTitlesVisible
+        })
+
+        cmds.set('Toggle house names', {
+            action: houseTitlesVisible
+                ? onHideHouseTitles
+                : onShowHouseTitles
         })
 
         cmds.set('Show available construction', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => {
-                onShowAvailableConstruction()
-            }
+            action: onShowAvailableConstruction,
+            filter: () => !availableConstructionVisible
         })
 
         cmds.set('Hide available construction', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => {
-                onHideAvailableConstruction()
-            }
+            action: onHideAvailableConstruction,
+            filter: () => availableConstructionVisible
         })
 
-        cmds.set('Open monitor', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => {
-                openMonitor()
-            }
+        cmds.set('Toggle available construction', {
+            action: availableConstructionVisible
+                ? onHideAvailableConstruction
+                : onShowAvailableConstruction
+        })
+
+        cmds.set('Start monitoring', {
+            action: openMonitor,
+            icon: <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
         })
 
         cmds.set('Remove road', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => {
-                removeRoad()
-            }
+            action: removeRoad,
+            icon: <UiIcon type='SCISSORS' scale={0.5} />
         })
 
         cmds.set('Close window', {
-            // eslint-disable-next-line
-            action: (_roadInfo: RoadInformation) => onClose()
+            action: onClose
+        })
+
+        cmds.set('Debug', {
+            action: (road: RoadInformation) => {
+                console.log(road)
+            },
+            hidden: true
+        })
+
+        cmds.set('Copy road JSON', {
+            action: async (road: RoadInformation) => {
+                await navigator.clipboard.writeText(JSON.stringify(road, null, 2))
+            },
+            hidden: true
         })
 
         return cmds
-    }, [onClose, onShowHouseTitles, onHideHouseTitles, onShowAvailableConstruction, onHideAvailableConstruction, openMonitor, removeRoad])
+    }, [
+        selected,
+        houseTitlesVisible,
+        availableConstructionVisible,
+        onShowHouseTitles,
+        onHideHouseTitles,
+        onShowAvailableConstruction,
+        onHideAvailableConstruction,
+        openMonitor,
+        removeRoad,
+        onClose
+    ])
 
     // Effects
     // Effect: close the window if the road is removed

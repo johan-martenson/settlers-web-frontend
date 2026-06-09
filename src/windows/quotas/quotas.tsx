@@ -191,80 +191,105 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
         const cmds = new Map<string, GenericCommand<MaterialQuotaToManage>>()
 
         cmds.set('Manage coal quota', {
-            action: () => setMaterialToManage('COAL')
+            action: () => setMaterialToManage('COAL'),
+            filter: material => material !== 'COAL'
         })
 
         cmds.set('Manage wheat quota', {
-            action: () => setMaterialToManage('WHEAT')
+            action: () => setMaterialToManage('WHEAT'),
+            filter: material => material !== 'WHEAT'
         })
 
         cmds.set('Manage water quota', {
-            action: () => setMaterialToManage('WATER')
+            action: () => setMaterialToManage('WATER'),
+            filter: material => material !== 'WATER'
         })
 
         cmds.set('Manage plank quota', {
-            action: () => setMaterialToManage('PLANK')
+            action: () => setMaterialToManage('PLANK'),
+            filter: material => material !== 'PLANK'
         })
 
         cmds.set('Manage food quota', {
-            action: () => setMaterialToManage('FOOD')
+            action: () => setMaterialToManage('FOOD'),
+            filter: material => material !== 'FOOD'
         })
 
         cmds.set('Manage iron bar quota', {
-            action: () => setMaterialToManage('IRON_BAR')
+            action: () => setMaterialToManage('IRON_BAR'),
+            filter: material => material !== 'IRON_BAR'
         })
 
         if (player !== undefined) {
-            coalConfig.forEach(config => {
-                console.log(config.houseType)
-                console.log(`Set ${config.houseType} quota`)
-                cmds.set(`Set ${config.houseType} coal quota`, {
-                    type: 'NUMBER',
-                    max: 10,
-                    min: 0,
-                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
-                    filter: (material: MaterialQuotaToManage) => material === 'COAL'
+            const quotaCommandConfigs: {
+                material: MaterialQuotaToManage
+                materialName: string
+                configs: QuotaConfig[]
+            }[] = [
+                    {
+                        material: 'COAL',
+                        materialName: 'coal',
+                        configs: coalConfig
+                    },
+                    {
+                        material: 'WHEAT',
+                        materialName: 'wheat',
+                        configs: wheatConfig
+                    },
+                    {
+                        material: 'WATER',
+                        materialName: 'water',
+                        configs: waterConfig
+                    },
+                    {
+                        material: 'FOOD',
+                        materialName: 'food',
+                        configs: foodConfig
+                    },
+                    {
+                        material: 'IRON_BAR',
+                        materialName: 'iron bar',
+                        configs: ironConfig
+                    }
+                ]
+
+            quotaCommandConfigs.forEach(({ material, materialName, configs }) => {
+                configs.forEach(config => {
+                    const building = buildingPretty(config.houseType)
+
+                    cmds.set(`Set ${building} ${materialName} quota`, {
+                        type: 'NUMBER',
+                        min: 0,
+                        max: 10,
+                        parameterName: 'quota',
+                        action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
+                        filter: currentMaterial => currentMaterial === material
+                    })
+
+                    cmds.set(`Max ${building} ${materialName} quota`, {
+                        action: () => config.set(player, 10),
+                        filter: currentMaterial => currentMaterial === material
+                    })
+
+                    cmds.set(`Clear ${building} ${materialName} quota`, {
+                        action: () => config.set(player, 0),
+                        filter: currentMaterial => currentMaterial === material
+                    })
                 })
             })
 
-            wheatConfig.forEach(config => {
-                cmds.set(`Set ${config.houseType} wheat quota`, {
-                    type: 'NUMBER',
-                    max: 10,
-                    min: 0,
-                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
-                    filter: (material: MaterialQuotaToManage) => material === 'WHEAT'
-                })
+            cmds.set('Debug', {
+                action: () => {
+                    console.log(player)
+                },
+                hidden: true
             })
 
-            waterConfig.forEach(config => {
-                cmds.set(`Set ${config.houseType} water quota`, {
-                    type: 'NUMBER',
-                    max: 10,
-                    min: 0,
-                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
-                    filter: (material: MaterialQuotaToManage) => material === 'WATER'
-                })
-            })
-
-            ironConfig.forEach(config => {
-                cmds.set(`Set ${config.houseType} iron bar quota`, {
-                    type: 'NUMBER',
-                    max: 10,
-                    min: 0,
-                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
-                    filter: (material: MaterialQuotaToManage) => material === 'IRON_BAR'
-                })
-            })
-
-            foodConfig.forEach(config => {
-                cmds.set(`Set ${config.houseType} food quota`, {
-                    type: 'NUMBER',
-                    max: 10,
-                    min: 0,
-                    action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
-                    filter: (material: MaterialQuotaToManage) => material === 'FOOD'
-                })
+            cmds.set('Copy player JSON', {
+                action: async () => {
+                    await navigator.clipboard.writeText(JSON.stringify(player, null, 2))
+                },
+                hidden: true
             })
         }
 
@@ -273,7 +298,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
         })
 
         return cmds
-    }, [player, onClose])
+    }, [player, onClose, materialToManage])
 
     // Rendering
     if (player === undefined) {

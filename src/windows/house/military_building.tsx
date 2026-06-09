@@ -31,80 +31,75 @@ const MilitaryBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Milita
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<HouseInformation>>()
 
-        cmds.set('evacuate', {
+        cmds.set('Evacuate', {
             action: (house: HouseInformation) => api.evacuateHouse(house.id),
-            filter: (house: HouseInformation) => !isEvacuated(house),
+            filter: house => !isEvacuated(house),
             icon: <UiIcon type='SEND_OUT_ARROWS' scale={0.5} />
         })
 
-        cmds.set('cancel evacuation', {
+        cmds.set('Cancel evacuation', {
             action: (house: HouseInformation) => api.cancelEvacuationForHouse(house.id),
-            filter: (house: HouseInformation) => isEvacuated(house),
+            filter: isEvacuated
         })
 
-        cmds.set('upgrade', {
+        cmds.set('Upgrade', {
             action: (house: HouseInformation) => api.upgrade(house.id),
-            filter: (house: HouseInformation) => canBeUpgraded(house) && !house.upgrading,
-            icon: <span>{house.type === 'Barracks' && <HouseIcon houseType='GuardHouse' nation={nation} scale={0.5} />}
-                {house.type === 'GuardHouse' && <HouseIcon houseType='WatchTower' nation={nation} scale={0.5} />}
-                {house.type === 'WatchTower' && <HouseIcon houseType='Fortress' nation={nation} scale={0.5} />}</span>
+            filter: house => canBeUpgraded(house) && !house.upgrading,
+            icon: (
+                <span>
+                    {house.type === 'Barracks' && <HouseIcon houseType='GuardHouse' nation={nation} scale={0.5} />}
+                    {house.type === 'GuardHouse' && <HouseIcon houseType='WatchTower' nation={nation} scale={0.5} />}
+                    {house.type === 'WatchTower' && <HouseIcon houseType='Fortress' nation={nation} scale={0.5} />}
+                </span>
+            )
         })
 
-        cmds.set('enable promotions', {
-            action: (house: HouseInformation) => {
-                api.enablePromotionsForHouse(house.id)
-            },
-            filter: (house: HouseInformation) => !house.promotionsEnabled,
+        cmds.set('Enable promotions', {
+            action: (house: HouseInformation) => api.enablePromotionsForHouse(house.id),
+            filter: house => !house.promotionsEnabled,
             icon: <UiIcon type='COIN' scale={0.5} />
         })
 
-        cmds.set('disable promotions', {
-            action: (house: HouseInformation) => {
-                api.disablePromotionsForHouse(house.id)
-            },
-            filter: (house: HouseInformation) => house.promotionsEnabled,
+        cmds.set('Disable promotions', {
+            action: (house: HouseInformation) => api.disablePromotionsForHouse(house.id),
+            filter: house => house.promotionsEnabled,
             icon: <UiIcon type='COIN_CROSSED_OUT' scale={0.5} />
         })
 
-        cmds.set('tear down', {
+        cmds.set('Tear down', {
             action: (house: HouseInformation) => {
                 api.removeBuilding(house.id)
-
                 onClose()
             },
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            filter: (_house: HouseInformation) => true,
             icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
         })
 
-        cmds.set('go to house', {
-            action: (house: HouseInformation) => goToPoint(house),
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            filter: (_house: HouseInformation) => true,
+        cmds.set('Go to building', {
+            action: goToPoint,
             icon: <UiIcon type='GO_TO_POINT' scale={0.5} />
         })
 
-        cmds.set('close', {
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            action: (_house: HouseInformation) => onClose(),
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            filter: (_house: HouseInformation) => true,
+        cmds.set('Close window', {
+            action: onClose,
             icon: <Dismiss16Filled />
         })
 
-        cmds.set('debug', {
+        cmds.set('Debug', {
             action: (house: HouseInformation) => {
                 console.log(house)
             },
             hidden: true
         })
 
+        cmds.set('Copy house JSON', {
+            action: async (house: HouseInformation) => {
+                await navigator.clipboard.writeText(JSON.stringify(house, null, 2))
+            },
+            hidden: true
+        })
+
         return cmds
-    }, [house.id, nation, house.type])
+    }, [nation, house.type, onClose, goToPoint])
 
     // Rendering
     const soldiers: (SoldierType | null)[] = []

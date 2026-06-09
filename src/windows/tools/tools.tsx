@@ -59,33 +59,87 @@ const Tools = ({ onClose, onRaise }: ToolsProps) => {
         const cmds = new Map<string, GenericCommand<object>>()
 
         TOOLS.forEach(tool => {
-            cmds.set(`Less ${materialPretty(tool)}`,
-                {
-                    action: () => {
-                        if (toolPrioritiesRef.current !== undefined) {
-                            api.setToolPriority(tool, clamp(toolPrioritiesRef.current[tool] - 1, 0, 10))
-                        }
-                    }
-                })
+            const name = materialPretty(tool)
 
-            cmds.set(`More ${materialPretty(tool)}`,
-                {
-                    action: () => {
-                        if (toolPrioritiesRef.current !== undefined) {
-                            api.setToolPriority(tool, clamp(toolPrioritiesRef.current[tool] + 1, 0, 10))
-                        }
+            cmds.set(`Less ${name}`, {
+                action: () => {
+                    if (toolPrioritiesRef.current !== undefined) {
+                        api.setToolPriority(
+                            tool,
+                            clamp(toolPrioritiesRef.current[tool] - 1, 0, 10)
+                        )
                     }
-                })
+                }
+            })
+
+            cmds.set(`More ${name}`, {
+                action: () => {
+                    if (toolPrioritiesRef.current !== undefined) {
+                        api.setToolPriority(
+                            tool,
+                            clamp(toolPrioritiesRef.current[tool] + 1, 0, 10)
+                        )
+                    }
+                }
+            })
+
+            cmds.set(`Set ${name} priority`, {
+                type: 'NUMBER',
+                min: 0,
+                max: 10,
+                parameterName: 'priority',
+                action: (_context: object, priority: number) => {
+                    api.setToolPriority(tool, priority)
+                }
+            })
+
+            cmds.set(`Max ${name} priority`, {
+                action: () => {
+                    api.setToolPriority(tool, 10)
+                }
+            })
+
+            cmds.set(`Clear ${name} priority`, {
+                action: () => {
+                    api.setToolPriority(tool, 0)
+                }
+            })
         })
 
-        cmds.set('Close window',
-            {
-                action: onClose
+        cmds.set('Max all priorities', {
+            action: () => {
+                TOOLS.forEach(tool => api.setToolPriority(tool, 10))
             }
-        )
+        })
+
+        cmds.set('Clear all priorities', {
+            action: () => {
+                TOOLS.forEach(tool => api.setToolPriority(tool, 0))
+            }
+        })
+
+        cmds.set('Close window', {
+            action: onClose
+        })
+
+        cmds.set('Debug', {
+            action: () => {
+                console.log(toolPrioritiesRef.current)
+            },
+            hidden: true
+        })
+
+        cmds.set('Copy priorities JSON', {
+            action: async () => {
+                await navigator.clipboard.writeText(
+                    JSON.stringify(toolPrioritiesRef.current, null, 2)
+                )
+            },
+            hidden: true
+        })
 
         return cmds
-    }, [onClose, toolPrioritiesRef])
+    }, [onClose])
 
     // Rendering
     return (

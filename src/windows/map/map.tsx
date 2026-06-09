@@ -76,34 +76,78 @@ const MapView = ({ mapId, onClose, onRaise }: MapViewProps) => {
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<MapViewProps>>()
 
-        cmds.set('Draw player land', {
-            // eslint-disable-next-line
-            action: (_props: MapViewProps) => {
-                setDrawPlayerLand(prev => !prev)
-            }
+        cmds.set('Show player land', {
+            action: () => setDrawPlayerLand(true),
+            filter: () => !drawPlayerLand
         })
 
-        cmds.set('Draw houses', {
-            // eslint-disable-next-line
-            action: (_props: MapViewProps) => {
-                setDrawHouses(prev => !prev)
-            }
+        cmds.set('Hide player land', {
+            action: () => setDrawPlayerLand(false),
+            filter: () => drawPlayerLand
         })
 
-        cmds.set('Draw roads', {
-            // eslint-disable-next-line
-            action: (_props: MapViewProps) => {
-                setDrawRoads(prev => !prev)
-            }
+        cmds.set('Toggle player land', {
+            action: toggleDrawPlayerLand
+        })
+
+        cmds.set('Show houses', {
+            action: () => setDrawHouses(true),
+            filter: () => !drawHouses
+        })
+
+        cmds.set('Hide houses', {
+            action: () => setDrawHouses(false),
+            filter: () => drawHouses
+        })
+
+        cmds.set('Toggle houses', {
+            action: toggleDrawHouses
+        })
+
+        cmds.set('Show roads', {
+            action: () => setDrawRoads(true),
+            filter: () => !drawRoads
+        })
+
+        cmds.set('Hide roads', {
+            action: () => setDrawRoads(false),
+            filter: () => drawRoads
+        })
+
+        cmds.set('Toggle roads', {
+            action: toggleDrawRoads
         })
 
         cmds.set('Close window', {
-            // eslint-disable-next-line
-            action: (_props: MapViewProps) => onClose()
+            action: onClose
+        })
+
+        cmds.set('Redraw map', {
+            action: () => setDrawCount(prev => prev + 1),
+            hidden: true
+        })
+
+        cmds.set('Copy map JSON', {
+            action: async () => {
+                await navigator.clipboard.writeText(
+                    JSON.stringify(mapWithTerrain, null, 2)
+                )
+            },
+            hidden: true
         })
 
         return cmds
-    }, [onClose])
+    }, [
+        drawPlayerLand,
+        drawHouses,
+        drawRoads,
+        drawFogOfWar,
+        toggleDrawPlayerLand,
+        toggleDrawHouses,
+        toggleDrawRoads,
+        onClose,
+        mapWithTerrain
+    ])
 
     const mapImage = useMemo(() => {
         if (mapWithTerrain) {

@@ -75,3 +75,19 @@
     color: lightgray;
 }
 
+.type-match-parameter {
+    opacity: 0.75;
+    font-style: italic;
+}
+
+.parameter-match-highlight {
+    opacity: 1;
+    font-style: normal;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.type-match-parameter-placeholder {
+    opacity: 0.5;
+    font-style: italic;
+}

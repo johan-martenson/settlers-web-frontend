@@ -324,19 +324,92 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
         const cmds = new Map<string, GenericCommand<WorkerId | undefined>>()
 
         cmds.set('Zoom in', {
-            action: () => zoomIn()
+            action: zoomIn
         })
 
         cmds.set('Zoom out', {
-            action: () => zoomOut()
+            action: zoomOut
+        })
+
+        cmds.set('Set zoom', {
+            type: 'NUMBER',
+            parameterName: 'scale',
+            min: MIN_SCALE,
+            max: MAX_SCALE,
+            action: (_id: WorkerId | undefined, scale: number) => zoomToScale(scale)
+        })
+
+        cmds.set('Center view', {
+            action: centerView
+        })
+
+        cmds.set('Small window', {
+            action: () => setSize('SMALL'),
+            filter: () => size !== 'SMALL'
+        })
+
+        cmds.set('Medium window', {
+            action: () => setSize('MEDIUM'),
+            filter: () => size !== 'MEDIUM'
+        })
+
+        cmds.set('Large window', {
+            action: () => setSize('LARGE'),
+            filter: () => size !== 'LARGE'
+        })
+
+        cmds.set('Start monitoring', {
+            action: () => startMonitor(findCenterGamePoint()),
+            filter: () => idToFollow === undefined,
+            icon: <UiIcon type='FILM_CAMERA' />
+        })
+
+        cmds.set('Stop monitoring', {
+            action: () => setIdToFollow(undefined),
+            filter: () => idToFollow !== undefined
         })
 
         cmds.set('Close window', {
-            action: () => onClose()
+            action: onClose
+        })
+
+        cmds.set('Debug', {
+            action: () => {
+                const entity =
+                    idToFollow !== undefined
+                        ? api.workers.get(idToFollow) ?? api.wildAnimals.get(idToFollow)
+                        : undefined
+
+                console.log(entity)
+            },
+            hidden: true
+        })
+
+        cmds.set('Copy followed entity JSON', {
+            action: async () => {
+                const entity =
+                    idToFollow !== undefined
+                        ? api.workers.get(idToFollow) ?? api.wildAnimals.get(idToFollow)
+                        : undefined
+
+                if (entity) {
+                    await navigator.clipboard.writeText(JSON.stringify(entity, null, 2))
+                }
+            },
+            hidden: true
         })
 
         return cmds
-    }, [zoomIn, zoomOut, onClose])
+    }, [
+        zoomIn,
+        zoomOut,
+        zoomToScale,
+        centerView,
+        size,
+        idToFollow,
+        onClose,
+        findCenterGamePoint
+    ])
 
     // Rendering
     let className

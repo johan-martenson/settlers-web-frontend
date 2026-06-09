@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { AnyBuilding, FlagDebugInfo, GameInformation, HOUSES, Nation, NATIONS, PlayerId, Point, PointInformation, TREE_TYPES, TreeType, WORKER_TYPES, WorkerType } from '../../api/types'
+import { AnyBuilding, FlagDebugInfo, FlagId, GameInformation, HouseId, HOUSES, isWorker, Nation, NATIONS, PlayerId, Point, PointInformation, TREE_TYPES, TreeId, TreeType, WORKER_TYPES, WorkerId, WorkerType } from '../../api/types'
 import { api } from '../../api/ws-api'
 import './debug.css'
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel } from '@fluentui/react-components'
@@ -51,6 +51,7 @@ function Value({ children }: { children?: React.ReactNode }) {
 function Debug({ point, onGoToPoint, onClose, onRaise }: DebugProps) {
 
     // State
+    const [openSections, setOpenSections] = useState<string[]>([])
     const [flagInformation, setFlagInformation] = useState<FlagDebugInfo>()
     const [pointInformation, setPointInformation] = useState<PointInformation>()
     const [gameInformation, setGameInformation] = useState<GameInformation>()
@@ -88,8 +89,221 @@ function Debug({ point, onGoToPoint, onClose, onRaise }: DebugProps) {
             action: () => onClose()
         })
 
+        cmds.set('Game', {
+            action: () => setOpenSections(['1'])
+        })
+
+        cmds.set('Map', {
+            action: () => setOpenSections(['2'])
+        })
+
+        cmds.set('Players', {
+            action: () => setOpenSections(['3'])
+        })
+
+        cmds.set('Debug logs', {
+            action: () => setOpenSections(['4'])
+        })
+
+        cmds.set('Point', {
+            action: () => setOpenSections(['5'])
+        })
+
+        cmds.set('Monitored world', {
+            action: () => setOpenSections(['6'])
+        })
+
+        cmds.set('Houses', {
+            action: () => setOpenSections(['6'])
+        })
+
+        cmds.set('Trees', {
+            action: () => setOpenSections(['6'])
+        })
+
+        cmds.set('Flags', {
+            action: () => setOpenSections(['6'])
+        })
+
+        cmds.set('Workers', {
+            action: () => setOpenSections(['6'])
+        })
+
+        cmds.set('Decorations', {
+            action: () => setOpenSections(['6'])
+        })
+
+        cmds.set('Crops', {
+            action: () => setOpenSections(['6'])
+        })
+
+        cmds.set('Clear filters', {
+            action: () => {
+                setHouseFilter({
+                    types: [],
+                    nations: [],
+                    players: []
+                })
+
+                setFlagFilter({
+                    nations: [],
+                    players: []
+                })
+
+                setTreeFilter({
+                    types: []
+                })
+
+                setWorkerFilter({
+                    types: [],
+                    nations: [],
+                    players: []
+                })
+            }
+        })
+
+        cmds.set('Go to selected building', {
+            action: () => {
+                if (
+                    pointInformation?.is === 'BUILDING'
+                    && pointInformation.buildingId !== undefined
+                ) {
+                    const house = api.houses.get(
+                        pointInformation.buildingId
+                    )
+
+                    if (house) {
+                        onGoToPoint(house)
+                    }
+                }
+            },
+            filter: () =>
+                pointInformation?.is === 'BUILDING'
+        })
+
+        cmds.set('Go to selected flag', {
+            action: () => {
+                if (
+                    pointInformation?.is === 'FLAG'
+                    && pointInformation.flagId !== undefined
+                ) {
+                    const flag = api.flags.get(
+                        pointInformation.flagId
+                    )
+
+                    if (flag) {
+                        onGoToPoint(flag)
+                    }
+                }
+            },
+            filter: () =>
+                pointInformation?.is === 'FLAG'
+        })
+
+        cmds.set('Go to selected tree', {
+            action: () => {
+                const tree = Array.from(api.trees.values())
+                    .find(tree =>
+                        tree.x === point.x
+                        && tree.y === point.y
+                    )
+
+                if (tree) {
+                    onGoToPoint(tree)
+                }
+            },
+            filter: () =>
+                Array.from(api.trees.values())
+                    .some(tree =>
+                        tree.x === point.x
+                        && tree.y === point.y
+                    )
+        })
+
+        cmds.set('Go to house', {
+            type: 'STRING',
+            parameterName: 'id',
+            action: (_context: unknown, id: HouseId) => {
+                const house = api.houses.get(id)
+
+                if (house) {
+                    onGoToPoint(house)
+                }
+            }
+        })
+
+        cmds.set('Go to flag', {
+            type: 'STRING',
+            parameterName: 'id',
+            action: (_context: unknown, id: FlagId) => {
+                const flag = api.flags.get(id)
+
+                if (flag) {
+                    onGoToPoint(flag)
+                }
+            }
+        })
+
+        cmds.set('Go to worker', {
+            type: 'STRING',
+            parameterName: 'id',
+            action: (_context: unknown, id: WorkerId) => {
+                const worker = api.workers.get(id)
+
+                if (worker) {
+                    onGoToPoint(worker)
+                }
+            }
+        })
+
+        cmds.set('Go to tree', {
+            type: 'STRING',
+            parameterName: 'id',
+            action: (_context: unknown, id: TreeId) => {
+                const tree = Array.from(api.trees.values())
+                    .find(tree => tree.id === id)
+
+                if (tree) {
+                    onGoToPoint(tree)
+                }
+            }
+        })
+
+        cmds.set('House type', {
+            type: 'ENUM',
+            parameterName: 'type',
+            values: Array.from(HOUSES),
+            action: (_context: unknown, houseType: AnyBuilding) => {
+                setOpenSections(['6'])
+
+                setHouseFilter(prev => ({
+                    ...prev,
+                    types: [houseType]
+                }))
+            }
+        })
+
+        cmds.set('Tree type', {
+            type: 'ENUM',
+            parameterName: 'type',
+            values: Array.from(TREE_TYPES),
+            action: (_context: unknown, treeType: TreeType) => {
+                setOpenSections(['6'])
+
+                setTreeFilter({
+                    types: [treeType]
+                })
+            }
+        })
+
         return cmds
-    }, [onClose])
+    }, [
+        onClose,
+        onGoToPoint,
+        point.x,
+        point.y,
+        pointInformation
+    ])
 
     // Rendering
     const vegetationBelow = api.allTiles.get(point)?.below
@@ -107,7 +321,11 @@ function Debug({ point, onGoToPoint, onClose, onRaise }: DebugProps) {
     >
         <div className='debug-window-contents'>
 
-            <Accordion multiple>
+            <Accordion
+                multiple
+                openItems={openSections}
+                onToggle={(_event, data) => setOpenSections(data.openItems as string[])}
+            >
 
                 <AccordionItem value='1'>
                     <AccordionHeader>Game</AccordionHeader>
@@ -295,7 +513,7 @@ function Debug({ point, onGoToPoint, onClose, onRaise }: DebugProps) {
                 </AccordionItem>
             </Accordion>
         </div>
-    </WindowWithTyping>)
+    </WindowWithTyping >)
 }
 
 export {

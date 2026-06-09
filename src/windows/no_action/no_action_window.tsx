@@ -59,34 +59,62 @@ function NoActionWindow({
 
         cmds.set('Show house names', {
             action: onShowTitles,
-            hidden: areHouseTitlesVisible
+            filter: () => !areHouseTitlesVisible
         })
 
         cmds.set('Hide house names', {
             action: onHideTitles,
-            hidden: !areHouseTitlesVisible
+            filter: () => areHouseTitlesVisible
+        })
+
+        cmds.set('Toggle house names', {
+            action: areHouseTitlesVisible
+                ? onHideTitles
+                : onShowTitles
         })
 
         cmds.set('Show available construction', {
             action: onShowAvailableConstruction,
-            hidden: isAvailableConstructionVisible
+            filter: () => !isAvailableConstructionVisible
         })
 
         cmds.set('Hide available construction', {
             action: onHideAvailableConstruction,
-            hidden: !isAvailableConstructionVisible
+            filter: () => isAvailableConstructionVisible
         })
 
-        cmds.set('Open monitor', {
-            action: startMonitor
+        cmds.set('Toggle available construction', {
+            action: isAvailableConstructionVisible
+                ? onHideAvailableConstruction
+                : onShowAvailableConstruction
         })
 
-        cmds.set('close window', {
+        cmds.set('Monitor', {
+            action: startMonitor,
+            icon: <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
+        })
+
+        cmds.set('Close window', {
             action: onClose
         })
 
+        cmds.set('Debug', {
+            action: (point: Point) => {
+                console.log(point)
+            },
+            hidden: true
+        })
+
+        cmds.set('Copy point JSON', {
+            action: async (point: Point) => {
+                await navigator.clipboard.writeText(JSON.stringify(point, null, 2))
+            },
+            hidden: true
+        })
+
         return cmds
-    }, [onReturnToHeadquarters,
+    }, [
+        onReturnToHeadquarters,
         onShowTitles,
         onHideTitles,
         onShowAvailableConstruction,
@@ -94,7 +122,8 @@ function NoActionWindow({
         startMonitor,
         onClose,
         areHouseTitlesVisible,
-        isAvailableConstructionVisible])
+        isAvailableConstructionVisible
+    ])
 
     // Rendering
     return (

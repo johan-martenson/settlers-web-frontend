@@ -9,16 +9,31 @@ import { GameListener, api } from '../../api/ws-api'
 // Types
 type MapSelectionProps = {
     minPlayers: number
+    filterTitle: string
+    filterAuthor: string
+    filterMinPlayers: number
+    filterMaxPlayers: number
     onMapSelected: (map: MapInformation) => void
+    onSetFilterTitle: (title: string) => void
+    onSetFilterAuthor: (author: string) => void
+    onSetFilterMinPlayers: (minPlayers: number) => void
+    onSetFilterMaxPlayers: (maxPlayers: number) => void
 }
 
 // React components
-const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
+const MapSelection = ({
+    minPlayers,
+    filterTitle,
+    filterAuthor,
+    filterMinPlayers,
+    filterMaxPlayers,
+    onMapSelected,
+    onSetFilterTitle,
+    onSetFilterAuthor,
+    onSetFilterMinPlayers,
+    onSetFilterMaxPlayers
+}: MapSelectionProps) => {
     const [map, setMap] = useState<MapInformation | undefined>()
-    const [filterTitle, setSearchTitle] = useState<string>('')
-    const [filterAuthor, setSearchAuthor] = useState<string>('')
-    const [filterMinPlayers, setFilterMinPlayers] = useState<number>(1)
-    const [filterMaxPlayers, setFilterMaxPlayers] = useState<number>(8)
 
     useEffect(() => {
         function gameInformationChanged(gameInformation: GameInformation): void {
@@ -46,12 +61,12 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                             <SearchBox
                                 contentBefore={'title: '}
                                 value={filterTitle}
-                                onChange={(event: SearchBoxChangeEvent, data: InputOnChangeData) => setSearchTitle(data.value)}
+                                onChange={(event: SearchBoxChangeEvent, data: InputOnChangeData) => onSetFilterTitle(data.value)}
                             />
                             <SearchBox
                                 contentBefore={'author: '}
                                 value={filterAuthor}
-                                onChange={(event: SearchBoxChangeEvent, data: InputOnChangeData) => setSearchAuthor(data.value)}
+                                onChange={(event: SearchBoxChangeEvent, data: InputOnChangeData) => onSetFilterAuthor(data.value)}
                             />
                             <Field label={`Min players (${filterMinPlayers})`}>
                                 <Slider
@@ -61,7 +76,7 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                                     value={filterMinPlayers}
                                     onChange={(event: React.ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
                                         if (data.value <= filterMaxPlayers) {
-                                            setFilterMinPlayers(data.value)
+                                            onSetFilterMinPlayers(data.value)
                                         }
                                     }}
                                 />
@@ -74,7 +89,7 @@ const MapSelection = ({ minPlayers, onMapSelected }: MapSelectionProps) => {
                                     value={filterMaxPlayers}
                                     onChange={(event: React.ChangeEvent<HTMLInputElement>, data: SliderOnChangeData) => {
                                         if (data.value >= filterMinPlayers) {
-                                            setFilterMaxPlayers(data.value)
+                                            onSetFilterMaxPlayers(data.value)
                                         }
                                     }}
                                 />

@@ -5,7 +5,6 @@ import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { api } from '../../api/ws-api'
 import { canBuildHouse, canBuildLargeHouse, canBuildMediumHouse, canBuildMine, canBuildRoad, canBuildSmallHouse, canRaiseFlag } from '../../utils/utils'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { ItemContainer } from '../../components/item_container'
 import { usePointInformation } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
 import { FlagIcon, HouseIcon, UiIcon } from '../../components/icons/icon'
@@ -62,17 +61,6 @@ const ConstructionInfo = ({
     const [buildingSizeSelected, setBuildingSizeSelected] = useState<SizeLowerCase>('small')
     const [hoverInfo, setHoverInfo] = useState<string | undefined>()
 
-    // Memos
-    const commands = useMemo(() => {
-        const cmds = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
-
-        cmds.set('Close window', {
-            action: () => onClose()
-        })
-
-        return cmds
-    }, [])
-
     // Functions
     const raiseFlagAndClose = useCallback(() => {
         console.info('Construction window: raising flag')
@@ -95,6 +83,173 @@ const ConstructionInfo = ({
         onStartMonitor(point)
         onClose()
     }, [point.x, point.y, onClose, onStartMonitor])
+
+
+    // Memos
+    const commands = useMemo(() => {
+        const cmds = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
+
+        cmds.set('Close window', {
+            action: onClose
+        })
+
+        cmds.set('Buildings', {
+            action: () => setSelected('Buildings'),
+            filter: () => canBuildHouse(point) || canBuildMine(point)
+        })
+
+        cmds.set('Flags and roads', {
+            action: () => setSelected('FlagsAndRoads'),
+            filter: () => canRaiseFlag(point)
+        })
+
+        cmds.set('Monitor tab', {
+            action: () => setSelected('Monitor')
+        })
+
+        cmds.set('Open monitor', {
+            action: startMonitorAndClose
+        })
+
+        cmds.set('Follow', {
+            action: startMonitorAndClose
+        })
+
+        if (canRaiseFlag(point)) {
+            cmds.set('Flag', {
+                action: raiseFlagAndClose,
+                icon: <FlagIcon type='NORMAL' nation={nation} />
+            })
+
+            cmds.set('Raise flag', {
+                action: raiseFlagAndClose,
+                icon: <FlagIcon type='NORMAL' nation={nation} />
+            })
+        }
+
+        if (canBuildRoad(point)) {
+            cmds.set('Road', {
+                action: startNewRoadAndClose,
+                icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
+            })
+
+            cmds.set('Build road', {
+                action: startNewRoadAndClose,
+                icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
+            })
+        }
+
+        cmds.set('Show titles', {
+            action: onShowHouseTitles,
+            filter: () => !houseTitlesVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
+        })
+
+        cmds.set('Hide titles', {
+            action: onHideHouseTitles,
+            filter: () => houseTitlesVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
+        })
+
+        cmds.set('Toggle titles', {
+            action: () => {
+                if (houseTitlesVisible) {
+                    onHideHouseTitles()
+                } else {
+                    onShowHouseTitles()
+                }
+            },
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
+        })
+
+        cmds.set('Show available construction', {
+            action: onShowAvailableConstruction,
+            filter: () => !availableConstructionVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
+        })
+
+        cmds.set('Hide available construction', {
+            action: onHideAvailableConstruction,
+            filter: () => availableConstructionVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
+        })
+
+        cmds.set('Toggle available construction', {
+            action: () => {
+                if (availableConstructionVisible) {
+                    onHideAvailableConstruction()
+                } else {
+                    onShowAvailableConstruction()
+                }
+            },
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
+        })
+
+        cmds.set('Small buildings', {
+            action: () => {
+                setSelected('Buildings')
+                setBuildingSizeSelected('small')
+            },
+            filter: () => canBuildSmallHouse(point) || canBuildMine(point)
+        })
+
+        cmds.set('Medium buildings', {
+            action: () => {
+                setSelected('Buildings')
+                setBuildingSizeSelected('medium')
+            },
+            filter: () => canBuildMediumHouse(point)
+        })
+
+        cmds.set('Large buildings', {
+            action: () => {
+                setSelected('Buildings')
+                setBuildingSizeSelected('large')
+            },
+            filter: () => canBuildLargeHouse(point)
+        })
+
+        const addBuildingCommand = (house: string, size: SizeLowerCase) => {
+            cmds.set(buildingPretty(house as never), {
+                action: () => {
+                    api.placeHouse(house as never, point)
+                    onSelectPoint(point)
+                    onClose()
+                },
+                icon: <HouseIcon nation={nation} houseType={house as never} drawShadow />
+            })
+        }
+
+        if (canBuildMine(point)) {
+            MINES.forEach(house => addBuildingCommand(house, 'small'))
+        } else if (canBuildSmallHouse(point)) {
+            SMALL_BUILDINGS_EXCEPT_MINES.forEach(house => addBuildingCommand(house, 'small'))
+        }
+
+        if (canBuildMediumHouse(point)) {
+            MEDIUM_HOUSE_VALUES.forEach(house => addBuildingCommand(house, 'medium'))
+        }
+
+        if (canBuildLargeHouse(point)) {
+            LARGE_HOUSE_VALUES
+                .filter(house => house !== 'Headquarter')
+                .forEach(house => addBuildingCommand(house, 'large'))
+        }
+
+        return cmds
+    }, [point,
+        nation,
+        houseTitlesVisible,
+        availableConstructionVisible,
+        onClose,
+        onSelectPoint,
+        onShowHouseTitles,
+        onHideHouseTitles,
+        onShowAvailableConstruction,
+        onHideAvailableConstruction,
+        startMonitorAndClose,
+        raiseFlagAndClose,
+        startNewRoadAndClose])
 
     // Rendering
     const constructionOptions = new Map<'Buildings' | 'FlagsAndRoads', string>()

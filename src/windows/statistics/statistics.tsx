@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { WindowWithTyping } from '../../components/dialog'
 import './statistics.css'
 import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { Nation, AnyBuilding, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, GENERAL_STATISTICS_TYPES, StatisticsView, STATISTICS_VIEWS, StatisticsPerPlayer } from '../../api/types'
+import { Nation, AnyBuilding, GeneralStatisticsType, Merchandise, MERCHANDISE_VALUES, PlayerColor, PlayerId, TOOLS, SOLDIERS, GOODS, WORKERS, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, GENERAL_STATISTICS_TYPES, StatisticsView, STATISTICS_VIEWS, StatisticsPerPlayer, isBuilding } from '../../api/types'
 import { api } from '../../api/ws-api'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Label } from 'recharts'
 import { StatisticsReply } from '../../api/ws/commands'
@@ -292,73 +292,145 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<StatisticsView>>()
 
-        // Set statistics view
+        // Statistics views
         STATISTICS_VIEWS.forEach(view => {
             cmds.set(`Show ${statisticsViewPretty(view)} statistics`, {
-                action: () => setState(view)
+                action: () => setState(view),
+                filter: currentView => currentView !== view
             })
         })
 
+        // General statistics
         GENERAL_STATISTICS_TYPES.forEach(statsType => {
             cmds.set(`Show ${generalStatisticsTypePretty(statsType)} statistics`, {
-                action: () => setGeneralStatistics(statsType),
-                filter: (view: StatisticsView) => view === 'GENERAL' && generalStatistics !== statsType
+                action: () => {
+                    setState('GENERAL')
+                    setGeneralStatistics(statsType)
+                },
+                filter: view => view !== 'GENERAL' || generalStatistics !== statsType
             })
         })
 
         // Merchandise statistics
         MERCHANDISE_VALUES.forEach(merchandise => {
             cmds.set(`Show ${merchandisePretty(merchandise)} statistics`, {
-                action: () => setSelectedMerchandise(prev => [...prev, merchandise]),
-                filter: (view: StatisticsView) => view === 'MERCHANDISE' && !selectedMerchandise.includes(merchandise)
+                action: () => {
+                    setState('MERCHANDISE')
+
+                    setSelectedMerchandise(prev =>
+                        prev.includes(merchandise)
+                            ? prev
+                            : [...prev, merchandise]
+                    )
+                },
+                filter: () => !selectedMerchandise.includes(merchandise)
             })
 
             cmds.set(`Hide ${merchandisePretty(merchandise)} statistics`, {
-                action: () => setSelectedMerchandise(prev => prev.filter(merch => merch !== merchandise)),
-                filter: (view: StatisticsView) => view === 'MERCHANDISE' && selectedMerchandise.includes(merchandise)
+                action: () => {
+                    setSelectedMerchandise(prev => prev.filter(merch => merch !== merchandise))
+                },
+                filter: () => selectedMerchandise.includes(merchandise)
+            })
+
+            cmds.set(`Toggle ${merchandisePretty(merchandise)} statistics`, {
+                action: () => {
+                    setState('MERCHANDISE')
+
+                    setSelectedMerchandise(prev =>
+                        prev.includes(merchandise)
+                            ? prev.filter(merch => merch !== merchandise)
+                            : [...prev, merchandise]
+                    )
+                }
             })
         })
 
         cmds.set('Show all merchandise statistics', {
-            action: () => setSelectedMerchandise([...MERCHANDISE_VALUES]),
-            filter: view =>
-                view === 'MERCHANDISE'
-                && selectedMerchandise.length < MERCHANDISE_VALUES.length
+            action: () => {
+                setState('MERCHANDISE')
+                setSelectedMerchandise([...MERCHANDISE_VALUES])
+            },
+            filter: () => selectedMerchandise.length < MERCHANDISE_VALUES.length
         })
 
         cmds.set('Hide all merchandise statistics', {
             action: () => setSelectedMerchandise([]),
-            filter: view =>
-                view === 'MERCHANDISE'
-                && selectedMerchandise.length > 0
+            filter: () => selectedMerchandise.length > 0
         })
 
-        // Toggle players to show statistics for
-        api.players.forEach(player => {
-            cmds.set(`Show statistics for ${player.name}`, {
-                action: () => setSelectedPlayers(prev => [...prev, player.id]),
-                filter: (view: StatisticsView) => (view === 'GENERAL' || (view === 'BUILDINGS' && buildingsView === 'HISTORICAL')) && !selectedPlayers.includes(player.id)
-            })
+        cmds.set('Reset merchandise selection', {
+            action: () => setSelectedMerchandise([]),
+            filter: () => selectedMerchandise.length > 0
+        })
 
-            cmds.set(`Hide statistics for ${player.name}`, {
-                action: () => setSelectedPlayers(prev => prev.filter(playerId => playerId !== player.id)),
-                filter: (view: StatisticsView) => (view === 'GENERAL' || (view === 'BUILDINGS' && buildingsView === 'HISTORICAL')) && selectedPlayers.includes(player.id)
-            })
+        // Player selection
+        const playerNames = Array.from(api.players.values().map(player => player.name))
+
+        cmds.set('Show statistics for player', {
+            type: 'ENUM',
+            values: playerNames,
+            parameterName: 'player',
+            action: (_view: StatisticsView, playerName: string) => {
+                const chosenPlayer = api.players.values().find(player => player.name === playerName)
+
+                if (chosenPlayer) {
+                    setSelectedPlayers(prev =>
+                        prev.includes(chosenPlayer.id)
+                            ? prev
+                            : [...prev, chosenPlayer.id]
+                    )
+                }
+            },
+            filter: view => view === 'GENERAL' || (view === 'BUILDINGS' && buildingsView === 'HISTORICAL')
+        })
+
+        cmds.set('Hide statistics for player', {
+            type: 'ENUM',
+            values: playerNames,
+            parameterName: 'player',
+            action: (_view: StatisticsView, playerName: string) => {
+                const chosenPlayer = api.players.values().find(player => player.name === playerName)
+
+                if (chosenPlayer) {
+                    setSelectedPlayers(prev =>
+                        prev.filter(playerId => playerId !== chosenPlayer.id)
+                    )
+                }
+            },
+            filter: view => view === 'GENERAL' || (view === 'BUILDINGS' && buildingsView === 'HISTORICAL')
+        })
+
+        cmds.set('Toggle player', {
+            type: 'ENUM',
+            values: playerNames,
+            parameterName: 'player',
+            action: (_view: StatisticsView, playerName: string) => {
+                const chosenPlayer = api.players.values().find(player => player.name === playerName)
+
+                if (chosenPlayer) {
+                    setSelectedPlayers(prev =>
+                        prev.includes(chosenPlayer.id)
+                            ? prev.filter(id => id !== chosenPlayer.id)
+                            : [...prev, chosenPlayer.id]
+                    )
+                }
+            },
+            filter: view => view === 'GENERAL' || (view === 'BUILDINGS' && buildingsView === 'HISTORICAL')
         })
 
         cmds.set('Show all players', {
-            action: () =>
-                setSelectedPlayers(
-                    Array.from(api.players.keys())
-                ),
-            filter: () =>
-                selectedPlayers.length < api.players.size
+            action: () => setSelectedPlayers(Array.from(api.players.keys())),
+            filter: () => selectedPlayers.length < api.players.size
         })
 
         cmds.set('Hide all players', {
             action: () => setSelectedPlayers([]),
-            filter: () =>
-                selectedPlayers.length > 0
+            filter: () => selectedPlayers.length > 0
+        })
+
+        cmds.set('Reset player selection', {
+            action: () => setSelectedPlayers([playerId])
         })
 
         // Building statistics
@@ -378,33 +450,54 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
             filter: view => view !== 'BUILDINGS' || buildingsView !== 'HISTORICAL'
         })
 
-            ;[
+        cmds.set('Show statistics for building', {
+            type: 'ENUM',
+            values: [
                 ...SMALL_HOUSE_VALUES,
                 ...MEDIUM_HOUSE_VALUES,
                 ...LARGE_HOUSE_VALUES
-            ].forEach(building => {
-                cmds.set(
-                    `Show ${buildingPretty(building)} statistics`,
-                    {
-                        action: () => {
-                            setState('BUILDINGS')
-                            setBuildingsView('HISTORICAL')
-                            setSelectedBuilding(building)
-                        },
-                        filter: () =>
-                            state !== 'BUILDINGS'
-                            || buildingsView !== 'HISTORICAL'
-                            || selectedBuilding !== building
-                    }
-                )
-            })
+            ],
+            parameterName: 'building',
+            action: (_view: StatisticsView, houseType: string) => {
+                if (isBuilding(houseType)) {
+                    setState('BUILDINGS')
+                    setBuildingsView('HISTORICAL')
+                    setSelectedBuilding(houseType)
+                }
+            },
+            filter: view => view !== 'BUILDINGS' || buildingsView !== 'HISTORICAL'
+        })
 
         cmds.set('Close window', {
-            action: () => onClose()
+            action: onClose
+        })
+
+        cmds.set('Debug statistics', {
+            action: () => {
+                console.log(statistics)
+            },
+            hidden: true
+        })
+
+        cmds.set('Copy statistics JSON', {
+            action: async () => {
+                await navigator.clipboard.writeText(
+                    JSON.stringify(statistics, null, 2)
+                )
+            },
+            hidden: true
         })
 
         return cmds
-    }, [onClose, generalStatistics, selectedMerchandise, selectedPlayers])
+    }, [
+        onClose,
+        playerId,
+        statistics,
+        generalStatistics,
+        selectedMerchandise,
+        selectedPlayers,
+        buildingsView
+    ])
 
     // Rendering
     const titleLabel = 'Statistics'

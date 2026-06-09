@@ -310,16 +310,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }, [goToPoint, setSelected])
 
-    function setNewTranslatedAnimated(newTranslate: { x: number, y: number }): void {
+    const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
         animator.animateSeveral(
             'TRANSLATE',
-            newTranslate => {
-                immediateStateRef.current.translate = { x: newTranslate[0], y: newTranslate[1] }
-            },
+            newTranslate => immediateStateRef.current.translate = { x: newTranslate[0], y: newTranslate[1] },
             [immediateStateRef.current.translate.x, immediateStateRef.current.translate.y],
             [newTranslate.x, newTranslate.y]
         )
-    }
+    }, [])
 
     const scrollToPoint = useCallback((point: Point) => {
         console.log(`Scrolling to point: ${JSON.stringify(point)}, animate: ${animateMapScrolling}`)
@@ -648,8 +646,376 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         setShowMenu,
         openWindow])
 
+    const startNewRoad = useCallback(async (point: Point) => {
+
+        // Start the list of points in the new road with the clicked point
+        if (PlayLogConfig.roads) {
+            console.info(`Play (roads): Start new road construction at: ${JSON.stringify({ x: point.x, y: point.y })}`)
+        }
+
+        // Get the possible connections from the server and draw them
+        const pointInformation = await api.getInformationOnPoint(point)
+
+        if (pointInformation !== undefined) {
+            startRoadBuilding([point], pointInformation.possibleRoadConnections)
+            setCursor('BUILDING_ROAD')
+        }
+    }, [startRoadBuilding])
+
+    function onWheel(event: React.WheelEvent): void {
+        zoom(immediateStateRef.current.scale - event.deltaY / 20.0)
+
+        event.preventDefault()
+    }
+
+    function onCommand(match: CommandMatch<PointInformationWithoutPossibleRoadConnections>): void {
+        if (PlayLogConfig.typeControl) {
+            console.log(`Play (commands): Executing command ${match.commandName} with type ${match.type} and point information ${JSON.stringify(selectedPointInformationRef.current)}`)
+        }
+
+        executeCommand(match, selectedPointInformationRef.current)
+    }
+
+
+    // Memos
+    const commands = useMemo(() => {
+        if (PlayLogConfig.commands) {
+            console.log('Play (commands): Set commands')
+        }
+
+        const player = api.players.get(selfPlayerId)
+        const nation = player?.nation ?? 'VIKINGS'
+        const color = player?.color ?? 'GREEN'
+
+        const commands = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
+
+        // Buildings
+        SMALL_HOUSE_VALUES.forEach(building => commands.set(building, {
+            action: (point: Point) => api.placeHouse(building, point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('SMALL'),
+            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+        }))
+        MEDIUM_HOUSE_VALUES.forEach(building => commands.set(building, {
+            action: (point: Point) => api.placeHouse(building, point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('MEDIUM'),
+            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+        }))
+        LARGE_HOUSE_VALUES.forEach(building => building !== 'Headquarter' && commands.set(building, {
+            action: (point: Point) => api.placeHouse(building, point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('LARGE'),
+            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
+        }))
+
+        // Core Actions
+        commands.set('Road', {
+            action: async (point: Point) => {
+                if (PlayLogConfig.roads) {
+                    console.log('Play (roads): Building road')
+                }
+
+                const pointDownRight = { x: point.x + 1, y: point.y - 1 }
+                const pointInformations = await api.getInformationOnPoints([point, pointDownRight])
+
+                const pointInformation = pointInformations.get(point)
+                const pointDownRightInformation = pointInformations.get(pointDownRight)
+
+                if (pointInformation === undefined) {
+                    console.error(`Failed to get point information: ${point} !`)
+                    return
+                }
+
+                if (pointInformation.is === 'BUILDING' && pointDownRightInformation !== undefined && pointDownRightInformation.possibleRoadConnections.length > 0) {
+                    startRoadBuilding([pointDownRight], pointDownRightInformation.possibleRoadConnections)
+                } else if (pointInformation.is === 'FLAG' && pointInformation.possibleRoadConnections.length > 0) {
+                    startRoadBuilding([point], pointInformation.possibleRoadConnections)
+                }
+
+                setCursor('BUILDING_ROAD')
+            },
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING' || pointInformation.is === 'FLAG',
+            icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
+        })
+
+        commands.set('Flag', {
+            action: (point: Point) => api.placeFlag(point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('FLAG'),
+            icon: <FlagIcon nation={nation} type='NORMAL' animate scale={0.7} color={color} />
+        })
+
+        commands.set('Cancel road', {
+            action: () => {
+                clearRoadBuilding()
+                api.removeLocalRoad('LOCAL')
+                setCursor('NOTHING')
+            }
+        })
+
+        // Deletions
+        commands.set('Remove building', {
+            action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING' && api.houses.get(pointInformation?.buildingId!)?.type !== 'Headquarter',
+        })
+        commands.set('Remove flag', {
+            action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'FLAG' && api.flags.get(pointInformation.flagId!)?.playerId === selfPlayerId,
+        })
+        commands.set('Remove road', {
+            action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'ROAD' && api.roads.get(pointInformation.roadId!)?.playerId === selfPlayerId,
+        })
+
+        // Building Management
+        commands.set('Upgrade', {
+            action: (point: Point) => {
+                const houseInformation = api.getHouseAtPointLocal(point)
+                if (houseInformation && canBeUpgraded(houseInformation)) {
+                    api.upgrade(houseInformation.id)
+                }
+            },
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => {
+                if (pointInformation.is !== 'BUILDING' || pointInformation.buildingId === undefined) return false
+                const houseInformation = api.houses.get(pointInformation.buildingId)
+                return houseInformation !== undefined
+                    && ['Barracks', 'GuardHouse', 'WatchTower'].includes(houseInformation.type)
+                    && ['OCCUPIED', 'UNOCCUPIED'].includes(houseInformation.state)
+            },
+            icon: <AddCircle24Regular />
+        })
+
+        commands.set('Evacuate building', {
+            action: (point: Point) => {
+                const house = api.houseAt(point)
+                if (house !== undefined) {
+                    api.evacuateHouse(house.id)
+                }
+            },
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING',
+            icon: <UiIcon type='SEND_OUT_ARROWS' scale={0.5} />
+        })
+
+        commands.set('Cancel evacuation', {
+            action: (point: Point) => {
+                const house = api.houseAt(point)
+
+                if (house !== undefined) {
+                    api.cancelEvacuationForHouse(house.id)
+                }
+            },
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING'
+        })
+
+        commands.set('Geologist', {
+            action: (point: Point) => api.callGeologist(point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'FLAG'
+        })
+        commands.set('Scout', {
+            action: (point: Point) => api.callScout(point),
+            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'FLAG'
+        })
+
+        // Windows & Menus
+        commands.set('Follow', {
+            action: (point: Point) => openWindow({ type: 'FOLLOW', point }),
+            icon: <UiIcon type='FILM_CAMERA' scale={0.5} />
+        })
+        commands.set('Monitor', {
+            action: (point: Point) => openWindow({ type: 'FOLLOW', point }),
+            icon: <UiIcon type='FILM_CAMERA' scale={0.5} />
+        })
+        commands.set('Statistics', { action: () => openSingletonWindow({ type: 'STATISTICS' }) })
+        commands.set('Transport priority', {
+            action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' }),
+            icon: <UiIcon type='TRANSPORT_PRIORITY' scale={0.5} />
+        })
+        commands.set('Quotas', { action: () => openSingletonWindow({ type: 'QUOTA' }) })
+        commands.set('Tools', {
+            action: () => openSingletonWindow({ type: 'TOOLS' }),
+            icon: <UiIcon type='TOOLS_WITH_QUESTION_MARK' scale={0.5} />
+        })
+        commands.set('Map', {
+            action: () => openWindow({ type: 'MAP' }),
+            icon: <UiIcon type='GLOBE_WITH_MAGNIFYING_GLASS' scale={0.5} />
+        })
+        commands.set('Guide', { action: () => openSingletonWindow({ type: 'GUIDE' }) })
+        commands.set('Menu', {
+            action: () => setShowMenu(true),
+            icon: <CalendarAgenda24Regular />
+        })
+        commands.set('Close menu', {
+            action: () => {
+                setShowMenu(false)
+                selfContainerRef?.current?.focus()
+            }
+        })
+
+        // Navigation & Camera
+        commands.set('Go to headquarters', {
+            action: () => {
+                const headquarter = getHeadquarterForPlayer(selfPlayerId)
+
+                if (headquarter) {
+                    scrollToPoint(headquarter)
+                    setSelected(headquarter)
+                }
+            }
+        })
+
+        commands.set('Center on selected point', { action: (point: Point) => scrollToPoint(point) })
+
+        commands.set('Zoom in', { action: () => zoom(immediateStateRef.current.scale + 10) })
+        commands.set('Zoom out', { action: () => zoom(immediateStateRef.current.scale - 10) })
+        commands.set('Reset zoom', { action: () => zoom(DEFAULT_SCALE) })
+
+        commands.set('Move north', { action: () => moveGame({ ...immediateStateRef.current.translate, y: immediateStateRef.current.translate.y + ARROW_KEY_MOVE_DISTANCE }) })
+        commands.set('Move south', { action: () => moveGame({ ...immediateStateRef.current.translate, y: immediateStateRef.current.translate.y - ARROW_KEY_MOVE_DISTANCE }) })
+        commands.set('Move east', { action: () => moveGame({ ...immediateStateRef.current.translate, x: immediateStateRef.current.translate.x - ARROW_KEY_MOVE_DISTANCE }) })
+        commands.set('Move west', { action: () => moveGame({ ...immediateStateRef.current.translate, x: immediateStateRef.current.translate.x + ARROW_KEY_MOVE_DISTANCE }) })
+
+        // UI Toggles
+        commands.set('Show house names', {
+            action: () => setShowTitles(true),
+            hidden: showTitles
+        })
+        commands.set('Hide house names', {
+            action: () => setShowTitles(false),
+            hidden: !showTitles
+        })
+        commands.set('Toggle house names', {
+            action: () => setShowTitles(prev => !prev),
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
+        })
+
+        commands.set('Show available construction', {
+            action: () => setShowAvailableConstruction(true),
+            hidden: showAvailableConstruction
+        })
+        commands.set('Hide available construction', {
+            action: () => setShowAvailableConstruction(false),
+            hidden: !showAvailableConstruction
+        })
+        commands.set('Toggle available construction', {
+            action: () => setShowAvailableConstruction(prev => !prev),
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
+        })
+
+        commands.set('Show typing commands', {
+            action: () => setShowTypingController(true),
+            hidden: showTypingController
+        })
+        commands.set('Hide typing commands', {
+            action: () => setShowTypingController(false),
+            hidden: !showTypingController
+        })
+
+        commands.set('Show music player', {
+            action: () => setShowMusicPlayer(true),
+            hidden: showMusicPlayer
+        })
+        commands.set('Hide music player', {
+            action: () => setShowMusicPlayer(false),
+            hidden: !showMusicPlayer
+        })
+
+        // Game State Control
+        commands.set('Pause game', {
+            action: () => api.pauseGame(gameId),
+            icon: <PauseFilled />,
+            hidden: gameState === 'PAUSED'
+        })
+        commands.set('Resume game', {
+            action: () => api.resumeGame(gameId),
+            icon: <UiIcon type='RIGHT_ARROW' scale={0.5} />,
+            hidden: gameState === 'STARTED'
+        })
+
+        // Debug & Cheats
+        commands.set('List statistics', {
+            action: () => printVariables(),
+            hidden: true
+        })
+        commands.set('Fps', {
+            action: () => setShowFpsCounter(prev => !prev),
+            hidden: true,
+            icon: <TopSpeed24Filled />
+        })
+        commands.set('Debug', {
+            action: () => openSingletonWindow({ type: 'DEBUG' }),
+            hidden: true,
+            icon: <UiIcon type='SPRAY_CAN' scale={0.5} />
+        })
+        commands.set('GiveMeSomeMore', {
+            action: () => api.cheat('GIVE_ME_SOME_MORE'),
+            hidden: true
+        })
+        commands.set('ShowMeTheWorld', {
+            action: () => api.cheat('SHOW_ME_THE_WORLD'),
+            hidden: true
+        })
+
+        commands.set('Enable fog of war', {
+            action: () => setFogOfWar(true),
+            hidden: true
+        })
+        commands.set('Disable fog of war', {
+            action: () => setFogOfWar(false),
+            hidden: true
+        })
+        commands.set('Toggle fog of war', {
+            action: () => setFogOfWar(prev => !prev),
+            hidden: true
+        })
+
+        // Clipboard Actions
+        commands.set('Copy selected point JSON', {
+            action: (point: Point) => navigator.clipboard.writeText(JSON.stringify(point, null, 2)),
+            hidden: true
+        })
+        commands.set('Copy selected point information JSON', {
+            action: () => navigator.clipboard.writeText(JSON.stringify(selectedPointInformationRef.current, null, 2)),
+            hidden: true
+        })
+
+        return commands
+    }, [
+        selfPlayerId,
+        gameId,
+        showTitles,
+        showAvailableConstruction,
+        showTypingController,
+        showMusicPlayer,
+        gameState,
+        openSingletonWindow,
+        openWindow,
+        scrollToPoint,
+        goToPoint,
+        setCursor,
+        clearRoadBuilding,
+        setSelected,
+        moveGame,
+        zoom
+    ])
+
+    const { available, matches } = useMemo(() => {
+        const available = new Set(commands.entries()
+            // eslint-disable-next-line
+            .filter(([_commandName, command]) => command.filter === undefined || command.filter(selectedPointInformation))
+
+            // eslint-disable-next-line
+            .map(([commandName, _command]) => commandName))
+
+        return {
+            matches: findMatchingCommands(commands, inputValue, selectedPointInformation),
+            available
+        }
+    }, [selectedPointInformation, inputValue, commands])
+
     const onKeyDown = useCallback((event: React.KeyboardEvent) => {
-        if (event.key === 'Escape') {
+        if (event.key === 'Enter') {
+            if (matches && matches.length > 0) {
+                console.log(matches[0])
+                executeCommand(matches[0], selectedPointInformationRef.current)
+            }
+        } else if (event.key === 'Escape') {
 
             // Close the active menu (if there is an active menu)
             if (windows.length > 0) {
@@ -685,223 +1051,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         keyTyped(event)
 
         event.preventDefault()
-    }, [windows, roadBuildingState.active, clearRoadBuilding, moveGame, zoom, closeActiveWindow])
-
-    const startNewRoad = useCallback(async (point: Point) => {
-
-        // Start the list of points in the new road with the clicked point
-        if (PlayLogConfig.roads) {
-            console.info(`Play (roads): Start new road construction at: ${JSON.stringify({ x: point.x, y: point.y })}`)
-        }
-
-        // Get the possible connections from the server and draw them
-        const pointInformation = await api.getInformationOnPoint(point)
-
-        if (pointInformation !== undefined) {
-            startRoadBuilding([point], pointInformation.possibleRoadConnections)
-            setCursor('BUILDING_ROAD')
-        }
-    }, [startRoadBuilding])
-
-    function onWheel(event: React.WheelEvent): void {
-        zoom(immediateStateRef.current.scale - event.deltaY / 20.0)
-
-        event.preventDefault()
-    }
-
-    function onCommand(match: CommandMatch<PointInformationWithoutPossibleRoadConnections>): void {
-        console.log(`Play (commands): Executing command ${match.commandName} with type ${match.type} and point information ${JSON.stringify(selectedPointInformationRef.current)}`)
-        executeCommand(match, selectedPointInformationRef.current)
-    }
-
-
-    // Memos
-    const commands = useMemo(() => {
-        if (PlayLogConfig.commands) {
-            console.log('Play (commands): Set commands')
-        }
-
-        const player = api.players.get(selfPlayerId)
-        const nation = player?.nation ?? 'VIKINGS'
-        const color = player?.color ?? 'GREEN'
-
-        const commands = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
-
-        SMALL_HOUSE_VALUES.forEach(building => commands.set(building, {
-            action: (point: Point) => api.placeHouse(building, point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('SMALL'),
-            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-        }))
-        MEDIUM_HOUSE_VALUES.forEach(building => commands.set(building, {
-            action: (point: Point) => api.placeHouse(building, point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('MEDIUM'),
-            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-        }))
-        LARGE_HOUSE_VALUES.forEach(building => building !== 'Headquarter' && commands.set(building, {
-            action: (point: Point) => api.placeHouse(building, point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('LARGE'),
-            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-        }))
-
-        commands.set('Road', {
-            action: async (point: Point) => {
-                if (PlayLogConfig.roads) {
-                    console.log('Play (roads): Building road')
-                }
-
-                const pointDownRight = { x: point.x + 1, y: point.y - 1 }
-                const pointInformations = await api.getInformationOnPoints([point, pointDownRight])
-
-                const pointInformation = pointInformations.get(point)
-                const pointDownRightInformation = pointInformations.get(pointDownRight)
-
-                if (pointInformation === undefined) {
-                    console.error(`Failed to get point information: ${point}!`)
-                    return
-                }
-
-                // If a house is selected, start the road from the flag
-                if (pointInformation.is === 'BUILDING' && pointDownRightInformation !== undefined && pointDownRightInformation.possibleRoadConnections.length > 0) {
-                    startRoadBuilding([pointDownRight], pointDownRightInformation.possibleRoadConnections)
-                } else if (pointInformation.is === 'FLAG' && pointInformation.possibleRoadConnections.length > 0) {
-                    startRoadBuilding([point], pointInformation.possibleRoadConnections)
-                }
-
-                setCursor('BUILDING_ROAD')
-            },
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING' || pointInformation.is === 'FLAG',
-            icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
-        })
-
-        commands.set('Flag', {
-            action: (point: Point) => api.placeFlag(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('FLAG'),
-            icon: <FlagIcon nation={nation} type='NORMAL' animate scale={0.7} color={color} />
-        })
-        commands.set('Remove (house, flag, or road)', {
-            action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => (pointInformation.is === 'BUILDING' &&
-                api.houses.get(pointInformation?.buildingId)?.type !== 'Headquarter') ||
-                (pointInformation.is === 'FLAG' && api.flags.get(pointInformation.flagId)?.playerId === selfPlayerId) ||
-                (pointInformation.is === 'ROAD' && api.roads.get(pointInformation.roadId)?.playerId === selfPlayerId),
-        })
-        commands.set('Statistics', { action: () => openSingletonWindow({ type: 'STATISTICS' }) })
-        commands.set('Titles', {
-            action: () => setShowTitles(prev => !prev),
-            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
-        })
-        commands.set('Available construction', {
-            action: () => setShowAvailableConstruction(prev => !prev),
-            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
-        })
-        commands.set('Geologist', {
-            action: (point: Point) => api.callGeologist(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'FLAG'
-        })
-        commands.set('Scout', {
-            action: (point: Point) => api.callScout(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'FLAG'
-        })
-        commands.set('Evacuate building', {
-            action: (point: Point) => {
-                const house = api.houseAt(point)
-
-                if (house !== undefined) {
-                    api.evacuateHouse(house.id)
-                }
-            },
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING',
-            icon: <UiIcon type='SEND_OUT_ARROWS' scale={0.5} />
-        })
-        commands.set('Transport priority', {
-            action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' }),
-            icon: <UiIcon type='TRANSPORT_PRIORITY' scale={0.5} />
-        })
-        commands.set('List statistics', { action: () => printVariables() })
-        commands.set('Upgrade', {
-            action: (point: Point) => {
-                const houseInformation = api.getHouseAtPointLocal(point)
-
-                if (houseInformation && canBeUpgraded(houseInformation)) {
-                    api.upgrade(houseInformation.id)
-                }
-            },
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => {
-                if (pointInformation.is !== 'BUILDING' || pointInformation.buildingId === undefined) {
-                    return false
-                }
-
-                const houseInformation = api.houses.get(pointInformation.buildingId)
-                return houseInformation !== undefined
-                    && ['Barracks', 'GuardHouse', 'WatchTower'].includes(houseInformation.type)
-                    && ['OCCUPIED', 'UNOCCUPIED'].includes(houseInformation.state)
-            },
-            icon: <AddCircle24Regular />
-        })
-        commands.set('Fps', {
-            action: () => setShowFpsCounter(prev => !prev),
-            hidden: true,
-            icon: <TopSpeed24Filled />
-        })
-        commands.set('Menu', {
-            action: () => setShowMenu(true),
-            icon: <CalendarAgenda24Regular />
-        })
-        commands.set('Quotas', { action: () => openSingletonWindow({ type: 'QUOTA' }) })
-        commands.set('Pause game', {
-            action: () => api.pauseGame(gameId),
-            icon: <PauseFilled />
-        })
-        commands.set('Resume game', {
-            action: () => api.resumeGame(gameId),
-            icon: <UiIcon type='RIGHT_ARROW' scale={0.5} />
-        })
-        commands.set('Debug', {
-            action: () => openSingletonWindow({ type: 'DEBUG' }),
-            hidden: true,
-            icon: <UiIcon type='SPRAY_CAN' scale={0.5} />
-        })
-        commands.set('Follow', {
-            action: (point: Point) => openWindow({ type: 'FOLLOW', point }),
-            icon: <UiIcon type='FILM_CAMERA' scale={0.5} />
-        })
-        commands.set('Tools', {
-            action: () => openSingletonWindow({ type: 'TOOLS' }),
-            icon: <UiIcon type='TOOLS_WITH_QUESTION_MARK' scale={0.5} />
-        })
-        commands.set('Map', {
-            action: () => openWindow({ type: 'MAP' }),
-            icon: <UiIcon type='GLOBE_WITH_MAGNIFYING_GLASS' scale={0.5} />
-        })
-        commands.set('GiveMeSomeMore', {
-            action: () => api.cheat('GIVE_ME_SOME_MORE'),
-            hidden: true
-        })
-        commands.set('ShowMeTheWorld', {
-            action: () => api.cheat('SHOW_ME_THE_WORLD'),
-            hidden: true
-        })
-        commands.set('Fog of war', {
-            action: () => setFogOfWar(prev => !prev),
-            hidden: true
-        })
-
-        return commands
-    }, [selfPlayerId, gameId, openSingletonWindow, openWindow, scrollToPoint, goToPoint])
-
-    const { available, matches } = useMemo(() => {
-        const available = new Set(commands.entries()
-            // eslint-disable-next-line
-            .filter(([_commandName, command]) => command.filter === undefined || command.filter(selectedPointInformation))
-
-            // eslint-disable-next-line
-            .map(([commandName, _command]) => commandName))
-
-        return {
-            matches: findMatchingCommands(commands, inputValue, selectedPointInformation),
-            available
-        }
-    }, [selectedPointInformation, inputValue, commands])
+    }, [windows, roadBuildingState.active, clearRoadBuilding, moveGame, zoom, closeActiveWindow, matches])
 
     // Rendering
     return (

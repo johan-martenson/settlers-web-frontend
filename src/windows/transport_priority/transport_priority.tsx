@@ -77,11 +77,40 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
         const cmds = new Map<string, GenericCommand<TransportCategory>>()
 
         priority.forEach(category => {
-            cmds.set(`Select ${transportCategoryPretty(category).toLowerCase()}`, {
-                action: (category: TransportCategory) => {
-                    setSelected(category)
+            const categoryName = transportCategoryPretty(category).toLowerCase()
+
+            cmds.set(`Select ${categoryName}`, {
+                action: () => setSelected(category),
+                filter: current => current !== category
+            })
+
+            cmds.set(`Set ${categoryName} priority`, {
+                type: 'NUMBER',
+                parameterName: 'priority',
+                min: 0,
+                max: TRANSPORT_CATEGORIES.size - 1,
+                action: (_current: TransportCategory, priority: number) => {
+                    api.setTransportPriorityForMaterial(category, priority)
                 }
             })
+        })
+
+        cmds.set('Raise priority', {
+            action: (category: TransportCategory) => increasePriority(category)
+        })
+
+        cmds.set('Lower priority', {
+            action: (category: TransportCategory) => decreasePriority(category)
+        })
+
+        cmds.set('Set priority', {
+            type: 'NUMBER',
+            parameterName: 'priority',
+            min: 0,
+            max: TRANSPORT_CATEGORIES.size - 1,
+            action: (category: TransportCategory, priority: number) => {
+                api.setTransportPriorityForMaterial(category, priority)
+            }
         })
 
         cmds.set('Set max priority', {
@@ -93,12 +122,32 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
         })
 
         cmds.set('Close window', {
-            // eslint-disable-next-line
-            action: (_category: TransportCategory) => onClose()
+            action: onClose
+        })
+
+        cmds.set('Debug', {
+            action: () => console.log(priority),
+            hidden: true
+        })
+
+        cmds.set('Copy priorities JSON', {
+            action: async () => {
+                await navigator.clipboard.writeText(
+                    JSON.stringify(priority, null, 2)
+                )
+            },
+            hidden: true
         })
 
         return cmds
-    }, [onClose, priority, setMaxPriority, setMinPriority])
+    }, [
+        priority,
+        increasePriority,
+        decreasePriority,
+        setMaxPriority,
+        setMinPriority,
+        onClose
+    ])
 
     // Rendering
     return (

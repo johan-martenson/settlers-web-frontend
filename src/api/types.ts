@@ -849,6 +849,12 @@ function isPlayerColor(playerColor: unknown): playerColor is PlayerColor {
     return PLAYER_COLORS_SET.has(playerColor as PlayerColor)
 }
 
+function isWorker(worker: unknown): worker is Worker {
+    return worker !== null &&
+        typeof worker === 'string' &&
+        WORKERS.has(worker.toUpperCase() as Worker)
+}
+
 export {
     isHeadquarterInformation,
     rankToMaterial,
@@ -859,6 +865,7 @@ export {
     isNation,
     isPlayerColor,
     isSpeed,
+    isWorker,
     WILD_ANIMAL_TYPES,
     SMALL_HOUSE_VALUES,
     MEDIUM_HOUSE_VALUES,

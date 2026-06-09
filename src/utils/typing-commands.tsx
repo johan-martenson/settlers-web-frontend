@@ -15,6 +15,7 @@ type FixedCommand<CommandContext> = BaseCommand<CommandContext> & {
 
 export type NumberCommand<CommandContext> = BaseCommand<CommandContext> & {
     type: 'NUMBER'
+    parameterName?: string
     min?: number
     max?: number
     action: (context: CommandContext, value: number) => void
@@ -22,12 +23,14 @@ export type NumberCommand<CommandContext> = BaseCommand<CommandContext> & {
 
 export type EnumCommand<CommandContext, TValue extends string> = BaseCommand<CommandContext> & {
     type: 'ENUM'
+    parameterName?: string
     values: readonly TValue[]
     action: (context: CommandContext, value: TValue) => void
 }
 
 export type StringCommand<CommandContext> = BaseCommand<CommandContext> & {
     type: 'STRING'
+    parameterName?: string
     allowEmpty?: boolean
     action: (context: CommandContext, value: string) => void
 }
@@ -553,6 +556,14 @@ function buildHighlightedParts(text: string, matchIndexes: number[]): Highlighte
     return parts
 }
 
+function renderParameterPlaceholder(text: string): React.ReactNode {
+    return (
+        <span className='type-match-parameter-placeholder'>
+            {`<${text}>`}
+        </span>
+    )
+}
+
 function prettyPrintFuzzyMatch<T>(match: CommandMatch<T>): React.ReactNode {
     switch (match.type) {
         case 'FIXED': {
@@ -565,19 +576,21 @@ function prettyPrintFuzzyMatch<T>(match: CommandMatch<T>): React.ReactNode {
         case 'NUMBER': {
             return (
                 <>
-                    {renderHighlightedText(
-                        match.commandName,
-                        match.matchIndexes
-                    )}
+                    {renderHighlightedText(match.commandName, match.matchIndexes)}
 
-                    {' '}
+                    <span>&nbsp;</span>
 
-                    <span className='type-match-parameter'>
-                        {renderHighlightedText(
-                            String(match.parsedParam),
-                            match.parameterMatchIndexes
+                    {match.parameterMatchState === 'COMMAND_ONLY'
+                        ? renderParameterPlaceholder(match.command.parameterName ?? 'number')
+                        : (
+                            <span className='type-match-parameter'>
+                                {renderHighlightedText(
+                                    String(match.parsedParam),
+                                    match.parameterMatchIndexes,
+                                    'parameter-match-highlight'
+                                )}
+                            </span>
                         )}
-                    </span>
                 </>
             )
         }
@@ -585,19 +598,21 @@ function prettyPrintFuzzyMatch<T>(match: CommandMatch<T>): React.ReactNode {
         case 'STRING': {
             return (
                 <>
-                    {renderHighlightedText(
-                        match.commandName,
-                        match.matchIndexes
-                    )}
+                    {renderHighlightedText(match.commandName, match.matchIndexes)}
 
-                    {' '}
+                    <span>&nbsp;</span>
 
-                    <span className='type-match-parameter'>
-                        {renderHighlightedText(
-                            match.parsedParam,
-                            match.parameterMatchIndexes
+                    {match.parameterMatchState === 'COMMAND_ONLY'
+                        ? renderParameterPlaceholder(match.command.parameterName ?? 'text')
+                        : (
+                            <span className='type-match-parameter'>
+                                {renderHighlightedText(
+                                    match.parsedParam,
+                                    match.parameterMatchIndexes,
+                                    'parameter-match-highlight'
+                                )}
+                            </span>
                         )}
-                    </span>
                 </>
             )
         }
@@ -605,26 +620,34 @@ function prettyPrintFuzzyMatch<T>(match: CommandMatch<T>): React.ReactNode {
         case 'ENUM': {
             return (
                 <>
-                    {renderHighlightedText(
-                        match.commandName,
-                        match.matchIndexes
-                    )}
+                    {renderHighlightedText(match.commandName, match.matchIndexes)}
 
-                    {' '}
+                    <span>&nbsp;</span>
 
-                    <span className='type-match-parameter'>
-                        {renderHighlightedText(
-                            match.parsedParam,
-                            match.parameterMatchIndexes
+                    {match.parameterMatchState === 'COMMAND_ONLY'
+                        ? renderParameterPlaceholder(
+                            match.command.parameterName ?? 'value'
+                        )
+                        : (
+                            <span className='type-match-parameter'>
+                                {renderHighlightedText(
+                                    match.parsedParam,
+                                    match.parameterMatchIndexes,
+                                    'parameter-match-highlight'
+                                )}
+                            </span>
                         )}
-                    </span>
                 </>
             )
         }
     }
 }
 
-function renderHighlightedText(text: string, matchIndexes: number[]): React.ReactNode {
+function renderHighlightedText(
+    text: string,
+    matchIndexes: number[],
+    highlightClass = 'match-highlight'
+): React.ReactNode {
     const parts = buildHighlightedParts(text, matchIndexes)
 
     return (
@@ -634,7 +657,7 @@ function renderHighlightedText(text: string, matchIndexes: number[]): React.Reac
                     key={index}
                     className={
                         part.highlighted
-                            ? 'match match-highlight'
+                            ? `match ${highlightClass}`
                             : undefined
                     }
                 >
@@ -645,6 +668,7 @@ function renderHighlightedText(text: string, matchIndexes: number[]): React.Reac
     )
 }
 
+// Exports
 export {
     findMatchingCommands,
     isFuzzyMatch,

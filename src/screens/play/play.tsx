@@ -46,6 +46,10 @@ import { useTypingInput } from '../../utils/hooks/input'
 import { useGameState } from './use-game-state'
 import { usePreventContextMenu } from './use-prevent-context-menu'
 import { useContainerSizeSync } from './use-container-size-sync'
+import { makeToolCommands } from '../../windows/tools/commands'
+import { makeTransportCommands } from '../../windows/transport_priority/commands'
+import { makeQuotaCommandsWithoutFilter } from '../../windows/quotas/commands'
+import { useGestureNavigation } from './use-gestures'
 
 // Types
 type HouseWindow = {
@@ -194,6 +198,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const [animateMapScrolling, setAnimateMapScrolling] = useState<boolean>(true)
     const [animateZoom, setAnimateZoom] = useState<boolean>(true)
     const [fogOfWar, setFogOfWar] = useState<boolean>(true)
+    const [chatExpanded, setChatExpanded] = useState<boolean>(false)
 
     // Monitoring
     const gameInformation = useGame()
@@ -231,6 +236,39 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     } = useWindows<Window>({ isDuplicateWindow })
 
     // Use the touch navigation hook
+    const zoom = useCallback((newScale: number) => {
+        newScale = Math.min(newScale, MAX_SCALE)
+        newScale = Math.max(newScale, MIN_SCALE)
+
+        if (animateZoom) {
+            animator.animate('ZOOM', (newScale) => {
+                immediateStateRef.current.translate = calcTranslation(
+                    immediateStateRef.current.scale,
+                    newScale,
+                    immediateStateRef.current.translate,
+                    immediateStateRef.current.screenSize,
+                )
+                immediateStateRef.current.scale = newScale
+            },
+                immediateStateRef.current.scale,
+                newScale)
+        } else {
+            immediateStateRef.current.translate = calcTranslation(
+                immediateStateRef.current.scale,
+                newScale,
+                immediateStateRef.current.translate,
+                immediateStateRef.current.screenSize
+            )
+            immediateStateRef.current.scale = newScale
+        }
+    }, [animateZoom])
+
+    const onPinchZoom = useCallback((scaleDelta: number, center: Point) => {
+        if (scaleDelta !== 1) {
+            zoom(immediateStateRef.current.scale + scaleDelta)
+        }
+    }, [])
+
     const {
         onTouchStart,
         onTouchMove,
@@ -238,8 +276,20 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         onTouchCancel
     } = useTouchNavigation({
         immediateStateRef,
-        ongoingTouches
+        ongoingTouches,
+        onPinchZoom
     })
+
+    // Use gestures
+    const onGestureZoom = useCallback((deltaScale: number, centerPoint: Point) => {
+        console.log('Gesture zoom', deltaScale, centerPoint)
+
+        if (deltaScale !== 1) {
+            zoom(immediateStateRef.current.scale + deltaScale)
+        }
+    }, [])
+
+    useGestureNavigation({ onPinchZoom: onGestureZoom, elementRef: selfContainerRef })
 
     // Use sound effects
     useSoundEffects({ immediateStateRef })
@@ -253,41 +303,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     // Prevent context menu from appearing on right click
     usePreventContextMenu()
 
-    // Track the container dimensions and update the immediate state accordingly
-    useContainerSizeSync({ gameId, selfContainerRef, immediateStateRef })
-
-    // Effects
-    // Effect: keep the selected point information ref in sync
-    useEffect(() => {
-        selectedPointInformationRef.current = selectedPointInformation
-    }, [selectedPointInformation])
-
-    // Effect: reset if gameId changes
-    useEffect(() => {
-        immediateStateRef.current = makeDefaultImmediateState()
-    }, [gameId])
-
-    // Effect: center on headquarters when game loads
-    useEffect(() => {
-        if (PlayLogConfig.lifecycle) {
-            console.log('Play (lifecycle): Center on headquarters on game load')
-        }
-
-        const headquarter = getHeadquarterForPlayer(selfPlayerId)
-        if (headquarter) {
-            if (PlayLogConfig.lifecycle) {
-                console.log(`Play (lifecycle): Center on headquarters: ${JSON.stringify(headquarter)}`)
-            }
-
-            goToHouse(headquarter.id)
-        } else {
-            console.error('Failed to find headquarter for player! Cannot center view on it!')
-            console.log(`Player id: ${selfPlayerId}, buildings: ${JSON.stringify(Array.from(api.houses.values()))}`)
-            console.log(`Player id: ${selfPlayerId}, flags: ${JSON.stringify(Array.from(api.flags.values()))}`)
-        }
-    }, [selfPlayerId, gameId])
-
-    // Functions
     const goToPoint = useCallback((point: Point) => {
         const scaleY = immediateStateRef.current.scale
 
@@ -310,6 +325,22 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         }
     }, [goToPoint, setSelected])
 
+    const focusOnPlayerHeadquarters = useCallback(() => {
+        const headquarter = getHeadquarterForPlayer(selfPlayerId)
+
+        if (PlayLogConfig.lifecycle) {
+            console.log(`Play (lifecycle): focus on player's headquarters`, headquarter)
+        }
+
+        if (headquarter) {
+            goToHouse(headquarter.id)
+        }
+    }, [selfPlayerId])
+
+    // Track the container dimensions and update the immediate state accordingly
+    useContainerSizeSync({ gameId, selfContainerRef, immediateStateRef, onInitialized: focusOnPlayerHeadquarters })
+
+    // Functions
     const setNewTranslatedAnimated = useCallback((newTranslate: { x: number, y: number }) => {
         animator.animateSeveral(
             'TRANSLATE',
@@ -340,33 +371,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             immediateStateRef.current.translate = newTranslate
         }
     }, [animateMapScrolling, setNewTranslatedAnimated])
-
-    const zoom = useCallback((newScale: number) => {
-        newScale = Math.min(newScale, MAX_SCALE)
-        newScale = Math.max(newScale, MIN_SCALE)
-
-        if (animateZoom) {
-            animator.animate('ZOOM', (newScale) => {
-                immediateStateRef.current.translate = calcTranslation(
-                    immediateStateRef.current.scale,
-                    newScale,
-                    immediateStateRef.current.translate,
-                    immediateStateRef.current.screenSize,
-                )
-                immediateStateRef.current.scale = newScale
-            },
-                immediateStateRef.current.scale,
-                newScale)
-        } else {
-            immediateStateRef.current.translate = calcTranslation(
-                immediateStateRef.current.scale,
-                newScale,
-                immediateStateRef.current.translate,
-                immediateStateRef.current.screenSize
-            )
-            immediateStateRef.current.scale = newScale
-        }
-    }, [animateZoom])
 
     const onMouseDown = useCallback((event: React.MouseEvent) => {
         if (event.button === 2) {
@@ -664,8 +668,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     function onWheel(event: React.WheelEvent): void {
         zoom(immediateStateRef.current.scale - event.deltaY / 20.0)
-
-        event.preventDefault()
     }
 
     function onCommand(match: CommandMatch<PointInformationWithoutPossibleRoadConnections>): void {
@@ -677,6 +679,45 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     }
 
 
+    // Effects
+    // Effect: listen to wheel events to handle zoom. Use an effect to be able to pass passive: false.
+    useEffect(() => {
+        function onWheelNative(event: WheelEvent): void {
+
+            if (PlayLogConfig.camera) {
+                console.log('Play (camera): got native wheel event')
+            }
+            zoom(immediateStateRef.current.scale - event.deltaY)
+
+            event.preventDefault()
+            event.stopPropagation()
+        }
+
+        window.addEventListener('wheel', onWheelNative, { passive: false })
+
+        if (PlayLogConfig.lifecycle) {
+            console.log('Play (lifecycle): listening to native wheel event')
+        }
+
+        return () => {
+            window.removeEventListener('wheel', onWheelNative)
+
+            if (PlayLogConfig.lifecycle) {
+                console.log('Play (lifecycle): unlistening to native wheel event')
+            }
+        }
+    }, [])
+
+    // Effect: keep the selected point information ref in sync
+    useEffect(() => {
+        selectedPointInformationRef.current = selectedPointInformation
+    }, [selectedPointInformation])
+
+    // Effect: reset if gameId changes
+    useEffect(() => {
+        immediateStateRef.current = makeDefaultImmediateState()
+    }, [gameId])
+
     // Memos
     const commands = useMemo(() => {
         if (PlayLogConfig.commands) {
@@ -687,7 +728,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         const nation = player?.nation ?? 'VIKINGS'
         const color = player?.color ?? 'GREEN'
 
-        const commands = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
+        const quotaCommands = player !== undefined ? makeQuotaCommandsWithoutFilter(player) : new Map()
+        const toolCommands = makeToolCommands()
+        const transportPriorityCommands = makeTransportCommands()
+        const commands = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>([
+            ...quotaCommands,
+            ...toolCommands,
+            ...transportPriorityCommands
+        ])
 
         // Buildings
         SMALL_HOUSE_VALUES.forEach(building => commands.set(building, {
@@ -841,6 +889,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             action: () => setShowMenu(true),
             icon: <CalendarAgenda24Regular />
         })
+        commands.set('Chat', {
+            action: () => setChatExpanded(prev => !prev)
+        })
         commands.set('Close menu', {
             action: () => {
                 setShowMenu(false)
@@ -866,19 +917,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         commands.set('Zoom out', { action: () => zoom(immediateStateRef.current.scale - 10) })
         commands.set('Reset zoom', { action: () => zoom(DEFAULT_SCALE) })
 
-        commands.set('Move north', { action: () => moveGame({ ...immediateStateRef.current.translate, y: immediateStateRef.current.translate.y + ARROW_KEY_MOVE_DISTANCE }) })
-        commands.set('Move south', { action: () => moveGame({ ...immediateStateRef.current.translate, y: immediateStateRef.current.translate.y - ARROW_KEY_MOVE_DISTANCE }) })
-        commands.set('Move east', { action: () => moveGame({ ...immediateStateRef.current.translate, x: immediateStateRef.current.translate.x - ARROW_KEY_MOVE_DISTANCE }) })
-        commands.set('Move west', { action: () => moveGame({ ...immediateStateRef.current.translate, x: immediateStateRef.current.translate.x + ARROW_KEY_MOVE_DISTANCE }) })
-
         // UI Toggles
         commands.set('Show house names', {
             action: () => setShowTitles(true),
-            hidden: showTitles
+            filter: () => !showTitles
         })
         commands.set('Hide house names', {
             action: () => setShowTitles(false),
-            hidden: !showTitles
+            filter: () => showTitles
         })
         commands.set('Toggle house names', {
             action: () => setShowTitles(prev => !prev),
@@ -887,11 +933,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         commands.set('Show available construction', {
             action: () => setShowAvailableConstruction(true),
-            hidden: showAvailableConstruction
+            filter: () => !showAvailableConstruction
         })
         commands.set('Hide available construction', {
             action: () => setShowAvailableConstruction(false),
-            hidden: !showAvailableConstruction
+            filter: () => showAvailableConstruction
         })
         commands.set('Toggle available construction', {
             action: () => setShowAvailableConstruction(prev => !prev),
@@ -900,32 +946,32 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
         commands.set('Show typing commands', {
             action: () => setShowTypingController(true),
-            hidden: showTypingController
+            filter: () => showTypingController
         })
         commands.set('Hide typing commands', {
             action: () => setShowTypingController(false),
-            hidden: !showTypingController
+            filter: () => !showTypingController
         })
 
         commands.set('Show music player', {
             action: () => setShowMusicPlayer(true),
-            hidden: showMusicPlayer
+            filter: () => showMusicPlayer
         })
         commands.set('Hide music player', {
             action: () => setShowMusicPlayer(false),
-            hidden: !showMusicPlayer
+            filter: () => !showMusicPlayer
         })
 
         // Game State Control
         commands.set('Pause game', {
             action: () => api.pauseGame(gameId),
             icon: <PauseFilled />,
-            hidden: gameState === 'PAUSED'
+            filter: () => gameState === 'PAUSED'
         })
         commands.set('Resume game', {
             action: () => api.resumeGame(gameId),
             icon: <UiIcon type='RIGHT_ARROW' scale={0.5} />,
-            hidden: gameState === 'STARTED'
+            filter: () => gameState === 'STARTED'
         })
 
         // Debug & Cheats
@@ -1004,14 +1050,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             .map(([commandName, _command]) => commandName))
 
         return {
-            matches: findMatchingCommands(commands, inputValue, selectedPointInformation),
+            matches: (inputValue !== undefined && inputValue.trim().length > 0) ? findMatchingCommands(commands, inputValue, selectedPointInformation) : [],
             available
         }
     }, [selectedPointInformation, inputValue, commands])
 
     const onKeyDown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === 'Enter') {
-            if (matches && matches.length > 0) {
+            if (showTypingController && matches && matches.length > 0) {
                 console.log(matches[0])
                 executeCommand(matches[0], selectedPointInformationRef.current)
             }
@@ -1044,11 +1090,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             zoom(immediateStateRef.current.scale + 1)
         } else if (event.key === '-') {
             zoom(immediateStateRef.current.scale - 1)
-        } else if (event.key === 'M') {
-            setShowMenu(true)
         }
 
-        keyTyped(event)
+        if (showTypingController) {
+            keyTyped(event)
+        }
 
         event.preventDefault()
     }, [windows, roadBuildingState.active, clearRoadBuilding, moveGame, zoom, closeActiveWindow, matches])
@@ -1068,7 +1114,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             onTouchEnd={onTouchEnd}
             onTouchCancel={onTouchCancel}
             onWheel={onWheel}
-            tabIndex={1}>
+            tabIndex={1}
+        >
 
             <GameCanvas
                 onPointClicked={onPointClicked}
@@ -1274,7 +1321,12 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             <GameMessagesViewer nation={player?.nation ?? 'ROMANS'} onGoToPoint={scrollToPoint} />
 
-            <ExpandChatBox playerId={selfPlayerId} roomId={`game-${gameId}`} />
+            <ExpandChatBox
+                playerId={selfPlayerId}
+                roomId={`game-${gameId}`}
+                expanded={chatExpanded}
+                onToggleExpanded={() => setChatExpanded(prev => !prev)}
+            />
 
             {showMusicPlayer && <MusicPlayer volume={musicVolume} />}
 

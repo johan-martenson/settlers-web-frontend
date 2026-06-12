@@ -10,7 +10,7 @@ import { DEFAULT_SCALE, STANDARD_HEIGHT } from './constants'
 import { textures } from '../render/textures'
 import { destroyProgram, draw, initProgram } from './webgl-utils'
 import { ANIMAL_ANIMATIONS, donkeyAnimation, fatCarrierNoCargo, fatCarrierWithCargo, fireAnimations, FLAG_ANIMATIONS, thinCarrierNoCargo, thinCarrierWithCargo, TREE_ANIMATIONS, WORKER_ANIMATIONS, WorkerAnimation } from '../assets/animations'
-import { buildingPretty } from '../utils/pretty_strings'
+import { buildingPretty } from '../utils/pretty-strings'
 import { RenderState, ToDraw, View, WebGlState } from './types'
 import { setDrawImageRenderingBuffers, setDrawShadowRenderingBuffers, setFogOfWarRenderingBuffers, setMapRenderingBuffers, setRoadRenderingBuffers } from './manage-buffers'
 import { drawGroundProgramDescriptor, DrawGroundUniforms, drawImageProgramDescriptor, DrawImageUniforms, drawShadowProgramDescriptor, DrawShadowUniforms, fogOfWarProgramDescriptor, FogOfWarUniforms } from './webgl-program-definitions'
@@ -18,7 +18,7 @@ import { calculateNormalsForEachPoint, interpolateHeight } from './geometry'
 import { useRenderStateSync } from './use-render-state'
 import { useWebGlContext } from './use-webgl-context'
 import { useRenderLoop } from './use-render-loop'
-import { PointMap } from '../utils/util_types_ng'
+import { PointMap } from '../utils/point-value-collections'
 
 
 // Types
@@ -763,19 +763,19 @@ function GameCanvas({
 
                 if (available.includes('LARGE')) {
                     const largeHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForLargeHouseAvailable()
-                    pushImage(largeHouseAvailableInfo, gamePoint, 'OBJECT')
+                    pushImage(largeHouseAvailableInfo, gamePoint, 'AVAILABLE_CONSTRUCTION', terrain.get(gamePoint)?.height)
                 } else if (available.includes('MEDIUM')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMediumHouseAvailable()
-                    pushImage(mediumHouseAvailableInfo, gamePoint, 'OBJECT')
+                    pushImage(mediumHouseAvailableInfo, gamePoint, 'AVAILABLE_CONSTRUCTION', terrain.get(gamePoint)?.height)
                 } else if (available.includes('SMALL')) {
                     const mediumHouseAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForSmallHouseAvailable()
-                    pushImage(mediumHouseAvailableInfo, gamePoint, 'OBJECT')
+                    pushImage(mediumHouseAvailableInfo, gamePoint, 'AVAILABLE_CONSTRUCTION', terrain.get(gamePoint)?.height)
                 } else if (available.includes('MINE')) {
                     const mineAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForMineAvailable()
-                    pushImage(mineAvailableInfo, gamePoint, 'OBJECT')
+                    pushImage(mineAvailableInfo, gamePoint, 'AVAILABLE_CONSTRUCTION', terrain.get(gamePoint)?.height)
                 } else if (available.includes('FLAG')) {
                     const flagAvailableInfo = uiElementsImageAtlasHandler.getDrawingInformationForFlagAvailable()
-                    pushImage(flagAvailableInfo, gamePoint, 'OBJECT')
+                    pushImage(flagAvailableInfo, gamePoint, 'AVAILABLE_CONSTRUCTION', terrain.get(gamePoint)?.height)
                 }
             }
         }
@@ -818,7 +818,7 @@ function GameCanvas({
                                 startPointInfo = roadBuildingImageAtlasHandler.getDrawingInformationForSameLevelConnection()
                             }
 
-                            pushImage(startPointInfo, point, 'POSSIBLE_ROAD_CONNECTIONS')
+                            pushImage(startPointInfo, point, 'POSSIBLE_ROAD_CONNECTIONS', terrain.get(point)?.height)
                         }
                     }
                 )
@@ -935,14 +935,10 @@ function GameCanvas({
 
 
         // Draw decoration shadows
-        for (const toDraw of renderState.decorationsShadowRenderQueue) {
-            drawShadow(toDraw, width, height)
-        }
+        renderState.decorationsShadowRenderQueue.forEach(shadow => drawShadow(shadow, width, height))
 
         // Draw decoration objects
-        for (const toDraw of renderState.decorationsRenderQueue) {
-            drawImage(toDraw, width, height)
-        }
+        renderState.decorationsRenderQueue.forEach(draw => drawImage(draw, width, height))
 
         duration.after('draw decorations')
 
@@ -971,32 +967,32 @@ function GameCanvas({
 
 
         // Draw shadows for game objects without sorting
-        if (renderState.drawShadowProgramInstance) {
-            for (const shadow of renderState.gameObjectsShadowRenderQueue) {
-                drawShadow(shadow, width, height)
-            }
-        }
+        renderState.gameObjectsShadowRenderQueue.forEach(draw => drawShadow(draw, width, height))
 
         // Draw game objects with sorting based on y coordinate
         renderState.gameObjectsRenderQueue.sort((draw1, draw2) => {
             return draw2.gamePoint.y - draw1.gamePoint.y
         })
 
-        if (renderState.drawImageProgramInstance !== undefined) {
-            for (const toDraw of renderState.gameObjectsRenderQueue) {
-                drawImage(toDraw, width, height)
-            }
-        }
+        renderState.gameObjectsRenderQueue.forEach(draw => drawImage(draw, width, height))
 
         duration.after('draw game objects')
 
 
-        // Draw the possible road connections layer. Assume for now that it doesn't need sorting
-        if (renderState.drawImageProgramInstance !== undefined) {
-            for (const toDraw of renderState.possibleRoadConnectionsRenderQueue) {
-                drawImage(toDraw, width, height)
-            }
+        // Draw the available construction
+        renderState.availableConstructionRenderQueue.sort((draw1, draw2) => {
+            return draw2.gamePoint.y - draw1.gamePoint.y
+        })
+
+        if (renderState.showAvailableConstruction) {
+            renderState.availableConstructionRenderQueue.forEach(draw => drawImage(draw, width, height))
         }
+
+        duration.after('draw available construction')
+
+
+        // Draw the possible road connections layer. Assume for now that it doesn't need sorting
+        renderState.possibleRoadConnectionsRenderQueue.forEach(draw => drawImage(draw, width, height))
 
         duration.after('draw possible road connections layer')
 
@@ -1018,21 +1014,13 @@ function GameCanvas({
 
 
         // Draw the selected point layer. Assume for now that it doesn't need sorting
-        if (renderState.drawImageProgramInstance !== undefined) {
-            for (const toDraw of renderState.selectedPointRenderQueue) {
-                drawImage(toDraw, width, height)
-            }
-        }
+        renderState.selectedPointRenderQueue.forEach(draw => drawImage(draw, width, height))
 
         duration.after('draw selected point layer')
 
 
         // Draw the hover point layer. Assume for now that it doesn't need sorting
-        if (renderState.drawImageProgramInstance !== undefined) {
-            for (const toDraw of renderState.hoverPointRenderQueue) {
-                drawImage(toDraw, width, height)
-            }
-        }
+        renderState.hoverPointRenderQueue.forEach(draw => drawImage(draw, width, height))
 
         duration.after('draw hover point layer')
 

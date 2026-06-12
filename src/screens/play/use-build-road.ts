@@ -9,7 +9,12 @@ const EMPTY_ROAD_BUILDING_STATE: RoadBuildingState = {
     possibleConnections: []
 }
 
-function useRoadBuilding() {
+function useRoadBuilding(): {
+    roadBuildingState: RoadBuildingState
+    clearRoadBuilding: () => void
+    startRoadBuilding: (road: Point[], possibleConnections: Point[]) => void
+    updateRoadBuilding: (road: Point[], possibleConnections: Point[]) => void
+} {
 
     // State
     const [roadBuildingState, setRoadBuildingState] = useState<RoadBuildingState>(EMPTY_ROAD_BUILDING_STATE)
@@ -39,8 +44,8 @@ function useRoadBuilding() {
 
         setRoadBuildingState({
             active: true,
-            road,
-            possibleConnections
+            road: [...road],
+            possibleConnections: [...possibleConnections]
         })
     }, [])
 
@@ -60,8 +65,8 @@ function useRoadBuilding() {
 
         setRoadBuildingState({
             active: true,
-            road,
-            possibleConnections
+            road: [...road],
+            possibleConnections: [...possibleConnections]
         })
     }, [])
 

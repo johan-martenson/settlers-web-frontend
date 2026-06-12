@@ -7,9 +7,10 @@ type UseContainerSizeSyncProps = {
     gameId: string
     selfContainerRef: RefObject<HTMLDivElement | null>
     immediateStateRef: RefObject<ImmediateState>
+    onInitialized?: () => void
 }
 
-function useContainerSizeSync({ gameId, selfContainerRef, immediateStateRef }: UseContainerSizeSyncProps): void {
+function useContainerSizeSync({ gameId, selfContainerRef, immediateStateRef, onInitialized }: UseContainerSizeSyncProps): void {
 
     useEffect(() => {
         let cancelled = false
@@ -54,6 +55,14 @@ function useContainerSizeSync({ gameId, selfContainerRef, immediateStateRef }: U
                             width: selfContainerRef.current.clientWidth,
                             height: selfContainerRef.current.clientHeight
                         }
+
+                        if (onInitialized) {
+                            try {
+                                onInitialized()
+                            } catch (error) {
+                                console.error('Play (lifecycle): Failed to call onInitialized callback')
+                            }
+                        }
                     } else {
                         console.error(
                             'Play (lifecycle): Failed to set initial screen size because container ref is not set'
@@ -93,7 +102,7 @@ function useContainerSizeSync({ gameId, selfContainerRef, immediateStateRef }: U
 
             window.removeEventListener('resize', updateScreenSize)
         }
-    }, [gameId, selfContainerRef, immediateStateRef])
+    }, [gameId, selfContainerRef, immediateStateRef, onInitialized])
 }
 
 export {

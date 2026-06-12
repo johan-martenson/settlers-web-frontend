@@ -3,7 +3,7 @@ import { delay, getDirectionForWalkingWorker, getPointDownLeft, getPointDownRigh
 import { WorkerType, GameMessage, HouseId, HouseInformation, Point, VegetationIntegers, GameId, PlayerId, WorkerId, WorkerInformation, ShipId, ShipInformation, FlagId, FlagInformation, RoadId, RoadInformation, TreeId, TreeInformationLocal, CropId, CropInformationLocal, SignId, SignInformation, PlayerInformation, AvailableConstruction, TerrainAtPoint, WildAnimalId, WildAnimalInformation, Decoration, Material, BodyType, WorkerAction, DecorationType, TreeInformation, CropInformation, ServerWorkerInformation, StoneInformation, GameMessageId, StoneId, GameState, GameSpeed, FallingTreeInformation, Action, PlayerColor, Nation, GameInformation, MapInformation, ResourceLevel, RoomId, ChatMessage, TransportCategory, Tool, AttackType, SoldierType, PointInformation, AnyBuilding, CheatCode, MapId, MapWithTerrain, PointInformationWithoutPossibleRoadConnections, ToolPriorities, TerrainInformation, Direction } from './types'
 import { getInformationOnPoint, updatePlayer, getMaps, startGame, getGameInformation, createGame, getGames, removeMessage, removeMessages, getInformationOnPoints, getFlagDebugInfo, setReservedSoldiers, setStrengthWhenPopulatingMilitaryBuildings, setDefenseStrength, setDefenseFromSurroundingBuildings, setMilitaryPopulationFarFromBorder, setMilitaryPopulationCloserToBorder, setMilitaryPopulationCloseToBorder, setSoldiersAvailableForAttack, createPlayer, addPlayerToGame, removePlayer, upgrade, setGameSpeed, setCheating, setTitle, setOthersCanJoin, setMap, getStrengthWhenPopulatingMilitaryBuildings, getDefenseStrength, getDefenseFromSurroundingBuildings, getPopulateMilitaryFarFromBorder, getPopulateMilitaryCloserToBorder, getPopulateMilitaryCloseToBorder, getSoldiersAvailableForAttack, getMilitarySettings, addDetailedMonitoring, removeDetailedMonitoring, setCoalQuotas, setFoodQuotas, setWheatQuotas, setWaterQuotas, setIronBarQuotas, getFoodQuotas, getWheatQuotas, getWaterQuotas, getIronBarQuotas, getCoalQuotas, pauseGame, resumeGame, sendChatMessageToRoom, listenToGameViewForPlayer, getChatRoomHistory, PlayerViewInformation, getViewForPlayer, listenToGameMetadata, listenToGamesList, listenToChatMessages, attackHouse, evacuateHouse, findPossibleNewRoad, deleteGame, disablePromotionsForHouse, resumeProductionForHouse, pauseProductionForHouse, enablePromotionsForHouse, cancelEvacuationForHouse, setTransportPriorityForMaterial, getTerrainForMap, placeRoad, placeFlag, placeRoadWithFlag, removeBuilding, removeFlag, removeRoad, callScout, callGeologist, placeHouse, setInitialResources, getTransportPriority, getStatistics, listenToStatistics, stopListeningToStatistics, markGameMessagesRead, getToolPriorities, setToolPriority, getMap, cheat, listenToPlayer, stopListeningToPlayer, stopSendingOutMaterial, sendOutMaterial, allowDelivery, blockDelivery, getMapsWithTerrain, getMapWithTerrain, stopListeningToGamesList } from './ws/commands'
 import { addConnectionStatusListener, ConnectionStatus, MAX_WAIT_FOR_CONNECTION, connectAndWaitForConnection, waitForConnection, addMessageListener } from './ws/core'
-import { PointMap, PointSet } from '../utils/util_types_ng'
+import { PointMap, PointSet } from '../utils/point-value-collections'
 
 // Types
 type WalkingTimerState = 'RUNNING' | 'NOT_RUNNING'
@@ -1353,14 +1353,10 @@ function addPlayerInformationListener(playerId: PlayerId, listener: PlayerInform
 function removePlayerInformationListener(playerId: PlayerId, listener: PlayerInformationListener): void {
     const listenersForPlayer = playerInformationListeners.get(playerId)
 
-    if (listenersForPlayer) {
-        listenersForPlayer.delete(listener)
+    listenersForPlayer?.delete(listener)
 
-        if (listenersForPlayer.size === 0) {
-            stopListeningToPlayer(playerId)
-        }
-    } else {
-        console.warn(`Tried to remove a player information listener for player ${playerId}, but there are no listeners for this player.`)
+    if (listenersForPlayer !== undefined && listenersForPlayer.size === 0) {
+        stopListeningToPlayer(playerId)
     }
 }
 
@@ -1426,18 +1422,16 @@ function addHouseListener(houseId: HouseId, houseListener: HouseListener): void 
 function removeHouseListener(houseId: HouseId, houseListener: HouseListener): void {
     const listenersForHouse = houseListeners.get(houseId)
 
-    if (listenersForHouse) {
-        houseListeners.get(houseId)?.delete(houseListener)
+    listenersForHouse?.delete(houseListener)
 
-        if (listenersForHouse.size === 0) {
-            if (api.playerId === undefined) {
-                throw new Error('Player id is undefined. Cannot remove detailed monitoring for house.')
-            }
-
-            removeDetailedMonitoring(houseId, api.playerId)
-
-            objectsWithDetailedMonitoring.delete(houseId)
+    if (listenersForHouse !== undefined && listenersForHouse.size === 0) {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot remove detailed monitoring for house.')
         }
+
+        removeDetailedMonitoring(houseId, api.playerId)
+
+        objectsWithDetailedMonitoring.delete(houseId)
     }
 }
 
@@ -1505,7 +1499,13 @@ function addRoadListener(roadId: RoadId, listener: RoadListener): void {
  * @param {RoadListener} listener - The listener to remove.
  */
 function removeRoadListener(roadId: RoadId, listener: RoadListener): void {
-    roadListeners.get(roadId)?.delete(listener)
+    const listeners = roadListeners.get(roadId)
+
+    listeners?.delete(listener)
+
+    if (listeners !== undefined && listeners.size === 0) {
+        roadListeners.delete(roadId)
+    }
 }
 
 /**
@@ -1592,18 +1592,16 @@ function removeGamesListener(listener: GameListListener): void {
 function removeFlagListener(flagId: FlagId, listener: FlagListener): void {
     const listeners = flagListeners.get(flagId)
 
-    if (listeners) {
-        flagListeners.get(flagId)?.delete(listener)
+    listeners?.delete(listener)
 
-        if (listeners.size === 0) {
-            if (api.playerId === undefined) {
-                throw new Error('Player id is undefined. Cannot remove detailed monitoring for flag.')
-            }
-
-            removeDetailedMonitoring(flagId, api.playerId)
-
-            objectsWithDetailedMonitoring.delete(flagId)
+    if (listeners !== undefined && listeners.size === 0) {
+        if (api.playerId === undefined) {
+            throw new Error('Player id is undefined. Cannot remove detailed monitoring for flag.')
         }
+
+        removeDetailedMonitoring(flagId, api.playerId)
+
+        objectsWithDetailedMonitoring.delete(flagId)
     }
 }
 
@@ -2219,7 +2217,6 @@ async function loadGameInformationAndCallListeners(gameInformation: GameInformat
  * @param {void}
  */
 function stopTimers(): void {
-
     if (WsApiLogConfig.timers) {
         console.log('WS API: Stopping walking timers')
     }
@@ -2641,14 +2638,6 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
             } else {
                 api.availableConstruction.set(point, change.available)
             }
-
-            availableConstructionListeners.get(point)?.forEach(listener => {
-                try {
-                    listener.onAvailableConstructionChanged(change.available)
-                } catch (e) {
-                    console.error(e)
-                }
-            })
         }
     }
 
@@ -2661,8 +2650,37 @@ function loadPlayerViewChangesAndCallListeners(playerViewChanges: PlayerViewChan
     playerViewChanges.removedMessages?.forEach(messageId => api.messages.delete(messageId))
 
 
-
     /// Notify listeners when all data is updated
+    playerViewChanges.changedFlags?.forEach(flag =>
+        flagListeners.get(flag.id)?.forEach(listener => {
+            try {
+                listener.onUpdate(flag)
+            } catch (e) {
+                console.error(e)
+            }
+        }))
+
+    playerViewChanges.removedFlags?.forEach(id =>
+        flagListeners.get(id)?.forEach(listener => {
+            try {
+                listener.onRemove()
+            } catch (e) {
+                console.error(e)
+            }
+        }))
+
+    if (playerViewChanges.changedAvailableConstruction) {
+        for (const change of playerViewChanges.changedAvailableConstruction) {
+            availableConstructionListeners.get(change)?.forEach(listener => {
+                try {
+                    listener.onAvailableConstructionChanged(change.available)
+                } catch (e) {
+                    console.error(e)
+                }
+            })
+        }
+    }
+
     if (playerViewChanges.newDiscoveredLand) {
         const newDiscoveredLand = new PointSet(playerViewChanges.newDiscoveredLand)
         discoveredPointListeners.forEach(listener => {

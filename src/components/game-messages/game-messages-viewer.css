@@ -26,10 +26,23 @@
     width: 100%;
 }
 
-.info-overlay {
+/*.info-overlay {
     background-color: crimson;
     border-radius: 8px;
     padding: 10px;
+}*/
+
+.info-overlay {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: red;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .game-messages-header {

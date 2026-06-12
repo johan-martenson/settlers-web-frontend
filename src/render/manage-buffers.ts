@@ -1,6 +1,6 @@
 import { FlagInformation, Point, RoadInformation, TerrainAtPoint, VEGETATION_INTEGERS } from '../api/types'
 import { api, TileBelow, TileDownRight } from '../api/ws-api'
-import { PointMap, PointSet } from '../utils/util_types_ng'
+import { PointMap, PointSet } from '../utils/point-value-collections'
 import { getPointDown, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpRight, sumAndNormalizeVectors, surroundingPoints, Vector } from '../utils/utils'
 import { MAIN_ROAD_TEXTURE_MAPPING, MAIN_ROAD_WITH_FLAG, NORMAL_ROAD_TEXTURE_MAPPING, NORMAL_ROAD_WITH_FLAG, NORMAL_STRAIGHT_UP_VECTOR, OVERLAP_FACTOR, OVERLAPS, TRANSITION_TEXTURE_MAPPINGS, UNIT_SQUARE, VEGETATION_TO_TEXTURE_MAPPING } from './constants'
 import { RenderLogConfig } from './game-render'

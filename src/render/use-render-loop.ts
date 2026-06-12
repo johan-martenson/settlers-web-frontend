@@ -2,7 +2,7 @@ import { useCallback, useEffect } from 'react'
 import { RenderState, View } from './types'
 import { AvailableConstruction, CropInformation, Decoration, FallingTreeInformation, FlagInformation, HouseInformation, PlayerId, Point, ShipInformation, SignInformation, StoneInformation, TerrainAtPoint, TreeInformation, WildAnimalInformation, WorkerInformation } from '../api/types'
 import { api, MonitoredBorderForPlayer } from '../api/ws-api'
-import { PointMap } from '../utils/util_types_ng'
+import { PointMap } from '../utils/point-value-collections'
 
 // Types
 type UseRenderLoopProps = {

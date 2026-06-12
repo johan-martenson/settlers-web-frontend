@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { PointMap } from '../utils/util_types_ng'
+import { PointMap } from '../utils/point-value-collections'
 import { Vector } from '../utils/utils'
 import { RenderState, RenderType, TrianglesAtPoint } from './types'
 import { Point } from '../api/types'

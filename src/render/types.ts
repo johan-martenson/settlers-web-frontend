@@ -1,7 +1,7 @@
 import { Point } from '../api/types'
 import { Dimension, DrawingInformation } from '../assets/types'
 import { NewRoad } from '../screens/play/play'
-import { PointMap } from '../utils/util_types_ng'
+import { PointMap } from '../utils/point-value-collections'
 import { Vector } from '../utils/utils'
 import { ProgramInstance } from './webgl-utils'
 

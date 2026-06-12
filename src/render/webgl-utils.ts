@@ -163,6 +163,12 @@ function draw<Uniforms extends object>(
 
         const { location, type } = uniformInstance
 
+        if (location === undefined) {
+            console.warn(`Uniform ${uniformName} has no location`)
+
+            continue
+        }
+
         if (type === 'FLOAT') {
             if (typeof value === 'number') {
                 gl.uniform1f(location ?? null, value)
@@ -170,6 +176,10 @@ function draw<Uniforms extends object>(
                 gl.uniform2fv(location ?? null, value)
             } else if (value.length === 3) {
                 gl.uniform3fv(location ?? null, value)
+            } else if (value.length === 4) {
+                gl.uniform4fv(location ?? null, value)
+            } else {
+                console.error(`Unsupported FLOAT uniform size for ${uniformName}`)
             }
         } else if (type === 'INT') {
             if (typeof value === 'number') {
@@ -178,6 +188,10 @@ function draw<Uniforms extends object>(
                 gl.uniform2iv(location ?? null, value)
             } else if (value.length === 3) {
                 gl.uniform3iv(location ?? null, value)
+            } else if (value.length === 4) {
+                gl.uniform4iv(location ?? null, value)
+            } else {
+                console.error(`Unsupported INT uniform size for ${uniformName}`)
             }
         } else if (type === 'MATRIX') {
             if (value.length === 4) {
@@ -186,6 +200,8 @@ function draw<Uniforms extends object>(
                 gl.uniformMatrix3fv(location ?? null, false, value)
             } else if (value.length === 16) {
                 gl.uniformMatrix4fv(location ?? null, false, value)
+            } else {
+                console.error(`Unsupported MATRIX uniform size for ${uniformName}`)
             }
         }
     }
@@ -210,7 +226,15 @@ function draw<Uniforms extends object>(
             length = candidateLength
         } else if (length !== 0 && length !== candidateLength) {
             console.error(`Mismatch in length ${attributeName}`)
+
+            return
         }
+    }
+
+    if (length <= 0) {
+        console.error('No valid vertex data available')
+
+        return
     }
 
     if (clearMode === 'CLEAR_BEFORE_DRAW') {

@@ -1,6 +1,6 @@
 import { Point } from '../api/types'
 import { api, TileBelow, TileDownRight } from '../api/ws-api'
-import { PointMap } from '../utils/util_types_ng'
+import { PointMap } from '../utils/point-value-collections'
 import { getNormalForTriangle, getPointDownLeft, getPointDownRight, getPointLeft, getPointRight, getPointUpLeft, getPointUpRight, sumAndNormalizeVectors, Vector } from '../utils/utils'
 
 function interpolateHeight(previous: Point, next: Point, progress: number): number {

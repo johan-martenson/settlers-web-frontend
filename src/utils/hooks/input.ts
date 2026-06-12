@@ -14,6 +14,7 @@ type UseTypingInputProps = {
     clearOnEnter?: boolean
     preventMultipleSpaces?: boolean
     preventInitialSpace?: boolean
+    preventTypingInInputFields?: boolean
 }
 
 // Hooks
@@ -23,7 +24,13 @@ type UseTypingInputProps = {
  * 
  * @returns {Object} An object containing the current input value, a ref to the input value, and a keyTyped function to handle key events.
  */
-function useTypingInput({ clearOnEscape = true, clearOnEnter = true, preventInitialSpace = true, preventMultipleSpaces = true }: UseTypingInputProps = {}): UseTypingInputResult {
+function useTypingInput({
+    clearOnEscape = true,
+    clearOnEnter = true,
+    preventInitialSpace = true,
+    preventMultipleSpaces = true,
+    preventTypingInInputFields = true
+}: UseTypingInputProps = {}): UseTypingInputResult {
 
     // State
     const [inputValue, setInputValue] = useState('')
@@ -52,7 +59,8 @@ function useTypingInput({ clearOnEscape = true, clearOnEnter = true, preventInit
         // Ignore key events from input fields
         const target = event.target as HTMLElement | null
 
-        if (target?.tagName === 'INPUT' ||
+        if (preventTypingInInputFields &&
+            target?.tagName === 'INPUT' ||
             target?.tagName === 'TEXTAREA' ||
             target?.isContentEditable) {
             if (HooksConfig.useTypingInput) {

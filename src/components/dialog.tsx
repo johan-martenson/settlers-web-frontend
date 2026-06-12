@@ -96,6 +96,7 @@ function WindowWithTyping<T extends object | string>({
     const runMatch = useCallback((match: typeof matches[number]) => {
         if (param === undefined) {
             console.error('Cannot run command without parameter/context')
+
             return
         }
 
@@ -139,8 +140,8 @@ function WindowWithTyping<T extends object | string>({
     // Rendering
     const matches = findMatchingCommands(commands, inputValue, param)
     const topMatch = matches.length > 0 ? matches[0] : undefined
-
-
+    const available = new Map(commands.entries()
+        .filter(([name, command]) => command.filter === undefined || param === undefined || command.filter(param)))
 
     return (
         <div
@@ -213,7 +214,7 @@ function WindowWithTyping<T extends object | string>({
                 {windowHoverInfo ?? hoverInfo}
             </div>
 
-            {inputValue && inputValue.length > 0 && <DialogTyping inputValue={inputValue} matches={matches} />}
+            <DialogTyping inputValue={inputValue} matches={matches} available={available} setHover={setWindowHoverInfo} />
 
             <Button
                 onClick={onClose}

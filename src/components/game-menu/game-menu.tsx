@@ -62,6 +62,7 @@ const GameMenu = ({
     isAvailableConstructionVisible,
     isAnimateMapScrollingSet,
     isAnimateZoomingSet,
+
     onClose,
     onChangedZoom,
     onSetTitlesVisible,

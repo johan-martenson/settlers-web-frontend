@@ -7,6 +7,7 @@ import { MapId } from '../../api/types'
 import { useMapWithTerrain } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
 import { UiIcon } from '../../components/icons/icon'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 type MapViewProps = {
     mapId: MapId
@@ -119,7 +120,8 @@ const MapView = ({ mapId, onClose, onRaise }: MapViewProps) => {
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         cmds.set('Redraw map', {

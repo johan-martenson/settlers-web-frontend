@@ -287,10 +287,7 @@ function playerToColor(playerColor: PlayerColor): string {
     return PLAYER_COLORS[playerColor]
 }
 
-function prettyPrintFuzzyMatch(
-    command: string,
-    matchIndexes: number[]
-): React.ReactNode {
+function prettyPrintFuzzyMatch(command: string, matchIndexes: number[]): React.ReactNode {
     const indexSet = new Set(matchIndexes)
 
     const parts: React.ReactNode[] = []

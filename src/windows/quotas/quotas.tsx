@@ -1,15 +1,18 @@
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import './quotas.css'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { AnyBuilding, Nation, PlayerId, PlayerInformation } from '../../api/types'
-import { api } from '../../api/ws-api'
+import { AnyBuilding, isMaterial, Nation, PlayerId, } from '../../api/types'
 import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
 import { clamp } from '../house/headquarter'
 import { GenericCommand } from '../../utils/typing-commands'
-import { buildingPretty } from '../../utils/pretty_strings'
-import { HouseIcon, UiIcon } from '../../components/icons/icon'
+import { buildingPretty } from '../../utils/pretty-strings'
+import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
+import { Dismiss16Filled } from '@fluentui/react-icons'
+import { MaterialQuotaToManage } from './types'
+import { QUOTA_CONFIGS, COAL_CONFIG, WHEAT_CONFIG, FOOD_CONFIG, WATER_CONFIG, IRON_CONFIG } from './constants'
+import { makeQuotaCommands } from './commands'
 
 // Types
 type QuotasProps = {
@@ -28,116 +31,6 @@ type QuotaRowProps = {
     onDecrease: () => void
     onIncrease: () => void
 }
-
-type QuotaConfig = {
-    houseType: AnyBuilding
-    get: (p: PlayerInformation) => number
-    set: (p: PlayerInformation, v: number) => void
-}
-
-type MaterialQuotaToManage = 'COAL' | 'WHEAT' | 'WATER' | 'PLANK' | 'FOOD' | 'IRON_BAR'
-
-
-// Configuration
-const coalConfig: QuotaConfig[] = [
-    {
-        houseType: 'Mint',
-        get: (p: PlayerInformation) => p.coalQuota.mint,
-        set: (p: PlayerInformation, v: number) => api.setCoalQuotas(v, p.coalQuota.armory, p.coalQuota.ironSmelter)
-    },
-    {
-        houseType: 'Armory',
-        get: (p: PlayerInformation) => p.coalQuota.armory,
-        set: (p: PlayerInformation, v: number) => api.setCoalQuotas(p.coalQuota.mint, v, p.coalQuota.ironSmelter)
-    },
-    {
-        houseType: 'IronSmelter',
-        get: (p: PlayerInformation) => p.coalQuota.ironSmelter,
-        set: (p: PlayerInformation, v: number) => api.setCoalQuotas(p.coalQuota.mint, p.coalQuota.armory, v)
-    }
-]
-
-const foodConfig: QuotaConfig[] = [
-    {
-        houseType: 'IronMine',
-        get: (p: PlayerInformation) => p.foodQuota.ironMine,
-        set: (p: PlayerInformation, v: number) => api.setFoodQuotas(v, p.foodQuota.coalMine, p.foodQuota.goldMine, p.foodQuota.graniteMine)
-    },
-    {
-        houseType: 'CoalMine',
-        get: (p: PlayerInformation) => p.foodQuota.coalMine,
-        set: (p: PlayerInformation, v: number) => api.setFoodQuotas(p.foodQuota.ironMine, v, p.foodQuota.goldMine, p.foodQuota.graniteMine)
-    },
-    {
-        houseType: 'GoldMine',
-        get: (p: PlayerInformation) => p.foodQuota.goldMine,
-        set: (p: PlayerInformation, v: number) => api.setFoodQuotas(p.foodQuota.ironMine, p.foodQuota.coalMine, v, p.foodQuota.graniteMine)
-    },
-    {
-        houseType: 'GraniteMine',
-        get: (p: PlayerInformation) => p.foodQuota.graniteMine,
-        set: (p: PlayerInformation, v: number) => api.setFoodQuotas(p.foodQuota.ironMine, p.foodQuota.coalMine, p.foodQuota.goldMine, v)
-    }
-]
-
-const waterConfig: QuotaConfig[] = [
-    {
-        houseType: 'Bakery',
-        get: (p: PlayerInformation) => p.waterQuota.bakery,
-        set: (p: PlayerInformation, v: number) => api.setWaterQuotas(v, p.waterQuota.donkeyFarm, p.waterQuota.pigFarm, p.waterQuota.brewery)
-    },
-    {
-        houseType: 'DonkeyFarm',
-        get: (p: PlayerInformation) => p.waterQuota.donkeyFarm,
-        set: (p: PlayerInformation, v: number) => api.setWaterQuotas(p.waterQuota.bakery, v, p.waterQuota.pigFarm, p.waterQuota.brewery)
-    },
-    {
-        houseType: 'PigFarm',
-        get: (p: PlayerInformation) => p.waterQuota.pigFarm,
-        set: (p: PlayerInformation, v: number) => api.setWaterQuotas(p.waterQuota.bakery, p.waterQuota.donkeyFarm, v, p.waterQuota.brewery)
-    },
-    {
-        houseType: 'Brewery',
-        get: (p: PlayerInformation) => p.waterQuota.brewery,
-        set: (p: PlayerInformation, v: number) => api.setWaterQuotas(p.waterQuota.bakery, p.waterQuota.donkeyFarm, p.waterQuota.pigFarm, v)
-    }
-]
-
-const wheatConfig: QuotaConfig[] = [
-    {
-        houseType: 'Mill',
-        get: (p: PlayerInformation) => p.wheatQuota.mill,
-        set: (p: PlayerInformation, v: number) => api.setWheatQuotas(p.wheatQuota.donkeyFarm, p.wheatQuota.pigFarm, v, p.wheatQuota.brewery)
-    },
-    {
-        houseType: 'DonkeyFarm',
-        get: (p: PlayerInformation) => p.wheatQuota.donkeyFarm,
-        set: (p: PlayerInformation, v: number) => api.setWheatQuotas(v, p.wheatQuota.pigFarm, p.wheatQuota.mill, p.wheatQuota.brewery)
-    },
-    {
-        houseType: 'PigFarm',
-        get: (p: PlayerInformation) => p.wheatQuota.pigFarm,
-        set: (p: PlayerInformation, v: number) => api.setWheatQuotas(p.wheatQuota.donkeyFarm, v, p.wheatQuota.mill, p.wheatQuota.brewery)
-    },
-    {
-        houseType: 'Brewery',
-        get: (p: PlayerInformation) => p.wheatQuota.brewery,
-        set: (p: PlayerInformation, v: number) => api.setWheatQuotas(p.wheatQuota.donkeyFarm, p.wheatQuota.pigFarm, p.wheatQuota.mill, v)
-    }
-]
-
-const ironConfig: QuotaConfig[] = [
-    {
-        houseType: 'Armory',
-        get: (p: PlayerInformation) => p.ironQuota.armory,
-        set: (p: PlayerInformation, v: number) => api.setIronBarQuotas(v, p.ironQuota.metalworks)
-    },
-    {
-        houseType: 'Metalworks',
-        get: (p: PlayerInformation) => p.ironQuota.metalworks,
-        set: (p: PlayerInformation, v: number) => api.setIronBarQuotas(p.ironQuota.armory, v)
-    }
-]
 
 
 // React components
@@ -188,113 +81,52 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
     // Memos
     const commands = useMemo(() => {
-        const cmds = new Map<string, GenericCommand<MaterialQuotaToManage>>()
+        const generalCommands = player !== undefined ? makeQuotaCommands(player) : new Map()
+        const cmds = new Map<string, GenericCommand<MaterialQuotaToManage>>(generalCommands)
 
         cmds.set('Manage coal quota', {
             action: () => setMaterialToManage('COAL'),
-            filter: material => material !== 'COAL'
+            filter: material => material !== 'COAL',
+            icon: <InventoryIcon nation={nation} material='COAL' scale={0.8} />
         })
 
         cmds.set('Manage wheat quota', {
             action: () => setMaterialToManage('WHEAT'),
-            filter: material => material !== 'WHEAT'
+            filter: material => material !== 'WHEAT',
+            icon: <InventoryIcon nation={nation} material='WHEAT' scale={0.8} />
         })
 
         cmds.set('Manage water quota', {
             action: () => setMaterialToManage('WATER'),
-            filter: material => material !== 'WATER'
+            filter: material => material !== 'WATER',
+            icon: <InventoryIcon nation={nation} material='WATER' scale={0.8} />
         })
 
         cmds.set('Manage plank quota', {
             action: () => setMaterialToManage('PLANK'),
-            filter: material => material !== 'PLANK'
+            filter: material => material !== 'PLANK',
+            icon: <InventoryIcon nation={nation} material='PLANK' scale={0.8} />
         })
 
         cmds.set('Manage food quota', {
             action: () => setMaterialToManage('FOOD'),
-            filter: material => material !== 'FOOD'
+            filter: material => material !== 'FOOD',
+            icon: <span>
+                <InventoryIcon nation={nation} material='MEAT' scale={0.8} inline />
+                <InventoryIcon nation={nation} material='BREAD' scale={0.8} inline />
+                <InventoryIcon nation={nation} material='FISH' scale={0.8} inline />
+            </span>
         })
 
         cmds.set('Manage iron bar quota', {
             action: () => setMaterialToManage('IRON_BAR'),
-            filter: material => material !== 'IRON_BAR'
+            filter: material => material !== 'IRON_BAR',
+            icon: <InventoryIcon nation={nation} material='IRON_BAR' scale={0.8} />
         })
 
-        if (player !== undefined) {
-            const quotaCommandConfigs: {
-                material: MaterialQuotaToManage
-                materialName: string
-                configs: QuotaConfig[]
-            }[] = [
-                    {
-                        material: 'COAL',
-                        materialName: 'coal',
-                        configs: coalConfig
-                    },
-                    {
-                        material: 'WHEAT',
-                        materialName: 'wheat',
-                        configs: wheatConfig
-                    },
-                    {
-                        material: 'WATER',
-                        materialName: 'water',
-                        configs: waterConfig
-                    },
-                    {
-                        material: 'FOOD',
-                        materialName: 'food',
-                        configs: foodConfig
-                    },
-                    {
-                        material: 'IRON_BAR',
-                        materialName: 'iron bar',
-                        configs: ironConfig
-                    }
-                ]
-
-            quotaCommandConfigs.forEach(({ material, materialName, configs }) => {
-                configs.forEach(config => {
-                    const building = buildingPretty(config.houseType)
-
-                    cmds.set(`Set ${building} ${materialName} quota`, {
-                        type: 'NUMBER',
-                        min: 0,
-                        max: 10,
-                        parameterName: 'quota',
-                        action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
-                        filter: currentMaterial => currentMaterial === material
-                    })
-
-                    cmds.set(`Max ${building} ${materialName} quota`, {
-                        action: () => config.set(player, 10),
-                        filter: currentMaterial => currentMaterial === material
-                    })
-
-                    cmds.set(`Clear ${building} ${materialName} quota`, {
-                        action: () => config.set(player, 0),
-                        filter: currentMaterial => currentMaterial === material
-                    })
-                })
-            })
-
-            cmds.set('Debug', {
-                action: () => {
-                    console.log(player)
-                },
-                hidden: true
-            })
-
-            cmds.set('Copy player JSON', {
-                action: async () => {
-                    await navigator.clipboard.writeText(JSON.stringify(player, null, 2))
-                },
-                hidden: true
-            })
-        }
-
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         return cmds
@@ -333,7 +165,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
             {materialToManage === 'COAL' &&
                 <ItemContainer width='20em'>
-                    {coalConfig.map(config => (
+                    {COAL_CONFIG.map(config => (
                         <QuotaRow
                             key={config.houseType}
                             {...config}
@@ -349,7 +181,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
             {materialToManage === 'FOOD' &&
                 <ItemContainer width='20em'>
-                    {foodConfig.map(config => (
+                    {FOOD_CONFIG.map(config => (
                         <QuotaRow
                             key={config.houseType}
                             {...config}
@@ -365,7 +197,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
             {materialToManage === 'WATER' &&
                 <ItemContainer width='20em'>
-                    {waterConfig.map(config => (
+                    {WATER_CONFIG.map(config => (
                         <QuotaRow
                             key={config.houseType}
                             {...config}
@@ -381,7 +213,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
             {materialToManage === 'WHEAT' &&
                 <ItemContainer width='20em'>
-                    {wheatConfig.map(config => (
+                    {WHEAT_CONFIG.map(config => (
                         <QuotaRow key={config.houseType} {...config} nation={nation} setHover={setHover}
                             value={config.get(player)}
                             onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
@@ -393,7 +225,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
             {materialToManage === 'IRON_BAR' &&
                 <ItemContainer width='20em'>
-                    {ironConfig.map(config => (
+                    {IRON_CONFIG.map(config => (
                         <QuotaRow key={config.houseType} {...config} nation={nation} setHover={setHover}
                             value={config.get(player)}
                             onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}

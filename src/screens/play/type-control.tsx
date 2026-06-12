@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import { useCallback, useState } from 'react'
 import './type-control.css'
-import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import { PointInformationWithoutPossibleRoadConnections } from '../../api/types'
 
 import { CommandMatch, GenericCommand } from '../../utils/typing-commands'
-import { TypeMatch } from '../../components/typing/typing'
+import { NoMatch, TypeMatch } from '../../components/typing/typing'
+import { KeyboardRegular } from '@fluentui/react-icons'
 
 // Types
 type TypeControlProps = {
@@ -29,6 +29,9 @@ const TypeControl = ({ commands, input, available, matches, onCommand }: TypeCon
     // State
     const [expanded, setExpanded] = useState<boolean>(false)
 
+    // Functions
+    const toggleExpanded = useCallback(() => setExpanded(prev => !prev), [])
+
     // Rendering
     let className = 'no-input'
 
@@ -41,6 +44,7 @@ const TypeControl = ({ commands, input, available, matches, onCommand }: TypeCon
     className += expanded ? ' typing-expanded' : ' typing-closed'
 
     const matchesMap = new Map(matches.map(match => [match.commandName, match]))
+    const topMatch = (matches !== undefined && matches.length > 0) ? matches[0] : undefined
 
     return (
         <div
@@ -48,71 +52,65 @@ const TypeControl = ({ commands, input, available, matches, onCommand }: TypeCon
             onWheel={event => event.stopPropagation()}
         >
 
-            <ExpandCollapseToggle
-                onExpand={() => {
-                    if (TypeControlLogConfig.lifecycle) {
-                        console.log('Type control (lifecycle): expanded')
-                    }
-
-                    setExpanded(true)
-                }}
-
-                onCollapse={() => {
-                    if (TypeControlLogConfig.lifecycle) {
-                        console.log('Type control (lifecycle): collapsed')
-                    }
-
-                    setExpanded(false)
-                }}
-            />
-
+            <div>
+                <KeyboardRegular
+                    fontSize={30}
+                    onClick={() => setExpanded(prev => !prev)}
+                />
+            </div>
             <div className={className}>
-                {input}
+                {topMatch !== undefined &&
+                    <TypeMatch match={topMatch} />
+                }
+                {topMatch === undefined && input !== undefined && input.trim().length > 0 &&
+                    <NoMatch text={input} />}
             </div>
 
-            {[...available].map(commandName => {
-                const match = matchesMap.get(commandName)
+            <div className='type-commands-container'>
+                {[...available].map(commandName => {
+                    const match = matchesMap.get(commandName)
 
-                if (input !== undefined && input.trim().length > 0 && match && !match.command.hidden) {
-                    return (
-                        <div
-                            key={commandName}
-                            className='type-control-command'
-                            onClick={() => onCommand(match)}
-                            onKeyDown={event => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                    onCommand(match)
-                                }
-                            }}
-                            role='button'
-                            tabIndex={0}
-                        >
-                            <div className='type-control-command-label'>
-                                <TypeMatch match={match} />
-                            </div> <div className='type-control-command-icon'>{match.command.icon}</div>
-                        </div>
-                    )
-                } else if (expanded) {
-                    const command = commands.get(commandName)
-
-                    if (command && !command.hidden) {
+                    if (input.trim().length > 0 && match && !match.command.hidden) {
                         return (
-                            <div key={commandName} className={'type-control-command not-matching'} >
-                                <div className={input && input.trim().length > 0
-                                    ? 'type-control-command-label not-matching'
-                                    : 'type-control-command-label'}>
-                                    {commandName}
-                                </div>
-                                <div className='type-control-command-icon'>
-                                    {command.icon}
+                            <div
+                                key={commandName}
+                                className='type-control-command'
+                                onClick={() => onCommand(match)}
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        onCommand(match)
+                                    }
+                                }}
+                                role='button'
+                                tabIndex={0}
+                            >
+                                <div className='type-control-command-label'>
+                                    <TypeMatch match={match} />
                                 </div>
                             </div>
                         )
-                    }
-                }
+                    } else if (expanded) {
+                        const command = commands.get(commandName)
 
-                return null
-            })}
+                        if (command && !command.hidden) {
+                            return (
+                                <div key={commandName} className={'type-control-command not-matching'} >
+                                    <div className={input && input.trim().length > 0
+                                        ? 'type-control-command-label not-matching'
+                                        : 'type-control-command-label'}>
+                                        {commandName}
+                                    </div>
+                                    <div className='type-control-command-icon'>
+                                        {command.icon}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    }
+
+                    return null
+                })}
+            </div>
         </div>
     )
 }

@@ -1,27 +1,85 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { CommandMatch, GenericCommand, prettyPrintFuzzyMatch } from '../../utils/typing-commands'
-import { ItemContainer } from '../item_container'
-import { Button } from '@fluentui/react-components'
-import { UiIcon } from '../icons/icon'
 import './typing.css'
-
+import { KeyboardRegular } from '@fluentui/react-icons'
 
 /// Types
-type TypeMatchListProps<T> = {
-    matches: CommandMatch<T>[]
-    highlightOnHover?: boolean
-    onClick?: (match: CommandMatch<T>) => void
-}
-
 type TypeMatchProps<T> = {
     match: CommandMatch<T>
     highlightOnHover?: boolean
     onClick?: (match: CommandMatch<T>) => void
+    setHover?: React.Dispatch<React.SetStateAction<string | undefined>>
+}
+
+type PrintCommand<T> = {
+    name: string
+    command: GenericCommand<T>
+    highlightOnHover?: boolean
+}
+
+type DialogTypingProps<T> = {
+    inputValue: string | undefined
+    matches: CommandMatch<T>[]
+    available?: Map<string, GenericCommand<T>>
+    setHover: React.Dispatch<React.SetStateAction<string | undefined>>
+}
+
+type NoMatchProps = {
+    text: string
+}
+
+type ListSize = 'COMPACT' | 'NORMAL' | 'FULL'
+
+
+/// Functions
+function matchToPrettyString<T>(match: CommandMatch<T>): string {
+    if (match.type === 'ENUM') {
+        if (match.parameterMatchState === 'COMPLETE') {
+            return `${match.commandName} ${match.parsedParam}`
+        } else {
+            return `${match.commandName} <${match.command.parameterName ?? 'enum'}>`
+        }
+    } else if (match.type === 'NUMBER') {
+        if (match.parameterMatchState === 'COMPLETE') {
+            return `${match.commandName} ${match.parsedParam}`
+        } else {
+            return `${match.commandName} <${match.command.parameterName ?? 'number'}>`
+        }
+    } else if (match.type === 'STRING') {
+        if (match.parameterMatchState === 'COMPLETE') {
+            return `${match.commandName} ${match.parsedParam}`
+        } else {
+            return `${match.commandName} <${match.command.parameterName ?? 'string'}>`
+        }
+    } else {
+        return match.commandName
+    }
+}
+
+function commandToString<T>(name: String, command: GenericCommand<T>): string {
+    if (command.type === 'ENUM') {
+        return `${name} <${command.parameterName ?? 'enum'}>`
+    } else if (command.type === 'STRING') {
+        return `${name} ${command.parameterName ?? 'string'}`
+    } else if (command.type === 'NUMBER') {
+        return `${name} <number>`
+    } else {
+        return `${name}`
+    }
 }
 
 
 /// React components
-function TypeMatch<T>({ match, highlightOnHover = false, onClick }: TypeMatchProps<T>) {
+function PrintCommand<T>({ name, command, highlightOnHover = false }: PrintCommand<T>) {
+    return (
+        <div className={`typing-match-and-icon ${highlightOnHover ? 'highlight-on-hover' : ''}`}>
+            {commandToString(name, command)}
+            {command.icon !== undefined && command.icon}
+        </div>
+    )
+}
+
+function TypeMatch<T>({ match, highlightOnHover = false, onClick, setHover }: TypeMatchProps<T>) {
     return (
         <div
             className={`typing-match-and-icon ${highlightOnHover ? 'highlight-on-hover' : ''}`}
@@ -33,6 +91,8 @@ function TypeMatch<T>({ match, highlightOnHover = false, onClick }: TypeMatchPro
             }}
             role='button'
             tabIndex={0}
+            onMouseEnter={() => setHover && setHover(matchToPrettyString(match))}
+            onMouseLeave={() => setHover && setHover(undefined)}
         >
             <div className='typing-match-text'>{prettyPrintFuzzyMatch(match)}</div>
 
@@ -41,101 +101,82 @@ function TypeMatch<T>({ match, highlightOnHover = false, onClick }: TypeMatchPro
     )
 }
 
-function TypeMatchList<T>({ matches, highlightOnHover = false, onClick }: TypeMatchListProps<T>) {
+function NoMatch({ text }: NoMatchProps) {
     return (
-        <div className='type-match-list'>
-            {matches.map(match => (
-                <TypeMatch
-                    key={`${match.type}-${match.commandName}`}
-                    match={match}
-                    highlightOnHover={highlightOnHover}
-                    onClick={onClick}
-                />
-            ))}
+        <div className='typing-match typing-no-match'>
+            No match for &quot;{text}&quot;
         </div>
     )
 }
 
-type DialogTypingProps<T> = {
-    inputValue: string | undefined
-    matches: CommandMatch<T>[]
-    available?: Map<string, GenericCommand<T>>
-
-}
-
-function DialogTyping<T>({ inputValue, matches, available }: DialogTypingProps<T>) {
+/// React components
+function DialogTyping<T>({ inputValue, matches, available, setHover }: DialogTypingProps<T>) {
 
     // State
-    const [showAlternativeMatches, setShowAlternativeMatches] = useState<boolean>(false)
+    const [listSize, setListSize] = useState<ListSize>('NORMAL')
 
     // Functions
     const toggleShowAlternativeMatches = useCallback(() => {
-        setShowAlternativeMatches(prev => !prev)
+        setListSize(prev => prev === 'NORMAL' ? 'FULL' : (prev === 'FULL' ? 'COMPACT' : 'NORMAL'))
     }, [])
 
     // Memos
-    const matchesMap = useMemo(() => new Map(matches.map(match => [match.commandName, match])), [matches])
+    const { matchesMap, topMatch } = useMemo(() => {
+        const matchesMap = new Map(matches.map(match => [match.commandName, match]))
+        const topMatch = matches.length > 0 ? matches[0] : undefined
+
+        return { matchesMap, topMatch }
+    }, [matches])
 
     // Rendering
-    const topMatch = matches.length > 0 ? matches[0] : undefined
+    return (
+        <>
 
-    return (<ItemContainer>
-        {inputValue && topMatch &&
-            <div className='typing-match-and-list-toggle'>
+            <KeyboardRegular
+                fontSize={30}
+                onClick={toggleShowAlternativeMatches}
+                onMouseEnter={() => setHover('Toggle typing control views')}
+                onMouseLeave={() => setHover(undefined)}
+            />
 
-                <Button
-                    appearance='subtle'
-                    size='small'
-                    onClick={toggleShowAlternativeMatches}
-                >
-                    {showAlternativeMatches &&
-                        <UiIcon type='DOWN_ARROW' />
-                    }
-
-                    {!showAlternativeMatches &&
-                        <UiIcon type='RIGHT_ARROW' />
-                    }
-                </Button>
-
-                <TypeMatch match={topMatch} />
-            </div>
-        }
-
-        {inputValue && !topMatch &&
-            <div className='typing-match typing-no-match'>
-                No match for &quot;{inputValue}&quot;
-            </div>
-        }
-
-        {inputValue && matches.length > 1 && showAlternativeMatches &&
-            <div className='typing-alternative-matches'>
-
-                {matches.slice(1).map(match => (
-                    <TypeMatch
-                        key={`${match.type}-${match.commandName}`}
-                        match={match}
-                        highlightOnHover
-                    />
-                ))}
-            </div>
-        }
-
-        {(inputValue === undefined || inputValue.trim().length === 0) && available !== undefined &&
-            [...available.keys()].map(name => {
-                if (matchesMap.has(name)) {
-                    return (<TypeMatch key={name} match={matchesMap.get(name) as CommandMatch<T>} />)
-                } else {
-                    return (<div key={name}>
-                        {name}
-                    </div>)
+            <div className='typing-list'>
+                {inputValue && !topMatch &&
+                    <NoMatch text={inputValue} />
                 }
-            })
-        }
-    </ItemContainer>)
+
+                {inputValue && topMatch &&
+                    <>
+                        <TypeMatch match={topMatch} setHover={setHover} />
+
+                        {listSize !== 'COMPACT' && available !== undefined &&
+                            Array.from(available.entries()).filter(([name, command]) => !command.hidden).map(([name, command]) => {
+                                if (matchesMap.has(name) && name !== topMatch.commandName) {
+                                    return (
+                                        <TypeMatch key={name} match={matchesMap.get(name) as CommandMatch<T>} setHover={setHover} />
+                                    )
+                                } else if (listSize === 'FULL' && name !== topMatch.commandName) {
+                                    return (
+                                        <PrintCommand name={name} command={command} />
+                                    )
+                                }
+                            })}
+                    </>
+                }
+
+                {(inputValue === undefined || inputValue.trim().length === 0) && available !== undefined && listSize === 'FULL' &&
+                    Array.from(available.entries()).filter(([name, command]) => !command.hidden).map(([name, command]) => {
+                        return (<TypeMatch key={name} match={matchesMap.get(name) as CommandMatch<T>} setHover={setHover} />)
+                    })
+                }
+            </div>
+        </>
+    )
 }
 
+/// Exports
 export {
     TypeMatch,
-    TypeMatchList,
-    DialogTyping
+    DialogTyping,
+    commandToString,
+    NoMatch
 }

@@ -12,6 +12,7 @@ import { MoveUpdate, WorkerMoveListener, api } from '../../api/ws-api'
 import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
 import { GenericCommand } from '../../utils/typing-commands'
 import { UiIcon } from '../../components/icons/icon'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type FollowProps = {
@@ -370,7 +371,8 @@ function Follow({ heightAdjust, point, scale = DEFAULT_SCALE, onRaise, onClose }
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         cmds.set('Debug', {

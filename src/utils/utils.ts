@@ -1,9 +1,10 @@
 import { TerrainInformation, TerrainAtPoint, Point, RoadId, RoadInformation, Direction, Size, HouseInformation, PointInformation, PlayerColor, PLAYER_COLORS, PlayerInformation, WATER_1, WATER_2, BUILDABLE_WATER, LAVA_1, MapWithTerrain, PointInformationWithoutPossibleRoadConnections, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES } from '../api/types'
 import { api } from '../api/ws-api'
-import { ScreenPoint, View } from '../render/game-render'
+import { ScreenPoint } from '../render/game-render'
 import { STANDARD_HEIGHT } from '../render/constants'
-import { PointMap, PointSet } from './util_types_ng'
-import { playerToColor } from './pretty_strings'
+import { PointMap, PointSet } from './point-value-collections'
+import { playerToColor } from './pretty-strings'
+import { View } from '../render/types'
 
 // Types
 export type Point3D = {

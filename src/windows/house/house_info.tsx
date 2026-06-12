@@ -11,7 +11,7 @@ import { ItemContainer } from '../../components/item_container'
 import { useHouse } from '../../utils/hooks/hooks'
 import { Dismiss16Filled } from '@fluentui/react-icons'
 import { GenericCommand } from '../../utils/typing-commands'
-import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../utils/pretty_strings'
+import { buildingPretty, MATERIAL_FIRST_UPPERCASE, materialPretty } from '../../utils/pretty-strings'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 
 /// Types
@@ -294,7 +294,8 @@ const EnemyHouseInfo = ({ house, nation, onClose, onRaise, goToPoint }: EnemyHou
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         addDebugCommands(cmds)
@@ -375,7 +376,8 @@ const MilitaryEnemyHouseInfo = ({ house, nation, onClose, onRaise }: MilitaryEne
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         addDebugCommands(cmds)
@@ -552,13 +554,15 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
         cmds.set('Pause production', {
             action: (house: HouseInformation) =>
                 api.pauseProductionForHouse(house.id),
-            filter: house => house.productionEnabled
+            filter: house => house.productionEnabled,
+            icon: <UiIcon type='GEARS_CROSSED_OVER' scale={0.5} />
         })
 
         cmds.set('Resume production', {
             action: (house: HouseInformation) =>
                 api.resumeProductionForHouse(house.id),
-            filter: house => !house.productionEnabled
+            filter: house => !house.productionEnabled,
+            icon: <UiIcon type='GEARS' scale={0.5} />
         })
 
         cmds.set('Tear down', {

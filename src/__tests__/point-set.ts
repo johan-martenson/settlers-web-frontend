@@ -1,5 +1,5 @@
 import { Point } from "../api/types"
-import { keyToPoint, PointMap, PointSet, pointToKey } from "../utils/util_types_ng"
+import { keyToPoint, PointMap, PointSet, pointToKey } from "../utils/point-value-collections"
 
 describe('Point encoding and decoding', () => {
     it('should encode and decode points within the valid range', () => {

@@ -4,7 +4,7 @@ import './game_creator.css'
 import GameOptions from './game_options'
 import MapSelection from './map_selection'
 import ManagePlayers from './manage_players'
-import { GameId, PlayerId, GameInformation, NATIONS, isNation, MapInformation, ResourceLevel } from '../../api/types'
+import { GameId, PlayerId, GameInformation, MapInformation, ResourceLevel } from '../../api/types'
 import { GameListener, api } from '../../api/ws-api'
 import { ChatBox } from '../../components/chat/chat'
 import { Center } from '../../components/center'
@@ -41,18 +41,17 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
     const [filterMaxPlayers, setFilterMaxPlayers] = useState<number>(8)
 
     // Monitoring hooks
-    const maps = useMaps()
     const { inputValue, keyTyped } = useTypingInput()
 
     // Functions
-    const onStartGameClicked = () => {
+    const onStartGameClicked = useCallback(() => {
         if (gameInformation?.id !== undefined) {
             api.startGame(gameInformation?.id ?? '')
             onGameStarted(gameInformation?.id, selfPlayerId)
         } else {
             console.error('Game id is not set')
         }
-    }
+    }, [gameInformation?.id, selfPlayerId, onGameStarted])
 
     const cancelAndRemoveGame = useCallback(() => {
         if (api.gameId !== undefined) {
@@ -62,8 +61,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
         }
 
         onGameCreateCanceled()
-
-    }, [])
+    }, [onGameCreateCanceled])
 
     const selectMap = useCallback((map: MapInformation) => {
         console.log('Selected map', map)
@@ -217,11 +215,8 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
         return commands
     }, [
         state,
-        maps,
         gameInformation,
-        selfPlayerId,
         onStartGameClicked,
-        onGameCreateCanceled,
         filterTitle,
         filterAuthor,
         filterMinPlayers,
@@ -232,7 +227,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
     // Effect: Keep focusing the container to be able to catch keyboard events
     useEffect(() => {
         selfContainerRef?.current?.focus()
-    }, [selfContainerRef])
+    }, [selfContainerRef, state])
 
     // Effect: Keep the game information reference up to date for the commands
     useEffect(() => {
@@ -310,7 +305,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
             cancelled = true
             api.removeGameStateListener(listener)
         }
-    }, [])
+    }, [onGameStarted])
 
     // Rendering
     const matches = findMatchingCommands(commands, inputValue, gameInformation)
@@ -360,7 +355,7 @@ const GameCreator = ({ selfPlayerId, onGameStarted, onGameCreateCanceled }: Game
                 </Center>
             }
 
-            {state === 'CREATE_GAME' && gameInformation?.id && selfPlayerId &&
+            {state === 'CREATE_GAME' && gameInformation?.id && selfPlayerId !== undefined &&
                 <div
                     id='game-creation-screen'
                     onKeyDown={(event: React.KeyboardEvent) => {

@@ -10,9 +10,10 @@ import { ItemContainer } from '../../components/item_container'
 import { MouseHandlerDataParam } from 'recharts/types/synchronisation/types'
 import { useStatistics, useTime } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
-import { buildingPretty, generalStatisticsTypePretty, materialPretty, merchandisePretty, playerToColor, statisticsViewPretty } from '../../utils/pretty_strings'
+import { buildingPretty, generalStatisticsTypePretty, materialPretty, merchandisePretty, playerToColor, statisticsViewPretty } from '../../utils/pretty-strings'
 import { HouseIcon, InventoryIcon, UiIcon, UiIconType } from '../../components/icons/icon'
 import { PlayerSelector } from './select-players'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type StatisticsProps = {
@@ -469,7 +470,8 @@ const Statistics: React.FC<StatisticsProps> = ({ nation, playerId, onRaise, onCl
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         cmds.set('Debug statistics', {

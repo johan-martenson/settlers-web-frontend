@@ -6,6 +6,7 @@ import { useState } from "react"
 import './no_action_window.css'
 import { GenericCommand } from '../../utils/typing-commands'
 import { UiIcon } from '../../components/icons/icon'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type NoActionWindowProps = {
@@ -54,39 +55,46 @@ function NoActionWindow({
         const cmds = new Map<string, GenericCommand<Point>>()
 
         cmds.set('Return to headquarters', {
-            action: onReturnToHeadquarters
+            action: onReturnToHeadquarters,
+            icon: <UiIcon type='PLUS_RETURN_TO_HEADQUARTERS' scale={0.5} />
         })
 
         cmds.set('Show house names', {
             action: onShowTitles,
-            filter: () => !areHouseTitlesVisible
+            filter: () => !areHouseTitlesVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
         })
 
         cmds.set('Hide house names', {
             action: onHideTitles,
-            filter: () => areHouseTitlesVisible
+            filter: () => areHouseTitlesVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
         })
 
         cmds.set('Toggle house names', {
             action: areHouseTitlesVisible
                 ? onHideTitles
-                : onShowTitles
+                : onShowTitles,
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
         })
 
         cmds.set('Show available construction', {
             action: onShowAvailableConstruction,
-            filter: () => !isAvailableConstructionVisible
+            filter: () => !isAvailableConstructionVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
         })
 
         cmds.set('Hide available construction', {
             action: onHideAvailableConstruction,
-            filter: () => isAvailableConstructionVisible
+            filter: () => isAvailableConstructionVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
         })
 
         cmds.set('Toggle available construction', {
             action: isAvailableConstructionVisible
                 ? onHideAvailableConstruction
-                : onShowAvailableConstruction
+                : onShowAvailableConstruction,
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
         })
 
         cmds.set('Monitor', {
@@ -95,7 +103,8 @@ function NoActionWindow({
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         cmds.set('Debug', {

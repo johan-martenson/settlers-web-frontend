@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { PlayLogConfig } from './config'
 
 type Point = {
@@ -23,6 +23,8 @@ type ImmediateState = {
 type UseTouchNavigationProps = {
     immediateStateRef: React.MutableRefObject<ImmediateState>
     ongoingTouches: Map<number, StoredTouch>
+    onPinchZoomIn?: () => void
+    onPinchZoomOut?: () => void
 }
 
 type UseTouchNavigationResult = {
@@ -35,8 +37,11 @@ type UseTouchNavigationResult = {
 
 function useTouchNavigation({
     immediateStateRef,
-    ongoingTouches
+    ongoingTouches,
+    onPinchZoomIn,
+    onPinchZoomOut
 }: UseTouchNavigationProps): UseTouchNavigationResult {
+    const lastPinchDistanceRef = useRef<number | null>(null)
 
     // Functions
     const copyTouch = useCallback((touch: React.Touch): StoredTouch => ({
@@ -54,6 +59,8 @@ function useTouchNavigation({
 
         immediateStateRef.current.touchMoveOngoing = false
         immediateStateRef.current.mouseMoving = false
+
+        lastPinchDistanceRef.current = null
     }, [immediateStateRef, ongoingTouches])
 
     const onTouchStart = useCallback((event: React.TouchEvent) => {
@@ -80,6 +87,15 @@ function useTouchNavigation({
                     `Play (touch): registered touch ${touch.identifier} at (${touch.pageX}, ${touch.pageY})`
                 )
             }
+        }
+
+        if (ongoingTouches.size === 2) {
+            const [firstTouch, secondTouch] = Array.from(ongoingTouches.values())
+
+            const deltaX = secondTouch.pageX - firstTouch.pageX
+            const deltaY = secondTouch.pageY - firstTouch.pageY
+
+            lastPinchDistanceRef.current = Math.hypot(deltaX, deltaY)
         }
 
         if (!immediateStateRef.current.touchMoveOngoing) {
@@ -170,7 +186,32 @@ function useTouchNavigation({
                 copyTouch(currentTouch)
             )
         }
-    }, [copyTouch, immediateStateRef, ongoingTouches])
+
+        if (ongoingTouches.size === 2) {
+            const [firstTouch, secondTouch] = Array.from(ongoingTouches.values())
+
+            const deltaX = secondTouch.pageX - firstTouch.pageX
+            const deltaY = secondTouch.pageY - firstTouch.pageY
+
+            const pinchDistance = Math.hypot(deltaX, deltaY)
+
+            if (lastPinchDistanceRef.current !== null) {
+                if (pinchDistance > lastPinchDistanceRef.current) {
+                    onPinchZoomIn?.()
+                } else if (pinchDistance < lastPinchDistanceRef.current) {
+                    onPinchZoomOut?.()
+                }
+            }
+
+            lastPinchDistanceRef.current = pinchDistance
+        }
+    }, [
+        copyTouch,
+        immediateStateRef,
+        ongoingTouches,
+        onPinchZoomIn,
+        onPinchZoomOut
+    ])
 
     const onTouchEnd = useCallback((event: React.TouchEvent) => {
         event.preventDefault()
@@ -200,6 +241,10 @@ function useTouchNavigation({
                     `Play (touch): removed touch ${touches[i].identifier}`
                 )
             }
+        }
+
+        if (ongoingTouches.size < 2) {
+            lastPinchDistanceRef.current = null
         }
 
         if (PlayLogConfig.touch) {
@@ -235,6 +280,10 @@ function useTouchNavigation({
                     `Play (touch): removed cancelled touch ${touches[i].identifier}`
                 )
             }
+        }
+
+        if (ongoingTouches.size < 2) {
+            lastPinchDistanceRef.current = null
         }
 
         if (PlayLogConfig.touch) {

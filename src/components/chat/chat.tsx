@@ -17,6 +17,8 @@ type ChatBoxProps = {
 type ExpandChatBoxProps = {
     playerId: PlayerId
     roomId: RoomId
+    expanded: boolean
+    onToggleExpanded: () => void
 }
 
 // React components
@@ -31,7 +33,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
     // Listening hooks
     const chatLog = useChatMessages(playerId, [roomId])
-    const { inputValue, keyTyped } = useTypingInput()
+    const { inputValue, keyTyped } = useTypingInput({ preventTypingInInputFields: false })
 
     // Functions
     const sendMessage = useCallback((text: string) => {
@@ -90,7 +92,6 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                     ref={inputRef}
                     value={inputValue}
                     onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => {
-                        console.log('Input change', data.value)
                         setMessageText(data.value)
                     }}
                     onKeyDown={(event: React.KeyboardEvent) => {
@@ -106,7 +107,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                         }
                     }} />
                 <Button
-                    disabled={!messageText.trim()}
+                    disabled={inputValue === undefined || !inputValue.trim()}
                     onClick={() => {
                         sendMessage(inputValue)
                         inputRef.current?.focus()
@@ -119,17 +120,17 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
     )
 }
 
-function ExpandChatBox({ playerId, roomId }: ExpandChatBoxProps) {
-    const [isExpanded, setIsExpanded] = useState<boolean>(false)
+function ExpandChatBox({ playerId, roomId, expanded, onToggleExpanded }: ExpandChatBoxProps) {
 
+    // Rendering
     return (
         <div className='expand-chat-box'>
             <ExpandCollapseToggle
-                onExpand={() => setIsExpanded(true)}
-                onCollapse={() => setIsExpanded(false)}
+                onExpand={onToggleExpanded}
+                onCollapse={onToggleExpanded}
             />
 
-            {isExpanded && <ChatBox playerId={playerId} roomId={roomId} />}
+            {expanded && <ChatBox playerId={playerId} roomId={roomId} />}
 
             <div><b>Chat</b></div>
         </div>

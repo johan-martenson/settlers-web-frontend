@@ -36,9 +36,8 @@ function GameInit() {
     useEffect(() => {
         (async () => {
             const urlParams = new URLSearchParams(window.location.search)
-            console.log(window.location)
-            console.log(window.location.search)
-            console.log('URL params:' + urlParams.toString())
+
+            console.log('Index: location and url params', window.location, urlParams.toString())
             const gameId = urlParams.get('gameId')
             const playerId = urlParams.get('playerId')
 
@@ -55,7 +54,7 @@ function GameInit() {
             } else if (window.location.pathname === '/create' && gameId !== null && playerId !== null) {
                 await api.followGame(gameId, playerId)
 
-                console.log(`Going to create game with gameId ${gameId} and playerId ${playerId}`)
+                console.log(`Index: Going to create game with gameId ${gameId} and playerId ${playerId}`)
 
                 setGameId(gameId)
                 setPlayer(api.players.get(playerId))
@@ -77,10 +76,10 @@ function GameInit() {
     }, [])
 
     async function onCreateNewGame(): Promise<void> {
-        console.log('Creating empty game, then going to create game screen')
+        console.log('Index: Creating empty game, then going to create game screen')
 
         if (player === undefined) {
-            console.error('Player is undefined')
+            console.error('Index: Player is undefined')
             return
         }
 
@@ -94,7 +93,7 @@ function GameInit() {
     }
 
     async function onJoinExistingGame(gameId: GameId): Promise<void> {
-        console.log(`Joining game ${gameId} as player ${JSON.stringify(player)}`)
+        console.log(`Index: Joining game ${gameId} as player ${JSON.stringify(player)}`)
 
         if (player === undefined) {
             console.error('The player is not set')
@@ -106,7 +105,7 @@ function GameInit() {
         const nextColor = getFreeColor(Array.from(api.players.values()))
 
         if (nextColor === undefined) {
-            console.error(`No free colors available for the player. Can't join game`)
+            console.error(`Index: No free colors available for the player. Can't join game`)
 
             return
         }

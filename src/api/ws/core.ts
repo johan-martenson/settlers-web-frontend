@@ -481,7 +481,7 @@ async function attemptReconnect(): Promise<void> {
                     console.error(`WS core (connection): Failed to reconnect`)
                 }
             } catch (error) {
-                console.error(`WS core (connection): Failed to reconnect: ${error}`)
+                console.error('WS core (connection): Failed to reconnect', error)
             }
 
             await delay(RECONNECT_DELAY)
@@ -502,7 +502,7 @@ function handleError(socket: WebSocket, event: Event): void {
 
     if (socket !== websocket) {
         if (WsCoreLogConfig.connectionHandling) {
-            console.info('WS core (connection): other socket was closed.')
+            console.info('WS core (connection): other socket had an error.')
         }
     }
 

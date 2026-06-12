@@ -1,35 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
-import { Tool, TOOLS } from '../../api/types'
+import { TOOLS } from '../../api/types'
 import { api } from '../../api/ws-api'
 import './tools.css'
 import { useToolPriorities } from '../../utils/hooks/hooks'
 import { clamp } from '../house/headquarter'
 import { GenericCommand } from '../../utils/typing-commands'
-import { UiIcon, UiIconType } from '../../components/icons/icon'
-import { materialPretty } from '../../utils/pretty_strings'
+import { UiIcon } from '../../components/icons/icon'
+import { materialPretty } from '../../utils/pretty-strings'
+import { Dismiss16Filled } from '@fluentui/react-icons'
+import { TOOLS_UI } from './constants'
+import { makeToolCommands } from './commands'
 
 // Types
 type ToolsProps = {
     onClose: () => void
     onRaise: () => void
-}
-
-// Constants
-const TOOLS_UI: Record<Tool, { PLUS: UiIconType, MINUS: UiIconType }> = {
-    'SAW': { 'PLUS': 'SAW_AND_PLUS', 'MINUS': 'SAW_AND_MINUS' },
-    'HAMMER': { 'PLUS': 'HAMMER_AND_PLUS', 'MINUS': 'HAMMER_AND_MINUS' },
-    'AXE': { 'PLUS': 'AXE_AND_PLUS', 'MINUS': 'AXE_AND_MINUS' },
-    'SHOVEL': { 'PLUS': 'SHOVEL_AND_PLUS', 'MINUS': 'SHOVEL_AND_MINUS' },
-    'PICK_AXE': { 'PLUS': 'PICK_AXE_AND_PLUS', 'MINUS': 'PICK_AXE_AND_MINUS' },
-    'BOW': { 'PLUS': 'BOW_AND_PLUS', 'MINUS': 'BOW_AND_MINUS' },
-    'CLEAVER': { 'PLUS': 'CLEAVER_AND_PLUS', 'MINUS': 'CLEAVER_AND_MINUS' },
-    'ROLLING_PIN': { 'PLUS': 'ROLLING_PIN_AND_PLUS', 'MINUS': 'ROLLING_PIN_AND_MINUS' },
-    'CRUCIBLE': { 'PLUS': 'CRUCIBLE_AND_PLUS', 'MINUS': 'CRUCIBLE_AND_MINUS' },
-    'TONGS': { 'PLUS': 'TONGS_AND_PLUS', 'MINUS': 'TONGS_AND_MINUS' },
-    'SCYTHE': { 'PLUS': 'SCYTHE_AND_PLUS', 'MINUS': 'SCYTHE_AND_MINUS' },
-    'FISHING_ROD': { 'PLUS': 'LINE_AND_HOOK_AND_PLUS', 'MINUS': 'LINE_AND_HOOK_AND_MINUS' }
 }
 
 // Configuration
@@ -56,7 +43,8 @@ const Tools = ({ onClose, onRaise }: ToolsProps) => {
 
     // Memos
     const commands = useMemo(() => {
-        const cmds = new Map<string, GenericCommand<object>>()
+        const contextFreeToolCommands = makeToolCommands()
+        const cmds = new Map<string, GenericCommand<object>>(contextFreeToolCommands)
 
         TOOLS.forEach(tool => {
             const name = materialPretty(tool)
@@ -82,28 +70,6 @@ const Tools = ({ onClose, onRaise }: ToolsProps) => {
                     }
                 }
             })
-
-            cmds.set(`Set ${name} priority`, {
-                type: 'NUMBER',
-                min: 0,
-                max: 10,
-                parameterName: 'priority',
-                action: (_context: object, priority: number) => {
-                    api.setToolPriority(tool, priority)
-                }
-            })
-
-            cmds.set(`Max ${name} priority`, {
-                action: () => {
-                    api.setToolPriority(tool, 10)
-                }
-            })
-
-            cmds.set(`Clear ${name} priority`, {
-                action: () => {
-                    api.setToolPriority(tool, 0)
-                }
-            })
         })
 
         cmds.set('Max all priorities', {
@@ -119,13 +85,12 @@ const Tools = ({ onClose, onRaise }: ToolsProps) => {
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         cmds.set('Debug', {
-            action: () => {
-                console.log(toolPrioritiesRef.current)
-            },
+            action: () => console.log(toolPrioritiesRef.current),
             hidden: true
         })
 

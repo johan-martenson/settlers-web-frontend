@@ -4,7 +4,7 @@ import { api } from '../../api/ws-api'
 import { Button } from '@fluentui/react-components'
 import './player_icon.css'
 import { usePlayer } from '../../utils/hooks/hooks'
-import { playerToColor } from '../../utils/pretty_strings'
+import { playerToColor } from '../../utils/pretty-strings'
 
 // Types
 type StaticPlayerIconProps = {

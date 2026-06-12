@@ -7,7 +7,7 @@ import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { useFlag } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
 import { FlagIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
-import { materialPretty } from '../../utils/pretty_strings'
+import { materialPretty } from '../../utils/pretty-strings'
 
 // Types
 type FriendlyFlagInfoProps = {

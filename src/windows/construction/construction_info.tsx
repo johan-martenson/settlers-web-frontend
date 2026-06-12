@@ -8,7 +8,8 @@ import { Button, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/r
 import { usePointInformation } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
 import { FlagIcon, HouseIcon, UiIcon } from '../../components/icons/icon'
-import { buildingPretty } from '../../utils/pretty_strings'
+import { buildingPretty } from '../../utils/pretty-strings'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type ConstructionInfoProps = {
@@ -89,38 +90,34 @@ const ConstructionInfo = ({
     const commands = useMemo(() => {
         const cmds = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
 
-        cmds.set('Close window', {
-            action: onClose
-        })
-
-        cmds.set('Buildings', {
+        cmds.set('Construct buildings', {
             action: () => setSelected('Buildings'),
-            filter: () => canBuildHouse(point) || canBuildMine(point)
+            filter: () => canBuildHouse(point) || canBuildMine(point),
+            icon: <UiIcon type='SHOVEL' scale={0.5} />
         })
 
         cmds.set('Flags and roads', {
             action: () => setSelected('FlagsAndRoads'),
-            filter: () => canRaiseFlag(point)
+            filter: () => canRaiseFlag(point),
+            icon: <UiIcon type='PULL_DOWN_FLAG' scale={0.5} />
         })
 
         cmds.set('Monitor tab', {
-            action: () => setSelected('Monitor')
+            action: () => setSelected('Monitor'),
+            icon: <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
         })
 
         cmds.set('Open monitor', {
-            action: startMonitorAndClose
+            action: startMonitorAndClose,
+            icon: <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
         })
 
         cmds.set('Follow', {
-            action: startMonitorAndClose
+            action: startMonitorAndClose,
+            icon: <UiIcon type='FILM_CAMERA' scale={0.5} />
         })
 
         if (canRaiseFlag(point)) {
-            cmds.set('Flag', {
-                action: raiseFlagAndClose,
-                icon: <FlagIcon type='NORMAL' nation={nation} />
-            })
-
             cmds.set('Raise flag', {
                 action: raiseFlagAndClose,
                 icon: <FlagIcon type='NORMAL' nation={nation} />
@@ -128,11 +125,6 @@ const ConstructionInfo = ({
         }
 
         if (canBuildRoad(point)) {
-            cmds.set('Road', {
-                action: startNewRoadAndClose,
-                icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
-            })
-
             cmds.set('Build road', {
                 action: startNewRoadAndClose,
                 icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
@@ -190,7 +182,8 @@ const ConstructionInfo = ({
                 setSelected('Buildings')
                 setBuildingSizeSelected('small')
             },
-            filter: () => canBuildSmallHouse(point) || canBuildMine(point)
+            filter: () => canBuildSmallHouse(point) || canBuildMine(point),
+            icon: <UiIcon type='RED_SMALL_AVAILABLE_BUILDING' scale={0.5} />
         })
 
         cmds.set('Medium buildings', {
@@ -198,7 +191,8 @@ const ConstructionInfo = ({
                 setSelected('Buildings')
                 setBuildingSizeSelected('medium')
             },
-            filter: () => canBuildMediumHouse(point)
+            filter: () => canBuildMediumHouse(point),
+            icon: <UiIcon type='RED_MEDIUM_AVAILABLE_BUILDING' scale={0.5} />
         })
 
         cmds.set('Large buildings', {
@@ -206,35 +200,41 @@ const ConstructionInfo = ({
                 setSelected('Buildings')
                 setBuildingSizeSelected('large')
             },
-            filter: () => canBuildLargeHouse(point)
+            filter: () => canBuildLargeHouse(point),
+            icon: <UiIcon type='RED_LARGE_AVAILABLE_BUILDING' scale={0.5} />
         })
 
-        const addBuildingCommand = (house: string, size: SizeLowerCase) => {
+        const addBuildingCommand = (house: string) => {
             cmds.set(buildingPretty(house as never), {
                 action: () => {
                     api.placeHouse(house as never, point)
                     onSelectPoint(point)
                     onClose()
                 },
-                icon: <HouseIcon nation={nation} houseType={house as never} drawShadow />
+                icon: <HouseIcon nation={nation} houseType={house as never} scale={0.5} drawShadow />
             })
         }
 
         if (canBuildMine(point)) {
-            MINES.forEach(house => addBuildingCommand(house, 'small'))
+            MINES.forEach(house => addBuildingCommand(house))
         } else if (canBuildSmallHouse(point)) {
-            SMALL_BUILDINGS_EXCEPT_MINES.forEach(house => addBuildingCommand(house, 'small'))
+            SMALL_BUILDINGS_EXCEPT_MINES.forEach(house => addBuildingCommand(house))
         }
 
         if (canBuildMediumHouse(point)) {
-            MEDIUM_HOUSE_VALUES.forEach(house => addBuildingCommand(house, 'medium'))
+            MEDIUM_HOUSE_VALUES.forEach(house => addBuildingCommand(house))
         }
 
         if (canBuildLargeHouse(point)) {
             LARGE_HOUSE_VALUES
                 .filter(house => house !== 'Headquarter')
-                .forEach(house => addBuildingCommand(house, 'large'))
+                .forEach(house => addBuildingCommand(house))
         }
+
+        cmds.set('Close window', {
+            action: onClose,
+            icon: <Dismiss16Filled />
+        })
 
         return cmds
     }, [point,

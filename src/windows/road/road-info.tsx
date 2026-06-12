@@ -120,44 +120,52 @@ const RoadInfo = ({
 
         cmds.set('Manage road', {
             action: () => setSelected('ROAD'),
-            filter: () => selected !== 'ROAD'
+            filter: () => selected !== 'ROAD',
+            icon: <UiIcon type='ROAD_AND_FLAGS' scale={0.5} />
         })
 
         cmds.set('Monitor', {
             action: () => setSelected('MONITOR'),
-            filter: () => selected !== 'MONITOR'
+            filter: () => selected !== 'MONITOR',
+            icon: <UiIcon type='MAGNIFYING_GLASS' scale={0.5} />
         })
 
         cmds.set('Show house names', {
             action: onShowHouseTitles,
-            filter: () => !houseTitlesVisible
+            filter: () => !houseTitlesVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
         })
 
         cmds.set('Hide house names', {
             action: onHideHouseTitles,
-            filter: () => houseTitlesVisible
+            filter: () => houseTitlesVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
         })
 
         cmds.set('Toggle house names', {
             action: houseTitlesVisible
                 ? onHideHouseTitles
-                : onShowHouseTitles
+                : onShowHouseTitles,
+            icon: <UiIcon type='PLUS_AVAILABLE_SMALL_BUILDING_WITH_TITLES' scale={0.5} />
         })
 
         cmds.set('Show available construction', {
             action: onShowAvailableConstruction,
-            filter: () => !availableConstructionVisible
+            filter: () => !availableConstructionVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
         })
 
         cmds.set('Hide available construction', {
             action: onHideAvailableConstruction,
-            filter: () => availableConstructionVisible
+            filter: () => availableConstructionVisible,
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
         })
 
         cmds.set('Toggle available construction', {
             action: availableConstructionVisible
                 ? onHideAvailableConstruction
-                : onShowAvailableConstruction
+                : onShowAvailableConstruction,
+            icon: <UiIcon type='PLUS_AVAILABLE_BUILDINGS' scale={0.5} />
         })
 
         cmds.set('Start monitoring', {

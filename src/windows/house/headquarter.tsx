@@ -8,8 +8,9 @@ import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
-import { MATERIAL_LABELS, soldierPretty } from '../../utils/pretty_strings'
+import { MATERIAL_LABELS, soldierPretty } from '../../utils/pretty-strings'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 
 // Types
@@ -302,6 +303,7 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
 
         cmds.set('Close window', {
             action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         return cmds

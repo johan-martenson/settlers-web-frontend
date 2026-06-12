@@ -6,8 +6,10 @@ import { api } from '../../api/ws-api'
 import { ItemContainer } from '../../components/item_container'
 import { useTransportPriority } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
-import { transportCategoryPretty } from '../../utils/pretty_strings'
+import { transportCategoryPretty } from '../../utils/pretty-strings'
 import { InventoryIcon, UiIcon } from '../../components/icons/icon'
+import { Dismiss16Filled } from '@fluentui/react-icons'
+import { makeTransportCommands } from './commands'
 
 // Types
 type SetTransportPriorityProps = {
@@ -74,7 +76,8 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
 
     // Memos
     const commands = useMemo(() => {
-        const cmds = new Map<string, GenericCommand<TransportCategory>>()
+        const contextFreeCommands = makeTransportCommands()
+        const cmds = new Map<string, GenericCommand<TransportCategory>>(contextFreeCommands)
 
         priority.forEach(category => {
             const categoryName = transportCategoryPretty(category).toLowerCase()
@@ -82,16 +85,6 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
             cmds.set(`Select ${categoryName}`, {
                 action: () => setSelected(category),
                 filter: current => current !== category
-            })
-
-            cmds.set(`Set ${categoryName} priority`, {
-                type: 'NUMBER',
-                parameterName: 'priority',
-                min: 0,
-                max: TRANSPORT_CATEGORIES.size - 1,
-                action: (_current: TransportCategory, priority: number) => {
-                    api.setTransportPriorityForMaterial(category, priority)
-                }
             })
         })
 
@@ -122,7 +115,8 @@ const SetTransportPriority = ({ nation, onClose, onRaise }: SetTransportPriority
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         cmds.set('Debug', {

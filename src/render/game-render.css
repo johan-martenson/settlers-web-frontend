@@ -8,6 +8,7 @@
     image-rendering: -moz-crisp-edges;
     image-rendering: -webkit-crisp-edges;
     image-rendering: pixelated;
+    touch-action: none;
 }
 
 .terrain-canvas {
@@ -18,4 +19,5 @@
     top: 0;
     left: 0;
     image-rendering: pixelated;
+    touch-action: none;
 }

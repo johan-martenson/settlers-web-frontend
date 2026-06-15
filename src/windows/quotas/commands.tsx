@@ -37,7 +37,8 @@ function makeQuotaCommands(player: PlayerInformation): Map<string, GenericComman
 
             cmds.set(`Clear all ${materialName.toLowerCase()} quotas`, {
                 action: () => configs.forEach(config => config.set(player, 0)),
-                filter: currentMaterial => currentMaterial === material
+                filter: currentMaterial => currentMaterial === material,
+                icon: <InventoryIcon nation={player.nation} material={isMaterial(material) ? material : 'COAL'} scale={0.8} missing />
             })
         })
     })

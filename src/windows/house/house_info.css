@@ -30,6 +30,10 @@
     flex-direction: column;
     gap: 5px;
     justify-content: flex-end;
+    width: 3em;
+    height: 3em;
+    align-items: center;
+    text-align: right;
 }
 
 .production-info {

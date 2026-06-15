@@ -131,7 +131,8 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                     return
                 }
                 api.blockDelivery(house.id, material)
-            }
+            },
+            icon: <UiIcon type='BLOCK_CROSS' scale={0.5} />
         })
 
         cmds.set('Unblock inventory', {
@@ -159,7 +160,8 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                     return
                 }
                 api.sendOutMaterial(house.id, material)
-            }
+            },
+            icon: <UiIcon type='SEND_OUT_ARROWS' scale={0.5} />
         })
 
         cmds.set('Stop sending out', {
@@ -181,9 +183,8 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
             parameterName: 'amount',
             min: 0,
             max: MAX_RESERVED,
-            action: (_house: HouseInformation, amount: number) => {
-                api.setReservedSoldiers('PRIVATE_RANK', amount)
-            }
+            action: (_house: HouseInformation, amount: number) => api.setReservedSoldiers('PRIVATE_RANK', amount),
+            icon: <InventoryIcon nation={nation} material='PRIVATE' scale={0.8} />
         })
 
         cmds.set('Set reserved private first class soldiers', {
@@ -191,9 +192,8 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
             parameterName: 'amount',
             min: 0,
             max: MAX_RESERVED,
-            action: (_house: HouseInformation, amount: number) => {
-                api.setReservedSoldiers('PRIVATE_FIRST_CLASS_RANK', amount)
-            }
+            action: (_house: HouseInformation, amount: number) => api.setReservedSoldiers('PRIVATE_FIRST_CLASS_RANK', amount),
+            icon: <InventoryIcon nation={nation} material='PRIVATE_FIRST_CLASS' scale={0.8} />
         })
 
         cmds.set('Set reserved sergeant soldiers', {
@@ -201,9 +201,8 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
             parameterName: 'amount',
             min: 0,
             max: MAX_RESERVED,
-            action: (_house: HouseInformation, amount: number) => {
-                api.setReservedSoldiers('SERGEANT_RANK', amount)
-            }
+            action: (_house: HouseInformation, amount: number) => api.setReservedSoldiers('SERGEANT_RANK', amount),
+            icon: <InventoryIcon nation={nation} material='SERGEANT' scale={0.8} />
         })
 
         cmds.set('Set reserved officer soldiers', {
@@ -211,9 +210,8 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
             parameterName: 'amount',
             min: 0,
             max: MAX_RESERVED,
-            action: (_house: HouseInformation, amount: number) => {
-                api.setReservedSoldiers('OFFICER_RANK', amount)
-            }
+            action: (_house: HouseInformation, amount: number) => api.setReservedSoldiers('OFFICER_RANK', amount),
+            icon: <InventoryIcon nation={nation} material='OFFICER' scale={0.8} />
         })
 
         cmds.set('Set reserved general soldiers', {
@@ -221,9 +219,8 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
             parameterName: 'amount',
             min: 0,
             max: MAX_RESERVED,
-            action: (_house: HouseInformation, amount: number) => {
-                api.setReservedSoldiers('GENERAL_RANK', amount)
-            }
+            action: (_house: HouseInformation, amount: number) => api.setReservedSoldiers('GENERAL_RANK', amount),
+            icon: <InventoryIcon nation={nation} material='GENERAL' scale={0.8} />
         })
 
         cmds.set('Set population strength', {
@@ -231,9 +228,7 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
             parameterName: 'value',
             min: 0,
             max: 10,
-            action: (_house: HouseInformation, value: number) => {
-                api.setStrengthWhenPopulatingMilitaryBuildings(value)
-            }
+            action: (_house: HouseInformation, value: number) => api.setStrengthWhenPopulatingMilitaryBuildings(value)
         })
 
         cmds.set('Set defense strength', {
@@ -363,7 +358,7 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
             </TabList>
 
             {panel === 'INVENTORY' &&
-                <ItemContainer rows >
+                <ItemContainer rows style={{ rowGap: '1.5em', padding: '0.5em' }}>
                     {INVENTORY_MATERIALS
                         .filter(material => material !== 'STOREHOUSE_WORKER' && material !== 'WELL_WORKER')
                         .map(material => {

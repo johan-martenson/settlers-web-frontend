@@ -16,5 +16,6 @@ export const PlayLogConfig = {
     errors: true,           // error situations
     gameState: true,       // game state changes, monitoring lifecycle
     preventContextMenu: true,  // prevent context menu from appearing
+    typeControl: false,
     ...(JSON.parse(localStorage.getItem('config.play.log') ?? '{}'))  // override log settings from local storage if it exists
 }

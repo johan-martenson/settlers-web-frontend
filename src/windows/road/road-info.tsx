@@ -7,6 +7,7 @@ import { ButtonRow, WindowWithTyping } from '../../components/dialog'
 import { useRoad } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
 import { UiIcon } from '../../components/icons/icon'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type RoadInfoProps = {
@@ -179,7 +180,8 @@ const RoadInfo = ({
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         cmds.set('Debug', {

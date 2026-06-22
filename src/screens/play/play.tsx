@@ -14,8 +14,8 @@ import { printVariables } from '../../utils/stats/stats'
 import { SetTransportPriority } from '../../windows/transport_priority/transport_priority'
 import { TypeControl } from './type-control'
 import { isRoadAtPoint } from '../../utils/utils'
-import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, SMALL_HOUSE_VALUES, MEDIUM_HOUSE_VALUES, LARGE_HOUSE_VALUES, HouseId, RoadId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
-import { CalendarAgenda24Regular, TopSpeed24Filled, AddCircle24Regular, PauseFilled } from '@fluentui/react-icons'
+import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, HouseId, RoadId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
+import { CalendarAgenda24Regular, TopSpeed24Filled } from '@fluentui/react-icons'
 import { HouseInfo } from '../../windows/house/house_info'
 import { sfx } from '../../sound/sound_effects'
 import { Quotas } from '../../windows/quotas/quotas'
@@ -26,14 +26,14 @@ import { Follow } from '../../windows/monitor/follow'
 import { DEFAULT_HEIGHT_ADJUSTMENT, DEFAULT_SCALE } from '../../render/constants'
 import { NoActionWindow } from '../../windows/no_action/no_action_window'
 import { ExpandChatBox } from '../../components/chat/chat'
-import { canBeUpgraded, getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint } from '../../api/utils'
+import { getHeadquarterForPlayer, removeHouseOrFlagOrRoadAtPoint } from '../../api/utils'
 import { calcTranslation } from '../../render/webgl-utils'
 import Tools from '../../windows/tools/tools'
 import { MapView } from '../../windows/map/map'
 import { useNonTriggeringState } from '../../utils/hooks/non_triggering'
 import { useGame, usePlayer, usePointInformation } from '../../utils/hooks/hooks'
 import { CommandMatch, executeCommand, findMatchingCommands, GenericCommand } from '../../utils/typing-commands'
-import { FlagIcon, HouseIcon, UiIcon } from '../../components/icons/icon'
+import { UiIcon } from '../../components/icons/icon'
 import { DistributiveOmit, useWindows } from './use-windows'
 import { PlayLogConfig } from './config'
 import { useTouchNavigation } from './use-touch-navigation'
@@ -48,84 +48,19 @@ import { usePreventContextMenu } from './use-prevent-context-menu'
 import { useContainerSizeSync } from './use-container-size-sync'
 import { makeToolCommands } from '../../windows/tools/commands'
 import { makeTransportCommands } from '../../windows/transport_priority/commands'
-import { makeQuotaCommandsWithoutFilter } from '../../windows/quotas/commands'
 import { useGestureNavigation } from './use-gestures'
+import { makeQuotaCommandsForGameContext } from '../../windows/quotas/commands'
+import { makeFlagCommandsForGameContext } from '../../commands/flag-commands'
+import { makeGameStateCommandsForGameContext } from '../../commands/game-state-commands'
+import { makeCheatCommandsForGameContext } from '../../commands/cheat-commands'
+import { commandsRequireSelectedPoint } from '../../commands/common'
+import { GameContext } from '../../commands/types'
+import { makeHouseCommandsForGameContext } from '../../commands/house-commands'
+import { GameWindow } from './types'
+import { makeWindowCommandsForGameContext } from '../../commands/window-commands'
 
 // Types
-type HouseWindow = {
-    type: 'HOUSE'
-    house: HouseInformation
-}
 
-type ToolsWindow = {
-    type: 'TOOLS'
-}
-
-type FlagWindow = {
-    type: 'FLAG'
-    flag: FlagInformation
-}
-
-type ConstructionWindow = {
-    type: 'CONSTRUCTION_WINDOW'
-    pointInformation: PointInformation
-}
-
-type StatisticsWindow = {
-    type: 'STATISTICS'
-}
-
-type GuideWindow = {
-    type: 'GUIDE'
-}
-
-type DebugWindow = {
-    type: 'DEBUG'
-}
-
-type QuotaWindow = {
-    type: 'QUOTA'
-}
-
-type RoadWindow = {
-    type: 'ROAD_INFO'
-    roadId: RoadId
-}
-
-type TransportPriorityWindow = {
-    type: 'TRANSPORT_PRIORITY'
-}
-
-type FollowWindow = {
-    type: 'FOLLOW'
-    point: Point
-}
-
-type NoActionWindow = {
-    type: 'NO_ACTION'
-    point: Point
-}
-
-type MapWindow = {
-    type: 'MAP'
-}
-
-type WindowType =
-    | HouseWindow
-    | FlagWindow
-    | ConstructionWindow
-    | StatisticsWindow
-    | GuideWindow
-    | DebugWindow
-    | QuotaWindow
-    | RoadWindow
-    | TransportPriorityWindow
-    | FollowWindow
-    | ToolsWindow
-    | NoActionWindow
-    | MapWindow
-
-type Window = { id: number } & WindowType
 
 type StoredTouch = {
     identifier: number
@@ -213,7 +148,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const selectedPointInformationRef = useRef(selectedPointInformation)
 
     // Use the windowing system hook
-    const isDuplicateWindow = useCallback((existing: Window, window: DistributiveOmit<Window, 'id'>) => {
+    const isDuplicateWindow = useCallback((existing: GameWindow, window: DistributiveOmit<GameWindow, 'id'>) => {
         return (
             (existing.type === 'HOUSE' && window.type === 'HOUSE' && existing.house.id === window.house.id) ||
             (existing.type === 'FLAG' && window.type === 'FLAG' && existing.flag.id === window.flag.id) ||
@@ -233,7 +168,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         closeWindow,
         closeActiveWindow,
         raiseWindow
-    } = useWindows<Window>({ isDuplicateWindow })
+    } = useWindows<GameWindow>({ isDuplicateWindow })
 
     // Use the touch navigation hook
     const zoom = useCallback((newScale: number) => {
@@ -670,12 +605,18 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         zoom(immediateStateRef.current.scale - event.deltaY / 20.0)
     }
 
-    function onCommand(match: CommandMatch<PointInformationWithoutPossibleRoadConnections>): void {
+    function onCommand(match: CommandMatch<GameContext>): void {
         if (PlayLogConfig.typeControl) {
             console.log(`Play (commands): Executing command ${match.commandName} with type ${match.type} and point information ${JSON.stringify(selectedPointInformationRef.current)}`)
         }
 
-        executeCommand(match, selectedPointInformationRef.current)
+        const gameContext: GameContext = {
+            selectedPoint: selectedPointInformationRef.current,
+            game: gameInformation,
+            player: api.players.get(selfPlayerId)
+        }
+
+        executeCommand(match, gameContext)
     }
 
 
@@ -728,33 +669,10 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         const nation = player?.nation ?? 'VIKINGS'
         const color = player?.color ?? 'GREEN'
 
-        const quotaCommands = player !== undefined ? makeQuotaCommandsWithoutFilter(player) : new Map()
-        const toolCommands = makeToolCommands()
-        const transportPriorityCommands = makeTransportCommands()
-        const commands = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>([
-            ...quotaCommands,
-            ...toolCommands,
-            ...transportPriorityCommands
-        ])
+        const quotaCommands = player !== undefined ? makeQuotaCommandsForGameContext(player) : new Map()
+        const commands = new Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>()
 
-        // Buildings
-        SMALL_HOUSE_VALUES.forEach(building => commands.set(building, {
-            action: (point: Point) => api.placeHouse(building, point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('SMALL'),
-            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-        }))
-        MEDIUM_HOUSE_VALUES.forEach(building => commands.set(building, {
-            action: (point: Point) => api.placeHouse(building, point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('MEDIUM'),
-            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-        }))
-        LARGE_HOUSE_VALUES.forEach(building => building !== 'Headquarter' && commands.set(building, {
-            action: (point: Point) => api.placeHouse(building, point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('LARGE'),
-            icon: <HouseIcon houseType={building} nation={nation} scale={0.5} />
-        }))
-
-        // Core Actions
+        // Manage roads
         commands.set('Road', {
             action: async (point: Point) => {
                 if (PlayLogConfig.roads) {
@@ -784,12 +702,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             icon: <UiIcon type='LIGHT_ROAD_IN_NATURE' scale={0.5} />
         })
 
-        commands.set('Flag', {
-            action: (point: Point) => api.placeFlag(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.canBuild.includes('FLAG'),
-            icon: <FlagIcon nation={nation} type='NORMAL' animate scale={0.7} color={color} />
-        })
-
         commands.set('Cancel road', {
             action: () => {
                 clearRoadBuilding()
@@ -798,93 +710,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             }
         })
 
-        // Deletions
-        commands.set('Remove building', {
-            action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING' && api.houses.get(pointInformation?.buildingId!)?.type !== 'Headquarter',
-        })
-        commands.set('Remove flag', {
-            action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'FLAG' && api.flags.get(pointInformation.flagId!)?.playerId === selfPlayerId,
-        })
         commands.set('Remove road', {
             action: (point: Point) => removeHouseOrFlagOrRoadAtPoint(point),
             filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'ROAD' && api.roads.get(pointInformation.roadId!)?.playerId === selfPlayerId,
         })
 
-        // Building Management
-        commands.set('Upgrade', {
-            action: (point: Point) => {
-                const houseInformation = api.getHouseAtPointLocal(point)
-                if (houseInformation && canBeUpgraded(houseInformation)) {
-                    api.upgrade(houseInformation.id)
-                }
-            },
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => {
-                if (pointInformation.is !== 'BUILDING' || pointInformation.buildingId === undefined) return false
-                const houseInformation = api.houses.get(pointInformation.buildingId)
-                return houseInformation !== undefined
-                    && ['Barracks', 'GuardHouse', 'WatchTower'].includes(houseInformation.type)
-                    && ['OCCUPIED', 'UNOCCUPIED'].includes(houseInformation.state)
-            },
-            icon: <AddCircle24Regular />
-        })
-
-        commands.set('Evacuate building', {
-            action: (point: Point) => {
-                const house = api.houseAt(point)
-                if (house !== undefined) {
-                    api.evacuateHouse(house.id)
-                }
-            },
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING',
-            icon: <UiIcon type='SEND_OUT_ARROWS' scale={0.5} />
-        })
-
-        commands.set('Cancel evacuation', {
-            action: (point: Point) => {
-                const house = api.houseAt(point)
-
-                if (house !== undefined) {
-                    api.cancelEvacuationForHouse(house.id)
-                }
-            },
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'BUILDING'
-        })
-
-        commands.set('Geologist', {
-            action: (point: Point) => api.callGeologist(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'FLAG'
-        })
-        commands.set('Scout', {
-            action: (point: Point) => api.callScout(point),
-            filter: (pointInformation: PointInformationWithoutPossibleRoadConnections) => pointInformation.is === 'FLAG'
-        })
-
         // Windows & Menus
-        commands.set('Follow', {
-            action: (point: Point) => openWindow({ type: 'FOLLOW', point }),
-            icon: <UiIcon type='FILM_CAMERA' scale={0.5} />
-        })
-        commands.set('Monitor', {
-            action: (point: Point) => openWindow({ type: 'FOLLOW', point }),
-            icon: <UiIcon type='FILM_CAMERA' scale={0.5} />
-        })
-        commands.set('Statistics', { action: () => openSingletonWindow({ type: 'STATISTICS' }) })
-        commands.set('Transport priority', {
-            action: () => openSingletonWindow({ type: 'TRANSPORT_PRIORITY' }),
-            icon: <UiIcon type='TRANSPORT_PRIORITY' scale={0.5} />
-        })
-        commands.set('Quotas', { action: () => openSingletonWindow({ type: 'QUOTA' }) })
-        commands.set('Tools', {
-            action: () => openSingletonWindow({ type: 'TOOLS' }),
-            icon: <UiIcon type='TOOLS_WITH_QUESTION_MARK' scale={0.5} />
-        })
-        commands.set('Map', {
-            action: () => openWindow({ type: 'MAP' }),
-            icon: <UiIcon type='GLOBE_WITH_MAGNIFYING_GLASS' scale={0.5} />
-        })
-        commands.set('Guide', { action: () => openSingletonWindow({ type: 'GUIDE' }) })
+
         commands.set('Menu', {
             action: () => setShowMenu(true),
             icon: <CalendarAgenda24Regular />
@@ -962,18 +794,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             filter: () => !showMusicPlayer
         })
 
-        // Game State Control
-        commands.set('Pause game', {
-            action: () => api.pauseGame(gameId),
-            icon: <PauseFilled />,
-            filter: () => gameState === 'PAUSED'
-        })
-        commands.set('Resume game', {
-            action: () => api.resumeGame(gameId),
-            icon: <UiIcon type='RIGHT_ARROW' scale={0.5} />,
-            filter: () => gameState === 'STARTED'
-        })
-
         // Debug & Cheats
         commands.set('List statistics', {
             action: () => printVariables(),
@@ -989,15 +809,8 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             hidden: true,
             icon: <UiIcon type='SPRAY_CAN' scale={0.5} />
         })
-        commands.set('GiveMeSomeMore', {
-            action: () => api.cheat('GIVE_ME_SOME_MORE'),
-            hidden: true
-        })
-        commands.set('ShowMeTheWorld', {
-            action: () => api.cheat('SHOW_ME_THE_WORLD'),
-            hidden: true
-        })
 
+        // Fog of war
         commands.set('Enable fog of war', {
             action: () => setFogOfWar(true),
             hidden: true
@@ -1021,7 +834,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             hidden: true
         })
 
-        return commands
+        return new Map<string, GenericCommand<GameContext>>([
+            ...makeHouseCommandsForGameContext(nation),
+            ...makeFlagCommandsForGameContext(selfPlayerId, nation, color),
+            ...makeWindowCommandsForGameContext(nation, openWindow, openSingletonWindow),
+            ...makeGameStateCommandsForGameContext(gameState),
+            ...quotaCommands,
+            ...makeToolCommands(nation),
+            ...makeTransportCommands(),
+            ...makeCheatCommandsForGameContext(),
+            ...commandsRequireSelectedPoint(commands)
+        ])
     }, [
         selfPlayerId,
         gameId,
@@ -1042,15 +865,21 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     ])
 
     const { available, matches } = useMemo(() => {
+        const gameContext: GameContext = {
+            selectedPoint: selectedPointInformationRef.current,
+            player: api.players.get(selfPlayerId),
+            game: gameInformation
+        }
+
         const available = new Set(commands.entries()
             // eslint-disable-next-line
-            .filter(([_commandName, command]) => command.filter === undefined || command.filter(selectedPointInformation))
+            .filter(([_commandName, command]) => command.filter === undefined || command.filter(gameContext))
 
             // eslint-disable-next-line
             .map(([commandName, _command]) => commandName))
 
         return {
-            matches: (inputValue !== undefined && inputValue.trim().length > 0) ? findMatchingCommands(commands, inputValue, selectedPointInformation) : [],
+            matches: (inputValue !== undefined && inputValue.trim().length > 0) ? findMatchingCommands(commands, inputValue, gameContext) : [],
             available
         }
     }, [selectedPointInformation, inputValue, commands])
@@ -1058,8 +887,15 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
     const onKeyDown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === 'Enter') {
             if (showTypingController && matches && matches.length > 0) {
-                console.log(matches[0])
-                executeCommand(matches[0], selectedPointInformationRef.current)
+                const gameContext: GameContext = {
+                    selectedPoint: selectedPointInformationRef.current,
+                    player: api.players.get(selfPlayerId),
+                    game: gameInformation
+                }
+
+                console.log('Executing command', matches[0], gameContext)
+
+                executeCommand(matches[0], gameContext)
             }
         } else if (event.key === 'Escape') {
 

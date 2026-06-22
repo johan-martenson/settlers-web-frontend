@@ -1,4 +1,6 @@
-import { isMaterial, PlayerInformation } from '../../api/types'
+import { isBuilding, isMaterial, PlayerInformation } from '../../api/types'
+import { commandRequiresPlayer, removeFilterFromCommand } from '../../commands/common'
+import { GameContext } from '../../commands/types'
 import { HouseIcon, InventoryIcon } from '../../components/icons/icon'
 import { buildingPretty } from '../../utils/pretty-strings'
 import { GenericCommand } from '../../utils/typing-commands'
@@ -11,25 +13,34 @@ function makeQuotaCommands(player: PlayerInformation): Map<string, GenericComman
 
     QUOTA_CONFIGS.forEach(({ material, materialName, configs }) => {
         configs.forEach(config => {
-            const building = buildingPretty(config.houseType)
+            let consumerLabel
+            let icon
 
-            cmds.set(`Set ${building.toLowerCase()} ${materialName.toLowerCase()} quota`, {
+            if (isBuilding(config.consumer)) {
+                consumerLabel = buildingPretty(config.consumer)
+                icon = <HouseIcon houseType={config.consumer} nation={player.nation} scale={0.5} />
+            } else {
+                consumerLabel = 'Construction'
+                icon = <div>Construction</div>
+            }
+
+            cmds.set(`Set ${consumerLabel.toLowerCase()} ${materialName.toLowerCase()} quota`, {
                 type: 'NUMBER',
                 min: 0,
                 max: 10,
                 parameterName: 'quota',
                 action: (_material: MaterialQuotaToManage, quota: number) => config.set(player, quota),
                 filter: currentMaterial => currentMaterial === material,
-                icon: <HouseIcon houseType={config.houseType} nation={player.nation} scale={0.5} />
+                icon
             })
 
-            cmds.set(`Max ${building.toLowerCase()} ${materialName.toLowerCase()} quota`, {
+            cmds.set(`Max ${consumerLabel.toLowerCase()} ${materialName.toLowerCase()} quota`, {
                 action: () => config.set(player, 10),
                 filter: currentMaterial => currentMaterial === material,
                 icon: <InventoryIcon nation={player.nation} material={isMaterial(material) ? material : 'COAL'} scale={0.8} />
             })
 
-            cmds.set(`Clear ${building.toLowerCase()} ${materialName.toLowerCase()} quota`, {
+            cmds.set(`Clear ${consumerLabel.toLowerCase()} ${materialName.toLowerCase()} quota`, {
                 action: () => config.set(player, 0),
                 filter: currentMaterial => currentMaterial === material,
                 icon: <InventoryIcon nation={player.nation} material={isMaterial(material) ? material : 'COAL'} scale={0.8} missing />
@@ -46,20 +57,70 @@ function makeQuotaCommands(player: PlayerInformation): Map<string, GenericComman
     return cmds
 }
 
-function makeQuotaCommandsWithoutFilter(player: PlayerInformation) {
-    return new Map(
-        Array.from(makeQuotaCommands(player), ([key, command]) => [
-            key,
-            {
-                ...command,
-                filter: undefined
+function makeQuotaCommandsForGameContext<TValue extends string>(player: PlayerInformation): Map<string, GenericCommand<GameContext, TValue>> {
+    const commands = new Map<string, GenericCommand<PlayerInformation, TValue>>()
+
+    QUOTA_CONFIGS.forEach(({ material, materialName, configs }) => {
+        configs.forEach(config => {
+            let consumerLabel
+            let icon
+
+            if (isBuilding(config.consumer)) {
+                consumerLabel = buildingPretty(config.consumer)
+                icon = <HouseIcon houseType={config.consumer} nation={player.nation} scale={0.5} />
+            } else {
+                consumerLabel = 'Construction'
+                icon = <div>Construction</div>
             }
-        ])
+
+            commands.set(`Set ${consumerLabel.toLowerCase()} ${materialName.toLowerCase()} quota`, {
+                type: 'NUMBER',
+                min: 0,
+                max: 10,
+                parameterName: 'quota',
+                action: (player: PlayerInformation, quota: number) => config.set(player, quota),
+                icon
+            })
+
+            commands.set(`Max ${consumerLabel.toLowerCase()} ${materialName.toLowerCase()} quota`, {
+                action: () => config.set(player, 10),
+                icon: <InventoryIcon nation={player.nation} material={isMaterial(material) ? material : 'COAL'} scale={0.8} />
+            })
+
+            commands.set(`Clear ${consumerLabel.toLowerCase()} ${materialName.toLowerCase()} quota`, {
+                action: () => config.set(player, 0),
+                icon: <InventoryIcon nation={player.nation} material={isMaterial(material) ? material : 'COAL'} scale={0.8} missing />
+            })
+
+            commands.set(`Clear all ${materialName.toLowerCase()} quotas`, {
+                action: () => configs.forEach(config => config.set(player, 0)),
+                icon: <InventoryIcon nation={player.nation} material={isMaterial(material) ? material : 'COAL'} scale={0.8} missing />
+            })
+
+            commands.set(`Increase ${consumerLabel.toLowerCase()} ${materialName.toLowerCase()} quota`, {
+                action: (player: PlayerInformation) => config.set(player, config.get(player) + 1),
+                filter: (player: PlayerInformation) => config.get(player) < 10
+            })
+
+            commands.set(`Decrease ${consumerLabel.toLowerCase()} ${materialName.toLowerCase()} quota`, {
+                action: (player: PlayerInformation) => config.set(player, config.get(player) + 1),
+                filter: (player: PlayerInformation) => config.get(player) > 0
+            })
+        })
+    })
+
+    return new Map(
+        [...commands].map(
+            ([name, command]) => [
+                name,
+                commandRequiresPlayer(command)
+            ]
+        )
     )
 }
 
 /// Exports
 export {
     makeQuotaCommands,
-    makeQuotaCommandsWithoutFilter
+    makeQuotaCommandsForGameContext
 }

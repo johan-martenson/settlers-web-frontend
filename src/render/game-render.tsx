@@ -440,6 +440,7 @@ function GameCanvas({
                 continue
             }
 
+            // Collect images to draw
             if (house.state === 'PLANNED') {
                 const plannedDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseJustStarted(house)
                 pushImage(plannedDrawInformation, house, 'OBJECT')
@@ -481,8 +482,38 @@ function GameCanvas({
                     const smokeDrawInformation = fireAnimations.getSmokeFrameForHouse(house, renderState.animationIndex)
                     pushImage(smokeDrawInformation, house, 'OBJECT')
                 }
-
             }
+
+            // Collect the titles
+            if (house.playerId !== selfPlayerId) {
+                console.log('Wrong player')
+
+                continue
+            }
+
+            const screenPoint = gamePointToScreenPointWithHeightAdjustmentInternal(house)
+            const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseReady(house)
+
+            let heightOffset = 0
+
+            if (houseDrawInformation) {
+                heightOffset = houseDrawInformation[0].offsetY * navigationState.scale / DEFAULT_SCALE
+            }
+
+            let houseTitle = buildingPretty(house.type)
+
+            if (house.state === 'UNFINISHED') {
+                houseTitle = `(${houseTitle})`
+            } else if (house.state === 'UNOCCUPIED') {
+                houseTitle = `${houseTitle} (unoccupied)`
+            } else if (house.productivity !== undefined && house.state === 'OCCUPIED') {
+                houseTitle = `${houseTitle} (${house.productivity}%)`
+            }
+
+            renderState.houseTitlesRenderQueue.push({
+                text: houseTitle,
+                gamePoint: screenPoint
+            })
         }
 
         duration.after('collect houses')
@@ -869,44 +900,6 @@ function GameCanvas({
         }
 
         duration.after('collect hover point')
-
-
-        // Collect house titles
-        for (const house of houses) {
-            if (house.playerId !== selfPlayerId) {
-                continue
-            }
-
-            if (house.x + 2 < minXInGame || house.x - 2 > maxXInGame || house.y + 2 < minYInGame || house.y - 2 > maxYInGame) {
-                continue
-            }
-
-            const screenPoint = gamePointToScreenPointWithHeightAdjustmentInternal(house)
-            const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseReady(house)
-
-            let heightOffset = 0
-
-            if (houseDrawInformation) {
-                heightOffset = houseDrawInformation[0].offsetY * navigationState.scale / DEFAULT_SCALE
-            }
-
-            let houseTitle = buildingPretty(house.type)
-
-            if (house.state === 'UNFINISHED') {
-                houseTitle = `(${houseTitle})`
-            } else if (house.state === 'UNOCCUPIED') {
-                houseTitle = `${houseTitle} (unoccupied)`
-            } else if (house.productivity !== undefined && house.state === 'OCCUPIED') {
-                houseTitle = `${houseTitle} (${house.productivity}%)`
-            }
-
-            renderState.houseTitlesRenderQueue.push({
-                text: houseTitle,
-                gamePoint: screenPoint
-            })
-        }
-
-        duration.after('collect house titles')
 
 
         /// Render from collected queues

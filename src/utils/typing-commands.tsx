@@ -8,7 +8,7 @@ type BaseCommand<CommandContext> = {
     filter?: (context: CommandContext) => boolean | undefined
 }
 
-type FixedCommand<CommandContext> = BaseCommand<CommandContext> & {
+export type FixedCommand<CommandContext> = BaseCommand<CommandContext> & {
     type?: 'FIXED'
     action: (context: CommandContext) => void
 }
@@ -35,10 +35,10 @@ export type StringCommand<CommandContext> = BaseCommand<CommandContext> & {
     action: (context: CommandContext, value: string) => void
 }
 
-export type GenericCommand<CommandContext> =
+export type GenericCommand<CommandContext, TValue extends string = string> =
     | FixedCommand<CommandContext>
     | NumberCommand<CommandContext>
-    | EnumCommand<CommandContext, string>
+    | EnumCommand<CommandContext, TValue>
     | StringCommand<CommandContext>
 
 type HighlightedPart = {

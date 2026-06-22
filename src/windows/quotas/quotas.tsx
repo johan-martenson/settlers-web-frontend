@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import './quotas.css'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { AnyBuilding, isMaterial, Nation, PlayerId, } from '../../api/types'
+import { AnyBuilding, isBuilding, Nation, PlayerId, } from '../../api/types'
 import { WindowWithTyping } from '../../components/dialog'
 import { ItemContainer } from '../../components/item_container'
 import { usePlayer } from '../../utils/hooks/hooks'
@@ -11,7 +11,7 @@ import { buildingPretty } from '../../utils/pretty-strings'
 import { HouseIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 import { Dismiss16Filled } from '@fluentui/react-icons'
 import { MaterialQuotaToManage } from './types'
-import { QUOTA_CONFIGS, COAL_CONFIG, WHEAT_CONFIG, FOOD_CONFIG, WATER_CONFIG, IRON_CONFIG } from './constants'
+import { COAL_CONFIG, WHEAT_CONFIG, FOOD_CONFIG, WATER_CONFIG, IRON_CONFIG, PLANKS_CONFIG } from './constants'
 import { makeQuotaCommands } from './commands'
 
 // Types
@@ -24,7 +24,7 @@ type QuotasProps = {
 }
 
 type QuotaRowProps = {
-    houseType: AnyBuilding
+    consumer: AnyBuilding | 'construction'
     nation: Nation
     value: number
     setHover: (text?: string) => void
@@ -34,18 +34,25 @@ type QuotaRowProps = {
 
 
 // React components
-const QuotaRow = ({ houseType, nation, value, setHover, onDecrease, onIncrease }: QuotaRowProps) => {
-    const label = buildingPretty(houseType)
+const QuotaRow = ({ consumer, nation, value, setHover, onDecrease, onIncrease }: QuotaRowProps) => {
+    const isHouse = isBuilding(consumer)
+    const label = isHouse ? buildingPretty(consumer) : 'construction'
 
     return <Field label={label} style={{ width: '100%' }}>
         <div className='quota-for-house'>
-            <HouseIcon
-                houseType={houseType}
-                nation={nation}
-                drawShadow
-                onMouseEnter={() => setHover(label)}
-                onMouseLeave={() => setHover(undefined)}
-            />
+            {isHouse
+                ? <HouseIcon
+                    houseType={consumer}
+                    nation={nation}
+                    drawShadow
+                    onMouseEnter={() => setHover(label)}
+                    onMouseLeave={() => setHover(undefined)}
+                />
+                : <div
+                    onMouseEnter={() => setHover(label)}
+                    onMouseLeave={() => setHover(undefined)}
+                >Construction</div>
+            }
 
             <div className='quota'>
                 <UiIcon type='MINUS' scale={0.5}
@@ -78,6 +85,8 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
 
     // Monitoring hooks
     const player = usePlayer(playerId)
+
+    console.log('Player is now', player)
 
     // Memos
     const commands = useMemo(() => {
@@ -167,7 +176,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
                 <ItemContainer width='20em'>
                     {COAL_CONFIG.map(config => (
                         <QuotaRow
-                            key={config.houseType}
+                            key={config.consumer}
                             {...config}
                             nation={nation}
                             setHover={setHover}
@@ -183,7 +192,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
                 <ItemContainer width='20em'>
                     {FOOD_CONFIG.map(config => (
                         <QuotaRow
-                            key={config.houseType}
+                            key={config.consumer}
                             {...config}
                             nation={nation}
                             setHover={setHover}
@@ -199,7 +208,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
                 <ItemContainer width='20em'>
                     {WATER_CONFIG.map(config => (
                         <QuotaRow
-                            key={config.houseType}
+                            key={config.consumer}
                             {...config}
                             nation={nation}
                             setHover={setHover}
@@ -214,7 +223,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
             {materialToManage === 'WHEAT' &&
                 <ItemContainer width='20em'>
                     {WHEAT_CONFIG.map(config => (
-                        <QuotaRow key={config.houseType} {...config} nation={nation} setHover={setHover}
+                        <QuotaRow key={config.consumer} {...config} nation={nation} setHover={setHover}
                             value={config.get(player)}
                             onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
                             onIncrease={() => config.set(player, clamp(config.get(player) + 1, 0, 10))}
@@ -226,7 +235,7 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
             {materialToManage === 'IRON_BAR' &&
                 <ItemContainer width='20em'>
                     {IRON_CONFIG.map(config => (
-                        <QuotaRow key={config.houseType} {...config} nation={nation} setHover={setHover}
+                        <QuotaRow key={config.consumer} {...config} nation={nation} setHover={setHover}
                             value={config.get(player)}
                             onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
                             onIncrease={() => config.set(player, clamp(config.get(player) + 1, 0, 10))}
@@ -234,6 +243,17 @@ const Quotas = ({ nation, playerId, onClose, onRaise }: QuotasProps) => {
                     ))}
                 </ItemContainer>
             }
+
+            {materialToManage === 'PLANK' &&
+                <ItemContainer width='20em'>
+                    {PLANKS_CONFIG.map(config => (
+                        <QuotaRow key={config.consumer} {...config} nation={nation} setHover={setHover}
+                            value={config.get(player)}
+                            onDecrease={() => config.set(player, clamp(config.get(player) - 1, 0, 10))}
+                            onIncrease={() => config.set(player, clamp(config.get(player) + 1, 0, 10))}
+                        />
+                    ))}
+                </ItemContainer>}
 
         </WindowWithTyping>
     )

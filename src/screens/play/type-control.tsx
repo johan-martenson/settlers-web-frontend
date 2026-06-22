@@ -7,12 +7,12 @@ import { NoMatch, TypeMatch } from '../../components/typing/typing'
 import { KeyboardRegular } from '@fluentui/react-icons'
 
 // Types
-type TypeControlProps = {
+type TypeControlProps<TContext> = {
     input: string
-    commands: Map<string, GenericCommand<PointInformationWithoutPossibleRoadConnections>>
+    commands: Map<string, GenericCommand<TContext>>
     available: Set<string>
-    matches: CommandMatch<PointInformationWithoutPossibleRoadConnections>[]
-    onCommand: (match: CommandMatch<PointInformationWithoutPossibleRoadConnections>) => void
+    matches: CommandMatch<TContext>[]
+    onCommand: (match: CommandMatch<TContext>) => void
 }
 
 // Log configuration
@@ -24,7 +24,7 @@ export const TypeControlLogConfig = {
 }
 
 // React components
-const TypeControl = ({ commands, input, available, matches, onCommand }: TypeControlProps) => {
+function TypeControl<TContext>({ commands, input, available, matches, onCommand }: TypeControlProps<TContext>) {
 
     // State
     const [expanded, setExpanded] = useState<boolean>(false)

@@ -271,11 +271,7 @@ function usePlayer(playerId: PlayerId): PlayerInformation | undefined {
         const updatedPlayer = api.players.get(playerId)
 
         if (HooksConfig.usePlayer) {
-            console.log(
-                'Hooks (usePlayer): Player changed',
-                playerId,
-                updatedPlayer
-            )
+            console.log('Hooks (usePlayer): Player changed', playerId, updatedPlayer)
         }
 
         setPlayer(updatedPlayer)

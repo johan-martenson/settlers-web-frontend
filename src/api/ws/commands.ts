@@ -196,6 +196,7 @@ enum Command {
     SetFoodQuotas = 'SET_FOOD_QUOTAS',
     SetWaterQuotas = 'SET_WATER_QUOTAS',
     SetIronBarQuotas = 'SET_IRON_BAR_QUOTAS',
+    SetPlankQuotas = 'SET_PLANK_QUOTAS',
     MarkGameMessagesRead = 'MARK_GAME_MESSAGES_READ',
 
     // Houses
@@ -257,8 +258,8 @@ type ResumeProductionForHouse = { houseId: HouseId }
 type EvacuateHouse = { houseId: HouseId }
 type SetToolPriority = { playerId: PlayerId, tool: Tool, priority: number }
 type GetToolPriorities = { playerId: PlayerId }
-type GetStatistics = {gameId: GameId, playerId: PlayerId}
-type GetTransportPriority = {playerId: PlayerId}
+type GetStatistics = { gameId: GameId, playerId: PlayerId }
+type GetTransportPriority = { playerId: PlayerId }
 type SetTransportPriority = { playerId: PlayerId, category: TransportCategory, priority: number }
 type AttackHouse = { houseId: HouseId, attackers: number, attackType: AttackType, playerId: PlayerId }
 type SetStrengthWhenPopulatingMilitaryBuildings = { strength: number, playerId: PlayerId }
@@ -289,19 +290,20 @@ type AddDetailedMonitoring = { id: HouseId | FlagId, playerId: PlayerId }
 type RemoveDetailedMonitoring = { id: HouseId | FlagId, playerId: PlayerId }
 type RemoveMessage = { messageId: GameMessageId, playerId: PlayerId }
 type RemoveMessages = { messageIds: GameMessageId[], playerId: PlayerId }
-type SetCoalQuotas = { mint: number, armory: number, ironSmelter: number, playerId: PlayerId}
+type SetCoalQuotas = { mint: number, armory: number, ironSmelter: number, playerId: PlayerId }
 type SetWheatQuotas = { donkeyFarm: number, pigFarm: number, mill: number, brewery: number, playerId: PlayerId }
 type SetFoodQuotas = { ironMine: number, coalMine: number, goldMine: number, graniteMine: number, playerId: PlayerId }
 type SetWaterQuotas = { bakery: number, donkeyFarm: number, pigFarm: number, brewery: number, playerId: PlayerId }
 type SetIronBarQuotas = { armory: number, metalworks: number, playerId: PlayerId }
+type SetPlankQuotas = { construction: number, shipyard: number, metalworks: number, playerId: PlayerId }
 type DeleteGame = { gameId: GameId }
 type PauseGame = { gameId: GameId }
 type ResumeGame = { gameId: GameId }
 type PlaceHouse = { x: number, y: number, type: AnyBuilding, playerId: PlayerId }
-type BlockDelivery = {houseId: HouseId, material: Material}
-type AllowDelivery = {houseId: HouseId, material: Material}
-type SendOut = {houseId: HouseId, material: Material}
-type StopSendingOut = {houseId: HouseId, material: Material}
+type BlockDelivery = { houseId: HouseId, material: Material }
+type AllowDelivery = { houseId: HouseId, material: Material }
+type SendOut = { houseId: HouseId, material: Material }
+type StopSendingOut = { houseId: HouseId, material: Material }
 type PlaceRoad = { road: Point[], playerId: PlayerId }
 type PlaceFlag = { flag: Point, playerId: PlayerId }
 type PlaceRoadWithFlag = { flag: Point, road: Point[], playerId: PlayerId }
@@ -321,10 +323,10 @@ type GetSoldiersAvailableForAttack = { playerId: PlayerId }
 type GetPopulateMilitaryFarFromBorder = { playerId: PlayerId }
 type GetMilitaryAwayFromBorder = { playerId: PlayerId }
 type GetMilitaryCloseToBorder = { playerId: PlayerId }
-type GetMilitarySettings = {playerId: PlayerId}
-type GetDefenseFromSurrounding = {playerId: PlayerId}
-type GetDefenseStrength = {playerId: PlayerId}
-type GetStrengthWhenPopulatingMilitaryBuildings = {playerId: PlayerId}
+type GetMilitarySettings = { playerId: PlayerId }
+type GetDefenseFromSurrounding = { playerId: PlayerId }
+type GetDefenseStrength = { playerId: PlayerId }
+type GetStrengthWhenPopulatingMilitaryBuildings = { playerId: PlayerId }
 type GetIronBarQuotas = { playerId: PlayerId }
 type GetWaterQuotas = { playerId: PlayerId }
 type GetWheatQuotas = { playerId: PlayerId }
@@ -859,7 +861,7 @@ async function getInformationOnPoints(points: Point[], playerId: PlayerId): Prom
  * @returns void
  */
 function cheat(cheatCode: CheatCode, playerId: PlayerId): void {
-    sendWithOptions<{ cheatCode: CheatCode, playerId: PlayerId}>(Command.Cheat, { cheatCode, playerId })
+    sendWithOptions<{ cheatCode: CheatCode, playerId: PlayerId }>(Command.Cheat, { cheatCode, playerId })
 }
 
 /**
@@ -1022,6 +1024,18 @@ function setIronBarQuotas(armory: number, metalworks: number, playerId: PlayerId
 }
 
 /**
+ * Sets the plank quotas.
+ * @param {number} construction - The quota for construction.
+ * @param {number} shipyard - The quota for shipyards.
+ * @param {number} metalworks - The quota for metalworks.
+ * @param {PlayerId} playerId - The identifier of the player for whom to set the quotas.
+ * @returns {void}
+ */
+function setPlankQuotas(construction: number, shipyard: number, metalworks: number, playerId: PlayerId): void {
+    sendWithOptions<SetPlankQuotas>(Command.SetPlankQuotas, { playerId, construction, shipyard, metalworks })
+}
+
+/**
  * Creates a new game with the given name and players.
  * @param {string} name - The name of the game
  * @param {(ExistingPlayerById | NewPlayerToCreate)[]} players - The players in the game
@@ -1079,7 +1093,7 @@ function placeHouse(type: AnyBuilding, point: Point, playerId: PlayerId): void {
 function blockDelivery(houseId: HouseId, material: Material): void {
     sendWithOptions<BlockDelivery>(Command.BlockMaterial, { houseId, material })
 }
- 
+
 /**
  * Allow delivery of the given material to the given storehouse.
  * @param {HouseId} houseId - The id of the storehouse to allow delivery to
@@ -1341,5 +1355,6 @@ export {
     stopSendingOutMaterial,
     getMapsWithTerrain,
     getMapWithTerrain,
-    stopListeningToGamesList
+    stopListeningToGamesList,
+    setPlankQuotas
 }

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { PlayLogConfig } from './config'
+import { GameWindow } from './types'
+
 
 // Types
 export type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
@@ -8,44 +10,54 @@ type WindowWithId<WindowType extends string = string> = {
     id: number
     type: WindowType
 }
-type UseWindowsProps<Window extends WindowWithId> = {
-    isDuplicateWindow?: (existing: Window, candidate: Window) => boolean
+type UseWindowsProps<GameWindow extends WindowWithId> = {
+    isDuplicateWindow?: (existing: GameWindow, candidate: GameWindow) => boolean
 }
 
-type UseWindowsResult<Window extends WindowWithId> = {
-    windows: Window[]
+export type OpenWindowFunction<GameWindow extends WindowWithId> =
+    (window: DistributiveOmit<GameWindow, 'id'>) => void
 
-    openWindow: (window: DistributiveOmit<Window, 'id'>) => void
-    openSingletonWindow: (window: DistributiveOmit<Window, 'id'>) => void
+export type OpenSingletonWindowFunction<GameWindow extends WindowWithId> =
+    (window: DistributiveOmit<GameWindow, 'id'>) => void
+export type CloseWindowFunction = (id: number) => void
+export type CloseActiveWindowFunction = () => void
+export type RaiseWindowFunction = (id: number) => void
 
-    closeWindow: (id: number) => void
-    closeActiveWindow: () => void
 
-    raiseWindow: (id: number) => void
+type UseWindowsResult<GameWindow extends WindowWithId> = {
+    windows: GameWindow[]
+
+    openWindow: OpenWindowFunction<GameWindow>
+    openSingletonWindow: OpenSingletonWindowFunction<GameWindow>
+
+    closeWindow: CloseWindowFunction
+    closeActiveWindow: CloseActiveWindowFunction
+
+    raiseWindow: RaiseWindowFunction
 
     clearWindows: () => void
 }
 
 // Functions
-function useWindows<Window extends WindowWithId>({
+function useWindows<GameWindow extends WindowWithId>({
     isDuplicateWindow
-}: UseWindowsProps<Window> = {}): UseWindowsResult<Window> {
+}: UseWindowsProps<GameWindow> = {}): UseWindowsResult<GameWindow> {
 
     // State
-    const [windows, setWindows] = useState<Window[]>([])
+    const [windows, setWindows] = useState<GameWindow[]>([])
 
     // Refs
     const nextWindowIdRef = useRef(0)
 
     // Functions
-    function withWindowId<Window extends WindowWithId>(
-        window: DistributiveOmit<Window, 'id'>,
+    function withWindowId<GameWindow extends WindowWithId>(
+        window: DistributiveOmit<GameWindow, 'id'>,
         id: number
-    ): Window {
-        return { ...window, id } as Window
+    ): GameWindow {
+        return { ...window, id } as GameWindow
     }
 
-    const openWindow = useCallback((window: DistributiveOmit<Window, 'id'>) => {
+    const openWindow = useCallback((window: DistributiveOmit<GameWindow, 'id'>) => {
         if (PlayLogConfig.windows) {
             console.log('Windows: Opening window requested', window)
         }
@@ -55,7 +67,7 @@ function useWindows<Window extends WindowWithId>({
                 const duplicate = prevWindows.find(existing =>
                     isDuplicateWindow(
                         existing,
-                        window as Window
+                        window as GameWindow
                     )
                 )
 
@@ -98,7 +110,7 @@ function useWindows<Window extends WindowWithId>({
         })
     }, [isDuplicateWindow])
 
-    const openSingletonWindow = useCallback((window: DistributiveOmit<Window, 'id'>) => {
+    const openSingletonWindow = useCallback((window: DistributiveOmit<GameWindow, 'id'>) => {
         setWindows(prevWindows => {
             if (PlayLogConfig.windows) {
                 console.log('Windows: Opening singleton window requested', window)

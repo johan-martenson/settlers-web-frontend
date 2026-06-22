@@ -1,7 +1,7 @@
 import { AnyBuilding, PlayerInformation } from '../../api/types'
 
 export type QuotaConfig = {
-    houseType: AnyBuilding
+    consumer: AnyBuilding | 'construction'
     get: (p: PlayerInformation) => number
     set: (p: PlayerInformation, v: number) => void
 }

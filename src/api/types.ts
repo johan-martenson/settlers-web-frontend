@@ -295,40 +295,51 @@ export type PlayerInformation = {
     readonly discoveredPoints: Set<Point> // NOTE: uses Set which will not check equality based on values!
     readonly nation: Nation
     ownedLand: Point[]
-    readonly strengthWhenPopulatingBuildings: number
-    readonly defenseStrength: number
-    readonly defenseFromSurroundingBuildings: number
-    readonly militaryPopulationFarFromBorder: number
-    readonly militaryPopulationAwayFromBorder: number
-    readonly militaryPopulationCloseToBorder: number
-    readonly soldiersAvailableForAttack: number
-    coalQuota: {
-        mint: number
-        armory: number
-        ironSmelter: number
+    readonly militarySettings: {
+        readonly strengthWhenPopulatingBuildings: number
+        readonly defenseStrength: number
+        readonly defenseFromSurroundingBuildings: number
+        readonly militaryPopulationFarFromBorder: number
+        readonly militaryPopulationAwayFromBorder: number
+        readonly militaryPopulationCloseToBorder: number
+        readonly soldiersAvailableForAttack: number
     }
-    wheatQuota: {
-        mill: number
-        donkeyFarm: number
-        pigFarm: number
-        brewery: number
+    readonly resourceQuotas: {
+        COAL: {
+            mint: number
+            armory: number
+            ironSmelter: number
+        }
+        WHEAT: {
+            mill: number
+            donkeyFarm: number
+            pigFarm: number
+            brewery: number
+        }
+        WATER: {
+            bakery: number
+            donkeyFarm: number
+            pigFarm: number
+            brewery: number
+        }
+        IRON: {
+            armory: number
+            metalworks: number
+        }
+        FOOD: {
+            ironMine: number
+            coalMine: number
+            goldMine: number
+            graniteMine: number
+        }
+        PLANKS: {
+            construction: number
+            shipyard: number
+            metalworks: number
+        }
     }
-    waterQuota: {
-        bakery: number
-        donkeyFarm: number
-        pigFarm: number
-        brewery: number
-    }
-    ironQuota: {
-        armory: number
-        metalworks: number
-    }
-    foodQuota: {
-        ironMine: number
-        coalMine: number
-        goldMine: number
-        graniteMine: number
-    }
+    readonly toolQuotas: Record<Tool, number>
+    readonly transportPriority: TransportCategory[]
 }
 
 export type GameInformation = {

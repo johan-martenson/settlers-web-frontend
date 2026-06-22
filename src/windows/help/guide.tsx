@@ -4,6 +4,7 @@ import './guide.css'
 import { Button } from '@fluentui/react-components'
 import { WindowWithTyping } from '../../components/dialog'
 import { GenericCommand } from '../../utils/typing-commands'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type GuideProps = {
@@ -32,46 +33,47 @@ const Guide = ({ onClose, onRaise }: GuideProps) => {
 
     // Memos
     const commands = useMemo(() => {
-    const cmds = new Map<string, GenericCommand<'guide'>>()
+        const cmds = new Map<string, GenericCommand<'guide'>>()
 
-    cmds.set('Next page', {
-        action: nextPage
-    })
-
-    cmds.set('Previous page', {
-        action: prevPage
-    })
-
-    cmds.set('First page', {
-        action: () => setPageNumber(0)
-    })
-
-    cmds.set('Last page', {
-        action: () => setPageNumber(HELP_PAGES.length - 1)
-    })
-
-    cmds.set('Go to page', {
-        type: 'NUMBER',
-        parameterName: 'page',
-        min: 1,
-        max: HELP_PAGES.length,
-        action: (_guide: 'guide', page: number) => {
-            setPageNumber(page - 1)
-        }
-    })
-
-    HELP_PAGES.forEach((page, index) => {
-        cmds.set(page.title, {
-            action: () => setPageNumber(index)
+        cmds.set('Next page', {
+            action: nextPage
         })
-    })
 
-    cmds.set('Close window', {
-        action: onClose
-    })
+        cmds.set('Previous page', {
+            action: prevPage
+        })
 
-    return cmds
-}, [nextPage, prevPage, onClose])
+        cmds.set('First page', {
+            action: () => setPageNumber(0)
+        })
+
+        cmds.set('Last page', {
+            action: () => setPageNumber(HELP_PAGES.length - 1)
+        })
+
+        cmds.set('Go to page', {
+            type: 'NUMBER',
+            parameterName: 'page',
+            min: 1,
+            max: HELP_PAGES.length,
+            action: (_guide: 'guide', page: number) => {
+                setPageNumber(page - 1)
+            }
+        })
+
+        HELP_PAGES.forEach((page, index) => {
+            cmds.set(page.title, {
+                action: () => setPageNumber(index)
+            })
+        })
+
+        cmds.set('Close window', {
+            action: onClose,
+            icon: <Dismiss16Filled />
+        })
+
+        return cmds
+    }, [nextPage, prevPage, onClose])
 
     // Rendering
     const currentPage: PageType = HELP_PAGES[pageNumber]

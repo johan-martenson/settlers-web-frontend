@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FlagInformation, Nation, Point } from '../../api/types'
 import './friendly_flag_info.css'
 import { api } from '../../api/ws-api'
@@ -8,8 +8,10 @@ import { useFlag } from '../../utils/hooks/hooks'
 import { GenericCommand } from '../../utils/typing-commands'
 import { FlagIcon, InventoryIcon, UiIcon } from '../../components/icons/icon'
 import { materialPretty } from '../../utils/pretty-strings'
+import { Dismiss16Filled } from '@fluentui/react-icons'
+import { useCloseWhenFlagIsRemoved } from './use-close-when-flag-is-removed'
 
-// Types
+/// Types
 type FriendlyFlagInfoProps = {
     flag: FlagInformation
     nation: Nation
@@ -19,9 +21,15 @@ type FriendlyFlagInfoProps = {
     onClose: () => void
 }
 
+/// Configuration
+const FriendlyFlagLogConfig = {
+    lifecycle: true,
+    actions: true
+}
+
 // TODO: add monitor tab
 
-// React components
+/// React components
 const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }: FriendlyFlagInfoProps) => {
 
     // State
@@ -30,6 +38,9 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
     // Monitoring hooks
     const flag = useFlag(props.flag.id)
 
+    // Close when the flag is removed
+    useCloseWhenFlagIsRemoved({ flag, onClose })
+
     // Functions
     const callScout = useCallback(() => {
         if (flag !== undefined) {
@@ -37,11 +48,27 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
         }
     }, [flag?.x, flag?.y])
 
+    const callScoutAndClose = useCallback(() => {
+        if (flag !== undefined) {
+            api.callScout({ x: flag.x, y: flag.y })
+        }
+
+        onClose()
+    }, [flag?.x, flag?.y, onClose])
+
     const callGeologist = useCallback(() => {
         if (flag !== undefined) {
             api.callGeologist({ x: flag.x, y: flag.y })
         }
     }, [flag?.x, flag?.y])
+
+    const callGeologistAndClose = useCallback(() => {
+        if (flag !== undefined) {
+            api.callGeologist({ x: flag.x, y: flag.y })
+        }
+
+        onClose()
+    }, [flag?.x, flag?.y, onClose])
 
     const removeFlagAndClose = useCallback(() => {
         if (flag !== undefined) {
@@ -89,7 +116,8 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
         })
 
         cmds.set('Close window', {
-            action: onClose
+            action: onClose,
+            icon: <Dismiss16Filled />
         })
 
         return cmds
@@ -101,11 +129,6 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
         onClose,
         nation
     ])
-
-    const flagListener = useMemo(() => ({
-        onUpdate: () => { },
-        onRemove: onClose
-    }), [onClose])
 
     const hoverFlag = useCallback(() => {
         setHoverInfo('Flag')
@@ -131,19 +154,6 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
         setHoverInfo(undefined)
     }, [setHoverInfo])
 
-    // Effects
-    // Effect: close the window if the flag is removed
-    useEffect(() => {
-        if (flag !== undefined) {
-            api.addFlagListener(flag.id, flagListener)
-        }
-
-        return () => {
-            if (flag !== undefined) {
-                api.removeFlagListener(flag.id, flagListener)
-            }
-        }
-    }, [flag?.id, flagListener])
 
     // Rendering
     if (flag === undefined) {
@@ -152,15 +162,13 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
         return null
     }
 
-    return (
-        <WindowWithTyping<FlagInformation>
-            commands={commands}
-            param={flag}
-            className='friendly-flag-info'
-            heading='Flag'
-            onClose={onClose}
-            hoverInfo={hoverInfo}
-            onRaise={onRaise}>
+    const windowContent = useMemo(() => {
+
+        if (FriendlyFlagLogConfig.lifecycle) {
+            console.log('Friendly flag window: rendering content')
+        }
+
+        return (
             <div className='flag-information'>
                 <FlagIcon
                     type={flag.type}
@@ -190,7 +198,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                     </Button>
 
                     <Button
-                        onClick={callGeologist}
+                        onClick={callGeologistAndClose}
                         onMouseEnter={hoverCallGeologist}
                         onMouseLeave={clearHover}
                     >
@@ -200,7 +208,7 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                     </Button>
 
                     <Button
-                        onClick={callScout}
+                        onClick={callScoutAndClose}
                         onMouseEnter={hoverCallScout}
                         onMouseLeave={clearHover}
                     >
@@ -230,6 +238,39 @@ const FriendlyFlagInfo = ({ nation, onClose, onStartNewRoad, onRaise, ...props }
                     </div>
                 }
             </div>
+        )
+    }, [
+        nation,
+        flag.type,
+        flag.nation,
+        flag.color,
+        flag.stackedCargo,
+        hoverFlag,
+        hoverRemoveFlag,
+        hoverCallGeologist,
+        hoverCallScout,
+        hoverBuildRoad,
+        clearHover,
+        startNewRoadAndClose,
+        removeFlagAndClose,
+        callGeologistAndClose,
+        callScoutAndClose
+    ])
+
+    if (FriendlyFlagLogConfig.lifecycle) {
+        console.log('Friendly flag window: rendering window')
+    }
+
+    return (
+        <WindowWithTyping<FlagInformation>
+            commands={commands}
+            param={flag}
+            className='friendly-flag-info'
+            heading='Flag'
+            onClose={onClose}
+            hoverInfo={hoverInfo}
+            onRaise={onRaise}>
+            {windowContent}
         </WindowWithTyping>
     )
 }

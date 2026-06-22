@@ -433,19 +433,19 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                                 type='WEAK_SOLDIER_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Populate new military buildings with weaker soldiers`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setStrengthWhenPopulatingMilitaryBuildings(clamp(player.strengthWhenPopulatingBuildings - 1, 0, 10))} />
+                                onClick={() => api.setStrengthWhenPopulatingMilitaryBuildings(clamp(player.militarySettings.strengthWhenPopulatingBuildings - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={player.strengthWhenPopulatingBuildings}
-                                onMouseEnter={() => setHover(`${player.strengthWhenPopulatingBuildings}/10`)}
+                                value={player.militarySettings.strengthWhenPopulatingBuildings}
+                                onMouseEnter={() => setHover(`${player.militarySettings.strengthWhenPopulatingBuildings}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='STRONG_SOLDIER_WITH_PLUS'
                                 onMouseEnter={() => setHover(`Populate new military buildings with stronger soldiers`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setStrengthWhenPopulatingMilitaryBuildings(clamp(player.strengthWhenPopulatingBuildings + 1, 0, 10))} />
+                                onClick={() => api.setStrengthWhenPopulatingMilitaryBuildings(clamp(player.militarySettings.strengthWhenPopulatingBuildings + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -455,19 +455,19 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                                 type='ONE_SHIELD_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Weaken defense`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setDefenseStrength(clamp(player.defenseStrength - 1, 0, 10))} />
+                                onClick={() => api.setDefenseStrength(clamp(player.militarySettings.defenseStrength - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={player.defenseStrength}
-                                onMouseEnter={() => setHover(`${player.defenseStrength}/10`)}
+                                value={player.militarySettings.defenseStrength}
+                                onMouseEnter={() => setHover(`${player.militarySettings.defenseStrength}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='TWO_SHIELDS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`Strengthen defense`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setDefenseStrength(clamp(player.defenseStrength + 1, 0, 10))} />
+                                onClick={() => api.setDefenseStrength(clamp(player.militarySettings.defenseStrength + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -477,19 +477,19 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                                 type='MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_MINUS'
                                 onMouseEnter={() => setHover(`Fewer defenders from surrounding buildings`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setDefenseFromSurroundingBuildings(clamp(player.defenseFromSurroundingBuildings - 1, 0, 10))} />
+                                onClick={() => api.setDefenseFromSurroundingBuildings(clamp(player.militarySettings.defenseFromSurroundingBuildings - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={player.defenseFromSurroundingBuildings}
-                                onMouseEnter={() => setHover(`${player.defenseFromSurroundingBuildings}/10`)}
+                                value={player.militarySettings.defenseFromSurroundingBuildings}
+                                onMouseEnter={() => setHover(`${player.militarySettings.defenseFromSurroundingBuildings}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='MILITARY_BUILDING_WITH_YELLOW_SHIELD_AND_PLUS'
                                 onMouseEnter={() => setHover(`More defenders from surrounding buildings`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setDefenseFromSurroundingBuildings(clamp(player.defenseFromSurroundingBuildings + 1, 0, 10))} />
+                                onClick={() => api.setDefenseFromSurroundingBuildings(clamp(player.militarySettings.defenseFromSurroundingBuildings + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -499,19 +499,19 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                                 type='MILITARY_BUILDING_WITH_SWORDS_AND_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers available for attacks`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setSoldiersAvailableForAttack(clamp(player.soldiersAvailableForAttack - 1, 0, 10))} />
+                                onClick={() => api.setSoldiersAvailableForAttack(clamp(player.militarySettings.soldiersAvailableForAttack - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={player.soldiersAvailableForAttack}
-                                onMouseEnter={() => setHover(`${player.soldiersAvailableForAttack}/10`)}
+                                value={player.militarySettings.soldiersAvailableForAttack}
+                                onMouseEnter={() => setHover(`${player.militarySettings.soldiersAvailableForAttack}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='MILITARY_BUILDING_WITH_SWORDS_AND_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers available for attacks`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setSoldiersAvailableForAttack(clamp(player.soldiersAvailableForAttack + 1, 0, 10))} />
+                                onClick={() => api.setSoldiersAvailableForAttack(clamp(player.militarySettings.soldiersAvailableForAttack + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -521,19 +521,19 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                                 type='SMALLEST_FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers far from the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setMilitaryPopulationFarFromBorder(clamp(player.militaryPopulationFarFromBorder - 1, 0, 10))} />
+                                onClick={() => api.setMilitaryPopulationFarFromBorder(clamp(player.militarySettings.militaryPopulationFarFromBorder - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={player.militaryPopulationFarFromBorder}
-                                onMouseEnter={() => setHover(`${player.militaryPopulationFarFromBorder}/10`)}
+                                value={player.militarySettings.militaryPopulationFarFromBorder}
+                                onMouseEnter={() => setHover(`${player.militarySettings.militaryPopulationFarFromBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='SMALLEST_FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers far from the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setMilitaryPopulationFarFromBorder(clamp(player.militaryPopulationFarFromBorder + 1, 0, 10))} />
+                                onClick={() => api.setMilitaryPopulationFarFromBorder(clamp(player.militarySettings.militaryPopulationFarFromBorder + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -543,19 +543,19 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                                 type='SMALLER_FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers closer to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setMilitaryPopulationCloserToBorder(clamp(player.militaryPopulationAwayFromBorder - 1, 0, 10))} />
+                                onClick={() => api.setMilitaryPopulationCloserToBorder(clamp(player.militarySettings.militaryPopulationAwayFromBorder - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={player.militaryPopulationAwayFromBorder}
-                                onMouseEnter={() => setHover(`${player.militaryPopulationAwayFromBorder}/10`)}
+                                value={player.militarySettings.militaryPopulationAwayFromBorder}
+                                onMouseEnter={() => setHover(`${player.militarySettings.militaryPopulationAwayFromBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='SMALLER_FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers closer to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setMilitaryPopulationCloserToBorder(clamp(player.militaryPopulationAwayFromBorder + 1, 0, 10))} />
+                                onClick={() => api.setMilitaryPopulationCloserToBorder(clamp(player.militarySettings.militaryPopulationAwayFromBorder + 1, 0, 10))} />
                         </div>
                     </Field>
 
@@ -565,19 +565,19 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
                                 type='FORTRESS_WITH_MINUS'
                                 onMouseEnter={() => setHover(`Fewer soldiers close to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setMilitaryPopulationCloseToBorder(clamp(player.militaryPopulationCloseToBorder - 1, 0, 10))} />
+                                onClick={() => api.setMilitaryPopulationCloseToBorder(clamp(player.militarySettings.militaryPopulationCloseToBorder - 1, 0, 10))} />
                             <meter
                                 min={0}
                                 max={10}
-                                value={player.militaryPopulationCloseToBorder}
-                                onMouseEnter={() => setHover(`${player.militaryPopulationCloseToBorder}/10`)}
+                                value={player.militarySettings.militaryPopulationCloseToBorder}
+                                onMouseEnter={() => setHover(`${player.militarySettings.militaryPopulationCloseToBorder}/10`)}
                                 onMouseLeave={() => setHover(undefined)}
                             />
                             <UiIcon
                                 type='FORTRESS_WITH_PLUS'
                                 onMouseEnter={() => setHover(`More soldiers close to the border`)}
                                 onMouseLeave={() => setHover(undefined)}
-                                onClick={() => api.setMilitaryPopulationCloseToBorder(clamp(player.militaryPopulationCloseToBorder + 1, 0, 10))}
+                                onClick={() => api.setMilitaryPopulationCloseToBorder(clamp(player.militarySettings.militaryPopulationCloseToBorder + 1, 0, 10))}
                             />
                         </div>
                     </Field>

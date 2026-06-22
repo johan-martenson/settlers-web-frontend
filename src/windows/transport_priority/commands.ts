@@ -25,6 +25,7 @@ function makeTransportCommands(): Map<string, GenericCommand<TransportCategory>>
             values: Array.from(TRANSPORT_CATEGORIES),
             action: (category: TransportCategory) => api.setTransportPriorityForMaterial(category, TRANSPORT_CATEGORIES.size - 1)
         })
+
         commands.set('Set min priority', {
             type: 'ENUM',
             values: Array.from(TRANSPORT_CATEGORIES),

@@ -167,7 +167,7 @@ const Lobby = ({ player, onCreateNewGame, onJoinExistingGame }: LobbyProps) => {
 
             {inputValue && inputValue.length > 0 &&
                 <div id='typing-input'>
-                    <DialogTyping inputValue={inputValue} matches={matches} />
+                    <DialogTyping inputValue={inputValue} matches={matches} setHover={() => {}} />
                 </div>
             }
 

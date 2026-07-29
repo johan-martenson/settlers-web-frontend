@@ -14,7 +14,7 @@ import { printVariables } from '../../utils/stats/stats'
 import { SetTransportPriority } from '../../windows/transport_priority/transport_priority'
 import { TypeControl } from './type-control'
 import { isRoadAtPoint } from '../../utils/utils'
-import { HouseInformation, FlagInformation, PlayerId, GameId, Point, PointInformation, HouseId, RoadId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
+import { PlayerId, GameId, Point, HouseId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
 import { CalendarAgenda24Regular, TopSpeed24Filled } from '@fluentui/react-icons'
 import { HouseInfo } from '../../windows/house/house_info'
 import { sfx } from '../../sound/sound_effects'
@@ -60,8 +60,6 @@ import { GameWindow } from './types'
 import { makeWindowCommandsForGameContext } from '../../commands/window-commands'
 
 // Types
-
-
 type StoredTouch = {
     identifier: number
     pageX: number
@@ -622,12 +620,13 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
     // Effects
     // Effect: listen to wheel events to handle zoom. Use an effect to be able to pass passive: false.
+    // TODO: scrolling should also work in the chat component. So listening to the window and using stopPropagation doesn't work.
     useEffect(() => {
         function onWheelNative(event: WheelEvent): void {
-
             if (PlayLogConfig.camera) {
                 console.log('Play (camera): got native wheel event')
             }
+
             zoom(immediateStateRef.current.scale - event.deltaY)
 
             event.preventDefault()

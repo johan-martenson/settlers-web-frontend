@@ -1,6 +1,8 @@
 Todo 1.0
 ========
 
+-34. Scrolling using the mousepad in the chat log zooms the map instead of scrolling.
+-33. Somehow there are two chat messages with the same id. That's strange and trips react up. Error in the backend or the frontend?
 -32. Pressing escape - with active window should only close active window, when building new road without active window, should stop road building.
 -31. Test Player::getInventory
 -30. When soldiers start walking apart / back again they are initially at 100% progress even if they are just starting to walk...

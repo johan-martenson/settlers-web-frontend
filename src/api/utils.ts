@@ -1,4 +1,4 @@
-import { Direction, GameInformation, HouseInformation, MILITARY_BUILDINGS, PLAYER_COLORS, PlayerColor, PlayerId, PlayerInformation, Point, SimpleDirection } from './types'
+import { Direction, GameInformation, HouseInformation, MILITARY_BUILDINGS, NATIONS, PLAYER_COLORS, PlayerColor, PlayerId, PlayerInformation, Point, SimpleDirection } from './types'
 import { api } from './ws-api'
 
 function simpleDirectionToCompassDirection(simpleDirection: SimpleDirection): Direction {
@@ -116,7 +116,7 @@ async function addComputerPlayer(players: PlayerInformation[], maxPlayers: numbe
         const newPlayer = await api.createPlayer(
             `Computer Player ${nextPlayer}`,
             nextColor,
-            'ROMANS',
+            [...NATIONS][colorsRemaining.size % NATIONS.size],
             'COMPUTER'
         )
 

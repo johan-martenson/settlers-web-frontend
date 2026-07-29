@@ -1,7 +1,7 @@
 import { Button, Input, InputOnChangeData } from '@fluentui/react-components'
 import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../../api/ws-api'
-import { PlayerId, RoomId } from '../../api/types'
+import { PlayerColor, PlayerId, RoomId } from '../../api/types'
 import './chat.css'
 import ExpandCollapseToggle from '../../components/expand_collapse_toggle/expand_collapse_toggle'
 import { ItemContainer } from '../item_container'
@@ -21,6 +21,18 @@ type ExpandChatBoxProps = {
     onToggleExpanded: () => void
 }
 
+// Constants
+const COLORS: Record<PlayerColor, string> = {
+    BLUE: 'black',
+    RED: 'red',
+    GREEN: 'green',
+    YELLOW: 'goldenrod',
+    PURPLE: 'purple',
+    GRAY: 'gray',
+    BROWN: 'brown',
+    WHITE: 'white'
+}
+
 // React components
 function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
@@ -33,7 +45,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
 
     // Listening hooks
     const chatLog = useChatMessages(playerId, [roomId])
-    const { inputValue, keyTyped } = useTypingInput({ preventTypingInInputFields: false })
+    const { inputValue, keyTyped, clear } = useTypingInput({ preventTypingInInputFields: false })
 
     // Functions
     const sendMessage = useCallback((text: string) => {
@@ -64,12 +76,15 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
         }
     }, [chatLog])
 
+    console.log('ChatBox: rendering with chatLog', chatLog, 'and inputValue', inputValue)
+
     // Render
     return (
         <div className='chat-box'>
             <ItemContainer
                 style={{
                     display: 'flex',
+                    flexWrap: 'nowrap',
                     flexDirection: 'column',
                     justifyContent: 'flex-start',
                     alignItems: 'flex-start',
@@ -80,7 +95,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
             >
                 {chatLog
                     .map(chatMessage => (
-                        <div key={chatMessage.id} className='chat-entry'>
+                        <div key={chatMessage.id} className='chat-entry' style={{ color: COLORS[[...api.players.values()].find(p => p.id === chatMessage.fromPlayerId)?.color ?? 'WHITE'] }}>
                             [{chatMessage.time.hours.toString().padStart(2, '0')}:
                             {chatMessage.time.minutes.toString().padStart(2, '0')}] {' '}
                             {chatMessage.fromName}: {chatMessage.text}
@@ -111,6 +126,7 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                     onClick={() => {
                         sendMessage(inputValue)
                         inputRef.current?.focus()
+                        clear()
                     }}
                 >
                     Send

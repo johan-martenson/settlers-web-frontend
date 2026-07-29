@@ -73,7 +73,7 @@ const GameList = ({ onJoinGame }: GameListProps) => {
                                                 </MenuItem>
                                             }
                                             {(game.status === 'STARTED' || game.status === 'EXPIRED') && game.players
-                                                .filter(player => player.type === 'HUMAN')
+                                                /*.filter(player => player.type === 'HUMAN')*/
                                                 .map(player =>
                                                     <MenuItem
                                                         key={player.id}

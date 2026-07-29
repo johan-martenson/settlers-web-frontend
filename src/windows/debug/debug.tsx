@@ -9,6 +9,7 @@ import Selector from './select'
 import { DebugLogsTable } from '../../components/log_configuration/log_configuration'
 import { HouseTable } from '../../components/house_table/house_table'
 import { UiIcon } from '../../components/icons/icon'
+import { Dismiss16Filled } from '@fluentui/react-icons'
 
 // Types
 type DebugProps = {
@@ -86,7 +87,8 @@ function Debug({ point, onGoToPoint, onClose, onRaise }: DebugProps) {
         const cmds = new Map()
 
         cmds.set('Close window', {
-            action: () => onClose()
+            action: () => onClose(),
+            icon: <Dismiss16Filled />
         })
 
         cmds.set('Game', {

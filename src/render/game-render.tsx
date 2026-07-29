@@ -486,8 +486,6 @@ function GameCanvas({
 
             // Collect the titles
             if (house.playerId !== selfPlayerId) {
-                console.log('Wrong player')
-
                 continue
             }
 

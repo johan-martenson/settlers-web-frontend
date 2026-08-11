@@ -24,7 +24,119 @@
 }
 
 .chat-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    padding: 4px 8px;
+
+    border-left: 3px solid var(--player-color);
+    border-radius: 4px;
+
+    background: rgba(255, 255, 255, 0.03);
     width: 100%;
     text-align: left;
     min-width: 0;
 }
+
+.chat-entry:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.chat-entry.blue {
+    --player-color: #5CA8FF;
+}
+
+.chat-entry.yellow {
+    --player-color: #FFD54A;
+}
+
+.chat-entry.red {
+    --player-color: #FF6B6B;
+}
+
+.chat-entry.purple {
+    --player-color: #C77DFF;
+}
+
+.chat-entry.gray {
+    --player-color: #CFCFCF;
+}
+
+.chat-entry.green {
+    --player-color: #69D86F;
+}
+
+.chat-entry.brown {
+    --player-color: #D19A66;
+}
+
+.chat-entry.white {
+    --player-color: #FFFFFF;
+}
+
+.player-name {
+    flex: 0 0 auto;
+
+    color: var(--player-color);
+    font-weight: 600;
+    white-space: nowrap;
+
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.player-name::after {
+    content: ":";
+}
+
+.chat-text {
+    flex: 1;
+
+    color: #eee;
+
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    margin-left: 2px;
+
+}
+
+.chat-timestamp {
+    color: #aaa;
+    font-size: 0.9em;
+    margin-right: 4px;
+}
+
+.chat-player-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin: 8px 0;
+}
+
+.chat-player-filter {
+    min-width: 0;
+
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 2px solid var(--player-color) !important;
+    color: #eee !important;
+
+    transition: opacity .15s ease, background .15s ease;
+}
+
+.chat-player-filter:hover {
+    background: rgba(255,255,255,.12) !important;
+}
+
+.chat-player-filter[aria-pressed="false"] {
+    opacity: .35;
+}
+
+.chat-player-filter.blue   { --player-color: #5CA8FF; }
+.chat-player-filter.red    { --player-color: #FF6B6B; }
+.chat-player-filter.green  { --player-color: #69D86F; }
+.chat-player-filter.yellow { --player-color: #FFD54A; }
+.chat-player-filter.purple { --player-color: #C77DFF; }
+.chat-player-filter.gray   { --player-color: #CFCFCF; }
+.chat-player-filter.brown  { --player-color: #D19A66; }
+.chat-player-filter.white  { --player-color: #FFFFFF; }

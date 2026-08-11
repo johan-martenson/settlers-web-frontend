@@ -238,6 +238,7 @@ enum Command {
 
     // Chat messages
     GetChatHistory = 'GET_CHAT_HISTORY_FOR_ROOM',
+    GetChatHistoryForRooms = 'GET_CHAT_HISTORY_FOR_ROOMS',
     SendChatMessageToRoom = 'SEND_CHAT_MESSAGE_TO_ROOM',
     RemoveMessage = 'REMOVE_MESSAGE',
     RemoveMessages = 'REMOVE_MESSAGES',
@@ -728,6 +729,17 @@ function stopListeningToPlayer(playerId: PlayerId): void {
 async function getChatRoomHistory(roomId: RoomId): Promise<ChatMessage[]> {
     return (
         await sendRequestAndWaitForReplyWithOptions<{ chatHistory: ChatMessage[] }, GetChatRoomHistory>(Command.GetChatHistory, { roomId })
+    ).chatHistory
+}
+
+/**
+ * Gets the chat history for the given rooms
+ * @param {RoomId[]} roomIds - The ids of the chat rooms
+ * @returns {Promise<ChatMessage[]>} The chat history as a list of chat messages
+ */
+async function getChatHistoryForRooms(roomIds: RoomId[]): Promise<ChatMessage[]> {
+    return (
+        await sendRequestAndWaitForReplyWithOptions<{ chatHistory: ChatMessage[] }, { roomIds: RoomId[] }>(Command.GetChatHistoryForRooms, { roomIds })
     ).chatHistory
 }
 
@@ -1356,5 +1368,6 @@ export {
     getMapsWithTerrain,
     getMapWithTerrain,
     stopListeningToGamesList,
-    setPlankQuotas
+    setPlankQuotas,
+    getChatHistoryForRooms,
 }

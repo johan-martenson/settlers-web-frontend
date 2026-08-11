@@ -715,7 +715,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         })
 
         // Windows & Menus
-
         commands.set('Menu', {
             action: () => setShowMenu(true),
             icon: <CalendarAgenda24Regular />
@@ -807,6 +806,17 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             action: () => openSingletonWindow({ type: 'DEBUG' }),
             hidden: true,
             icon: <UiIcon type='SPRAY_CAN' scale={0.5} />
+        })
+        commands.set('Play as', {
+            type: 'ENUM',
+            values: [...api.players.values()].map(player => player.name),
+            action: (context: unknown, playerName: string) => {
+                const player = api.players.values().find(player => player.name === playerName)
+                if (player) {
+                    window.location.href = `/play?gameId=${gameId}&playerId=${player.id}`
+                }
+            },
+            hidden: true
         })
 
         // Fog of war
@@ -954,8 +964,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             <GameCanvas
                 onPointClicked={onPointClicked}
-                selectedPoint={selected}
                 onPointDoubleClick={onPointDoubleClicked}
+                onWheel={onWheel}
+                selectedPoint={selected}
                 showHouseTitles={showTitles}
                 newRoad={roadBuildingState.road}
                 possibleRoadConnections={roadBuildingState.possibleConnections}

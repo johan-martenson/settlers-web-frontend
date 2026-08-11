@@ -41,11 +41,11 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
     const messagesRef = useRef<HTMLDivElement>(null)
 
     // State
-    const [messageText, setMessageText] = useState<string>('')
+    const [inputValue, setInputValue] = useState('')
+    const [hiddenPlayers, setHiddenPlayers] = useState<Set<PlayerId>>(new Set())
 
     // Listening hooks
     const chatLog = useChatMessages(playerId, [roomId])
-    const { inputValue, keyTyped, clear } = useTypingInput({ preventTypingInInputFields: false })
 
     // Functions
     const sendMessage = useCallback((text: string) => {
@@ -55,6 +55,20 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
             api.sendChatMessageToRoom(trimmed, roomId, playerId)
         }
     }, [roomId, playerId])
+
+    const togglePlayer = useCallback((playerIdToToggle: PlayerId) => {
+        setHiddenPlayers(previous => {
+            const next = new Set(previous)
+
+            if (next.has(playerIdToToggle)) {
+                next.delete(playerIdToToggle)
+            } else {
+                next.add(playerIdToToggle)
+            }
+
+            return next
+        })
+    }, [])
 
     // Effects
     // Effect: Autofocus on mount
@@ -94,39 +108,82 @@ function ChatBox({ playerId, roomId }: ChatBoxProps) {
                 }}
             >
                 {chatLog
-                    .map(chatMessage => (
-                        <div key={chatMessage.id} className='chat-entry' style={{ color: COLORS[[...api.players.values()].find(p => p.id === chatMessage.fromPlayerId)?.color ?? 'WHITE'] }}>
-                            [{chatMessage.time.hours.toString().padStart(2, '0')}:
-                            {chatMessage.time.minutes.toString().padStart(2, '0')}] {' '}
-                            {chatMessage.fromName}: {chatMessage.text}
-                        </div>))}
+                    .filter(chatMessage => !hiddenPlayers.has(chatMessage.fromPlayerId))
+                    .map(chatMessage => {
+                        var color = [...api.players.values()].find(p => p.id === chatMessage.fromPlayerId)?.color.toLowerCase() ?? 'white'
+
+                        return (
+                            <div
+                                key={chatMessage.id}
+                                className={`chat-entry ${color}`}
+                            >
+                                <div className='chat-timestamp'>
+                                    [{chatMessage.time.hours.toString().padStart(2, '0')}:
+                                    {chatMessage.time.minutes.toString().padStart(2, '0')}] {' '}
+                                </div>
+                                <div className='player-name'>{chatMessage.fromName}</div><div className='chat-text'>{chatMessage.text}</div>
+                            </div>)
+                    })}
             </ItemContainer>
+
+            <div className='chat-player-filters'>
+                {[...api.players.values()]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(player => {
+                        const hidden = hiddenPlayers.has(player.id)
+
+                        return (
+                            <Button
+                                key={player.id}
+                                size='small'
+                                appearance='outline'
+                                className={`chat-player-filter ${player.color.toLowerCase()}`}
+                                aria-pressed={!hidden}
+                                disabled={player.id === playerId}
+                                onClick={() => togglePlayer(player.id)}
+                            >
+                                {player.name}
+                            </Button>
+                        )
+                    })}
+            </div>
 
             <div className='chat-type-and-send'>
                 <Input
                     ref={inputRef}
                     value={inputValue}
                     onChange={(ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData) => {
-                        setMessageText(data.value)
+                        setInputValue(data.value)
                     }}
-                    onKeyDown={(event: React.KeyboardEvent) => {
-                        if (!event.metaKey && !event.altKey && !event.ctrlKey && !event.shiftKey) {
-                            if (event.key === 'Enter') {
+                    onKeyDown={(event) => {
+                        // Never let the game's global key handler receive keys while
+                        // the chat input has focus.
+                        event.stopPropagation()
+
+                        switch (event.key) {
+                            case 'Enter':
+                                event.preventDefault()
+
                                 sendMessage(inputValue)
-                            }
+                                setInputValue('')
 
-                            keyTyped(event)
+                                break
 
-                            event.preventDefault()
-                            event.stopPropagation()
+                            case 'Escape':
+                                event.preventDefault()
+
+                                setInputValue('')
+
+                                break
                         }
-                    }} />
+                    }}
+                />
                 <Button
                     disabled={inputValue === undefined || !inputValue.trim()}
                     onClick={() => {
                         sendMessage(inputValue)
                         inputRef.current?.focus()
-                        clear()
+                        setInputValue('')
                     }}
                 >
                     Send

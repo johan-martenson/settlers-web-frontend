@@ -73,7 +73,7 @@ type WindowType =
     | NoActionWindow
     | MapWindow
 
-export type Window = { id: number } & WindowType
+export type GameWindow = { id: number } & WindowType
 
 export type ImmediateState = {
     mouseDown: boolean

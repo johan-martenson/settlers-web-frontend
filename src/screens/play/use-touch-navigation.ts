@@ -21,12 +21,10 @@ type ImmediateState = {
 }
 
 type UseTouchNavigationProps = {
-    immediateStateRef: React.MutableRefObject<ImmediateState>
+    immediateStateRef: React.RefObject<ImmediateState>
     ongoingTouches: Map<number, StoredTouch>
-    onPinchZoomIn?: () => void
-    onPinchZoomOut?: () => void
+    onPinchZoom?: (scaleDelta: number, center: Point) => void
 }
-
 type UseTouchNavigationResult = {
     onTouchStart: (event: React.TouchEvent) => void
     onTouchMove: (event: React.TouchEvent) => void
@@ -38,9 +36,10 @@ type UseTouchNavigationResult = {
 function useTouchNavigation({
     immediateStateRef,
     ongoingTouches,
-    onPinchZoomIn,
-    onPinchZoomOut
+    onPinchZoom
 }: UseTouchNavigationProps): UseTouchNavigationResult {
+
+    // References
     const lastPinchDistanceRef = useRef<number | null>(null)
 
     // Functions
@@ -195,12 +194,19 @@ function useTouchNavigation({
 
             const pinchDistance = Math.hypot(deltaX, deltaY)
 
-            if (lastPinchDistanceRef.current !== null) {
-                if (pinchDistance > lastPinchDistanceRef.current) {
-                    onPinchZoomIn?.()
-                } else if (pinchDistance < lastPinchDistanceRef.current) {
-                    onPinchZoomOut?.()
+            if (
+                lastPinchDistanceRef.current !== null &&
+                lastPinchDistanceRef.current > 0
+            ) {
+                const scaleDelta =
+                    pinchDistance / lastPinchDistanceRef.current
+
+                const center = {
+                    x: (firstTouch.pageX + secondTouch.pageX) / 2,
+                    y: (firstTouch.pageY + secondTouch.pageY) / 2
                 }
+
+                onPinchZoom?.(scaleDelta, center)
             }
 
             lastPinchDistanceRef.current = pinchDistance
@@ -209,8 +215,7 @@ function useTouchNavigation({
         copyTouch,
         immediateStateRef,
         ongoingTouches,
-        onPinchZoomIn,
-        onPinchZoomOut
+        onPinchZoom
     ])
 
     const onTouchEnd = useCallback((event: React.TouchEvent) => {

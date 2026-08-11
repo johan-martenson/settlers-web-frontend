@@ -7,7 +7,7 @@ export const HooksConfig = {
     useGame: false,
     useMaps: false,
     useHouse: false,
-    useChatMessages: false,
+    useChatMessages: true,
     useGameMessages: false,
     useGames: false,
     useNonTriggeringState: false,

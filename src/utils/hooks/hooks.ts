@@ -373,25 +373,41 @@ function useHouse(houseId: HouseId): HouseInformation | undefined {
 function useChatMessages(playerId: PlayerId, roomIds: RoomId[]): ChatMessage[] {
 
     // State
-    const [messages, setMessages] = useState<ChatMessage[]>(() => {
-        const value = api.chatRoomMessages
-
-        if (HooksConfig.useChatMessages) {
-            console.log('Hooks (useChatMessages): Initial state', value)
-        }
-
-        return value
-    })
+    const [messages, setMessages] = useState<ChatMessage[]>([])
 
     // Effects
-    // Effect: listen to new chat room messages
+    // Effect: fetch chat room history and listen to new chat room messages
     useEffect(() => {
-        const listener = () => {
-            if (HooksConfig.useChatMessages) {
-                console.log('Hooks (useChatMessages): Update received', api.chatRoomMessages)
+        let cancelled = false
+
+        const loadHistory = async () => {
+            const value = await api.getChatHistoryForRooms(roomIds)
+
+            if (cancelled) {
+                return
             }
 
-            setMessages(Array.from(api.chatRoomMessages))
+            if (HooksConfig.useChatMessages) {
+                console.log('Hooks (useChatMessages): Initial state', value)
+            }
+
+            setMessages(value)
+        }
+
+        void loadHistory()
+
+        const listener = async () => {
+            const value = await api.getChatHistoryForRooms(roomIds)
+
+            if (cancelled) {
+                return
+            }
+
+            if (HooksConfig.useChatMessages) {
+                console.log('Hooks (useChatMessages): Update received', value)
+            }
+
+            setMessages(value)
         }
 
         api.addChatMessagesListener(listener, playerId, roomIds)
@@ -401,6 +417,8 @@ function useChatMessages(playerId: PlayerId, roomIds: RoomId[]): ChatMessage[] {
         }
 
         return () => {
+            cancelled = true
+
             api.removeChatMessagesListener(listener)
 
             if (HooksConfig.useChatMessages) {

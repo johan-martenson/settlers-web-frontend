@@ -46,6 +46,7 @@ type GameCanvasProps = {
     onPointClicked?: ((point: Point) => void)
     onPointDoubleClick?: ((point: Point) => void)
     onKeyDown?: ((event: React.KeyboardEvent) => void)
+    onWheel?: ((event: React.WheelEvent) => void)
 }
 
 type InterpolatedPosition = {
@@ -140,7 +141,8 @@ function GameCanvas({
     fogOfWar = true,
     onPointClicked,
     onKeyDown,
-    onPointDoubleClick }: GameCanvasProps) {
+    onPointDoubleClick,
+    onWheel }: GameCanvasProps) {
 
     // References
     const normalCanvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -1427,6 +1429,7 @@ function GameCanvas({
                 onKeyDown={onKeyDown}
                 onClick={onClick}
                 onDoubleClick={onDoubleClick}
+                onWheel={onWheel}
                 style={{ cursor: MOUSE_STYLES.get(cursor ?? 'NOTHING') }}
                 tabIndex={-1}
                 ref={overlayCanvasRef}

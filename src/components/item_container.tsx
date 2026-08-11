@@ -18,7 +18,7 @@ type ItemContainerProps = {
 const ItemContainer = ({ children, height, padding, inline, width, rows = false, autoScroll = false, center, style }: ItemContainerProps) => {
 
     // References
-    const containerRef = useRef<HTMLDivElement>(null)    
+    const containerRef = useRef<HTMLDivElement>(null)
 
     // Effects
     // Effect: Scroll to latest message
@@ -50,7 +50,12 @@ const ItemContainer = ({ children, height, padding, inline, width, rows = false,
             height,
             padding,
             width,
-            display: inline ? 'inline-flex' : 'flex' }}>
+            display: inline ? 'inline-flex' : 'flex'
+        }}
+        onWheel={(e) => {
+            e.stopPropagation();
+        }}
+    >
         {children}
     </div>)
 }

@@ -16,6 +16,7 @@ function makeTransportCommands(): Map<string, GenericCommand<TransportCategory>>
             min: 0,
             max: TRANSPORT_CATEGORIES.size - 1,
             action: (_current: TransportCategory, priority: number) => {
+                console.log(`Setting transport priority. Context: ${_current}, Priority: ${priority}`)
                 api.setTransportPriorityForMaterial(category, priority)
             }
         })
@@ -23,13 +24,15 @@ function makeTransportCommands(): Map<string, GenericCommand<TransportCategory>>
         commands.set('Set max priority', {
             type: 'ENUM',
             values: Array.from(TRANSPORT_CATEGORIES),
-            action: (category: TransportCategory) => api.setTransportPriorityForMaterial(category, TRANSPORT_CATEGORIES.size - 1)
+            action: (_current: TransportCategory, category: string) => {
+                api.setTransportPriorityForMaterial(category as TransportCategory, TRANSPORT_CATEGORIES.size - 1)
+            }
         })
 
         commands.set('Set min priority', {
             type: 'ENUM',
             values: Array.from(TRANSPORT_CATEGORIES),
-            action: (category: TransportCategory) => api.setTransportPriorityForMaterial(category, 0)
+            action: (_current: TransportCategory, category: string) => api.setTransportPriorityForMaterial(category as TransportCategory, 0)
         })
     })
 

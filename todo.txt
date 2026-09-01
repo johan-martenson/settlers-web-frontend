@@ -1,6 +1,25 @@
 Todo 1.0
 ========
 
+-39. Storehouse never gets occupied AND cargos get delivered to the unoccupied storehouse
+-38. Concurrent modification of map::buildings
+        I think this is because computer players are now taking action in callbacks. So, maybe:
+         - building.stepTime() results in:
+         - a computer player callback being called
+         - and the computer player callback makes any modification to map::buildings, e.g. removes a building or places a building
+
+        Exception during game loop: java.util.ConcurrentModificationException
+        java.util.ConcurrentModificationException
+                at java.base/java.util.ArrayList$Itr.checkForComodification(ArrayList.java:1104)
+                at java.base/java.util.ArrayList$Itr.next(ArrayList.java:1058)
+                at org.appland.settlers.model.GameMap.stepTime(GameMap.java:329)
+                at org.appland.settlers.rest.GameTicker.lambda$activate$0(GameTicker.java:85)
+                at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+                at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:371)
+                at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:310)
+                at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090)
+                at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
+                at java.base/java.lang.Thread.run(Thread.java:1516)
 -37. When I do "play as ab" (ab is the human player), an enemy player is close by and the enemy player's border isn't shown
 -36. Adds new border but fails to remove old border
 -35. Yellow geologists have no animation when they dig (at least on very fast speed)

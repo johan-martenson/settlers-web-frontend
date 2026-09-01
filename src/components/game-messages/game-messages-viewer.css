@@ -7,30 +7,94 @@
     border-radius: 0.5rem;
     padding: 0.7rem;
     gap: 10px;
+    width: 30em;
+
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    max-height: 90vh;
 }
 
 .game-message-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     overflow-y: auto;
-    max-height: 80vh;
     gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .game-message {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    height: 32px;
+    min-height: 32px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) 2rem 1.5rem 1.5rem;
+    grid-template-rows: auto;
     align-items: center;
-    gap: 10px;
+    column-gap: 10px;
     width: 100%;
+    padding: 0 6px;
+    margin: 2px 0;
+
+    border-radius: 5px;
+
+    background: rgba(255, 255, 255, 0.035);
+
+    transition:
+        background-color 0.12s ease,
+        box-shadow 0.12s ease;
 }
 
-/*.info-overlay {
-    background-color: crimson;
-    border-radius: 8px;
-    padding: 10px;
-}*/
+
+.game-message:hover {
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.game-message-icon {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-message-text {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.game-message-count {
+    grid-column: 3;
+    grid-row: 1;
+    white-space: nowrap;
+    opacity: 0.7;
+}
+
+.game-message-go-to-point {
+    grid-column: 4;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-message-trash {
+    grid-column: 5;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
 .info-overlay {
     width: 25px;
@@ -51,4 +115,93 @@
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+    flex: 0 0 auto;
+}
+
+.game-messages-filter-active {
+    position: relative;
+}
+
+.game-messages-filter-indicator {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #2196f3;
+}
+
+.game-message-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    margin-bottom: 10px;
+    flex: 0 0 auto;
+}
+
+.game-message-filter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+}
+
+.game-message-filter:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.game-message-filter-show {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.game-message-filter-collapse {
+    background: rgba(33, 150, 243, 0.25);
+    border-color: #2196f3;
+}
+
+.game-message-filter-hide {
+    background: rgba(244, 67, 54, 0.2);
+    border-color: #f44336;
+}
+
+.game-message-filter-hide .game-message-filter-label {
+    text-decoration: line-through;
+}
+
+.game-message-list-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.20) transparent;
+    flex-wrap: nowrap;
+    max-height: 100%;
+    overflow-y: auto;
+    min-height: 0px;
+}
+
+.game-message-list-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.game-message-list-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.game-message-list-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+}
+
+.game-message-list-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.30);
 }

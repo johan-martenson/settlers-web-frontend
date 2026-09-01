@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 // State
-const imageCache = new WeakMap<HTMLImageElement, ImageBitmap>()
+const imageCache = new WeakMap<HTMLImageElement, Promise<ImageBitmap>>()
 
 // Hooks
 function useAnimatedSprite({
@@ -48,21 +48,36 @@ function useAnimatedSprite({
             rafId = requestAnimationFrame(loop)
         }
 
-        ;(async () => {
-            const { image } = await loader()
-            if (!mountedRef.current) return
-
-            let bitmap = imageCache.get(image)
-            if (!bitmap) {
-                bitmap = await createImageBitmap(image)
+            ; (async () => {
+                const { image } = await loader()
                 if (!mountedRef.current) return
-                imageCache.set(image, bitmap)
-            }
 
-            bitmapRef.current = bitmap
-            requestAnimationFrame(loop)
+                let bitmapPromise = imageCache.get(image)
 
-        })()
+                if (!bitmapPromise) {
+                    const start = performance.now()
+
+                    bitmapPromise = createImageBitmap(image)
+
+                    imageCache.set(image, bitmapPromise)
+
+                    bitmapPromise.then(() => {
+                        console.log(
+                            `createImageBitmap: ${image.width}x${image.height} took ${(performance.now() - start).toFixed(2)} ms`
+                        )
+                    }).catch(() => {
+                        imageCache.delete(image)
+                    })
+                }
+
+                const bitmap = await bitmapPromise
+
+                if (!mountedRef.current) return
+
+                bitmapRef.current = bitmap
+
+                requestAnimationFrame(loop)
+            })()
 
         return () => {
             mountedRef.current = false

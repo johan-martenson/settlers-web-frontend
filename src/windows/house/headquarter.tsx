@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { Field, SelectTabData, SelectTabEvent, Tab, TabList } from '@fluentui/react-components'
-import { HouseInformation, Material, Nation, Point, SOLDIER_TYPES, isHeadquarterInformation, isMaterial, rankToMaterial } from '../../api/types'
+import { HouseInformation, Material, Nation, Point, SOLDIER_TYPES, isMaterial, rankToMaterial } from '../../api/types'
 import './house_info.css'
 import { useState } from 'react'
 import { api } from '../../api/ws-api'
@@ -383,7 +383,7 @@ const HeadquarterInfo = ({ house, nation, onGoToPoint, onClose, onRaise }: Headq
             {panel === 'RESERVED' &&
                 <ItemContainer>
                     {SOLDIER_TYPES.map(rank => {
-                        if (!isHeadquarterInformation(house)) {
+                        if (house.type !== 'Headquarter') {
                             console.error(`Headquarters window: house ${house.id} is not a headquarters`)
 
                             return null

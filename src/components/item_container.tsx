@@ -12,10 +12,11 @@ type ItemContainerProps = {
     style?: React.CSSProperties
     center?: boolean
     autoScroll?: boolean
+    className?: string
 }
 
 // React components
-const ItemContainer = ({ children, height, padding, inline, width, rows = false, autoScroll = false, center, style }: ItemContainerProps) => {
+const ItemContainer = ({ children, height, padding, inline, width, rows = false, autoScroll = false, center, style, className }: ItemContainerProps) => {
 
     // References
     const containerRef = useRef<HTMLDivElement>(null)
@@ -41,7 +42,7 @@ const ItemContainer = ({ children, height, padding, inline, width, rows = false,
 
     // Rendering
     return (<div
-        className='item-container'
+        className={`item-container ${className || ''}`}
         ref={containerRef}
         style={{
             ...style,

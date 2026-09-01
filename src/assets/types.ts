@@ -1,4 +1,4 @@
-import { ShipConstructionProgress, PlayerColor, Material, WorkerAction, Nation, AnyBuilding, SignType, Size, FireSize, TreeType, TreeSize, Direction, SmokeType } from '../api/types'
+import { ShipConstructionProgress, PlayerColor, Material, WorkerAction, Nation, AnyBuilding, SignType, Size, FireSize, TreeType, TreeSize, Direction, SmokeType, PigStyeSlot, PigAge } from '../api/types'
 import { UiIconType } from '../components/icons/icon'
 
 export type Dimension = {
@@ -137,6 +137,13 @@ export type AnimalImageAtlas = {
     shadowImages?: Record<Direction, OneImage>
     cargos?: Record<Material, OneImage>
     nationSpecific?: Record<Nation, Record<Material, OneImage>>
+}
+
+type PigAction = 'PIG_ACTION_1' | 'PIG_ACTION_2' | 'PIG_ACTION_3' | 'PIG_ACTION_4' | 'PIG_ACTION_5'
+
+export type PigImageAtlas = {
+    animations: Record<PigAge, Partial<Record<PigAction, ImageSeries>>>
+    shadows: Record<PigAge, OneImage>
 }
 
 export type AnimationType = 'SINGLE_THEN_FREEZE' | 'REPEAT' | 'SINGLE_THEN_STOP'

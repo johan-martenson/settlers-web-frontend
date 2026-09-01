@@ -14,7 +14,7 @@ import { printVariables } from '../../utils/stats/stats'
 import { SetTransportPriority } from '../../windows/transport_priority/transport_priority'
 import { TypeControl } from './type-control'
 import { isRoadAtPoint } from '../../utils/utils'
-import { PlayerId, GameId, Point, HouseId, PointInformationWithoutPossibleRoadConnections } from '../../api/types'
+import { PlayerId, GameId, Point, HouseId, PointInformationWithoutPossibleRoadConnections, SPEED_VALUES, GameSpeed } from '../../api/types'
 import { CalendarAgenda24Regular, TopSpeed24Filled } from '@fluentui/react-icons'
 import { HouseInfo } from '../../windows/house/house_info'
 import { sfx } from '../../sound/sound_effects'
@@ -360,7 +360,9 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
         immediateStateRef.current.mouseMoving = false
     }
 
-    const onPointClicked = useCallback(async (point: Point) => {
+    const onPointClicked = useCallback(async (point: Point, shiftKey: boolean = false) => {
+        console.log('On point clicked', point, shiftKey)
+        console.log(roadBuildingState)
         if (PlayLogConfig.selection) {
             console.info(`Play (selection): Clicked point: ${point.x}, ${point.y}`, roadBuildingState)
         }
@@ -377,11 +379,11 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
             // Handle the case where one of the directly adjacent possible new road connections is selected
             if (roadBuildingState.possibleConnections?.find(e => e.x === point.x && e.y === point.y)) {
-                possibleNewRoad.push(point)
+                possibleNewRoad.push({ x: point.x, y: point.y })
                 api.placeLocalRoad(possibleNewRoad)
 
                 // Handle the case where a point further away was clicked
-            } else {
+            } else if (!shiftKey) {
 
                 // Get the possible road from the current point to the clicked point. Make sure to avoid the ongoing planned road
                 const possibleNewRoadSegment = (await api.findPossibleNewRoad(recent, point, roadBuildingState.road)).possibleRoad
@@ -410,8 +412,14 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                     console.info('Play (roads): Placing road directly to flag')
                 }
 
+                // Make a special road if shift is pressed
+                if (shiftKey) {
+                    api.placeConnection([...possibleNewRoad, point])
+                } else {
+                    api.placeRoad(possibleNewRoad)
+                }
+
                 // Create the road, clear ongoing road building, and set the point as selected
-                api.placeRoad(possibleNewRoad)
                 clearRoadBuilding()
                 api.removeLocalRoad('LOCAL')
                 setSelected(point)
@@ -819,6 +827,16 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
             hidden: true
         })
 
+        // Set game speed
+        commands.set('Set game speed', {
+            type: 'ENUM',
+            values: SPEED_VALUES,
+            action: (context: unknown, speed: string) => {
+                api.setGameSpeed(speed as GameSpeed)
+            },
+            hidden: true
+        })
+
         // Fog of war
         commands.set('Enable fog of war', {
             action: () => setFogOfWar(true),
@@ -920,7 +938,7 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
 
                 api.removeLocalRoad('LOCAL')
             }
-        } else if (event.key === ' ') {
+        } else if (event.key === ' ' && (inputValue === undefined || inputValue.trim().length === 0)) {
             setShowTitles(prev => !prev)
             setShowAvailableConstruction(prev => !prev)
         } else if (event.key === 'ArrowUp') {

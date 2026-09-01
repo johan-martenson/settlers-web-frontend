@@ -1,7 +1,8 @@
-import { AnyBuilding, CropGrowth, CropInformation, CropType, DecorationType, Direction, FireSize, FlagInformation, FlagType, HouseInformation, Material, Nation, PlayerColor, ShipConstructionProgress, ShipInformation, SignInformation, SignType, Size, SmokeType, StoneAmount, StoneInformation, StoneType, TreeInformation, TreeSize, TreeType, WorkerAction } from '../api/types'
-import { AnimalImageAtlas, AnimationType, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
+import { AnyBuilding, CropGrowth, CropInformation, CropType, DecorationType, Direction, FireSize, FlagInformation, FlagType, HouseInformation, Material, Nation, PigInformation, PlayerColor, ShipConstructionProgress, ShipInformation, SignInformation, SignType, Size, SmokeType, StoneAmount, StoneInformation, StoneType, TreeInformation, TreeSize, TreeType, WorkerAction } from '../api/types'
+import { AnimalImageAtlas, AnimationType, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, PigImageAtlas, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
 import { AssetsLogConfig } from './config'
 import { UiIconType } from '../components/icons/icon'
+import { PIG_OFFSETS } from './constants'
 
 // Types
 type SmokeTable = Record<
@@ -76,6 +77,16 @@ const OFFSET_ADJUSTMENTS_FOR_ACTIONS: Partial<Record<WorkerAction, { x: number, 
     'OPEN_OVEN': { x: 5, y: -10 },
 }
 
+
+// Functions
+function report(message: string, ...arglist: any[]): void {
+    const key = JSON.stringify(arglist)
+
+    if (!reported.has(key)) {
+        console.error(message, ...arglist)
+        reported.add(key)
+    }
+}
 
 // Classes
 abstract class BaseImageAtlasHandler<ImageAtlas extends object> {
@@ -207,6 +218,12 @@ class UiElementsImageAtlasHandler extends BaseImageAtlasHandler<UiElementsImageA
     }
 
     getUiElement(type: UiIconType): DrawingInformation | undefined {
+        if (!this.atlas.icons[type]) {
+            report(`UiElementsImageAtlasHandler: No icon found for type ${type}`, type)
+
+            return undefined
+        }
+
         return {
             ...imageInfoFromSingleImage(this.atlas.icons[type]),
             image: this.sourceImage,
@@ -544,8 +561,7 @@ class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
         // Report if there still is no action image found
         if (!actionImages) {
             if (!reported.has(worker.action)) {
-                console.error(`FOUND NO ACTION: name: ${this.name}, nation: ${worker.nation}, direction: ${worker.direction}, action: ${worker.action}, color: ${worker.color}`)
-                reported.add(worker.action)
+                report(`FOUND NO ACTION: name: ${this.name}, nation: ${worker.nation}, direction: ${worker.direction}, action: ${worker.action}, color: ${worker.color}`, worker)
             }
 
             return undefined
@@ -591,9 +607,7 @@ class WorkerImageAtlasHandler extends BaseImageAtlasHandler<WorkerImageAtlas> {
             ?? this.atlas.common?.cargoImages?.[material]?.[direction]
 
         if (!cargoImages) {
-            console.log(`No cargo images for material ${material}`)
-            console.log(this.atlas.common.cargoImages)
-            console.error(this.name, material, direction)
+            report(`No cargo images for material ${material}`, material, direction, nation)
 
             return undefined
         }
@@ -697,11 +711,11 @@ class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
 
     getDrawingInformationForWorkingHouse(house: HouseInformation, animationIndex: number): DrawingInformation[] | undefined {
         if (this.atlas.buildings[house.nation][house.type] === undefined) {
-            console.log([house.nation, house.type, this.atlas.buildings[house.nation]])
+            report(`Missing working animation for ${house.nation}, ${house.type}`, house.nation, house.type)
         }
 
         if (this.atlas.buildings[house.nation][house.type].workingAnimation === undefined || this.atlas.buildings[house.nation][house.type].readyShadow === undefined) {
-            console.error(['Missing animation for', house.nation, house.type])
+            report(`Missing animation for ${house.nation}, ${house.type}`, house.nation, house.type)
 
             return undefined
         }
@@ -711,7 +725,7 @@ class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
         const houseAnimationShadow = this.atlas.buildings[house.nation][house.type].workingAnimationShadow
 
         if (houseAnimation === undefined) {
-            console.error('Image atlas handlers: Missing animation for', [house.nation, house.type])
+            report(`Missing animation for ${house.nation}, ${house.type}`, house.nation, house.type)
 
             return undefined
         }
@@ -733,14 +747,14 @@ class HouseImageAtlasHandler extends BaseImageAtlasHandler<HouseImageAtlas> {
 
     getDrawingInformationForHouseReady(house: PartialHouse): DrawingInformation[] | undefined {
         if (this.atlas.buildings[house.nation][house.type] === undefined) {
-            console.error('Image atlas handlers: Missing ready image for', [house.nation, house.type])
+            report(`Missing ready image for ${house.nation}, ${house.type}`, house.nation, house.type)
         }
 
         const houseImage = this.atlas.buildings[house.nation][house.type].ready
         const houseShadowImage = this.atlas.buildings[house.nation][house.type].readyShadow
 
         if (houseShadowImage === undefined) {
-            console.error([house.nation, house.type])
+            report(`Missing ready shadow image for ${house.nation}, ${house.type}`, house.nation, house.type)
         }
 
         return [
@@ -1166,6 +1180,47 @@ class CropImageAtlasHandler extends BaseImageAtlasHandler<CropImageAtlasInfo> {
     }
 }
 
+class PigImageAtlasHandler extends BaseImageAtlasHandler<PigImageAtlas> {
+    private pathPrefix: string
+
+    constructor(prefix: string) {
+        super()
+
+        this.pathPrefix = prefix
+    }
+
+    async load(): Promise<void> {
+        await super.load(this.pathPrefix + 'image-atlas-pig.json', this.pathPrefix + 'image-atlas-pig.png')
+    }
+
+    getDrawingInformationForPig(nation: Nation, pig: PigInformation, animationCounter: number): DrawingInformation[] | undefined {
+        const imageSeries = this.atlas.animations[pig.age][pig.age === 'ADULT' ? 'PIG_ACTION_1' : 'PIG_ACTION_2']
+        const offset = PIG_OFFSETS[nation][pig.slot]
+        const shadowImageInfo = this.atlas.shadows[pig.age]
+
+        if (imageSeries === undefined || shadowImageInfo === undefined || offset === undefined) {
+            report(`Missing image info for pig: ${pig}`, pig, offset)
+
+            return undefined
+        }
+
+        const image = imageInfoFromHorizontalImageSeries(imageSeries, animationCounter)
+
+        return [
+            {
+                ...image,
+                offsetX: -offset.x + image.offsetX,
+                offsetY: -offset.y + image.offsetY,
+                image: this.sourceImage
+            },
+            {
+                ...imageInfoFromSingleImage(shadowImageInfo),
+                image: this.sourceImage
+            }
+        ]
+    }
+}
+
 class AnimalImageAtlasHandler extends BaseImageAtlasHandler<AnimalImageAtlas> {
     private pathPrefix: string
     private name: string
@@ -1186,7 +1241,7 @@ class AnimalImageAtlasHandler extends BaseImageAtlasHandler<AnimalImageAtlas> {
             ?? this.atlas.cargos?.[material]
 
         if (!cargoImage) {
-            console.error(`Didn't find cargo image`, material, nation)
+            report(`Didn't find cargo image: ${material} for nation ${nation}`, material, nation)
 
             return undefined
         }
@@ -1287,6 +1342,7 @@ ANIMAL_FALLBACK_DIRECTION.set('WEST', 'EAST')
 ANIMAL_FALLBACK_DIRECTION.set('NORTH_WEST', 'SOUTH_EAST')
 ANIMAL_FALLBACK_DIRECTION.set('NORTH_EAST', 'SOUTH_WEST')
 
+const PIG_HANDLER = new PigImageAtlasHandler('assets/nature/animals/')
 const HOUSE_HANDLER = new HouseImageAtlasHandler('assets/')
 const materialImageAtlasHandler = new MaterialImageAtlasHandler('assets/')
 const shipImageAtlas = new ShipImageAtlasHandler('assets/')
@@ -1326,6 +1382,7 @@ actionAnimationType.set('DRAW_WATER_1', 'REPEAT')
 actionAnimationType.set('FEED_THE_PIGS', 'SINGLE_THEN_STOP')
 
 export {
+    PIG_HANDLER,
     HOUSE_HANDLER,
     materialImageAtlasHandler,
     WorkerImageAtlasHandler,

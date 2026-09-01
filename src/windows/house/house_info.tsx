@@ -180,7 +180,7 @@ const HouseInfo = ({ selfPlayerId, nation, goToPoint, onClose, onRaise, ...props
             }
 
             {isOwnHouse && house.state === 'UNFINISHED' &&
-                <UnfinishedHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} />
+                <UnfinishedHouseInfo house={house} nation={nation} onClose={onClose} onRaise={onRaise} goToPoint={goToPoint} />
             }
 
             {isOwnHouse && house.type !== 'Headquarter' && houseIsReady(house) && isMilitaryBuilding(house) &&
@@ -221,7 +221,7 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise, goToPoint }: Planne
                 api.removeBuilding(house.id)
                 onClose()
             },
-            icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+            icon: <UiIcon type='HOUSE_BURNING' scale={0.5} />
         })
 
         cmds.set('Close window', {
@@ -262,7 +262,7 @@ const PlannedHouseInfo = ({ house, nation, onClose, onRaise, goToPoint }: Planne
                     onMouseEnter={() => setHoverInfo('Tear down')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+                    <UiIcon type='HOUSE_BURNING' scale={0.5} />
                 </Button>
                 <Button
                     onClick={() => {
@@ -481,7 +481,7 @@ const UnfinishedHouseInfo = ({ house, nation, goToPoint, onClose, onRaise }: Unf
                 api.removeBuilding(house.id)
                 onClose()
             },
-            icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+            icon: <UiIcon type='HOUSE_BURNING' scale={0.5} />
         })
 
         cmds.set('Close window', {
@@ -531,7 +531,7 @@ const UnfinishedHouseInfo = ({ house, nation, goToPoint, onClose, onRaise }: Unf
                 onMouseEnter={() => setHoverInfo('Tear down')}
                 onMouseLeave={() => setHoverInfo(undefined)}
             >
-                <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+                <UiIcon type='HOUSE_BURNING' scale={0.5} />
             </Button>
         </WindowWithTyping>
     )
@@ -570,7 +570,7 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
                 api.removeBuilding(house.id)
                 onClose()
             },
-            icon: <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+            icon: <UiIcon type='HOUSE_BURNING' scale={0.5} />
         })
 
         cmds.set('Close window', {
@@ -667,7 +667,7 @@ const ProductionBuilding = ({ house, nation, goToPoint, onClose, onRaise }: Prod
                     onMouseEnter={() => setHoverInfo('Tear down')}
                     onMouseLeave={() => setHoverInfo(undefined)}
                 >
-                    <UiIcon type='DESTROY_BUILDING' scale={0.5} />
+                    <UiIcon type='HOUSE_BURNING' scale={0.5} />
                 </Button>
                 <Button
                     onClick={() => {

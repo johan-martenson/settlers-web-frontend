@@ -17,6 +17,7 @@ export type GameMessageId = string
 export type StoneId = string
 export type RoomId = string
 export type ChatMessageId = string
+export type PigId = string
 
 type Time = {
     hours: number
@@ -39,7 +40,7 @@ export type ChatMessage = {
 const MILITARY_BUILDING_VALUES = ['Barracks', 'GuardHouse', 'WatchTower', 'Fortress', 'Headquarter'] as const
 export const MILITARY_BUILDINGS = new Set<AnyBuilding>(MILITARY_BUILDING_VALUES)
 
-const SPEED_VALUES = ['VERY_FAST', 'FAST', 'NORMAL', 'SLOW'] as const
+export const SPEED_VALUES = ['VERY_FAST', 'FAST', 'NORMAL', 'SLOW'] as const
 export type GameSpeed = typeof SPEED_VALUES[number]
 export const GAME_SPEEDS = [...SPEED_VALUES] as const
 
@@ -505,8 +506,8 @@ export type DecorationType =
     | 'MINI_BUSH'
     | 'GRASS_2'
     | 'MINI_GRASS'
-    | 'HUMAN_SKELETON_1'
-    | 'HUMAN_SKELETON_2'
+    | 'HUMAN_SKELETON_FRESH'
+    | 'HUMAN_SKELETON_DECAYED'
     | 'PORTAL'
     | 'SHINING_PORTAL'
     | 'MINI_STONE_WITH_GRASS'
@@ -576,7 +577,7 @@ type HouseResourceItem = {
 
 type HouseState = 'UNFINISHED' | 'UNOCCUPIED' | 'OCCUPIED' | 'BURNING' | 'DESTROYED' | 'PLANNED'
 
-export type HouseInformation = Point & {
+export type BaseHouseInformation = Point & {
     id: HouseId
     playerId: PlayerId
     type: AnyBuilding
@@ -597,9 +598,37 @@ export type HouseInformation = Point & {
     isWorking?: boolean
 }
 
+type BuildingSpecificInformation = {
+    PigFarm: {
+        pigs: PigInformation[]
+    }
+    Headquarter: {
+        inReserve: Record<SoldierType, number>
+        reserved: Record<SoldierType, number>
+    }
+}
+
+export type HouseInformation =
+    BaseHouseInformation & {
+        [B in AnyBuilding]:
+        { type: B } &
+        (B extends keyof BuildingSpecificInformation
+            ? BuildingSpecificInformation[B]
+            : {})
+    }[AnyBuilding]
+
 export type HeadquarterInformation = HouseInformation & {
     inReserve: Record<SoldierType, number>
     reserved: Record<SoldierType, number>
+}
+
+export type PigStyeSlot = 'SLOT_1' | 'SLOT_2' | 'SLOT_3' | 'SLOT_4' | 'SLOT_5'
+export type PigAge = 'PIGLET' | 'ADULT'
+
+export type PigInformation = {
+    id: PigId
+    slot: PigStyeSlot
+    age: PigAge
 }
 
 export type FlagInformation = Point & {
@@ -809,7 +838,6 @@ export type GameMessage = {
 function isSpeed(speed: unknown): speed is GameSpeed {
     return SPEED_VALUES.includes(speed as GameSpeed)
 }
-
 
 function isHeadquarterInformation(houseInformation: HouseInformation): houseInformation is HeadquarterInformation {
     return houseInformation.type === 'Headquarter'

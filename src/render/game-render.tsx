@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef } from 'react'
-import { AvailableConstruction, CropInformation, Decoration, FallingTreeInformation, FlagInformation, HouseInformation, PlayerId, Point, ShipInformation, SignInformation, StoneInformation, TerrainAtPoint, TreeInformation, WildAnimalInformation, WorkerInformation } from '../api/types'
+import { AvailableConstruction, CropInformation, Decoration, FallingTreeInformation, FlagInformation, HouseInformation, PigInformation, PlayerId, Point, ShipInformation, SignInformation, StoneInformation, TerrainAtPoint, TreeInformation, WildAnimalInformation, WorkerInformation } from '../api/types'
 import { Duration } from '../utils/stats/duration'
 import './game-render.css'
 import { api, MonitoredBorderForPlayer } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../utils/stats/stats'
 import { gamePointToScreenPointWithHeightAdjustment, getHouseSize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../utils/utils'
-import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, HOUSE_HANDLER, loadImageAsync, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
+import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, HOUSE_HANDLER, loadImageAsync, PIG_HANDLER, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import { DEFAULT_SCALE, STANDARD_HEIGHT } from './constants'
 import { textures } from '../render/textures'
 import { destroyProgram, draw, initProgram } from './webgl-utils'
@@ -43,7 +43,7 @@ type GameCanvasProps = {
     heightAdjust: number
     fogOfWar?: boolean
 
-    onPointClicked?: ((point: Point) => void)
+    onPointClicked?: ((point: Point, shiftKey?: boolean) => void)
     onPointDoubleClick?: ((point: Point) => void)
     onKeyDown?: ((event: React.KeyboardEvent) => void)
     onWheel?: ((event: React.WheelEvent) => void)
@@ -463,6 +463,12 @@ function GameCanvas({
                 pushImageWithShadow(houseUnderConstruction, house, 'OBJECT')
                 pushImageWithShadow(houseDrawInformation, house, 'OBJECT')
             } else {
+                if (house.type ==='PigFarm') {
+                    for (const pig of house.pigs) {
+                        pushImageWithShadow(PIG_HANDLER.getDrawingInformationForPig(house.nation, pig, 0), house, 'OBJECT')
+                    }
+                }
+
                 if ((house.type === 'Mill' && house.isWorking) ||
                     (house.type === 'Mint' && house.isWorking && house.nation === 'ROMANS') ||
                     (house.type === 'IronSmelter' && house.nation === 'ROMANS' && house.isWorking) ||
@@ -1104,6 +1110,7 @@ function GameCanvas({
         textures.registerTexture(gl, TREE_ANIMATIONS.getImage())
         textures.registerTexture(gl, FLAG_ANIMATIONS.getImage())
         textures.registerTexture(gl, HOUSE_HANDLER.getSourceImage())
+        textures.registerTexture(gl, PIG_HANDLER.getSourceImage())
         textures.registerTexture(gl, fireAnimations.getImage())
         textures.registerTexture(gl, signImageAtlasHandler.getSourceImage())
         textures.registerTexture(gl, uiElementsImageAtlasHandler.getImage())
@@ -1248,6 +1255,7 @@ function GameCanvas({
                     TREE_ANIMATIONS.load(),
                     FLAG_ANIMATIONS.load(),
                     HOUSE_HANDLER.load(),
+                    PIG_HANDLER.load(),
                     fireAnimations.load(),
                     signImageAtlasHandler.load(),
                     uiElementsImageAtlasHandler.load(),
@@ -1404,7 +1412,7 @@ function GameCanvas({
                 y: event.clientY - rect.top
             })
 
-        onPointClickedRef.current?.(gamePoint)
+        onPointClickedRef.current?.(gamePoint, event.shiftKey)
 
         event.stopPropagation()
     }, [screenPointToGamePointWithHeightAdjustmentInternal])

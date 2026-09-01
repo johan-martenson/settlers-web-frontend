@@ -230,6 +230,7 @@ enum Command {
     // Road
     PlaceRoad = 'PLACE_ROAD',
     RemoveRoad = 'REMOVE_ROAD',
+    PlaceConnection = 'PLACE_CONNECTION',
     FindPossibleNewRoad = 'FIND_NEW_ROAD',
     PlaceFlagAndRoad = 'PLACE_FLAG_AND_ROAD',
 
@@ -306,6 +307,7 @@ type AllowDelivery = { houseId: HouseId, material: Material }
 type SendOut = { houseId: HouseId, material: Material }
 type StopSendingOut = { houseId: HouseId, material: Material }
 type PlaceRoad = { road: Point[], playerId: PlayerId }
+type PlaceConnection = { points: Point[], playerId: PlayerId }
 type PlaceFlag = { flag: Point, playerId: PlayerId }
 type PlaceRoadWithFlag = { flag: Point, road: Point[], playerId: PlayerId }
 type RemoveFlag = { id: FlagId }
@@ -1144,6 +1146,16 @@ function placeRoad(points: Point[], playerId: PlayerId): void {
 }
 
 /**
+ * Connects two points on the map by placing roads and re-using existing roads.
+ * @param {Point[]} points - The points that define the connection path.
+ * @param {PlayerId} playerId - The identifier of the player placing the connection.
+ * @returns {void}
+ */
+function placeConnection(points: Point[], playerId: PlayerId): void {
+    sendWithOptions<PlaceConnection>(Command.PlaceConnection, { points, playerId })
+}
+
+/**
  * Places a flag at a specific point on the map.
  * @param {Point} flag - The location to place the flag.
  * @param {PlayerId} playerId - The identifier of the player placing the flag.
@@ -1370,4 +1382,5 @@ export {
     stopListeningToGamesList,
     setPlankQuotas,
     getChatHistoryForRooms,
+    placeConnection,
 }

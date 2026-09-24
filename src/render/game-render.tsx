@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef } from 'react'
-import { AvailableConstruction, CropInformation, Decoration, FallingTreeInformation, FlagInformation, HouseInformation, PigInformation, PlayerId, Point, ShipInformation, SignInformation, StoneInformation, TerrainAtPoint, TreeInformation, WildAnimalInformation, WorkerInformation } from '../api/types'
+import { AvailableConstruction, CropInformation, Decoration, FallingTreeInformation, FlagInformation, HouseInformation, PlayerId, Point, ShipInformation, SignInformation, StoneInformation, TerrainAtPoint, TreeInformation, WildAnimalInformation, WorkerInformation } from '../api/types'
 import { Duration } from '../utils/stats/duration'
 import './game-render.css'
 import { api, MonitoredBorderForPlayer } from '../api/ws-api'
 import { addVariableIfAbsent, getAverageValueForVariable, getLatestValueForVariable, isLatestValueHighestForVariable, printVariables } from '../utils/stats/stats'
 import { gamePointToScreenPointWithHeightAdjustment, getHouseSize, screenPointToGamePointNoHeightAdjustment, screenPointToGamePointWithHeightAdjustment } from '../utils/utils'
-import { borderImageAtlasHandler, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, HOUSE_HANDLER, loadImageAsync, PIG_HANDLER, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
+import { borderImageAtlasHandler, BREEDING_DONKEY_HANDLER, cargoImageAtlasHandler, cropsImageAtlasHandler, decorationsImageAtlasHandler, fireImageAtlasHandler, HOUSE_HANDLER, loadImageAsync, PIG_HANDLER, roadBuildingImageAtlasHandler, shipImageAtlas, signImageAtlasHandler, stoneImageAtlasHandler, treeImageAtlasHandler, uiElementsImageAtlasHandler } from '../assets/image_atlas_handlers'
 import { DEFAULT_SCALE, STANDARD_HEIGHT } from './constants'
 import { textures } from '../render/textures'
 import { destroyProgram, draw, initProgram } from './webgl-utils'
@@ -463,12 +463,6 @@ function GameCanvas({
                 pushImageWithShadow(houseUnderConstruction, house, 'OBJECT')
                 pushImageWithShadow(houseDrawInformation, house, 'OBJECT')
             } else {
-                if (house.type ==='PigFarm') {
-                    for (const pig of house.pigs) {
-                        pushImageWithShadow(PIG_HANDLER.getDrawingInformationForPig(house.nation, pig, 0), house, 'OBJECT')
-                    }
-                }
-
                 if ((house.type === 'Mill' && house.isWorking) ||
                     (house.type === 'Mint' && house.isWorking && house.nation === 'ROMANS') ||
                     (house.type === 'IronSmelter' && house.nation === 'ROMANS' && house.isWorking) ||
@@ -479,6 +473,16 @@ function GameCanvas({
                 } else {
                     const houseDrawInformation = HOUSE_HANDLER.getDrawingInformationForHouseReady(house)
                     pushImageWithShadow(houseDrawInformation, house, 'OBJECT')
+                }
+
+                if (house.type === 'PigFarm') {
+                    for (const pig of house.pigs) {
+                        pushImageWithShadow(PIG_HANDLER.getDrawingInformationForPig(house.nation, pig, 0), house, 'OBJECT')
+                    }
+                } else if (house.type === 'DonkeyFarm') {
+                    for (const donkey of house.donkeys) {
+                        pushImage(BREEDING_DONKEY_HANDLER.getDrawingInformationForBreedingDonkey(house.nation, donkey, renderState.animationIndex), house, 'OBJECT')
+                    }
                 }
 
                 if (house.door === 'OPEN') {
@@ -1111,6 +1115,7 @@ function GameCanvas({
         textures.registerTexture(gl, FLAG_ANIMATIONS.getImage())
         textures.registerTexture(gl, HOUSE_HANDLER.getSourceImage())
         textures.registerTexture(gl, PIG_HANDLER.getSourceImage())
+        textures.registerTexture(gl, BREEDING_DONKEY_HANDLER.getSourceImage())
         textures.registerTexture(gl, fireAnimations.getImage())
         textures.registerTexture(gl, signImageAtlasHandler.getSourceImage())
         textures.registerTexture(gl, uiElementsImageAtlasHandler.getImage())
@@ -1256,6 +1261,7 @@ function GameCanvas({
                     FLAG_ANIMATIONS.load(),
                     HOUSE_HANDLER.load(),
                     PIG_HANDLER.load(),
+                    BREEDING_DONKEY_HANDLER.load(),
                     fireAnimations.load(),
                     signImageAtlasHandler.load(),
                     uiElementsImageAtlasHandler.load(),

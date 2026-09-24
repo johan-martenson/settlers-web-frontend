@@ -146,4 +146,8 @@ export type PigImageAtlas = {
     shadows: Record<PigAge, OneImage>
 }
 
+export type BreedingDonkeyImageAtlas = {
+    animation: ImageSeries
+}
+
 export type AnimationType = 'SINGLE_THEN_FREEZE' | 'REPEAT' | 'SINGLE_THEN_STOP'

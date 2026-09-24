@@ -18,6 +18,7 @@ export type StoneId = string
 export type RoomId = string
 export type ChatMessageId = string
 export type PigId = string
+export type DonkeyId = string
 
 type Time = {
     hours: number
@@ -31,11 +32,18 @@ export type ChatMessage = {
     id: ChatMessageId
     fromPlayerId: PlayerId
     fromName: string
-    toPlayers: PlayerId[]
-    toRoomId: RoomId
     text: string
     time: Time
-}
+} & (
+    | {
+        toPlayerId: PlayerId
+        toRoomId?: undefined
+    }
+    | {
+        toRoomId: RoomId
+        toPlayerId?: undefined
+    }
+)
 
 const MILITARY_BUILDING_VALUES = ['Barracks', 'GuardHouse', 'WatchTower', 'Fortress', 'Headquarter'] as const
 export const MILITARY_BUILDINGS = new Set<AnyBuilding>(MILITARY_BUILDING_VALUES)
@@ -72,7 +80,7 @@ const GOODS_VALUES = ['FLOUR', 'PIG', 'GOLD', 'IRON', 'COAL', 'STONE', 'WATER', 
 export type Goods = typeof GOODS_VALUES[number]
 export const GOODS = new Set<Goods>(GOODS_VALUES)
 
-const WORKER_VALUES = ['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'CARPENTER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'BUILDER', 'PLANER', 'SHIPWRIGHT', ...SOLDIER_VALUES] as const
+const WORKER_VALUES = ['ARMORER', 'BAKER', 'BREWER', 'BUTCHER', 'COURIER', 'DONKEY_BREEDER', 'DONKEY', 'FARMER', 'FISHERMAN', 'FORESTER', 'GEOLOGIST', 'HUNTER', 'IRON_FOUNDER', 'METALWORKER', 'MILLER', 'MINER', 'MINTER', 'PIG_BREEDER', 'CARPENTER', 'SCOUT', 'STONEMASON', 'STOREHOUSE_WORKER', 'WELL_WORKER', 'WOODCUTTER_WORKER', 'BUILDER', 'PLANER', 'SHIPWRIGHT', 'CATAPULT_WORKER', ...SOLDIER_VALUES] as const
 
 export type Worker = typeof WORKER_VALUES[number]
 export const WORKERS = new Set<Worker>(WORKER_VALUES)
@@ -421,7 +429,6 @@ const WORKER_TYPE_VALUES = ['Armorer'
     , 'Geologist'
     , 'Hunter'
     , 'IronFounder'
-    , 'IronSmelter'
     , 'Metalworker'
     , 'Miller'
     , 'Miner'
@@ -440,6 +447,7 @@ const WORKER_TYPE_VALUES = ['Armorer'
     , 'General'
     , 'Builder'
     , 'Planer'
+    , 'CatapultWorker'
     , 'Shipwright'] as const
 export type WorkerType = typeof WORKER_TYPE_VALUES[number]
 const WORKER_TYPES = [...WORKER_TYPE_VALUES] as const
@@ -480,6 +488,12 @@ export type WorkerAction =
     | 'SLAUGHTERING'
     | 'DRAW_WATER_1'
     | 'FEED_THE_PIGS'
+    | 'ATTACK'
+    | 'SHIELD_UP'
+    | 'HAMMERING_ARMOR'
+    | 'MELT_IRON'
+    | 'DRAW_WATER_2'
+    | 'DRAW_WATER_3'
 
 export type Action = 'FALLING_TREE' | 'HOUSE_BURNING' | WorkerAction
 
@@ -602,6 +616,9 @@ type BuildingSpecificInformation = {
     PigFarm: {
         pigs: PigInformation[]
     }
+    DonkeyFarm: {
+        donkeys: BreedingDonkeyInformation[]
+    }
     Headquarter: {
         inReserve: Record<SoldierType, number>
         reserved: Record<SoldierType, number>
@@ -622,6 +639,7 @@ export type HeadquarterInformation = HouseInformation & {
     reserved: Record<SoldierType, number>
 }
 
+export type DonkeySlot = 'SLOT_1' | 'SLOT_2' | 'SLOT_3'
 export type PigStyeSlot = 'SLOT_1' | 'SLOT_2' | 'SLOT_3' | 'SLOT_4' | 'SLOT_5'
 export type PigAge = 'PIGLET' | 'ADULT'
 
@@ -629,6 +647,11 @@ export type PigInformation = {
     id: PigId
     slot: PigStyeSlot
     age: PigAge
+}
+
+export type BreedingDonkeyInformation = {
+    id: DonkeyId
+    slot: DonkeySlot
 }
 
 export type FlagInformation = Point & {
@@ -680,7 +703,7 @@ export type InventoryStatistics = Partial<Record<Material, Measurement[]>>
 
 export type BuildingStatistics = Partial<Record<AnyBuilding, Measurement[]>>
 
-export const GENERAL_STATISTICS_TYPES = ['land', 'houses', 'workers', 'goods', 'military', 'coins', 'production', 'killedEnemies']
+export const GENERAL_STATISTICS_TYPES = ['land', 'houses', 'workers', 'goods', 'military', 'coins', 'production', 'killedEnemies'] as const
 export type GeneralStatisticsType = typeof GENERAL_STATISTICS_TYPES[number]
 
 export type GeneralStatistics = Record<GeneralStatisticsType, Measurement[]>

@@ -1,8 +1,8 @@
-import { AnyBuilding, CropGrowth, CropInformation, CropType, DecorationType, Direction, FireSize, FlagInformation, FlagType, HouseInformation, Material, Nation, PigInformation, PlayerColor, ShipConstructionProgress, ShipInformation, SignInformation, SignType, Size, SmokeType, StoneAmount, StoneInformation, StoneType, TreeInformation, TreeSize, TreeType, WorkerAction } from '../api/types'
-import { AnimalImageAtlas, AnimationType, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, PigImageAtlas, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
+import { AnyBuilding, BreedingDonkeyInformation, CropGrowth, CropInformation, CropType, DecorationType, Direction, FireSize, FlagInformation, FlagType, HouseInformation, Material, Nation, PigInformation, PlayerColor, ShipConstructionProgress, ShipInformation, SignInformation, SignType, Size, SmokeType, StoneAmount, StoneInformation, StoneType, TreeInformation, TreeSize, TreeType, WorkerAction } from '../api/types'
+import { AnimalImageAtlas, AnimationType, BreedingDonkeyImageAtlas, CargoImageAtlas, Dimension, DrawingInformation, FireImageAtlas, HouseImageAtlas, ImageSeries, OneImage, PigImageAtlas, RoadBuildingImageAtlas, ShipImageAtlas, SignImageAtlas, TreeImageAtlas, UiElementsImageAtlas, WorkerImageAtlas } from './types'
 import { AssetsLogConfig } from './config'
 import { UiIconType } from '../components/icons/icon'
-import { PIG_OFFSETS } from './constants'
+import { DONKEY_OFFSETS, PIG_OFFSETS } from './constants'
 
 // Types
 type SmokeTable = Record<
@@ -1180,6 +1180,46 @@ class CropImageAtlasHandler extends BaseImageAtlasHandler<CropImageAtlasInfo> {
     }
 }
 
+class BreedingDonkeyImageAtlasHandler extends BaseImageAtlasHandler<BreedingDonkeyImageAtlas> {
+    private pathPrefix: string
+
+    constructor(prefix: string) {
+        super()
+        this.pathPrefix = prefix
+    }
+
+    async load(): Promise<void> {
+        await super.load(this.pathPrefix + 'image-atlas-breeding-donkey.json', this.pathPrefix + 'image-atlas-breeding-donkey.png')
+    }
+
+    getDrawingInformationForBreedingDonkey(nation: Nation, donkey: BreedingDonkeyInformation, animationCounter: number): DrawingInformation | undefined {
+        const imageSeries = this.atlas.animation
+        const offset = DONKEY_OFFSETS[nation][donkey.slot]
+
+        if (imageSeries === undefined) {
+            report(`Missing image info for breeding donkey for nation ${nation}`, nation)
+
+            return undefined
+        }
+
+        var slotOffset = 0
+        if (donkey.slot === 'SLOT_1') {
+            slotOffset = 3
+        } else if (donkey.slot === 'SLOT_2') {
+            slotOffset = 6
+        }
+
+        const image = imageInfoFromHorizontalImageSeries(imageSeries, Math.round(animationCounter / 2) + slotOffset)
+
+        return {
+            ...image,
+            offsetX: -offset.x + image.offsetX,
+            offsetY: -offset.y + image.offsetY,
+            image: this.sourceImage
+        }
+    }
+}
+
 class PigImageAtlasHandler extends BaseImageAtlasHandler<PigImageAtlas> {
     private pathPrefix: string
 
@@ -1343,6 +1383,7 @@ ANIMAL_FALLBACK_DIRECTION.set('NORTH_WEST', 'SOUTH_EAST')
 ANIMAL_FALLBACK_DIRECTION.set('NORTH_EAST', 'SOUTH_WEST')
 
 const PIG_HANDLER = new PigImageAtlasHandler('assets/nature/animals/')
+const BREEDING_DONKEY_HANDLER = new BreedingDonkeyImageAtlasHandler('assets/nature/animals/')
 const HOUSE_HANDLER = new HouseImageAtlasHandler('assets/')
 const materialImageAtlasHandler = new MaterialImageAtlasHandler('assets/')
 const shipImageAtlas = new ShipImageAtlasHandler('assets/')
@@ -1383,6 +1424,7 @@ actionAnimationType.set('FEED_THE_PIGS', 'SINGLE_THEN_STOP')
 
 export {
     PIG_HANDLER,
+    BREEDING_DONKEY_HANDLER,
     HOUSE_HANDLER,
     materialImageAtlasHandler,
     WorkerImageAtlasHandler,

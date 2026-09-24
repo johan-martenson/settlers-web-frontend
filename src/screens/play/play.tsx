@@ -939,7 +939,6 @@ const Play = ({ gameId, selfPlayerId, onLeaveGame }: PlayProps) => {
                 api.removeLocalRoad('LOCAL')
             }
         } else if (event.key === ' ' && (inputValue === undefined || inputValue.trim().length === 0)) {
-            setShowTitles(prev => !prev)
             setShowAvailableConstruction(prev => !prev)
         } else if (event.key === 'ArrowUp') {
             moveGame({ ...immediateStateRef.current.translate, y: immediateStateRef.current.translate.y + ARROW_KEY_MOVE_DISTANCE })
